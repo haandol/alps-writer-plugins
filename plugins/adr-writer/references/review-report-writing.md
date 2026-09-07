@@ -51,7 +51,8 @@ settlement`, not `idempotency is handled`.
 
 ## Visualize relationships the reader would reconstruct
 
-Include the smallest grounded Mermaid diagram when any trigger applies:
+Classify the visual map from the confirmed implementation scope. Mark it
+required when any trigger applies:
 
 - three or more participants, processing steps, states, components, or ADRs;
 - a system boundary, dependency, or contradiction;
@@ -73,10 +74,16 @@ Draw only relationships established by the ADR, code, diff, or executed evidence
 Use short behavior labels instead of implementation trivia. After the diagram,
 write one sentence beginning with `Notice:` that states the review point.
 
-The prose must remain independently reviewable when Mermaid does not render.
-A local one-file PASS or a single-document PASS may omit a diagram when the entire
-relationship is clear in one or two sentences. Do not add a diagram to satisfy a
-format quota, and do not repeat the same relationship in several diagram types.
+Record the required/omitted decision and its evidence-based reason in the owning
+artifact. When required, the report must include the selected Mermaid type and
+one `Notice:` sentence per diagram; omission is a validation failure. Diagrams
+may appear in `Visual map` or any subject-specific narrative section, and
+multiple diagrams are allowed when they explain different relationships. The prose must remain
+independently reviewable when Mermaid does not render. A local one-file PASS or
+a single-document PASS may omit a diagram only when the entire relationship is
+clear in one or two sentences and the artifact records that reason. Do not add
+several diagrams to satisfy a format quota or repeat the same relationship in
+several diagram types.
 
 ## Remove AI slop
 

@@ -41,10 +41,14 @@ to the reader, not by file or implementation sequence.
    flow. When one exists, explain the starting condition or trigger, action,
    system response, and observable result. If no coherent flow exists, start
    with the most consequential behavior and why it matters.
-3. Add background only where the reader first needs it. Do not front-load a
+3. Explain the major algorithm or control/data flow independently from contract
+   coverage: trigger, important steps and branches, state or data change, and
+   observable result. Use a concrete input/result example when code or tests
+   establish it.
+4. Add background only where the reader first needs it. Do not front-load a
    generic system overview.
-4. Trace every contract-relevant path needed to support the explanation. Do not stop at files present in the diff.
-5. Extract the **requirements** the ADR records (max counts and turns, usage
+5. Trace every contract-relevant path needed to support the explanation. Do not stop at files present in the diff.
+6. Extract the **requirements** the ADR records (max counts and turns, usage
    quotas, retention periods, size caps, response targets, allowed value sets,
    transition rules, mandatory fields, permissions, visibility, ordering,
    uniqueness, units) and the implementation-independent observable evidence
@@ -54,15 +58,15 @@ to the reader, not by file or implementation sequence.
    cannot be found, write `not found in code`. Inside whichever fixed section
    fits best, answer **What the ADR specifies vs what the code does**; use a
    table only when it makes that comparison clearer.
-6. Explain failure, cancellation, retries, duplicates, concurrent execution,
+7. Explain failure, cancellation, retries, duplicates, concurrent execution,
    and partial completion when they exist, not only the happy path.
-7. Connect the related tests to the behavior they demonstrate. Call out new
+8. Connect the related tests to the behavior they demonstrate. Call out new
    dependencies, configuration, stored state, and operational observability
    only when present.
-8. Use the diff to explain before/after behavior when it exists, but never omit
+9. Use the diff to explain before/after behavior when it exists, but never omit
    unchanged implementation that enforces an ADR contract row.
-9. Never guess at anything the ADR, diff, code, or tests cannot establish —
-   write `cannot determine`.
+10. Never guess at anything the ADR, diff, code, or tests cannot establish —
+    write `cannot determine`.
 
 ## Output
 

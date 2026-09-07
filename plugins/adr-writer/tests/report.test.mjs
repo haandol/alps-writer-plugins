@@ -63,6 +63,23 @@ test("standard reviews render the same standalone HTML with separate implementat
   assert.match(result.stdout, /Change scope · none/);
 });
 
+test("review notes reuse the disclosure body without a second horizontal inset", () => {
+  const result = render({
+    language: "ko",
+    adr: "docs/adr/test.md",
+    verdict: "PASS",
+    notes: "검토 범위에서 발견된 제한 사항입니다.",
+    findings: [],
+    contractCoverage: [],
+    implementationChoices: [],
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /class="section-disclosure__body notes"/);
+  assert.match(result.stdout, /\.notes__v\s*\{[^}]*margin:\s*0;/s);
+  assert.doesNotMatch(result.stdout, /\.notes\s*\{[^}]*padding:/s);
+});
+
 test("arbitrary finding IDs are not interpolated into DOM selectors", () => {
   const hostileId = 'x"] :checked, script[data-x="';
   const result = render({
@@ -349,6 +366,34 @@ const id = 42;
   assert.doesNotMatch(result.stdout, /```mermaid/);
 });
 
+test("a grounded flowchart renders as a visual relationship diagram", () => {
+  const result = render({
+    language: "ko",
+    adr: "docs/adr/review/0001.md",
+    verdict: "PASS",
+    findings: [],
+    contractCoverage: [],
+    implementationChoices: [],
+    narrativeSections: [
+      {
+        title: "주요 리뷰 흐름",
+        body: `\`\`\`mermaid
+flowchart LR
+  Scope["구현 범위 탐색"] --> Review["증거 검토"]
+  Review --> Render["HTML 렌더링"]
+\`\`\`
+Notice: 구현 범위에서 검증된 증거가 HTML 설명으로 이어집니다.`,
+      },
+    ],
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /class="diagram diagram--flow"/);
+  assert.match(result.stdout, /구현 범위 탐색/);
+  assert.match(result.stdout, /HTML 렌더링/);
+  assert.doesNotMatch(result.stdout, /<figure class="diagram diagram--fallback"/);
+});
+
 test("the report uses a table of contents and progressive disclosure", () => {
   const result = render({
     language: "en",
@@ -467,6 +512,31 @@ test("At a glance content is escaped without duplicating PASS feedback data", ()
   assert.match(result.stdout, /&lt;\/script&gt;&lt;script&gt;/);
   assert.doesNotMatch(result.stdout, /\\u003c\/script\\u003e/);
   assert.equal((result.stdout.match(/<script>/g) ?? []).length, 1);
+});
+
+test("a finding-free PASS uses one compact result card instead of a second verdict stamp", () => {
+  const result = render({
+    language: "ko",
+    adr: "docs/adr/test.md",
+    verdict: "PASS",
+    findings: [],
+    contractCoverage: [
+      {
+        contractId: "D0",
+        requirement: "검증된 결과를 제공한다",
+        status: "PROVEN",
+        adrBasis: "Decision",
+        implementation: "검증된 결과를 제공한다",
+        evidence: "review",
+        tests: "PASS",
+      },
+    ],
+    implementationChoices: [],
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /class="conforms"/);
+  assert.doesNotMatch(result.stdout, /class="conforms__stamp"/);
 });
 
 test("INCONCLUSIVE with no findings does not render a false conforming claim", () => {

@@ -143,6 +143,15 @@ The completion boundary admits one result and rejects or reuses duplicate work.
 ## Provider failure does not cross the completion boundary
 The handler records completion only after provider success.
 
+## Visual map
+\`\`\`mermaid
+flowchart LR
+  Request["Settlement request"] --> Boundary["Completion boundary"]
+  Boundary -->|new| Complete["Write one completion"]
+  Boundary -->|duplicate| Existing["Return existing result"]
+\`\`\`
+Notice: The completion boundary decides whether one durable result is created or reused.
+
 ## Findings
 ### F1. Duplicate settlement
 - Files and symbols to change: src/stream.mjs
@@ -197,6 +206,11 @@ function validFindings(dir) {
     adr,
     verdict: "FIX_REQUIRED",
     atAGlance: { ...FULL_AT_A_GLANCE },
+    visualization: {
+      required: true,
+      reason: "Settlement has three processing stages and a duplicate-request branch.",
+      diagramType: "flowchart",
+    },
     explanation: path.join(dir, "explanation.md"),
     report: path.join(dir, "implementation-review.md"),
     scope: ["src/stream.mjs", "test/stream.test.mjs"],
@@ -305,7 +319,7 @@ ${PR_GUIDANCE}
 `;
 }
 
-test("review artifact validator accepts a concise full report without Mermaid", () => {
+test("review artifact validator accepts a concise full report with required Mermaid", () => {
   withArtifacts((dir) => {
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
     writeFileSync(path.join(dir, "implementation-review.md"), validReport());
@@ -332,6 +346,10 @@ test("review artifact validator rejects missing core headings and evidence field
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
     writeFileSync(path.join(dir, "implementation-review.md"), "# short report\n");
     const findings = validFindings(dir);
+    findings.visualization = {
+      required: false,
+      reason: "This fixture isolates missing headings and evidence fields.",
+    };
     delete findings.findings[0].evidence;
     delete findings.findings[0].whyItMatters;
     writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
@@ -341,7 +359,71 @@ test("review artifact validator rejects missing core headings and evidence field
     assert.match(result.stderr, /evidence must be a non-empty string/);
     assert.match(result.stderr, /whyItMatters must be a non-empty string/);
     assert.match(result.stderr, /missing: ## ADR contract coverage/);
-    assert.doesNotMatch(result.stderr, /Mermaid|flowchart|sequenceDiagram/);
+    assert.doesNotMatch(result.stderr, /Mermaid fence|declared flowchart/);
+  });
+});
+
+test("review artifact validator rejects missing required Mermaid across all narrative sections", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(
+      path.join(dir, "implementation-review.md"),
+      validReport().replace(
+        /## Visual map[\s\S]*?Notice: The completion boundary decides whether one durable result is created or reused\.\n\n/,
+        "",
+      ),
+    );
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(validFindings(dir), null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /narrative must contain at least one Mermaid fence/);
+  });
+});
+
+test("review artifact validator accepts Mermaid inside a subject-specific section", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(
+      path.join(dir, "implementation-review.md"),
+      validReport()
+        .replace("## Visual map\n", "## Provider failure routing\n")
+        .replace(
+          "Notice: The completion boundary decides whether one durable result is created or reused.",
+          "Notice: The subject section diagram shows where the completion branch is chosen.",
+        ),
+    );
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(validFindings(dir), null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 0, result.stderr);
+  });
+});
+
+test("review artifact validator accepts multiple Mermaid diagrams across narrative sections", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(
+      path.join(dir, "implementation-review.md"),
+      validReport().replace(
+        "## Findings",
+        `## Provider request order
+\`\`\`mermaid
+sequenceDiagram
+  participant API
+  participant Provider
+  API->>Provider: settlement request
+  Provider-->>API: result
+\`\`\`
+Notice: The second diagram explains request order separately from the completion branch.
+
+## Findings`,
+      ),
+    );
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(validFindings(dir), null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 0, result.stderr);
   });
 });
 
@@ -463,6 +545,10 @@ test("review artifact validator accepts concise standard-mode artifacts without 
     findings.reviewMode = "standard";
     findings.verdict = "PASS";
     findings.atAGlance = { ...STANDARD_AT_A_GLANCE };
+    findings.visualization = {
+      required: false,
+      reason: "The one-file parser refactor is clear in two sentences.",
+    };
     findings.comprehensionCheck = validParserComprehensionCheck();
     findings.findings = [];
     findings.implementationChoices = [];

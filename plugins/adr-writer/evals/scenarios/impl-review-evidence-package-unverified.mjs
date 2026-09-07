@@ -193,6 +193,10 @@ export default {
         action: "Verify provider failure injection or accept the documented risk.",
         risk: "A provider failure could record completion without executed evidence.",
       },
+      visualization: {
+        required: false,
+        reason: "The supplied fixture explains two local settlement paths in two short sections.",
+      },
       scope: ["src/payments/settle.ts", "test/payments/settle.test.ts"],
       changeScope: ["src/payments/settle.ts"],
       metrics: {

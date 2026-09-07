@@ -31,6 +31,7 @@ anchors and established technical terms when translation would reduce precision.
 - `necessity-review.md`
 - `sufficiency-review.md`
 - The verified findings, tests, and normalized Notable implementation choices
+- The visualization requirement, reason, and selected Mermaid diagram type
 
 ## Core report
 
@@ -40,12 +41,13 @@ the whole implementation:
 1. What did the review conclude, and what does that mean for a user or operator?
 2. What must happen next?
 3. What intent, problem, and contract from the ADR explain why this change exists?
-4. What user, operator, request, state, or failure flow best explains the important behavior?
-5. Which mechanism and background details are needed to understand that flow?
-6. Which ADR decisions and contract rows are accounted for, and what did the implementation do for each one?
-7. Which tests ran and what did they prove?
-8. What risk remains unverified?
-9. Which one to five important questions would reveal whether the reader can explain the implementation?
+4. What major algorithm or control/data flow produces the important result?
+5. What user, operator, request, state, or failure flow best explains that behavior?
+6. Which mechanism, concrete example, and background details are needed to understand that flow?
+7. Which ADR decisions and contract rows are accounted for, and what did the implementation do for each one?
+8. Which tests ran and what did they prove?
+9. What risk remains unverified?
+10. Which one to five important questions would reveal whether the reader can explain the implementation?
 
 Start with `At a glance`:
 
@@ -124,8 +126,13 @@ mode and for PASS. Keep this structure:
 <!-- generated from findings.json -->
 ```
 
-`Visual map` is conditional. Omit the heading when the shared report guide has
-no visualization trigger.
+`Visual map` is an optional overview, not the only diagram location. When
+`visualization.required` is true, include one or more Mermaid fences whose set
+includes `diagramType`. Put each diagram in the subject-specific section where
+it best explains that algorithm, state, request, or failure flow, or use
+`Visual map` for a cross-section overview. Add one non-empty `Notice:` sentence
+per diagram. When false, diagrams remain allowed whenever they materially
+improve the explanation.
 
 `ADR intent` is fixed and appears before the narrative. It connects the ADR's
 problem, adopted direction, and contract without copying every Driver or
@@ -139,6 +146,11 @@ walkthrough`.
 - Follow a verified user, operator, request, state, or failure flow when one
   exists.
 - Otherwise lead with the most consequential behavior and observable result.
+- Explain the important algorithm or control/data flow as trigger → major steps
+  and branches → state or data change → observable result.
+- Use a small concrete input/result example when code or tests establish it;
+  label an illustrative value as illustrative rather than presenting it as a
+  requirement.
 - Order sections by reader importance. Execution and dependency order are
   optional.
 - Introduce background just in time.
@@ -175,21 +187,24 @@ When a choice or contract-critical path relies on an externally checkable premis
 Keep all four structured fields even when there is only one choice. The
 materializer owns the Markdown table.
 
-## Conditional diagrams
+## Evidence-gated diagrams
 
 Draw only relationships confirmed in the actual code. Never use ASCII or box-drawing diagrams.
 
-Add the smallest useful Mermaid when a shared-guide trigger applies:
+Use the smallest useful Mermaid selected in `findings.json.visualization`:
 
 - `flowchart` for branching, component relationships, retries, rollback, or dependency order
 - `sequenceDiagram` for async or cross-system request flow
 - `stateDiagram-v2` when state transitions are central
 - `erDiagram` when changed data relationships are central
 
-Place it before findings. Do not require a diagram count or a particular
-diagram type. A small local PASS report may contain no diagram. Ground every
+Place every diagram before findings, in the section whose prose it clarifies. A
+required diagram cannot be omitted. A small local
+PASS report may contain no diagram only when `visualization.required` is false
+and the reason states why one or two sentences are sufficient. Ground every
 node and edge in code evidence and add one `Notice:` sentence explaining what
-the reader should verify.
+the reader should verify. Use multiple diagrams when they answer different
+questions; do not impose a one-diagram or one-section limit.
 
 ## Conditional repair guide
 
@@ -207,8 +222,9 @@ For each actionable finding include:
 
 Keep the fix steps proportional to the finding. Ban vague instructions such as
 "handle appropriately" or "add the necessary tests". Do not add another
-tutorial, glossary, merge checklist, or extra diagram outside the fixed
-explanation sections unless it directly helps resolve a verified finding.
+tutorial, glossary, or merge checklist. Additional diagrams inside the
+narrative are allowed whenever they directly improve understanding or help
+resolve a verified finding.
 
 When a finding concerns documentation, tests, or long inline comments, read
 `${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md` completely and

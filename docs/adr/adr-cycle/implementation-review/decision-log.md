@@ -2,6 +2,9 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-09-07 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — Mermaid를 `Visual map` 한 섹션에 고정하지 않고 각 주제별 설명 section에도 배치하며, 서로 다른 알고리즘·상태·실패 관계를 설명할 때 필요한 수만큼 사용할 수 있도록 확장했다.
+- **2026-09-07 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 주요 알고리즘과 다단계 제어·데이터 흐름을 계약 coverage와 별도로 설명하고, 독자가 관계를 재구성해야 하는 리뷰는 근거 있는 Mermaid와 시각 렌더링을 검증 필수 항목으로 만들었다.
+- **2026-09-07 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — standard와 full 구현 리뷰가 검증된 HTML Evidence Package를 생성한 직후 환경의 기본 브라우저로 정확히 한 번 열고, 열기 실패는 경로와 이유를 알리되 review verdict를 바꾸지 않도록 변경했다.
 - **2026-09-05 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 일반 코드 리뷰의 작업 중심 표현을 적용해 finding을 수정·결정·검증·참고로 묶고, 각 카드가 영향·기대/현재 동작·요청 변경·수정 위치·완료 조건을 먼저 보여주며 감사용 원본 근거는 접힌 상세와 JSON에 유지하도록 변경했다.
 - **2026-09-05 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 검증된 HTML Evidence Package를 생성한 뒤 운영체제 기본 애플리케이션을 자동으로 열지 않고 정확한 절대 경로만 표시하며, 명시적인 사용자 요청이 있을 때만 별도 작업으로 열도록 변경했다.
 - **2026-09-04 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 사람용 HTML을 목차와 점진적 evidence 공개 구조로 변경해 핵심 흐름과 finding을 먼저 보여주고, 상세 coverage·scope·구현 선택은 상태에 따라 접으며 Mermaid 렌더링, contract anchor, 결정 필요 finding 전용 ruling과 입력 후 self-check를 제공하도록 변경했다.

@@ -10,6 +10,12 @@ const ALLOWED_MODES = new Set(["standard", "full"]);
 const ALLOWED_PERSPECTIVES = new Set(["necessity", "sufficiency", "both"]);
 const ALLOWED_CONFIDENCE = new Set(["high", "medium", "low"]);
 const ALLOWED_COVERAGE_STATUSES = new Set(["PROVEN", "VIOLATED", "UNVERIFIED", "CONTRADICTED"]);
+const ALLOWED_DIAGRAM_TYPES = new Set([
+  "flowchart",
+  "sequenceDiagram",
+  "stateDiagram-v2",
+  "erDiagram",
+]);
 const COVERAGE_STATUS_LABELS = {
   en: {
     PROVEN: "Met",
@@ -94,6 +100,18 @@ function sectionBody(source, headingPattern, stopPattern) {
   const body = [];
   for (let index = start + 1; index < lines.length; index++) {
     if (stopPattern.test(lines[index])) break;
+    body.push(lines[index]);
+  }
+  return body.join("\n").trim();
+}
+
+function rawNarrativeBody(source) {
+  const lines = String(source ?? "").split(/\r?\n/);
+  const start = lines.findIndex((line) => line.trim() === "## ADR intent");
+  if (start < 0) return "";
+  const body = [];
+  for (let index = start + 1; index < lines.length; index++) {
+    if (lines[index].trim() === "## Findings") break;
     body.push(lines[index]);
   }
   return body.join("\n").trim();
@@ -219,6 +237,33 @@ function validateAtAGlance(atAGlance, errors) {
     if (typeof atAGlance[field] !== "string" || !atAGlance[field].trim()) {
       errors.push(`findings.json atAGlance.${field} must be a non-empty string`);
     }
+  }
+}
+
+function validateVisualization(visualization, errors) {
+  if (!visualization || typeof visualization !== "object" || Array.isArray(visualization)) {
+    errors.push("findings.json visualization must be an object");
+    return;
+  }
+
+  if (typeof visualization.required !== "boolean") {
+    errors.push("findings.json visualization.required must be a boolean");
+  }
+  if (typeof visualization.reason !== "string" || !visualization.reason.trim()) {
+    errors.push("findings.json visualization.reason must be a non-empty string");
+  }
+  if (
+    visualization.diagramType !== undefined &&
+    !ALLOWED_DIAGRAM_TYPES.has(visualization.diagramType)
+  ) {
+    errors.push(
+      "findings.json visualization.diagramType must be flowchart, sequenceDiagram, stateDiagram-v2, or erDiagram",
+    );
+  }
+  if (visualization.required && !ALLOWED_DIAGRAM_TYPES.has(visualization.diagramType)) {
+    errors.push(
+      "findings.json visualization.diagramType is required when visualization is required",
+    );
   }
 }
 
@@ -535,6 +580,25 @@ function validateReport(report, data, errors) {
     if (!body) errors.push(`implementation-review.md ${heading} must not be empty`);
   }
 
+  const narrativeBody = rawNarrativeBody(report);
+  if (data.visualization?.required) {
+    const diagrams = [...narrativeBody.matchAll(/```mermaid\s*\n\s*([A-Za-z][^\s]*)[\s\S]*?```/gi)];
+    if (diagrams.length === 0) {
+      errors.push("implementation-review.md narrative must contain at least one Mermaid fence");
+    }
+    if ((narrativeBody.match(/^Notice:\s+\S+/gm) ?? []).length < diagrams.length) {
+      errors.push(
+        "implementation-review.md must contain one non-empty Notice: per Mermaid diagram",
+      );
+    }
+    const diagramType = data.visualization.diagramType;
+    if (diagramType && !diagrams.some((diagram) => diagram[1] === diagramType)) {
+      errors.push(
+        `implementation-review.md narrative must contain the declared ${diagramType} diagram`,
+      );
+    }
+  }
+
   const atAGlanceBody = sectionBody(report, /^## At a glance\s*$/i, /^##\s+/);
   if (data.verdict && !atAGlanceBody.includes(data.verdict)) {
     errors.push("implementation-review.md At a glance is missing the verdict");
@@ -643,6 +707,7 @@ function main() {
       errors.push("findings.json reviewMode must be standard or full");
     }
     validateAtAGlance(data.atAGlance, errors);
+    validateVisualization(data.visualization, errors);
     if (typeof data.adr !== "string" || !data.adr.trim()) errors.push("findings.json missing adr");
     if (!ALLOWED_VERDICTS.has(data.verdict)) {
       errors.push(`findings.json verdict is invalid: ${data.verdict ?? "(missing)"}`);

@@ -1130,14 +1130,12 @@ function buildHtml(data) {
   const empty =
     count === 0 && verdictKey === "PASS"
       ? `<div class="conforms">
-           <div class="conforms__stamp">Conforms</div>
            <p class="conforms__lead">${esc(ui.noCounterexample)}</p>
            <p class="conforms__sub">${esc(ui.evidence)} · ${provenCount} / ${coverageCount} ${esc(ui.proven)}</p>
          </div>`
       : count === 0
         ? `<div class="conforms">
-             <div class="conforms__stamp">${esc(verdictKey || "unruled")}</div>
-             <p class="conforms__lead">${esc(ui.incomplete)}</p>
+             <p class="conforms__lead">${esc(verdictKey || "unruled")} · ${esc(ui.incomplete)}</p>
            </div>`
         : "";
 
@@ -1523,12 +1521,8 @@ function buildHtml(data) {
   }
   .ruling__note:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; border-color: var(--focus); }
 
-  /* notes footer */
-  .notes { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-           padding: 14px 18px; margin-top: 4px; }
-  .notes__k { font: 600 10px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase;
-              color: var(--ink-2); }
-  .notes__v { font-size: 13.5px; color: var(--ink); margin: 8px 0 0; }
+  /* review notes reuse the disclosure's horizontal inset */
+  .notes__v { font-size: 13.5px; color: var(--ink); margin: 0; }
 
   /* ── grounded Mermaid render ─────────────────────────────────── */
   .diagram {
@@ -1559,15 +1553,12 @@ function buildHtml(data) {
   .flow__arrow small { display: block; margin-top: 5px; color: var(--ink-2); font: 11px/1.25 var(--sans); }
   .diagram--fallback figcaption { color: #b4690e; margin-bottom: 8px; font-weight: 650; }
 
-  /* conforming (empty) state */
-  .conforms { text-align: center; padding: 48px 24px; }
-  .conforms__stamp {
-    display: inline-block; font: 700 22px/1 var(--mono); letter-spacing: 0.1em;
-    color: var(--verdict); border: 2px solid var(--verdict); border-radius: 10px;
-    padding: 14px 28px; box-shadow: inset 0 0 0 2px var(--card), inset 0 0 0 3px var(--verdict);
-    background: color-mix(in srgb, var(--verdict) 8%, var(--card));
+  /* compact empty state; the header already carries the verdict stamp */
+  .conforms {
+    padding: 14px 16px; border: 1px solid var(--line); border-left: 3px solid var(--verdict);
+    border-radius: 10px; background: var(--card);
   }
-  .conforms__lead { font: 660 17px/1.4 var(--sans); margin: 20px 0 4px; }
+  .conforms__lead { font: 660 15px/1.4 var(--sans); margin: 0; }
   .conforms__sub { font-size: 13.5px; color: var(--ink-2); margin: 0; }
 
   /* ── action bar ────────────────────────────────────────────────── */
@@ -1714,7 +1705,7 @@ function buildHtml(data) {
 
   ${
     data.notes
-      ? `<details class="section-disclosure"><summary>${esc(ui.residualNotes)}</summary><section class="notes"><p class="notes__v">${esc(data.notes)}</p></section></details>`
+      ? `<details class="section-disclosure"><summary>${esc(ui.residualNotes)}</summary><section class="section-disclosure__body notes"><p class="notes__v">${esc(data.notes)}</p></section></details>`
       : ""
   }
 

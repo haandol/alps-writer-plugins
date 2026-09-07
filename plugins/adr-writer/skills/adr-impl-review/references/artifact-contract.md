@@ -2,7 +2,7 @@
 
 Read this reference completely only after the review evidence has been
 synthesized and the verdict is known. It owns the common standard/full report,
-JSON, validation, rendering, path reporting, completion-response, and optional
+JSON, validation, rendering, opening, completion-response, and optional
 interactive-comprehension contract.
 
 ## 1. Generate the concise evidence report
@@ -29,11 +29,12 @@ Before writing the report, read
 Use progressive disclosure. Every report contains `At a glance`, `Review mode`,
 `Scope`, `ADR intent`, at least one subject-specific narrative section,
 `Findings`, `ADR contract coverage`, `Notable implementation choices`, `Tests`,
-`Residual risks`, and `Comprehension check` by default. `Visual map` is
-conditional on the shared report guide. The narrative headings and order follow
-the reader's most important verified flow rather than a fixed tutorial template.
-Include detailed repair guidance only for `FIX_REQUIRED`, `BLOCK`, or when the
-user asks for it.
+`Residual risks`, and `Comprehension check` by default. Mermaid diagrams are
+required somewhere between `ADR intent` and `Findings` when
+`findings.json.visualization.required` is true. The narrative headings and
+order follow the reader's most important verified flow rather than a fixed
+tutorial template. Include detailed repair guidance only for `FIX_REQUIRED`,
+`BLOCK`, or when the user asks for it.
 
 Under `At a glance`, `ADR contract coverage`, `Notable implementation choices`,
 and `Comprehension check`, write only:
@@ -45,10 +46,15 @@ and `Comprehension check`, write only:
 The report is the narrative source. The deterministic materializer writes the
 repeated data views from `findings.json`.
 
-Include the smallest grounded Mermaid when one of the shared report guide's
-relationship triggers applies, using only relationships confirmed in the actual
-code. A local one-file PASS may omit the diagram when the whole relationship is
-clear in one or two sentences. Do not require a diagram count or type.
+Classify visualization before writing. Record `required`, a non-empty `reason`,
+and the smallest fitting `diagramType` in `findings.json.visualization`.
+When `required` is true, include at least one Mermaid fence of the declared type
+in `Visual map` or any subject-specific section, and add one non-empty `Notice:`
+sentence per diagram. The validator rejects missing or mismatched diagrams. A
+local one-file PASS may set `required: false` only when the whole relationship
+is clear in one or two sentences; record why the diagram is unnecessary. Use as
+many diagrams as materially reduce reconstruction work; do not merge different
+review questions into one crowded diagram or add duplicates.
 
 - Overall change structure: `flowchart`
 - Core request/event flow: `sequenceDiagram`
@@ -157,6 +163,11 @@ Serialize the available role artifacts and synthesized result into
     "action": "Pass the cancellation signal through the upstream client and rerun the cancellation test.",
     "risk": "Restart recovery remains unverified because no local queue was available."
   },
+  "visualization": {
+    "required": true,
+    "reason": "Checkout cancellation crosses the handler and upstream client and has success and abort branches.",
+    "diagramType": "flowchart"
+  },
   "explanation": "/tmp/.../explanation.md",
   "report": "/tmp/.../implementation-review.md",
   "scope": ["src/checkout/handler.ts", "src/checkout/client.ts", "test/checkout.test.ts"],
@@ -226,20 +237,24 @@ Serialize the available role artifacts and synthesized result into
 }
 ```
 
-`language`, `reviewMode`, `atAGlance`, `metrics`, `contractCoverage`,
+`language`, `reviewMode`, `atAGlance`, `visualization`, `metrics`, `contractCoverage`,
 `implementationChoices`, `comprehensionCheck`, and `explanation` are mandatory
 even for `PASS` with zero findings or zero choices. `atAGlance` contains
 non-empty `impact`, `action`, and `risk`; use `None` only when that axis was
-checked and is empty. `comprehensionCheck.questions` contains one to five
+checked and is empty. `visualization` always contains a boolean `required` and a
+non-empty evidence-based `reason`; a required visualization also contains one
+of `flowchart`, `sequenceDiagram`, `stateDiagram-v2`, or `erDiagram` as
+`diagramType`. `comprehensionCheck.questions` contains one to five
 questions with non-empty `id`, `question`, `answerCriteria`, and `evidence`.
 `contractCoverage` is non-empty because `D0` always represents the ADR Decision
 even when there is no explicit requirement-contract subsection.
 
 The artifact validator reads the ADR, derives `D0/R1..Rn`, rejects missing or
 duplicate IDs, rejects missing or reordered explanation/check sections, rejects
-invalid question counts or exposed answer criteria, and rejects `PASS` when
-tests were not executed, a coverage row is not `PROVEN`, an unverified risk
-remains, or a blocking finding remains. Count the raw findings each independent
+a required Mermaid when the declared diagram type or per-diagram `Notice:` is
+absent from the narrative, rejects invalid question counts or exposed answer criteria,
+and rejects `PASS` when tests were not executed, a coverage row is not `PROVEN`,
+an unverified risk remains, or a blocking finding remains. Count the raw findings each independent
 perspective produced before deduplication, count `Unverified risk` entries after
 synthesis, and count distinct test or reproduction commands actually executed.
 In standard mode the necessity count is zero by definition.
@@ -257,7 +272,7 @@ Validate and build the HTML in both modes:
 node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-materialize.mjs <artifact-dir>
 node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-validate.mjs <artifact-dir>
 node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-report.mjs <findings.json> --out <artifact-dir>/adr-impl-review-report.html
-node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-path.mjs <artifact-dir>/adr-impl-review-report.html
+node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-open.mjs <artifact-dir>/adr-impl-review-report.html
 ```
 
 If materialization or validation fails, do not report completion or generate the
@@ -267,17 +282,18 @@ re-run until both exit 0. In particular, fill `perspective`, `code`, `evidence`,
 write `NOT RUN — <reason>` rather than leaving it blank. If HTML rendering fails
 or produces an empty file, the review is also incomplete.
 
-In both modes, run `adr-impl-review-path.mjs` immediately after rendering. The
-helper verifies that the report exists and is non-empty, then prints only its
-exact absolute path. Never invoke the host's default application or another file
-opener as part of the ordinary review flow. Open the report only when the user
-explicitly requests that separate action.
+In both modes, run `adr-impl-review-open.mjs` immediately after the non-empty
+check. The helper attempts the host's default browser exactly once and prints
+`OPENED <path>` or `NOT_OPENED <path> — <reason>`. Do not silently skip the
+command based on an assumption that the environment is headless. A
+`NOT_OPENED` result for a valid artifact does not invalidate the review; state
+the reason and provide the exact path.
 
 ## 3. Completion response and comprehension interaction
 
 The ordinary main-session completion response contains only the verdict, key
 impact/action/risk, applied fixes, tests, lifecycle result, and the HTML path
-reported by `adr-impl-review-path.mjs`. Do not copy any comprehension question,
+plus `OPENED` or `NOT_OPENED` result. Do not copy any comprehension question,
 `answerCriteria`, grading evidence, or answer request into that response. A
 pre-promotion invocation by `/adr-impl` must not ask the user to rule
 `apply / skip / defer` on `PROVEN` coverage rows, implementation choices, or

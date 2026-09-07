@@ -173,7 +173,7 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 │   ├── adr-impl-review-materialize.mjs # derives repeated Markdown sections from findings.json
 │   ├── adr-impl-review-validate.mjs    # /adr-impl-review artifact validator
 │   ├── adr-impl-review-report.mjs      # renders findings.json → standalone review HTML
-│   └── adr-impl-review-path.mjs        # validates the local HTML report and prints its absolute path
+│   └── adr-impl-review-open.mjs        # validates and opens the local HTML report once
 ├── hooks/
 │   ├── hooks.json        # SessionStart registration
 │   └── surface-adr-context.mjs  # SessionStart — inject a compact ADR admission directive

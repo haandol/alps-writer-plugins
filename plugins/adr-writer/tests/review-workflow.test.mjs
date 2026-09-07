@@ -392,18 +392,17 @@ test("adr-impl promotes only after verified refactoring, tests, and final review
   assert.match(artifactContract, /Validate and build the HTML in both modes/i);
   assert.match(
     artifactContract,
-    /node \$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/adr-impl-review-path\.mjs <artifact-dir>\/adr-impl-review-report\.html/i,
+    /node \$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/adr-impl-review-open\.mjs <artifact-dir>\/adr-impl-review-report\.html/i,
   );
-  assert.match(artifactContract, /prints only its\s+exact absolute path/i);
+  assert.match(artifactContract, /attempts the host's default browser exactly once/i);
   assert.match(
     finalReviewContract,
     /Never report either review mode complete without a validated, non-empty `adr-impl-review-report\.html`/i,
   );
   assert.match(
     finalReviewContract,
-    /Never finish either review mode without running `adr-impl-review-path\.mjs`/i,
+    /Never finish either review mode without running `adr-impl-review-open\.mjs` once/i,
   );
-  assert.match(finalReviewContract, /Never open the HTML report automatically/i);
 
   const explainer = read("agents/adr-impl-explainer.md");
   const necessity = read("agents/adr-impl-necessity-reviewer.md");
@@ -606,7 +605,7 @@ test("implementation review keeps contract evidence without a mandatory merge ch
   assert.doesNotMatch(reviewContract, /seven-axis merge decision checklist/);
 });
 
-test("repair guidance and Mermaid are conditional on the review evidence", () => {
+test("repair guidance is conditional and Mermaid may appear across narrative sections", () => {
   const writer = read("agents/adr-impl-review-report-writer.md");
 
   assert.match(writer, /FIX_REQUIRED|BLOCK/);
@@ -618,6 +617,8 @@ test("repair guidance and Mermaid are conditional on the review evidence", () =>
   assert.match(writer, /erDiagram/);
   assert.match(writer, /Never use ASCII or box-drawing diagrams/);
   assert.match(writer, /Draw only relationships confirmed in the actual code/);
+  assert.match(writer, /one-diagram or one-section limit/);
+  assert.match(writer, /subject-specific section/);
   assert.doesNotMatch(writer, /Include at least:/);
   assert.match(writer, /Files and symbols to change/);
   assert.match(writer, /Scope not to touch/);
@@ -663,7 +664,7 @@ test("human-facing review reports use one junior-readable visual writing guide",
   assert.match(guide, /generic best-practice advice/i);
   assert.match(
     guide,
-    /The prose must remain independently reviewable when Mermaid does not render/i,
+    /The prose must remain\s+independently reviewable when Mermaid does not render/i,
   );
-  assert.match(guide, /local one-file PASS or a single-document PASS may omit a diagram/i);
+  assert.match(guide, /local one-file PASS or\s+a single-document PASS may omit a diagram/i);
 });
