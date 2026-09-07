@@ -17,9 +17,9 @@ function withReport(run) {
 }
 
 test("the opener uses the host default browser command", () => {
-  assert.deepEqual(openerCommand("/tmp/report.html", "darwin"), {
+  assert.deepEqual(openerCommand("file:///tmp/report.html?v=1", "darwin"), {
     command: "open",
-    args: ["/tmp/report.html"],
+    args: ["file:///tmp/report.html?v=1"],
   });
   assert.deepEqual(openerCommand("C:\\report.html", "win32"), {
     command: "cmd.exe",
@@ -47,7 +47,25 @@ test("a valid report is opened exactly once", () => {
     assert.equal(result.validArtifact, true);
     assert.equal(calls.length, 1);
     assert.equal(calls[0].command, "open");
-    assert.deepEqual(calls[0].args, [path.resolve(report)]);
+    assert.equal(calls[0].args.length, 1);
+    assert.match(calls[0].args[0], /^file:.*adr-impl-review-report\.html\?v=\d+-\d+$/);
+  });
+});
+
+test("rewriting the same report path changes the browser URL fingerprint", () => {
+  withReport((report) => {
+    const targets = [];
+    const spawn = (_command, args) => {
+      targets.push(args[0]);
+      return { status: 0 };
+    };
+
+    openReviewReport(report, { platform: "darwin", spawn });
+    writeFileSync(report, "<!doctype html><title>Updated review</title>");
+    openReviewReport(report, { platform: "darwin", spawn });
+
+    assert.equal(targets.length, 2);
+    assert.notEqual(targets[0], targets[1]);
   });
 });
 

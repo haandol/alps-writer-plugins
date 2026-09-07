@@ -20,19 +20,13 @@ Before eliciting or drafting, read
 `${CLAUDE_PLUGIN_ROOT}/references/reader-first-writing.md` completely. Apply it
 to the ADR body and the Decision Digest without weakening any contract.
 
-## What you are actually writing — one level of an abstraction ladder
+## Authoritative working model
 
-Every keep/drop call in this skill follows from one idea, so hold it while you write.
+Read the target repository's `docs/adr/concepts.md` abstraction ladder and
+`docs/adr/authoring-rules.md` requirement gate, falling back to the plugin
+templates. They own the single-level read and regeneration tests.
 
 **PRD, ADR, and code are the same system at three resolutions** — like C4's context / container / component zoom, not three documents about three topics. The value of a level is what it **refuses** to show, because that is what lets a reader load one level, get its question answered, and stop.
-
-```mermaid
-flowchart TD
-    PRD["ALPS / PRD — WHAT / WHY<br/>the user's problem and target"]
-    ADR["ADR — HOW (architecture)<br/>the decision, its rationale,<br/>and the requirement contract"]
-    Code["Code / AGENTS.md — HOW (detail)<br/>structure, names, signatures,<br/>tuning values"]
-    PRD --> ADR --> Code
-```
 
 So an ADR answers exactly one question: **"why this decision, and what must the result honor?"** Two ways to get that wrong, and you are guarding both directions at once:
 
@@ -91,13 +85,13 @@ Check for category bloat — once the category is settled, follow the inspect-an
 Writing a good ADR without an ALPS requires the following. Ask briefly, one item at a time:
 
 1. **What problem or need is driving this decision?** (Context)
-2. **Which pressures, constraints, or requirements discriminate between the options?** (Decision Drivers — 3-5 of them. Not generic quality attributes like "scalability" or "maintainability" but the facts and constraints that actually decide between options. For the authoring rules see `authoring-rules.md` "Decision Drivers".) If the user answers in one word, prompt once more: "Which of performance, security, cost, complexity, team skills, or schedule is narrowing this decision?"
+2. **Which pressures, constraints, or requirements discriminate between the options?** (Decision Drivers — usually 3-5, but keep only real discriminators. Not generic quality attributes like "scalability" or "maintainability".) If the decision is tightly constrained, record why fewer drivers are sufficient.
 3. **What choice are you making? One core line.** (Decision)
    - **Collect the values and contracts the result must honor as well** (the requirement contract — `authoring-rules.md` "Concrete numbers" + "Non-numeric requirements"). Even if the user says "that can just go in the code," record it in the ADR too — the value is enforced in code, but **only the ADR records that it is a contract**, which is what later justifies changing the ADR first (`authoring-rules.md` "Requirements live in the code and in the ADR"). **Always ask once**, even unprompted: "Are there values or rules a developer must not decide on their own here? For example a maximum count or number of turns, a usage quota, a retention period, a size cap, a response-time target — and also **the list of allowed states or values, whether an input is mandatory, who may see what, whether duplicates are allowed, and the unit of money or time.**" **Requirements do not arrive only as numbers, so do not stop at probing for numbers.** Carry each answer into the ADR **with its number and basis (policy, contract, regulation) verbatim.** The deciding question is "if a developer changed this value, would that violate a requirement?" — YES makes it a requirement value that must be recorded; NO makes it an implementation tuning value that must not. Classify anything the user answers with "whatever seems right" as a tuning value and leave it out — **never invent a number and record it as though it were a requirement.**
    - **Collect observable evidence for each contract row** — ask what implementation-independent result would show that the obligation is met or violated. Keep one obligation per row so later implementation review can assign one coverage status. Record outcomes such as "the sixth upload is rejected and the count remains 5", not test commands, file names, functions, libraries, fixtures, or internal representations.
    - **Expose only decision-changing assumptions.** When the alternatives comparison depends on an unstated fact, ask: "What assumption is this choice relying on, and what decision would we reconsider if it were false?" Route the answer before writing it. A value or rule the result must honor goes in the requirement contract. An assumption that changes which architectural alternative is preferred becomes one short line in Context or the relevant Decision Driver: `<assumption> — reconsider <decision> if false`. A replaceable library, SDK, adapter, internal structure, timeout, pool size, retry count, or other implementation default stays out of the ADR and is surfaced later by implementation review. If an unverified assumption changes the contract or a durable architecture boundary, resolve it before approval rather than recording it as accepted fact. Do not add a separate assumptions section, confidence taxonomy, or fixed table.
 
-4. **Were other options considered and rejected? Collect at least two realistic alternatives** (see `authoring-rules.md` "Alternatives — at least two"). If the user says "I only thought of this one," ask once: "Was there another architecture, provider, boundary, or fallback policy on the table? If the only alternatives are interchangeable libraries or SDKs, this decision probably fails the ADR admission gate and belongs in code." If there still are none, the automated review will catch it as BLOCK — never invent a strawman.
+4. **Were other options considered and rejected? Collect the realistic alternatives that actually existed.** Two or more are useful when available. If policy, regulation, or an external boundary left only one valid path, record that constraint instead of inventing a strawman.
 5. **Is there another category that must be implemented before this one (a prerequisite)?** (Upstream dependency — e.g. "checkout needs the cart working first".) If so, collect that **prerequisite category key** (otherwise "none"). This answer is stored as `dependsOn` in `.mapping.json` in step 4 and read by `/adr-impl`'s prerequisite gate — the "Prerequisites" line on step 7's confirmation screen comes from here too. In a project that also has an ALPS PRD, `/feature-to-adr` carries dependencies over from Section 6.3, so you need not ask again.
 6. **(Optional) Which bounded context does this decision belong to, and what is its DDD subdomain classification?** — ask lightly only when the category is two-segment (`identity/login`) or the user cares about domain classification ("Is this context core to the product's competitiveness, supporting, or generic enough to be replaced by an off-the-shelf product?"). If they answer, store it as the context entry's `subdomainType` in step 4. **If they do not know, or the structure is flat and single-feature, skip the question** — it is advisory metadata and never forced.
 
@@ -163,9 +157,12 @@ The ADR index is `docs/adr/.mapping.json` — the README no longer holds an ADR 
 
 ### 6. Verify before saving — the deterministic harness, then your own R1-R20 pass
 
-Verify in two stages just before saving: **the deterministic harness settles the mechanical rules, and you carry the judgment rules yourself** — this command does not delegate to a review subagent.
+Verify in two stages just before saving: **the deterministic harness settles the mechanical rules, and the authoring path performs the judgment pass.** Self-check is the default; for a long ADR, new domain, high uncertainty, or an axis the author cannot judge independently, the current model may use an independent reviewer or separately grounded pass.
 
-Why it does not: you wrote this draft one turn after step 3 walked you through the abstraction ladder, the requirement gate, the regeneration test, the level filters, and the prose rules — which is the same rule set R1-R20 tests. A separate reviewer would re-derive a judgment you just made, and its punch list would be mostly items you already got right, which is how a user learns to skim findings. So **you hold the reviewer's perspective while drafting, and prove it at the gate below.** `/adr-review` stays available for the case that perspective cannot cover: an ADR edited later, by hand or by another session, where nobody knows what its author was told (step 8 points there).
+The default self-check avoids repeating the same read when the authoring context is
+fresh. Use an independent reviewer only when length, novelty, uncertainty, or a
+known blind spot makes a separately grounded read materially stronger.
+`/adr-review` remains the later path for inherited or hand-edited ADRs.
 
 **(a) The deterministic harness — `adr-structure-lint`**:
 
@@ -176,7 +173,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs <the category key of t
 This harness parses the `docs/adr/` this ADR lives in and mechanically verifies the following (grounded in `authoring-rules.md`, `concepts.md`, and `structure.md`):
 
 - The Status enum and date format (the first half of R1), presence of the required sections (Status/Context/Decision/Consequences), canonical filename (`NNNN-kebab.md`, no stale `fN-` prefix), title number = filename number, path depth ≤ 2 segments
-- Anti-pattern category segments (the first half of R5), Decision Drivers count 3-5 (R13), alternatives ≥ 2 (R14), Related links resolving (R10), whether a value is written in code-constant form (R18's format half — the `value-as-constant` warning)
+- Anti-pattern category segments (the first half of R5), advisory Driver/alternative count warnings (R13/R14), Related links resolving (R10), whether a value is written in code-constant form (R18's format half — the `value-as-constant` warning)
 - The `.mapping.json` schema and `dependsOn` integrity (dangling / self-edge / cycles — R16), mapping↔disk consistency (R8), plus the mapping `adrs` record shape (path/status/summary) and status↔body agreement
 - Internally it calls `adr-invariants.sh` to also check code→ADR and ADR→PRD back-references (R15/R17)
 - Seeded-doc health, reported once for the directory rather than per ADR: version lag (`rules-doc-stale` / `rules-doc-unstamped`) and layout lag (`rules-doc-layout-legacy` / `rules-doc-layout-duplicated`) — all four route back to step 1, which owns the seeding and the refresh question
@@ -200,7 +197,7 @@ Skip the items the harness already proved (Status format, required sections, fil
 
 **Two of these you cannot check as well as a fresh reader, so make them explicit rather than assumed.** The values were in this conversation and the alternatives are yours, so a draft missing a requirement still reads as complete to you, and your own alternatives never look like strawmen. So for **R18a and R19, write the check out** — list the contracts a rebuild must honor and mark each present or absent, instead of concluding "the contract is complete". Anything absent goes back to the user as a question in step 7; **never invent a number to close the gap.**
 
-Fix what the pass finds before step 7. If the draft needs splitting, or a DB schema change needs `docs/tables/` updated in the same change, return to step 3. **Report the pass in one line at step 7** ("harness passed; R18a/R19 self-checked, no reviewer subagent — run `/adr-review <category>` for an independent read"), so the user knows which axes were self-judged and can ask for a second opinion.
+Fix what the pass finds before step 7. If the draft needs splitting, or a DB schema change needs `docs/tables/` updated in the same change, return to step 3. **Report the pass in one line at step 7** ("harness passed; R18a/R19 checked; independent read: used|not needed — run `/adr-review <category>` for a later second opinion").
 
 ### 7. User confirmation
 
@@ -223,7 +220,7 @@ technical layer.
 **Decision question**: <the architectural question this ADR answers>
 **Decision intent**: <the verified problem, pressure, and result this decision exists to protect>
 **Current decision**: <2-3 sentences stating the final state>
-**Decision Drivers**: <3-5, one line each>
+**Decision Drivers**: <real discriminators; usually 3-5>
 **Decision-changing assumptions**: <assumption → what decision is reconsidered if false; omit when none>
 **Requirement contract**:
 - Required guarantees: <verbatim values and rules with their basis, or omit this row>
@@ -236,7 +233,7 @@ technical layer.
 **Regeneration checklist**: <each contract rebuilt code must honor and the observable result used to review it, marked present; unresolved items are explicit questions>
 **Alternatives considered**: <N realistic options; expand only on request or when one affects approval>
 **Prerequisites**: <dependency ADRs, or none>
-**Verification**: <harness: pass | n warnings> · self-checked R1-R20 (no reviewer subagent) — `/adr-review <category>` for an independent read
+**Verification**: <harness: pass | n warnings> · R1-R20 checked · independent read: <used|not needed>
 
 Does this current-state decision, any decision-changing assumptions, complete contract, rationale, risks, and complete regeneration checklist match your intent? If approved, save the full ADR as `Proposed` and move on to implementation (`/adr-impl`). This is the routine intent/spec-fitness confirmation; implementation review does not ask the same questions again unless the ADR changes or a genuine contract ambiguity is discovered.
 ```

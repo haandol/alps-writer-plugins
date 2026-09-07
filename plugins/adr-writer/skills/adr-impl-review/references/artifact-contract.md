@@ -29,7 +29,8 @@ Before writing the report, read
 Use progressive disclosure. Every report contains `At a glance`, `Review mode`,
 `Scope`, `ADR intent`, at least one subject-specific narrative section,
 `Findings`, `ADR contract coverage`, `Notable implementation choices`, `Tests`,
-`Residual risks`, and `Comprehension check` by default. Mermaid diagrams are
+`Residual risks` by default. Add `Comprehension check` only when the user asks
+for it or the review has high comprehension load or broad change scope. Mermaid diagrams are
 required somewhere between `ADR intent` and `Findings` when
 `findings.json.visualization.required` is true. The narrative headings and
 order follow the reader's most important verified flow rather than a fixed
@@ -74,9 +75,11 @@ reader-facing synthesis order inside each group. Give every finding a
 `contractIds` array linking it to the affected coverage rows; use an empty array
 only for a genuinely decision-neutral item.
 
-Every finding has two layers. The action layer requires `whyItMatters`,
-`expectedBehavior`, `observedBehavior`, `requestedChange`, `editTargets`, and
-`completionCriteria`. The technical layer keeps category, confidence,
+Every finding has two layers. The model must provide category, perspective,
+summary, confidence, exact code/evidence, test result, and contract links.
+`whyItMatters`, `expectedBehavior`, `observedBehavior`, `requestedChange`,
+`editTargets`, and `completionCriteria` are optional precision fields; when
+absent, the renderer derives concise defaults from the core evidence. The technical layer keeps category, confidence,
 perspective, ADR quote, exact code fragment, evidence, test command, and current
 result. Show the action layer by default and collapse the technical layer.
 
@@ -97,7 +100,8 @@ Concise means the default human view answers what to do next. Preserve all seven
 coverage fields in JSON, but do not force them into seven visible columns.
 Never replace the four-column implementation-choice table with prose.
 
-End the report with a generated `Comprehension check`. Keep one to five
+When comprehension support is selected, end the report with a generated
+`Comprehension check`. Keep one to five
 medium-difficulty free-response questions in the structured check. Ask only
 material questions about the before/after behavior, causal path, ADR contract,
 failure or boundary case, or important trade-off. Do not use filler, symbol-name
@@ -237,17 +241,21 @@ Serialize the available role artifacts and synthesized result into
 }
 ```
 
-`language`, `reviewMode`, `atAGlance`, `visualization`, `metrics`, `contractCoverage`,
-`implementationChoices`, `comprehensionCheck`, and `explanation` are mandatory
+`language`, `reviewMode`, `atAGlance`, `visualization`, `contractCoverage`,
+`implementationChoices` and `explanation` are mandatory
 even for `PASS` with zero findings or zero choices. `atAGlance` contains
 non-empty `impact`, `action`, and `risk`; use `None` only when that axis was
 checked and is empty. `visualization` always contains a boolean `required` and a
 non-empty evidence-based `reason`; a required visualization also contains one
 of `flowchart`, `sequenceDiagram`, `stateDiagram-v2`, or `erDiagram` as
-`diagramType`. `comprehensionCheck.questions` contains one to five
+`diagramType`. When present, `comprehensionCheck.questions` contains one to five
 questions with non-empty `id`, `question`, `answerCriteria`, and `evidence`.
 `contractCoverage` is non-empty because `D0` always represents the ADR Decision
 even when there is no explicit requirement-contract subsection.
+
+`metrics` and expanded action wording are optional derived views. When supplied,
+the validator checks them; when absent, deterministic tooling and coverage/test
+evidence provide the display values.
 
 The artifact validator reads the ADR, derives `D0/R1..Rn`, rejects missing or
 duplicate IDs, rejects missing or reordered explanation/check sections, rejects

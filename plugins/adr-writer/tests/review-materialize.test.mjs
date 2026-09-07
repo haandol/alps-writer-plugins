@@ -158,3 +158,29 @@ test("materializer rejects a report whose generated section anchor is missing", 
     assert.match(result.stderr, /missing: ## ADR contract coverage/);
   });
 });
+
+test("materializer leaves comprehension absent when no questions were requested", () => {
+  withArtifact((dir) => {
+    writeFileSync(
+      path.join(dir, "implementation-review.md"),
+      sourceReport().replace(/## Comprehension check[\s\S]*$/, ""),
+    );
+    writeFileSync(
+      path.join(dir, "findings.json"),
+      JSON.stringify({
+        language: "en",
+        verdict: "PASS",
+        atAGlance: { impact: "none", action: "none", risk: "none" },
+        contractCoverage: [],
+        implementationChoices: [],
+      }),
+    );
+
+    const result = spawnSync(process.execPath, [MATERIALIZE, dir], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    assert.doesNotMatch(
+      readFileSync(path.join(dir, "implementation-review.md"), "utf8"),
+      /Comprehension check/,
+    );
+  });
+});

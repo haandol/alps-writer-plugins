@@ -47,7 +47,7 @@ the whole implementation:
 7. Which ADR decisions and contract rows are accounted for, and what did the implementation do for each one?
 8. Which tests ran and what did they prove?
 9. What risk remains unverified?
-10. Which one to five important questions would reveal whether the reader can explain the implementation?
+10. When comprehension support is warranted, which one to five important questions would reveal whether the reader can explain the implementation?
 
 Start with `At a glance`:
 
@@ -70,7 +70,8 @@ material choice. The materializer writes a concise four-column coverage summary
 and the four-column read-only choice table before artifact validation. The seven
 coverage audit fields remain in JSON.
 
-For every finding, write a plain-language action card into `findings.json`:
+For every finding, provide the smallest evidence-complete source. Add these
+plain-language action fields only when the core summary/evidence cannot derive them precisely:
 
 - `whyItMatters` — the user, operational, correctness, safety, or maintenance consequence
 - `expectedBehavior` — the behavior the reviewer should expect
@@ -154,7 +155,7 @@ walkthrough`.
 - Order sections by reader importance. Execution and dependency order are
   optional.
 - Introduce background just in time.
-- `Comprehension check` contains one to five medium-difficulty free-response
+- When selected, `Comprehension check` contains one to five medium-difficulty free-response
   questions about the most material behavior, causal path, ADR contract,
   boundary/failure case, or trade-off. Do not ask trivia about symbol names or
   line numbers.

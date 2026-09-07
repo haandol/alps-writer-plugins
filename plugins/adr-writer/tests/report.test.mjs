@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -13,6 +15,26 @@ function render(data) {
     encoding: "utf8",
   });
 }
+
+test("file rendering rejects a PASS report with no junior-readable narrative", () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "adr-review-report-narrative-"));
+  try {
+    const input = path.join(dir, "findings.json");
+    writeFileSync(input, JSON.stringify({ adr: "docs/adr/test.md", verdict: "PASS" }));
+    const result = spawnSync(
+      process.execPath,
+      [REPORT, input, "--out", path.join(dir, "report.html")],
+      {
+        encoding: "utf8",
+      },
+    );
+
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /validated report narrative is required/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 test("inline findings JSON cannot terminate the report script element", () => {
   const payload = "</script><script>globalThis.__injected = true</script>";

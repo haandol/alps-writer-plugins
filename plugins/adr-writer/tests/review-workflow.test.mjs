@@ -342,7 +342,7 @@ test("adr-sync names the current README and concepts split", () => {
   assert.doesNotMatch(sync, /README\/AGENTS split|AGENTS material sits inside/);
 });
 
-test("adr-impl promotes only after verified refactoring, tests, and final review pass", () => {
+test("adr-impl uses a risk-selected refactor assessment before final review", () => {
   const impl = read("skills/adr-impl/SKILL.md");
   const initialTests = impl.indexOf("initial implementation tests pass");
   const refactor = impl.indexOf("/adr-impl-refactor <category>");
@@ -360,11 +360,16 @@ test("adr-impl promotes only after verified refactoring, tests, and final review
     assert.notEqual(position, -1, `adr-impl is missing ${label}`);
   }
 
-  assert.ok(initialTests < refactor, "refactoring must start only after the initial tests pass");
+  assert.ok(
+    initialTests < refactor,
+    "refactor assessment must start only after initial tests pass",
+  );
   assert.ok(refactor < fullTests, "the full test rerun must exercise the refactored code");
   assert.ok(fullTests < finalReview, "the final review must inspect tested, refactored code");
   assert.ok(finalReview < promotion, "Accepted must be gated by a passing final review");
   assert.match(impl, /Do not pass it the refactor review or result artifacts/);
+  assert.match(impl, /multi-call-site changes/);
+  assert.match(impl, /skip the separate pass and record that basis/);
   assert.match(impl, /On `FIX_REQUIRED`, preserve the current lifecycle state/);
   assert.match(impl, /`BLOCK` and unresolved `INCONCLUSIVE` preserve the current lifecycle state/);
 
@@ -459,6 +464,14 @@ test("no maintenance command bypasses the final review when promoting Proposed",
   assert.match(sync, /route it to `\/adr-impl <category>`/);
   assert.match(rollup, /every decision included in it came from already-`Accepted` ADRs/);
   assert.match(rollup, /tests and final implementation review pass/);
+});
+
+test("rollup keeps numbering gaps unless exact renames are explicitly approved", () => {
+  const rollup = read("skills/adr-rollup/SKILL.md");
+
+  assert.match(rollup, /does not respond or the answer is unclear: leave the gap/i);
+  assert.match(rollup, /every old → new path/i);
+  assert.doesNotMatch(rollup, /Default \(if the user does not respond\): close it/i);
 });
 
 test("adr-impl-refactor auto-applies only locally verified behavior-preserving changes", () => {
@@ -603,6 +616,16 @@ test("implementation review keeps contract evidence without a mandatory merge ch
   assert.match(writer, /Residual risks/);
   assert.doesNotMatch(writer, /Merge decision checklist/);
   assert.doesNotMatch(reviewContract, /seven-axis merge decision checklist/);
+});
+
+test("ADR rationale quality is not reduced to driver and alternative quotas", () => {
+  const rules = read("templates/adr/authoring-rules.md");
+  const reviewer = read("agents/adr-reviewer.md");
+
+  assert.match(rules, /default, not a validity threshold/);
+  assert.match(rules, /Never invent a strawman to satisfy a count/);
+  assert.match(reviewer, /3-5 is a default, not a quota/);
+  assert.match(reviewer, /constrained the choice/);
 });
 
 test("repair guidance is conditional and Mermaid may appear across narrative sections", () => {

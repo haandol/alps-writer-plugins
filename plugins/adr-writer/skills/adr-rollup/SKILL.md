@@ -164,9 +164,9 @@ Repoint the ADRs whose paths changed by the renumber together with the deleted o
 - **Close it** → renumber per procedure 1-4 above and then perform the step 8 repoint (rollup's default philosophy: leave no trace).
 - **Leave it** → skip the renumber when there are many external permanent links (see "External impact of a renumber" below) or the user wants the gaps kept. The gaps remain, but `numbering-gap` is only a warning and does not block the lint.
 
-**Default (if the user does not respond): close it.** Closing gaps via renumber is rollup's default philosophy ("leave no trace"), so perform the renumber unless the user explicitly asks you to leave them. Ask, but on no response or an unclear one, proceed with closing them and note "closed the gaps (old→new)" in the step 10 summary.
+**Default when the user does not respond or the answer is unclear: leave the gap.** Renumber changes paths and may break external links, so execute it only when the approval explicitly includes the old → new paths. Never infer destructive approval from silence.
 
-A path rename is a destructive change that breaks external links, so it falls inside the step 10 approval scope — though that is part of the overall rollup approval, not a separate re-confirmation for the renumber alone (the default is to close them).
+A path rename is a destructive change that breaks external links. Include every old → new path in the step 10 approval scope; a generic rollup approval that omits those paths does not authorize renumbering.
 
 ### 8. Update the mapping index and cross-references (reflecting deletions and the renumber together)
 

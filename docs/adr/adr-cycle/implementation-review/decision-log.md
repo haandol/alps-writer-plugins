@@ -2,6 +2,7 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-09-07 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — comprehension check를 요청·고부하 리뷰에만 생성하고, 반복 JSON 필드를 deterministic 파생으로 옮기며, content fingerprint URL로 stale 브라우저 보고서를 방지하도록 변경했다.
 - **2026-09-07 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — Mermaid를 `Visual map` 한 섹션에 고정하지 않고 각 주제별 설명 section에도 배치하며, 서로 다른 알고리즘·상태·실패 관계를 설명할 때 필요한 수만큼 사용할 수 있도록 확장했다.
 - **2026-09-07 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 주요 알고리즘과 다단계 제어·데이터 흐름을 계약 coverage와 별도로 설명하고, 독자가 관계를 재구성해야 하는 리뷰는 근거 있는 Mermaid와 시각 렌더링을 검증 필수 항목으로 만들었다.
 - **2026-09-07 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — standard와 full 구현 리뷰가 검증된 HTML Evidence Package를 생성한 직후 환경의 기본 브라우저로 정확히 한 번 열고, 열기 실패는 경로와 이유를 알리되 review verdict를 바꾸지 않도록 변경했다.

@@ -41,7 +41,6 @@ const REQUIRED_REPORT_TEXT = [
   "## Notable implementation choices",
   "## Tests",
   "## Residual risks",
-  "## Comprehension check",
 ];
 const REQUIRED_EXPLANATION_FIRST_HEADING = "## ADR intent";
 const REQUIRED_REPAIR_TEXT = [
@@ -191,12 +190,6 @@ function validateFinding(finding, index, errors) {
     "perspective",
     "summary",
     "confidence",
-    "whyItMatters",
-    "expectedBehavior",
-    "observedBehavior",
-    "requestedChange",
-    "editTargets",
-    "completionCriteria",
     "code",
     "evidence",
     "test",
@@ -326,6 +319,7 @@ function validateContractCoverage(row, index, errors) {
 }
 
 function validateComprehensionCheck(check, errors) {
+  if (check === undefined) return;
   if (!check || typeof check !== "object" || Array.isArray(check)) {
     errors.push("findings.json comprehensionCheck must be an object");
     return;
@@ -425,7 +419,10 @@ function validatePass(data, errors) {
   ) {
     errors.push("PASS contractCoverage tests must not contain failed or unexecuted results");
   }
-  if (!Number.isInteger(data.metrics?.testCommandCount) || data.metrics.testCommandCount < 1) {
+  if (
+    data.metrics !== undefined &&
+    (!Number.isInteger(data.metrics?.testCommandCount) || data.metrics.testCommandCount < 1)
+  ) {
     errors.push("PASS requires at least one executed test or reproduction command");
   }
   if (data.metrics?.unverifiedRiskCount > 0) {
@@ -465,6 +462,7 @@ function tableRows(report, heading, nextHeading) {
 }
 
 function validateMetrics(metrics, findings, errors) {
+  if (metrics === undefined) return;
   if (!metrics || typeof metrics !== "object" || Array.isArray(metrics)) {
     errors.push("findings.json metrics must be an object");
     return;
@@ -542,23 +540,19 @@ function validateReport(report, data, errors) {
   for (const text of REQUIRED_REPORT_TEXT) {
     if (!report.includes(text)) errors.push(`implementation-review.md missing: ${text}`);
   }
-  validateHeadingOrder(
-    report,
-    [
-      "## At a glance",
-      "## Review mode",
-      "## Scope",
-      "## ADR intent",
-      "## Findings",
-      "## ADR contract coverage",
-      "## Notable implementation choices",
-      "## Tests",
-      "## Residual risks",
-      "## Comprehension check",
-    ],
-    "implementation-review.md",
-    errors,
-  );
+  const orderedHeadings = [
+    "## At a glance",
+    "## Review mode",
+    "## Scope",
+    "## ADR intent",
+    "## Findings",
+    "## ADR contract coverage",
+    "## Notable implementation choices",
+    "## Tests",
+    "## Residual risks",
+  ];
+  if (data.comprehensionCheck?.questions?.length) orderedHeadings.push("## Comprehension check");
+  validateHeadingOrder(report, orderedHeadings, "implementation-review.md", errors);
 
   const reportHeadings = topLevelHeadings(report);
   const intentIndex = reportHeadings.indexOf("## ADR intent");
@@ -645,6 +639,9 @@ function validateReport(report, data, errors) {
 
   const comprehensionBody = sectionBody(report, /^## Comprehension check\s*$/i, /^##\s+/);
   const check = data.comprehensionCheck;
+  if (check?.questions?.length && !report.includes("## Comprehension check")) {
+    errors.push("implementation-review.md missing: ## Comprehension check");
+  }
   if (check?.prGuidance && !comprehensionBody.includes(check.prGuidance)) {
     errors.push("implementation-review.md missing comprehensionCheck.prGuidance");
   }

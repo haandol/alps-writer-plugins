@@ -126,14 +126,14 @@ test("adr-review sweeps ADR documents, report-only, and stays out of the code", 
 // the conversation, so an incomplete draft reads as complete to its author. If
 // /adr-new drops the delegation without picking the axes up explicitly, nothing
 // fails; the requirement just disappears from the pipeline. Hence both halves.
-test("/adr-new verifies its own draft instead of delegating to adr-reviewer", () => {
+test("/adr-new defaults to self-check and permits a risk-selected independent read", () => {
   const adrNew = read(path.join(ADR_ROOT, "skills", "adr-new", "SKILL.md"));
 
-  // it must not spawn the reviewer, by name or by the generic-subagent fallback
-  assert.doesNotMatch(adrNew, /invoke it|adr-reviewer\.md/);
-  assert.match(adrNew, /this command does not delegate to a review subagent/);
-  // ...and it must say why, or the next editor reads the removal as an oversight
-  assert.match(adrNew, /same rule set R1-R20 tests/);
+  // fresh authoring context defaults to self-check, but the model may select an
+  // independent read when length, novelty, or uncertainty makes it useful.
+  assert.match(adrNew, /Self-check is the default/);
+  assert.match(adrNew, /independent reviewer or separately grounded pass/);
+  assert.match(adrNew, /Authoritative working model/);
 
   // the absence axes the reviewer used to own, now carried here explicitly
   assert.match(adrNew, /ADR review checklist/);
@@ -147,7 +147,7 @@ test("/adr-new verifies its own draft instead of delegating to adr-reviewer", ()
   assert.match(adrNew, /Applying a filter before the gate/);
 
   // the user is told which axes were self-judged, and how to get a second opinion
-  assert.match(adrNew, /self-checked R1-R20 \(no reviewer subagent\)/);
+  assert.match(adrNew, /independent read: <used\|not needed>/);
 
   // the reviewer agent names /adr-review as its path, and disclaims /adr-new
   const reviewer = read(path.join(ADR_ROOT, "agents", "adr-reviewer.md"));

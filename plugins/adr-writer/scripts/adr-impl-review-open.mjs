@@ -29,8 +29,9 @@ export function openReviewReport(
   { platform = process.platform, spawn = spawnSync } = {},
 ) {
   const absolutePath = path.resolve(reportPath);
+  let stat;
   try {
-    const stat = statSync(absolutePath);
+    stat = statSync(absolutePath);
     if (!stat.isFile() || stat.size === 0) {
       return {
         opened: false,
@@ -48,7 +49,9 @@ export function openReviewReport(
     };
   }
 
-  const opener = openerCommand(absolutePath, platform);
+  const reportUrl = pathToFileURL(absolutePath);
+  reportUrl.searchParams.set("v", `${stat.size}-${Math.trunc(stat.mtimeMs)}`);
+  const opener = openerCommand(reportUrl.href, platform);
   if (!opener) {
     return {
       opened: false,

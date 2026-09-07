@@ -4,7 +4,7 @@ Date: 2026-08-17
 
 ## Status
 
-Accepted (2026-09-03)
+Accepted (2026-09-07)
 
 ## Context
 
@@ -21,6 +21,8 @@ ADR은 구현 청사진이 아니라 재생성 계약이다. 코드를 여러 �
 시각화도 선택 여부만 모델 판단에 맡기면 여러 ADR의 충돌, 의존 관계, 상태 흐름과 변경 전후 의미가 긴 목록으로 남을 수 있다. 고정 개수의 다이어그램은 단순한 PASS에도 형식 비용을 만들지만, 관계를 독자가 머릿속에서 재구성해야 하는 조건은 명시할 수 있다.
 
 ADR의 각 section을 형식적으로 채우면 결정의 의도보다 Drivers, 계약과 Alternatives 목록이 먼저 보일 수 있다. 반복 대조문, 장식용 영어 명칭, 강제된 번호 구조와 generic bridge가 겹치면 문장은 매끄러워도 어떤 결정이 중요한지 흐려진다. ADR은 독자가 현재 결정과 이유를 빠르게 복원하도록 쓰고, 스타일을 위해 일화나 확신을 만들어서는 안 된다.
+
+Drivers와 Alternatives의 고정 개수는 일반적인 품질 신호지만 모든 결정의 실질을 대신하지 못한다. 외부 규제나 조직 정책이 선택지를 사실상 제한하는 결정에서 개수를 맞추면 filler driver와 strawman alternative가 생긴다. 작성과 검토는 개수보다 실제로 선택을 구분하는 근거와 대안이 제한된 이유를 우선해야 한다.
 
 ## Decision Drivers
 
@@ -41,6 +43,10 @@ Decision Digest는 결정 질문과 현재 결정을 먼저 보여주고, 요구
 대안 선택을 실제로 바꾸는 가정이 있으면 Context 또는 관련 Decision Driver에 `가정 — 틀리면 다시 검토할 결정`을 한 줄로 기록한다. 별도 Decision premises section, 신뢰도 등급이나 고정 표는 만들지 않는다. 요구사항 값과 규칙은 requirement contract에 유지하고, 구현 라이브러리와 튜닝 값은 코드 수준에 둔다. 계약이나 지속적인 경계에 영향을 주는 미확정 가정은 승인 전에 질문한다.
 
 기존 ADR이 바뀌면 전체 본문보다 Decision, requirement contract, Decision Drivers와 Consequences의 의미 변경을 먼저 보여준다. 전체 ADR, 대안의 상세 비교와 코드 근거는 사용자가 요청하거나 판정에 필요할 때 제공한다. Digest와 diff는 대화 또는 보고 화면이며 별도 권위 문서로 저장하지 않는다.
+
+새 ADR 작성은 deterministic harness와 author self-check를 기본으로 사용한다. 다만 긴 ADR, 새로운 도메인, 높은 불확실성이나 작성자가 스스로 판단하기 어려운 축이 있으면 현재 모델이 독립 reviewer 또는 별도 grounded pass를 선택할 수 있다.
+
+Decision Drivers와 Alternatives는 품질을 우선한다. 일반적으로 3~5개의 discriminating Driver와 두 개 이상의 현실적 대안이 유용하지만, 더 적은 수가 결정의 실제 제약을 정확히 표현하면 그 이유를 기록하고 허용한다. 개수만 채우는 driver와 strawman alternative는 금지한다.
 
 `/adr-review`와 `/adr-sync`의 사람용 보고서는 상세 목록보다 먼저 **한눈에 보기**를 제공한다. 한눈에 보기는 결론, 사용자 또는 운영 영향, 필요한 다음 조치와 남은 위험을 평이한 언어로 답한다. 해당 주제를 처음 보는 주니어 개발자를 독자로 가정하고, 피할 수 없는 도메인·기술 용어는 처음 한 번만 짧게 설명한다. 규칙 ID, 경로, 인용과 상세 근거는 전체 보고서에 유지한다.
 
@@ -84,6 +90,8 @@ ADR 본문과 사람용 보고서는 독자, 결정 의도와 근거 상태를 �
 - 각 Mermaid 뒤에는 독자가 확인할 핵심을 한 문장으로 적고, 전체 텍스트는 Mermaid 렌더링 없이도 판정 가능해야 한다.
 - 전체 ADR 본문과 상세 대안은 사용자가 요청하거나 판정에 필요할 때 제공한다.
 - ADR 작성과 사람용 보고서는 reader-first writing 점검을 거쳐 반복적이고 장식적인 AI-slop 신호를 제거한다.
+- 새 ADR은 self-check를 기본으로 하되 위험·길이·불확실성에 따라 독립 reviewer를 사용할 수 있다.
+- Driver와 Alternative의 개수는 advisory이며 실제 선택을 구분하는 품질과 제한된 대안의 근거를 우선한다.
 
 #### 금지
 

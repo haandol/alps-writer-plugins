@@ -132,7 +132,7 @@ function main() {
   if (!Array.isArray(data.implementationChoices)) {
     usage("findings.json implementationChoices must be an array");
   }
-  if (!data.comprehensionCheck || !Array.isArray(data.comprehensionCheck.questions)) {
+  if (data.comprehensionCheck !== undefined && !Array.isArray(data.comprehensionCheck?.questions)) {
     usage("findings.json comprehensionCheck.questions must be an array");
   }
 
@@ -156,12 +156,14 @@ function main() {
     "Tests",
     choicesTable(data.implementationChoices),
   );
-  report = replaceSection(
-    report,
-    "Comprehension check",
-    null,
-    comprehensionSection(data.comprehensionCheck),
-  );
+  if (data.comprehensionCheck?.questions?.length) {
+    report = replaceSection(
+      report,
+      "Comprehension check",
+      null,
+      comprehensionSection(data.comprehensionCheck),
+    );
+  }
 
   writeFileSync(reportPath, `${report.trim()}\n`);
   process.stdout.write(`materialized ${reportPath}\n`);

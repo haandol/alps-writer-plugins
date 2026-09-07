@@ -217,7 +217,7 @@ Keep only the gray zone — what code cannot reveal, or what loses its intent un
 
 Record only the pressures, constraints, and requirements that **actually discriminate** between options. Not mandatory in every ADR, but almost always needed for the alternatives comparison to read as more than taste.
 
-- 3-5 of them. Past ten, some are probably sub-items of another driver
+- 3-5 is a useful default, not a validity threshold. Keep only facts that discriminate; fewer are valid when the decision is tightly constrained and says why
 - Mix business and technical drivers — one kind alone makes the rationale look thin
 - State facts and constraints. Opinions and preferences ("we like a modern stack") are not drivers
 - They must discriminate — an item every option satisfies equally is not a driver, just a shared premise
@@ -247,9 +247,9 @@ Do not add a separate assumptions section, confidence taxonomy, evidence table, 
 - A library, SDK, adapter, pool size, timeout chosen only for implementation convenience, internal module shape, or other replaceable default stays in code. The implementation review may expose it in its ephemeral Notable implementation choices, but the ADR does not persist it.
 - Omit assumptions when the choice does not depend on one. A short ADR is clearer than an empty taxonomy.
 
-## Alternatives — at least two
+## Alternatives — realistic comparison, not a quota
 
-An ADR body must record **at least two realistic alternatives.** If there genuinely was only one path, reconsider whether the decision needs an ADR at all — a decision's core value is "why not the other way," and code does not preserve that.
+An ADR should record realistic alternatives when they existed. Two or more usually make the trade-off clear, but a constrained decision may record one credible rejected alternative or explain why policy, regulation, or an external boundary left no other valid path. Never invent a strawman to satisfy a count.
 
 - Write each alternative's pros and cons **against the [Decision Drivers](#decision-drivers)** — generalities unrelated to the drivers are meaningless
 - **No strawmen** — do not pad the count with options nobody would take ("just hand-write everything"). Only options that genuinely reached the table
@@ -259,7 +259,7 @@ An ADR body must record **at least two realistic alternatives.** If there genuin
 
 Common failures:
 
-- Only one option — there is no comparison at all → fails review rule R14 (alternatives ≥ 2). (Weak alternatives also weaken R12's gray zone, but R14 is the rule that catches a single option directly)
+- Only one option with no explanation of why the choice was constrained → fails review rule R14
 - Two options that are "do this" and "do nothing" — not real alternatives
 - Pros and cons that are generalities unrelated to the drivers ("there's a learning curve", "it's flexible")
 
@@ -426,7 +426,7 @@ For the PR reviewer or the author before merge.
 - [ ] **No code references below folder level** anywhere in prose, tables, or diagrams
 - [ ] **No back-references from code** — the code this ADR governs (comments, constants, imports) carries no ADR ID or path. If the code exists, check via adr-reviewer R17 or `/adr-sync` step 5(a) grep; for a new `Proposed` with no code yet, `/adr-sync` checks after implementation
 - [ ] **No forbidden items** (code snippets, tuning values, call graphs, field-type tables, env var names, pseudocode, full JSON, migration commands) — requirement values and business limits are _not_ forbidden items
-- [ ] **Decision Drivers** number 3-5 and are discriminating facts or constraints, not opinions
+- [ ] **Decision Drivers** are discriminating facts or constraints; 3-5 is a default, not a quota
 - [ ] **At least two alternatives**, each with pros and cons weighed against the Decision Drivers (no strawmen)
 - [ ] **A grounded Mermaid diagram** is not missing where a flow, state, boundary, or alternative relationship is clearer visually, and no diagram copies a code call graph or invents a relationship
 - [ ] **If a DB key pattern changed**, `docs/tables/{name}.md` (or the equivalent) exists with bidirectional links

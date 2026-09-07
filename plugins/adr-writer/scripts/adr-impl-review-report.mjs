@@ -1830,6 +1830,9 @@ function main() {
   if (!data.adr) die("findings JSON missing required field: adr");
   if (!data.verdict) die("findings JSON missing required field: verdict");
   data.narrativeSections = loadNarrativeSections(data, opts.in);
+  if (!opts.stdout && data.narrativeSections.length === 0) {
+    die("validated report narrative is required before writing HTML");
+  }
 
   const html = buildHtml(data);
 

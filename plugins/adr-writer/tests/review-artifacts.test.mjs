@@ -357,7 +357,7 @@ test("review artifact validator rejects missing core headings and evidence field
     const result = validate(dir);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /evidence must be a non-empty string/);
-    assert.match(result.stderr, /whyItMatters must be a non-empty string/);
+    assert.doesNotMatch(result.stderr, /whyItMatters must be a non-empty string/);
     assert.match(result.stderr, /missing: ## ADR contract coverage/);
     assert.doesNotMatch(result.stderr, /Mermaid fence|declared flowchart/);
   });
@@ -573,6 +573,53 @@ test("review artifact validator accepts concise standard-mode artifacts without 
       },
     ];
     findings.metrics.sufficiencyFindingCount = 0;
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 0, result.stderr);
+  });
+});
+
+test("review artifact validator accepts PASS without metrics or comprehension check", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(
+      path.join(dir, "implementation-review.md"),
+      validStandardReport().replace(/## Comprehension check[\s\S]*$/, ""),
+    );
+    const findings = validFindings(dir);
+    writeAdr(dir, "Existing parsing behavior remains unchanged");
+    findings.reviewMode = "standard";
+    findings.verdict = "PASS";
+    findings.atAGlance = { ...STANDARD_AT_A_GLANCE };
+    findings.visualization = {
+      required: false,
+      reason: "The one-file parser refactor is clear in two sentences.",
+    };
+    delete findings.metrics;
+    delete findings.comprehensionCheck;
+    findings.findings = [];
+    findings.implementationChoices = [];
+    findings.contractCoverage = [
+      {
+        contractId: "D0",
+        requirement: "Parser compatibility",
+        status: "PROVEN",
+        adrBasis: "Decision",
+        implementation: "the parser preserves accepted inputs and outputs",
+        evidence: "src/parser.mjs",
+        tests: "node --test test/parser.test.mjs — PASS",
+      },
+      {
+        contractId: "R1",
+        requirement: "Existing parsing behavior remains unchanged",
+        status: "PROVEN",
+        adrBasis: "Existing parsing behavior remains unchanged",
+        implementation: "the parser preserves accepted inputs and outputs",
+        evidence: "src/parser.mjs",
+        tests: "node --test test/parser.test.mjs — PASS",
+      },
+    ];
     writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
 
     const result = validate(dir);

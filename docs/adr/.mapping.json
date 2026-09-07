@@ -27,8 +27,19 @@
       "adrs": [
         {
           "path": "docs/adr/adr-authoring/decision-presentation/0001-present-decision-digest-and-semantic-diff.md",
-          "status": "Accepted (2026-09-03)",
-          "summary": "ADR과 사람용 리뷰는 결정 의도와 중요도·인과 흐름을 우선하고 리포트 언어와 AI-slop 신호를 일관되게 다룬다"
+          "status": "Accepted (2026-09-07)",
+          "summary": "ADR 작성과 리뷰는 근거 품질을 우선하고 self-check와 독립 review를 위험에 따라 선택한다"
+        }
+      ],
+      "dependsOn": ["adr-authoring/current-state"]
+    },
+    "adr-authoring/rollup-safety": {
+      "feature": "Destructive ADR rollup safety",
+      "adrs": [
+        {
+          "path": "docs/adr/adr-authoring/rollup-safety/0001-require-explicit-approval-for-destructive-rollup.md",
+          "status": "Accepted (2026-09-07)",
+          "summary": "ADR rollup은 삭제·덮어쓰기·renumber 대상을 보여주고 명시적으로 승인된 파괴적 변경만 실행한다"
         }
       ],
       "dependsOn": ["adr-authoring/current-state"]
@@ -105,7 +116,7 @@
         {
           "path": "docs/adr/adr-cycle/implementation-review/0001-validated-low-risk-refactoring.md",
           "status": "Accepted (2026-09-07)",
-          "summary": "구현 리뷰 HTML은 각 설명 섹션에 필요한 Mermaid로 주요 흐름을 설명하고 검증 직후 기본 브라우저로 한 번 연다"
+          "summary": "구현 리뷰는 위험에 비례한 evidence와 선택적 이해 지원을 제공하고 fingerprint URL로 최신 HTML을 연다"
         }
       ],
       "dependsOn": []
@@ -126,8 +137,8 @@
       "adrs": [
         {
           "path": "docs/adr/delivery/development-flow/0001-safe-proportional-development-gates.md",
-          "status": "Accepted (2026-09-03)",
-          "summary": "개발 흐름은 안전 게이트와 모델 재량 orchestration을 유지하며 ADR 구현 함수의 언어 표준 문서 주석과 ideal·edge 테스트를 완료 조건으로 요구한다"
+          "status": "Accepted (2026-09-07)",
+          "summary": "개발 흐름은 안전 게이트를 유지하되 별도 refactor pass와 이해 지원을 변경 위험에 비례해 실행한다"
         }
       ],
       "dependsOn": ["adr-cycle/implementation-review", "alps-authoring/spec-handoff"]

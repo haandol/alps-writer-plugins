@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the adr-authoring/deci
 category. Each ADR body describes only the current state, while the timeline of "what
 changed and why" accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-09-07 — ADR 작성 판단을 정량 quota보다 근거 품질과 모델 재량에 맞춤
+
+- **Current ADR**: [present decision digest and semantic diff](./0001-present-decision-digest-and-semantic-diff.md)
+- **Change type**: requirement rule change
+- **What**: Drivers 3~5개와 Alternatives 2개를 validity quota가 아닌 권장값으로 바꾸고, 긴·새로운·불확실한 ADR에서는 독립 reviewer를 선택할 수 있게 했다.
+- **Why**: filler driver와 strawman alternative를 줄이고, fresh authoring context의 self-check와 필요한 independent read를 위험에 따라 선택해야 한다.
+
 ## 2026-09-03 — ADR과 사람용 보고서를 의도·중요도·인과 흐름 중심으로 작성
 
 - **Current ADR**: [present decision digest and semantic diff](./0001-present-decision-digest-and-semantic-diff.md)
