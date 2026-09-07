@@ -85,7 +85,7 @@ export default {
       `step 7 confirmation as granted — write the files rather than waiting.`,
       ``,
       `Because you cannot ask, anything you would have asked at step 7 goes in your`,
-      `report instead: state it as an open question. Do NOT invent a value to close a`,
+      `report instead: state it as an open question. Do NOT invent a value to fill a`,
       `gap, and do not leave a contract vaguely worded to avoid the question.`,
       ``,
       `## The user's brief`,

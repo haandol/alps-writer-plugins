@@ -223,7 +223,11 @@ test("Lite documents initialize, validate, resume, and export independently from
   assert.match(service.exportMarkdown(), /## Section 4\. Demo Scenario/);
 
   const resumed = new DocumentService();
-  assert.match(resumed.loadDocument(liteTarget), /get_lite_alps_section_guide/);
+  const resumeGuidance = resumed.loadDocument(liteTarget);
+  assert.match(resumeGuidance, /get_lite_alps_section_guide/);
+  assert.match(resumeGuidance, /propose Sections 2 and 4 before asking the user to design them/i);
+  assert.match(resumeGuidance, /missing user-owned or protected context/i);
+  assert.doesNotMatch(resumeGuidance, /DO NOT auto-generate content/);
 
   const full = new DocumentService();
   assert.match(full.initDocument("product", fullTarget), /Created ALPS document/);
@@ -499,6 +503,10 @@ test("Lite Section 1 asks for business impact without pulling demo design forwar
   );
 
   assert.match(runtime, /same conversational approval pattern as Full ALPS/i);
+  assert.doesNotMatch(
+    runtime,
+    /Ask 1-2 focused questions at a time - DO NOT auto-generate content/,
+  );
   assert.match(skill, /ask one focused question or at most two closely related\s+questions/i);
   assert.match(overview, /Ask one focused question, or at most two closely related questions/i);
   assert.match(guide, /Who is the main target user, and what core problem/i);

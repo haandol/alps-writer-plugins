@@ -445,6 +445,31 @@ export class DocumentService {
     return `Created ${profile.label} document at ${filepath}`;
   }
 
+  /**
+   * Keeps resume guidance aligned with each profile's authoring contract.
+   * Full ALPS remains question-first, while Lite asks only for missing or
+   * protected context and preserves proposal-first Sections 2 and 4.
+   */
+  private resumeGuidance(profile: DocumentProfile): string {
+    const steps = isLiteProfile(profile)
+      ? `1. Call ${profile.sectionGuideTool}(N) before working on any section
+2. Follow the guide: ask only for missing user-owned or protected context, but propose Sections 2 and 4 before asking the user to design them
+3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
+4. Get explicit "yes" confirmation before calling save_alps_section()`
+      : `1. Call ${profile.sectionGuideTool}(N) before working on any section
+2. Ask 1-2 focused questions at a time - DO NOT auto-generate content
+3. Wait for user response before proceeding
+4. Get explicit "yes" confirmation before calling save_alps_section()`;
+
+    return `⚠️ CONVERSATION MODE REQUIRED:
+${steps}
+NEVER save generated content without user approval.`;
+  }
+
+  /**
+   * Selects only structurally valid ALPS documents and returns the matching
+   * profile's conversation rules so resume cannot cross document boundaries.
+   */
   loadDocument(docPath: string): string {
     this.workingDoc = null;
     const filepath = this.expandPath(docPath);
@@ -466,16 +491,10 @@ export class DocumentService {
     if (pathError) return pathError;
 
     this.workingDoc = filepath;
-    const guideTool = inspection.profile.sectionGuideTool;
     return `${this.getStatus()}
 
 ---
-⚠️ CONVERSATION MODE REQUIRED:
-1. Call ${guideTool}(N) before working on any section
-2. Ask 1-2 focused questions at a time - DO NOT auto-generate content
-3. Wait for user response before proceeding
-4. Get explicit "yes" confirmation before calling save_alps_section()
-NEVER save generated content without user approval.`;
+${this.resumeGuidance(inspection.profile)}`;
   }
 
   saveSection(section: number, subsectionId: string, title: string, content: string): string {

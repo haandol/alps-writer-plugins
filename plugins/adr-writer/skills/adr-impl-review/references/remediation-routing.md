@@ -34,7 +34,7 @@ Detailed routes:
   when the decision topic itself forked and the old decision must stay
   separately referenceable.
 - `Undecided behavior` → first confirm the behavior passes the ADR admission
-  gate. If it is replaceable implementation discretion, close the finding with
+  gate. If it is replaceable implementation discretion, resolve the finding with
   no ADR change. Otherwise the user decides whether to add the admitted decision
   to the ADR or remove it from the code. Adding it goes through the same owners:
   `/adr-impl` or `/adr-sync` for an in-place addition, `/adr-new` when it is a
@@ -53,9 +53,9 @@ Detailed routes:
 - `Contradiction` → do not fix anything before a human decides which of the two
   premises holds.
 
-Once automatic fixes are done, run `/adr-impl-review` again to close the selected
-review path. Full mode closes both necessity and sufficiency passes; standard
-mode closes its sufficiency pass. On `PASS`, the caller completes the Status
+Once automatic fixes are done, run `/adr-impl-review` again to complete the selected
+review path. Full mode completes both necessity and sufficiency passes; standard
+mode completes its sufficiency pass. On `PASS`, the caller completes the Status
 transition and reports the fixes; no routine post-implementation approval
 remains. The comprehension check is not an approval, but it still governs
 whether the human should open or send the PR.

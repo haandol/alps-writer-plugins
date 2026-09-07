@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the adr-authoring/deci
 category. Each ADR body describes only the current state, while the timeline of "what
 changed and why" accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-09-07 — 문체 품질 규칙을 구체적인 패턴 이름으로 설명
+
+- **Current ADR**: [present decision digest and semantic diff](./0001-present-decision-digest-and-semantic-diff.md)
+- **Change type**: terminology and review contract
+- **What**: 포괄적인 문체 품질 라벨을 제거하고 반복 대조문, 장식용 명칭, 강제 번호 구조, filler bridge와 중복 시각 요소를 직접 이름으로 기록했다.
+- **Why**: 작성자와 리뷰어가 추상적인 품질 라벨을 해석하지 않고 수정할 문장 패턴을 바로 식별해야 한다.
+
 ## 2026-09-07 — ADR 작성 판단을 정량 quota보다 근거 품질과 모델 재량에 맞춤
 
 - **Current ADR**: [present decision digest and semantic diff](./0001-present-decision-digest-and-semantic-diff.md)

@@ -1,7 +1,7 @@
 {
   "name": "alps-writer",
   "description": "Author Full or Lite ALPS documents in Claude Code via a guided MCP workflow. Use /lite-alps-init for mockups and PoCs, or hand Full ALPS features to adr-writer.",
-  "version": "0.8.14",
+  "version": "0.8.15",
   "author": {
     "name": "haandol"
   },

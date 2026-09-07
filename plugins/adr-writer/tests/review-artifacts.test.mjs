@@ -24,8 +24,8 @@ const PR_GUIDANCE =
 function validExplanation() {
   return `# Implementation explanation
 
-## ADR intent
-Settlement must turn a provider result into one durable completion record without charging twice.
+## Context
+Settlement must turn a provider result into one durable completion record without charging twice. Settlement receives retries and provider outcomes, and the review covers the completion boundary and failure path.
 
 ## A duplicate request reaches the completion boundary
 The boundary admits one successful result and returns the stored result for a retry.
@@ -33,6 +33,27 @@ The boundary admits one successful result and returns the stored result for a re
 ## Provider failure leaves the payment pending
 The handler records completion only after provider success, so failure never looks completed.
 `;
+}
+
+function component({
+  name,
+  responsibility,
+  implementation,
+  verification,
+  location,
+  content,
+  explanation,
+  tests = "node --test test/stream.test.mjs — PASS",
+  kind = "diff",
+}) {
+  return {
+    id: "C1",
+    name,
+    responsibility,
+    implementation,
+    verification,
+    codeEvidence: [{ kind, location, content, explanation, tests }],
+  };
 }
 
 function validComprehensionCheck() {
@@ -60,6 +81,106 @@ function validParserComprehensionCheck() {
         answerCriteria:
           "The accepted inputs, validation order, and public output shape remain unchanged.",
         evidence: "ADR R1; src/parser.mjs; parser compatibility test",
+      },
+    ],
+  };
+}
+
+function validReviewHike() {
+  return {
+    context: {
+      intent: "Settlement creates one durable result without charging twice.",
+      preconditions: "Settlement receives duplicate requests and provider outcomes.",
+      contracts: "One completion boundary preserves idempotency and pending state.",
+      scopeAndRisk: "Retry and provider-failure paths determine the verdict.",
+    },
+    hills: [
+      {
+        id: "H1",
+        title: "A duplicate request cannot create a second settlement",
+        sliceType: "user-flow",
+        sliceName: "Duplicate settlement request",
+        reviewQuestion: "Can a duplicate request create more than one durable settlement?",
+        container: {
+          responsibility: "Reuse one durable settlement for a duplicate request.",
+          interactions: "The request reaches the completion boundary and stored result.",
+          outcome: "The request has one durable settlement.",
+        },
+        components: [
+          component({
+            name: "Idempotent completion boundary",
+            responsibility: "Separate new work from a duplicate request.",
+            implementation: "The vertical settlement path returns the existing result.",
+            verification: "The duplicate request test observes one durable settlement.",
+            location: "src/stream.mjs:4",
+            content: "- writeSettlement(result)\n+ return existing ?? writeSettlement(result)",
+            explanation: "The duplicate path reuses the durable result.",
+          }),
+        ],
+        contractIds: ["D0"],
+      },
+      {
+        id: "H2",
+        title: "Provider failure does not cross the completion boundary",
+        sliceType: "user-flow",
+        sliceName: "Provider failure settlement",
+        reviewQuestion: "Can provider failure appear as a completed settlement?",
+        container: {
+          responsibility: "Keep provider failure outside the completion boundary.",
+          interactions: "The provider failure returns to the settlement handler.",
+          outcome: "No completed settlement is visible.",
+        },
+        components: [
+          component({
+            name: "Provider failure branch",
+            responsibility: "Preserve pending state until provider success.",
+            implementation: "The vertical failure path keeps the payment pending.",
+            verification: "The provider-failure test observes no completed settlement.",
+            location: "src/stream.mjs:12",
+            content: "- markCompleted(payment)\n+ keepPending(payment)",
+            explanation: "Failure no longer records completion.",
+            tests: "node --test test/stream.test.mjs — FAIL: expected pending",
+          }),
+        ],
+        contractIds: ["R1"],
+      },
+    ],
+  };
+}
+
+function validParserReviewHike() {
+  return {
+    context: {
+      intent: "Preserve parser compatibility while extracting a helper.",
+      preconditions: "Existing callers depend on accepted inputs and outputs.",
+      contracts: "Validation order and public output stay unchanged.",
+      scopeAndRisk: "The parser and compatibility tests are in scope.",
+    },
+    hills: [
+      {
+        id: "H1",
+        title: "Existing callers see the same parser behavior",
+        sliceType: "logical-capability",
+        sliceName: "Parser compatibility",
+        reviewQuestion: "Does helper extraction preserve parser compatibility?",
+        container: {
+          responsibility: "Preserve existing parser behavior.",
+          interactions: "A caller submits supported input and receives public output.",
+          outcome: "Existing callers observe no behavior change.",
+        },
+        components: [
+          component({
+            name: "Parser helper",
+            responsibility: "Validate and transform supported input.",
+            implementation: "The helper performs the same validation and transformation.",
+            verification: "Compatibility tests observe no caller-visible behavior change.",
+            location: "src/parser.mjs:1",
+            content: "- parseInline(input)\n+ parseWithHelper(input)",
+            explanation: "The extracted helper preserves parser behavior.",
+            tests: "node --test test/parser.test.mjs — PASS",
+          }),
+        ],
+        contractIds: ["D0", "R1"],
       },
     ],
   };
@@ -134,23 +255,128 @@ full
 ## Scope
 stream settlement
 
-## ADR intent
-Settlement must create one durable completion record and preserve pending state on provider failure.
+## Context
+<!-- generated review context start -->
+
+### Intent
+
+Settlement creates one durable result without charging twice.
+
+### Preconditions and surrounding context
+
+Settlement receives duplicate requests and provider outcomes.
+
+### Core contracts
+
+One completion boundary preserves idempotency and pending state.
+
+### Review scope and risk
+
+Retry and provider-failure paths determine the verdict.
+
+<!-- generated review context end -->
 
 ## A duplicate request cannot create a second settlement
-The completion boundary admits one result and rejects or reuses duplicate work.
+Can a duplicate request create more than one durable settlement?
+
+<!-- generated container zoom start -->
+
+- Vertical slice: Duplicate settlement request (user-flow)
+
+### Responsibility
+
+Reuse one durable settlement for a duplicate request.
+
+### Interactions
+
+The request reaches the completion boundary and stored result.
+
+### Observable outcome
+
+The request has one durable settlement.
+
+<!-- generated container zoom end -->
+
+<!-- generated component zoom start -->
+
+### Component C1 · Idempotent completion boundary
+
+- Responsibility: Separate new work from a duplicate request.
+- Detailed implementation: The vertical settlement path returns the existing result.
+- Verification result: The duplicate request test observes one durable settlement.
+
+#### Code 1 · diff · src/stream.mjs:4
+
+\`\`\`diff
+- writeSettlement(result)
++ return existing ?? writeSettlement(result)
+\`\`\`
+
+- Why this code matters: The duplicate path reuses the durable result.
+- Tests: node --test test/stream.test.mjs — PASS
+
+<!-- generated component zoom end -->
+
+<!-- generated hill evidence start -->
+
+### D0 · Met · Idempotent settlement boundary
+
+- Implementation: settlement has a single completion boundary
+- Evidence: src/stream.mjs:4 — completion boundary
+- Tests: node --test test/stream.test.mjs — PASS
+
+<!-- generated hill evidence end -->
 
 ## Provider failure does not cross the completion boundary
-The handler records completion only after provider success.
+Can provider failure appear as a completed settlement?
 
-## Visual map
-\`\`\`mermaid
-flowchart LR
-  Request["Settlement request"] --> Boundary["Completion boundary"]
-  Boundary -->|new| Complete["Write one completion"]
-  Boundary -->|duplicate| Existing["Return existing result"]
+<!-- generated container zoom start -->
+
+- Vertical slice: Provider failure settlement (user-flow)
+
+### Responsibility
+
+Keep provider failure outside the completion boundary.
+
+### Interactions
+
+The provider failure returns to the settlement handler.
+
+### Observable outcome
+
+No completed settlement is visible.
+
+<!-- generated container zoom end -->
+
+<!-- generated component zoom start -->
+
+### Component C1 · Provider failure branch
+
+- Responsibility: Preserve pending state until provider success.
+- Detailed implementation: The vertical failure path keeps the payment pending.
+- Verification result: The provider-failure test observes no completed settlement.
+
+#### Code 1 · diff · src/stream.mjs:12
+
+\`\`\`diff
+- markCompleted(payment)
++ keepPending(payment)
 \`\`\`
-Notice: The completion boundary decides whether one durable result is created or reused.
+
+- Why this code matters: Failure no longer records completion.
+- Tests: node --test test/stream.test.mjs — FAIL: expected pending
+
+<!-- generated component zoom end -->
+
+<!-- generated hill evidence start -->
+
+### R1 · Fix required · Settlement completes at most once
+
+- Implementation: the current settlement path can write twice
+- Evidence: src/stream.mjs:12 — duplicate writes reproduced
+- Tests: node --test test/stream.test.mjs — FAIL: expected 1, got 2
+
+<!-- generated hill evidence end -->
 
 ## Findings
 ### F1. Duplicate settlement
@@ -160,10 +386,10 @@ Notice: The completion boundary decides whether one durable result is created or
 - Needs confirmation: none
 
 ## ADR contract coverage
-| Contract | Status | Requirement | Review result |
+| Contract | Status | Hill | Requirement |
 | --- | --- | --- | --- |
-| D0 | Met | Idempotent settlement boundary | Settlement has a single completion boundary |
-| R1 | Fix required | Settlement completes at most once | The current settlement path can write twice |
+| D0 | Met | H1 | Idempotent settlement boundary |
+| R1 | Fix required | H2 | Settlement completes at most once |
 
 ## Notable implementation choices
 | Selected value or behavior | Code evidence | Why it fits the ADR intent | Why it matters |
@@ -189,12 +415,12 @@ Fix F1 before merge.
 function validReportWithInlineCodeCells() {
   return validReport()
     .replace(
-      "| D0 | Met | Idempotent settlement boundary |",
-      "| `D0` | `Met` | Idempotent settlement boundary |",
+      "| D0 | Met | H1 | Idempotent settlement boundary |",
+      "| `D0` | `Met` | H1 | Idempotent settlement boundary |",
     )
     .replace(
-      "| R1 | Fix required | Settlement completes at most once |",
-      "| `R1` | `Fix required` | Settlement completes at most once |",
+      "| R1 | Fix required | H2 | Settlement completes at most once |",
+      "| `R1` | `Fix required` | H2 | Settlement completes at most once |",
     );
 }
 
@@ -206,11 +432,7 @@ function validFindings(dir) {
     adr,
     verdict: "FIX_REQUIRED",
     atAGlance: { ...FULL_AT_A_GLANCE },
-    visualization: {
-      required: true,
-      reason: "Settlement has three processing stages and a duplicate-request branch.",
-      diagramType: "flowchart",
-    },
+    reviewHike: validReviewHike(),
     explanation: path.join(dir, "explanation.md"),
     report: path.join(dir, "implementation-review.md"),
     scope: ["src/stream.mjs", "test/stream.test.mjs"],
@@ -285,23 +507,62 @@ standard — localized implementation reinforcement
 ## Scope
 src/parser.mjs
 
-## ADR intent
-The parser refactor must preserve every accepted input and public output.
+## Context
+Preserve parser compatibility while extracting a helper.
+Existing callers depend on accepted inputs and outputs.
+Validation order and public output stay unchanged.
+The parser and compatibility tests are in scope.
 
 ## Existing callers see the same parser behavior
+Does helper extraction preserve parser compatibility?
+
+Parser compatibility
+Preserve existing parser behavior.
+A caller submits supported input and receives public output.
+Existing callers observe no behavior change.
+
+### Component C1 · Parser helper
+
+Validate and transform supported input.
+The helper performs the same validation and transformation.
+Compatibility tests observe no caller-visible behavior change.
+
+#### Code 1 · diff · src/parser.mjs:1
+
+\`\`\`diff
+- parseInline(input)
++ parseWithHelper(input)
+\`\`\`
+
+The extracted helper preserves parser behavior.
+node --test test/parser.test.mjs — PASS
+
 The helper extraction changes organization without changing validation or output.
 
-## Invalid input still fails at the same boundary
-Input validation remains ahead of output construction.
+<!-- generated hill evidence start -->
+
+### D0 · Met · Parser compatibility
+
+- Implementation: the parser preserves accepted inputs and outputs
+- Evidence: src/parser.mjs — behavior-preserving helper extraction
+- Tests: node --test test/parser.test.mjs — PASS
+
+### R1 · Met · Existing parsing behavior remains unchanged
+
+- Implementation: the parser preserves accepted inputs and outputs
+- Evidence: src/parser.mjs — behavior-preserving helper extraction
+- Tests: node --test test/parser.test.mjs — PASS
+
+<!-- generated hill evidence end -->
 
 ## Findings
 None
 
 ## ADR contract coverage
-| Contract | Status | Requirement | Review result |
+| Contract | Status | Hill | Requirement |
 | --- | --- | --- | --- |
-| D0 | Met | Parser compatibility | The parser preserves accepted inputs and outputs |
-| R1 | Met | Existing parsing behavior remains unchanged | The parser preserves accepted inputs and outputs |
+| D0 | Met | H1 | Parser compatibility |
+| R1 | Met | H1 | Existing parsing behavior remains unchanged |
 
 ## Notable implementation choices
 None found.
@@ -341,6 +602,95 @@ test("review artifact validator accepts inline-code contract IDs and statuses", 
   });
 });
 
+test("review artifact validator requires each contract in exactly one Hill", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    findings.reviewHike.hills[0].contractIds.push("R1");
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /assigned to more than one Hill: R1/);
+  });
+});
+
+test("review artifact validator rejects unknown and unassigned Hill contracts", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    findings.reviewHike.hills[1].contractIds = ["R99"];
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /references unknown contract row: R99/);
+    assert.match(result.stderr, /not assigned to a Review Hiking Hill: R1/);
+  });
+});
+
+test("review artifact validator requires Context, Container, Component, and Code evidence", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    delete findings.reviewHike.context.scopeAndRisk;
+    findings.reviewHike.hills[0].sliceType = "backend";
+    delete findings.reviewHike.hills[0].sliceName;
+    delete findings.reviewHike.hills[1].container.interactions;
+    delete findings.reviewHike.hills[1].components[0].verification;
+    findings.reviewHike.hills[1].components[0].codeEvidence[0].kind = "patch";
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /reviewHike\.context\.scopeAndRisk must be a non-empty string/);
+    assert.match(
+      result.stderr,
+      /reviewHike\.hills\[0\]\.sliceType must be user-flow, logical-capability, or bounded-context/,
+    );
+    assert.match(result.stderr, /reviewHike\.hills\[0\]\.sliceName must be a non-empty string/);
+    assert.match(
+      result.stderr,
+      /reviewHike\.hills\[1\]\.container\.interactions must be a non-empty string/,
+    );
+    assert.match(
+      result.stderr,
+      /reviewHike\.hills\[1\]\.components\[0\]\.verification must be a non-empty string/,
+    );
+    assert.match(
+      result.stderr,
+      /reviewHike\.hills\[1\]\.components\[0\]\.codeEvidence\[0\]\.kind must be diff or excerpt/,
+    );
+  });
+});
+
+test("review artifact validator requires a diff for changed scope and permits excerpts without change scope", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(
+      path.join(dir, "implementation-review.md"),
+      validReport().replaceAll("· diff ·", "· excerpt ·"),
+    );
+    const findings = validFindings(dir);
+    for (const hill of findings.reviewHike.hills) {
+      for (const item of hill.components[0].codeEvidence) item.kind = "excerpt";
+    }
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+
+    const changedResult = validate(dir);
+    assert.equal(changedResult.status, 1);
+    assert.match(changedResult.stderr, /at least one diff Code evidence/);
+
+    findings.changeScope = [];
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+    const existingResult = validate(dir);
+    assert.equal(existingResult.status, 0, existingResult.stderr);
+  });
+});
+
 test("review artifact validator rejects missing core headings and evidence fields", () => {
   withArtifacts((dir) => {
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
@@ -363,35 +713,46 @@ test("review artifact validator rejects missing core headings and evidence field
   });
 });
 
-test("review artifact validator rejects missing required Mermaid across all narrative sections", () => {
+test("review artifact validator accepts the zoom hierarchy without a global Trail map", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(validFindings(dir), null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 0, result.stderr);
+  });
+});
+
+test("review artifact validator accepts artifacts without visualization metadata", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    delete findings.visualization;
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 0, result.stderr);
+  });
+});
+
+test("review artifact validator accepts an additional Mermaid inside a Hill", () => {
   withArtifacts((dir) => {
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
     writeFileSync(
       path.join(dir, "implementation-review.md"),
       validReport().replace(
-        /## Visual map[\s\S]*?Notice: The completion boundary decides whether one durable result is created or reused\.\n\n/,
-        "",
+        "The handler records completion only after provider success.",
+        `The handler records completion only after provider success.
+
+\`\`\`mermaid
+stateDiagram-v2
+  pending --> completed: provider success
+  pending --> pending: provider failure
+\`\`\`
+Notice: The Hill diagram keeps provider failure outside the completed state.`,
       ),
-    );
-    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(validFindings(dir), null, 2));
-
-    const result = validate(dir);
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /narrative must contain at least one Mermaid fence/);
-  });
-});
-
-test("review artifact validator accepts Mermaid inside a subject-specific section", () => {
-  withArtifacts((dir) => {
-    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
-    writeFileSync(
-      path.join(dir, "implementation-review.md"),
-      validReport()
-        .replace("## Visual map\n", "## Provider failure routing\n")
-        .replace(
-          "Notice: The completion boundary decides whether one durable result is created or reused.",
-          "Notice: The subject section diagram shows where the completion branch is chosen.",
-        ),
     );
     writeFileSync(path.join(dir, "findings.json"), JSON.stringify(validFindings(dir), null, 2));
 
@@ -400,14 +761,15 @@ test("review artifact validator accepts Mermaid inside a subject-specific sectio
   });
 });
 
-test("review artifact validator accepts multiple Mermaid diagrams across narrative sections", () => {
+test("review artifact validator accepts multiple Mermaid diagrams inside Hills", () => {
   withArtifacts((dir) => {
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
     writeFileSync(
       path.join(dir, "implementation-review.md"),
       validReport().replace(
-        "## Findings",
-        `## Provider request order
+        "The completion boundary admits one result and rejects or reuses duplicate work.",
+        `The completion boundary admits one result and rejects or reuses duplicate work.
+
 \`\`\`mermaid
 sequenceDiagram
   participant API
@@ -416,8 +778,7 @@ sequenceDiagram
   Provider-->>API: result
 \`\`\`
 Notice: The second diagram explains request order separately from the completion branch.
-
-## Findings`,
+`,
       ),
     );
     writeFileSync(path.join(dir, "findings.json"), JSON.stringify(validFindings(dir), null, 2));
@@ -518,6 +879,7 @@ test("review artifact validator rejects missing coverage fields and non-proven P
     writeFileSync(path.join(dir, "implementation-review.md"), validStandardReport());
     const findings = validFindings(dir);
     findings.reviewMode = "standard";
+    findings.reviewHike = validParserReviewHike();
     findings.verdict = "PASS";
     findings.atAGlance = { ...STANDARD_AT_A_GLANCE };
     findings.comprehensionCheck = validParserComprehensionCheck();
@@ -543,6 +905,7 @@ test("review artifact validator accepts concise standard-mode artifacts without 
     const findings = validFindings(dir);
     writeAdr(dir, "Existing parsing behavior remains unchanged");
     findings.reviewMode = "standard";
+    findings.reviewHike = validParserReviewHike();
     findings.verdict = "PASS";
     findings.atAGlance = { ...STANDARD_AT_A_GLANCE };
     findings.visualization = {
@@ -580,7 +943,7 @@ test("review artifact validator accepts concise standard-mode artifacts without 
   });
 });
 
-test("review artifact validator accepts PASS without metrics or comprehension check", () => {
+test("review artifact validator accepts PASS without metrics, comprehension, or explanation artifacts", () => {
   withArtifacts((dir) => {
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
     writeFileSync(
@@ -590,6 +953,7 @@ test("review artifact validator accepts PASS without metrics or comprehension ch
     const findings = validFindings(dir);
     writeAdr(dir, "Existing parsing behavior remains unchanged");
     findings.reviewMode = "standard";
+    findings.reviewHike = validParserReviewHike();
     findings.verdict = "PASS";
     findings.atAGlance = { ...STANDARD_AT_A_GLANCE };
     findings.visualization = {
@@ -598,6 +962,7 @@ test("review artifact validator accepts PASS without metrics or comprehension ch
     };
     delete findings.metrics;
     delete findings.comprehensionCheck;
+    delete findings.explanation;
     findings.findings = [];
     findings.implementationChoices = [];
     findings.contractCoverage = [
@@ -633,6 +998,7 @@ test("standard-mode artifacts reject necessity findings and missing contract cov
     writeFileSync(path.join(dir, "implementation-review.md"), "# ADR implementation review\n");
     const findings = validFindings(dir);
     findings.reviewMode = "standard";
+    findings.reviewHike = validParserReviewHike();
     findings.atAGlance = { ...STANDARD_AT_A_GLANCE };
     findings.comprehensionCheck = validParserComprehensionCheck();
     findings.metrics.necessityFindingCount = 1;
@@ -652,6 +1018,7 @@ test("PASS rejects omitted ADR rows, duplicate IDs, unexecuted tests, and blocki
     const findings = validFindings(dir);
     writeAdr(dir, "Existing parsing behavior remains unchanged");
     findings.reviewMode = "standard";
+    findings.reviewHike = validParserReviewHike();
     findings.verdict = "PASS";
     findings.atAGlance = { ...STANDARD_AT_A_GLANCE };
     findings.comprehensionCheck = validParserComprehensionCheck();
@@ -716,7 +1083,7 @@ test("human-facing report requires complete coverage and implementation-choice s
       path.join(dir, "implementation-review.md"),
       validReport()
         .replace(
-          "| R1 | Fix required | Settlement completes at most once | The current settlement path can write twice |",
+          "| R1 | Fix required | H2 | Settlement completes at most once |",
           "| R1 | Fix required |",
         )
         .replace(
@@ -738,27 +1105,27 @@ test("review artifact validator enforces an intent-first subject-specific explan
   withArtifacts((dir) => {
     writeFileSync(
       path.join(dir, "explanation.md"),
-      validExplanation().replace("## ADR intent", "## Background"),
+      validExplanation().replace("## Context", "## Background"),
     );
     writeFileSync(path.join(dir, "implementation-review.md"), validReport());
     writeFileSync(path.join(dir, "findings.json"), JSON.stringify(validFindings(dir), null, 2));
 
     const result = validate(dir);
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /must start with ## ADR intent/);
+    assert.match(result.stderr, /must start with ## Context/);
   });
 
   withArtifacts((dir) => {
     writeFileSync(
       path.join(dir, "explanation.md"),
-      "# Implementation explanation\n\n## ADR intent\nIntent only.\n",
+      "# Implementation explanation\n\n## Context\nIntent only.\n",
     );
     writeFileSync(path.join(dir, "implementation-review.md"), validReport());
     writeFileSync(path.join(dir, "findings.json"), JSON.stringify(validFindings(dir), null, 2));
 
     const result = validate(dir);
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /subject-specific heading after ## ADR intent/);
+    assert.match(result.stderr, /subject-specific Hill after ## Context/);
   });
 });
 

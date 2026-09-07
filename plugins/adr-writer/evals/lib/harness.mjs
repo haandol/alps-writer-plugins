@@ -72,8 +72,8 @@ export function validateReviewArtifact(dir, report, findings) {
     "explanation.md",
     `# Implementation explanation
 
-## ADR intent
-The implementation must preserve the reviewed ADR decision and contract.
+## Context
+The implementation must preserve the reviewed ADR decision and contract. The supplied scenario defines the surrounding conditions, contract baseline, scope, and verification limits.
 
 ## The reviewed behavior reaches its observable result
 The verified path follows the supplied evidence and tests through the contract boundary.
@@ -163,6 +163,32 @@ export function alpsLiteGuideText(section) {
     path.join(ALPS_PLUGIN_ROOT, "src", "guides", "lite", `${String(section).padStart(2, "0")}.md`),
     "utf8",
   );
+}
+
+/**
+ * Produces the real Lite resume response from the shipping DocumentService so
+ * behavior evals exercise runtime guidance rather than a copied prompt.
+ */
+export function alpsLiteResumeText(dir) {
+  const target = path.join(dir, "resume.lite.alps.xml");
+  const script = [
+    'import { DocumentService } from "./src/tools/documents/service.ts";',
+    `const target = ${JSON.stringify(target)};`,
+    "const author = new DocumentService();",
+    'author.initDocument("resume", target, "lite");',
+    "const resumed = new DocumentService();",
+    "process.stdout.write(resumed.loadDocument(target));",
+  ].join("\n");
+  const result = spawnSync("pnpm", ["--filter", "alps-writer", "exec", "tsx", "-e", script], {
+    cwd: path.resolve(ALPS_PLUGIN_ROOT, "..", ".."),
+    encoding: "utf8",
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `unable to produce Lite resume guidance: ${result.stderr.trim() || result.stdout.trim()}`,
+    );
+  }
+  return result.stdout.trim();
 }
 
 export function agentText(name, options = {}) {

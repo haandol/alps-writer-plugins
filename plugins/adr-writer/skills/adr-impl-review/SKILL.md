@@ -6,13 +6,15 @@ argument-hint: "[adr-path-or-category] [--base <ref>] [--mode standard|full]"
 
 # adr-impl-review
 
-Rather than approving the implementation outright, disprove it in the following order.
+Disprove the implementation in this order.
 
 ```mermaid
 flowchart TD
     ADR["Target ADR"] --> SCOPE["Find complete implementation scope"]
+    SCOPE --> CONTEXT["Write Context: intent, contracts, scope"]
+    CONTEXT --> HIKE["Review Container/Hill → Component → Code"]
     CHANGE["Implementation change context"] --> RISK{"Protected surface?"}
-    SCOPE --> RISK
+    HIKE --> RISK
     RISK -->|No| STANDARD["Standard: ledger + sufficiency + targeted tests"]
     RISK -->|Yes or unclear| FULL["Full: necessity + sufficiency + evidence artifacts"]
     STANDARD --> RULING["Validated HTML Evidence Package"]
@@ -30,21 +32,20 @@ required perspectives, evidence, and verdicts are contractual. Subagent count,
 named/generic/main-session execution, parallelism, and model selection are chosen
 by the current model.
 
-The review has two independent outputs:
+The review has two outputs:
 
 - **Implementation verdict** — whether the code and tests honor the ADR.
 - **PR comprehension readiness** — whether the reader can explain the important
   behavior and causal path.
 
-A `PASS` verdict never implies comprehension readiness. Do not open or send the
-PR until the comprehension check is passed, but do not turn that check into an
-ADR approval, Status transition, or code-correctness verdict.
+`PASS` never implies comprehension readiness. Do not send the PR until the
+check passes, and never turn it into an ADR or code verdict.
 
 ## The abstraction ladder — which level owns each disagreement
 
 Most findings in this review are a disagreement between the ADR and the code, and **every routing call below is really the question "which level owns this fact?"** So hold the principle (`authoring-rules.md` / `concepts.md` "The abstraction ladder") while reading the findings.
 
-PRD, ADR, and code are the same system at three resolutions — like C4's context / container / component zoom — and each level exists to be **read alone**. The ADR's question is "why this decision, and what must the result honor?"; the code's is "how is it done?" That split decides every category:
+PRD, ADR, and code are the same system at three resolutions, and each level exists to be **read alone**. The ADR's question is "why this decision, and what must the result honor?"; the code's is "how is it done?" That split decides every category:
 
 | Disagreement                                          | Level that owns it          | Category                   | Route                                    |
 | ----------------------------------------------------- | --------------------------- | -------------------------- | ---------------------------------------- |
@@ -70,7 +71,7 @@ A note on scope: `/adr-impl-review` judges the **code** level against the ADR le
 - **Evidence over assertion**: every finding includes the applicable basis among an ADR quote, the actual diff or code location, and a reproduction procedure or execution result. Report a conjecture you could not reproduce only as `Unverified risk`. For an assumption risk, state the externally checkable premise, the contract or safety consequence if it is false, and the missing verification; never request or fabricate private chain-of-thought.
 - **Escalation is exceptional**: ask for human judgment only when the approved contract must change, premises contradict, a material risk cannot be verified, or the repair would exceed the approved scope. Evidence-backed implementation and test defects are remediation work, not approval questions.
 
-Before planning the review execution, read `${CLAUDE_PLUGIN_ROOT}/references/subagent-dispatch.md` completely. The role files under `${CLAUDE_PLUGIN_ROOT}/agents/` define reusable role contracts, not a mandatory topology. Choose the smallest available combination of named agents, generic read-only subagents, or main-session passes that preserves the selected mode's perspectives and evidence. Record an isolation limitation only when it materially affects confidence.
+Before planning execution, read `${CLAUDE_PLUGIN_ROOT}/references/subagent-dispatch.md` completely. Choose the smallest available strategy that preserves the selected perspectives and evidence. Record only material isolation limits.
 
 ## 1. Fix the target, implementation scope, and change scope
 
@@ -124,7 +125,17 @@ both scopes, prepare the following original material.
 
 Create one review artifact directory and pass its path to every agent that follows. To avoid dirtying the repository, the default location is `${TMPDIR:-/tmp}/adr-impl-review-<adr-slug>-<timestamp>/`. Record the review start time when this directory is created. The final artifact records the selected mode and rationale, elapsed time, per-perspective finding counts, unverified-risk count, and executed test-command count.
 
-### 1.1 Select the review mode
+### 1.1 Build the Review Hiking route
+
+Read `references/review-hiking.md` completely. It owns Context,
+Container/Hill, Component, Code evidence, contract assignment, test selection,
+ephemeral state, and perspective isolation. Produce `reviewHike.context` and
+`reviewHike.hills` before mode selection. If
+`/adr-impl` supplies Implementation Hill boundaries, reuse them when they match
+shipping user flows, capabilities, or bounded contexts; adjust only when final
+evidence shows a different vertical boundary.
+
+### 1.2 Select the review mode
 
 Use `full` when any of these surfaces changes: requirement values or rules, public API or wire form, schema or persistence, state or transitions, permissions or visibility, security boundaries, external fallback, concurrency, transactions, resource lifetime, or error semantics. Also use `full` when the complete implementation scope spans bounded contexts or broad modules, when the user requests a full review, or whenever classification is unclear.
 
@@ -132,31 +143,25 @@ Use `standard` only for localized implementation or reinforcement of an existing
 
 Record `reviewMode` and the classification evidence in the artifacts.
 
-### 1.2 Build the common implementation explanation
+### 1.3 Prepare optional explanation input
 
-For both review modes, create the plain-language implementation explanation
-using the `adr-impl-explainer` role contract. The model may use a named agent,
-generic read-only subagent, or write it directly. Give that role only the ADR,
-complete implementation scope, separate change scope, and related tests. Save the result as
-`explanation.md`.
+For broad or high-load reviews, optionally apply the `adr-impl-explainer` role
+to the ADR, complete and change scopes, and related tests. Save optional
+`explanation.md`; skip it when the report can explain the Hills directly.
 
-The explanation starts with `ADR intent`, followed by one to three
-subject-specific top-level sections ordered by importance. Follow a verified
-user, operator, request, state, or failure flow when one exists. Otherwise lead
-with the most consequential behavior and result. Do not default to execution or
-file order.
+The explanation starts with `Context`, then follows each Container/Hill through
+Component and Code evidence in
+reader-priority order. Apply
+`references/review-hiking.md`; do not default to file order.
 
-Only `ADR intent` and its first position are fixed. The later headings name the
-actual behavior or situation. The internal paragraphs, lists, tables, examples,
-optional subsections, diagrams, and length remain subject-specific.
-Do not stop to show it or ask the user to reconfirm the implementation. Never
-pass it to the necessity or sufficiency perspective.
+Later headings name the actual vertical behavior, capability, or bounded
+context. Their content remains subject-specific.
+Do not stop to show it or ask the user to reconfirm. Never pass it to either
+review perspective.
 
-When the review evidence is synthesized, prepare a comprehension check with one
-to five medium-difficulty free-response questions. Ask only material questions
-about the before/after behavior, causal path, ADR contract, failure or boundary
-case, or important trade-off. Do not use filler, symbol-name trivia, or line
-number recall.
+When selected, prepare one to five medium-difficulty free-response questions
+about material behavior, causal paths, contracts, boundaries, failures, or
+trade-offs. Do not ask symbol or line-number trivia.
 
 For each question, keep these machine-readable fields:
 
@@ -175,8 +180,8 @@ meaning or mark the PR comprehension-ready.
 For `standard`, execute this section and then continue at section 7. Sections 2-6 are the full-mode path.
 
 1. Build a decision ledger containing every ADR decision and each independently reviewable requirement-contract row, including its implementation-independent observable evidence. The sufficiency pass also extracts Notable implementation choices once from the complete implementation scope.
-2. Apply the `adr-impl-sufficiency-reviewer` role to the ADR, complete implementation scope, separate change scope, tests, project rule documents, and the ledger. Use a named agent, generic read-only subagent, or separately grounded main-session pass as appropriate. Record an isolation limitation only when it weakens the evidence.
-3. Execute the related targeted tests and any minimal reproduction needed to account for every ledger row. An unexecuted core path makes the verdict `INCONCLUSIVE`, not `PASS`.
+2. Apply the `adr-impl-sufficiency-reviewer` role to the original material, Hills, and ledger with the smallest suitable execution strategy.
+3. Review Hills in reader-priority order; record contract status, implementation evidence, and targeted test results. An unexecuted core path yields `INCONCLUSIVE`.
 4. Verify and synthesize findings using section 4's evidence rules. Standard mode has no necessity pass, separate report-writing requirement, fixed Mermaid quota, or post-implementation spec-fitness gate.
 5. Continue at **Report and artifact stage** below. In standard mode,
    `reviewMode` is `standard`, `necessityFindingCount` is zero, and `PASS`
@@ -235,6 +240,9 @@ Apply the `adr-impl-sufficiency-reviewer` role contract.
 - **Compare requirement values value by value** — put each limit, quota, cycle, retention period, cap, and target the ADR records as its own ledger row and compare it directly against the number in the code. "There is limit logic" is not an accounting. A value mismatch or an unenforced value is a `Spec violation`. For a self-imposed value absent from the ADR, apply the admission gate: admitted requirement or boundary choices become `Undecided behavior`; replaceable choices go into Notable implementation choices; an unknown becomes `Unverified risk` only when it could affect safety or the ADR contract.
 - **Compare non-numeric requirements item by item too** — allowed value sets, transition rules, mandatory fields, permissions, visibility, ordering, uniqueness, and units are each ledger rows as well. An added or removed set member, a forbidden transition becoming allowed, and mandatory → optional are all `Spec violation`. **Split enums** — a differing identifier name is `Impl-fact mismatch` (correct the ADR), while a differing allowed set or transition rule is `Spec violation` (correct the code).
 - **Inspect hidden implementation premises** — for every material choice and every contract-critical call path, ask which externally checkable fact must hold for the implementation to preserve the ADR contract and safety. Verify provider guarantees, caller authentication, input provenance, ordering, uniqueness, trust boundaries, and platform behavior from code, tests, configuration, or an authoritative external contract. If a premise is not verified and its falsehood could break a contract row or safety property, emit `Unverified risk`, mark the affected coverage row `UNVERIFIED`, and do not return `PASS`. Do not reconstruct the implementer's private reasoning.
+- **Complete each Hill's evidence in order** — apply
+  `references/review-hiking.md`; missing status, evidence, or test results
+  prevent `PASS`.
 - **Resolve apparent requirement gaps before escalating** — connect a logical consequence to its explicit parent contract, recognize an established project/domain default as implementation discretion, and escalate only when several valid product behaviors remain or the missing rule affects money, permissions, legal/compliance behavior, retention, irreversible data, a public contract, or durable fallback. For an escalation, produce the complete Decision request instead of a bare ambiguity note.
 - Before checking documentation and tests, read
   `${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md` completely and
@@ -262,7 +270,9 @@ The main session does not merge the two reviews by vote. Verify findings with th
 7. Normalize the decision ledger into contract coverage independently from findings. Derive deterministic IDs from the ADR: `D0` is the Decision and `R1..Rn` are every top-level bullet under `### Requirement contract` in source order. Every derived ID gets exactly one row with `contractId`, `requirement`, `status`, `adrBasis`, `implementation`, `evidence`, and `tests`; omissions, duplicates, and invented IDs are invalid. `D0.adrBasis` is `Decision`; each `Rn.adrBasis` is the complete source bullet verbatim. Use only `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`. `PROVEN` means the inspected or executed evidence supports the row and no counterexample was found; it is not a mathematical proof.
 8. Before normalizing implementation choices, inspect their externally checkable premises. A premise confirmed by code, tests, configuration, or an authoritative external contract may remain part of the choice's evidence. If the premise is unverified and could violate safety or an ADR contract row when false, create an `Unverified risk`, mark the affected coverage `UNVERIFIED`, and block `PASS`. Do not infer private reasoning.
 9. Normalize Notable implementation choices independently from findings. Every row has only a concrete selected value or behavior, code evidence, why it fits the ADR intent, and why it matters. Explain fit by naming the preserved contract or boundary, not by guessing why the implementer chose it. A row that changes a requirement contract or durable boundary is removed from the list and raised as `Undecided behavior`.
-10. Classify visualization from the complete scope using the artifact contract. Record `required`, its evidence-based `reason`, and a primary `diagramType`. Mermaid may appear in any narrative section, with multiple diagrams for distinct questions; use `required: false` only when one or two sentences suffice.
+10. Normalize the wide view into `reviewHike.context` and the Container,
+    Component, and Code route into `reviewHike.hills` exactly as
+    `references/review-hiking.md` and the artifact contract require.
 11. Normalize every finding into a user-action card as well as technical evidence. Keep non-empty `whyItMatters`, `expectedBehavior`, `observedBehavior`, `requestedChange`, `editTargets`, and `completionCriteria` fields. These fields explain the task in plain language; the exact ADR quote, code fragment, evidence, command, and result remain separate audit fields.
 
 The synthesized verdict:
@@ -298,11 +308,15 @@ finding-free standalone review.
 - Never expose raw Markdown list markers or a supported Mermaid fence as the primary human-facing rendering.
 - Never sort the human report by technical category. Group findings as fix, decision, verification, and suggestion tasks, then preserve the report writer's importance order inside each group.
 - Never show ruling controls for ordinary evidence-backed remediation or read-only context.
-- Never put implementation chronology ahead of ADR intent and the most
+- Never put implementation chronology ahead of Context and the most
   important verified user or operational behavior.
+- Never call technical layers, files, modules, reviewer roles, or review
+  lifecycle phases Hills.
+- Never synthesize the final verdict while a Hill has an unaccounted contract
+  row or unexecuted core vertical path.
 - Never use generic `Background`, `Intuition`, and `Code walkthrough` headings
   as a mandatory report template.
-- Never invent a story, user reaction, measurement, project outcome, or causal
+- Never invent a user reaction, measurement, project outcome, or causal
   relationship that the ADR, code, tests, configuration, or user did not establish.
 - Never generate more than five primary comprehension questions or add filler to
   reach five.

@@ -467,13 +467,13 @@ test("prose style is stated once, applied at authoring and review, and never cut
   assert.match(adrNew, /active voice/i);
   assert.match(adrNew, /never shorten by deleting content/i);
   assert.match(adrNew, /references\/reader-first-writing\.md/);
-  assert.match(adrNew, /Lead with intent and remove AI slop/);
+  assert.match(adrNew, /Lead with intent and remove mechanical writing patterns/);
   assert.match(adrNew, /Decision intent/);
 
   // the reviewer owns it as R20, advisory so it cannot block or outrank a real defect
   const reviewer = read(path.join(ADR_ROOT, "agents", "adr-reviewer.md"));
   assert.match(reviewer, /R20/);
-  assert.match(reviewer, /Reader-first prose and AI slop/);
+  assert.match(reviewer, /Reader-first prose quality/);
   assert.match(reviewer, /repeated contrast templates/);
   assert.match(reviewer, /ornamental English labels/);
   assert.match(reviewer, /forced numbered symmetry/);

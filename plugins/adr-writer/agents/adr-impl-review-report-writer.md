@@ -13,7 +13,7 @@ evidence sections from `findings.json` before validation.
 
 Before writing, read
 `${CLAUDE_PLUGIN_ROOT}/references/review-report-writing.md` completely. This
-agent owns the junior-facing explanation, visual map, and AI-slop removal. The
+agent owns the junior-facing explanation, visual map, and mechanical-pattern cleanup. The
 upstream review artifacts remain evidence sources, not a prose template.
 Also read `${CLAUDE_PLUGIN_ROOT}/references/reader-first-writing.md` completely.
 
@@ -27,11 +27,13 @@ anchors and established technical terms when translation would reduce precision.
 - The separate change scope or raw diff
 - Project conventions
 - `review-baseline.md`
-- `explanation.md`
+- Optional `explanation.md`, when a separate plain-language pass was useful
 - `necessity-review.md`
 - `sufficiency-review.md`
 - The verified findings, tests, and normalized Notable implementation choices
-- The visualization requirement, reason, and selected Mermaid diagram type
+- The Review Hiking Context and route, including each Container/Hill's vertical
+  slice, Components, focused Code evidence, and contract ids
+- The Trail map requirement, reason, and selected Mermaid diagram type
 
 ## Core report
 
@@ -42,7 +44,9 @@ the whole implementation:
 2. What must happen next?
 3. What intent, problem, and contract from the ADR explain why this change exists?
 4. What major algorithm or control/data flow produces the important result?
-5. What user, operator, request, state, or failure flow best explains that behavior?
+5. Which low Review Hiking Container/Hills let the reader understand and verify the
+   important user flows, logical capabilities, or bounded contexts one at a
+   time?
 6. Which mechanism, concrete example, and background details are needed to understand that flow?
 7. Which ADR decisions and contract rows are accounted for, and what did the implementation do for each one?
 8. Which tests ran and what did they prove?
@@ -78,7 +82,7 @@ plain-language action fields only when the core summary/evidence cannot derive t
 - `observedBehavior` — what the review actually found
 - `requestedChange` — the concrete next action
 - `editTargets` — the files and symbols to change or inspect
-- `completionCriteria` — the observable result and verification that close the item
+- `completionCriteria` — the observable result and verification that complete the item
 
 The HTML groups these cards as `fix`, `decide`, `verify`, and `note` tasks.
 Within each task group, preserve the importance order selected during synthesis.
@@ -100,13 +104,23 @@ mode and for PASS. Keep this structure:
 
 ## Scope
 
-## ADR intent
+## Context
 
-## <subject-specific narrative heading>
+<!-- generated review context from findings.json -->
 
-## <optional additional narrative heading>
+## Trail map
 
-## Visual map
+<only when visualization is required>
+
+## <first Hill title>
+
+<!-- generated container zoom from findings.json -->
+
+<!-- generated component zoom from findings.json -->
+
+<!-- generated hill evidence from findings.json -->
+
+## <next Hill title>
 
 ## Findings
 
@@ -127,26 +141,42 @@ mode and for PASS. Keep this structure:
 <!-- generated from findings.json -->
 ```
 
-`Visual map` is an optional overview, not the only diagram location. When
+`Trail map` is the grounded visual route built after the complete implementation
+scope was fixed and before the review perspectives ran. When
 `visualization.required` is true, include one or more Mermaid fences whose set
-includes `diagramType`. Put each diagram in the subject-specific section where
-it best explains that algorithm, state, request, or failure flow, or use
-`Visual map` for a cross-section overview. Add one non-empty `Notice:` sentence
-per diagram. When false, diagrams remain allowed whenever they materially
-improve the explanation.
+includes `diagramType`. Start the section with one plain-language `How to read
+it` line using `visualization.readingGuide`. The guide must identify what this
+map's boxes and arrows mean and which route belongs to each relevant Hill; a
+generic Mermaid definition is insufficient. Keep `visualization.reason` in the
+structured artifact only. Put the overall relationship in `Trail map`; put a
+diagram inside a Hill when it explains a distinct algorithm, state, request, or
+failure question. Add one non-empty `Notice:` sentence per diagram. When false,
+omit `Trail map` unless a diagram still materially improves a Hill.
 
-`ADR intent` is fixed and appears before the narrative. It connects the ADR's
-problem, adopted direction, and contract without copying every Driver or
-requirement row.
+`Context` is fixed and appears before the narrative. It contains only
+`<!-- generated review context from findings.json -->`; the materializer writes
+intent, preconditions and surrounding context, core contracts, and review
+scope/risk.
 
-Between `ADR intent` and `Findings`, include at least one
-subject-specific `##` heading. Name the actual behavior or situation rather than
-using generic containers such as `Background`, `Intuition`, or `Code
-walkthrough`.
+Between `Context` and `Findings`, include exactly the Review Hiking
+Container/Hills plus optional `Trail map`. Each Hill title is the exact
+`reviewHike.hills[].title` and names the actual user flow, logical capability,
+or evidence-grounded bounded context rather than a technical layer, file,
+module, review phase, or generic container such as `Background`, `Intuition`,
+or `Code walkthrough`.
 
-- Follow a verified user, operator, request, state, or failure flow when one
-  exists.
-- Otherwise lead with the most consequential behavior and observable result.
+- State the Hill's review question, `sliceType`, `sliceName`, and Container
+  responsibility/interactions/outcome in `findings.json`.
+- Put `<!-- generated container zoom from findings.json -->` after the question.
+- Put `<!-- generated component zoom from findings.json -->` next. Components
+  state detailed implementation and verification; each includes focused Code
+  evidence with kind, location, actual content, explanation, and tests.
+- Use `diff` for core changed lines. Use `excerpt` only when the reviewed
+  implementation has no change diff. A non-empty change scope requires at least
+  one diff in the report.
+- Put `<!-- generated hill evidence from findings.json -->` after the Hill
+  Components. The materializer replaces it with the assigned contract evidence
+  cards. Do not copy the cards manually.
 - Explain the important algorithm or control/data flow as trigger → major steps
   and branches → state or data change → observable result.
 - Use a small concrete input/result example when code or tests establish it;
@@ -168,10 +198,15 @@ the answer criteria remain hidden until the reader answers.
 The standalone HTML owns progressive disclosure:
 
 - It is one responsive page with a table of contents and section anchors.
-- It shows At a glance, ADR intent, the important narrative, and Findings before detailed evidence.
-- It keeps `PROVEN` coverage, scope, metrics, and Notable implementation choices collapsed by default while opening exceptional coverage.
+- It shows At a glance, Context, a plain-language
+  `Whole-route map (Trail map)` label, Review Hiking
+  Container/Hills, Components, collapsed Code evidence, and Findings before the
+  remaining evidence.
+- Each Hill keeps its assigned `PROVEN` contract cards collapsed and opens its
+  exceptional coverage. Scope, metrics, and Notable implementation choices stay
+  collapsed by default.
 - It renders Markdown lists, inline code, fenced `<pre>` code blocks, and supported Mermaid relationships. Unsupported Mermaid syntax keeps an explicit source fallback.
-- A finding includes `contractIds` when it relates to one or more `D0` / `R1..Rn` rows. Group findings by human action (`fix`, `decide`, `verify`, `note`), never by technical category, and preserve importance order inside each group.
+- A finding includes `contractIds` when it relates to one or more `D0` / `R1..Rn` rows. Link it to the owning Hill's evidence card. Group findings by human action (`fix`, `decide`, `verify`, `note`), never by technical category, and preserve importance order inside each group.
 - Ruling controls appear only for findings that require human judgment: `Decision changed in code`, admitted `Undecided behavior`, material `Unverified risk`, or `Contradiction`.
 - Comprehension questions remain collapsed. The HTML may reveal hidden criteria only after the reader enters an answer and explicitly requests self-check; this never marks the PR comprehension-ready.
 - Use the report language for the HTML `lang` and fixed interface labels.
@@ -199,8 +234,9 @@ Use the smallest useful Mermaid selected in `findings.json.visualization`:
 - `stateDiagram-v2` when state transitions are central
 - `erDiagram` when changed data relationships are central
 
-Place every diagram before findings, in the section whose prose it clarifies. A
-required diagram cannot be omitted. A small local
+Build the Trail map before the review perspectives use it, then place every
+verified diagram before findings in the section whose prose it clarifies. A
+required Trail map cannot be omitted. A small local
 PASS report may contain no diagram only when `visualization.required` is false
 and the reason states why one or two sentences are sufficient. Ground every
 node and edge in code evidence and add one `Notice:` sentence explaining what
@@ -237,8 +273,13 @@ derive the repair guidance from that contract.
 - Mark an unexecuted claim as `needs confirmation`; never present it as a confirmed defect.
 - Explain jargon only when it appears in the report.
 - Put the observable symptom before the internal category or symbol name.
-- Keep `ADR intent` and every subject-specific narrative section grounded in the
+- Keep `Context` and every subject-specific narrative section grounded in the
   ADR, diff, code, and tests. Do not turn them into generic background material.
+- Keep every Hill grounded in one vertical user flow, logical capability, or
+  bounded context and one review question. Do not group by technical layer,
+  file, module, reviewer role, or review phase.
+- Assign every contract id to exactly one Hill and keep the Hill title identical
+  between `reviewHike` and its Markdown heading.
 - Under `Scope`, distinguish the complete implementation scope from the
   separate change scope. Never present the diff as though it were the complete
   implementation.

@@ -95,7 +95,7 @@ test("implementation review separates ADR decisions from code-level AI choices",
   assert.match(reportWriter, /read-only/);
 });
 
-test("implementation review leads with ADR intent and a reader-priority narrative", () => {
+test("implementation review leads with Context and a reader-priority narrative", () => {
   const skill = read("skills/adr-impl-review/SKILL.md");
   const artifactContract = read("skills/adr-impl-review/references/artifact-contract.md");
   const reviewContract = `${skill}\n${artifactContract}`;
@@ -103,10 +103,11 @@ test("implementation review leads with ADR intent and a reader-priority narrativ
   const reportWriter = read("agents/adr-impl-review-report-writer.md");
   const guide = read("references/review-report-writing.md");
   const readerFirst = read("references/reader-first-writing.md");
+  const hiking = read("skills/adr-impl-review/references/review-hiking.md");
   const validator = read("scripts/adr-impl-review-validate.mjs");
 
   for (const source of [skill, explainer, reportWriter, guide]) {
-    assert.match(source, /ADR intent/);
+    assert.match(source, /Context/);
     assert.match(source, /importance|important/i);
     assert.match(source, /flow|causal/i);
   }
@@ -115,10 +116,12 @@ test("implementation review leads with ADR intent and a reader-priority narrativ
   }
 
   assert.match(explainer, /subject-specific heading/i);
-  assert.match(reportWriter, /Between `ADR intent` and `Findings`/);
+  assert.match(reportWriter, /Between `Context` and `Findings`/);
   assert.match(readerFirst, /repeated contrast templates/i);
   assert.match(readerFirst, /ornamental title-cased English labels/i);
   assert.match(readerFirst, /Never invent an anecdote/i);
+  assert.match(hiking, /junior developer/i);
+  assert.match(hiking, /file and symbol|focused unified diff/i);
   assert.match(guide, /language the user explicitly requests or currently uses/i);
   assert.match(guide, /target ADR's dominant\s+language/i);
   assert.match(guide, /multi-ADR report/i);
@@ -128,8 +131,8 @@ test("implementation review leads with ADR intent and a reader-priority narrativ
     reviewContract,
     /may reveal `answerCriteria` and `evidence` only after the reader enters an\s+answer/i,
   );
-  assert.match(skill, /A `PASS` verdict never implies comprehension readiness/);
-  assert.match(skill, /Do not open or send the\s+PR until the comprehension check is passed/);
+  assert.match(skill, /`PASS` never implies comprehension readiness/);
+  assert.match(skill, /Do not send the PR until the\s+check passes/);
   assert.match(artifactContract, /Do not persist quiz progress or pass\/fail state/);
   assert.match(artifactContract, /Do not automatically begin the comprehension check/i);
   assert.match(
@@ -143,7 +146,7 @@ test("implementation review leads with ADR intent and a reader-priority narrativ
   );
   assert.match(validator, /must contain 1 to 5 questions/);
   assert.match(validator, /exposes comprehensionCheck/);
-  assert.match(validator, /subject-specific narrative heading/);
+  assert.match(validator, /Container\/Hill heading/);
 });
 
 test("review orchestration allows named, generic, or main-session execution", () => {
@@ -181,7 +184,7 @@ test("unsupported review orchestration falls back without prescribing an agent t
   assert.match(dispatch, /do not retry/);
 
   assert.match(review, /named reviewers, generic read-only subagents, main-session passes/);
-  assert.match(implReview, /named agents, generic read-only subagents, or main-session passes/);
+  assert.match(implReview, /smallest available strategy/);
   assert.match(refactor, /main-session candidate may still become `APPLY_NOW`/);
   assert.match(refactor, /Agent topology is not a classification input/);
 });
@@ -223,6 +226,7 @@ test("large skill details are loaded through explicit progressive-disclosure ref
   const implReview = read("skills/adr-impl-review/SKILL.md");
   const artifactContract = read("skills/adr-impl-review/references/artifact-contract.md");
   const remediationRouting = read("skills/adr-impl-review/references/remediation-routing.md");
+  const reviewHiking = read("skills/adr-impl-review/references/review-hiking.md");
 
   assert.match(sync, /read `references\/repository-hygiene\.md` completely/);
   assert.match(sync, /Do not read that reference.*when no candidate exists/);
@@ -256,10 +260,60 @@ test("large skill details are loaded through explicit progressive-disclosure ref
   );
   assert.match(artifactContract, /Implementation review artifact contract/);
   assert.match(remediationRouting, /Implementation review remediation routing/);
+  assert.match(implReview, /read `references\/review-hiking\.md` completely/i);
+  assert.match(reviewHiking, /Review Hiking/);
   assert.ok(
     implReview.trim().split(/\s+/).length < 4500,
     "adr-impl-review SKILL.md should stay below 4.5k words",
   );
+});
+
+test("implementation and review Hiking use vertical Hills with review zooms", () => {
+  const impl = read("skills/adr-impl/SKILL.md");
+  const implementationHiking = read("skills/adr-impl/references/implementation-hiking.md");
+  const review = read("skills/adr-impl-review/SKILL.md");
+  const reviewHiking = read("skills/adr-impl-review/references/review-hiking.md");
+  const artifactContract = read("skills/adr-impl-review/references/artifact-contract.md");
+
+  assert.match(impl, /read `references\/implementation-hiking\.md` completely/i);
+  assert.match(implementationHiking, /user-flow/);
+  assert.match(implementationHiking, /logical-capability/);
+  assert.match(implementationHiking, /bounded-context/);
+  assert.match(implementationHiking, /Preconditions and surrounding context/);
+  assert.match(implementationHiking, /Core design and contracts/);
+  assert.match(implementationHiking, /Implementation/);
+  assert.match(implementationHiking, /Verification/);
+  assert.match(implementationHiking, /Never use frontend\/backend\/data layers/);
+  assert.match(
+    impl,
+    /Finish the Hill's necessary cross-layer behavior and targeted ideal\/edge verification/,
+  );
+  assert.match(review, /Implementation Hill boundaries, reuse them/i);
+  assert.match(reviewHiking, /Context/);
+  assert.match(reviewHiking, /sliceType/);
+  assert.match(reviewHiking, /Components/);
+  assert.match(reviewHiking, /Code evidence/);
+  assert.match(artifactContract, /generated review context from findings\.json/);
+  assert.match(artifactContract, /generated container zoom from findings\.json/);
+  assert.match(artifactContract, /generated component zoom from findings\.json/);
+  for (const source of [impl, implementationHiking, review, reviewHiking]) {
+    assert.doesNotMatch(source, /close(?:d|s)?\s+(?:one\s+)?Hill|Hill\s+is\s+closed/i);
+  }
+});
+
+test("reader-facing prompts name concrete writing patterns without a generic quality label", () => {
+  const sources = [
+    read("references/reader-first-writing.md"),
+    read("references/review-report-writing.md"),
+    read("skills/adr-new/SKILL.md"),
+    read("agents/adr-reviewer.md"),
+    read("agents/adr-impl-review-report-writer.md"),
+  ];
+
+  for (const source of sources) {
+    assert.doesNotMatch(source, /AI[- ]?slop/i);
+    assert.match(source, /repeated contrast|mechanical writing|Reader-first prose quality/i);
+  }
 });
 
 test("core skill prompts stay within the progressive-disclosure budget", () => {
@@ -608,7 +662,9 @@ test("implementation review keeps contract evidence without a mandatory merge ch
   assert.match(writer, /PROVEN/);
   assert.match(reviewContract, /contractCoverage/);
   assert.match(reviewContract, /PASS.*every contract-coverage row.*PROVEN/is);
-  assert.match(materializer, /Review result/);
+  assert.match(materializer, /implementation: "Implementation"/);
+  assert.match(materializer, /evidence: "Evidence"/);
+  assert.match(materializer, /tests: "Tests"/);
   assert.match(materializer, /seven audit fields remain authoritative in findings\.json/i);
   assert.match(materializer, /Selected value or behavior/);
   assert.match(writer, /generated from findings\.json/);
@@ -641,7 +697,7 @@ test("repair guidance is conditional and Mermaid may appear across narrative sec
   assert.match(writer, /Never use ASCII or box-drawing diagrams/);
   assert.match(writer, /Draw only relationships confirmed in the actual code/);
   assert.match(writer, /one-diagram or one-section limit/);
-  assert.match(writer, /subject-specific section/);
+  assert.match(writer, /Hill/);
   assert.doesNotMatch(writer, /Include at least:/);
   assert.match(writer, /Files and symbols to change/);
   assert.match(writer, /Scope not to touch/);

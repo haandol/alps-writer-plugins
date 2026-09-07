@@ -31651,6 +31651,27 @@ ${content}
     this.workingDoc = filepath;
     return `Created ${profile.label} document at ${filepath}`;
   }
+  /**
+   * Keeps resume guidance aligned with each profile's authoring contract.
+   * Full ALPS remains question-first, while Lite asks only for missing or
+   * protected context and preserves proposal-first Sections 2 and 4.
+   */
+  resumeGuidance(profile) {
+    const steps = isLiteProfile(profile) ? `1. Call ${profile.sectionGuideTool}(N) before working on any section
+2. Follow the guide: ask only for missing user-owned or protected context, but propose Sections 2 and 4 before asking the user to design them
+3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
+4. Get explicit "yes" confirmation before calling save_alps_section()` : `1. Call ${profile.sectionGuideTool}(N) before working on any section
+2. Ask 1-2 focused questions at a time - DO NOT auto-generate content
+3. Wait for user response before proceeding
+4. Get explicit "yes" confirmation before calling save_alps_section()`;
+    return `\u26A0\uFE0F CONVERSATION MODE REQUIRED:
+${steps}
+NEVER save generated content without user approval.`;
+  }
+  /**
+   * Selects only structurally valid ALPS documents and returns the matching
+   * profile's conversation rules so resume cannot cross document boundaries.
+   */
   loadDocument(docPath) {
     this.workingDoc = null;
     const filepath = this.expandPath(docPath);
@@ -31669,16 +31690,10 @@ ${content}
     const pathError = this.pathError(filepath, inspection.profile);
     if (pathError) return pathError;
     this.workingDoc = filepath;
-    const guideTool = inspection.profile.sectionGuideTool;
     return `${this.getStatus()}
 
 ---
-\u26A0\uFE0F CONVERSATION MODE REQUIRED:
-1. Call ${guideTool}(N) before working on any section
-2. Ask 1-2 focused questions at a time - DO NOT auto-generate content
-3. Wait for user response before proceeding
-4. Get explicit "yes" confirmation before calling save_alps_section()
-NEVER save generated content without user approval.`;
+${this.resumeGuidance(inspection.profile)}`;
   }
   saveSection(section, subsectionId, title, content) {
     const document = this.readWorkingDocument();
@@ -31855,7 +31870,7 @@ var server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.8.14" },
+  { name: "alps-writer", version: "0.8.15" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
@@ -32036,8 +32051,8 @@ server.tool(
   `Load an existing ALPS or Lite ALPS document to resume editing. The document profile is detected automatically.
 \u26A0\uFE0F CRITICAL: After loading, you MUST follow the conversation guide:
 1. Call the matching get_alps_section_guide(N) or get_lite_alps_section_guide(N)
-2. Ask 1-2 focused questions at a time - DO NOT auto-generate content
-3. Wait for user response before proceeding
+2. Follow the selected profile: Full asks for missing context before drafting; Lite asks only for missing or protected context and proposes Sections 2 and 4
+3. Wait when a focused question is required; otherwise present the completed proposal for approval
 4. Get explicit confirmation before saving each section`,
   {
     doc_path: external_exports.string().min(1).describe("Path to the .alps.xml or .lite.alps.xml file")

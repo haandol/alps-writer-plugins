@@ -86,6 +86,20 @@ function visibleOutput(output) {
   return output.split(/---\s*\n\s*## Machine-readable tail|===\s*EVAL-VERDICT/i)[0];
 }
 
+function usesOnlySuppliedPaths(output) {
+  const paths = [
+    ...output.matchAll(/\b(?:src|test|tests)\/[\w./-]+|[\w./-]+\.(?:ts|js|mjs):\d+/gi),
+  ].map((match) => match[0]);
+  return paths.every((value) =>
+    [
+      "src/payments/settle.ts",
+      "test/payments/settle.test.ts",
+      "settle.ts:42",
+      "settle.ts:58",
+    ].includes(value),
+  );
+}
+
 function coverageRows(visible) {
   return visible.split("\n").filter((line) => line.includes("|") && /\b(?:D0|R1|R2)\b/.test(line));
 }
@@ -131,7 +145,17 @@ export default {
       `Do not put conversational prose before or instead of the report file contents.`,
       `Do not invent files or tests beyond the facts below. Show the normal response first.`,
       `The normal response must lead with At a glance (Verdict, Impact, Action, Risk),`,
-      `then ADR intent, one or more subject-specific narrative sections ordered by importance, findings, contract coverage, notable implementation choices, residual risks, and Comprehension check.`,
+      `then Context, these exact Container/Hills with Components and Code, findings, contract coverage, notable implementation choices, residual risks, and Comprehension check.`,
+      `Under Context write only <!-- generated review context from findings.json -->.`,
+      `Context fields must be exactly: Payment settlement preserves one durable result. / Payment settlement receives retries and provider outcomes. / One completion boundary preserves idempotency and pending state. / Duplicate and provider-failure paths determine the verdict.`,
+      `Hill H1 heading: A retry reaches the idempotent boundary.`,
+      `Hill H1 vertical slice must be user-flow / Duplicate payment settlement.`,
+      `Hill H1 Container must explain retry responsibility, interactions, and one-completion outcome. Component C1 must explain the idempotent boundary and include a focused diff Code evidence.`,
+      `Hill H2 heading: Provider failure leaves the payment pending.`,
+      `Hill H2 vertical slice must be user-flow / Provider failure settlement.`,
+      `Hill H2 Container must explain provider-failure responsibility, interactions, and pending outcome. Component C1 must explain the failure branch and include a focused diff Code evidence.`,
+      `Put <!-- generated container zoom from findings.json --> and <!-- generated component zoom from findings.json --> once after each Hill question.`,
+      `Put <!-- generated hill evidence from findings.json --> once after each Hill Components block.`,
       `Follow the verified payment retry or provider-failure flow where it helps. Do not default to implementation order.`,
       `Remove repeated contrast templates, ornamental one-off labels, forced numbered symmetry, filler bridges, and duplicate visuals. Do not invent a story.`,
       `Coverage and choices are read-only.`,
@@ -169,6 +193,82 @@ export default {
         impact: "Settlement behavior matches the recorded contract.",
         action: "None.",
         risk: "No unverified core risk remains.",
+      },
+      visualization: {
+        required: false,
+        reason: "The supplied fixture explains two local settlement paths in two short sections.",
+      },
+      reviewHike: {
+        context: {
+          intent: "Payment settlement preserves one durable result.",
+          preconditions: "Payment settlement receives retries and provider outcomes.",
+          contracts: "One completion boundary preserves idempotency and pending state.",
+          scopeAndRisk: "Duplicate and provider-failure paths determine the verdict.",
+        },
+        hills: [
+          {
+            id: "H1",
+            title: "A retry reaches the idempotent boundary",
+            sliceType: "user-flow",
+            sliceName: "Duplicate payment settlement",
+            reviewQuestion: "Can a retry create more than one completion?",
+            container: {
+              responsibility: "Reuse one completion for a retry.",
+              interactions: "The retry reaches the idempotency boundary and stored result.",
+              outcome: "The payment remains completed once.",
+            },
+            components: [
+              {
+                id: "C1",
+                name: "Idempotency boundary",
+                responsibility: "Separate new settlement from retries.",
+                implementation: "Return the existing completion for the same key.",
+                verification: "The duplicate-settlement test observes one payment.",
+                codeEvidence: [
+                  {
+                    kind: "diff",
+                    location: "src/payments/settle.ts:42",
+                    content: "- complete(payment)\n+ return existing ?? complete(payment)",
+                    explanation: "The retry path reuses the existing completion.",
+                    tests: "duplicate-settlement test — PASS",
+                  },
+                ],
+              },
+            ],
+            contractIds: ["R1"],
+          },
+          {
+            id: "H2",
+            title: "Provider failure leaves the payment pending",
+            sliceType: "user-flow",
+            sliceName: "Provider failure settlement",
+            reviewQuestion: "Can provider failure record completion?",
+            container: {
+              responsibility: "Keep provider failure outside completion.",
+              interactions: "The provider failure returns to settlement.",
+              outcome: "No completed payment is visible.",
+            },
+            components: [
+              {
+                id: "C1",
+                name: "Provider failure branch",
+                responsibility: "Preserve pending state until provider success.",
+                implementation: "The failure path keeps the payment pending.",
+                verification: "The provider-failure test observes no completion.",
+                codeEvidence: [
+                  {
+                    kind: "diff",
+                    location: "src/payments/settle.ts:58",
+                    content: "- recordCompletion(payment)\n+ keepPending(payment)",
+                    explanation: "Failure no longer records completion.",
+                    tests: "provider-failure test — PASS",
+                  },
+                ],
+              },
+            ],
+            contractIds: ["D0", "R2"],
+          },
+        ],
       },
       scope: ["src/payments/settle.ts", "test/payments/settle.test.ts"],
       changeScope: ["src/payments/settle.ts", "test/payments/settle.test.ts"],
@@ -289,12 +389,11 @@ export default {
           /questionCount\s*=\s*[1-5]\b/i.test(comprehension) &&
           /answersHidden\s*=\s*true/i.test(comprehension) &&
           /prReadyBeforeQuiz\s*=\s*false/i.test(comprehension) &&
-          materializedVisible.includes("## ADR intent") &&
-          materializedVisible.indexOf("## ADR intent") <
-            materializedVisible.indexOf("## Findings") &&
-          /^## (?!ADR intent$|Visual map$|Findings$).+/m.test(
+          materializedVisible.includes("## Context") &&
+          materializedVisible.indexOf("## Context") < materializedVisible.indexOf("## Findings") &&
+          /^## (?!Context$|Visual map$|Findings$).+/m.test(
             materializedVisible.slice(
-              materializedVisible.indexOf("## ADR intent") + "## ADR intent".length,
+              materializedVisible.indexOf("## Context") + "## Context".length,
               materializedVisible.indexOf("## Findings"),
             ),
           ) &&
@@ -314,11 +413,11 @@ export default {
         /(?:the key is|what matters is|ultimately|firstly|secondly|thirdly).*(?:the key is|what matters is|ultimately|firstly|secondly|thirdly)/is,
         "does not use repeated filler bridges or forced numbered symmetry",
       ),
-      expectNoText(
-        materializedVisible,
-        /\b(?:src|test|tests)\/[\w./-]+|[\w./-]+\.(?:ts|js|mjs):\d+/i,
-        "does not invent code or test paths absent from the supplied evidence",
-      ),
+      {
+        pass: usesOnlySuppliedPaths(materializedVisible),
+        detail: "Code zoom contains only supplied implementation paths",
+        label: "does not invent code or test paths absent from the supplied evidence",
+      },
     ];
   },
 };

@@ -85,7 +85,7 @@ clear in one or two sentences and the artifact records that reason. Do not add
 several diagrams to satisfy a format quota or repeat the same relationship in
 several diagram types.
 
-## Remove AI slop
+## Remove mechanical writing patterns
 
 Every sentence must contribute a verdict, contract, evidence, impact, action, or
 risk. Delete:
@@ -116,16 +116,18 @@ reason to hide evidence or merge independent obligations.
   diagram.
 - **ADR sync** — visualize a changed decision flow, dependency/category movement,
   or unresolved ADR-versus-code branch. Keep semantic diffs in text.
-- **Implementation review** — after At a glance and scope, explain `ADR intent`
-  before implementation detail. Between `ADR intent` and findings, use
-  one or more subject-specific headings ordered by importance. Follow a verified
-  user, operator, request, state, or failure flow when it makes the behavior
-  easier to understand; otherwise lead with the most consequential behavior and
-  its result. Execution order is optional. Put findings before detailed contract
-  evidence. The standalone HTML keeps `PROVEN` coverage, scope, metrics, and
-  implementation choices collapsed, opens exceptional coverage, and links
-  findings to contract IDs, group them by required human action rather than
-  technical category, and preserve importance order inside each group. End the report
+- **Implementation review** — after At a glance and scope, use Context for
+  intent, preconditions, contracts, and scope/risk. Then use one
+  Container/Hill per vertical user flow, logical capability, or bounded context.
+  Inside each Hill, show Component implementation detail and collapsed Code
+  evidence containing a focused diff or current excerpt plus tests. These are
+  reading zooms. Technical layers, files,
+  and review phases never define Hill boundaries. Execution order is optional.
+  Put findings after the Hiking route. The standalone HTML keeps `PROVEN` cards, scope, metrics, and
+  implementation choices collapsed, opens exceptional cards, links findings to
+  the owning Hill and contract IDs, groups them by required human action rather
+  than technical category, and preserves importance order inside each group.
+  End the report
   with `Comprehension check` containing one to five material free-response
   questions. Keep the check collapsed. Reveal criteria only after answer entry
   and an explicit self-check action, and state that this comparison does not

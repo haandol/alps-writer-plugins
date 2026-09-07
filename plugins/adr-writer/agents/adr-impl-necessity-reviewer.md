@@ -104,7 +104,7 @@ PASS | FIX_REQUIRED | INCONCLUSIVE
   - observedBehavior: <plain-language behavior the review found>
   - requestedChange: <concrete next action>
   - editTargets: <files and symbols to change>
-  - completionCriteria: <observable result and verification that close the item>
+  - completionCriteria: <observable result and verification that complete the item>
   - confidence: high|medium|low
   - ADR: "<quote>"
   - code: <file:line + the actual code fragment>

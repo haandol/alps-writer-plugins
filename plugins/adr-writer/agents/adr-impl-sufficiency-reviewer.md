@@ -51,6 +51,8 @@ The caller passes:
 - (Optional) A summary of deterministic harness results (passes and errors from `adr-structure-lint` / `adr-invariants.sh`)
 - The approved `review-baseline.md`
 - The review artifact directory (create temporary reproduction files only there)
+- The preliminary Trail map and Review Hiking Hills derived from the confirmed
+  complete implementation scope
 
 ## Review procedure
 
@@ -82,13 +84,36 @@ grep finds "code where a keyword lives." So the cases where **a decision was mad
    - `implemented` — appears as decided (evidence: file:line). For a requirement-value row, quote the number in the evidence to show **the code's value equals the ADR's value.**
    - `missing` — no corresponding code found. **Before concluding "not there" from a failed search,** check call paths, indirect invocations, differently named symbols, and generated code once more (connected to the D2 false-positive caution below). If it is still absent, `[Spec violation]` (the default presumption right after implementation) — but if the decision is missing wholesale, follow the "unimplemented decision" handling in section 4.
    - `implemented differently` — the code does it another way → `[Spec violation]` or `[Decision changed in code]` (see the categories in section 4).
-3. **You cannot issue `PASS` while any row is unaccounted for** — "0 spec violations = PASS" makes it easy to mistake "found no violation" for "there is no violation." PASS requires every ledger row closed as `implemented`. If a row could not be accounted for because the scope could not be narrowed, record that fact itself in Findings as `[Spec violation]` (insufficient evidence, scope needs widening).
+3. **You cannot issue `PASS` while any row is unaccounted for** — "0 spec violations = PASS" makes it easy to mistake "found no violation" for "there is no violation." PASS requires every ledger row to have an implementation status, exact evidence, and executed tests. If a row could not be accounted for because the scope could not be narrowed, record that fact itself in Findings as `[Spec violation]` (insufficient evidence, scope needs widening).
 4. **Normalize each decision-ledger row into contract coverage** — assign `D0` to the ADR Decision and `R1..Rn` to every top-level bullet under `### Requirement contract` in source order. Keep exactly one row for every derived ID, with no omissions, duplicates, or invented IDs. For `D0`, use `Decision` as `adrBasis`; for each `Rn`, copy the complete source bullet verbatim into `adrBasis`. Record the requirement in recognizable ADR language, one of `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`, how the implementation meets or fails it, exact code or execution evidence, and the tests run. Include the ADR's implementation-independent observable evidence when selecting verification. Never bundle several requirements into one row. `PROVEN` means current evidence supports the obligation and no counterexample was found; it is not a mathematical proof.
 5. **Build Notable implementation choices once from code outward** — enumerate only material behavior and values the code selected but the ADR does not specify. Include dependencies, tuning defaults, internal fallback behavior, and inherited conventions only when they affect runtime behavior, failure handling, operations, cost, or future maintenance. For each item record only the selected value or behavior, `file:line` evidence, why it fits the ADR intent, and why it matters. Explain fit by naming the requirement or durable boundary the choice preserves; never invent historical rationale. Apply the admission gate to every candidate: an admitted contract or durable-boundary choice becomes `[Undecided behavior]`; replaceable implementation discretion stays in this read-only list.
-6. **Inspect externally checkable premises before closing a choice or contract row** — ask which provider guarantee, input provenance, ordering, uniqueness, trust-boundary fact, platform behavior, or similar fact must hold for the code to preserve the ADR contract and safety. Verify it from code, tests, configuration, or an authoritative external contract. Do not reconstruct or request private chain-of-thought. Missing historical rationale or alternatives is not a risk by itself, but if a premise is unverified and its falsehood could violate safety or an ADR contract row, emit `[Unverified risk]`, mark the affected coverage row `UNVERIFIED`, and do not issue `PASS`.
+6. **Inspect externally checkable premises before accepting a choice or contract row** — ask which provider guarantee, input provenance, ordering, uniqueness, trust-boundary fact, platform behavior, or similar fact must hold for the code to preserve the ADR contract and safety. Verify it from code, tests, configuration, or an authoritative external contract. Do not reconstruct or request private chain-of-thought. Missing historical rationale or alternatives is not a risk by itself, but if a premise is unverified and its falsehood could violate safety or an ADR contract row, emit `[Unverified risk]`, mark the affected coverage row `UNVERIFIED`, and do not issue `PASS`.
 7. **Resolve requirement gaps with domain knowledge before escalation** — prefer explicit contract implications, then project conventions and sibling behavior, then authoritative protocol/platform/domain rules, then broadly accepted reversible defaults below ADR resolution. Escalate only when several valid product outcomes remain or protected product policy is involved, and produce the complete Decision request.
 
 The decision ledger and Notable implementation choices are separate inputs to the final report. D1 and D2 fill the decision ledger; the single code-outward pass above makes important implementation discretion visible without promoting it into the ADR.
+
+### 2.6 Review Hiking — verify one Hill at a time
+
+Use the supplied Hills as the review sequence, while independently verifying
+that each Hill is a real vertical user flow, logical capability, or bounded
+context rather than a technical layer, file group, or review phase.
+
+For each Hill:
+
+1. Restate its one review question.
+2. Verify the Container responsibility, interactions, and outcome; then verify
+   every Component's detailed implementation, verification result, and focused
+   Code evidence.
+3. Select the relevant counterexample that could break the vertical result.
+4. Execute the linked targeted tests or a non-destructive reproduction.
+5. Account for every contract id assigned to the Hill before continuing.
+
+If a Hill boundary hides a cross-Hill invariant, move the complete invariant
+and all affected contract rows into one Hill or record the cross-Hill
+relationship explicitly. Never duplicate a contract row across Hills. A Hill
+with missing contract status, implementation evidence, or targeted test results
+makes the review `INCONCLUSIVE` or `FIX_REQUIRED`; a later Hill cannot override
+that result.
 
 ### 3. Review dimensions
 
@@ -99,7 +124,7 @@ Record what each dimension surfaces using the category tags in section 4. D1 and
 Check whether the gray zone the ADR decided appears verbatim in the code's behavior. This is this review's greatest value — catching an implementation that quietly skipped a decided behavior.
 
 - **Business rules translated into system behavior** — does a rule like "7-day grace period after signup" appear in code through the triggers, state values, and events the ADR specified?
-- **Requirement-value compliance (compare value by value)** — is each requirement value the ADR recorded (max turns, usage quotas, retention, size caps, response targets, lockout thresholds) enforced in code at **the same value**? Do not close on "there is limit logic" — **compare the numbers directly.** ADR "max 20 turns" ↔ code `30` is a `[Spec violation]`, and if the value is enforced nowhere at all (no cap check exists) that is likewise a violation.
+- **Requirement-value compliance (compare value by value)** — is each requirement value the ADR recorded (max turns, usage quotas, retention, size caps, response targets, lockout thresholds) enforced in code at **the same value**? Do not accept "there is limit logic" as evidence — **compare the numbers directly.** ADR "max 20 turns" ↔ code `30` is a `[Spec violation]`, and if the value is enforced nowhere at all (no cap check exists) that is likewise a violation.
 - **Non-numeric requirement compliance (compare item by item)** — are the ADR's allowed value sets, transition rules, mandatory fields, permissions, visibility, ordering, uniqueness, and units present in the code as written? If a state the ADR allows is absent from the code, or the code allows a state the ADR does not, that is a `[Spec violation]` (or `[Undecided behavior]` if the latter was intentional and passes the admission gate); a forbidden transition being reachable in code is a violation; a mandatory input implemented as optional is a violation. **Split enums** — a differing identifier name or wire representation is `[Impl-fact mismatch]` (code is authoritative, remove or correct the ADR detail via sync), but **a differing allowed set or transition rule is a `[Spec violation]`** (the ADR is authoritative). Never let a naming difference cover for a set violation. If the code imposes its own limit that the ADR never mentions, apply the admission gate: a requirement or admitted architectural constraint becomes `[Undecided behavior]`; a replaceable tuning value or implementation means goes into Notable implementation choices; an unconfirmed behavior becomes `[Unverified risk]` only when it could affect safety or the ADR contract.
 - **Domain rules and state transitions** — are transitions implemented per the ADR's state machine and invariants? Are any transitions missing, or any reachable that should not be?
 - **External-dependency fallback/degradation** — the ADR says "on failure return the last cached result, and empty if none," but does the code simply throw?
@@ -159,7 +184,7 @@ The code↔ADR link lives neither in the code nor in the mapping (`authoring-rul
 
 Separate the character of each code/ADR disagreement. This is **symmetric** with `/adr-sync`'s "source-of-truth scope": sync removes code-level detail from the ADR while preserving admitted contracts and decisions; impl-review runs right after implementation, so **the admitted ADR contract and decision are the spec** and the code should have followed them.
 
-- **[Spec violation]** — the code **did not honor** the ADR's gray-zone decision (it skipped a decided behavior or did it differently). **A decision left wholly unimplemented** (a ledger row closed as `missing`) also belongs here — it is this review's primary output and the form most easily missed. The ADR is authoritative, so this is **a code fix** → `FIX_REQUIRED`.
+- **[Spec violation]** — the code **did not honor** the ADR's gray-zone decision (it skipped a decided behavior or did it differently). **A decision left wholly unimplemented** (a ledger row marked `missing`) also belongs here — it is this review's primary output and the form most easily missed. The ADR is authoritative, so this is **a code fix** → `FIX_REQUIRED`.
 - **[Decision changed in code]** — the code deliberately implemented a **different but coherent** decision (someone changed their mind mid-implementation without updating the ADR — an ADR-first cycle violation). This agent never rules alone on which side is right (the same stance as `/adr-sync`). Present the caller with the branch: update the ADR (edit-in-place vs supersede — `authoring-rules.md` "Changing an ADR — edit-in-place vs supersede") or revert the code.
 - **[Undecided behavior]** — the code does **something extra the ADR never decided and that extra behavior passes the ADR admission gate** (it changes a requirement contract, durable boundary, provider/model/fallback, key design, algorithm, or cross-implementation trade-off). Present two branches: add the admitted decision to the ADR or remove it from code. **Do not file replaceable implementation means here** — libraries, SDKs, frameworks, middleware, credential provider chains, signers, authentication adapters, module structure, and tuning values are expected implementation discretion when the same contracts and boundaries hold.
 - **Notable implementation choices** — code does something the ADR correctly leaves to implementation discretion. Record only material choices with the selected value or behavior, `file:line` evidence, why it fits the ADR intent, and why it matters. Intent fit states which contract or boundary remains intact; it does not reconstruct the implementer's private reasoning. This is not a finding and does not change the verdict. If the choice passes the admission gate, classify it as `[Undecided behavior]` instead. If the actual behavior, call path, or externally checkable premise cannot be confirmed and the uncertainty could affect safety or the contract, classify it as `[Unverified risk]` instead of guessing.
@@ -222,6 +247,18 @@ Include only choices that remain below ADR resolution after applying the admissi
 | ----------- | ------ | --------- | ------------------------------- | -------- | ----- |
 
 Use exactly `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`. Include every independent decision-ledger row. PASS requires every row to be `PROVEN`.
+
+### Review Hiking
+
+- Context
+  - intent: `<ADR intent and adopted direction>`
+  - preconditions: `<shared conditions and surrounding systems>`
+  - contracts: `<core contract baseline>`
+  - scopeAndRisk: `<review scope and material uncertainty>`
+- H1 `<title>` — Container slice: `<type / name>` — question: `<one review question>` — contracts: `<D0, R1...>`
+  - responsibility/interactions/outcome: `<Container-level behavior>`
+  - Components: `<C1..Cn detailed implementation and verification>`
+  - Code: `<focused diff or excerpt, location, explanation, tests>`
 
 ### Tests executed
 - `<command>` → PASS|FAIL|NOT RUN — <key result>

@@ -53,6 +53,81 @@ const COVERAGE_STATUS_LABELS = {
   },
 };
 
+const HILL_EVIDENCE_LABELS = {
+  en: {
+    implementation: "Implementation",
+    evidence: "Evidence",
+    tests: "Tests",
+  },
+  ko: {
+    implementation: "구현",
+    evidence: "근거",
+    tests: "테스트",
+  },
+};
+const REVIEW_CONTEXT_LABELS = {
+  en: {
+    intent: "Intent",
+    preconditions: "Preconditions and surrounding context",
+    contracts: "Core contracts",
+    scopeAndRisk: "Review scope and risk",
+  },
+  ko: {
+    intent: "의도",
+    preconditions: "사전 조건·주변 컨텍스트",
+    contracts: "핵심 계약",
+    scopeAndRisk: "검토 범위·위험",
+  },
+};
+const CONTAINER_LABELS = {
+  en: {
+    slice: "Vertical slice",
+    responsibility: "Responsibility",
+    interactions: "Interactions",
+    outcome: "Observable outcome",
+  },
+  ko: {
+    slice: "수직 단위",
+    responsibility: "책임",
+    interactions: "상호작용",
+    outcome: "관찰 결과",
+  },
+};
+const COMPONENT_LABELS = {
+  en: {
+    component: "Component",
+    responsibility: "Responsibility",
+    implementation: "Detailed implementation",
+    verification: "Verification result",
+    code: "Code",
+    location: "Location",
+    explanation: "Why this code matters",
+    tests: "Tests",
+  },
+  ko: {
+    component: "Component",
+    responsibility: "책임",
+    implementation: "상세 구현",
+    verification: "검증 결과",
+    code: "Code",
+    location: "위치",
+    explanation: "코드 근거 설명",
+    tests: "테스트",
+  },
+};
+const SLICE_TYPE_LABELS = {
+  en: {
+    "user-flow": "user flow",
+    "logical-capability": "logical capability",
+    "bounded-context": "bounded context",
+  },
+  ko: {
+    "user-flow": "사용자 흐름",
+    "logical-capability": "논리 기능",
+    "bounded-context": "바운디드 컨텍스트(하나의 업무 경계)",
+  },
+};
+
 function reportLanguage(data) {
   return String(data.language || "")
     .toLowerCase()
@@ -62,22 +137,154 @@ function reportLanguage(data) {
 }
 
 /**
- * Materialize the complete ledger as a concise human summary.
- * The seven audit fields remain authoritative in findings.json.
+ * Materialize the complete ledger as a concise Hiking route summary.
+ * The seven audit fields remain authoritative in findings.json and each Hill
+ * owns the detailed human-readable evidence for its assigned contracts.
  */
-function coverageTable(rows, language) {
+function coverageTable(rows, language, reviewHike) {
   const headers =
     language === "ko"
-      ? ["계약", "상태", "요구사항", "검토 결과"]
-      : ["Contract", "Status", "Requirement", "Review result"];
+      ? ["계약", "상태", "Hill", "요구사항"]
+      : ["Contract", "Status", "Hill", "Requirement"];
+  const hillByContract = new Map(
+    reviewHike.hills.flatMap((hill) => hill.contractIds.map((contractId) => [contractId, hill.id])),
+  );
   return [
     `| ${headers.join(" | ")} |`,
     "| --- | --- | --- | --- |",
     ...rows.map(
       (row) =>
-        `| ${tableCell(row.contractId)} | ${tableCell(COVERAGE_STATUS_LABELS[language][row.status] || row.status)} | ${tableCell(row.requirement)} | ${tableCell(row.implementation)} |`,
+        `| ${tableCell(row.contractId)} | ${tableCell(COVERAGE_STATUS_LABELS[language][row.status] || row.status)} | ${tableCell(hillByContract.get(row.contractId))} | ${tableCell(row.requirement)} |`,
     ),
   ].join("\n");
+}
+
+function hillEvidence(rows, language) {
+  const labels = HILL_EVIDENCE_LABELS[language];
+  return rows
+    .map((row) => {
+      const status = COVERAGE_STATUS_LABELS[language][row.status] || row.status;
+      return [
+        `### ${tableCell(row.contractId)} · ${tableCell(status)} · ${tableCell(row.requirement)}`,
+        "",
+        `- ${labels.implementation}: ${tableCell(row.implementation)}`,
+        `- ${labels.evidence}: ${tableCell(row.evidence)}`,
+        `- ${labels.tests}: ${tableCell(row.tests)}`,
+      ].join("\n");
+    })
+    .join("\n\n");
+}
+
+/**
+ * Materialize the C4-style Context zoom so Markdown and HTML share one source.
+ * The structured JSON remains authoritative and the generated block is replaceable.
+ */
+function reviewContext(context, language) {
+  const labels = REVIEW_CONTEXT_LABELS[language];
+  const lines = [];
+  for (const field of ["intent", "preconditions", "contracts", "scopeAndRisk"]) {
+    lines.push(`### ${labels[field]}`, "", tableCell(context[field]), "");
+  }
+  return lines.join("\n").trim();
+}
+
+function containerZoom(hill, language) {
+  const labels = CONTAINER_LABELS[language];
+  const sliceType = SLICE_TYPE_LABELS[language][hill.sliceType] || hill.sliceType;
+  return [
+    `- ${labels.slice}: ${tableCell(hill.sliceName)} (${tableCell(sliceType)})`,
+    "",
+    `### ${labels.responsibility}`,
+    "",
+    tableCell(hill.container.responsibility),
+    "",
+    `### ${labels.interactions}`,
+    "",
+    tableCell(hill.container.interactions),
+    "",
+    `### ${labels.outcome}`,
+    "",
+    tableCell(hill.container.outcome),
+  ].join("\n");
+}
+
+function componentZoom(components, language) {
+  const labels = COMPONENT_LABELS[language];
+  return components
+    .map((component) => {
+      const codeBlocks = component.codeEvidence
+        .map((codeEvidence, index) =>
+          [
+            `#### ${labels.code} ${index + 1} · ${tableCell(codeEvidence.kind)} · ${tableCell(codeEvidence.location)}`,
+            "",
+            `\`\`\`${codeEvidence.kind === "diff" ? "diff" : ""}`,
+            String(codeEvidence.content).trim(),
+            "```",
+            "",
+            `- ${labels.explanation}: ${tableCell(codeEvidence.explanation)}`,
+            `- ${labels.tests}: ${tableCell(codeEvidence.tests)}`,
+          ].join("\n"),
+        )
+        .join("\n\n");
+      return [
+        `### ${labels.component} ${tableCell(component.id)} · ${tableCell(component.name)}`,
+        "",
+        `- ${labels.responsibility}: ${tableCell(component.responsibility)}`,
+        `- ${labels.implementation}: ${tableCell(component.implementation)}`,
+        `- ${labels.verification}: ${tableCell(component.verification)}`,
+        "",
+        codeBlocks,
+      ].join("\n");
+    })
+    .join("\n\n");
+}
+
+function replaceGeneratedBlock(source, heading, placeholder, generatedStart, generatedEnd, body) {
+  const lines = source.split(/\r?\n/);
+  const start = lines.findIndex((line) => line.trim() === heading);
+  if (start < 0) usage(`implementation-review.md missing heading: ${heading}`);
+  const stopCandidate = lines.findIndex((line, index) => index > start && /^##\s+/.test(line));
+  const stop = stopCandidate < 0 ? lines.length : stopCandidate;
+  const placeholderIndex = lines.findIndex(
+    (line, index) => index > start && index < stop && line.trim() === placeholder,
+  );
+  const generatedStartIndex = lines.findIndex(
+    (line, index) => index > start && index < stop && line.trim() === generatedStart,
+  );
+  const generatedEndIndex =
+    generatedStartIndex < 0
+      ? -1
+      : lines.findIndex(
+          (line, index) =>
+            index > generatedStartIndex && index < stop && line.trim() === generatedEnd,
+        );
+  const block = [generatedStart, "", body, "", generatedEnd];
+  if (placeholderIndex >= 0) {
+    return [
+      ...lines.slice(0, placeholderIndex),
+      ...block,
+      ...lines.slice(placeholderIndex + 1),
+    ].join("\n");
+  }
+  if (generatedStartIndex >= 0 && generatedEndIndex > generatedStartIndex) {
+    return [
+      ...lines.slice(0, generatedStartIndex),
+      ...block,
+      ...lines.slice(generatedEndIndex + 1),
+    ].join("\n");
+  }
+  usage(`implementation-review.md ${heading} missing generated content marker`);
+}
+
+function replaceHillEvidence(source, hill, rows, language) {
+  return replaceGeneratedBlock(
+    source,
+    `## ${hill.title}`,
+    "<!-- generated hill evidence from findings.json -->",
+    "<!-- generated hill evidence start -->",
+    "<!-- generated hill evidence end -->",
+    hillEvidence(rows, language),
+  );
 }
 
 function choicesTable(choices) {
@@ -129,6 +336,9 @@ function main() {
   if (!Array.isArray(data.contractCoverage)) {
     usage("findings.json contractCoverage must be an array");
   }
+  if (!Array.isArray(data.reviewHike?.hills) || data.reviewHike.hills.length === 0) {
+    usage("findings.json reviewHike.hills must be a non-empty array");
+  }
   if (!Array.isArray(data.implementationChoices)) {
     usage("findings.json implementationChoices must be an array");
   }
@@ -142,13 +352,46 @@ function main() {
     `- Action: ${data.atAGlance.action}`,
     `- Risk: ${data.atAGlance.risk}`,
   ].join("\n");
+  const language = reportLanguage(data);
 
   report = replaceSection(report, "At a glance", "Review mode", atAGlance);
+  report = replaceGeneratedBlock(
+    report,
+    "## Context",
+    "<!-- generated review context from findings.json -->",
+    "<!-- generated review context start -->",
+    "<!-- generated review context end -->",
+    reviewContext(data.reviewHike.context, language),
+  );
+  for (const hill of data.reviewHike.hills) {
+    report = replaceGeneratedBlock(
+      report,
+      `## ${hill.title}`,
+      "<!-- generated container zoom from findings.json -->",
+      "<!-- generated container zoom start -->",
+      "<!-- generated container zoom end -->",
+      containerZoom(hill, language),
+    );
+    report = replaceGeneratedBlock(
+      report,
+      `## ${hill.title}`,
+      "<!-- generated component zoom from findings.json -->",
+      "<!-- generated component zoom start -->",
+      "<!-- generated component zoom end -->",
+      componentZoom(hill.components, language),
+    );
+    const rows = hill.contractIds.map((contractId) => {
+      const row = data.contractCoverage.find((candidate) => candidate.contractId === contractId);
+      if (!row) usage(`reviewHike Hill ${hill.id} references unknown contract: ${contractId}`);
+      return row;
+    });
+    report = replaceHillEvidence(report, hill, rows, language);
+  }
   report = replaceSection(
     report,
     "ADR contract coverage",
     "Notable implementation choices",
-    coverageTable(data.contractCoverage, reportLanguage(data)),
+    coverageTable(data.contractCoverage, language, data.reviewHike),
   );
   report = replaceSection(
     report,

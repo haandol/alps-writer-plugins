@@ -10,6 +10,7 @@ test("the impact map selects related scenarios without becoming a second contrac
   const { scenarioNamesForChangedPaths } = await import(path.join(EVALS, "impact-map.mjs"));
   const scenarios = [
     { name: "alps-reference-routes-only-durable-context" },
+    { name: "lite-alps-resume-preserves-proposal-first" },
     { name: "feature-handoff-ownership-transfer" },
     { name: "author-keeps-values-and-lints" },
     { name: "impl-review-evidence-package-pass" },
@@ -17,7 +18,11 @@ test("the impact map selects related scenarios without becoming a second contrac
 
   assert.deepEqual(
     [...scenarioNamesForChangedPaths(["plugins/alps-writer/src/guides/04.md"], scenarios)].sort(),
-    ["alps-reference-routes-only-durable-context", "feature-handoff-ownership-transfer"],
+    [
+      "alps-reference-routes-only-durable-context",
+      "feature-handoff-ownership-transfer",
+      "lite-alps-resume-preserves-proposal-first",
+    ],
   );
   assert.deepEqual(
     [
@@ -29,6 +34,15 @@ test("the impact map selects related scenarios without becoming a second contrac
     [...scenarioNamesForChangedPaths(["README.md"], scenarios)],
     [],
     "repository prose alone must not trigger live-model evals",
+  );
+  assert.deepEqual(
+    [
+      ...scenarioNamesForChangedPaths(
+        ["plugins/alps-writer/src/tools/documents/service.ts"],
+        scenarios,
+      ),
+    ].sort(),
+    ["alps-reference-routes-only-durable-context", "lite-alps-resume-preserves-proposal-first"],
   );
 });
 

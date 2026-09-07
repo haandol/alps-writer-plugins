@@ -149,6 +149,11 @@ disposable reproduction artifacts.
      minimum solution and Essential User Experiences without asking the user to
      design a flow; Section 4 then proposes the concrete starting state, input,
      user actions, and visible results from those outcome-only experiences.
+   - `lite-alps-resume-preserves-proposal-first` feeds the actual
+     `DocumentService.loadDocument` response into the Lite Section 2 prompt. It
+     catches a shared Full/Lite resume banner that restores Full's blanket
+     no-auto-generation rule and suppresses Lite's proposal-first Sections 2
+     and 4.
    - `lite-alps-skips-empty-optional-section` ↔
      `lite-alps-records-explicit-exclusions` check both directions of current
      Lite Section 3. No explicit exclusions means skip the Section and continue

@@ -28,7 +28,7 @@
         {
           "path": "docs/adr/adr-authoring/decision-presentation/0001-present-decision-digest-and-semantic-diff.md",
           "status": "Accepted (2026-09-07)",
-          "summary": "ADR 작성과 리뷰는 근거 품질을 우선하고 self-check와 독립 review를 위험에 따라 선택한다"
+          "summary": "ADR 작성과 리뷰는 구체적인 문장 패턴을 점검하고 근거 품질에 따라 self-check와 독립 review를 선택한다"
         }
       ],
       "dependsOn": ["adr-authoring/current-state"]
@@ -116,7 +116,7 @@
         {
           "path": "docs/adr/adr-cycle/implementation-review/0001-validated-low-risk-refactoring.md",
           "status": "Accepted (2026-09-07)",
-          "summary": "구현 리뷰는 위험에 비례한 evidence와 선택적 이해 지원을 제공하고 fingerprint URL로 최신 HTML을 연다"
+          "summary": "구현 리뷰는 Context→Container/Hill→Component→Code 트리로 의도·기능·상세 구현·핵심 diff를 보여준다"
         }
       ],
       "dependsOn": []
@@ -138,7 +138,7 @@
         {
           "path": "docs/adr/delivery/development-flow/0001-safe-proportional-development-gates.md",
           "status": "Accepted (2026-09-07)",
-          "summary": "개발 흐름은 안전 게이트를 유지하되 별도 refactor pass와 이해 지원을 변경 위험에 비례해 실행한다"
+          "summary": "ADR 구현은 수직 Hill마다 계약·구현·targeted test 결과를 확인한 뒤 전체 검증한다"
         }
       ],
       "dependsOn": ["adr-cycle/implementation-review", "alps-authoring/spec-handoff"]

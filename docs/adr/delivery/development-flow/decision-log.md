@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-09-07 — current ADR: [safe proportional development gates](./0001-safe-proportional-development-gates.md)** — Implementation Hiking의 모호한 완료 표현을 구현 완료, targeted test 명령과 관찰 결과 확인으로 구체화했다.
+- **2026-09-07 — current ADR: [safe proportional development gates](./0001-safe-proportional-development-gates.md)** — ADR 구현을 사용자 흐름·논리 기능·bounded context별 Implementation Hiking으로 진행하고, 각 수직 Hill에서 컨텍스트, 핵심 설계·계약, 필요한 계층의 구현과 targeted test 결과를 확인한 뒤 다음 Hill로 이동하도록 변경했다.
 - **2026-09-07 — current ADR: [safe proportional development gates](./0001-safe-proportional-development-gates.md)** — 별도 refactor pass를 고정 단계가 아니라 중복·효율·복잡도·다중 call site 신호가 있을 때 실행하는 위험 비례 gate로 변경했다.
 - **2026-09-03 — current ADR: [safe proportional development gates](./0001-safe-proportional-development-gates.md)** — ADR 구현 함수에 언어 표준 문서 주석으로 존재 이유와 동작을 남기고, 각 구현 동작의 ideal case와 관련 edge case를 자동 테스트로 검증하도록 완료 계약을 강화했다. 코드와 모든 주석은 ADR 파일이나 번호를 직접 참조하지 않는다.
 - **2026-08-28 — current ADR: [safe proportional development gates](./0001-safe-proportional-development-gates.md)** — 사용자-visible 복잡도 평가와 안전 게이트는 유지하면서 플러그인을 제거해도 PRD·ADR·코드·테스트가 독립적으로 문맥을 보존하도록 하네스를 비침습적 관리 계층으로 정의하고, 서브에이전트 수·종류·실행 순서와 모델 선택을 현재 모델의 일시적 orchestration 판단으로 내렸다.

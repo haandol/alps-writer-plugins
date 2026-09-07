@@ -155,7 +155,7 @@ export const AUTHORITY = {
 export const VERDICTS = {
   PASS: {
     hue: "#2e7d4f",
-    note: "No removable change and no confirmed counterexample; the decision ledger and targeted tests are closed.",
+    note: "No removable change and no confirmed counterexample; every decision-ledger row has evidence and the targeted tests passed.",
   },
   FIX_REQUIRED: {
     hue: "#b4690e",

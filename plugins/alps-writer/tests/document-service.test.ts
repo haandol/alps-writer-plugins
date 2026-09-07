@@ -93,7 +93,9 @@ test("legacy Technology Stack content migrates to Architecture Constraints on sa
     );
   fs.writeFileSync(target, legacy);
 
-  assert.match(service.loadDocument(target), /ALPS Document: demo/);
+  const resumed = service.loadDocument(target);
+  assert.match(resumed, /ALPS Document: demo/);
+  assert.match(resumed, /DO NOT auto-generate content/);
   assert.match(
     service.saveSection(
       4,

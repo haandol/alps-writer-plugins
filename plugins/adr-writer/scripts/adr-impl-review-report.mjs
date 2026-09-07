@@ -45,6 +45,47 @@
 //       "action": "next required action, or None",
 //       "risk": "remaining uncertainty, or None"
 //     },
+//     "visualization": {
+//       "required": true,
+//       "reason": "why the whole-route map reduces reconstruction work",
+//       "diagramType": "flowchart",
+//       "readingGuide": "what this map's boxes, arrows, and Hill routes mean"
+//     },
+//     "reviewHike": {                                     // required by validator
+//       "context": {
+//         "intent": "the ADR intent and adopted direction",
+//         "preconditions": "the system conditions and neighboring boundaries",
+//         "contracts": "the core contracts under review",
+//         "scopeAndRisk": "the implementation scope and material uncertainty"
+//       },
+//       "hills": [{
+//         "id": "H1",
+//         "title": "A duplicate request reuses the completed payment",
+//         "sliceType": "user-flow" | "logical-capability" | "bounded-context",
+//         "sliceName": "Duplicate payment settlement",
+//         "reviewQuestion": "Can the same payment request complete more than once?",
+//         "container": {
+//           "responsibility": "reuse one durable settlement",
+//           "interactions": "request, completion boundary, and stored result",
+//           "outcome": "the customer is charged at most once"
+//         },
+//         "components": [{
+//           "id": "C1",
+//           "name": "Idempotent completion boundary",
+//           "responsibility": "separate new work from retries",
+//           "implementation": "return the stored result for a completed key",
+//           "verification": "duplicate-settlement test passes",
+//           "codeEvidence": [{
+//             "kind": "diff",
+//             "location": "src/payments/settle.ts:42",
+//             "content": "- write(result)\\n+ return existing ?? write(result)",
+//             "explanation": "the retry path no longer writes twice",
+//             "tests": "pnpm test -- settlement — PASS"
+//           }]
+//         }],
+//         "contractIds": ["D0", "R1"]
+//       }]
+//     },
 //     "explanation":"/tmp/.../explanation.md",
 //     "report":     "/tmp/.../implementation-review.md",
 //     "scope":      ["src/checkout/handler.ts", "..."],   // complete ADR implementation scope
@@ -198,6 +239,29 @@ const UI = {
     noCounterexample: "No additional work was identified.",
     incomplete: "No work item was confirmed, but the review did not complete.",
     evidence: "Technical evidence",
+    hill: "Container / Hill",
+    reviewQuestion: "What this Container verifies",
+    reviewContext: "Context · Intent and contracts",
+    verticalSlice: "Vertical slice",
+    sliceTypeLabels: {
+      "user-flow": "user flow",
+      "logical-capability": "logical capability",
+      "bounded-context": "bounded context",
+    },
+    contextIntent: "Intent",
+    contextPreconditions: "Preconditions and surrounding context",
+    contextContracts: "Core contracts",
+    contextScopeAndRisk: "Review scope and risk",
+    containerResponsibility: "Responsibility",
+    containerInteractions: "Interactions",
+    containerOutcome: "Observable outcome",
+    components: "Components",
+    componentResponsibility: "Responsibility",
+    componentImplementation: "Detailed implementation",
+    componentVerification: "Verification result",
+    codeEvidence: "Code",
+    codeLocation: "Location",
+    codeExplanation: "Why this code matters",
     coverage: "Contract verification",
     coverageSummary: "Contract verification summary",
     taskFix: "Fix required",
@@ -273,6 +337,29 @@ const UI = {
     noCounterexample: "추가로 처리할 작업이 없습니다.",
     incomplete: "확정된 작업은 없지만 리뷰가 완료되지 않았습니다.",
     evidence: "상세 기술 근거",
+    hill: "Container / 낮은 언덕",
+    reviewQuestion: "이 Container에서 확인할 것",
+    reviewContext: "Context · 의도와 계약",
+    verticalSlice: "수직 단위",
+    sliceTypeLabels: {
+      "user-flow": "사용자 흐름",
+      "logical-capability": "논리 기능",
+      "bounded-context": "바운디드 컨텍스트(하나의 업무 경계)",
+    },
+    contextIntent: "의도",
+    contextPreconditions: "사전 조건·주변 컨텍스트",
+    contextContracts: "핵심 계약",
+    contextScopeAndRisk: "검토 범위·위험",
+    containerResponsibility: "책임",
+    containerInteractions: "상호작용",
+    containerOutcome: "관찰 결과",
+    components: "Components",
+    componentResponsibility: "책임",
+    componentImplementation: "상세 구현",
+    componentVerification: "검증 결과",
+    codeEvidence: "Code",
+    codeLocation: "위치",
+    codeExplanation: "코드 근거 설명",
     coverage: "계약 검증 결과",
     coverageSummary: "계약 검증 요약",
     taskFix: "수정 필요",
@@ -661,7 +748,7 @@ function normalizeAtAGlance(data) {
 
 /**
  * Extract the reader-facing narrative in its authored priority order.
- * The renderer keeps ADR intent and subject-specific flow headings instead of rebuilding a fixed tutorial template.
+ * The renderer keeps Context and subject-specific flow headings instead of rebuilding a fixed tutorial template.
  */
 function markdownSectionsBetween(source, startHeading, endHeading) {
   const lines = String(source ?? "").split(/\r?\n/);
@@ -715,10 +802,10 @@ function loadNarrativeSections(data, inputPath) {
   if (!existsSync(reportPath)) return [];
 
   const report = readFileSync(reportPath, "utf8");
-  const beforeFindings = markdownSectionsBetween(report, "ADR intent", "Findings");
+  const beforeFindings = markdownSectionsBetween(report, "Context", "Findings");
   return beforeFindings.length
     ? beforeFindings
-    : markdownSectionsBetween(report, "ADR intent", "ADR contract coverage");
+    : markdownSectionsBetween(report, "Context", "ADR contract coverage");
 }
 
 /**
@@ -768,6 +855,73 @@ function normalizeContractCoverage(data) {
   }));
 }
 
+function normalizeReviewHike(data) {
+  const value =
+    data.reviewHike && typeof data.reviewHike === "object" && !Array.isArray(data.reviewHike)
+      ? data.reviewHike
+      : {};
+  const hills = Array.isArray(value.hills) ? value.hills : [];
+  return {
+    context: {
+      intent: value.context?.intent || "",
+      preconditions: value.context?.preconditions || "",
+      contracts: value.context?.contracts || "",
+      scopeAndRisk: value.context?.scopeAndRisk || "",
+    },
+    hills: hills.map((hill, index) => ({
+      id: hill?.id || `H${index + 1}`,
+      title: hill?.title || `Hill ${index + 1}`,
+      sliceType: hill?.sliceType || "",
+      sliceName: hill?.sliceName || "",
+      reviewQuestion: hill?.reviewQuestion || "",
+      container: {
+        responsibility: hill?.container?.responsibility || "",
+        interactions: hill?.container?.interactions || "",
+        outcome: hill?.container?.outcome || "",
+      },
+      components: (Array.isArray(hill?.components) ? hill.components : []).map(
+        (component, componentIndex) => ({
+          id: component?.id || `C${componentIndex + 1}`,
+          name: component?.name || "",
+          responsibility: component?.responsibility || "",
+          implementation: component?.implementation || "",
+          verification: component?.verification || "",
+          codeEvidence: (Array.isArray(component?.codeEvidence) ? component.codeEvidence : []).map(
+            (codeEvidence) => ({
+              kind: codeEvidence?.kind || "",
+              location: codeEvidence?.location || "",
+              content: codeEvidence?.content || "",
+              explanation: codeEvidence?.explanation || "",
+              tests: codeEvidence?.tests || "",
+            }),
+          ),
+        }),
+      ),
+      contractIds: Array.isArray(hill?.contractIds) ? hill.contractIds : [],
+    })),
+  };
+}
+
+function stripGeneratedHillContent(body) {
+  return String(body ?? "")
+    .replace(
+      /<!-- generated container zoom start -->[\s\S]*?<!-- generated container zoom end -->/g,
+      "",
+    )
+    .replace(
+      /<!-- generated component zoom start -->[\s\S]*?<!-- generated component zoom end -->/g,
+      "",
+    )
+    .replace(
+      /<!-- generated hill evidence start -->[\s\S]*?<!-- generated hill evidence end -->/g,
+      "",
+    )
+    .replace(/<!-- generated container zoom from findings\.json -->/g, "")
+    .replace(/<!-- generated component zoom from findings\.json -->/g, "")
+    .replace(/<!-- generated hill evidence from findings\.json -->/g, "")
+    .trim();
+}
+
 function contractCoverageCard(row, index, total, ui) {
   const idx = String(index + 1).padStart(2, "0");
   const status = String(row.status || "UNVERIFIED").toUpperCase();
@@ -806,6 +960,127 @@ function contractCoverageCard(row, index, total, ui) {
     </details>
     </div>
   </details>`;
+}
+
+function contextItems(context, ui) {
+  return [
+    [ui.contextIntent, context.intent],
+    [ui.contextPreconditions, context.preconditions],
+    [ui.contextContracts, context.contracts],
+    [ui.contextScopeAndRisk, context.scopeAndRisk],
+  ]
+    .map(
+      ([label, value]) =>
+        `<div class="hill-story__step"><span>${esc(label)}</span><p>${esc(value)}</p></div>`,
+    )
+    .join("");
+}
+
+function reviewContextCard(context, ui) {
+  return `
+  <section class="hill hill--foundation" id="review-context">
+    <header class="hill__head">
+      <span class="tag hill__tag">${esc(ui.reviewContext)}</span>
+    </header>
+    <div class="hill-story" aria-label="${esc(ui.reviewContext)}">${contextItems(context, ui)}</div>
+  </section>`;
+}
+
+function codeEvidenceCard(codeEvidence, index, ui, hillId, componentId) {
+  const kind = String(codeEvidence.kind || "excerpt");
+  return `
+    <details class="code-evidence" id="code-${esc(hillId)}-${esc(componentId)}-${index + 1}">
+      <summary>${esc(ui.codeEvidence)} ${index + 1} · ${esc(kind)} · ${esc(
+        codeEvidence.location,
+      )}</summary>
+      <div class="code-evidence__body">
+        <div class="meta__row"><span class="meta__k">${esc(ui.codeLocation)}</span><span class="meta__v meta__v--mono">${esc(codeEvidence.location)}</span></div>
+        <pre><code>${esc(codeEvidence.content)}</code></pre>
+        <div class="meta__row"><span class="meta__k">${esc(ui.codeExplanation)}</span><span class="meta__v">${esc(codeEvidence.explanation)}</span></div>
+        <div class="meta__row"><span class="meta__k">${esc(ui.tests)}</span><span class="meta__v meta__v--mono">${esc(codeEvidence.tests)}</span></div>
+      </div>
+    </details>`;
+}
+
+function componentCard(component, ui, hillId) {
+  const codeCards = component.codeEvidence
+    .map((codeEvidence, index) => codeEvidenceCard(codeEvidence, index, ui, hillId, component.id))
+    .join("\n");
+  return `
+    <article class="component" id="component-${esc(hillId)}-${esc(component.id.toLowerCase())}">
+      <header class="component__head">
+        <span class="tag component__tag">Component ${esc(component.id)}</span>
+        <h3>${esc(component.name)}</h3>
+      </header>
+      <div class="component__grid">
+        <div><span>${esc(ui.componentResponsibility)}</span><p>${esc(component.responsibility)}</p></div>
+        <div><span>${esc(ui.componentImplementation)}</span><p>${esc(component.implementation)}</p></div>
+        <div><span>${esc(ui.componentVerification)}</span><p>${esc(component.verification)}</p></div>
+      </div>
+      <div class="component__code">${codeCards}</div>
+    </article>`;
+}
+
+function reviewHillCard(hill, body, rows, ui) {
+  const sliceType = ui.sliceTypeLabels?.[hill.sliceType] || hill.sliceType;
+  const hillId = hill.id.toLowerCase();
+  const components = hill.components
+    .map((component) => componentCard(component, ui, hillId))
+    .join("\n");
+  const coverageCards = rows
+    .map((row, rowIndex) => contractCoverageCard(row, rowIndex, rows.length, ui))
+    .join("\n");
+
+  return `
+  <section class="hill" id="hill-${esc(hill.id.toLowerCase())}">
+    <header class="hill__head">
+      <span class="tag hill__tag">${esc(ui.hill)} ${esc(hill.id)}</span>
+    </header>
+    <h2 class="explanation__title">${esc(hill.title)}</h2>
+    <p class="hill__slice"><span class="side__label">${esc(ui.verticalSlice)}</span> ${esc(
+      hill.sliceName,
+    )} <code>${esc(sliceType)}</code></p>
+    <div class="hill__question">
+      <span class="side__label">${esc(ui.reviewQuestion)}</span>
+      <p>${esc(hill.reviewQuestion)}</p>
+    </div>
+    <div class="container-zoom" aria-label="${esc(ui.hill)}">
+      <div><span>${esc(ui.containerResponsibility)}</span><p>${esc(hill.container.responsibility)}</p></div>
+      <div><span>${esc(ui.containerInteractions)}</span><p>${esc(hill.container.interactions)}</p></div>
+      <div><span>${esc(ui.containerOutcome)}</span><p>${esc(hill.container.outcome)}</p></div>
+    </div>
+    <h3 class="component-section-title">${esc(ui.components)}</h3>
+    <div class="components">${components}</div>
+    ${
+      body
+        ? `<div class="explanation__body">${renderMarkdown(
+            stripGeneratedHillContent(body),
+            ui,
+          )}</div>`
+        : ""
+    }
+    <div class="hill__evidence">${coverageCards}</div>
+  </section>`;
+}
+
+function coverageIndex(rows, hillByContract, ui) {
+  return `<ul class="coverage-index">${rows
+    .map((row) => {
+      const hill = hillByContract.get(row.contractId);
+      const status =
+        {
+          PROVEN: ui.statusProven,
+          VIOLATED: ui.statusViolated,
+          UNVERIFIED: ui.statusUnverified,
+          CONTRADICTED: ui.statusContradicted,
+        }[row.status] || ui.statusUnverified;
+      return `<li><a href="#contract-${esc(row.contractId)}">${esc(row.contractId)}</a><span>${esc(
+        status,
+      )}</span><a href="#hill-${esc((hill?.id || "").toLowerCase())}">${esc(
+        hill?.id || "",
+      )}</a><p>${esc(row.requirement)}</p></li>`;
+    })
+    .join("")}</ul>`;
 }
 
 function implementationChoiceCard(choice, index, total, ui) {
@@ -1080,17 +1355,30 @@ function buildHtml(data) {
   const findings = normalizeFindings(data);
   const atAGlance = normalizeAtAGlance(data);
   const narrativeSections = normalizeNarrativeSections(data);
+  const reviewHike = normalizeReviewHike(data);
   const comprehensionCheck = normalizeComprehensionCheck(data);
   const contractCoverage = normalizeContractCoverage(data);
   const implementationChoices = normalizeImplementationChoices(data);
-  const narrativeWithIds = narrativeSections.map((section, index) => ({
-    ...section,
-    id: `narrative-${slug(section.title, `section-${index + 1}`)}-${index + 1}`,
+  const narrativeByTitle = new Map(narrativeSections.map((section) => [section.title, section]));
+  const hillTitles = new Set(reviewHike.hills.map((hill) => hill.title));
+  const narrativeWithIds = narrativeSections
+    .filter((section) => section.title !== "Context" && !hillTitles.has(section.title))
+    .map((section, index) => ({
+      ...section,
+      id: `narrative-${slug(section.title, `section-${index + 1}`)}-${index + 1}`,
+      displayTitle: section.title,
+    }));
+  const supportingNarrative = narrativeWithIds;
+  const hillByContract = new Map(
+    reviewHike.hills.flatMap((hill) => hill.contractIds.map((contractId) => [contractId, hill])),
+  );
+  const coverageById = new Map(contractCoverage.map((row) => [row.contractId, row]));
+  const hillsWithRows = reviewHike.hills.map((hill) => ({
+    ...hill,
+    body: narrativeByTitle.get(hill.title)?.body || "",
+    rows: hill.contractIds.map((contractId) => coverageById.get(contractId)).filter(Boolean),
   }));
   const cards = groupedFindingCards(findings, ui);
-  const coverageCards = contractCoverage
-    .map((row, index) => contractCoverageCard(row, index, contractCoverage.length, ui))
-    .join("\n");
   const choiceCards = implementationChoices
     .map((choice, index) =>
       implementationChoiceCard(choice, index, implementationChoices.length, ui),
@@ -1099,8 +1387,15 @@ function buildHtml(data) {
   const comprehensionCards = comprehensionCheck.questions
     .map((question, index) => comprehensionQuestionCard(question, index, ui))
     .join("\n");
-  const narrativeCards = narrativeWithIds
-    .map((section) => explanationCard(section.title, section.body, section.id, ui))
+  const narrativeCards = supportingNarrative
+    .map((section) => explanationCard(section.displayTitle, section.body, section.id, ui))
+    .join("\n");
+  const hillCards = hillsWithRows
+    .map((hill) => reviewHillCard(hill, hill.body, hill.rows, ui))
+    .join("\n");
+  const contextCard = reviewContextCard(reviewHike.context, ui);
+  const fallbackCoverageCards = contractCoverage
+    .map((row, index) => contractCoverageCard(row, index, contractCoverage.length, ui))
     .join("\n");
   const count = findings.length;
   const coverageCount = contractCoverage.length;
@@ -1120,11 +1415,37 @@ function buildHtml(data) {
   );
   const hasOverview = atAGlance.impact || atAGlance.action || atAGlance.risk;
   const tocItems = [
-    hasOverview ? { id: "overview", label: ui.overview } : null,
-    ...narrativeWithIds.map((section) => ({ id: section.id, label: section.title })),
-    { id: "findings", label: ui.findings },
-    coverageCount || choiceCount ? { id: "evidence", label: ui.evidence } : null,
-    comprehensionCheck.questions.length ? { id: "comprehension", label: ui.comprehension } : null,
+    hasOverview ? { id: "overview", label: ui.overview, level: 0 } : null,
+    { id: "review-context", label: ui.reviewContext, level: 0 },
+    ...supportingNarrative.map((section) => ({
+      id: section.id,
+      label: section.displayTitle,
+      level: 0,
+    })),
+    ...reviewHike.hills.flatMap((hill) => [
+      {
+        id: `hill-${hill.id.toLowerCase()}`,
+        label: `${hill.id} · ${hill.title}`,
+        level: 1,
+      },
+      ...hill.components.flatMap((component) => [
+        {
+          id: `component-${hill.id.toLowerCase()}-${component.id.toLowerCase()}`,
+          label: `${component.id} · ${component.name}`,
+          level: 2,
+        },
+        ...component.codeEvidence.map((codeEvidence, index) => ({
+          id: `code-${hill.id.toLowerCase()}-${component.id.toLowerCase()}-${index + 1}`,
+          label: `Code ${index + 1} · ${codeEvidence.kind}`,
+          level: 3,
+        })),
+      ]),
+    ]),
+    { id: "findings", label: ui.findings, level: 0 },
+    coverageCount || choiceCount ? { id: "evidence", label: ui.evidence, level: 0 } : null,
+    comprehensionCheck.questions.length
+      ? { id: "comprehension", label: ui.comprehension, level: 0 }
+      : null,
   ].filter(Boolean);
 
   const empty =
@@ -1151,6 +1472,7 @@ function buildHtml(data) {
           scope,
           changeScope,
           findings,
+          reviewHike,
           contractCoverage,
           implementationChoices,
           comprehensionCheck: {
@@ -1236,6 +1558,9 @@ function buildHtml(data) {
   }
   .toc ol { margin: 0; padding-left: 20px; }
   .toc li { margin: 6px 0; font-size: 13px; }
+  .toc li[data-level="1"] { margin-left: 10px; }
+  .toc li[data-level="2"] { margin-left: 22px; font-size: 12.5px; }
+  .toc li[data-level="3"] { margin-left: 34px; font-size: 12px; color: var(--ink-2); }
   .toc a { color: var(--ink); text-decoration: none; }
   .toc a:hover { color: var(--focus); text-decoration: underline; }
 
@@ -1313,6 +1638,76 @@ function buildHtml(data) {
   }
   .explanation__body p { margin: 10px 0; }
   .explanation__body ul, .explanation__body ol { margin: 10px 0; padding-left: 24px; }
+  .hill {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px; margin: 18px 0;
+  }
+  .hill__head { display: flex; align-items: center; gap: 12px; }
+  .hill__tag { --sev: #426b4f; }
+  .hill__question {
+    background: color-mix(in srgb, #426b4f 9%, var(--card));
+    border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; margin: 10px 0 12px;
+  }
+  .hill__question p { margin: 0; font-weight: 650; }
+  .hill__slice { margin: 8px 0 0; font-size: 13px; color: var(--ink-2); }
+  .hill__slice code { margin-left: 6px; }
+  .hill--foundation { border-color: color-mix(in srgb, #426b4f 36%, var(--line)); }
+  .zoom-disclaimer { margin: 8px 0 14px; color: var(--ink-2); font-size: 12.5px; }
+  .hill-story {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px; margin: 12px 0 16px;
+  }
+  .hill-story__step {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px 11px;
+  }
+  .hill-story__step span {
+    display: block; font: 700 10px/1 var(--mono); letter-spacing: 0.11em;
+    text-transform: uppercase; color: var(--ink-2); margin-bottom: 7px;
+  }
+  .hill-story__step p { margin: 0; font-size: 13px; }
+  .container-zoom {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px; margin: 12px 0 18px;
+  }
+  .container-zoom > div, .component__grid > div {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px 11px;
+  }
+  .container-zoom span, .component__grid span {
+    display: block; font: 700 10px/1 var(--mono); letter-spacing: 0.11em;
+    text-transform: uppercase; color: var(--ink-2); margin-bottom: 7px;
+  }
+  .container-zoom p, .component__grid p { margin: 0; font-size: 13px; }
+  .component-section-title {
+    font: 700 11px/1 var(--mono); letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-2); margin: 20px 0 10px;
+  }
+  .components { display: grid; gap: 12px; }
+  .component {
+    border: 1px solid var(--line); border-radius: 9px;
+    background: color-mix(in srgb, var(--card) 88%, var(--paper)); padding: 14px;
+  }
+  .component__head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .component__head h3 { margin: 0; font-size: 16px; }
+  .component__tag { --sev: #5b5f97; }
+  .component__grid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+  }
+  .component__code { margin-top: 10px; }
+  .code-evidence {
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--paper); margin-top: 8px; padding: 0 11px;
+  }
+  .code-evidence > summary {
+    cursor: pointer; padding: 11px 0; font: 650 12px/1.3 var(--mono);
+  }
+  .code-evidence__body { padding: 0 0 12px; }
+  .code-evidence pre {
+    overflow: auto; background: #172029; color: #edf3f7;
+    border-radius: 7px; padding: 12px; font: 12px/1.55 var(--mono);
+  }
+  .hill__evidence { margin-top: 16px; }
 
   .section-title {
     font: 700 11px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase;
@@ -1333,6 +1728,15 @@ function buildHtml(data) {
     border: 1px solid var(--line); background: var(--card);
     border-radius: 999px; padding: 5px 10px; font: 650 11px/1 var(--mono);
   }
+  .coverage-index { list-style: none; padding: 0; margin: 10px 0 18px; }
+  .coverage-index li {
+    display: grid; grid-template-columns: auto auto auto 1fr; gap: 10px;
+    align-items: baseline; border-bottom: 1px solid var(--line); padding: 9px 0;
+  }
+  .coverage-index li > a, .coverage-index li > span {
+    font: 700 11px/1 var(--mono);
+  }
+  .coverage-index li p { margin: 0; font-size: 13px; }
 
   /* ── finding ───────────────────────────────────────────────────── */
   .finding {
@@ -1406,7 +1810,7 @@ function buildHtml(data) {
     border-left: 3px solid #217a68; border-radius: 8px;
     padding: 16px 18px 14px; margin-bottom: 14px;
   }
-  .choice__tag { background: #217a68; }
+  .choice__tag { --sev: #217a68; }
   .choice__value {
     background: color-mix(in srgb, #217a68 9%, var(--card));
     border: 1px solid var(--line); border-radius: 7px;
@@ -1585,6 +1989,9 @@ function buildHtml(data) {
     .page { display: block; padding: 18px 14px 36px; }
     .toc { position: static; margin-bottom: 18px; }
     .overview__grid { grid-template-columns: 1fr; }
+    .hill-story, .container-zoom, .component__grid { grid-template-columns: 1fr; }
+    .coverage-index li { grid-template-columns: auto auto auto; }
+    .coverage-index li p { grid-column: 1 / -1; }
     .task-comparison { grid-template-columns: 1fr; }
     .coverage__summary { grid-template-columns: 1fr auto; }
     .coverage__status { grid-column: 1 / -1; }
@@ -1609,7 +2016,7 @@ function buildHtml(data) {
 <nav class="toc" aria-label="${esc(ui.toc)}">
   <h2 class="toc__title">${esc(ui.toc)}</h2>
   <ol>
-    ${tocItems.map((item) => `<li><a href="#${esc(item.id)}">${esc(item.label)}</a></li>`).join("")}
+    ${tocItems.map((item) => `<li data-level="${item.level || 0}"><a href="#${esc(item.id)}">${esc(item.label)}</a></li>`).join("")}
   </ol>
 </nav>
 <main class="wrap">
@@ -1662,7 +2069,9 @@ function buildHtml(data) {
       : ""
   }
 
+  ${contextCard}
   ${narrativeCards}
+  ${hillCards}
 
   <section id="findings">
     <h2 class="section-title">${esc(ui.findings)} · ${count}</h2>
@@ -1690,7 +2099,15 @@ function buildHtml(data) {
             <span>${esc(ui.statusUnverified)} ${unverifiedCount}</span>
             <span>${esc(ui.statusContradicted)} ${contradictedCount}</span>
           </div>
-          ${coverageCount ? `<h3>${esc(ui.coverage)}</h3>${coverageCards}` : ""}
+          ${
+            coverageCount
+              ? `<h3>${esc(ui.coverage)}</h3>${
+                  reviewHike.hills.length
+                    ? coverageIndex(contractCoverage, hillByContract, ui)
+                    : fallbackCoverageCards
+                }`
+              : ""
+          }
           ${
             choiceCount
               ? `<details class="section-disclosure">

@@ -22,7 +22,7 @@ const server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.8.14" },
+  { name: "alps-writer", version: "0.8.15" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
@@ -241,8 +241,8 @@ server.tool(
   `Load an existing ALPS or Lite ALPS document to resume editing. The document profile is detected automatically.
 ⚠️ CRITICAL: After loading, you MUST follow the conversation guide:
 1. Call the matching get_alps_section_guide(N) or get_lite_alps_section_guide(N)
-2. Ask 1-2 focused questions at a time - DO NOT auto-generate content
-3. Wait for user response before proceeding
+2. Follow the selected profile: Full asks for missing context before drafting; Lite asks only for missing or protected context and proposes Sections 2 and 4
+3. Wait when a focused question is required; otherwise present the completed proposal for approval
 4. Get explicit confirmation before saving each section`,
   {
     doc_path: z.string().min(1).describe("Path to the .alps.xml or .lite.alps.xml file"),

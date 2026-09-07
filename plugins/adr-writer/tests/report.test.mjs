@@ -424,6 +424,88 @@ test("the report uses a table of contents and progressive disclosure", () => {
     findings: [],
     scope: ["src/a.ts"],
     changeScope: [],
+    reviewHike: {
+      context: {
+        intent: "Preserve the caller-visible contract.",
+        preconditions: "Requests cross one main path and one recovery path.",
+        contracts: "Both paths preserve the caller-visible result.",
+        scopeAndRisk: "Targeted tests prove the main path and expose the recovery gap.",
+      },
+      hills: [
+        {
+          id: "H1",
+          title: "The decision preserves the main flow",
+          sliceType: "user-flow",
+          sliceName: "Main request flow",
+          reviewQuestion: "Does the main flow preserve the decision?",
+          container: {
+            responsibility: "Preserve the main request result.",
+            interactions: "The caller enters the implementation and receives a result.",
+            outcome: "The caller receives the expected result.",
+          },
+          components: [
+            {
+              id: "C1",
+              name: "Main request handler",
+              responsibility: "Apply the decision to a valid request.",
+              implementation: "The vertical request path applies the decision.",
+              verification: "The targeted test returns the expected caller result.",
+              codeEvidence: [
+                {
+                  kind: "excerpt",
+                  location: "src/a.ts:1",
+                  content: "return applyDecision(request);",
+                  explanation: "The main path returns the contract-preserving result.",
+                  tests: "node --test — PASS",
+                },
+              ],
+            },
+          ],
+          contractIds: ["D0"],
+        },
+        {
+          id: "H2",
+          title: "The failure path still needs verification",
+          sliceType: "user-flow",
+          sliceName: "Dependency recovery flow",
+          reviewQuestion: "Does failure preserve the required result?",
+          container: {
+            responsibility: "Preserve the failure result.",
+            interactions: "The unavailable dependency routes the request to recovery.",
+            outcome: "Recovery remains unverified.",
+          },
+          components: [
+            {
+              id: "C1",
+              name: "Recovery branch",
+              responsibility: "Attempt recovery without changing the public result.",
+              implementation: "The vertical failure path attempts recovery.",
+              verification: "Recovery remains unverified because the path did not run.",
+              codeEvidence: [
+                {
+                  kind: "excerpt",
+                  location: "src/a.ts:20",
+                  content: "return recover(request);",
+                  explanation: "The recovery branch is present but unexecuted.",
+                  tests: "NOT RUN",
+                },
+              ],
+            },
+          ],
+          contractIds: ["R1"],
+        },
+      ],
+    },
+    narrativeSections: [
+      {
+        title: "The decision preserves the main flow",
+        body: "The targeted main-flow test passed.",
+      },
+      {
+        title: "The failure path still needs verification",
+        body: "The environment could not execute recovery.",
+      },
+    ],
     contractCoverage: [
       {
         contractId: "D0",
@@ -457,11 +539,33 @@ test("the report uses a table of contents and progressive disclosure", () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /<nav class="toc"/);
   assert.match(result.stdout, /<details class="review-meta">/);
+  assert.match(result.stdout, /id="hill-h1"/);
+  assert.match(result.stdout, /id="hill-h2"/);
+  assert.match(result.stdout, /Does the main flow preserve the decision/);
+  assert.match(result.stdout, /Context · Intent and contracts/);
+  assert.match(result.stdout, /Preconditions and surrounding context/);
+  assert.match(result.stdout, /Core contracts/);
+  assert.match(result.stdout, /Vertical slice/);
+  assert.match(result.stdout, /Main request flow/);
+  assert.match(result.stdout, /Component C1/);
+  assert.match(result.stdout, /Main request handler/);
+  assert.match(result.stdout, /class="code-evidence"/);
+  assert.match(result.stdout, /return applyDecision\(request\)/);
+  assert.match(result.stdout, /data-level="1"[^>]*><a href="#hill-h1"/);
+  assert.match(result.stdout, /data-level="2"[^>]*><a href="#component-h1-c1"/);
+  assert.match(result.stdout, /data-level="3"[^>]*><a href="#code-h1-c1-1"/);
+  assert.match(result.stdout, /\.hill__tag \{ --sev: #426b4f; \}/);
+  assert.match(result.stdout, /\.choice__tag \{ --sev: #217a68; \}/);
+  assert.doesNotMatch(result.stdout, /class="hill__order"/);
   assert.match(result.stdout, /<details class="coverage coverage--proven" id="contract-D0">/);
   assert.match(
     result.stdout,
     /<details class="coverage coverage--unverified" id="contract-R1" open>/,
   );
+  assert.equal(result.stdout.match(/id="contract-D0"/g)?.length, 1);
+  assert.equal(result.stdout.match(/id="contract-R1"/g)?.length, 1);
+  assert.match(result.stdout, /class="coverage-index"/);
+  assert.ok(result.stdout.indexOf('id="hill-h1"') < result.stdout.indexOf('id="findings"'));
   assert.match(result.stdout, /<summary>Notable implementation choices · 1<\/summary>/);
 });
 
@@ -502,6 +606,47 @@ test("HTML chrome follows the selected report language", () => {
     verdict: "PASS",
     atAGlance: { impact: "영향 없음", action: "없음", risk: "없음" },
     findings: [],
+    reviewHike: {
+      context: {
+        intent: "Lite 문서를 안전하게 재개한다.",
+        preconditions: "사용자가 기존 문서를 다시 연다.",
+        contracts: "문서 프로필과 순서를 보존해야 한다.",
+        scopeAndRisk: "재개 흐름과 이어 쓰기 결과를 검토한다.",
+      },
+      hills: [
+        {
+          id: "H1",
+          title: "문서를 안전하게 재개한다",
+          sliceType: "user-flow",
+          sliceName: "Lite 문서 재개",
+          reviewQuestion: "올바른 문서만 다시 열리는가?",
+          container: {
+            responsibility: "올바른 Lite 문서를 선택한다.",
+            interactions: "사용자 요청과 문서 형식 검사가 이어진다.",
+            outcome: "사용자가 이어서 작성할 수 있다.",
+          },
+          components: [
+            {
+              id: "C1",
+              name: "문서 재개 검사",
+              responsibility: "프로필과 Section 순서를 확인한다.",
+              implementation: "재개 흐름이 형식을 확인하고 올바른 문서를 선택한다.",
+              verification: "재개 테스트에서 사용자가 이어서 작성할 수 있다.",
+              codeEvidence: [
+                {
+                  kind: "excerpt",
+                  location: "src/documents.ts:1",
+                  content: "return loadValidLiteDocument(path);",
+                  explanation: "유효한 Lite 문서만 선택한다.",
+                  tests: "pnpm test — PASS",
+                },
+              ],
+            },
+          ],
+          contractIds: [],
+        },
+      ],
+    },
     contractCoverage: [],
     implementationChoices: [],
   });
@@ -511,6 +656,14 @@ test("HTML chrome follows the selected report language", () => {
   assert.match(result.stdout, />목차</);
   assert.match(result.stdout, />한눈에 보기</);
   assert.match(result.stdout, />해야 할 작업 · 0</);
+  assert.match(result.stdout, />Container \/ 낮은 언덕 H1</);
+  assert.match(result.stdout, />이 Container에서 확인할 것</);
+  assert.match(result.stdout, />Context · 의도와 계약</);
+  assert.match(result.stdout, />사전 조건·주변 컨텍스트</);
+  assert.match(result.stdout, />핵심 계약</);
+  assert.match(result.stdout, />상세 구현</);
+  assert.match(result.stdout, />Code 1 · excerpt/);
+  assert.match(result.stdout, />수직 단위</);
   assert.doesNotMatch(result.stdout, />PROVEN</);
 });
 

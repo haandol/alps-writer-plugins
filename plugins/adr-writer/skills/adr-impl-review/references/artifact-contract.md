@@ -12,8 +12,8 @@ conclusions. The model may use a named agent, generic subagent, or write the
 report directly.
 
 Give the report-writing role the original ADR, complete implementation scope,
-separate change scope, `review-baseline.md` when full mode produced one, the
-available explanation/necessity/sufficiency artifacts, normalized Notable
+separate change scope, `review-baseline.md` when full mode produced one, any
+available optional explanation plus necessity/sufficiency artifacts, normalized Notable
 implementation choices, and verified findings and test results. Save the result
 as `implementation-review.md`.
 
@@ -27,15 +27,16 @@ Before writing the report, read
 `${CLAUDE_PLUGIN_ROOT}/references/reader-first-writing.md` completely.
 
 Use progressive disclosure. Every report contains `At a glance`, `Review mode`,
-`Scope`, `ADR intent`, at least one subject-specific narrative section,
+`Scope`, `Context`, one or more Review Hiking Container/Hill sections,
 `Findings`, `ADR contract coverage`, `Notable implementation choices`, `Tests`,
 `Residual risks` by default. Add `Comprehension check` only when the user asks
-for it or the review has high comprehension load or broad change scope. Mermaid diagrams are
-required somewhere between `ADR intent` and `Findings` when
-`findings.json.visualization.required` is true. The narrative headings and
-order follow the reader's most important verified flow rather than a fixed
-tutorial template. Include detailed repair guidance only for `FIX_REQUIRED`,
-`BLOCK`, or when the user asks for it.
+for it or the review has high comprehension load or broad change scope. The
+narrative headings and
+Hill order follow the reader's most important verified flows rather than a fixed
+tutorial template. `Context` contains one generated context marker.
+Each Hill contains generated Container, Component, and contract-evidence markers.
+Include detailed repair guidance only for `FIX_REQUIRED`, `BLOCK`, or
+when the user asks for it.
 
 Under `At a glance`, `ADR contract coverage`, `Notable implementation choices`,
 and `Comprehension check`, write only:
@@ -45,17 +46,14 @@ and `Comprehension check`, write only:
 ```
 
 The report is the narrative source. The deterministic materializer writes the
-repeated data views from `findings.json`.
+Context, Container, Component, Code, each Hill's contract evidence cards, and
+the global coverage summary from `findings.json`.
 
-Classify visualization before writing. Record `required`, a non-empty `reason`,
-and the smallest fitting `diagramType` in `findings.json.visualization`.
-When `required` is true, include at least one Mermaid fence of the declared type
-in `Visual map` or any subject-specific section, and add one non-empty `Notice:`
-sentence per diagram. The validator rejects missing or mismatched diagrams. A
-local one-file PASS may set `required: false` only when the whole relationship
-is clear in one or two sentences; record why the diagram is unnecessary. Use as
-many diagrams as materially reduce reconstruction work; do not merge different
-review questions into one crowded diagram or add duplicates.
+The Context → Container/Hill → Component → Code tree is the report map. Do not
+create a global Trail map or visualization metadata. A Component may include a
+small Mermaid diagram only when its request, state, failure, or data relationship
+cannot be understood clearly from prose and Code evidence. Add one `Notice:`
+sentence per diagram and keep every node and edge grounded in reviewed evidence.
 
 - Overall change structure: `flowchart`
 - Core request/event flow: `sequenceDiagram`
@@ -63,8 +61,9 @@ review questions into one crowded diagram or add duplicates.
 - Relationships, if the data model changed: `erDiagram`
 - A separate `flowchart` when the failure, retry, and rollback flow is complex
 
-Diagrams must provide a review map, not decoration. Tie each node to confirmed
-code or ADR evidence, then add one `Notice:` sentence naming the review point.
+Diagrams explain a Component relationship, not the whole report tree. Tie each
+node to confirmed code or ADR evidence and add one `Notice:` sentence naming the
+review point.
 Point clearly in the prose to where a finding occurs and the expected flow after
 the fix. Never guess at an edge you could not confirm in the actual code. Never
 use ASCII or box-drawing diagrams.
@@ -86,9 +85,19 @@ result. Show the action layer by default and collapse the technical layer.
 Keep ADR contract coverage in structured JSON with `Contract ID`, `Requirement`,
 `Status`, `ADR basis`, `How the implementation meets it`, `Evidence`, and
 `Tests`. Keep the ADR wording recognizable and never merge several obligations
-into one row. The materializer writes a human summary with contract ID, an
-easy-language status, requirement, and review result. The remaining audit
-fields stay in JSON and the HTML's collapsed technical evidence.
+into one row. `reviewHike.hills[].contractIds` assigns every row to exactly one
+Hill. The materializer writes the complete requirement, status, implementation,
+evidence, and tests together inside that Hill and writes only contract id,
+status, Hill, and requirement in the global coverage summary. The remaining
+audit fields stay in JSON and the HTML's collapsed technical evidence.
+
+Treat Context, Container, Component, and Code as report zoom levels. Context contains intent,
+preconditions, core contracts, and scope/risk. Each Hill is the Container zoom
+and contains responsibility, interactions, and outcome. Components contain
+detailed implementation and verification. Code evidence is collapsed by default
+and contains focused `diff` or `excerpt` content, location, explanation, and
+tests. A non-empty change scope requires at least one `diff` evidence item in the
+complete report.
 
 Keep Notable implementation choices in structured JSON with `Selected value or
 behavior`, `Code evidence`, `Why it fits the ADR intent`, and `Why it matters`.
@@ -97,7 +106,8 @@ resolution and do not amend the ADR. If a row would alter the ADR contract or
 durable boundary, it must be an `Undecided behavior` finding instead.
 
 Concise means the default human view answers what to do next. Preserve all seven
-coverage fields in JSON, but do not force them into seven visible columns.
+coverage fields in JSON, but do not force them into seven visible columns or
+repeat the same detailed evidence outside its Hill.
 Never replace the four-column implementation-choice table with prose.
 
 When comprehension support is selected, end the report with a generated
@@ -170,7 +180,49 @@ Serialize the available role artifacts and synthesized result into
   "visualization": {
     "required": true,
     "reason": "Checkout cancellation crosses the handler and upstream client and has success and abort branches.",
-    "diagramType": "flowchart"
+    "diagramType": "flowchart",
+    "readingGuide": "Read nodes as request participants or outcomes, arrows as request and cancellation paths, and the abort branch as the route reviewed in H2."
+  },
+  "reviewHike": {
+    "context": {
+      "intent": "Payment settlement creates one durable result.",
+      "preconditions": "Settlement receives retries and provider outcomes.",
+      "contracts": "One completion boundary preserves idempotency and pending state.",
+      "scopeAndRisk": "Retry and provider-failure paths determine the verdict."
+    },
+    "hills": [
+      {
+        "id": "H1",
+        "title": "A duplicate request reuses the completed payment",
+        "sliceType": "user-flow",
+        "sliceName": "Duplicate payment settlement",
+        "reviewQuestion": "Can the same payment request complete more than once?",
+        "container": {
+          "responsibility": "Reuse one durable settlement for a retry.",
+          "interactions": "The request reaches the completion boundary and stored result.",
+          "outcome": "The customer is charged at most once."
+        },
+        "components": [
+          {
+            "id": "C1",
+            "name": "Idempotent completion boundary",
+            "responsibility": "Separate new work from retries.",
+            "implementation": "Return the stored result for a completed key.",
+            "verification": "The duplicate-settlement test observes one completion.",
+            "codeEvidence": [
+              {
+                "kind": "diff",
+                "location": "src/payments/settle.ts:42",
+                "content": "- write(result)\n+ return existing ?? write(result)",
+                "explanation": "The retry path no longer writes twice.",
+                "tests": "pnpm test -- settlement — PASS"
+              }
+            ]
+          }
+        ],
+        "contractIds": ["D0", "R1"]
+      }
+    ]
   },
   "explanation": "/tmp/.../explanation.md",
   "report": "/tmp/.../implementation-review.md",
@@ -241,26 +293,45 @@ Serialize the available role artifacts and synthesized result into
 }
 ```
 
-`language`, `reviewMode`, `atAGlance`, `visualization`, `contractCoverage`,
-`implementationChoices` and `explanation` are mandatory
+`language`, `reviewMode`, `atAGlance`, `reviewHike`, `contractCoverage`,
+`implementationChoices` are mandatory
 even for `PASS` with zero findings or zero choices. `atAGlance` contains
 non-empty `impact`, `action`, and `risk`; use `None` only when that axis was
-checked and is empty. `visualization` always contains a boolean `required` and a
-non-empty evidence-based `reason`; a required visualization also contains one
-of `flowchart`, `sequenceDiagram`, `stateDiagram-v2`, or `erDiagram` as
-`diagramType`. When present, `comprehensionCheck.questions` contains one to five
+checked and is empty. When present, `comprehensionCheck.questions` contains one to five
 questions with non-empty `id`, `question`, `answerCriteria`, and `evidence`.
 `contractCoverage` is non-empty because `D0` always represents the ADR Decision
 even when there is no explicit requirement-contract subsection.
+
+`explanation` is optional. When present it points to a temporary
+`explanation.md` whose structure the validator checks; the final
+`implementation-review.md` remains responsible for the complete human-facing
+narrative.
+
+`reviewHike.context` contains non-empty `intent`, `preconditions`, `contracts`,
+and `scopeAndRisk` fields. `reviewHike.hills` is non-empty.
+Hill ids are sequential `H1..Hn`; titles are unique and match the corresponding
+Markdown `##` headings exactly. Every Hill has one allowed `sliceType`
+(`user-flow`, `logical-capability`, or `bounded-context`), one non-empty
+`sliceName`, one non-empty `reviewQuestion`, a complete `container`, one or more
+sequential Components, and one or more contract ids. Every Component has
+non-empty responsibility, implementation, verification, and Code evidence.
+Code evidence kinds are `diff` or `excerpt`; a non-empty change scope requires
+at least one `diff`. Across all Hills, every `contractCoverage.contractId` appears
+exactly once. Technical layers, file groups, modules, and review lifecycle
+phases do not define Hill boundaries. `Context` contains
+`<!-- generated review context from findings.json -->`; each Hill contains
+`<!-- generated container zoom from findings.json -->`,
+`<!-- generated component zoom from findings.json -->`, and
+`<!-- generated hill evidence from findings.json -->` before materialization.
 
 `metrics` and expanded action wording are optional derived views. When supplied,
 the validator checks them; when absent, deterministic tooling and coverage/test
 evidence provide the display values.
 
 The artifact validator reads the ADR, derives `D0/R1..Rn`, rejects missing or
-duplicate IDs, rejects missing or reordered explanation/check sections, rejects
-a required Mermaid when the declared diagram type or per-diagram `Notice:` is
-absent from the narrative, rejects invalid question counts or exposed answer criteria,
+duplicate IDs, validates an optional explanation artifact when supplied, rejects
+missing or reordered report/check sections, rejects
+a missing or inconsistent Hill assignment, rejects invalid question counts or exposed answer criteria,
 and rejects `PASS` when tests were not executed, a coverage row is not `PROVEN`,
 an unverified risk remains, or a blocking finding remains. Count the raw findings each independent
 perspective produced before deduplication, count `Unverified risk` entries after

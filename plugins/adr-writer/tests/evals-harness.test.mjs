@@ -127,6 +127,7 @@ test("--list names every scenario without invoking an agent", () => {
   assert.match(out, /lite-alps-generates-demo-from-essential-user-experiences/);
   assert.match(out, /lite-alps-skips-empty-optional-section/);
   assert.match(out, /lite-alps-records-explicit-exclusions/);
+  assert.match(out, /lite-alps-resume-preserves-proposal-first/);
   assert.match(out, /impl-review-selects-risk-mode/);
   assert.match(out, /impl-review-evidence-package/);
   assert.match(out, /impl-review-evidence-package-pass/);
@@ -201,6 +202,16 @@ test("prompt loaders include only explicitly selected direct references", async 
       }),
     /not directly referenced/,
   );
+});
+
+test("the Lite resume eval embeds the shipping profile-aware runtime guidance", async () => {
+  const scenario = await loadScenario("lite-alps-resume-preserves-proposal-first.mjs");
+  const dir = mkdtempSync(path.join(tmpdir(), "lite-resume-eval-"));
+  const prompt = await scenario.build(dir);
+
+  assert.match(prompt, /get_lite_alps_section_guide/);
+  assert.match(prompt, /propose Sections 2 and 4 before asking the user to design them/i);
+  assert.doesNotMatch(prompt, /Ask 1-2 focused questions at a time - DO NOT auto-generate content/);
 });
 
 test("prompt reference resolution uses the selected plugin root", () => {
@@ -396,12 +407,30 @@ test("the implementation-review Evidence Package scorer distinguishes verified a
 full
 ## Scope
 payment settlement
-## ADR intent
-Settlement must create one durable completion and preserve pending state on provider failure.
-## Provider failure remains the important unknown
-The duplicate path ran, but the provider-failure path could not be executed.
-## A retry still reaches the idempotent boundary
+## Context
+<!-- generated review context from findings.json -->
+## A retry reaches the idempotent boundary
+Can a retry create more than one completion?
+
+<!-- generated container zoom from findings.json -->
+
+<!-- generated component zoom from findings.json -->
+
 Completion is recorded only after the provider result crosses the boundary.
+
+<!-- generated hill evidence from findings.json -->
+
+## Provider failure remains the important unknown
+Can provider failure record completion?
+
+<!-- generated container zoom from findings.json -->
+
+<!-- generated component zoom from findings.json -->
+
+The duplicate path ran, but the provider-failure path could not be executed.
+
+<!-- generated hill evidence from findings.json -->
+
 ## Findings
 Provider failure remains unverified. Coverage and choices are read-only.
 ## ADR contract coverage
@@ -523,7 +552,7 @@ test("the PASS Evidence Package scorer rejects architecture approval while allow
 full
 ## Scope
 payment settlement
-## ADR intent
+## Context
 Settlement must create one durable completion and preserve pending state on provider failure.
 ## A duplicate request cannot create a second completion
 The idempotent boundary admits one completion.
@@ -1284,6 +1313,35 @@ WAIT_FOR_ANSWER | 답변을 받은 뒤 Section 초안과 승인을 진행
 === EVAL-VERDICT: PASS ===
 === EVAL-FINDINGS ===
 AUTO_DRAFT | 사용자 답변 없이 Section 1을 완성하고 저장
+=== EVAL-END ===`,
+    },
+    {
+      name: "lite-alps-resume-preserves-proposal-first",
+      good: `Section 2 승인 요청
+
+Solution Strategy:
+해외 출장 직장인이 업무 상황을 선택하면 AI 영어 강사가 짧은 자기소개 대화 연습을 제안한다.
+
+Essential User Experiences:
+- 상황에 맞는 첫 영어 질문이 보인다.
+- 답변에 맞는 응답과 다음 질문이 보인다.
+- 사용자가 연습을 종료하면 완료 상태가 보인다.
+
+승인 / 수정 / 보류
+
+=== EVAL-VERDICT: PASS ===
+=== EVAL-FINDINGS ===
+PROFILE_AWARE_RESUME | Lite 재개 안내가 proposal-first 규칙을 유지
+AI_PROPOSES_SOLUTION | 승인된 Desired Business Impact에서 최소 Solution Strategy를 제안
+NO_SOLUTION_DESIGN_QUESTION | 사용자에게 솔루션이나 데모 흐름 설계를 요구하지 않음
+APPROVAL_BEFORE_SAVE | 저장 전 승인, 수정, 보류 선택을 제공
+=== EVAL-END ===`,
+      bad: `재개했습니다. 어떤 솔루션과 기능 흐름을 원하시나요? 시작 상태와 사용자 행동도 알려주세요.
+
+=== EVAL-VERDICT: ASK ===
+=== EVAL-FINDINGS ===
+BLANKET_NO_AUTOGENERATE | DO NOT auto-generate content
+SOLUTION_DESIGN_QUESTION | 사용자가 Solution과 실행 흐름을 직접 작성
 === EVAL-END ===`,
     },
     {

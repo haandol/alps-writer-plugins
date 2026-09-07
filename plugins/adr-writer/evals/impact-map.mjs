@@ -30,6 +30,10 @@ export const IMPACT_RULES = [
     scenarioPrefixes: ["lite-alps-"],
   },
   {
+    pathPrefixes: ["plugins/alps-writer/src/tools/documents/"],
+    scenarioPrefixes: ["alps-", "lite-alps-"],
+  },
+  {
     pathPrefixes: ["plugins/adr-writer/hooks/"],
     scenarioPrefixes: ["hook-"],
   },

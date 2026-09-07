@@ -16,6 +16,12 @@ const ALLOWED_DIAGRAM_TYPES = new Set([
   "stateDiagram-v2",
   "erDiagram",
 ]);
+const ALLOWED_HILL_SLICE_TYPES = new Set(["user-flow", "logical-capability", "bounded-context"]);
+const ALLOWED_CODE_EVIDENCE_KINDS = new Set(["diff", "excerpt"]);
+const REVIEW_CONTEXT_FIELDS = ["intent", "preconditions", "contracts", "scopeAndRisk"];
+const CONTAINER_FIELDS = ["responsibility", "interactions", "outcome"];
+const COMPONENT_FIELDS = ["name", "responsibility", "implementation", "verification"];
+const CODE_EVIDENCE_FIELDS = ["kind", "location", "content", "explanation", "tests"];
 const COVERAGE_STATUS_LABELS = {
   en: {
     PROVEN: "Met",
@@ -35,14 +41,14 @@ const REQUIRED_REPORT_TEXT = [
   "## At a glance",
   "## Review mode",
   "## Scope",
-  "## ADR intent",
+  "## Context",
   "## Findings",
   "## ADR contract coverage",
   "## Notable implementation choices",
   "## Tests",
   "## Residual risks",
 ];
-const REQUIRED_EXPLANATION_FIRST_HEADING = "## ADR intent";
+const REQUIRED_EXPLANATION_FIRST_HEADING = "## Context";
 const REQUIRED_REPAIR_TEXT = [
   "## Repair guide",
   "Files and symbols to change:",
@@ -104,13 +110,13 @@ function sectionBody(source, headingPattern, stopPattern) {
   return body.join("\n").trim();
 }
 
-function rawNarrativeBody(source) {
+function rawSectionBody(source, headingText) {
   const lines = String(source ?? "").split(/\r?\n/);
-  const start = lines.findIndex((line) => line.trim() === "## ADR intent");
+  const start = lines.findIndex((line) => line.trim() === headingText);
   if (start < 0) return "";
   const body = [];
   for (let index = start + 1; index < lines.length; index++) {
-    if (lines[index].trim() === "## Findings") break;
+    if (/^##\s+/.test(lines[index])) break;
     body.push(lines[index]);
   }
   return body.join("\n").trim();
@@ -234,6 +240,7 @@ function validateAtAGlance(atAGlance, errors) {
 }
 
 function validateVisualization(visualization, errors) {
+  if (visualization === undefined) return;
   if (!visualization || typeof visualization !== "object" || Array.isArray(visualization)) {
     errors.push("findings.json visualization must be an object");
     return;
@@ -315,6 +322,161 @@ function validateContractCoverage(row, index, errors) {
 
   if (row.status && !ALLOWED_COVERAGE_STATUSES.has(row.status)) {
     errors.push(`${label}.status must be PROVEN, VIOLATED, UNVERIFIED, or CONTRADICTED`);
+  }
+}
+
+/**
+ * Validate the repeated non-empty string fields used by review zoom objects.
+ * One implementation keeps Context, Container, Component, and Code checks aligned.
+ */
+function validateNonEmptyStringFields(value, fields, label, errors) {
+  for (const field of fields) {
+    if (typeof value[field] !== "string" || !value[field].trim()) {
+      errors.push(`${label}.${field} must be a non-empty string`);
+    }
+  }
+}
+
+function validateReviewHike(reviewHike, coverageRows, changeScope, errors) {
+  if (!reviewHike || typeof reviewHike !== "object" || Array.isArray(reviewHike)) {
+    errors.push("findings.json reviewHike must be an object");
+    return;
+  }
+  if (!Array.isArray(reviewHike.hills) || reviewHike.hills.length === 0) {
+    errors.push("findings.json reviewHike.hills must be a non-empty array");
+    return;
+  }
+  if (
+    !reviewHike.context ||
+    typeof reviewHike.context !== "object" ||
+    Array.isArray(reviewHike.context)
+  ) {
+    errors.push("findings.json reviewHike.context must be an object");
+  } else {
+    validateNonEmptyStringFields(
+      reviewHike.context,
+      REVIEW_CONTEXT_FIELDS,
+      "reviewHike.context",
+      errors,
+    );
+  }
+
+  const validContractIds = new Set(coverageRows.map((row) => row?.contractId).filter(Boolean));
+  const assignedContractIds = new Set();
+  const seenTitles = new Set();
+  let diffEvidenceCount = 0;
+
+  for (const [index, hill] of reviewHike.hills.entries()) {
+    const label = `reviewHike.hills[${index}]`;
+    if (!hill || typeof hill !== "object" || Array.isArray(hill)) {
+      errors.push(`${label} must be an object`);
+      continue;
+    }
+
+    const expectedId = `H${index + 1}`;
+    if (hill.id !== expectedId) errors.push(`${label}.id must be ${expectedId}`);
+    for (const field of ["title", "sliceName", "reviewQuestion"]) {
+      if (typeof hill[field] !== "string" || !hill[field].trim()) {
+        errors.push(`${label}.${field} must be a non-empty string`);
+      }
+    }
+    if (!ALLOWED_HILL_SLICE_TYPES.has(hill.sliceType)) {
+      errors.push(`${label}.sliceType must be user-flow, logical-capability, or bounded-context`);
+    }
+    if (typeof hill.title === "string" && hill.title.trim()) {
+      if (seenTitles.has(hill.title)) {
+        errors.push(`reviewHike contains duplicate Hill title: ${hill.title}`);
+      }
+      seenTitles.add(hill.title);
+    }
+
+    if (!hill.container || typeof hill.container !== "object" || Array.isArray(hill.container)) {
+      errors.push(`${label}.container must be an object`);
+    } else {
+      validateNonEmptyStringFields(hill.container, CONTAINER_FIELDS, `${label}.container`, errors);
+    }
+
+    if (!Array.isArray(hill.components) || hill.components.length === 0) {
+      errors.push(`${label}.components must be a non-empty array`);
+    } else {
+      for (const [componentIndex, component] of hill.components.entries()) {
+        const componentLabel = `${label}.components[${componentIndex}]`;
+        if (!component || typeof component !== "object" || Array.isArray(component)) {
+          errors.push(`${componentLabel} must be an object`);
+          continue;
+        }
+        const expectedComponentId = `C${componentIndex + 1}`;
+        if (component.id !== expectedComponentId) {
+          errors.push(`${componentLabel}.id must be ${expectedComponentId}`);
+        }
+        validateNonEmptyStringFields(component, COMPONENT_FIELDS, componentLabel, errors);
+        if (!Array.isArray(component.codeEvidence) || component.codeEvidence.length === 0) {
+          errors.push(`${componentLabel}.codeEvidence must be a non-empty array`);
+          continue;
+        }
+        for (const [codeIndex, codeEvidence] of component.codeEvidence.entries()) {
+          const codeLabel = `${componentLabel}.codeEvidence[${codeIndex}]`;
+          if (!codeEvidence || typeof codeEvidence !== "object" || Array.isArray(codeEvidence)) {
+            errors.push(`${codeLabel} must be an object`);
+            continue;
+          }
+          validateNonEmptyStringFields(codeEvidence, CODE_EVIDENCE_FIELDS, codeLabel, errors);
+          if (!ALLOWED_CODE_EVIDENCE_KINDS.has(codeEvidence.kind)) {
+            errors.push(`${codeLabel}.kind must be diff or excerpt`);
+          }
+          if (typeof codeEvidence.content === "string" && codeEvidence.content.includes("```")) {
+            errors.push(`${codeLabel}.content must not contain a fenced-code delimiter`);
+          }
+          if (codeEvidence.kind === "diff") {
+            diffEvidenceCount += 1;
+            if (
+              typeof codeEvidence.content === "string" &&
+              !/^(?:\+(?!\+{2})|-(?!-{2})).+/m.test(codeEvidence.content)
+            ) {
+              errors.push(`${codeLabel}.content must contain an added or removed diff line`);
+            }
+          }
+        }
+      }
+    }
+
+    if (!Array.isArray(hill.contractIds) || hill.contractIds.length === 0) {
+      errors.push(`${label}.contractIds must be a non-empty array`);
+      continue;
+    }
+    const withinHill = new Set();
+    for (const [contractIndex, contractId] of hill.contractIds.entries()) {
+      if (typeof contractId !== "string" || !contractId.trim()) {
+        errors.push(`${label}.contractIds[${contractIndex}] must be a non-empty string`);
+        continue;
+      }
+      if (withinHill.has(contractId)) {
+        errors.push(`${label}.contractIds contains duplicate contract id: ${contractId}`);
+        continue;
+      }
+      withinHill.add(contractId);
+      if (!validContractIds.has(contractId)) {
+        errors.push(`${label}.contractIds references unknown contract row: ${contractId}`);
+        continue;
+      }
+      if (assignedContractIds.has(contractId)) {
+        errors.push(`contract row is assigned to more than one Hill: ${contractId}`);
+        continue;
+      }
+      assignedContractIds.add(contractId);
+    }
+  }
+
+  for (const contractId of validContractIds) {
+    if (!assignedContractIds.has(contractId)) {
+      errors.push(`contract row is not assigned to a Review Hiking Hill: ${contractId}`);
+    }
+  }
+
+  if (Array.isArray(changeScope) && changeScope.length > 0 && diffEvidenceCount === 0) {
+    errors.push(
+      "reviewHike must contain at least one diff Code evidence when change scope is non-empty",
+    );
   }
 }
 
@@ -520,9 +682,7 @@ function validateExplanation(explanation, errors) {
     errors.push(`explanation.md must start with ${REQUIRED_EXPLANATION_FIRST_HEADING}`);
   }
   if (actualHeadings.length < 2) {
-    errors.push(
-      "explanation.md must include at least one subject-specific heading after ## ADR intent",
-    );
+    errors.push("explanation.md must include at least one subject-specific Hill after ## Context");
   }
 
   for (let index = 0; index < actualHeadings.length; index++) {
@@ -544,7 +704,7 @@ function validateReport(report, data, errors) {
     "## At a glance",
     "## Review mode",
     "## Scope",
-    "## ADR intent",
+    "## Context",
     "## Findings",
     "## ADR contract coverage",
     "## Notable implementation choices",
@@ -555,41 +715,92 @@ function validateReport(report, data, errors) {
   validateHeadingOrder(report, orderedHeadings, "implementation-review.md", errors);
 
   const reportHeadings = topLevelHeadings(report);
-  const intentIndex = reportHeadings.indexOf("## ADR intent");
+  const contextIndex = reportHeadings.indexOf("## Context");
   const findingsIndex = reportHeadings.indexOf("## Findings");
   const narrativeHeadings =
-    intentIndex >= 0 && findingsIndex > intentIndex
+    contextIndex >= 0 && findingsIndex > contextIndex
       ? reportHeadings
-          .slice(intentIndex + 1, findingsIndex)
+          .slice(contextIndex + 1, findingsIndex)
           .filter((heading) => heading !== "## Visual map")
       : [];
   if (narrativeHeadings.length < 1) {
     errors.push(
-      "implementation-review.md must include at least one subject-specific narrative heading between ## ADR intent and ## Findings",
+      "implementation-review.md must include at least one Container/Hill heading between ## Context and ## Findings",
     );
   }
 
-  for (const heading of ["## ADR intent", ...narrativeHeadings]) {
+  const expectedHillHeadings = (data.reviewHike?.hills ?? []).map((hill) => `## ${hill.title}`);
+  const actualHillHeadings = narrativeHeadings.filter(
+    (heading) => heading !== "## Trail map" && heading !== "## Visual map",
+  );
+  if (
+    expectedHillHeadings.length !== actualHillHeadings.length ||
+    expectedHillHeadings.some((heading, index) => actualHillHeadings[index] !== heading)
+  ) {
+    errors.push(
+      `implementation-review.md Hill headings must match reviewHike order: ${expectedHillHeadings.join(" → ")}`,
+    );
+  }
+
+  for (const heading of ["## Context", ...narrativeHeadings]) {
     const body = sectionBody(report, new RegExp(`^${escapeRegExp(heading)}\\s*$`, "i"), /^##\s+/);
     if (!body) errors.push(`implementation-review.md ${heading} must not be empty`);
   }
 
-  const narrativeBody = rawNarrativeBody(report);
-  if (data.visualization?.required) {
-    const diagrams = [...narrativeBody.matchAll(/```mermaid\s*\n\s*([A-Za-z][^\s]*)[\s\S]*?```/gi)];
-    if (diagrams.length === 0) {
-      errors.push("implementation-review.md narrative must contain at least one Mermaid fence");
+  const contextBody = sectionBody(report, /^## Context\s*$/i, /^##\s+/);
+  for (const [field, value] of Object.entries(data.reviewHike?.context ?? {})) {
+    if (typeof value === "string" && value.trim() && !contextBody.includes(value)) {
+      errors.push(`implementation-review.md Context is missing context.${field}`);
     }
-    if ((narrativeBody.match(/^Notice:\s+\S+/gm) ?? []).length < diagrams.length) {
-      errors.push(
-        "implementation-review.md must contain one non-empty Notice: per Mermaid diagram",
-      );
+  }
+
+  for (const hill of data.reviewHike?.hills ?? []) {
+    const heading = `## ${hill.title}`;
+    const body = sectionBody(report, new RegExp(`^${escapeRegExp(heading)}\\s*$`, "i"), /^##\s+/);
+    const rawBody = rawSectionBody(report, heading);
+    if (!body.includes(hill.reviewQuestion)) {
+      errors.push(`implementation-review.md ${heading} is missing its review question`);
     }
-    const diagramType = data.visualization.diagramType;
-    if (diagramType && !diagrams.some((diagram) => diagram[1] === diagramType)) {
-      errors.push(
-        `implementation-review.md narrative must contain the declared ${diagramType} diagram`,
-      );
+    if (!body.includes(hill.sliceName ?? "")) {
+      errors.push(`implementation-review.md ${heading} is missing its vertical slice name`);
+    }
+    for (const [field, value] of Object.entries(hill.container ?? {})) {
+      if (typeof value === "string" && value.trim() && !body.includes(value)) {
+        errors.push(`implementation-review.md ${heading} is missing container.${field}`);
+      }
+    }
+    for (const [componentIndex, component] of (hill.components ?? []).entries()) {
+      if (!body.includes(`Component ${component.id} · ${component.name}`)) {
+        errors.push(
+          `implementation-review.md ${heading} is missing component ${componentIndex + 1}`,
+        );
+      }
+      for (const [field, value] of Object.entries(component)) {
+        if (
+          field !== "codeEvidence" &&
+          field !== "id" &&
+          typeof value === "string" &&
+          value.trim() &&
+          !body.includes(value)
+        ) {
+          errors.push(`implementation-review.md ${heading} is missing component.${field}`);
+        }
+      }
+      for (const [codeIndex, codeEvidence] of (component.codeEvidence ?? []).entries()) {
+        for (const field of ["kind", "location", "content", "explanation", "tests"]) {
+          const value = codeEvidence[field];
+          if (typeof value === "string" && value.trim() && !rawBody.includes(value.trim())) {
+            errors.push(
+              `implementation-review.md ${heading} is missing component ${component.id} codeEvidence[${codeIndex}].${field}`,
+            );
+          }
+        }
+      }
+    }
+    for (const contractId of hill.contractIds ?? []) {
+      if (!body.includes(`### ${contractId} ·`)) {
+        errors.push(`implementation-review.md ${heading} is missing ${contractId} Hill evidence`);
+      }
     }
   }
 
@@ -605,6 +816,11 @@ function validateReport(report, data, errors) {
 
   const coverageRows = tableRows(report, "ADR contract coverage", "Notable implementation choices");
   const coverageById = new Map(coverageRows.map((cells) => [cells[0], cells]));
+  const hillByContract = new Map(
+    (data.reviewHike?.hills ?? []).flatMap((hill) =>
+      (hill.contractIds ?? []).map((contractId) => [contractId, hill.id]),
+    ),
+  );
   const language = String(data.language || "")
     .toLowerCase()
     .startsWith("ko")
@@ -620,6 +836,8 @@ function validateReport(report, data, errors) {
       );
     } else if (cells[1] !== COVERAGE_STATUS_LABELS[language][row.status]) {
       errors.push(`implementation-review.md contractCoverage[${index}] status does not match JSON`);
+    } else if (cells[2] !== hillByContract.get(row.contractId)) {
+      errors.push(`implementation-review.md contractCoverage[${index}] Hill does not match JSON`);
     }
   }
 
@@ -751,6 +969,7 @@ function main() {
         errors,
       );
       validateFindingContractLinks(data.findings ?? [], data.contractCoverage, errors);
+      validateReviewHike(data.reviewHike, data.contractCoverage, data.changeScope, errors);
       validatePass(data, errors);
     }
 
@@ -758,11 +977,13 @@ function main() {
     if (!reportPath || path.resolve(reportPath) !== path.resolve(expectedReport)) {
       errors.push("findings.json report must point to implementation-review.md");
     }
-    const explanationPath = resolveArtifact(artifactDir, data.explanation);
-    if (!explanationPath || !existsSync(explanationPath)) {
-      errors.push("review explanation must point to an existing file");
-    } else {
-      validateExplanation(readFileSync(explanationPath, "utf8"), errors);
+    if (data.explanation !== undefined) {
+      const explanationPath = resolveArtifact(artifactDir, data.explanation);
+      if (!explanationPath || !existsSync(explanationPath)) {
+        errors.push("review explanation must point to an existing file");
+      } else {
+        validateExplanation(readFileSync(explanationPath, "utf8"), errors);
+      }
     }
 
     if (existsSync(expectedReport)) {
