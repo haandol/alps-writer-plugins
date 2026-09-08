@@ -1,6 +1,6 @@
 {
   "name": "alps-writer",
-  "version": "0.8.15",
+  "version": "0.8.16",
   "description": "Author Full or Lite ALPS product documents through a guided MCP workflow and hand Full ALPS features off to ADR authoring.",
   "author": {
     "name": "haandol",
