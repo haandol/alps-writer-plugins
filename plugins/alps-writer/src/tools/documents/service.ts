@@ -452,11 +452,11 @@ export class DocumentService {
    */
   private resumeGuidance(profile: DocumentProfile): string {
     const steps = isLiteProfile(profile)
-      ? `1. Call ${profile.sectionGuideTool}(N) before working on any section
+      ? `1. Call ${profile.sectionContextTool}(N) before working on any section
 2. Follow the guide: ask only for missing user-owned or protected context, but propose Sections 2 and 4 before asking the user to design them
 3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
 4. Get explicit "yes" confirmation before calling save_alps_section()`
-      : `1. Call ${profile.sectionGuideTool}(N) before working on any section
+      : `1. Call ${profile.sectionContextTool}(N) before working on any section
 2. Ask 1-2 focused questions at a time - DO NOT auto-generate content
 3. Wait for user response before proceeding
 4. Get explicit "yes" confirmation before calling save_alps_section()`;

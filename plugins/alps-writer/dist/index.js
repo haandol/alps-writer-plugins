@@ -31040,7 +31040,7 @@ var ALPS_PROFILE = {
     sourceSubsectionId: "6.1"
   },
   optionalSections: [],
-  sectionGuideTool: "get_alps_section_guide"
+  sectionContextTool: "get_alps_section_context"
 };
 var LITE_ALPS_PROFILE = {
   id: "lite",
@@ -31065,7 +31065,7 @@ var LITE_ALPS_PROFILE = {
   authoringOrder: [1, 2, 3, 4],
   dynamicSection: null,
   optionalSections: [3],
-  sectionGuideTool: "get_lite_alps_section_guide"
+  sectionContextTool: "get_lite_alps_section_context"
 };
 var DOCUMENT_PROFILES = {
   alps: ALPS_PROFILE,
@@ -31217,32 +31217,37 @@ ${guide}`;
 
 // src/tools/templates/controller.ts
 var TemplateController = class {
-  constructor(service, sectionGuideTool = "get_alps_section_guide") {
+  constructor(service, sectionContextTool = "get_alps_section_context") {
     this.service = service;
-    this.sectionGuideTool = sectionGuideTool;
+    this.sectionContextTool = sectionContextTool;
   }
   service;
-  sectionGuideTool;
+  sectionContextTool;
+  /**
+   * Appends the required next action to the profile overview so authoring
+   * always enters through the guide-first Section context contract.
+   */
   getAlpsOverview() {
     return this.service.getOverview() + `
 
 ---
 ## Next Step
 
-**REQUIRED**: Call \`${this.sectionGuideTool}(1)\` to begin interactive writing.
+**REQUIRED**: Call \`${this.sectionContextTool}(1)\` to begin interactive writing.
 Do NOT write any section without going through the guide's Q&A process first.`;
   }
-  listAlpsSections() {
-    return this.service.listSections();
-  }
-  getAlpsSection(section, includeExamples = false) {
-    return this.service.getSection(section, includeExamples);
-  }
-  getAlpsFullTemplate(includeExamples = false) {
-    return this.service.getFullTemplate(includeExamples);
-  }
-  getAlpsSectionGuide(section) {
-    return this.service.getSectionGuide(section);
+  /**
+   * Returns the complete authoring context for one Section so callers cannot
+   * skip the conversation guide. The guide stays first to surface prerequisite
+   * reads before the template skeleton that the caller will fill.
+   */
+  getAlpsSectionContext(section, includeExamples = false) {
+    return `${this.service.getSectionGuide(section)}
+
+---
+## Section Template
+
+${this.service.getSection(section, includeExamples)}`;
   }
 };
 
@@ -31657,10 +31662,10 @@ ${content}
    * protected context and preserves proposal-first Sections 2 and 4.
    */
   resumeGuidance(profile) {
-    const steps = isLiteProfile(profile) ? `1. Call ${profile.sectionGuideTool}(N) before working on any section
+    const steps = isLiteProfile(profile) ? `1. Call ${profile.sectionContextTool}(N) before working on any section
 2. Follow the guide: ask only for missing user-owned or protected context, but propose Sections 2 and 4 before asking the user to design them
 3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
-4. Get explicit "yes" confirmation before calling save_alps_section()` : `1. Call ${profile.sectionGuideTool}(N) before working on any section
+4. Get explicit "yes" confirmation before calling save_alps_section()` : `1. Call ${profile.sectionContextTool}(N) before working on any section
 2. Ask 1-2 focused questions at a time - DO NOT auto-generate content
 3. Wait for user response before proceeding
 4. Get explicit "yes" confirmation before calling save_alps_section()`;
@@ -31870,7 +31875,7 @@ var server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.8.16" },
+  { name: "alps-writer", version: "0.8.17" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
@@ -31899,12 +31904,11 @@ Keywords: PRD, ALPS, Lite ALPS, \uAE30\uD68D\uC11C, \uAE30\uD68D \uBB38\uC11C, \
    Lite ALPS order: 1, 2, 3, 4. Section 3 is optional.
    For Full ALPS, author Requirements (6) before Design (5), because Design reuses the Feature IDs defined in Section 6.1.
    For each section:
-   a. Call the matching get_alps_section_guide(N) or get_lite_alps_section_guide(N)
-   b. Call the matching get_alps_section(N) or get_lite_alps_section(N)
-   c. Follow conversation guide from overview
-   d. Present a concise plain-text approval digest and get explicit user confirmation
-   e. save_alps_section(section, subsection_id, title, content) \u2014 one call per X.n subsection; Full ALPS Section 7 uses one call per Feature \u2014 only AFTER confirmation
-   f. Move to the next section only after this one is confirmed
+   a. Call the matching get_alps_section_context(N) or get_lite_alps_section_context(N)
+   b. Follow the returned conversation guide and template
+   c. Present a concise plain-text approval digest and get explicit user confirmation
+   d. save_alps_section(section, subsection_id, title, content) \u2014 one call per X.n subsection; Full ALPS Section 7 uses one call per Feature \u2014 only AFTER confirmation
+   e. Move to the next section only after this one is confirmed
 4. In batch mode, keep every section and dynamic Feature as a separately labeled
    approval unit and persist each with its own save_alps_section call. Never merge,
    skip, or infer a Feature.
@@ -31936,92 +31940,45 @@ Keywords: PRD, ALPS, Lite ALPS, \uAE30\uD68D\uC11C, \uAE30\uD68D \uBB38\uC11C, \
 var tc = new TemplateController(new TemplateService());
 var liteTc = new TemplateController(
   new TemplateService(LITE_ALPS_PROFILE),
-  "get_lite_alps_section_guide"
+  "get_lite_alps_section_context"
 );
 var dc = new DocumentController(new DocumentService());
 server.tool(
   "get_alps_overview",
-  "Get the ALPS template overview with all section descriptions. IMPORTANT: After calling this, you MUST call get_alps_section_guide(1) to start the interactive Q&A process.",
+  "Get the Full ALPS overview and authoring rules. Call get_alps_section_context(1) next.",
   {},
   () => ({
     content: [{ type: "text", text: tc.getAlpsOverview() }]
   })
 );
-server.tool("list_alps_sections", "List all available ALPS template sections.", {}, () => ({
-  content: [{ type: "text", text: JSON.stringify(tc.listAlpsSections()) }]
-}));
 server.tool(
-  "get_alps_section",
-  "Get a specific ALPS template section by number.",
+  "get_alps_section_context",
+  "Get the Full ALPS conversation guide followed by the template for one section.",
   {
-    section: external_exports.number().min(FIRST_SECTION).max(LAST_SECTION).describe(`Section number (${SECTION_RANGE})`),
+    section: external_exports.number().int().min(FIRST_SECTION).max(LAST_SECTION).describe(`Section number (${SECTION_RANGE})`),
     include_examples: external_exports.boolean().default(false).describe("Include example content")
   },
   ({ section, include_examples }) => ({
-    content: [{ type: "text", text: tc.getAlpsSection(section, include_examples) }]
-  })
-);
-server.tool(
-  "get_alps_full_template",
-  "Get the complete ALPS template with all sections combined.",
-  { include_examples: external_exports.boolean().default(false).describe("Include example content") },
-  ({ include_examples }) => ({
-    content: [{ type: "text", text: tc.getAlpsFullTemplate(include_examples) }]
-  })
-);
-server.tool(
-  "get_alps_section_guide",
-  "Get conversation guide for writing a specific ALPS section. Use this before starting each section.",
-  {
-    section: external_exports.number().min(FIRST_SECTION).max(LAST_SECTION).describe(`Section number (${SECTION_RANGE})`)
-  },
-  ({ section }) => ({
-    content: [{ type: "text", text: tc.getAlpsSectionGuide(section) }]
+    content: [{ type: "text", text: tc.getAlpsSectionContext(section, include_examples) }]
   })
 );
 server.tool(
   "get_lite_alps_overview",
-  "Get the Lite ALPS overview for mockup and PoC authoring. Call this before writing any Lite ALPS section.",
+  "Get the Lite ALPS overview and authoring rules. Call get_lite_alps_section_context(1) next.",
   {},
   () => ({
     content: [{ type: "text", text: liteTc.getAlpsOverview() }]
   })
 );
 server.tool(
-  "list_lite_alps_sections",
-  "List all available Lite ALPS template sections.",
-  {},
-  () => ({
-    content: [{ type: "text", text: JSON.stringify(liteTc.listAlpsSections()) }]
-  })
-);
-server.tool(
-  "get_lite_alps_section",
-  "Get a specific Lite ALPS template section by number.",
+  "get_lite_alps_section_context",
+  "Get the Lite ALPS conversation guide followed by the template for one section.",
   {
-    section: external_exports.number().min(LITE_FIRST_SECTION).max(LITE_LAST_SECTION).describe(`Section number (${LITE_SECTION_RANGE})`),
+    section: external_exports.number().int().min(LITE_FIRST_SECTION).max(LITE_LAST_SECTION).describe(`Section number (${LITE_SECTION_RANGE})`),
     include_examples: external_exports.boolean().default(false).describe("Include example content")
   },
   ({ section, include_examples }) => ({
-    content: [{ type: "text", text: liteTc.getAlpsSection(section, include_examples) }]
-  })
-);
-server.tool(
-  "get_lite_alps_full_template",
-  "Get the complete Lite ALPS template with all sections combined.",
-  { include_examples: external_exports.boolean().default(false).describe("Include example content") },
-  ({ include_examples }) => ({
-    content: [{ type: "text", text: liteTc.getAlpsFullTemplate(include_examples) }]
-  })
-);
-server.tool(
-  "get_lite_alps_section_guide",
-  "Get the conversation guide for a specific Lite ALPS section. Use this before starting each Lite section.",
-  {
-    section: external_exports.number().min(LITE_FIRST_SECTION).max(LITE_LAST_SECTION).describe(`Section number (${LITE_SECTION_RANGE})`)
-  },
-  ({ section }) => ({
-    content: [{ type: "text", text: liteTc.getAlpsSectionGuide(section) }]
+    content: [{ type: "text", text: liteTc.getAlpsSectionContext(section, include_examples) }]
   })
 );
 server.tool(
@@ -32048,12 +32005,7 @@ server.tool(
 );
 server.tool(
   "load_alps_document",
-  `Load an existing ALPS or Lite ALPS document to resume editing. The document profile is detected automatically.
-\u26A0\uFE0F CRITICAL: After loading, you MUST follow the conversation guide:
-1. Call the matching get_alps_section_guide(N) or get_lite_alps_section_guide(N)
-2. Follow the selected profile: Full asks for missing context before drafting; Lite asks only for missing or protected context and proposes Sections 2 and 4
-3. Wait when a focused question is required; otherwise present the completed proposal for approval
-4. Get explicit confirmation before saving each section`,
+  "Load an existing Full or Lite ALPS document, detect its profile, and return its status plus profile-specific resume guidance.",
   {
     doc_path: external_exports.string().min(1).describe("Path to the .alps.xml or .lite.alps.xml file")
   },

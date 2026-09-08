@@ -48,25 +48,19 @@ Config example with `ALPS_OUTPUT_DIR`:
 
 ## MCP tools
 
-### Full ALPS template tools
+### Full ALPS authoring tools
 
-| Tool                     | Description                                            |
-| ------------------------ | ------------------------------------------------------ |
-| `get_alps_overview`      | Get the ALPS template overview with conversation guide |
-| `list_alps_sections`     | List all available template sections                   |
-| `get_alps_section`       | Get a specific template section by number (1–9)        |
-| `get_alps_full_template` | Get the complete template with all sections            |
-| `get_alps_section_guide` | Get the conversation guide for writing a section       |
+| Tool                       | Description                                                 |
+| -------------------------- | ----------------------------------------------------------- |
+| `get_alps_overview`        | Get the Full ALPS overview and authoring rules              |
+| `get_alps_section_context` | Get a Section's conversation guide followed by its template |
 
-### Lite ALPS template tools
+### Lite ALPS authoring tools
 
-| Tool                          | Description                                                |
-| ----------------------------- | ---------------------------------------------------------- |
-| `get_lite_alps_overview`      | Get the current 4-section Lite ALPS overview and rules     |
-| `list_lite_alps_sections`     | List the Lite ALPS template sections                       |
-| `get_lite_alps_section`       | Get a current Lite ALPS template section by number (1–4)   |
-| `get_lite_alps_full_template` | Get the complete Lite ALPS template                        |
-| `get_lite_alps_section_guide` | Get the conversation guide for writing a Lite ALPS section |
+| Tool                            | Description                                                      |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `get_lite_alps_overview`        | Get the current 4-section Lite ALPS overview and authoring rules |
+| `get_lite_alps_section_context` | Get a Lite Section's conversation guide followed by its template |
 
 ### Document management tools
 
@@ -82,6 +76,7 @@ Config example with `ALPS_OUTPUT_DIR`:
 
 Document writes are guarded:
 
+- The public surface contains 11 tools. Section lists and whole-document templates are not exposed; authoring loads one Section context at a time.
 - Full documents use `.alps.xml`; Lite documents use `.lite.alps.xml` and declare the Lite profile in the root. A failed `init` or `load` leaves no document selected.
 - Existing files are never selected implicitly by either initialization tool; resume them explicitly with `load_alps_document`.
 - Full ALPS resumes in dependency order `1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9`. Lite ALPS resumes in `1 → 2 → 3 → 4`; Section 3 is optional and Section 4 is required.

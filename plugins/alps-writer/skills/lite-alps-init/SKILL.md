@@ -45,11 +45,12 @@ implementation readiness.
    - Sections 1, 2, and 4 are required.
    - Section 3 is optional and remains unwritten when the user has no explicit exclusions and the
      approved boundary is not materially ambiguous.
-   - After loading, call `mcp__alps-writer__get_alps_document_status`, summarize completed required
-     Sections once, and resume at the first incomplete required Section.
+   - After loading, use the status included in the `mcp__alps-writer__load_alps_document` result,
+     summarize completed required Sections once, and resume at the first incomplete required
+     Section.
 6. For each Section:
-   - Call `mcp__alps-writer__get_lite_alps_section_guide(N)`.
-   - Call `mcp__alps-writer__get_lite_alps_section(N)`.
+   - Call `mcp__alps-writer__get_lite_alps_section_context(N)` and follow the returned guide and
+     template.
    - Read every prerequisite named by the guide with
      `mcp__alps-writer__read_alps_section`.
    - Briefly explain the Section's purpose.

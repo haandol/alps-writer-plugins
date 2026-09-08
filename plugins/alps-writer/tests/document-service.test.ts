@@ -3,8 +3,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, test } from "node:test";
+import { ALPS_PROFILE } from "../src/profiles.js";
 import { DocumentService } from "../src/tools/documents/service.js";
 import { TemplateRegistry } from "../src/tools/templates/registry.js";
+import { TemplateService } from "../src/tools/templates/service.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -45,6 +47,31 @@ test("load accepts only structurally valid .alps.xml documents", () => {
   assert.match(service.loadDocument(fakeAlps), /Invalid ALPS document/);
   assert.match(service.saveSection(1, "1", "Purpose", "replacement"), /No document loaded/);
   assert.doesNotMatch(fs.readFileSync(valid, "utf8"), /replacement/);
+});
+
+test("template asset failures preserve the active document and its content", () => {
+  const dir = temporaryDirectory();
+  const target = path.join(dir, "active.alps.xml");
+  const service = new DocumentService();
+  assert.match(service.initDocument("active", target), /Created ALPS document/);
+  assert.match(service.saveSection(1, "1", "Purpose", "preserved"), /Saved 1\.1/);
+
+  const emptyChapters = path.join(dir, "empty-chapters");
+  const emptyGuides = path.join(dir, "empty-guides");
+  fs.mkdirSync(emptyChapters);
+  fs.mkdirSync(emptyGuides);
+  const templates = new TemplateService({
+    ...ALPS_PROFILE,
+    chaptersDir: emptyChapters,
+    guidesDir: emptyGuides,
+  });
+  const before = fs.readFileSync(target, "utf8");
+
+  assert.equal(templates.getSectionGuide(1), "Section 1 not found.");
+  assert.equal(templates.getSection(1), "Section 1 not found.");
+  assert.equal(fs.readFileSync(target, "utf8"), before);
+  assert.match(service.getStatus(), /ALPS Document: active/);
+  assert.match(service.readSection(1, "1"), /preserved/);
 });
 
 test("XML-sensitive project names and Markdown content round-trip without data loss", () => {

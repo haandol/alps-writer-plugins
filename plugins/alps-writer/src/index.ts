@@ -22,7 +22,7 @@ const server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.8.16" },
+  { name: "alps-writer", version: "0.8.17" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
@@ -51,12 +51,11 @@ Keywords: PRD, ALPS, Lite ALPS, 기획서, 기획 문서, 제품 요구사항, �
    Lite ALPS order: 1, 2, 3, 4. Section 3 is optional.
    For Full ALPS, author Requirements (6) before Design (5), because Design reuses the Feature IDs defined in Section 6.1.
    For each section:
-   a. Call the matching get_alps_section_guide(N) or get_lite_alps_section_guide(N)
-   b. Call the matching get_alps_section(N) or get_lite_alps_section(N)
-   c. Follow conversation guide from overview
-   d. Present a concise plain-text approval digest and get explicit user confirmation
-   e. save_alps_section(section, subsection_id, title, content) — one call per X.n subsection; Full ALPS Section 7 uses one call per Feature — only AFTER confirmation
-   f. Move to the next section only after this one is confirmed
+   a. Call the matching get_alps_section_context(N) or get_lite_alps_section_context(N)
+   b. Follow the returned conversation guide and template
+   c. Present a concise plain-text approval digest and get explicit user confirmation
+   d. save_alps_section(section, subsection_id, title, content) — one call per X.n subsection; Full ALPS Section 7 uses one call per Feature — only AFTER confirmation
+   e. Move to the next section only after this one is confirmed
 4. In batch mode, keep every section and dynamic Feature as a separately labeled
    approval unit and persist each with its own save_alps_section call. Never merge,
    skip, or infer a Feature.
@@ -89,67 +88,40 @@ Keywords: PRD, ALPS, Lite ALPS, 기획서, 기획 문서, 제품 요구사항, �
 const tc = new TemplateController(new TemplateService());
 const liteTc = new TemplateController(
   new TemplateService(LITE_ALPS_PROFILE),
-  "get_lite_alps_section_guide",
+  "get_lite_alps_section_context",
 );
 const dc = new DocumentController(new DocumentService());
 
 // Template tools
 server.tool(
   "get_alps_overview",
-  "Get the ALPS template overview with all section descriptions. IMPORTANT: After calling this, you MUST call get_alps_section_guide(1) to start the interactive Q&A process.",
+  "Get the Full ALPS overview and authoring rules. Call get_alps_section_context(1) next.",
   {},
   () => ({
     content: [{ type: "text", text: tc.getAlpsOverview() }],
   }),
 );
 
-server.tool("list_alps_sections", "List all available ALPS template sections.", {}, () => ({
-  content: [{ type: "text", text: JSON.stringify(tc.listAlpsSections()) }],
-}));
-
 server.tool(
-  "get_alps_section",
-  "Get a specific ALPS template section by number.",
+  "get_alps_section_context",
+  "Get the Full ALPS conversation guide followed by the template for one section.",
   {
     section: z
       .number()
+      .int()
       .min(FIRST_SECTION)
       .max(LAST_SECTION)
       .describe(`Section number (${SECTION_RANGE})`),
     include_examples: z.boolean().default(false).describe("Include example content"),
   },
   ({ section, include_examples }) => ({
-    content: [{ type: "text", text: tc.getAlpsSection(section, include_examples) }],
-  }),
-);
-
-server.tool(
-  "get_alps_full_template",
-  "Get the complete ALPS template with all sections combined.",
-  { include_examples: z.boolean().default(false).describe("Include example content") },
-  ({ include_examples }) => ({
-    content: [{ type: "text", text: tc.getAlpsFullTemplate(include_examples) }],
-  }),
-);
-
-server.tool(
-  "get_alps_section_guide",
-  "Get conversation guide for writing a specific ALPS section. Use this before starting each section.",
-  {
-    section: z
-      .number()
-      .min(FIRST_SECTION)
-      .max(LAST_SECTION)
-      .describe(`Section number (${SECTION_RANGE})`),
-  },
-  ({ section }) => ({
-    content: [{ type: "text", text: tc.getAlpsSectionGuide(section) }],
+    content: [{ type: "text", text: tc.getAlpsSectionContext(section, include_examples) }],
   }),
 );
 
 server.tool(
   "get_lite_alps_overview",
-  "Get the Lite ALPS overview for mockup and PoC authoring. Call this before writing any Lite ALPS section.",
+  "Get the Lite ALPS overview and authoring rules. Call get_lite_alps_section_context(1) next.",
   {},
   () => ({
     content: [{ type: "text", text: liteTc.getAlpsOverview() }],
@@ -157,51 +129,19 @@ server.tool(
 );
 
 server.tool(
-  "list_lite_alps_sections",
-  "List all available Lite ALPS template sections.",
-  {},
-  () => ({
-    content: [{ type: "text", text: JSON.stringify(liteTc.listAlpsSections()) }],
-  }),
-);
-
-server.tool(
-  "get_lite_alps_section",
-  "Get a specific Lite ALPS template section by number.",
+  "get_lite_alps_section_context",
+  "Get the Lite ALPS conversation guide followed by the template for one section.",
   {
     section: z
       .number()
+      .int()
       .min(LITE_FIRST_SECTION)
       .max(LITE_LAST_SECTION)
       .describe(`Section number (${LITE_SECTION_RANGE})`),
     include_examples: z.boolean().default(false).describe("Include example content"),
   },
   ({ section, include_examples }) => ({
-    content: [{ type: "text", text: liteTc.getAlpsSection(section, include_examples) }],
-  }),
-);
-
-server.tool(
-  "get_lite_alps_full_template",
-  "Get the complete Lite ALPS template with all sections combined.",
-  { include_examples: z.boolean().default(false).describe("Include example content") },
-  ({ include_examples }) => ({
-    content: [{ type: "text", text: liteTc.getAlpsFullTemplate(include_examples) }],
-  }),
-);
-
-server.tool(
-  "get_lite_alps_section_guide",
-  "Get the conversation guide for a specific Lite ALPS section. Use this before starting each Lite section.",
-  {
-    section: z
-      .number()
-      .min(LITE_FIRST_SECTION)
-      .max(LITE_LAST_SECTION)
-      .describe(`Section number (${LITE_SECTION_RANGE})`),
-  },
-  ({ section }) => ({
-    content: [{ type: "text", text: liteTc.getAlpsSectionGuide(section) }],
+    content: [{ type: "text", text: liteTc.getAlpsSectionContext(section, include_examples) }],
   }),
 );
 
@@ -238,12 +178,7 @@ server.tool(
 
 server.tool(
   "load_alps_document",
-  `Load an existing ALPS or Lite ALPS document to resume editing. The document profile is detected automatically.
-⚠️ CRITICAL: After loading, you MUST follow the conversation guide:
-1. Call the matching get_alps_section_guide(N) or get_lite_alps_section_guide(N)
-2. Follow the selected profile: Full asks for missing context before drafting; Lite asks only for missing or protected context and proposes Sections 2 and 4
-3. Wait when a focused question is required; otherwise present the completed proposal for approval
-4. Get explicit confirmation before saving each section`,
+  "Load an existing Full or Lite ALPS document, detect its profile, and return its status plus profile-specific resume guidance.",
   {
     doc_path: z.string().min(1).describe("Path to the .alps.xml or .lite.alps.xml file"),
   },

@@ -749,11 +749,12 @@ test("feature-to-adr completes ownership transfer and makes explicit re-import i
   assert.match(importer, /Never create an empty placeholder ADR/);
 });
 
-test("alps-init resumes from status in the dependency-respecting section order", () => {
+test("alps-init resumes from the load result in dependency-respecting section order", () => {
   const init = read(path.join(PLUGINS_ROOT, "alps-writer", "skills", "alps-init", "SKILL.md"));
 
   assert.match(init, /1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9/);
-  assert.match(init, /get_alps_document_status/);
+  assert.match(init, /status included in the `load_alps_document` result/);
+  assert.doesNotMatch(init, /call `mcp__alps-writer__get_alps_document_status`/i);
   assert.match(init, /first section in that order that is not `✅ Written`/);
   assert.match(init, /Do not reopen or re-confirm a completed unchanged section/);
   assert.match(init, /user requests a full review/);

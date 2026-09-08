@@ -25,11 +25,11 @@ Start authoring an ALPS (PRD).
    - In batch mode, keep every section or Feature as a separately labeled draft and save each one with its own `save_alps_section` call only after the user approves the batch. The user may approve, reject, or revise individual items.
 5. Use the dependency-respecting authoring order **1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9**.
    - For a new document, start at Section 1.
-   - After loading an existing document, call `mcp__alps-writer__get_alps_document_status`, summarize the completed sections once, and resume at the first section in that order that is not `✅ Written`.
+   - After loading an existing document, use the status included in the `load_alps_document` result, summarize the completed sections once, and resume at the first section in that order that is not `✅ Written`.
    - Do not reopen or re-confirm a completed unchanged section unless the user requests a full review or an edited prerequisite requires that section to be revisited.
 6. From the selected starting point:
-   - `get_alps_section_guide(N)` → `get_alps_section(N)` → ask the user 1-2 questions → show a concise plain-text approval digest and confirm → call `save_alps_section(N, ...)` once per approved `X.n` subsection → move to the next section only once confirmed
-   - In batch mode, repeat the guide/read step for every included section before drafting, present the sections as separate approval units, and save them separately after approval.
+   - `get_alps_section_context(N)` → follow the returned guide and template → ask the user 1-2 questions → show a concise plain-text approval digest and confirm → call `save_alps_section(N, ...)` once per approved `X.n` subsection → move to the next section only once confirmed
+   - In batch mode, repeat the Section context step for every included section before drafting, present the sections as separate approval units, and save them separately after approval.
    - Never skip an incomplete section at your own discretion. Even one that looks trivial must be seen and approved by the user before moving on.
    - The digest must remain readable as raw text. Label the approval unit, then show only its purpose/user value, scope and non-goals, mandatory requirements, contract-bearing values and rules with their basis, success or demo outcome, and unresolved questions. End with clear approve, revise, and defer choices.
    - Omit repeated explanations, examples, Markdown-dependent decoration, and implementation detail. Do not name omitted implementation details or add an exclusion list for them. Never save a requirement value, permission, allowed state, transition, ordering, uniqueness, unit, scope boundary, or success condition that was absent from the digest. Show the full pending content when the user requests it.

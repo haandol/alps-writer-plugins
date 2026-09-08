@@ -26,15 +26,14 @@ required prerequisite is incomplete, complete it first.
 
 For every Section that needs content:
 
-1. Call `get_lite_alps_section_guide(N)`.
-2. Call `get_lite_alps_section(N)`.
-3. Explain the Section's purpose briefly.
-4. Ask one focused question, or at most two closely related questions, when required context is
+1. Call `get_lite_alps_section_context(N)` and follow the returned guide and template.
+2. Explain the Section's purpose briefly.
+3. Ask one focused question, or at most two closely related questions, when required context is
    missing. Skip optional Section 3 without a question when no explicit exclusion exists and the
    approved boundary is not materially ambiguous.
-5. Wait for the user's response and integrate it iteratively.
-6. When the Section is complete, present a concise plain-text approval digest.
-7. Save only after explicit approval with `save_alps_section`.
+4. Wait for the user's response and integrate it iteratively.
+5. When the Section is complete, present a concise plain-text approval digest.
+6. Save only after explicit approval with `save_alps_section`.
 
 Use atomic confirmation by default. Batch confirmation is allowed only when the user explicitly
 requests it or provides a complete structured source covering several Sections. Batch mode keeps

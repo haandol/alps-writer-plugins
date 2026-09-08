@@ -26,7 +26,7 @@ export interface DocumentProfile {
   authoringOrder: readonly number[];
   dynamicSection: DynamicSectionDefinition | null;
   optionalSections: readonly number[];
-  sectionGuideTool: string;
+  sectionContextTool: string;
 }
 
 const templatesDir = path.join(__dirname, "templates");
@@ -66,7 +66,7 @@ export const ALPS_PROFILE: DocumentProfile = {
     sourceSubsectionId: "6.1",
   },
   optionalSections: [],
-  sectionGuideTool: "get_alps_section_guide",
+  sectionContextTool: "get_alps_section_context",
 };
 
 export const LITE_ALPS_PROFILE: DocumentProfile = {
@@ -92,7 +92,7 @@ export const LITE_ALPS_PROFILE: DocumentProfile = {
   authoringOrder: [1, 2, 3, 4],
   dynamicSection: null,
   optionalSections: [3],
-  sectionGuideTool: "get_lite_alps_section_guide",
+  sectionContextTool: "get_lite_alps_section_context",
 };
 
 export const DOCUMENT_PROFILES: Readonly<Record<DocumentProfileId, DocumentProfile>> = {

@@ -63,7 +63,7 @@ Some sections depend on other sections. Before working on a section with referen
 
 <conversation-flow>
 For EVERY section:
-1. Call `get_alps_section_guide(N)` before writing
+1. Call `get_alps_section_context(N)` before writing and follow the returned guide and template
 2. Briefly explain section purpose (1-2 sentences)
 3. Ask 1 (max 2) focused questions from the guide
 4. Integrate answers iteratively
@@ -127,7 +127,7 @@ When user provides PDF, ALPS (PRD), or any reference:
 </reference-document-handling>
 
 <rules>
-- NEVER write section without calling get_alps_section_guide() first
+- NEVER write section without calling get_alps_section_context() first
 - NEVER proceed without explicit user confirmation
 - ALWAYS confirm at the section level — never skip a section without the user approving it
 - Batch confirmation requires explicit opt-in or a complete structured source

@@ -227,7 +227,7 @@ test("the Lite resume eval embeds the shipping profile-aware runtime guidance", 
   const dir = mkdtempSync(path.join(tmpdir(), "lite-resume-eval-"));
   const prompt = await scenario.build(dir);
 
-  assert.match(prompt, /get_lite_alps_section_guide/);
+  assert.match(prompt, /get_lite_alps_section_context/);
   assert.match(prompt, /propose Sections 2 and 4 before asking the user to design them/i);
   assert.doesNotMatch(prompt, /Ask 1-2 focused questions at a time - DO NOT auto-generate content/);
 });

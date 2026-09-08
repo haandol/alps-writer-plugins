@@ -224,7 +224,7 @@ test("Lite documents initialize, validate, resume, and export independently from
 
   const resumed = new DocumentService();
   const resumeGuidance = resumed.loadDocument(liteTarget);
-  assert.match(resumeGuidance, /get_lite_alps_section_guide/);
+  assert.match(resumeGuidance, /get_lite_alps_section_context/);
   assert.match(resumeGuidance, /propose Sections 2 and 4 before asking the user to design them/i);
   assert.match(resumeGuidance, /missing user-owned or protected context/i);
   assert.doesNotMatch(resumeGuidance, /DO NOT auto-generate content/);

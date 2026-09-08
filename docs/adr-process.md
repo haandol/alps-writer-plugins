@@ -124,18 +124,15 @@ flowchart TD
     Q -->|이어쓰기| L["load_alps_document()"]
     I --> Ov["get_alps_overview()<br/>9개 섹션 전체의 작성 가이드"]
     L --> Ov
-    L --> Status["get_alps_document_status()<br/>완료 섹션을 한 번 요약"]
     Ov --> StartAt{"시작 위치"}
-    Status --> StartAt
     StartAt -->|"신규"| First["Section 1"]
-    StartAt -->|"이어쓰기"| Resume["의존 순서상 첫 미완료 섹션<br/>완료·미변경 섹션은 재확인하지 않음"]
+    StartAt -->|"이어쓰기"| Resume["load 응답의 상태에서 의존 순서상 첫 미완료 섹션 선택<br/>완료·미변경 섹션은 재확인하지 않음"]
     First --> Loop
     Resume --> Loop
 
     subgraph Loop["섹션마다 — 한 번에 하나씩, 절대 묶지 않는다"]
         direction TB
-        G["get_alps_section_guide(N)"] --> T["get_alps_section(N)"]
-        T --> Ask["초점이 잡힌 질문 1~2개"]
+        G["get_alps_section_context(N)<br/>guide 다음 template"] --> Ask["초점이 잡힌 질문 1~2개"]
         Ask --> Show["완성된 섹션을 출력"]
         Show --> C{"사용자 확인?"}
         C -->|수정 요청| Ask
@@ -155,7 +152,7 @@ flowchart TD
 
 **작성 순서** — `1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9`. 섹션 번호와 최종 문서 순서는 그대로다(5는 Design, 6은 Requirements). _질문하는_ 순서만 어긋나는데, Section 5가 Section 6.1이 정의하는 Feature ID(F1, F2, …)를 재사용하기 때문이다. 질문 순서가 숫자 순서에서 벗어나는 곳은 여기 한 군데뿐이다.
 
-기존 문서는 `get_alps_document_status` 결과를 읽고 이 순서에서 첫 미완료 섹션부터 이어간다. 완료된 섹션은 한 번 요약하되, 사용자가 전체 재검토를 요청하거나 선행 내용이 바뀐 경우가 아니면 다시 승인받지 않는다.
+기존 문서는 `load_alps_document` 응답에 포함된 상태를 읽고 이 순서에서 첫 미완료 섹션부터 이어간다. 완료된 섹션은 한 번 요약하되, 사용자가 전체 재검토를 요청하거나 선행 내용이 바뀐 경우가 아니면 다시 승인받지 않는다.
 
 | §   | 섹션                      | §   | 섹션                        |
 | --- | ------------------------- | --- | --------------------------- |
