@@ -239,27 +239,30 @@ const UI = {
     noCounterexample: "No additional work was identified.",
     incomplete: "No work item was confirmed, but the review did not complete.",
     evidence: "Technical evidence",
-    hill: "Container / Hill",
-    reviewQuestion: "What this Container verifies",
-    reviewContext: "Context · Intent and contracts",
-    verticalSlice: "Vertical slice",
+    hill: "Review flow · Container",
+    reviewQuestion: "Question this flow answers",
+    reviewContext: "Why this change exists · Context",
+    verticalSlice: "Flow under review",
     sliceTypeLabels: {
       "user-flow": "user flow",
       "logical-capability": "logical capability",
       "bounded-context": "bounded context",
     },
-    contextIntent: "Intent",
-    contextPreconditions: "Preconditions and surrounding context",
-    contextContracts: "Core contracts",
-    contextScopeAndRisk: "Review scope and risk",
-    containerResponsibility: "Responsibility",
-    containerInteractions: "Interactions",
-    containerOutcome: "Observable outcome",
-    components: "Components",
-    componentResponsibility: "Responsibility",
-    componentImplementation: "Detailed implementation",
-    componentVerification: "Verification result",
-    codeEvidence: "Code",
+    contextIntent: "Purpose",
+    contextPreconditions: "Starting point",
+    contextContracts: "What must remain true",
+    contextScopeAndRisk: "Review boundary and risk",
+    containerResponsibility: "What this flow must achieve",
+    containerInteractions: "How the flow proceeds",
+    containerOutcome: "What the reader should observe",
+    components: "How the result is produced",
+    componentResponsibility: "Role in the flow",
+    componentImplementation: "How it works",
+    componentVerification: "How it was verified",
+    flowEvidence: "Implementation and evidence",
+    componentsCount: "components",
+    contractsCount: "contracts",
+    codeEvidence: "Code evidence",
     codeLocation: "Location",
     codeExplanation: "Why this code matters",
     coverage: "Contract verification",
@@ -337,27 +340,30 @@ const UI = {
     noCounterexample: "추가로 처리할 작업이 없습니다.",
     incomplete: "확정된 작업은 없지만 리뷰가 완료되지 않았습니다.",
     evidence: "상세 기술 근거",
-    hill: "Container / 낮은 언덕",
-    reviewQuestion: "이 Container에서 확인할 것",
-    reviewContext: "Context · 의도와 계약",
-    verticalSlice: "수직 단위",
+    hill: "리뷰 흐름 · Container",
+    reviewQuestion: "이 흐름이 답해야 할 질문",
+    reviewContext: "왜 이 변경이 필요한가 · Context",
+    verticalSlice: "검토할 흐름",
     sliceTypeLabels: {
       "user-flow": "사용자 흐름",
       "logical-capability": "논리 기능",
       "bounded-context": "바운디드 컨텍스트(하나의 업무 경계)",
     },
-    contextIntent: "의도",
-    contextPreconditions: "사전 조건·주변 컨텍스트",
-    contextContracts: "핵심 계약",
-    contextScopeAndRisk: "검토 범위·위험",
-    containerResponsibility: "책임",
-    containerInteractions: "상호작용",
-    containerOutcome: "관찰 결과",
-    components: "Components",
-    componentResponsibility: "책임",
-    componentImplementation: "상세 구현",
-    componentVerification: "검증 결과",
-    codeEvidence: "Code",
+    contextIntent: "목적",
+    contextPreconditions: "시작 조건",
+    contextContracts: "반드시 유지할 계약",
+    contextScopeAndRisk: "검토 경계와 위험",
+    containerResponsibility: "이 흐름이 달성할 일",
+    containerInteractions: "흐름이 진행되는 방식",
+    containerOutcome: "독자가 확인할 결과",
+    components: "결과를 만드는 구현",
+    componentResponsibility: "흐름에서 맡은 역할",
+    componentImplementation: "동작 방식",
+    componentVerification: "검증 방법과 결과",
+    flowEvidence: "구현과 검증 근거",
+    componentsCount: "구성 요소",
+    contractsCount: "계약",
+    codeEvidence: "코드 근거",
     codeLocation: "위치",
     codeExplanation: "코드 근거 설명",
     coverage: "계약 검증 결과",
@@ -962,27 +968,22 @@ function contractCoverageCard(row, index, total, ui) {
   </details>`;
 }
 
-function contextItems(context, ui) {
-  return [
-    [ui.contextIntent, context.intent],
-    [ui.contextPreconditions, context.preconditions],
-    [ui.contextContracts, context.contracts],
-    [ui.contextScopeAndRisk, context.scopeAndRisk],
-  ]
-    .map(
-      ([label, value]) =>
-        `<div class="hill-story__step"><span>${esc(label)}</span><p>${esc(value)}</p></div>`,
-    )
-    .join("");
+function narrativeParagraph(label, value, className = "") {
+  return `<p${className ? ` class="${className}"` : ""}><strong>${esc(label)}.</strong> ${esc(
+    value,
+  )}</p>`;
 }
 
 function reviewContextCard(context, ui) {
   return `
   <section class="hill hill--foundation" id="review-context">
-    <header class="hill__head">
-      <span class="tag hill__tag">${esc(ui.reviewContext)}</span>
-    </header>
-    <div class="hill-story" aria-label="${esc(ui.reviewContext)}">${contextItems(context, ui)}</div>
+    <h2 class="explanation__title">${esc(ui.reviewContext)}</h2>
+    <div class="context-narrative" aria-label="${esc(ui.reviewContext)}">
+      ${narrativeParagraph(ui.contextIntent, context.intent, "narrative-lead")}
+      ${narrativeParagraph(ui.contextPreconditions, context.preconditions)}
+      ${narrativeParagraph(ui.contextContracts, context.contracts)}
+      ${narrativeParagraph(ui.contextScopeAndRisk, context.scopeAndRisk)}
+    </div>
   </section>`;
 }
 
@@ -1012,18 +1013,39 @@ function componentCard(component, ui, hillId) {
         <span class="tag component__tag">Component ${esc(component.id)}</span>
         <h3>${esc(component.name)}</h3>
       </header>
-      <div class="component__grid">
-        <div><span>${esc(ui.componentResponsibility)}</span><p>${esc(component.responsibility)}</p></div>
-        <div><span>${esc(ui.componentImplementation)}</span><p>${esc(component.implementation)}</p></div>
-        <div><span>${esc(ui.componentVerification)}</span><p>${esc(component.verification)}</p></div>
+      <div class="component__narrative">
+        ${narrativeParagraph(ui.componentResponsibility, component.responsibility)}
+        ${narrativeParagraph(ui.componentImplementation, component.implementation)}
+        ${narrativeParagraph(ui.componentVerification, component.verification, "verification-note")}
       </div>
       <div class="component__code">${codeCards}</div>
     </article>`;
 }
 
+function hillResult(rows, ui) {
+  const priority = ["CONTRADICTED", "VIOLATED", "UNVERIFIED", "PROVEN"];
+  const status = priority.find((candidate) =>
+    rows.some((row) => String(row.status || "").toUpperCase() === candidate),
+  );
+  const normalizedStatus = status || "UNVERIFIED";
+  const label =
+    {
+      PROVEN: ui.statusProven,
+      VIOLATED: ui.statusViolated,
+      UNVERIFIED: ui.statusUnverified,
+      CONTRADICTED: ui.statusContradicted,
+    }[normalizedStatus] || ui.statusUnverified;
+  return {
+    statusClass: normalizedStatus.toLowerCase(),
+    label,
+    open: normalizedStatus !== "PROVEN",
+  };
+}
+
 function reviewHillCard(hill, body, rows, ui) {
   const sliceType = ui.sliceTypeLabels?.[hill.sliceType] || hill.sliceType;
   const hillId = hill.id.toLowerCase();
+  const result = hillResult(rows, ui);
   const components = hill.components
     .map((component) => componentCard(component, ui, hillId))
     .join("\n");
@@ -1032,34 +1054,53 @@ function reviewHillCard(hill, body, rows, ui) {
     .join("\n");
 
   return `
-  <section class="hill" id="hill-${esc(hill.id.toLowerCase())}">
+  <section class="hill hill--${esc(result.statusClass)}" id="hill-${esc(hill.id.toLowerCase())}">
     <header class="hill__head">
-      <span class="tag hill__tag">${esc(ui.hill)} ${esc(hill.id)}</span>
+      <div>
+        <p class="hill__eyebrow">${esc(hill.id)} · ${esc(sliceType)}</p>
+        <h2 class="explanation__title">${esc(hill.title)}</h2>
+      </div>
+      <span class="flow-status flow-status--${esc(result.statusClass)}">${esc(
+        result.label,
+      )} · ${rows.length}</span>
     </header>
-    <h2 class="explanation__title">${esc(hill.title)}</h2>
     <p class="hill__slice"><span class="side__label">${esc(ui.verticalSlice)}</span> ${esc(
       hill.sliceName,
-    )} <code>${esc(sliceType)}</code></p>
+    )}</p>
     <div class="hill__question">
       <span class="side__label">${esc(ui.reviewQuestion)}</span>
       <p>${esc(hill.reviewQuestion)}</p>
     </div>
-    <div class="container-zoom" aria-label="${esc(ui.hill)}">
-      <div><span>${esc(ui.containerResponsibility)}</span><p>${esc(hill.container.responsibility)}</p></div>
-      <div><span>${esc(ui.containerInteractions)}</span><p>${esc(hill.container.interactions)}</p></div>
-      <div><span>${esc(ui.containerOutcome)}</span><p>${esc(hill.container.outcome)}</p></div>
-    </div>
-    <h3 class="component-section-title">${esc(ui.components)}</h3>
-    <div class="components">${components}</div>
     ${
       body
-        ? `<div class="explanation__body">${renderMarkdown(
+        ? `<div class="explanation__body hill__authored-narrative">${renderMarkdown(
             stripGeneratedHillContent(body),
             ui,
           )}</div>`
         : ""
     }
-    <div class="hill__evidence">${coverageCards}</div>
+    <div class="hill__narrative" aria-label="${esc(ui.hill)}">
+      ${narrativeParagraph(
+        ui.containerResponsibility,
+        hill.container.responsibility,
+        "narrative-lead",
+      )}
+      ${narrativeParagraph(ui.containerInteractions, hill.container.interactions)}
+      ${narrativeParagraph(ui.containerOutcome, hill.container.outcome, "outcome-note")}
+    </div>
+    <details class="hill__details"${result.open ? " open" : ""}>
+      <summary>
+        <span>${esc(ui.flowEvidence)}</span>
+        <small>${hill.components.length} ${esc(ui.componentsCount)} · ${rows.length} ${esc(
+          ui.contractsCount,
+        )}</small>
+      </summary>
+      <div class="hill__details-body">
+        <h3 class="component-section-title">${esc(ui.components)}</h3>
+        <div class="components">${components}</div>
+        <div class="hill__evidence">${coverageCards}</div>
+      </div>
+    </details>
   </section>`;
 }
 
@@ -1614,17 +1655,18 @@ function buildHtml(data) {
     text-transform: uppercase; color: var(--ink-2); margin: 0 0 12px;
   }
   .overview__grid {
-    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
+    display: grid; gap: 0;
   }
   .overview__item {
-    background: var(--paper); border: 1px solid var(--line);
-    border-radius: 8px; padding: 11px 12px;
+    display: grid; grid-template-columns: 76px 1fr; gap: 12px;
+    align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line);
   }
+  .overview__item:first-child { border-top: 0; }
   .overview__key {
-    display: block; font: 700 10px/1 var(--mono); letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--ink-2); margin-bottom: 7px;
+    display: block; font: 700 10px/1 var(--mono); letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-2);
   }
-  .overview__value { margin: 0; font-size: 13.5px; }
+  .overview__value { margin: 0; font-size: 14px; }
   .explanation {
     background: var(--card); border: 1px solid var(--line); border-radius: 10px;
     padding: 16px 18px; margin: 14px 0;
@@ -1639,11 +1681,30 @@ function buildHtml(data) {
   .explanation__body p { margin: 10px 0; }
   .explanation__body ul, .explanation__body ol { margin: 10px 0; padding-left: 24px; }
   .hill {
+    --hill-status: #566173;
     background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    border-top: 3px solid var(--hill-status);
     padding: 18px; margin: 18px 0;
   }
-  .hill__head { display: flex; align-items: center; gap: 12px; }
+  .hill--proven { --hill-status: #2e7d4f; }
+  .hill--violated { --hill-status: #c0362c; }
+  .hill--unverified { --hill-status: #b4690e; }
+  .hill--contradicted { --hill-status: #7457a6; }
+  .hill__head {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  }
+  .hill__head .explanation__title { margin-bottom: 0; }
+  .hill__eyebrow {
+    margin: 0 0 6px; font: 700 10px/1 var(--mono);
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2);
+  }
   .hill__tag { --sev: #426b4f; }
+  .flow-status {
+    flex: 0 0 auto; border: 1px solid color-mix(in srgb, var(--hill-status) 45%, var(--line));
+    border-radius: 999px; padding: 6px 10px;
+    background: color-mix(in srgb, var(--hill-status) 8%, var(--card));
+    color: var(--hill-status); font: 700 11px/1 var(--mono);
+  }
   .hill__question {
     background: color-mix(in srgb, #426b4f 9%, var(--card));
     border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; margin: 10px 0 12px;
@@ -1653,35 +1714,28 @@ function buildHtml(data) {
   .hill__slice code { margin-left: 6px; }
   .hill--foundation { border-color: color-mix(in srgb, #426b4f 36%, var(--line)); }
   .zoom-disclaimer { margin: 8px 0 14px; color: var(--ink-2); font-size: 12.5px; }
-  .hill-story {
-    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px; margin: 12px 0 16px;
+  .context-narrative, .hill__narrative, .component__narrative {
+    max-width: 74ch;
   }
-  .hill-story__step {
-    background: var(--paper); border: 1px solid var(--line);
-    border-radius: 8px; padding: 10px 11px;
+  .context-narrative p, .hill__narrative p, .component__narrative p {
+    margin: 10px 0; font-size: 14px;
   }
-  .hill-story__step span {
-    display: block; font: 700 10px/1 var(--mono); letter-spacing: 0.11em;
-    text-transform: uppercase; color: var(--ink-2); margin-bottom: 7px;
+  .context-narrative strong, .hill__narrative strong, .component__narrative strong {
+    color: var(--ink);
   }
-  .hill-story__step p { margin: 0; font-size: 13px; }
-  .container-zoom {
-    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px; margin: 12px 0 18px;
+  .narrative-lead {
+    font-size: 15px !important; line-height: 1.7;
   }
-  .container-zoom > div, .component__grid > div {
-    background: var(--paper); border: 1px solid var(--line);
-    border-radius: 8px; padding: 10px 11px;
+  .outcome-note, .verification-note {
+    padding: 9px 12px; border-left: 3px solid #426b4f;
+    background: color-mix(in srgb, #426b4f 7%, var(--card));
   }
-  .container-zoom span, .component__grid span {
-    display: block; font: 700 10px/1 var(--mono); letter-spacing: 0.11em;
-    text-transform: uppercase; color: var(--ink-2); margin-bottom: 7px;
+  .hill__authored-narrative {
+    max-width: 74ch; margin: 14px 0 16px; padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
   }
-  .container-zoom p, .component__grid p { margin: 0; font-size: 13px; }
   .component-section-title {
-    font: 700 11px/1 var(--mono); letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--ink-2); margin: 20px 0 10px;
+    font: 700 16px/1.3 var(--sans); color: var(--ink); margin: 24px 0 10px;
   }
   .components { display: grid; gap: 12px; }
   .component {
@@ -1691,10 +1745,18 @@ function buildHtml(data) {
   .component__head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .component__head h3 { margin: 0; font-size: 16px; }
   .component__tag { --sev: #5b5f97; }
-  .component__grid {
-    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
-  }
   .component__code { margin-top: 10px; }
+  .hill__details {
+    margin-top: 18px; border-top: 1px solid var(--line);
+  }
+  .hill__details > summary {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    cursor: pointer; padding: 14px 0 2px; font-weight: 700;
+  }
+  .hill__details > summary small {
+    color: var(--ink-2); font: 600 11px/1.2 var(--mono);
+  }
+  .hill__details-body { padding-top: 8px; }
   .code-evidence {
     border: 1px solid var(--line); border-radius: 8px;
     background: var(--paper); margin-top: 8px; padding: 0 11px;
@@ -1730,13 +1792,13 @@ function buildHtml(data) {
   }
   .coverage-index { list-style: none; padding: 0; margin: 10px 0 18px; }
   .coverage-index li {
-    display: grid; grid-template-columns: auto auto auto 1fr; gap: 10px;
-    align-items: baseline; border-bottom: 1px solid var(--line); padding: 9px 0;
+    display: flex; flex-wrap: wrap; gap: 8px 12px;
+    align-items: baseline; border-bottom: 1px solid var(--line); padding: 10px 0;
   }
   .coverage-index li > a, .coverage-index li > span {
     font: 700 11px/1 var(--mono);
   }
-  .coverage-index li p { margin: 0; font-size: 13px; }
+  .coverage-index li p { flex: 1 1 100%; margin: 0; font-size: 13px; }
 
   /* ── finding ───────────────────────────────────────────────────── */
   .finding {
@@ -1988,10 +2050,9 @@ function buildHtml(data) {
   @media (max-width: 620px) {
     .page { display: block; padding: 18px 14px 36px; }
     .toc { position: static; margin-bottom: 18px; }
-    .overview__grid { grid-template-columns: 1fr; }
-    .hill-story, .container-zoom, .component__grid { grid-template-columns: 1fr; }
-    .coverage-index li { grid-template-columns: auto auto auto; }
-    .coverage-index li p { grid-column: 1 / -1; }
+    .overview__item { grid-template-columns: 1fr; gap: 5px; }
+    .hill__head { flex-direction: column; }
+    .hill__details > summary { align-items: flex-start; flex-direction: column; gap: 5px; }
     .task-comparison { grid-template-columns: 1fr; }
     .coverage__summary { grid-template-columns: 1fr auto; }
     .coverage__status { grid-column: 1 / -1; }

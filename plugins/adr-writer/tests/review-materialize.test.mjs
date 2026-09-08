@@ -166,13 +166,13 @@ test("materializer creates the complete Markdown evidence sections from findings
     assert.match(report, /- Verdict: PASS/);
     assert.match(report, /\| D0 \| Met \| H1 \| A \\\| B \|/);
     assert.match(report, /### D0 · Met · A \\\| B/);
-    assert.match(report, /- Implementation: Implemented/);
-    assert.match(report, /- Evidence: src\/example\.ts/);
-    assert.match(report, /- Tests: node --test — PASS/);
-    assert.match(report, /### Intent/);
+    assert.match(report, /\*\*Implementation\.\*\* Implemented/);
+    assert.match(report, /\*\*Evidence\.\*\* src\/example\.ts/);
+    assert.match(report, /\*\*Tests\.\*\* node --test — PASS/);
+    assert.match(report, /\*\*Intent\.\*\*/);
     assert.match(report, /The request reaches a contract boundary\./);
-    assert.match(report, /- Vertical slice: Contract-bound request \(user flow\)/);
-    assert.match(report, /### Responsibility/);
+    assert.match(report, /\*\*Vertical slice\.\*\* Contract-bound request \(user flow\)/);
+    assert.match(report, /\*\*Responsibility\.\*\*/);
     assert.match(report, /### Component C1 · Request boundary/);
     assert.match(report, /```diff[\s\S]*- oldBoundary\(request\)/);
     assert.match(report, /\| fixed delay \| src\/example\.ts \|/);
@@ -280,9 +280,9 @@ test("materializer localizes Hill evidence labels for Korean reports", () => {
     assert.equal(result.status, 0, result.stderr);
 
     const report = readFileSync(path.join(dir, "implementation-review.md"), "utf8");
-    assert.match(report, /- 구현: 경계를 보존한다/);
-    assert.match(report, /- 근거: src\/example\.ts/);
-    assert.match(report, /- 테스트: node --test — PASS/);
-    assert.doesNotMatch(report, /- Implementation:/);
+    assert.match(report, /\*\*구현\.\*\* 경계를 보존한다/);
+    assert.match(report, /\*\*근거\.\*\* src\/example\.ts/);
+    assert.match(report, /\*\*테스트\.\*\* node --test — PASS/);
+    assert.doesNotMatch(report, /\*\*Implementation\.\*\*/);
   });
 });

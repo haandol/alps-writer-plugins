@@ -127,11 +127,24 @@ reason to hide evidence or merge independent obligations.
   implementation choices collapsed, opens exceptional cards, links findings to
   the owning Hill and contract IDs, groups them by required human action rather
   than technical category, and preserves importance order inside each group.
+  Lead each Hill with the actual flow title and an aggregate status. Keep
+  Container/Hiking terminology as secondary metadata. Collapse the Component,
+  Code, and contract evidence for a fully proven Hill, and open that evidence
+  when any assigned contract needs a fix, verification, or conflict resolution.
   End the report
   with `Comprehension check` containing one to five material free-response
   questions. Keep the check collapsed. Reveal criteria only after answer entry
   and an explicit self-check action, and state that this comparison does not
   make the PR comprehension-ready.
+
+For the default reading path, write prose before structured evidence. Context
+and each Hill should read like a concise tutorial or senior review comment:
+starting condition → action and branch → system response or state change →
+observable result → verification. Do not present Context, Container, or
+Component fields as equal-width table-like cards. Keep contract coverage,
+implementation choices, and code excerpts available as collapsed evidence after
+the reader has the causal model.
+
 - **Implementation refactor** — visualize before/after work flow only when several
   call sites or processing stages are involved. A local rename or extraction does
   not need one.

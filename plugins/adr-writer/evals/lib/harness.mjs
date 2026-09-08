@@ -166,26 +166,75 @@ export function alpsLiteGuideText(section) {
 }
 
 /**
- * Produces the real Lite resume response from the shipping DocumentService so
- * behavior evals exercise runtime guidance rather than a copied prompt.
+ * Produces the real Lite resume response from the committed marketplace bundle
+ * so behavior evals exercise the dependency-free consumer runtime rather than a
+ * copied prompt or the contributor-only pnpm/tsx toolchain.
  */
 export function alpsLiteResumeText(dir) {
   const target = path.join(dir, "resume.lite.alps.xml");
-  const script = [
-    'import { DocumentService } from "./src/tools/documents/service.ts";',
-    `const target = ${JSON.stringify(target)};`,
-    "const author = new DocumentService();",
-    'author.initDocument("resume", target, "lite");',
-    "const resumed = new DocumentService();",
-    "process.stdout.write(resumed.loadDocument(target));",
+  const bundle = path.join(ALPS_PLUGIN_ROOT, "dist", "index.js");
+  const client = [
+    'const { spawn } = require("node:child_process");',
+    "const [bundle, target] = process.argv.slice(1);",
+    'const server = spawn(process.execPath, [bundle], { stdio: ["pipe", "pipe", "pipe"] });',
+    'server.stdout.setEncoding("utf8");',
+    'server.stderr.setEncoding("utf8");',
+    'let stdout = "";',
+    'let stderr = "";',
+    "let complete = false;",
+    "const timer = setTimeout(() => finish(2, `MCP bundle timed out: ${stderr}`), 10000);",
+    "function send(message) { server.stdin.write(`${JSON.stringify(message)}\\n`); }",
+    'function finish(code, message = "") {',
+    "  if (complete) return;",
+    "  complete = true;",
+    "  clearTimeout(timer);",
+    "  if (message) (code === 0 ? process.stdout : process.stderr).write(message);",
+    "  server.kill();",
+    "  process.exitCode = code;",
+    "}",
+    'server.stderr.on("data", (chunk) => { stderr += chunk; });',
+    'server.on("error", (error) => finish(2, `MCP bundle failed: ${error.message}`));',
+    'server.on("exit", (code) => {',
+    "  if (!complete) finish(2, `MCP bundle exited before load response (${code}): ${stderr}`);",
+    "});",
+    'server.stdout.on("data", (chunk) => {',
+    "  stdout += chunk;",
+    "  for (;;) {",
+    '    const newline = stdout.indexOf("\\n");',
+    "    if (newline < 0) break;",
+    "    const line = stdout.slice(0, newline).trim();",
+    "    stdout = stdout.slice(newline + 1);",
+    "    if (!line) continue;",
+    "    const message = JSON.parse(line);",
+    "    if (message.id === 1) {",
+    '      send({ jsonrpc: "2.0", method: "notifications/initialized" });',
+    "      send({",
+    '        jsonrpc: "2.0", id: 2, method: "tools/call",',
+    '        params: { name: "init_lite_alps_document", arguments: { project_name: "resume", output_path: target } },',
+    "      });",
+    "    } else if (message.id === 2) {",
+    "      send({",
+    '        jsonrpc: "2.0", id: 3, method: "tools/call",',
+    '        params: { name: "load_alps_document", arguments: { doc_path: target } },',
+    "      });",
+    "    } else if (message.id === 3) {",
+    '      const text = message.result?.content?.find((item) => item.type === "text")?.text;',
+    "      if (!text) finish(2, `MCP load response contained no text: ${line}`);",
+    "      else finish(0, text);",
+    "    }",
+    "  }",
+    "});",
+    "send({",
+    '  jsonrpc: "2.0", id: 1, method: "initialize",',
+    '  params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "adr-eval", version: "0" } },',
+    "});",
   ].join("\n");
-  const result = spawnSync("pnpm", ["--filter", "alps-writer", "exec", "tsx", "-e", script], {
-    cwd: path.resolve(ALPS_PLUGIN_ROOT, "..", ".."),
+  const result = spawnSync(process.execPath, ["-e", client, bundle, target], {
     encoding: "utf8",
   });
   if (result.status !== 0) {
     throw new Error(
-      `unable to produce Lite resume guidance: ${result.stderr.trim() || result.stdout.trim()}`,
+      `unable to produce Lite resume guidance: ${(result.stderr || "").trim() || (result.stdout || "").trim()}`,
     );
   }
   return result.stdout.trim();

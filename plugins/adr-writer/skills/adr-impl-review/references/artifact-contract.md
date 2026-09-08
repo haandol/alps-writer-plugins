@@ -49,6 +49,13 @@ The report is the narrative source. The deterministic materializer writes the
 Context, Container, Component, Code, each Hill's contract evidence cards, and
 the global coverage summary from `findings.json`.
 
+The human-facing order is prose first, evidence second. Context and each Hill
+must read as connected sentences that explain trigger or starting condition,
+the important action and branch, the system response or state change, the
+observable result, and the verification. Do not render the Context, Container,
+or Component fields as equal-width table-like grids. The structured fields and
+coverage rows remain complete in JSON and collapsed evidence.
+
 The Context → Container/Hill → Component → Code tree is the report map. Do not
 create a global Trail map or visualization metadata. A Component may include a
 small Mermaid diagram only when its request, state, failure, or data relationship
@@ -140,11 +147,16 @@ as comparison rather than grading; it never sets comprehension readiness.
 The HTML is one responsive page with a table of contents and section anchors. It
 renders Markdown lists, inline code, fenced `<pre>` code blocks, and supported
 Mermaid relationships. Unsupported Mermaid syntax keeps an explicit warning and
-source fallback. It opens non-`PROVEN` coverage while collapsing `PROVEN`
-coverage, scope, metrics, and Notable implementation choices. It uses the report
-language for the document `lang` and fixed interface labels. Ruling controls and
-feedback export appear only for `Decision changed in code`, admitted `Undecided
-behavior`, material `Unverified risk`, and `Contradiction`.
+source fallback. Each Hill leads with its real flow title and aggregate contract
+status; C4/Hiking vocabulary remains secondary metadata. A fully `PROVEN` Hill
+keeps its Component, Code, and contract evidence collapsed, while a Hill with
+`VIOLATED`, `UNVERIFIED`, or `CONTRADICTED` coverage opens that evidence by
+default. Individual non-`PROVEN` coverage stays open and `PROVEN` coverage stays
+collapsed. Scope, metrics, and Notable implementation choices also stay
+collapsed. It uses the report language for the document `lang` and fixed
+interface labels. Ruling controls and feedback export appear only for `Decision
+changed in code`, admitted `Undecided behavior`, material `Unverified risk`, and
+`Contradiction`.
 
 For each actionable finding in a conditional repair guide, include:
 
