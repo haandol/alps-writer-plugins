@@ -542,13 +542,27 @@ test("the report uses a table of contents and progressive disclosure", () => {
   assert.match(result.stdout, /id="hill-h1"/);
   assert.match(result.stdout, /id="hill-h2"/);
   assert.match(result.stdout, /Does the main flow preserve the decision/);
-  assert.match(result.stdout, /Context · Intent and contracts/);
-  assert.match(result.stdout, /Preconditions and surrounding context/);
-  assert.match(result.stdout, /Core contracts/);
-  assert.match(result.stdout, /Vertical slice/);
+  assert.match(result.stdout, /Why this change exists · Context/);
+  assert.match(result.stdout, /Starting point/);
+  assert.match(result.stdout, /What must remain true/);
+  assert.match(result.stdout, /Flow under review/);
   assert.match(result.stdout, /Main request flow/);
   assert.match(result.stdout, /Component C1/);
   assert.match(result.stdout, /Main request handler/);
+  assert.match(result.stdout, /class="flow-status flow-status--proven">Met · 1/);
+  assert.match(
+    result.stdout,
+    /class="flow-status flow-status--unverified">Verification required · 1/,
+  );
+  assert.match(result.stdout, /<details class="hill__details">/);
+  assert.match(result.stdout, /<details class="hill__details" open>/);
+  assert.match(result.stdout, /Implementation and evidence/);
+  assert.match(result.stdout, /class="context-narrative"/);
+  assert.match(result.stdout, /class="hill__narrative"/);
+  assert.match(result.stdout, /class="component__narrative"/);
+  assert.doesNotMatch(result.stdout, /class="hill-story"/);
+  assert.doesNotMatch(result.stdout, /class="container-zoom"/);
+  assert.doesNotMatch(result.stdout, /class="component__grid"/);
   assert.match(result.stdout, /class="code-evidence"/);
   assert.match(result.stdout, /return applyDecision\(request\)/);
   assert.match(result.stdout, /data-level="1"[^>]*><a href="#hill-h1"/);
@@ -566,6 +580,11 @@ test("the report uses a table of contents and progressive disclosure", () => {
   assert.equal(result.stdout.match(/id="contract-R1"/g)?.length, 1);
   assert.match(result.stdout, /class="coverage-index"/);
   assert.ok(result.stdout.indexOf('id="hill-h1"') < result.stdout.indexOf('id="findings"'));
+  assert.ok(
+    result.stdout.indexOf("The targeted main-flow test passed.") <
+      result.stdout.indexOf('id="component-h1-c1"'),
+    "the authored causal narrative must appear before structured implementation evidence",
+  );
   assert.match(result.stdout, /<summary>Notable implementation choices · 1<\/summary>/);
 });
 
@@ -656,14 +675,17 @@ test("HTML chrome follows the selected report language", () => {
   assert.match(result.stdout, />목차</);
   assert.match(result.stdout, />한눈에 보기</);
   assert.match(result.stdout, />해야 할 작업 · 0</);
-  assert.match(result.stdout, />Container \/ 낮은 언덕 H1</);
-  assert.match(result.stdout, />이 Container에서 확인할 것</);
-  assert.match(result.stdout, />Context · 의도와 계약</);
-  assert.match(result.stdout, />사전 조건·주변 컨텍스트</);
-  assert.match(result.stdout, />핵심 계약</);
-  assert.match(result.stdout, />상세 구현</);
-  assert.match(result.stdout, />Code 1 · excerpt/);
-  assert.match(result.stdout, />수직 단위</);
+  assert.match(result.stdout, />H1 · 사용자 흐름</);
+  assert.match(result.stdout, />이 흐름이 답해야 할 질문</);
+  assert.match(result.stdout, />왜 이 변경이 필요한가 · Context</);
+  assert.match(result.stdout, />시작 조건\.</);
+  assert.match(result.stdout, />반드시 유지할 계약\.</);
+  assert.match(result.stdout, />동작 방식\.</);
+  assert.match(result.stdout, />코드 근거 1 · excerpt/);
+  assert.match(result.stdout, />검토할 흐름</);
+  assert.match(result.stdout, /class="flow-status flow-status--unverified">검증 필요 · 0/);
+  assert.match(result.stdout, /<details class="hill__details" open>/);
+  assert.match(result.stdout, />구현과 검증 근거</);
   assert.doesNotMatch(result.stdout, />PROVEN</);
 });
 

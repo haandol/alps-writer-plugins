@@ -167,6 +167,13 @@ or `Code walkthrough`.
 
 - State the Hill's review question, `sliceType`, `sliceName`, and Container
   responsibility/interactions/outcome in `findings.json`.
+- Write the Hill's causal explanation before the generated evidence: starting
+  condition or trigger → action and important branch → system response or state
+  change → observable result → how the review verified it. Use connected
+  paragraphs that read like a concise tutorial or senior review comment.
+- Do not turn Context, Container, or Component fields into equal-width table-like
+  summary grids in the human-facing report. Structured fields preserve the audit
+  contract; prose establishes the reader's mental model before evidence cards.
 - Put `<!-- generated container zoom from findings.json -->` after the question.
 - Put `<!-- generated component zoom from findings.json -->` next. Components
   state detailed implementation and verification; each includes focused Code
@@ -203,8 +210,11 @@ The standalone HTML owns progressive disclosure:
   Container/Hills, Components, collapsed Code evidence, and Findings before the
   remaining evidence.
 - Each Hill keeps its assigned `PROVEN` contract cards collapsed and opens its
-  exceptional coverage. Scope, metrics, and Notable implementation choices stay
-  collapsed by default.
+  exceptional coverage. The actual flow title and aggregate contract status are
+  the Hill's primary scan target; Container/Hiking terminology is secondary.
+  Fully proven Hills keep Component, Code, and contract evidence collapsed,
+  while any exceptional coverage opens the owning Hill's evidence. Scope,
+  metrics, and Notable implementation choices stay collapsed by default.
 - It renders Markdown lists, inline code, fenced `<pre>` code blocks, and supported Mermaid relationships. Unsupported Mermaid syntax keeps an explicit source fallback.
 - A finding includes `contractIds` when it relates to one or more `D0` / `R1..Rn` rows. Link it to the owning Hill's evidence card. Group findings by human action (`fix`, `decide`, `verify`, `note`), never by technical category, and preserve importance order inside each group.
 - Ruling controls appear only for findings that require human judgment: `Decision changed in code`, admitted `Undecided behavior`, material `Unverified risk`, or `Contradiction`.

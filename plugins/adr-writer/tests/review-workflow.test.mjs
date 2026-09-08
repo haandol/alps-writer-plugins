@@ -117,6 +117,12 @@ test("implementation review leads with Context and a reader-priority narrative",
 
   assert.match(explainer, /subject-specific heading/i);
   assert.match(reportWriter, /Between `Context` and `Findings`/);
+  assert.match(reportWriter, /causal explanation before the generated evidence/i);
+  assert.match(artifactContract, /human-facing order is prose first, evidence second/i);
+  assert.match(guide, /concise tutorial or senior review comment/i);
+  for (const source of [reportWriter, artifactContract, guide]) {
+    assert.match(source, /equal-width table-like/i);
+  }
   assert.match(readerFirst, /repeated contrast templates/i);
   assert.match(readerFirst, /ornamental title-cased English labels/i);
   assert.match(readerFirst, /Never invent an anecdote/i);

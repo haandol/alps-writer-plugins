@@ -167,9 +167,11 @@ function hillEvidence(rows, language) {
       return [
         `### ${tableCell(row.contractId)} · ${tableCell(status)} · ${tableCell(row.requirement)}`,
         "",
-        `- ${labels.implementation}: ${tableCell(row.implementation)}`,
-        `- ${labels.evidence}: ${tableCell(row.evidence)}`,
-        `- ${labels.tests}: ${tableCell(row.tests)}`,
+        `**${labels.implementation}.** ${tableCell(row.implementation)}`,
+        "",
+        `**${labels.evidence}.** ${tableCell(row.evidence)}`,
+        "",
+        `**${labels.tests}.** ${tableCell(row.tests)}`,
       ].join("\n");
     })
     .join("\n\n");
@@ -181,30 +183,28 @@ function hillEvidence(rows, language) {
  */
 function reviewContext(context, language) {
   const labels = REVIEW_CONTEXT_LABELS[language];
-  const lines = [];
-  for (const field of ["intent", "preconditions", "contracts", "scopeAndRisk"]) {
-    lines.push(`### ${labels[field]}`, "", tableCell(context[field]), "");
-  }
-  return lines.join("\n").trim();
+  return [
+    `**${labels.intent}.** ${tableCell(context.intent)}`,
+    "",
+    `**${labels.preconditions}.** ${tableCell(context.preconditions)}`,
+    "",
+    `**${labels.contracts}.** ${tableCell(context.contracts)}`,
+    "",
+    `**${labels.scopeAndRisk}.** ${tableCell(context.scopeAndRisk)}`,
+  ].join("\n");
 }
 
 function containerZoom(hill, language) {
   const labels = CONTAINER_LABELS[language];
   const sliceType = SLICE_TYPE_LABELS[language][hill.sliceType] || hill.sliceType;
   return [
-    `- ${labels.slice}: ${tableCell(hill.sliceName)} (${tableCell(sliceType)})`,
+    `**${labels.slice}.** ${tableCell(hill.sliceName)} (${tableCell(sliceType)})`,
     "",
-    `### ${labels.responsibility}`,
+    `**${labels.responsibility}.** ${tableCell(hill.container.responsibility)}`,
     "",
-    tableCell(hill.container.responsibility),
+    `**${labels.interactions}.** ${tableCell(hill.container.interactions)}`,
     "",
-    `### ${labels.interactions}`,
-    "",
-    tableCell(hill.container.interactions),
-    "",
-    `### ${labels.outcome}`,
-    "",
-    tableCell(hill.container.outcome),
+    `**${labels.outcome}.** ${tableCell(hill.container.outcome)}`,
   ].join("\n");
 }
 
@@ -229,9 +229,11 @@ function componentZoom(components, language) {
       return [
         `### ${labels.component} ${tableCell(component.id)} · ${tableCell(component.name)}`,
         "",
-        `- ${labels.responsibility}: ${tableCell(component.responsibility)}`,
-        `- ${labels.implementation}: ${tableCell(component.implementation)}`,
-        `- ${labels.verification}: ${tableCell(component.verification)}`,
+        `**${labels.responsibility}.** ${tableCell(component.responsibility)}`,
+        "",
+        `**${labels.implementation}.** ${tableCell(component.implementation)}`,
+        "",
+        `**${labels.verification}.** ${tableCell(component.verification)}`,
         "",
         codeBlocks,
       ].join("\n");
