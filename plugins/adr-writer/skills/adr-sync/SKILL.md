@@ -1,16 +1,16 @@
 ---
 name: adr-sync
-description: Verify that ADRs in docs/adr/ accurately describe the current codebase and fix any drift. Uses the ADR index at docs/adr/.mapping.json (categories → adrs with path/status/summary + dependsOn; no code paths and no PRD reference — the code an ADR governs is found by reading the ADR and searching the repo). Use when the user invokes /adr-sync or asks to audit ADRs against shipping code. Keywords - "/adr-sync", "ADR sync", "ADR drift check", "ADR 동기화", "ADR drift 검사".
+description: Verify that ADRs in docs/adr/ accurately describe the repository implementation and fix any drift. Uses the ADR index at docs/adr/.mapping.json (categories → adrs with path/status/summary + dependsOn; no code paths and no PRD reference — the implementation an ADR governs is found by reading the ADR and searching the repo). Use when the user invokes /adr-sync or asks to audit ADRs against shipping code or IaC. Keywords - "/adr-sync", "ADR sync", "ADR drift check", "ADR 동기화", "ADR drift 검사".
 argument-hint: "[category?] [--quick]"
 ---
 
 # adr-sync
 
-Verify that every ADR in `docs/adr/` matches the shipping code. Fix drifted ADRs, resolve contradictions between related ADRs, and synchronize the `.mapping.json` index (the adrs[] path/status/summary).
+Verify that every ADR in `docs/adr/` matches the repository implementation, including IaC and repository-local configuration. Fix drifted ADRs, resolve contradictions between related ADRs, and synchronize the `.mapping.json` index (the adrs[] path/status/summary).
 
 Alongside verification and correction, **refine each ADR into one self-contained document describing the current admitted decision and requirement contract.** Reconstruct the evolution narration that accumulated mid-body over time ("originally it was X, then changed to Y", "added Z in v2", "changed to B compared with the previous A") into a single current-state description, so reading one ADR conveys its durable decision without code-level implementation facts. Of what you strip out, **harvest major transitions** into the category's `decision-log.md` (Pass 2's step 3-E); **minor** evolutions and individual diffs are preserved by Git, so the ADR body carries no evolution history. (This is cleanup within a single ADR — merging an evolution _chain_ spread across several ADRs into one is `adr-rollup`'s job.)
 
-The default is **deep mode**: read every ADR body in scope and compare every claim (APIs, error codes, enums, entity fields, Status, Related links) against the code. With `--quick`, check only the adrs[] summary in `.mapping.json` (the one-line Key Decision).
+The default is **deep mode**: read every ADR body in scope and compare every claim (APIs, error codes, enums, entity fields, IaC, Status, Related links) against repository evidence. With `--quick`, check only the adrs[] summary in `.mapping.json` (the one-line Key Decision).
 
 ## Modes
 
@@ -35,7 +35,13 @@ If the argument is a category, target only that category (`/adr-sync auth`).
 
 #### Finding the related code
 
-Verifying an ADR and judging its Status requires looking at the code it governs. Since the mapping holds no code paths, narrow the scope for each ADR with the three steps in `structure.md` "Finding the related code" (extract domain keywords from the Decision/Mermaid/title → narrow with `Glob`/`Grep` → cross-check against the ADR's Decision). **Reuse a scope once found for the duration of this sync run** (Pass 1 → Pass 2); never persist it in the mapping.
+Verifying an ADR and judging its Status requires looking at the repository implementation it governs. Code evidence includes source, tests, IaC, deployment manifests, and repository-local configuration. Since the mapping holds no code paths, narrow the scope for each ADR with the three steps in `structure.md` "Finding the related code" (extract domain keywords from the Decision/Mermaid/title → narrow with `Glob`/`Grep` → cross-check against the ADR's Decision). **Reuse a scope once found for the duration of this sync run** (Pass 1 → Pass 2); never persist it in the mapping.
+
+#### Evidence boundary — repository and local execution only
+
+`/adr-sync` verifies the repository implementation, **not deployed runtime state**. Never access live infrastructure, provider APIs or consoles, remote state, clusters, databases, SaaS administration, or deployment platforms — including read-only calls and even when credentials already exist. Do not log in, discover credentials, refresh remote state, deploy, or apply changes. Run a local command only when it is known not to authenticate or contact a remote service.
+
+When an ADR or scope involves infrastructure, deployment, cloud, clusters, remote services, or IaC, read `references/local-evidence-boundary.md` completely before verification. If a claim can only be established from a live environment, report `[Runtime state unverified]`; do not classify it as ADR drift, claim `In Sync` for the deployed environment, or use it to change Status. Route live-state assurance to a separate explicitly authorized operational audit.
 
 #### When the mapping file is absent
 
@@ -43,7 +49,7 @@ If `docs/adr/.mapping.json` does not exist yet or is empty, infer category candi
 
 ### 2. Pass 1 — quick drift detection (the quick-mode entry point)
 
-For each ADR, extract the adrs[] summary from `.mapping.json` (the one-line Key Decision) and grep the scope narrowed by "Finding the related code". Mark the result **In Sync** or **Drift Suspected**.
+For each ADR, extract the adrs[] summary from `.mapping.json` (the one-line Key Decision) and grep the scope narrowed by "Finding the related code". Mark the repository result **In Sync**, **Drift Suspected**, or **Unverified**. `In Sync` means ADR ↔ repository implementation only.
 
 Quick mode performs only this step plus the index-based **detection and proposal** of stale `fN` naming in 3.7 (detecting stale `fN` naming from the adrs[] paths in `.mapping.json`) — it skips the remaining 3.x deep checks and any actual file moves.
 
@@ -51,7 +57,7 @@ If those paths reveal stale `fN` naming, read `references/repository-hygiene.md`
 
 ### 3. Pass 2 — deep verification (always run in deep mode)
 
-Before starting Pass 2, read `references/repository-hygiene.md` completely. It owns category integrity, split recommendations, stale Feature-ID naming, cross-ADR contradictions, companion/invariant checks, source-edit approval, and mapping hygiene. Apply those checks after the per-ADR semantic verification below and before the report.
+Before starting Pass 2, read `references/repository-hygiene.md` completely and read `references/reconciliation-boundary.md` completely. They own repository hygiene and ADR ↔ repository authority respectively. Apply their checks after the per-ADR semantic verification below and before the report.
 
 **Secure structure and consistency with the deterministic harness first** — filter out the mechanical rules before the LLM spends tokens on filenames, the Status enum, or index consistency:
 
@@ -66,7 +72,7 @@ For each target ADR:
 1. Read the entire ADR body.
    - **Apply the ADR admission gate to the core subject before comparing details.** If the ADR is fundamentally about a replaceable library, SDK, framework, middleware, module layout, credential provider chain, signer, or authentication adapter and no requirement or architecture/security boundary depends on that exact choice, do not synchronize the detail toward the code. Record `[Retire low-level ADR]` and propose moving useful guidance to code/project docs. Code changes to that implementation means are not ADR drift.
 2. Extract the verifiable claims:
-   - **Status** — grep the scope narrowed by "Finding the related code" to confirm what exists in code. Auto-correct an invalid completion claim (`Accepted` but absent from code or tests → `Proposed`). Do **not** promote `Proposed` merely because code and tests exist: `Accepted` also requires `/adr-impl-review` to pass, and review evidence is not persisted in the ADR or mapping. Record that case under **Suggestions** and route it to `/adr-impl <category>` to run the completion gate. For the status semantics and the automatic transition policy see `concepts.md` "Automatic transition rules". **Every Status correction must use the deterministic transition script with the exact target ADR path**:
+   - **Status** — grep the scope narrowed by "Finding the related code" to confirm what exists in repository source, IaC, configuration, and tests. Auto-correct an invalid completion claim (`Accepted` but absent from repository implementation or tests → `Proposed`). Deployment presence and live runtime state are not Status prerequisites. Do **not** promote `Proposed` merely because code and tests exist: `Accepted` also requires `/adr-impl-review` to pass, and review evidence is not persisted in the ADR or mapping. Record that case under **Suggestions** and route it to `/adr-impl <category>` to run the completion gate. For the status semantics and the automatic transition policy see `concepts.md` "Automatic transition rules". **Every Status correction must use the deterministic transition script with the exact target ADR path**:
 
      ```bash
      node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs <target-adr-path> Proposed
@@ -78,9 +84,10 @@ For each target ADR:
    - **Error codes** — grep the constants.
    - **Enum / type values** — grep `oneof=...`, validate tags, TS unions.
    - **Entity field names** — grep DB tags (`dynamodbav`, ORM annotations).
-   - **GSI / sparse index key patterns** — grep partition names and sort-key prefixes.
+   - **GSI / sparse index key patterns** — grep schema or IaC definitions, partition names, and sort-key prefixes.
+   - **Infrastructure topology and policy** — inspect IaC, deployment manifests, local configuration, and policy tests; never query the deployed resource.
    - **UI labels and constants** — grep user-facing strings.
-   - **Source-of-truth pointers** — whether an external document path such as "see `docs/tables/auth.md` for the schema" still exists and agrees with that file itself.
+   - **Repository companion-document pointers** — whether a repository-local path such as "see `docs/tables/auth.md` for the schema" still exists and agrees with that file itself.
    - **Related ADR links** — whether they exist and their Status is consistent.
 
 3. Identify implementation-detail bloat — **apply the requirement gate first** (`authoring-rules.md` "The requirement gate and two filters"), set aside everything that passes the gate as not-for-removal, then sweep the body with the two criteria below:
@@ -88,14 +95,7 @@ For each target ADR:
    - **The code-readthrough test** (`concepts.md` "What an ADR covers — the gray zone between business and code"): is a paragraph that failed the gate obvious from reading the related code? If it is, take it out of the ADR (function responsibilities, module dependency graphs, field-type tables, error message wording and UI labels, env var names, pseudocode, and the like).
    - **The forbidden-items table** (`authoring-rules.md` "What to exclude from an ADR" — read the "exception when it is a requirement" column alongside it): file paths (below folder level), code snippets, **implementation tuning values** (connection pools, backoff, cache TTL, worker counts — values a developer may change without violating a requirement), detailed entity field tables, migration commands, full JSON.
    - **Look for omissions at the same time** — if the code clearly holds a requirement contract (e.g. a session turn cap, a per-plan usage quota) that the ADR body lacks, ask the user whether it is a requirement or an implementation tuning value, and if it is a requirement add it to the ADR with its value and basis. This is the opposite direction from removing bloat; record it in `Suggestions` as `[Missing requirement] <what>`. **But never conclude a value in code is a requirement and quietly copy it over** — the code does not tell you whether a value is a contract or a coincidence, so always confirm with the user.
-     3-E. **Final-state reconstruction — keep the result, remove the transition** (a Pass 2 sub-step, distinct from the separate `### 3.5 Category slice integrity` section below). Reconstruct the ADR and its `.mapping.json` summary into direct current-state assertions, so the reader never has to derive the result from replaced terms or intermediate steps. Apply `authoring-rules.md` "Final-state wording". Find and fix the following:
-   - **Evolution phrasing → present-tense assertion**: convert chronological narration such as "it was X at first, then changed to Y", "added Z in v2", "changed to B compared with the previous A", "as of 2024-…", "the deprecated ~" into an assertion holding only what the current code does ("the system operates as Y"). Strip the old stages from the body, but **if a stage was a major transition** (replacing the adopted alternative, inverting a Driver, changing the core algorithm or architecture, a bug fix that changes behavior — `authoring-rules.md` "What to log — minor vs major"), **harvest it into that category's `decision-log.md` before deleting** (one line at the top, newest first; if no log exists, start by copying the `decision-log.template.md` seed into the category folder — `structure.md` "Decision log"; put no old ADR numbers in the prose, only the `current ADR` link). For a **minor evolution** (refining boundary wording, rephrasing, correcting implementation facts), simply delete it (Git preserves the history) — do not put it in the log. **An evolution where a requirement value changed** ("max 20 turns → 30 turns") is not minor — the contract the result must honor changed, so it is a harvest target.
-   - **Contrastive transition → final-state assertion**: rewrite "`LEGACY_EVENT`와 `CURRENT_EVENT`를 혼용하지 않고 `CURRENT_EVENT`만 사용한다" as "이벤트 이름은 `CURRENT_EVENT`다." Likewise rewrite "타임아웃을 10초에서 30초로 변경한다" as "타임아웃은 30초다." Remove "instead of", "rather than", "no longer", "without mixing", "기존 ~ 대신", and similar carriers when the earlier term adds no current contract. Alternatives may retain rejected choices; `decision-log.md` may retain a major old → new transition.
-   - **Preserve current prohibitions**: do not strip negative wording that still constrains rebuilt code. "PII never leaves the region" and "a cancelled order never moves to shipping" are current requirements, not transition narration.
-   - **Remove Changelog/History/Revision/Update paragraphs and sub-headings embedded mid-body**: such sections belong to Git, not the ADR body. The fact that this ADR supersedes or replaces another stays as a single line in `Status` and `Related` and is never expanded into body narrative.
-   - **Consolidate duplicated or contradictory descriptions of a decision**: when the same decision is described in several places from different points in time, merge them into a single description based on the current code.
-   - Reconstruct by rearranging paragraphs to match the standard section order of `README.md` `## ADR template` (Status / Context / Decision Drivers / Decision / alternatives / Consequences / Related) and the per-section authoring rules in `authoring-rules.md`, but **never drop a gray-zone decision (adoption rationale, alternatives, domain rules, state transitions, fallback)** — revive the real rationale and alternatives buried inside the evolution narration and carry them over in the present tense. This is _compression_ of information, not _loss_.
-   - However, **when a gray-zone decision contradicts the code, never quietly overwrite the ADR to match the code in the name of narration cleanup** — follow the "Scope of the source of truth" branch below exactly (decision change vs violation).
+     3-E. **Final-state reconstruction — keep the result, remove the transition.** When the body or mapping summary contains evolution narration, replaced identifiers or values, migration steps, comparison carriers, embedded history, or duplicated decision descriptions, read `references/current-state-reconstruction.md` completely and apply it. Keep `Final-state reconstruction` current-state-only, preserve genuine prohibitions and the complete requirement contract, and harvest major transitions to `decision-log.md`.
 4. Check ADR admission and gray-zone substance — if the core subject fails the admission gate, record `[Retire low-level ADR]` rather than strengthening it. If it passes but the body contains none of (a) alternatives comparison / adoption rationale (b) business rules translated into system behavior (c) domain rules and state transitions (d) external-dependency fallback, record in `Suggestions` as "strengthen the gray zone or consider retiring the ADR".
    4-b. **The regeneration test** (`authoring-rules.md` "What an ADR must satisfy") — ask "if all the code in this category were deleted and only this ADR survived, could requirement-honoring code be rebuilt from it alone?" Differences in implementation, structure, and naming are normal, so ignore them and look **only for missing result contracts** — requirement values, **allowed value sets, transition rules, mandatory fields, ordering, uniqueness, units** (`authoring-rules.md` "Non-numeric requirements"), permission and visibility rules, required validation conditions, state transitions and invariants, and the behavior guaranteed to the user on failure. When you spot an omission, record it in `Suggestions` as `[Missing requirement] <what is missing — which code behavior is the basis>` and confirm with the user to fill it in. This check is the counterpart to the bloat removal in step 3 — sync is not a command that only takes away, it is a command that **keeps the contract whole**.
 5. Check Decision Drivers and alternatives ≥ 2 (`authoring-rules.md` "Decision Drivers" / "Alternatives — at least two"):
@@ -105,17 +105,15 @@ For each target ADR:
 
 **Caution**: never add new implementation detail to an ADR. An ADR covers only the gray zone between business and code (the rationale for the decision, domain rules, trade-offs) and **the requirement contract the result must honor** — facts discoverable by reading the code that are also not requirements go to the code and its docstrings. Conversely, **a requirement contract missing from the ADR is an omission to be added**, so handle it through step 3's `[Missing requirement]` branch (after user confirmation).
 
-#### Scope of the source of truth — what follows the code and what follows the ADR
+#### Scope of the source of truth — what follows repository evidence and what follows the ADR
 
-"The code is the source of truth" is **limited to implementation facts.** Matching gray-zone decisions to the code as well would let code changes drag ADR decisions along, breaking the one-way PRD → ADR → code direction (`concepts.md` "Verifying the stability gradient"). Distinguish these cases:
+Apply `references/reconciliation-boundary.md`; it is the full authority for this branch.
 
-- **Status and permitted code-verifiable facts (code is authoritative)** — Status follows whether the implementation and tests exist. When an ADR contains non-requirement implementation facts such as internal API paths, error-code names, enum identifiers/wire representation, field names, libraries, SDKs, credential/auth wiring, or module structure, **remove the detail from the ADR rather than keeping a synchronized copy.** Correct a code-verifiable fact in place only when it passed the admission/requirement gates, such as a public compatibility contract or an architecture-level key design. This prevents ordinary code changes from dragging ADR edits.
-- **Requirement values (the ADR is authoritative — never overwrite them to match the code)** — if the ADR says "max 20 turns" and the code says 30, that is not an implementation fact to correct but a **contract mismatch.** Quietly changing the value toward the code lets the code redefine the requirement. Branch as with gray-zone decisions below (intended change vs violation), ask the user, and record in `Suggestions` as `[Requirement value drift] <category> — ADR "<value>" ↔ code "<value>"`. **When it is judged an intended change, keep the order** — update the ADR's requirement contract to the new value, log one line in `decision-log.md` (a requirement value change is major at minimum), then bring the code to that value. The fact that the code already holds the new value is not a reason to skip updating the ADR — the contract must be recorded as having changed first, so the next reader reads 30 turns as a requirement rather than a coincidence (`authoring-rules.md` "Requirements live in the code and in the ADR").
-- **Non-numeric requirements (the ADR is authoritative)** — requirements do not arrive only as numbers (`authoring-rules.md` "Non-numeric requirements"). When **allowed value sets, transition rules, mandatory fields, permissions, visibility, ordering, uniqueness, or units** differ from the code, handle them **exactly** as requirement values above — never quietly change them toward the code; record `[Requirement value drift]` and ask. **Enums split here**: a state name changing from `StatusPaid` to `"PAID"` is an implementation fact above, so remove that identifier or representation from the ADR; but **allowed states being added or removed, or a formerly forbidden transition becoming allowed, is a contract change**, so never overwrite it to match the code. Lumping it all together as "it's an enum, so the code is authoritative" lets the code redefine a business-defined value set.
-- **Gray-zone decisions (the ADR is authoritative)** — the adoption rationale, the alternatives comparison, domain rules, state transitions, external-dependency fallback, and the _intent_ behind the key design. When the code **contradicts** such a decision (e.g. the ADR says "optimistic locking" but the code switched to pessimistic locking), do **not** quietly change the ADR to match the code — this is a signal that someone skipped the ADR-first cycle and changed the decision. Branch into one of the two and ask the user:
-  - **An intended decision change** → update the ADR to the current decision so it justifies the code. Editing the body in place to current state is the default, and if that transition is **major** (replacing the adopted alternative, inverting a Driver, changing the core algorithm or architecture) leave one line in the category's `decision-log.md`. Supersede with a new ADR only when the decision topic has branched and the old decision must coexist as a separate record (see `authoring-rules.md` "Changing an ADR — edit-in-place vs supersede"). Record in `Suggestions` as `[Decision changed in code] <category> — the code contradicts the ADR decision. Update the ADR (log to decision-log if major), then realign`.
-  - **An unintended violation** → the code broke the decision, so the code is what needs fixing. Leave the ADR as it is and record in `Suggestions` as `[Code violates ADR] <category> — the code diverges from the ADR decision. Consider correcting the code`.
-  - Sync never rules on which of the two it is by itself — the authority for gray-zone decisions rests with the ADR, so overwriting the ADR to match the code must never become the default behavior.
+- Status and non-requirement implementation facts follow repository evidence, and stale low-level facts usually leave the ADR.
+- Requirement values and **Non-numeric requirements (the ADR is authoritative)** never follow code silently. In particular, allowed states being added or removed, or a formerly forbidden transition becoming allowed, is a contract change.
+- Gray-zone decisions remain ADR-authoritative. On contradiction ask the user to rule **An intended decision change** versus implementation violation, and use `decision-log.md` for a major transition.
+- Repository behavior that looks like an omitted contract is `[Missing requirement]`, not proof that the ADR should copy it.
+- Infrastructure repository evidence follows the local-only boundary; deployed state remains unverified.
 
 ### 7. Report
 
@@ -135,6 +133,11 @@ it.
 ### Scope
 - Categories: <list or "all">
 - ADRs inspected: <n>
+
+### Evidence boundary
+- Repository evidence inspected: <source/IaC/config/tests/local-only outputs>
+- Live environment access: Not performed — outside adr-sync scope
+- Runtime-only claims: <none | [Runtime state unverified] ...>
 
 ### Visual map
 <the smallest grounded Mermaid required by the shared report guide, or omit this section>
@@ -165,6 +168,7 @@ Notice: <the decision, dependency, or unresolved branch the reader should verify
 - [Supersede recommended?] — only when the decision topic has branched and the old decision must coexist as a separate record (i.e. when edit-in-place + decision-log cannot hold it — `authoring-rules.md` "Changing an ADR — edit-in-place vs supersede"). A plain decision switch is absorbed by edit-in-place + decision-log, not a supersede
 - [Sub-folder split recommended] — <category>: <n> ADRs, candidate sub-features ...
 - [Feature-ID naming] — <category>: old fN naming, canonicalization deferred (when the user declined)
+- [Runtime state unverified] — <claim>: repository evidence was inspected, but deployed state would require live access outside adr-sync
 - [Missing requirement] — <category>: a contract the code honors (<what>) is absent from the ADR. If it is a requirement, add it with its value and basis (user confirmation required)
 - [Requirement value drift] — <category>: ADR "<value/set/rule>" ↔ code "<value/set/rule>". Needs a ruling on whether it was an intended change or a violation (this bucket covers not only numbers but also mismatched allowed value sets, mandatory fields, permissions, and transition rules)
 ```
@@ -182,5 +186,6 @@ be rendered as `Unchanged`.
 - Numbers increase sequentially within a category. A number vacated by a split stays as a gap (never renumber). Sync does not rearrange numbers — closing gaps (renumbering) is a step performed only by `adr-rollup` when it merges a chain and deletes ADRs. **The canonicalization in 3.7 is not a renumber** — removing an `fN-` filename prefix and re-keying a folder leave the number (`NNNN`) untouched, so they do not conflict with the renumber ban above.
 - The Feature-ID naming canonicalization in 3.7 only detects and proposes even under `--quick` (the adrs[] paths in `.mapping.json` alone reveal stale naming) — in both modes the actual move happens only after user confirmation.
 - Apply the **ADR admission gate before suggesting `[New ADR needed?]`**. A library, SDK, framework, credential/auth adapter, or module-structure choice that preserves the same contracts and boundaries is ordinary implementation discretion, not missing architecture.
+- `/adr-sync` never expands into a live infrastructure audit. IaC and repository-local configuration are code evidence; cloud APIs, consoles, clusters, remote state, databases, and SaaS administration are outside scope even when access is read-only.
 - After admission, apply the **decision identity check before suggesting a new ADR**. Search the mapping summaries and plausible ADR bodies for the same architectural question and owned boundary. If one current-state record can hold the intended result, route the change to that existing ADR; provider/alternative changes and reversals are edit-in-place, not new identities. Suggest a new ADR only when no owner exists or the topic truly forks.
 - What the code is the source of truth for is **limited to Status and code-level facts** — code-level facts are usually removed from the ADR rather than mirrored there. By contrast, **admitted gray-zone decisions (adoption rationale, domain rules, state transitions, fallback) and requirements (whether numeric, a value set, a mandatory field, or a permission) are the ADR's authority.** Enums split — **names and representation belong to the code, the allowed set and transition rules to the ADR.** When the code contradicts such a decision, do not overwrite the ADR to match it; branch into "decision change vs violation" (see "Scope of the source of truth" under step 3 item 6 above).

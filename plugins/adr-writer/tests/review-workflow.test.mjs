@@ -223,6 +223,9 @@ test("sufficiency review is a pre-promotion completion gate", () => {
 test("large skill details are loaded through explicit progressive-disclosure references", () => {
   const sync = read("skills/adr-sync/SKILL.md");
   const hygiene = read("skills/adr-sync/references/repository-hygiene.md");
+  const localEvidence = read("skills/adr-sync/references/local-evidence-boundary.md");
+  const reconstruction = read("skills/adr-sync/references/current-state-reconstruction.md");
+  const reconciliation = read("skills/adr-sync/references/reconciliation-boundary.md");
   const implReview = read("skills/adr-impl-review/SKILL.md");
   const artifactContract = read("skills/adr-impl-review/references/artifact-contract.md");
   const remediationRouting = read("skills/adr-impl-review/references/remediation-routing.md");
@@ -234,8 +237,21 @@ test("large skill details are loaded through explicit progressive-disclosure ref
     sync,
     /Before starting Pass 2, read `references\/repository-hygiene\.md` completely/,
   );
+  assert.match(sync, /read `references\/reconciliation-boundary\.md` completely/);
+  assert.match(sync, /read `references\/local-evidence-boundary\.md` completely/);
+  assert.match(sync, /read `references\/current-state-reconstruction\.md` completely/);
   assert.doesNotMatch(sync, /^### 3\.5\./m);
   assert.ok(sync.trim().split(/\s+/).length < 5000, "adr-sync SKILL.md should stay below 5k words");
+  assert.ok(
+    sync.trim().split(/\s+/).length < 4000,
+    "adr-sync core should stay below 4k words after extracting conditional detail",
+  );
+
+  assert.match(localEvidence, /^## What adr-sync never does$/m);
+  assert.match(localEvidence, /including read-only access/i);
+  assert.match(localEvidence, /Runtime state unverified/);
+  assert.match(reconstruction, /^## Preserve current prohibitions$/m);
+  assert.match(reconciliation, /^## Non-numeric requirements$/m);
 
   for (const section of [
     "Category slice integrity",

@@ -96,7 +96,10 @@ export default {
 
     return [
       skillText("adr-sync", {
-        references: ["skills/adr-sync/references/repository-hygiene.md"],
+        references: [
+          "skills/adr-sync/references/repository-hygiene.md",
+          "skills/adr-sync/references/current-state-reconstruction.md",
+        ],
       }),
       `\n---\n\n# This run`,
       `Repository: ${dir}`,
