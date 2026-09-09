@@ -35,4 +35,4 @@ accumulates here, newest first. Git preserves the individual diffs.
 - **Why**: <the change in the driver or constraint that prompted this>
 - **What is now void** (optional): <the Consequences the previous decision left that no longer apply>
 
-<!-- adr-writer:rules-version 0.8.17 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.8.18 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
