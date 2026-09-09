@@ -115,8 +115,8 @@
       "adrs": [
         {
           "path": "docs/adr/adr-cycle/implementation-review/0001-validated-low-risk-refactoring.md",
-          "status": "Accepted (2026-09-07)",
-          "summary": "구현 리뷰는 Context→Container/Hill→Component→Code 트리로 의도·기능·상세 구현·핵심 diff를 보여준다"
+          "status": "Accepted (2026-09-09)",
+          "summary": "구현 리뷰는 대시보드 요소 없이 관련 ADR·핵심 구현·자체 검증·한계·향후 보완을 잇는 논문형 에세이로 읽히며 구조화된 감사 자료와 객관식 자가점검은 근거 부록에만 둔다"
         }
       ],
       "dependsOn": []

@@ -137,8 +137,15 @@
 //       "questions": [
 //         {
 //           "id": "Q1",
-//           "question": "Why does provider failure leave the payment pending?",
-//           "answerCriteria": "kept out of the visible HTML",
+//           "question": "Which result preserves pending state after provider failure?",
+//           "options": [
+//             { "id": "A", "text": "mark completed", "feedback": "provider success is missing" },
+//             { "id": "B", "text": "keep pending", "feedback": "this preserves the contract" },
+//             { "id": "C", "text": "delete payment", "feedback": "deletion is not the failure result" },
+//             { "id": "D", "text": "retry forever", "feedback": "retry is bounded" }
+//           ],
+//           "correctOptionId": "B",
+//           "explanation": "kept out of the visible HTML",
 //           "evidence": "kept out of the visible HTML"
 //         }
 //       ]
@@ -223,7 +230,11 @@ const UI = {
   en: {
     title: "ADR implementation review",
     toc: "Contents",
-    overview: "At a glance",
+    overview: "Abstract",
+    analysis: "Core implementation and algorithms",
+    validation: "Self-validation methods and results",
+    discussion: "Results, limitations, and future work",
+    conclusion: "Conclusion",
     impact: "Impact",
     action: "Action",
     risk: "Risk",
@@ -235,13 +246,13 @@ const UI = {
     explanation: "Plain explanation",
     report: "Review report",
     metrics: "Review metrics",
-    findings: "Work to do",
+    findings: "Findings and discussion",
     noCounterexample: "No additional work was identified.",
     incomplete: "No work item was confirmed, but the review did not complete.",
-    evidence: "Technical evidence",
+    evidence: "Evidence appendix",
     hill: "Review flow · Container",
     reviewQuestion: "Question this flow answers",
-    reviewContext: "Why this change exists · Context",
+    reviewContext: "Related ADRs and change context",
     verticalSlice: "Flow under review",
     sliceTypeLabels: {
       "user-flow": "user flow",
@@ -255,6 +266,10 @@ const UI = {
     containerResponsibility: "What this flow must achieve",
     containerInteractions: "How the flow proceeds",
     containerOutcome: "What the reader should observe",
+    claim: "Claim",
+    workedExample: "Worked example",
+    counterexample: "Boundary or counterexample",
+    assessment: "Assessment",
     components: "How the result is produced",
     componentResponsibility: "Role in the flow",
     componentImplementation: "How it works",
@@ -309,11 +324,13 @@ const UI = {
     exportHint: "Resolve only the findings that require a human decision, then export.",
     export: "Export decisions",
     saved: "Saved · feedback.json",
-    selfCheck: "Check my answer",
-    answerPlaceholder: "Write your answer before revealing the criteria.",
-    answerRequired: "Write an answer first.",
-    answerCriteria: "Answer criteria",
-    gradingEvidence: "Evidence used for the criteria",
+    selfCheck: "Check selection",
+    answerRequired: "Select one choice first.",
+    correct: "Correct",
+    needsReview: "Review this concept",
+    selectedFeedback: "Selection feedback",
+    answerCriteria: "Why the correct choice fits",
+    gradingEvidence: "Evidence",
     selfCheckLimit:
       "This self-check reveals criteria for comparison. It does not mark the PR comprehension-ready.",
     diagramFallback:
@@ -324,7 +341,11 @@ const UI = {
   ko: {
     title: "ADR 구현 리뷰",
     toc: "목차",
-    overview: "한눈에 보기",
+    overview: "초록",
+    analysis: "핵심 구현 방법과 알고리즘",
+    validation: "자체 검증 방법과 결과",
+    discussion: "결과 해석, 한계와 향후 보완",
+    conclusion: "결론",
     impact: "영향",
     action: "조치",
     risk: "위험",
@@ -336,13 +357,13 @@ const UI = {
     explanation: "구현 설명",
     report: "리뷰 보고서",
     metrics: "리뷰 지표",
-    findings: "해야 할 작업",
+    findings: "발견 사항과 논의",
     noCounterexample: "추가로 처리할 작업이 없습니다.",
     incomplete: "확정된 작업은 없지만 리뷰가 완료되지 않았습니다.",
-    evidence: "상세 기술 근거",
+    evidence: "근거 부록",
     hill: "리뷰 흐름 · Container",
     reviewQuestion: "이 흐름이 답해야 할 질문",
-    reviewContext: "왜 이 변경이 필요한가 · Context",
+    reviewContext: "관련 ADR과 변경 맥락",
     verticalSlice: "검토할 흐름",
     sliceTypeLabels: {
       "user-flow": "사용자 흐름",
@@ -356,6 +377,10 @@ const UI = {
     containerResponsibility: "이 흐름이 달성할 일",
     containerInteractions: "흐름이 진행되는 방식",
     containerOutcome: "독자가 확인할 결과",
+    claim: "주장",
+    workedExample: "대표 정상 사례",
+    counterexample: "반례·경계 조건",
+    assessment: "평가",
     components: "결과를 만드는 구현",
     componentResponsibility: "흐름에서 맡은 역할",
     componentImplementation: "동작 방식",
@@ -410,11 +435,13 @@ const UI = {
     exportHint: "사용자 결정이 필요한 finding만 판단한 뒤 내보내세요.",
     export: "결정 내보내기",
     saved: "저장됨 · feedback.json",
-    selfCheck: "내 답과 비교하기",
-    answerPlaceholder: "판정 기준을 보기 전에 답을 작성하세요.",
-    answerRequired: "먼저 답을 작성하세요.",
-    answerCriteria: "판정 기준",
-    gradingEvidence: "판정 근거",
+    selfCheck: "선택 확인",
+    answerRequired: "먼저 선택지 하나를 고르세요.",
+    correct: "정답",
+    needsReview: "다시 확인 필요",
+    selectedFeedback: "선택한 답의 설명",
+    answerCriteria: "정답이 맞는 이유",
+    gradingEvidence: "근거",
     selfCheckLimit:
       "이 self-check는 비교할 기준만 보여줍니다. PR 이해 준비도를 자동 판정하지 않습니다.",
     diagramFallback: "간이 renderer가 지원하지 않는 Mermaid 문법입니다. 원문을 표시합니다.",
@@ -842,9 +869,34 @@ function normalizeComprehensionCheck(data) {
     questions: questions.map((question, index) => ({
       id: question.id || `Q${index + 1}`,
       question: question.question || "",
-      answerCriteria: question.answerCriteria || "",
+      options: (Array.isArray(question.options) ? question.options : []).map((option) => ({
+        id: option?.id || "",
+        text: option?.text || "",
+        feedback: option?.feedback || "",
+      })),
+      correctOptionId: question.correctOptionId || "",
+      explanation: question.explanation || "",
       evidence: question.evidence || "",
     })),
+  };
+}
+
+function normalizeReviewDiagnostics(data) {
+  const value =
+    data.reviewDiagnostics &&
+    typeof data.reviewDiagnostics === "object" &&
+    !Array.isArray(data.reviewDiagnostics)
+      ? data.reviewDiagnostics
+      : {};
+  const normalize = (field) => ({
+    status: value[field]?.status || "UNVERIFIED",
+    assessment: value[field]?.assessment || "",
+    evidence: value[field]?.evidence || "",
+  });
+  return {
+    contractCompleteness: normalize("contractCompleteness"),
+    testSufficiency: normalize("testSufficiency"),
+    necessity: normalize("necessity"),
   };
 }
 
@@ -880,6 +932,10 @@ function normalizeReviewHike(data) {
       sliceType: hill?.sliceType || "",
       sliceName: hill?.sliceName || "",
       reviewQuestion: hill?.reviewQuestion || "",
+      claim: hill?.claim || "",
+      workedExample: hill?.workedExample || "",
+      counterexample: hill?.counterexample || "",
+      assessment: hill?.assessment || "",
       container: {
         responsibility: hill?.container?.responsibility || "",
         interactions: hill?.container?.interactions || "",
@@ -976,13 +1032,13 @@ function narrativeParagraph(label, value, className = "") {
 
 function reviewContextCard(context, ui) {
   return `
-  <section class="hill hill--foundation" id="review-context">
+  <section class="paper-section" id="review-context">
     <h2 class="explanation__title">${esc(ui.reviewContext)}</h2>
     <div class="context-narrative" aria-label="${esc(ui.reviewContext)}">
-      ${narrativeParagraph(ui.contextIntent, context.intent, "narrative-lead")}
-      ${narrativeParagraph(ui.contextPreconditions, context.preconditions)}
-      ${narrativeParagraph(ui.contextContracts, context.contracts)}
-      ${narrativeParagraph(ui.contextScopeAndRisk, context.scopeAndRisk)}
+      <p class="narrative-lead">${esc(context.intent)}</p>
+      <p>${esc(context.preconditions)}</p>
+      <p>${esc(context.contracts)}</p>
+      <p>${esc(context.scopeAndRisk)}</p>
     </div>
   </section>`;
 }
@@ -1043,7 +1099,6 @@ function hillResult(rows, ui) {
 }
 
 function reviewHillCard(hill, body, rows, ui) {
-  const sliceType = ui.sliceTypeLabels?.[hill.sliceType] || hill.sliceType;
   const hillId = hill.id.toLowerCase();
   const result = hillResult(rows, ui);
   const components = hill.components
@@ -1054,23 +1109,8 @@ function reviewHillCard(hill, body, rows, ui) {
     .join("\n");
 
   return `
-  <section class="hill hill--${esc(result.statusClass)}" id="hill-${esc(hill.id.toLowerCase())}">
-    <header class="hill__head">
-      <div>
-        <p class="hill__eyebrow">${esc(hill.id)} · ${esc(sliceType)}</p>
-        <h2 class="explanation__title">${esc(hill.title)}</h2>
-      </div>
-      <span class="flow-status flow-status--${esc(result.statusClass)}">${esc(
-        result.label,
-      )} · ${rows.length}</span>
-    </header>
-    <p class="hill__slice"><span class="side__label">${esc(ui.verticalSlice)}</span> ${esc(
-      hill.sliceName,
-    )}</p>
-    <div class="hill__question">
-      <span class="side__label">${esc(ui.reviewQuestion)}</span>
-      <p>${esc(hill.reviewQuestion)}</p>
-    </div>
+  <section class="paper-subsection" id="hill-${esc(hill.id.toLowerCase())}">
+    <h3 class="explanation__title">${esc(hill.title)}</h3>
     ${
       body
         ? `<div class="explanation__body hill__authored-narrative">${renderMarkdown(
@@ -1079,21 +1119,16 @@ function reviewHillCard(hill, body, rows, ui) {
           )}</div>`
         : ""
     }
-    <div class="hill__narrative" aria-label="${esc(ui.hill)}">
-      ${narrativeParagraph(
-        ui.containerResponsibility,
-        hill.container.responsibility,
-        "narrative-lead",
-      )}
-      ${narrativeParagraph(ui.containerInteractions, hill.container.interactions)}
-      ${narrativeParagraph(ui.containerOutcome, hill.container.outcome, "outcome-note")}
+    <div class="hill__narrative" aria-label="${esc(hill.title)}">
+      <p class="narrative-lead">${esc(hill.sliceName)}. ${esc(hill.claim)}</p>
+      <p>${esc(hill.workedExample)}</p>
+      <p>${esc(hill.counterexample)}</p>
+      <p>${esc(hill.container.responsibility)} ${esc(hill.container.interactions)}</p>
+      <p>${esc(hill.container.outcome)} ${esc(hill.assessment)}</p>
     </div>
     <details class="hill__details"${result.open ? " open" : ""}>
       <summary>
         <span>${esc(ui.flowEvidence)}</span>
-        <small>${hill.components.length} ${esc(ui.componentsCount)} · ${rows.length} ${esc(
-          ui.contractsCount,
-        )}</small>
       </summary>
       <div class="hill__details-body">
         <h3 class="component-section-title">${esc(ui.components)}</h3>
@@ -1146,14 +1181,26 @@ function implementationChoiceCard(choice, index, total, ui) {
 }
 
 function comprehensionQuestionCard(question, index, ui) {
+  const options = question.options
+    .map(
+      (option) => `
+      <label class="quiz__option">
+        <input type="radio" name="quiz-${index}" value="${esc(option.id)}">
+        <span><strong>${esc(option.id)}.</strong> ${esc(option.text)}</span>
+      </label>`,
+    )
+    .join("");
   return `
   <article class="quiz">
     <span class="quiz__id">${esc(question.id)}</span>
     <p class="quiz__question">${esc(question.question)}</p>
-    <textarea class="quiz__answer" data-question-index="${index}" rows="3" placeholder="${esc(ui.answerPlaceholder)}"></textarea>
-    <button class="quiz__check" type="button" data-question-index="${index}" data-answer="${base64(question.answerCriteria)}" data-evidence="${base64(question.evidence)}">${esc(ui.selfCheck)}</button>
+    <div class="quiz__options">${options}</div>
+    <button class="quiz__check" type="button" data-question-index="${index}" data-correct="${esc(question.correctOptionId)}" data-explanation="${base64(question.explanation)}" data-evidence="${base64(question.evidence)}" data-feedback="${base64(JSON.stringify(Object.fromEntries(question.options.map((option) => [option.id, option.feedback]))))}">${esc(ui.selfCheck)}</button>
     <p class="quiz__required" data-question-index="${index}" hidden>${esc(ui.answerRequired)}</p>
     <div class="quiz__feedback" data-question-index="${index}" hidden>
+      <strong class="quiz__result"></strong>
+      <strong>${esc(ui.selectedFeedback)}</strong>
+      <p class="quiz__selected-feedback"></p>
       <strong>${esc(ui.answerCriteria)}</strong>
       <p class="quiz__criteria"></p>
       <strong>${esc(ui.gradingEvidence)}</strong>
@@ -1161,6 +1208,43 @@ function comprehensionQuestionCard(question, index, ui) {
       <p class="quiz__limit">${esc(ui.selfCheckLimit)}</p>
     </div>
   </article>`;
+}
+
+function reviewDiagnosticsCard(diagnostics, ui) {
+  const labels =
+    ui.analysis === "분석"
+      ? {
+          contractCompleteness: "계약 누락",
+          testSufficiency: "테스트 공백",
+          necessity: "과다 변경",
+        }
+      : {
+          contractCompleteness: "Missing contracts",
+          testSufficiency: "Test gaps",
+          necessity: "Excess scope",
+        };
+  return ["contractCompleteness", "testSufficiency", "necessity"]
+    .map((field) => {
+      const item = diagnostics[field];
+      return `<section class="paper-subsection">
+        <h3>${esc(labels[field])}</h3>
+        <p>${esc(item.assessment)}</p>
+        <p>${esc(item.evidence)}</p>
+      </section>`;
+    })
+    .join("");
+}
+
+function findingDiscussion(findings, ui) {
+  if (findings.length === 0) return `<p>${esc(ui.noCounterexample)}</p>`;
+  return findings
+    .map(
+      (finding) =>
+        `<p>${esc(finding.summary)} ${esc(finding.whyItMatters)} ${esc(
+          finding.requestedChange,
+        )} ${esc(finding.completionCriteria)}</p>`,
+    )
+    .join("");
 }
 
 function explanationCard(title, body, id, ui) {
@@ -1397,6 +1481,7 @@ function buildHtml(data) {
   const atAGlance = normalizeAtAGlance(data);
   const narrativeSections = normalizeNarrativeSections(data);
   const reviewHike = normalizeReviewHike(data);
+  const reviewDiagnostics = normalizeReviewDiagnostics(data);
   const comprehensionCheck = normalizeComprehensionCheck(data);
   const contractCoverage = normalizeContractCoverage(data);
   const implementationChoices = normalizeImplementationChoices(data);
@@ -1428,6 +1513,8 @@ function buildHtml(data) {
   const comprehensionCards = comprehensionCheck.questions
     .map((question, index) => comprehensionQuestionCard(question, index, ui))
     .join("\n");
+  const diagnosticCards = reviewDiagnosticsCard(reviewDiagnostics, ui);
+  const discussionProse = findingDiscussion(findings, ui);
   const narrativeCards = supportingNarrative
     .map((section) => explanationCard(section.displayTitle, section.body, section.id, ui))
     .join("\n");
@@ -1448,12 +1535,6 @@ function buildHtml(data) {
   const decisionCount = findings.filter((finding) =>
     USER_DECISION_CATEGORIES.has(finding.category),
   ).length;
-  const taskCounts = Object.fromEntries(
-    ["fix", "decide", "verify", "note"].map((group) => [
-      group,
-      findings.filter((finding) => finding.actionGroup === group).length,
-    ]),
-  );
   const hasOverview = atAGlance.impact || atAGlance.action || atAGlance.risk;
   const tocItems = [
     hasOverview ? { id: "overview", label: ui.overview, level: 0 } : null,
@@ -1482,24 +1563,15 @@ function buildHtml(data) {
         })),
       ]),
     ]),
-    { id: "findings", label: ui.findings, level: 0 },
+    { id: "analysis", label: ui.analysis, level: 0 },
+    { id: "validation", label: ui.validation, level: 0 },
+    { id: "findings", label: ui.discussion, level: 0 },
+    { id: "conclusion", label: ui.conclusion, level: 0 },
     coverageCount || choiceCount ? { id: "evidence", label: ui.evidence, level: 0 } : null,
     comprehensionCheck.questions.length
       ? { id: "comprehension", label: ui.comprehension, level: 0 }
       : null,
   ].filter(Boolean);
-
-  const empty =
-    count === 0 && verdictKey === "PASS"
-      ? `<div class="conforms">
-           <p class="conforms__lead">${esc(ui.noCounterexample)}</p>
-           <p class="conforms__sub">${esc(ui.evidence)} · ${provenCount} / ${coverageCount} ${esc(ui.proven)}</p>
-         </div>`
-      : count === 0
-        ? `<div class="conforms">
-             <p class="conforms__lead">${esc(verdictKey || "unruled")} · ${esc(ui.incomplete)}</p>
-           </div>`
-        : "";
 
   // Embed the findings so the download echoes the original context back
   // alongside the reviewer's rulings — the main session gets both in one file.
@@ -1889,11 +1961,14 @@ function buildHtml(data) {
     color: #7457a6; margin-bottom: 8px;
   }
   .quiz__question { margin: 0; font-size: 14px; }
-  .quiz__answer {
-    width: 100%; margin-top: 12px; padding: 9px 10px; resize: vertical;
-    border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink);
-    font: 13.5px/1.5 var(--sans);
+  .quiz__options { display: grid; gap: 8px; margin-top: 12px; }
+  .quiz__option {
+    display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--paper);
+    cursor: pointer;
   }
+  .quiz__option:has(input:checked) { border-color: var(--focus); }
+  .quiz__option input { margin-top: 3px; }
   .quiz__check {
     margin-top: 9px; padding: 8px 12px; border: 1px solid var(--ink);
     border-radius: 7px; background: var(--ink); color: var(--card); cursor: pointer;
@@ -1906,6 +1981,15 @@ function buildHtml(data) {
   }
   .quiz__feedback p { margin: 5px 0 10px; }
   .quiz__limit { color: var(--ink-2); font-size: 12.5px; }
+  .diagnostics { display: grid; gap: 12px; margin: 12px 0 22px; }
+  .diagnostic {
+    border-left: 3px solid var(--line); padding: 10px 14px; background: var(--card);
+  }
+  .diagnostic header { display: flex; justify-content: space-between; gap: 12px; }
+  .diagnostic h3, .diagnostic p { margin: 0 0 8px; }
+  .diagnostic--issue { border-left-color: #c0362c; }
+  .diagnostic--unverified { border-left-color: #b4690e; }
+  .diagnostic--clear { border-left-color: #2e7d4f; }
   .finding__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .tag {
     font: 600 10.5px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
@@ -2047,6 +2131,41 @@ function buildHtml(data) {
   button.export:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   button.export.done { background: #2e7d4f; border-color: #2e7d4f; }
 
+  /* Paper reading mode: the default body is prose; structured evidence stays collapsed. */
+  body { background: var(--card); }
+  .page {
+    width: min(860px, 100%); display: block; padding: 38px 28px 64px;
+  }
+  .wrap { font-family: Georgia, "Times New Roman", serif; }
+  .toc {
+    position: static; border: 0; border-bottom: 1px solid var(--line);
+    border-radius: 0; padding: 0 0 18px; margin-bottom: 36px; background: transparent;
+  }
+  .toc ol { columns: 2; column-gap: 32px; }
+  .doc { border-bottom: 1px solid var(--line); }
+  .review-meta { border: 0; padding: 0; background: transparent; }
+  .overview, .explanation, .paper-section, .paper-subsection {
+    border: 0; border-radius: 0; background: transparent; padding: 0; margin: 28px 0;
+  }
+  .overview__title, .section-title {
+    font: 700 22px/1.3 Georgia, "Times New Roman", serif;
+    letter-spacing: 0; text-transform: none; color: var(--ink); margin: 34px 0 14px;
+  }
+  .overview__grid { display: block; }
+  .overview__item { display: block; border: 0; padding: 0; }
+  .overview__key, .stamp, .hill__eyebrow, .hill__slice, .hill__question,
+  .flow-status, .task-summary { display: none; }
+  .overview__value, .context-narrative p, .hill__narrative p,
+  .paper-section p, .paper-subsection p {
+    font-size: 15.5px; line-height: 1.85; margin: 12px 0;
+  }
+  .explanation__title { font-family: Georgia, "Times New Roman", serif; }
+  .hill__details, .section-disclosure, #evidence {
+    font-family: var(--sans);
+  }
+  .diagnostics { display: block; }
+  .diagnostic { border: 0; padding: 0; background: transparent; }
+
   @media (max-width: 620px) {
     .page { display: block; padding: 18px 14px 36px; }
     .toc { position: static; margin-bottom: 18px; }
@@ -2111,49 +2230,49 @@ function buildHtml(data) {
       </div>
       </details>
     </div>
-    <div class="stamp">
-      <div class="stamp__k">VERDICT</div>
-      <div class="stamp__v">${esc(verdictKey || "—")}</div>
-    </div>
   </header>
 
   ${
     hasOverview
       ? `<section class="overview" id="overview">
            <h2 class="overview__title">${esc(ui.overview)}</h2>
-           <div class="overview__grid">
-             <div class="overview__item"><span class="overview__key">${esc(ui.impact)}</span><p class="overview__value">${esc(atAGlance.impact)}</p></div>
-             <div class="overview__item"><span class="overview__key">${esc(ui.action)}</span><p class="overview__value">${esc(atAGlance.action)}</p></div>
-             <div class="overview__item"><span class="overview__key">${esc(ui.risk)}</span><p class="overview__value">${esc(atAGlance.risk)}</p></div>
-           </div>
+           <p class="overview__value">${esc(atAGlance.impact)} ${esc(atAGlance.action)} ${esc(
+             atAGlance.risk,
+           )}</p>
          </section>`
       : ""
   }
 
   ${contextCard}
   ${narrativeCards}
-  ${hillCards}
+  <section id="analysis">
+    <h2 class="section-title">${esc(ui.analysis)}</h2>
+    ${hillCards}
+  </section>
+
+  <section class="paper-section" id="validation">
+    <h2 class="section-title">${esc(ui.validation)}</h2>
+    <p>${esc(reviewDiagnostics.testSufficiency.assessment)}</p>
+    <p>${esc(reviewDiagnostics.testSufficiency.evidence)}</p>
+  </section>
 
   <section id="findings">
-    <h2 class="section-title">${esc(ui.findings)} · ${count}</h2>
-    ${
-      count
-        ? `<div class="task-summary">
-            <span>${esc(ui.taskFix)} ${taskCounts.fix}</span>
-            <span>${esc(ui.taskDecide)} ${taskCounts.decide}</span>
-            <span>${esc(ui.taskVerify)} ${taskCounts.verify}</span>
-            <span>${esc(ui.taskNote)} ${taskCounts.note}</span>
-          </div>`
-        : ""
-    }
-    ${empty}
-    ${cards}
+    <h2 class="section-title">${esc(ui.discussion)}</h2>
+    <div class="discussion-prose">${diagnosticCards}</div>
+    ${discussionProse}
+    ${data.notes ? `<p>${esc(data.notes)}</p>` : ""}
+  </section>
+
+  <section id="conclusion">
+    <h2 class="section-title">${esc(ui.conclusion)}</h2>
+    <p>${esc(verdictKey || "—")}. ${esc(atAGlance.action)} ${esc(atAGlance.risk)}</p>
   </section>
 
   ${
-    coverageCount || choiceCount
-      ? `<section id="evidence">
-          <h2 class="section-title">${esc(ui.evidence)}</h2>
+    coverageCount || choiceCount || count
+      ? `<details class="section-disclosure" id="evidence">
+          <summary>${esc(ui.evidence)}</summary>
+          <div class="section-disclosure__body">
           <div class="coverage-summary" aria-label="${esc(ui.coverageSummary)}">
             <span>${esc(ui.statusProven)} ${provenCount}</span>
             <span>${esc(ui.statusViolated)} ${violatedCount}</span>
@@ -2177,13 +2296,9 @@ function buildHtml(data) {
                 </details>`
               : ""
           }
-        </section>`
-      : ""
-  }
-
-  ${
-    data.notes
-      ? `<details class="section-disclosure"><summary>${esc(ui.residualNotes)}</summary><section class="section-disclosure__body notes"><p class="notes__v">${esc(data.notes)}</p></section></details>`
+          ${count ? `<h3>${esc(ui.findings)}</h3>${cards}` : ""}
+          </div>
+        </details>`
       : ""
   }
 
@@ -2223,17 +2338,24 @@ ${
   document.querySelectorAll(".quiz__check").forEach((button) => {
     button.addEventListener("click", () => {
       const index = button.dataset.questionIndex;
-      const answer = document.querySelector('.quiz__answer[data-question-index="' + index + '"]');
+      const answer = document.querySelector('input[name="quiz-' + index + '"]:checked');
       const required = document.querySelector('.quiz__required[data-question-index="' + index + '"]');
       const feedback = document.querySelector('.quiz__feedback[data-question-index="' + index + '"]');
-      if (!answer || !answer.value.trim()) {
+      if (!answer) {
         if (required) required.hidden = false;
         if (feedback) feedback.hidden = true;
         return;
       }
       if (required) required.hidden = true;
       if (feedback) {
-        feedback.querySelector(".quiz__criteria").textContent = decode(button.dataset.answer);
+        const feedbackByOption = JSON.parse(decode(button.dataset.feedback) || "{}");
+        const correct = answer.value === button.dataset.correct;
+        feedback.querySelector(".quiz__result").textContent = correct
+          ? ${inlineScriptJson(ui.correct)}
+          : ${inlineScriptJson(ui.needsReview)};
+        feedback.querySelector(".quiz__selected-feedback").textContent =
+          feedbackByOption[answer.value] || "";
+        feedback.querySelector(".quiz__criteria").textContent = decode(button.dataset.explanation);
         feedback.querySelector(".quiz__evidence").textContent = decode(button.dataset.evidence);
         feedback.hidden = false;
       }

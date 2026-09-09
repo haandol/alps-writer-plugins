@@ -26,20 +26,22 @@ Before writing the report, read
 `${CLAUDE_PLUGIN_ROOT}/references/review-report-writing.md` and
 `${CLAUDE_PLUGIN_ROOT}/references/reader-first-writing.md` completely.
 
-Use progressive disclosure. Every report contains `At a glance`, `Review mode`,
-`Scope`, `Context`, one or more Review Hiking Container/Hill sections,
-`Findings`, `ADR contract coverage`, `Notable implementation choices`, `Tests`,
-`Residual risks` by default. Add `Comprehension check` only when the user asks
-for it or the review has high comprehension load or broad change scope. The
-narrative headings and
-Hill order follow the reader's most important verified flows rather than a fixed
-tutorial template. `Context` contains one generated context marker.
-Each Hill contains generated Container, Component, and contract-evidence markers.
+Use progressive disclosure and a paper-shaped reading order: title, abstract,
+related ADRs and context, core implementation methods and algorithms,
+self-validation methods and results, results and limitations, conclusion and
+future work, and evidence appendix. The body is continuous essay prose. Do not
+show structured field labels such as `Claim`, `Worked example`,
+`Counterexample`, `Assessment`, `Responsibility`, `Interactions`, or
+`Outcome`. Do not use verdict stamps, status pills, count chips, task cards, or
+tables in the default body. Keep the structured fields for validation and
+compose them into paragraphs. The evidence appendix keeps mode, scope, contract
+coverage, implementation choices, detailed findings, code, tests, residual
+risks, and the optional comprehension check.
 Include detailed repair guidance only for `FIX_REQUIRED`, `BLOCK`, or
 when the user asks for it.
 
-Under `At a glance`, `ADR contract coverage`, `Notable implementation choices`,
-and `Comprehension check`, write only:
+Under the generated `Abstract`, `ADR contract coverage`, `Notable implementation
+choices`, and `Comprehension check`, write only:
 
 ```html
 <!-- generated from findings.json -->
@@ -49,11 +51,13 @@ The report is the narrative source. The deterministic materializer writes the
 Context, Container, Component, Code, each Hill's contract evidence cards, and
 the global coverage summary from `findings.json`.
 
-The human-facing order is prose first, evidence second. Context and each Hill
-must read as connected sentences that explain trigger or starting condition,
-the important action and branch, the system response or state change, the
-observable result, and the verification. Do not render the Context, Container,
-or Component fields as equal-width table-like grids. The structured fields and
+The human-facing order is prose first, evidence second. Related context and each
+implementation section read as connected paragraphs that explain trigger or
+starting condition, the important action and branch, the system response or
+state change, the observable result, and the verification. The validation
+section explains which test case covered which behavior and what was observed.
+The results and limitations section discusses contract gaps, test gaps, excess
+scope, residual risk, and evidence-backed future work. Structured fields and
 coverage rows remain complete in JSON and collapsed evidence.
 
 The Context → Container/Hill → Component → Code tree is the report map. Do not
@@ -117,18 +121,20 @@ coverage fields in JSON, but do not force them into seven visible columns or
 repeat the same detailed evidence outside its Hill.
 Never replace the four-column implementation-choice table with prose.
 
-When comprehension support is selected, end the report with a generated
-`Comprehension check`. Keep one to five
-medium-difficulty free-response questions in the structured check. Ask only
-material questions about the before/after behavior, causal path, ADR contract,
-failure or boundary case, or important trade-off. Do not use filler, symbol-name
-trivia, or line-number recall.
+When comprehension support is selected, end the evidence appendix with a
+generated `Comprehension check`. Keep one to five medium-difficulty,
+four-option single-answer questions in the structured check. Ask only material
+application questions about the before/after behavior, causal path, ADR
+contract, failure or boundary case, test condition, or excess scope. Do not use
+filler, trick wording, symbol-name trivia, or line-number recall.
 
 For each question, keep:
 
 - `id` — `Q1` through `Q5` in order
-- `question` — the visible free-response prompt
-- `answerCriteria` — the concepts and causal relationship a correct answer must contain
+- `question` — the visible application prompt
+- `options` — exactly four `{ "id": "A".."D", "text": "...", "feedback": "..." }` objects
+- `correctOptionId` — the one correct option id
+- `explanation` — why the correct option follows from the contract and evidence
 - `evidence` — the ADR, code, or test evidence used to grade it
 
 State explicitly in `prGuidance`:
@@ -138,11 +144,13 @@ State explicitly in `prGuidance`:
 - the PR must not be opened or sent until every question is answered correctly
   without reading the answer criteria.
 
-Do not manually put the questions, answer criteria, or evidence in Markdown.
-The materializer writes only the visible prompts. The HTML keeps the whole check
-collapsed. It may reveal a question's criteria and evidence only after the
-reader enters an answer and explicitly clicks the self-check action. Label this
-as comparison rather than grading; it never sets comprehension readiness.
+Do not manually put hidden feedback, the correct option, explanation, or
+evidence in Markdown. The materializer writes only the visible prompts and four
+options. The HTML keeps the whole check collapsed. It may reveal the selected
+option's feedback, correct explanation, and evidence only after the reader
+selects one option and explicitly clicks self-check. Use neutral feedback only:
+no score, grade, celebration, praise, ability judgment, or gamification. It
+never sets comprehension readiness.
 
 The HTML is one responsive page with a table of contents and section anchors. It
 renders Markdown lists, inline code, fenced `<pre>` code blocks, and supported
@@ -263,8 +271,31 @@ Serialize the available role artifacts and synthesized result into
     "questions": [
       {
         "id": "Q1",
-        "question": "Why does provider failure leave the payment pending rather than completed?",
-        "answerCriteria": "The provider result is required before the idempotent completion boundary records success.",
+        "question": "Which result preserves the completion boundary after provider failure?",
+        "options": [
+          {
+            "id": "A",
+            "text": "Mark the payment completed",
+            "feedback": "Failure has not crossed the completion boundary."
+          },
+          {
+            "id": "B",
+            "text": "Keep the payment pending",
+            "feedback": "This preserves the completion contract."
+          },
+          {
+            "id": "C",
+            "text": "Delete the payment",
+            "feedback": "Deletion is not the recorded failure result."
+          },
+          {
+            "id": "D",
+            "text": "Retry forever",
+            "feedback": "The contract does not allow unbounded retry."
+          }
+        ],
+        "correctOptionId": "B",
+        "explanation": "Provider success is required before completion is recorded.",
         "evidence": "ADR R2; src/payments/settle.ts:42; provider failure test"
       }
     ]
@@ -309,8 +340,9 @@ Serialize the available role artifacts and synthesized result into
 `implementationChoices` are mandatory
 even for `PASS` with zero findings or zero choices. `atAGlance` contains
 non-empty `impact`, `action`, and `risk`; use `None` only when that axis was
-checked and is empty. When present, `comprehensionCheck.questions` contains one to five
-questions with non-empty `id`, `question`, `answerCriteria`, and `evidence`.
+checked and is empty. When present, `comprehensionCheck.questions` contains one
+to five questions with non-empty `id`, `question`, exactly four `options`, one
+`correctOptionId`, `explanation`, and `evidence`.
 `contractCoverage` is non-empty because `D0` always represents the ADR Decision
 even when there is no explicit requirement-contract subsection.
 
@@ -385,7 +417,8 @@ the reason and provide the exact path.
 The ordinary main-session completion response contains only the verdict, key
 impact/action/risk, applied fixes, tests, lifecycle result, and the HTML path
 plus `OPENED` or `NOT_OPENED` result. Do not copy any comprehension question,
-`answerCriteria`, grading evidence, or answer request into that response. A
+correct option, option feedback, explanation, grading evidence, or answer
+request into that response. A
 pre-promotion invocation by `/adr-impl` must not ask the user to rule
 `apply / skip / defer` on `PROVEN` coverage rows, implementation choices, or
 ordinary evidence-backed repairs; the caller owns remediation. Contract
@@ -405,12 +438,12 @@ comprehension check, leave PR comprehension readiness unverified and complete
 the main-session response without a question.
 
 Only when the user explicitly asks to run the comprehension check, load the
-prepared artifact and ask one primary question at a time without revealing its
-`answerCriteria` or `evidence` first. Grade meaning and causal understanding,
-not exact wording.
+prepared artifact and ask one primary question at a time with all four choices.
+Do not reveal the correct option, feedback, explanation, or evidence first.
 
-- On a correct answer, briefly state why it is correct and ask the next question.
-- On an incomplete or incorrect answer, state that the PR is not
+- On a correct selection, state the supporting concept and ask the next question
+  without praise, celebration, scoring, grading, or ability judgment.
+- On an incorrect selection, state that the PR is not
   comprehension-ready, explain the missing concept with the stored evidence,
   and let the reader retry the same question. A retry does not create a sixth
   primary question.

@@ -53,14 +53,14 @@ the whole implementation:
 9. What risk remains unverified?
 10. When comprehension support is warranted, which one to five important questions would reveal whether the reader can explain the implementation?
 
-Start with `At a glance`:
+Start with `Abstract`:
 
 - `Verdict` — the supplied verdict in plain language.
 - `Impact` — the observable user or operational effect.
 - `Action` — the next required action, or `None`.
 - `Risk` — the remaining uncertainty, or `None`.
 
-Put `<!-- generated from findings.json -->` under `At a glance`. The JSON
+Put `<!-- generated from findings.json -->` under `Abstract`. The JSON
 handoff carries the non-empty `atAGlance.impact`, `atAGlance.action`, and
 `atAGlance.risk` values, and the materializer writes the final visible section.
 
@@ -84,19 +84,26 @@ plain-language action fields only when the core summary/evidence cannot derive t
 - `editTargets` — the files and symbols to change or inspect
 - `completionCriteria` — the observable result and verification that complete the item
 
-The HTML groups these cards as `fix`, `decide`, `verify`, and `note` tasks.
-Within each task group, preserve the importance order selected during synthesis.
-Keep exact category, confidence, perspective, ADR quote, code fragment,
-reproduction evidence, command, and result in the collapsed technical evidence.
-Never make a suggestion look like a blocker.
+The main results-and-limitations prose explains `fix`, `decide`, `verify`, and
+`note` findings in importance order without cards or badges. Keep exact category,
+confidence, perspective, ADR quote, code fragment, reproduction evidence,
+command, result, and action controls in the collapsed evidence appendix. Never
+make a suggestion look like a blocker.
 
 Use progressive disclosure. The default report is concise, including in full
-mode and for PASS. Keep this structure:
+mode and for PASS. Shape the human-facing HTML like a readable paper: abstract,
+related ADRs and context, core implementation methods and algorithms,
+self-validation methods and results, results and limitations, conclusion and
+future work, and evidence appendix. Write continuous essay paragraphs. Never
+render `Claim:`, `Worked example:`, `Counterexample:`, `Assessment:`, structured
+Container labels, verdict stamps, status pills, count chips, task cards, or
+tables in the default body. Keep structured data and detailed findings in the
+collapsed appendix.
 
 ```markdown
 # ADR implementation review
 
-## At a glance
+## Abstract
 
 <!-- generated from findings.json -->
 
@@ -192,20 +199,22 @@ or `Code walkthrough`.
 - Order sections by reader importance. Execution and dependency order are
   optional.
 - Introduce background just in time.
-- When selected, `Comprehension check` contains one to five medium-difficulty free-response
-  questions about the most material behavior, causal path, ADR contract,
-  boundary/failure case, or trade-off. Do not ask trivia about symbol names or
-  line numbers.
+- When selected, `Comprehension check` contains one to five medium-difficulty
+  four-option single-answer questions about the most material behavior, causal
+  path, ADR contract, boundary/failure case, test condition, or excess scope.
+  Do not ask trivia, use trick wording, or add filler.
 
-Do not manually copy the questions into Markdown. Keep the PR guidance, visible
-questions, semantic answer criteria, and ADR/code/test evidence in
-`findings.json`. The materializer writes only the guidance and visible prompts;
-the answer criteria remain hidden until the reader answers.
+Do not manually copy the hidden quiz data into Markdown. Keep the PR guidance,
+visible questions and options, correct option, neutral option feedback,
+explanation, and ADR/code/test evidence in `findings.json`. The materializer
+writes only the guidance, prompts, and choices. Hidden feedback stays unavailable
+until the reader selects one choice. Never output scores, grades, celebration,
+praise, ability judgments, or gamification.
 
 The standalone HTML owns progressive disclosure:
 
 - It is one responsive page with a table of contents and section anchors.
-- It shows At a glance, Context, a plain-language
+- It shows an Abstract, Introduction, a plain-language
   `Whole-route map (Trail map)` label, Review Hiking
   Container/Hills, Components, collapsed Code evidence, and Findings before the
   remaining evidence.

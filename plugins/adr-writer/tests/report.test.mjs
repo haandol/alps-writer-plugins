@@ -73,7 +73,29 @@ test("standard reviews render the same standalone HTML with separate implementat
     implementationChoices: [],
     comprehensionCheck: {
       prGuidance: "Do not open or send the PR until the question passes.",
-      questions: [{ id: "Q1", question: "Why is parser compatibility preserved?" }],
+      questions: [
+        {
+          id: "Q1",
+          question: "Which behavior preserves parser compatibility?",
+          options: [
+            { id: "A", text: "Change the output", feedback: "That breaks compatibility." },
+            {
+              id: "B",
+              text: "Keep inputs and outputs stable",
+              feedback: "This preserves compatibility.",
+            },
+            { id: "C", text: "Remove validation", feedback: "Validation remains required." },
+            {
+              id: "D",
+              text: "Require caller migration",
+              feedback: "Callers must remain compatible.",
+            },
+          ],
+          correctOptionId: "B",
+          explanation: "Accepted inputs and outputs remain stable.",
+          evidence: "parser compatibility tests",
+        },
+      ],
     },
   });
 
@@ -85,7 +107,7 @@ test("standard reviews render the same standalone HTML with separate implementat
   assert.match(result.stdout, /Change scope · none/);
 });
 
-test("review notes reuse the disclosure body without a second horizontal inset", () => {
+test("review notes appear as prose in the limitations section", () => {
   const result = render({
     language: "ko",
     adr: "docs/adr/test.md",
@@ -97,9 +119,9 @@ test("review notes reuse the disclosure body without a second horizontal inset",
   });
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /class="section-disclosure__body notes"/);
-  assert.match(result.stdout, /\.notes__v\s*\{[^}]*margin:\s*0;/s);
-  assert.doesNotMatch(result.stdout, /\.notes\s*\{[^}]*padding:/s);
+  assert.match(result.stdout, /검토 범위에서 발견된 제한 사항입니다/);
+  assert.match(result.stdout, /결과 해석, 한계와 향후 보완/);
+  assert.doesNotMatch(result.stdout, /class="section-disclosure__body notes"/);
 });
 
 test("arbitrary finding IDs are not interpolated into DOM selectors", () => {
@@ -200,7 +222,7 @@ test("necessity and sufficiency evidence survives into the interactive report", 
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /Unnecessary change/);
   assert.match(result.stdout, /Unverified risk/);
-  assert.match(result.stdout, /At a glance/);
+  assert.match(result.stdout, /Abstract/);
   assert.match(result.stdout, /A cancelled request may continue consuming upstream resources/);
   assert.match(result.stdout, /Remove the unnecessary event bus/);
   assert.match(result.stdout, /Restart recovery was not exercised locally/);
@@ -220,17 +242,20 @@ test("necessity and sufficiency evidence survives into the interactive report", 
   assert.match(result.stdout, /Verification required · R1/);
   assert.match(result.stdout, /Met 1/);
   assert.match(result.stdout, /Review result/);
-  assert.match(result.stdout, /Work to do · 2/);
-  assert.match(result.stdout, /Fix required · 1/);
-  assert.match(result.stdout, /Verification required · 1/);
+  assert.match(result.stdout, /Results, limitations, and future work/);
   assert.match(result.stdout, /Why it matters/);
   assert.match(result.stdout, /Where to change/);
   assert.match(result.stdout, /Done when/);
   assert.match(result.stdout, /Technical evidence/);
   assert.match(result.stdout, /Review report/);
   assert.ok(
-    result.stdout.indexOf("finding-s1") < result.stdout.indexOf("Contract verification"),
-    "findings must appear before detailed contract coverage",
+    result.stdout.indexOf("Results, limitations, and future work") <
+      result.stdout.indexOf("Contract verification"),
+    "finding prose must appear before the evidence appendix",
+  );
+  assert.ok(
+    result.stdout.indexOf("finding-s1") > result.stdout.indexOf("Contract verification"),
+    "detailed finding cards must stay inside the evidence appendix",
   );
   assert.ok(
     result.stdout.indexOf("Contract verification") <
@@ -296,7 +321,14 @@ test("comprehension questions render without exposing grading criteria", () => {
         {
           id: "Q1",
           question: "Why does provider failure leave the payment pending?",
-          answerCriteria: "SECRET_ANSWER_CRITERIA",
+          options: [
+            { id: "A", text: "SECRET_OPTION_A", feedback: "SECRET_FEEDBACK_A" },
+            { id: "B", text: "SECRET_OPTION_B", feedback: "SECRET_FEEDBACK_B" },
+            { id: "C", text: "SECRET_OPTION_C", feedback: "SECRET_FEEDBACK_C" },
+            { id: "D", text: "SECRET_OPTION_D", feedback: "SECRET_FEEDBACK_D" },
+          ],
+          correctOptionId: "B",
+          explanation: "SECRET_ANSWER_EXPLANATION",
           evidence: "SECRET_GRADING_EVIDENCE",
         },
       ],
@@ -308,13 +340,18 @@ test("comprehension questions render without exposing grading criteria", () => {
   assert.match(result.stdout, /Q1/);
   assert.match(result.stdout, /Why does provider failure leave the payment pending/);
   assert.match(result.stdout, /Do not open or send the PR/);
-  assert.match(result.stdout, /class="quiz__answer"/);
+  assert.match(result.stdout, /class="quiz__option"/);
+  assert.match(result.stdout, /type="radio"/);
   assert.match(result.stdout, /class="quiz__check"/);
-  assert.doesNotMatch(result.stdout, /SECRET_ANSWER_CRITERIA/);
+  assert.match(result.stdout, /Correct/);
+  assert.match(result.stdout, /Review this concept/);
+  assert.doesNotMatch(result.stdout, /Congratulations|Great job|Well done|10 points/);
+  assert.doesNotMatch(result.stdout, /SECRET_ANSWER_EXPLANATION/);
+  assert.doesNotMatch(result.stdout, /SECRET_FEEDBACK_A/);
   assert.doesNotMatch(result.stdout, /SECRET_GRADING_EVIDENCE/);
   assert.match(
     result.stdout,
-    new RegExp(Buffer.from("SECRET_ANSWER_CRITERIA", "utf8").toString("base64")),
+    new RegExp(Buffer.from("SECRET_ANSWER_EXPLANATION", "utf8").toString("base64")),
   );
 });
 
@@ -541,19 +578,14 @@ test("the report uses a table of contents and progressive disclosure", () => {
   assert.match(result.stdout, /<details class="review-meta">/);
   assert.match(result.stdout, /id="hill-h1"/);
   assert.match(result.stdout, /id="hill-h2"/);
-  assert.match(result.stdout, /Does the main flow preserve the decision/);
-  assert.match(result.stdout, /Why this change exists · Context/);
-  assert.match(result.stdout, /Starting point/);
-  assert.match(result.stdout, /What must remain true/);
-  assert.match(result.stdout, /Flow under review/);
-  assert.match(result.stdout, /Main request flow/);
+  assert.match(result.stdout, /Related ADRs and change context/);
+  assert.match(result.stdout, /Preserve the caller-visible contract/);
+  assert.match(result.stdout, /Core implementation and algorithms/);
+  assert.match(result.stdout, /Self-validation methods and results/);
   assert.match(result.stdout, /Component C1/);
   assert.match(result.stdout, /Main request handler/);
-  assert.match(result.stdout, /class="flow-status flow-status--proven">Met · 1/);
-  assert.match(
-    result.stdout,
-    /class="flow-status flow-status--unverified">Verification required · 1/,
-  );
+  assert.doesNotMatch(result.stdout, /class="flow-status/);
+  assert.doesNotMatch(result.stdout, /Question this flow answers/);
   assert.match(result.stdout, /<details class="hill__details">/);
   assert.match(result.stdout, /<details class="hill__details" open>/);
   assert.match(result.stdout, /Implementation and evidence/);
@@ -639,6 +671,10 @@ test("HTML chrome follows the selected report language", () => {
           sliceType: "user-flow",
           sliceName: "Lite 문서 재개",
           reviewQuestion: "올바른 문서만 다시 열리는가?",
+          claim: "유효한 Lite 문서만 다시 연다.",
+          workedExample: "정상 문서는 같은 위치에서 이어서 작성된다.",
+          counterexample: "다른 프로필 문서를 열면 순서 계약이 깨진다.",
+          assessment: "재개 테스트가 정상·거부 경로를 확인한다.",
           container: {
             responsibility: "올바른 Lite 문서를 선택한다.",
             interactions: "사용자 요청과 문서 형식 검사가 이어진다.",
@@ -673,17 +709,17 @@ test("HTML chrome follows the selected report language", () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /<html lang="ko">/);
   assert.match(result.stdout, />목차</);
-  assert.match(result.stdout, />한눈에 보기</);
-  assert.match(result.stdout, />해야 할 작업 · 0</);
-  assert.match(result.stdout, />H1 · 사용자 흐름</);
-  assert.match(result.stdout, />이 흐름이 답해야 할 질문</);
-  assert.match(result.stdout, />왜 이 변경이 필요한가 · Context</);
-  assert.match(result.stdout, />시작 조건\.</);
-  assert.match(result.stdout, />반드시 유지할 계약\.</);
-  assert.match(result.stdout, />동작 방식\.</);
+  assert.match(result.stdout, />초록</);
+  assert.match(result.stdout, />관련 ADR과 변경 맥락</);
+  assert.match(result.stdout, />핵심 구현 방법과 알고리즘</);
+  assert.match(result.stdout, />자체 검증 방법과 결과</);
+  assert.match(result.stdout, />결과 해석, 한계와 향후 보완</);
+  assert.doesNotMatch(result.stdout, />H1 · 사용자 흐름</);
+  assert.doesNotMatch(result.stdout, />이 흐름이 답해야 할 질문</);
+  assert.doesNotMatch(result.stdout, />시작 조건\.</);
   assert.match(result.stdout, />코드 근거 1 · excerpt/);
-  assert.match(result.stdout, />검토할 흐름</);
-  assert.match(result.stdout, /class="flow-status flow-status--unverified">검증 필요 · 0/);
+  assert.doesNotMatch(result.stdout, />검토할 흐름</);
+  assert.doesNotMatch(result.stdout, /class="flow-status/);
   assert.match(result.stdout, /<details class="hill__details" open>/);
   assert.match(result.stdout, />구현과 검증 근거</);
   assert.doesNotMatch(result.stdout, />PROVEN</);
@@ -711,7 +747,7 @@ test("At a glance content is escaped without duplicating PASS feedback data", ()
   assert.equal((result.stdout.match(/<script>/g) ?? []).length, 1);
 });
 
-test("a finding-free PASS uses one compact result card instead of a second verdict stamp", () => {
+test("a finding-free PASS uses paper prose without a verdict stamp", () => {
   const result = render({
     language: "ko",
     adr: "docs/adr/test.md",
@@ -732,8 +768,9 @@ test("a finding-free PASS uses one compact result card instead of a second verdi
   });
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /class="conforms"/);
-  assert.doesNotMatch(result.stdout, /class="conforms__stamp"/);
+  assert.match(result.stdout, /<section id="conclusion">/);
+  assert.doesNotMatch(result.stdout, /class="stamp"/);
+  assert.doesNotMatch(result.stdout, /class="conforms"/);
 });
 
 test("INCONCLUSIVE with no findings does not render a false conforming claim", () => {
@@ -757,6 +794,5 @@ test("INCONCLUSIVE with no findings does not render a false conforming claim", (
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /INCONCLUSIVE/);
-  assert.match(result.stdout, /the review did not complete/);
   assert.doesNotMatch(result.stdout, /No unnecessary changes or counterexamples were confirmed/);
 });

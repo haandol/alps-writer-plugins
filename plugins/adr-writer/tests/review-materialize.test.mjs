@@ -33,6 +33,10 @@ function reviewHike(contractIds = ["D0"]) {
         sliceType: "user-flow",
         sliceName: "Contract-bound request",
         reviewQuestion: "Does the request preserve the boundary?",
+        claim: "The request preserves the approved boundary.",
+        workedExample: "A valid request returns the expected result.",
+        counterexample: "Skipping validation would violate the boundary.",
+        assessment: "The ideal and compatibility tests support the claim.",
         container: {
           responsibility: "Apply the request contract.",
           interactions: "The caller reaches the boundary and receives a result.",
@@ -93,6 +97,8 @@ Does the request preserve the boundary?
 
 ## Findings
 
+<!-- generated review diagnostics from findings.json -->
+
 None.
 
 ## ADR contract coverage
@@ -150,9 +156,44 @@ test("materializer creates the complete Markdown evidence sections from findings
             whyItMatters: "latency",
           },
         ],
+        reviewDiagnostics: {
+          contractCompleteness: {
+            status: "CLEAR",
+            assessment: "Every reviewed behavior has a contract row.",
+            evidence: "D0 is assigned once.",
+          },
+          testSufficiency: {
+            status: "CLEAR",
+            assessment: "The ideal and boundary tests pass.",
+            evidence: "node --test — PASS",
+          },
+          necessity: {
+            status: "CLEAR",
+            assessment: "No removable change was found.",
+            evidence: "The necessity pass found no excess scope.",
+          },
+        },
         comprehensionCheck: {
           prGuidance: "Answer before sending the PR.",
-          questions: [{ id: "Q1", question: "Why is the boundary preserved?" }],
+          questions: [
+            {
+              id: "Q1",
+              question: "Which result preserves the boundary?",
+              options: [
+                { id: "A", text: "Skip validation", feedback: "Validation is required." },
+                {
+                  id: "B",
+                  text: "Return the expected result",
+                  feedback: "This preserves the boundary.",
+                },
+                { id: "C", text: "Change the output", feedback: "That breaks compatibility." },
+                { id: "D", text: "Ignore errors", feedback: "Errors remain part of the contract." },
+              ],
+              correctOptionId: "B",
+              explanation: "The valid request must return the expected result.",
+              evidence: "src/example.ts and node --test",
+            },
+          ],
         },
       }),
     );
@@ -163,20 +204,24 @@ test("materializer creates the complete Markdown evidence sections from findings
     assert.equal(result.status, 0, result.stderr);
 
     const report = readFileSync(path.join(dir, "implementation-review.md"), "utf8");
-    assert.match(report, /- Verdict: PASS/);
+    assert.match(report, /No behavior regression\.[\s\S]*PASS\./);
     assert.match(report, /\| D0 \| Met \| H1 \| A \\\| B \|/);
     assert.match(report, /### D0 · Met · A \\\| B/);
     assert.match(report, /\*\*Implementation\.\*\* Implemented/);
     assert.match(report, /\*\*Evidence\.\*\* src\/example\.ts/);
     assert.match(report, /\*\*Tests\.\*\* node --test — PASS/);
-    assert.match(report, /\*\*Intent\.\*\*/);
+    assert.doesNotMatch(report, /\*\*Intent\.\*\*/);
     assert.match(report, /The request reaches a contract boundary\./);
-    assert.match(report, /\*\*Vertical slice\.\*\* Contract-bound request \(user flow\)/);
-    assert.match(report, /\*\*Responsibility\.\*\*/);
+    assert.doesNotMatch(report, /\*\*Vertical slice\.\*\*/);
+    const containerBlock = report.match(
+      /<!-- generated container zoom start -->([\s\S]*?)<!-- generated container zoom end -->/,
+    )?.[1];
+    assert.doesNotMatch(containerBlock, /\*\*Responsibility\.\*\*/);
     assert.match(report, /### Component C1 · Request boundary/);
     assert.match(report, /```diff[\s\S]*- oldBoundary\(request\)/);
     assert.match(report, /\| fixed delay \| src\/example\.ts \|/);
-    assert.match(report, /1\. Q1 — Why is the boundary preserved\?/);
+    assert.match(report, /1\. Q1 — Which result preserves the boundary\?/);
+    assert.match(report, /- B\. Return the expected result/);
     assert.match(
       report,
       /## The request reaches the boundary[\s\S]*The request test observes the expected caller result\./,
@@ -209,9 +254,33 @@ test("materializer rejects a report whose generated section anchor is missing", 
         reviewHike: reviewHike([]),
         contractCoverage: [],
         implementationChoices: [],
+        reviewDiagnostics: {
+          contractCompleteness: { status: "CLEAR", assessment: "clear", evidence: "none" },
+          testSufficiency: { status: "CLEAR", assessment: "clear", evidence: "none" },
+          necessity: { status: "CLEAR", assessment: "clear", evidence: "none" },
+        },
+        reviewDiagnostics: {
+          contractCompleteness: { status: "CLEAR", assessment: "clear", evidence: "D0" },
+          testSufficiency: { status: "CLEAR", assessment: "clear", evidence: "test" },
+          necessity: { status: "CLEAR", assessment: "clear", evidence: "diff" },
+        },
         comprehensionCheck: {
           prGuidance: "guidance",
-          questions: [{ id: "Q1", question: "question" }],
+          questions: [
+            {
+              id: "Q1",
+              question: "question",
+              options: [
+                { id: "A", text: "a", feedback: "a" },
+                { id: "B", text: "b", feedback: "b" },
+                { id: "C", text: "c", feedback: "c" },
+                { id: "D", text: "d", feedback: "d" },
+              ],
+              correctOptionId: "A",
+              explanation: "because",
+              evidence: "evidence",
+            },
+          ],
         },
       }),
     );
@@ -239,6 +308,11 @@ test("materializer leaves comprehension absent when no questions were requested"
         reviewHike: reviewHike([]),
         contractCoverage: [],
         implementationChoices: [],
+        reviewDiagnostics: {
+          contractCompleteness: { status: "CLEAR", assessment: "clear", evidence: "none" },
+          testSufficiency: { status: "CLEAR", assessment: "clear", evidence: "none" },
+          necessity: { status: "CLEAR", assessment: "clear", evidence: "none" },
+        },
       }),
     );
 
@@ -273,6 +347,11 @@ test("materializer localizes Hill evidence labels for Korean reports", () => {
           },
         ],
         implementationChoices: [],
+        reviewDiagnostics: {
+          contractCompleteness: { status: "CLEAR", assessment: "누락 없음", evidence: "D0" },
+          testSufficiency: { status: "CLEAR", assessment: "공백 없음", evidence: "테스트" },
+          necessity: { status: "CLEAR", assessment: "과다 없음", evidence: "diff" },
+        },
       }),
     );
 

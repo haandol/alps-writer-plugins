@@ -450,6 +450,8 @@ The duplicate path ran, but the provider-failure path could not be executed.
 <!-- generated hill evidence from findings.json -->
 
 ## Findings
+<!-- generated review diagnostics from findings.json -->
+
 Provider failure remains unverified. Coverage and choices are read-only.
 ## ADR contract coverage
 | Contract ID | Requirement | Status | ADR basis | How the implementation meets it | Evidence | Tests |
@@ -577,6 +579,8 @@ The idempotent boundary admits one completion.
 ## Provider failure leaves the payment pending
 The duplicate and provider-failure paths both passed their targeted tests.
 ## Findings
+<!-- generated review diagnostics from findings.json -->
+
 Approve each choice?
 ## ADR contract coverage
 | Contract ID | Requirement | Status | ADR basis | How the implementation meets it | Evidence | Tests |

@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-09-09 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 사람용 기본 화면에서 verdict stamp, 상태 pill, 집계 chip, 작업 카드, 표와 `주장·사례·반례·평가` 라벨을 제거했다. 본문은 초록, 관련 ADR과 맥락, 핵심 구현·알고리즘, 자체 검증 결과, 결과 해석·한계, 결론·향후 보완을 잇는 논문형 에세이로 작성하고 구조화된 감사 자료는 근거 부록에만 유지한다.
+- **2026-09-09 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 사람용 Evidence Package를 논문형 읽기 흐름, 학습 지도, 정상·반례 사례와 주장→근거→평가 구조로 바꾸고 계약 누락·테스트 공백·과다 변경을 별도 진단한다. 이해도 확인은 중간 난이도 4지선다 단일정답형 최대 5개와 칭찬·점수 없는 중립적 자가점검 피드백만 제공한다.
 - **2026-09-07 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — Context → Container/Hill → Component → Code 트리 자체가 보고서 탐색 경로를 제공하므로 전역 Trail map과 visualization metadata를 제거했다. 목차는 Component와 접힌 Code evidence까지 계층적으로 연결하고, 다이어그램은 필요한 Component 내부에서만 선택적으로 사용한다.
 - **2026-09-07 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — Evidence Package를 Context → Container/Hill → Component → Code 확대 단계로 재구성했다. Context는 의도·전제·계약·범위를, Container/Hill은 수직 기능을, Component는 상세 구현을, Code는 핵심 diff 또는 기존 구현 excerpt와 테스트를 보여준다.
 - **2026-09-07 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — Trail map의 생성 근거는 검증용 artifact에만 유지하고 사람용 보고서에는 지도별 읽는 법만 표시하도록 단순화했다. 포괄적인 문체 품질 라벨과 모호한 완료 표현은 구체적인 문장 패턴과 계약·구현·테스트 확인 결과로 바꿨다. 최종 report가 이미 구현 설명을 소유하므로 별도 `explanation.md`는 선택적 임시 입력으로 낮췄다.

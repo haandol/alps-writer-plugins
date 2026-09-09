@@ -63,8 +63,30 @@ function validComprehensionCheck() {
       {
         id: "Q1",
         question: "Why must settlement record completion only once?",
-        answerCriteria:
-          "The idempotency boundary prevents duplicate requests from creating duplicate completion records.",
+        options: [
+          {
+            id: "A",
+            text: "Retries create a new record.",
+            feedback: "This would violate idempotency.",
+          },
+          {
+            id: "B",
+            text: "One boundary reuses the durable result.",
+            feedback: "This matches the contract.",
+          },
+          {
+            id: "C",
+            text: "The provider owns duplicate detection.",
+            feedback: "The local boundary owns it.",
+          },
+          {
+            id: "D",
+            text: "Duplicate completion is harmless.",
+            feedback: "It changes the durable result.",
+          },
+        ],
+        correctOptionId: "B",
+        explanation: "The idempotency boundary prevents duplicate completion records.",
         evidence: "ADR R1; src/stream.mjs:4; duplicate settlement test",
       },
     ],
@@ -78,8 +100,22 @@ function validParserComprehensionCheck() {
       {
         id: "Q1",
         question: "Why does the helper extraction preserve parser compatibility?",
-        answerCriteria:
-          "The accepted inputs, validation order, and public output shape remain unchanged.",
+        options: [
+          {
+            id: "A",
+            text: "It changes the public output.",
+            feedback: "That would break compatibility.",
+          },
+          { id: "B", text: "It removes validation.", feedback: "Validation remains required." },
+          {
+            id: "C",
+            text: "Inputs, validation order, and output remain unchanged.",
+            feedback: "This is the compatibility contract.",
+          },
+          { id: "D", text: "Callers must migrate.", feedback: "No caller migration is allowed." },
+        ],
+        correctOptionId: "C",
+        explanation: "The accepted inputs, validation order, and output remain unchanged.",
         evidence: "ADR R1; src/parser.mjs; parser compatibility test",
       },
     ],
@@ -101,6 +137,10 @@ function validReviewHike() {
         sliceType: "user-flow",
         sliceName: "Duplicate settlement request",
         reviewQuestion: "Can a duplicate request create more than one durable settlement?",
+        claim: "A duplicate request reuses one durable settlement.",
+        workedExample: "Two requests with one key produce one stored result.",
+        counterexample: "A second write for the same key violates the contract.",
+        assessment: "The duplicate path is covered by code and an ideal-case test.",
         container: {
           responsibility: "Reuse one durable settlement for a duplicate request.",
           interactions: "The request reaches the completion boundary and stored result.",
@@ -125,6 +165,10 @@ function validReviewHike() {
         sliceType: "user-flow",
         sliceName: "Provider failure settlement",
         reviewQuestion: "Can provider failure appear as a completed settlement?",
+        claim: "Provider failure stays outside the completion boundary.",
+        workedExample: "A failed provider call leaves the payment pending.",
+        counterexample: "Marking failure as completed violates the state contract.",
+        assessment: "The failing test shows this path still needs correction.",
         container: {
           responsibility: "Keep provider failure outside the completion boundary.",
           interactions: "The provider failure returns to the settlement handler.",
@@ -163,6 +207,10 @@ function validParserReviewHike() {
         sliceType: "logical-capability",
         sliceName: "Parser compatibility",
         reviewQuestion: "Does helper extraction preserve parser compatibility?",
+        claim: "Helper extraction preserves caller-visible parser behavior.",
+        workedExample: "A supported input returns the same public output.",
+        counterexample: "Changing validation order or output would break callers.",
+        assessment: "Compatibility tests cover the ideal and relevant edge paths.",
         container: {
           responsibility: "Preserve existing parser behavior.",
           interactions: "A caller submits supported input and receives public output.",
@@ -279,6 +327,11 @@ Retry and provider-failure paths determine the verdict.
 ## A duplicate request cannot create a second settlement
 Can a duplicate request create more than one durable settlement?
 
+A duplicate request reuses one durable settlement.
+Two requests with one key produce one stored result.
+A second write for the same key violates the contract.
+The duplicate path is covered by code and an ideal-case test.
+
 <!-- generated container zoom start -->
 
 - Vertical slice: Duplicate settlement request (user-flow)
@@ -330,6 +383,11 @@ The request has one durable settlement.
 ## Provider failure does not cross the completion boundary
 Can provider failure appear as a completed settlement?
 
+Provider failure stays outside the completion boundary.
+A failed provider call leaves the payment pending.
+Marking failure as completed violates the state contract.
+The failing test shows this path still needs correction.
+
 <!-- generated container zoom start -->
 
 - Vertical slice: Provider failure settlement (user-flow)
@@ -379,6 +437,34 @@ No completed settlement is visible.
 <!-- generated hill evidence end -->
 
 ## Findings
+<!-- generated review diagnostics start -->
+
+### Missing contracts
+
+**Status.** CLEAR
+
+Every reviewed behavior has a contract row.
+
+**Evidence.** D0 and R1 are assigned once.
+
+### Test gaps
+
+**Status.** ISSUE
+
+The provider-failure test currently fails.
+
+**Evidence.** node --test test/stream.test.mjs
+
+### Excess scope
+
+**Status.** CLEAR
+
+No removable change was found.
+
+**Evidence.** Necessity review found no excess path.
+
+<!-- generated review diagnostics end -->
+
 ### F1. Duplicate settlement
 - Files and symbols to change: src/stream.mjs
 - Scope not to touch: protocol
@@ -406,6 +492,10 @@ None beyond F1.
 ${PR_GUIDANCE}
 
 1. Q1 — Why must settlement record completion only once?
+   - A. Retries create a new record.
+   - B. One boundary reuses the durable result.
+   - C. The provider owns duplicate detection.
+   - D. Duplicate completion is harmless.
 
 ## Repair guide
 Fix F1 before merge.
@@ -454,6 +544,23 @@ function validFindings(dir) {
         whyItMatters: "changes recovery latency and request rate",
       },
     ],
+    reviewDiagnostics: {
+      contractCompleteness: {
+        status: "CLEAR",
+        assessment: "Every reviewed behavior has a contract row.",
+        evidence: "D0 and R1 are assigned once.",
+      },
+      testSufficiency: {
+        status: "ISSUE",
+        assessment: "The provider-failure test currently fails.",
+        evidence: "node --test test/stream.test.mjs",
+      },
+      necessity: {
+        status: "CLEAR",
+        assessment: "No removable change was found.",
+        evidence: "Necessity review found no excess path.",
+      },
+    },
     comprehensionCheck: validComprehensionCheck(),
     contractCoverage: [
       {
@@ -516,6 +623,11 @@ The parser and compatibility tests are in scope.
 ## Existing callers see the same parser behavior
 Does helper extraction preserve parser compatibility?
 
+Helper extraction preserves caller-visible parser behavior.
+A supported input returns the same public output.
+Changing validation order or output would break callers.
+Compatibility tests cover the ideal and relevant edge paths.
+
 Parser compatibility
 Preserve existing parser behavior.
 A caller submits supported input and receives public output.
@@ -556,6 +668,34 @@ The helper extraction changes organization without changing validation or output
 <!-- generated hill evidence end -->
 
 ## Findings
+<!-- generated review diagnostics start -->
+
+### Missing contracts
+
+**Status.** CLEAR
+
+Every parser behavior has a contract row.
+
+**Evidence.** D0 and R1 are assigned once.
+
+### Test gaps
+
+**Status.** CLEAR
+
+Ideal and compatibility edge tests pass.
+
+**Evidence.** node --test test/parser.test.mjs — PASS
+
+### Excess scope
+
+**Status.** CLEAR
+
+The extraction changes organization only.
+
+**Evidence.** Necessity review found no removable behavior.
+
+<!-- generated review diagnostics end -->
+
 None
 
 ## ADR contract coverage
@@ -577,6 +717,10 @@ Standard sufficiency perspective only; no protected surface changed.
 ${PR_GUIDANCE}
 
 1. Q1 — Why does the helper extraction preserve parser compatibility?
+   - A. It changes the public output.
+   - B. It removes validation.
+   - C. Inputs, validation order, and output remain unchanged.
+   - D. Callers must migrate.
 `;
 }
 
@@ -1136,7 +1280,13 @@ test("review artifact validator requires one to five hidden-answer comprehension
     findings.comprehensionCheck.questions = Array.from({ length: 6 }, (_, index) => ({
       id: `Q${index + 1}`,
       question: `Question ${index + 1}?`,
-      answerCriteria: `Answer ${index + 1}`,
+      options: ["A", "B", "C", "D"].map((id) => ({
+        id,
+        text: `${id} option ${index + 1}`,
+        feedback: `${id} feedback ${index + 1}`,
+      })),
+      correctOptionId: "A",
+      explanation: `Answer ${index + 1}`,
       evidence: `Evidence ${index + 1}`,
     }));
     writeFileSync(
@@ -1163,13 +1313,30 @@ test("review artifact validator requires one to five hidden-answer comprehension
       path.join(dir, "implementation-review.md"),
       validReport().replace(
         "1. Q1 — Why must settlement record completion only once?",
-        `1. Q1 — Why must settlement record completion only once?\n\n${findings.comprehensionCheck.questions[0].answerCriteria}`,
+        `1. Q1 — Why must settlement record completion only once?\n\n${findings.comprehensionCheck.questions[0].options[0].feedback}`,
       ),
     );
     writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
 
     const result = validate(dir);
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /exposes comprehensionCheck\.questions\[0\]\.answerCriteria/);
+    assert.match(
+      result.stderr,
+      /exposes comprehensionCheck\.questions\[0\]\.options\[0\]\.feedback/,
+    );
+  });
+});
+
+test("review artifact validator rejects praise, scores, and gamification in self-check feedback", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    findings.comprehensionCheck.questions[0].options[0].feedback = "Great job — 10 points.";
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /feedback must stay neutral and unscored/);
   });
 });

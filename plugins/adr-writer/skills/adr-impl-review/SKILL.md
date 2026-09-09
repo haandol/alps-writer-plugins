@@ -1,6 +1,6 @@
 ---
 name: adr-impl-review
-description: Review the complete code implementation of an ADR using a risk-selected standard or full path, then generate an intent-first standalone HTML Evidence Package whose narrative follows the most important verified user, operator, or system flow. Standard reviews use a decision ledger, a sufficiency perspective, and targeted tests; full reviews add separately grounded necessity and sufficiency perspectives plus detailed repair artifacts. Report-only; never edits code or ADRs.
+description: Review the complete code implementation of an ADR using a risk-selected standard or full path, then generate a paper-shaped standalone HTML Evidence Package that teaches the verified behavior in manageable segments and exposes contract gaps, test gaps, and excess scope. Report-only; never edits code or ADRs.
 argument-hint: "[adr-path-or-category] [--base <ref>] [--mode standard|full]"
 ---
 
@@ -159,21 +159,29 @@ context. Their content remains subject-specific.
 Do not stop to show it or ask the user to reconfirm. Never pass it to either
 review perspective.
 
-When selected, prepare one to five medium-difficulty free-response questions
-about material behavior, causal paths, contracts, boundaries, failures, or
-trade-offs. Do not ask symbol or line-number trivia.
+When selected, prepare one to five medium-difficulty four-option,
+single-answer questions about material behavior, causal paths, contracts,
+boundaries, failures, test conditions, or excess scope. Each question applies
+the explanation to a concrete situation. Do not ask symbol or line-number
+trivia, use trick wording, or add filler.
 
 For each question, keep these machine-readable fields:
 
 - `id` — `Q1` through `Q5` in order
-- `question` — the visible free-response prompt
-- `answerCriteria` — the concepts and causal relationship a correct answer must contain
+- `question` — the visible application prompt
+- `options` — exactly `A` through `D`; each option has visible `text` and hidden,
+  neutral `feedback`
+- `correctOptionId` — exactly one of `A`, `B`, `C`, or `D`
+- `explanation` — why the correct option follows from the contract and causal path
 - `evidence` — the ADR, code, or test evidence used to grade it
 
-The visible report initially contains only `id` and `question`. The standalone
-HTML may reveal `answerCriteria` and `evidence` only after the reader enters an
-answer and explicitly requests self-check. That local comparison does not grade
-meaning or mark the PR comprehension-ready.
+The visible report initially contains only `id`, `question`, and the four
+options. The standalone HTML may reveal the selected option's feedback, the
+correct answer explanation, and evidence only after the reader selects one
+option and explicitly requests self-check. Use neutral outcomes such as
+`Correct` and `Review this concept`; never add a score, grade, celebration,
+ability judgment, praise, or gamification. This local comparison does not mark
+the PR comprehension-ready.
 
 ## Standard mode
 
@@ -320,8 +328,11 @@ finding-free standalone review.
   relationship that the ADR, code, tests, configuration, or user did not establish.
 - Never generate more than five primary comprehension questions or add filler to
   reach five.
-- Never reveal a question's answer criteria or evidence before the reader
-  answers.
+- Never generate a free-response comprehension question.
+- Never reveal a question's correct option, option feedback, explanation, or
+  evidence before the reader selects one option.
+- Never add scores, grades, celebration, praise, ability judgments, or
+  gamification to self-check feedback.
 - Never include a comprehension question, grading criterion, evidence, or answer
   request in the ordinary main-session completion response.
 - Never start the interactive comprehension check unless the user explicitly

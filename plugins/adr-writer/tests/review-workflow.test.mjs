@@ -121,7 +121,10 @@ test("implementation review leads with Context and a reader-priority narrative",
   assert.match(artifactContract, /human-facing order is prose first, evidence second/i);
   assert.match(guide, /concise tutorial or senior review comment/i);
   for (const source of [reportWriter, artifactContract, guide]) {
-    assert.match(source, /equal-width table-like/i);
+    assert.match(
+      source,
+      /continuous essay prose|continuous essay paragraphs|default body contains no|default body.*no/i,
+    );
   }
   assert.match(readerFirst, /repeated contrast templates/i);
   assert.match(readerFirst, /ornamental title-cased English labels/i);
@@ -132,10 +135,13 @@ test("implementation review leads with Context and a reader-priority narrative",
   assert.match(guide, /target ADR's dominant\s+language/i);
   assert.match(guide, /multi-ADR report/i);
   assert.doesNotMatch(reviewContract, /exactly these top-level sections/i);
-  assert.match(reviewContract, /one\s+to five medium-difficulty free-response questions/i);
   assert.match(
     reviewContract,
-    /may reveal `answerCriteria` and `evidence` only after the reader enters an\s+answer/i,
+    /one\s+to five medium-difficulty[\s\S]{0,80}four-option[\s\S]{0,40}single-answer questions/i,
+  );
+  assert.match(
+    reviewContract,
+    /may reveal the selected[\s\S]{0,80}feedback[\s\S]{0,80}only after the reader selects one/i,
   );
   assert.match(skill, /`PASS` never implies comprehension readiness/);
   assert.match(skill, /Do not send the PR until the\s+check passes/);
@@ -740,8 +746,9 @@ test("human-facing review reports use one junior-readable visual writing guide",
   for (const source of reportProducers) {
     assert.match(source, /references\/review-report-writing\.md/);
     assert.match(source, /read[\s\S]{0,120}completely/i);
-    assert.match(source, /At a glance/);
   }
+  assert.match(reportProducers[2], /Abstract/);
+  assert.match(reportProducers[4], /Abstract/);
 
   for (const trigger of [
     /three or more participants/,

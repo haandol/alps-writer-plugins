@@ -65,34 +65,6 @@ const HILL_EVIDENCE_LABELS = {
     tests: "테스트",
   },
 };
-const REVIEW_CONTEXT_LABELS = {
-  en: {
-    intent: "Intent",
-    preconditions: "Preconditions and surrounding context",
-    contracts: "Core contracts",
-    scopeAndRisk: "Review scope and risk",
-  },
-  ko: {
-    intent: "의도",
-    preconditions: "사전 조건·주변 컨텍스트",
-    contracts: "핵심 계약",
-    scopeAndRisk: "검토 범위·위험",
-  },
-};
-const CONTAINER_LABELS = {
-  en: {
-    slice: "Vertical slice",
-    responsibility: "Responsibility",
-    interactions: "Interactions",
-    outcome: "Observable outcome",
-  },
-  ko: {
-    slice: "수직 단위",
-    responsibility: "책임",
-    interactions: "상호작용",
-    outcome: "관찰 결과",
-  },
-};
 const COMPONENT_LABELS = {
   en: {
     component: "Component",
@@ -115,19 +87,6 @@ const COMPONENT_LABELS = {
     tests: "테스트",
   },
 };
-const SLICE_TYPE_LABELS = {
-  en: {
-    "user-flow": "user flow",
-    "logical-capability": "logical capability",
-    "bounded-context": "bounded context",
-  },
-  ko: {
-    "user-flow": "사용자 흐름",
-    "logical-capability": "논리 기능",
-    "bounded-context": "바운디드 컨텍스트(하나의 업무 경계)",
-  },
-};
-
 function reportLanguage(data) {
   return String(data.language || "")
     .toLowerCase()
@@ -182,29 +141,30 @@ function hillEvidence(rows, language) {
  * The structured JSON remains authoritative and the generated block is replaceable.
  */
 function reviewContext(context, language) {
-  const labels = REVIEW_CONTEXT_LABELS[language];
   return [
-    `**${labels.intent}.** ${tableCell(context.intent)}`,
+    tableCell(context.intent),
     "",
-    `**${labels.preconditions}.** ${tableCell(context.preconditions)}`,
+    tableCell(context.preconditions),
     "",
-    `**${labels.contracts}.** ${tableCell(context.contracts)}`,
+    tableCell(context.contracts),
     "",
-    `**${labels.scopeAndRisk}.** ${tableCell(context.scopeAndRisk)}`,
+    tableCell(context.scopeAndRisk),
   ].join("\n");
 }
 
 function containerZoom(hill, language) {
-  const labels = CONTAINER_LABELS[language];
-  const sliceType = SLICE_TYPE_LABELS[language][hill.sliceType] || hill.sliceType;
   return [
-    `**${labels.slice}.** ${tableCell(hill.sliceName)} (${tableCell(sliceType)})`,
+    `${tableCell(hill.sliceName)}. ${tableCell(hill.claim)}`,
     "",
-    `**${labels.responsibility}.** ${tableCell(hill.container.responsibility)}`,
+    tableCell(hill.workedExample),
     "",
-    `**${labels.interactions}.** ${tableCell(hill.container.interactions)}`,
+    tableCell(hill.counterexample),
     "",
-    `**${labels.outcome}.** ${tableCell(hill.container.outcome)}`,
+    tableCell(hill.container.responsibility),
+    "",
+    tableCell(hill.container.interactions),
+    "",
+    `${tableCell(hill.container.outcome)} ${tableCell(hill.assessment)}`,
   ].join("\n");
 }
 
@@ -305,10 +265,40 @@ function comprehensionSection(check) {
   return [
     check.prGuidance,
     "",
-    ...check.questions.map(
-      (question, index) => `${index + 1}. ${question.id} — ${question.question}`,
+    ...check.questions.map((question, index) =>
+      [
+        `${index + 1}. ${question.id} — ${question.question}`,
+        ...question.options.map((option) => `   - ${option.id}. ${option.text}`),
+      ].join("\n"),
     ),
   ].join("\n");
+}
+
+function diagnosticsSection(diagnostics, language) {
+  const labels =
+    language === "ko"
+      ? {
+          contractCompleteness: "계약과 범위",
+          testSufficiency: "자체 검증 결과",
+          necessity: "필요성과 과다 변경",
+        }
+      : {
+          contractCompleteness: "Contracts and scope",
+          testSufficiency: "Self-validation results",
+          necessity: "Necessity and excess scope",
+        };
+  return ["contractCompleteness", "testSufficiency", "necessity"]
+    .map((field) => {
+      const item = diagnostics[field];
+      return [
+        `### ${labels[field]}`,
+        "",
+        tableCell(item.assessment),
+        "",
+        tableCell(item.evidence),
+      ].join("\n");
+    })
+    .join("\n\n");
 }
 
 function main() {
@@ -344,15 +334,21 @@ function main() {
   if (!Array.isArray(data.implementationChoices)) {
     usage("findings.json implementationChoices must be an array");
   }
+  if (!data.reviewDiagnostics || typeof data.reviewDiagnostics !== "object") {
+    usage("findings.json reviewDiagnostics must be an object");
+  }
   if (data.comprehensionCheck !== undefined && !Array.isArray(data.comprehensionCheck?.questions)) {
     usage("findings.json comprehensionCheck.questions must be an array");
   }
 
   const atAGlance = [
-    `- Verdict: ${data.verdict}`,
-    `- Impact: ${data.atAGlance.impact}`,
-    `- Action: ${data.atAGlance.action}`,
-    `- Risk: ${data.atAGlance.risk}`,
+    data.atAGlance.impact,
+    "",
+    data.atAGlance.action,
+    "",
+    data.atAGlance.risk,
+    "",
+    `${data.verdict}.`,
   ].join("\n");
   const language = reportLanguage(data);
 
@@ -389,6 +385,14 @@ function main() {
     });
     report = replaceHillEvidence(report, hill, rows, language);
   }
+  report = replaceGeneratedBlock(
+    report,
+    "## Findings",
+    "<!-- generated review diagnostics from findings.json -->",
+    "<!-- generated review diagnostics start -->",
+    "<!-- generated review diagnostics end -->",
+    diagnosticsSection(data.reviewDiagnostics, language),
+  );
   report = replaceSection(
     report,
     "ADR contract coverage",

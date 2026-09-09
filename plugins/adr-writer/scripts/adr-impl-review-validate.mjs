@@ -20,8 +20,13 @@ const ALLOWED_HILL_SLICE_TYPES = new Set(["user-flow", "logical-capability", "bo
 const ALLOWED_CODE_EVIDENCE_KINDS = new Set(["diff", "excerpt"]);
 const REVIEW_CONTEXT_FIELDS = ["intent", "preconditions", "contracts", "scopeAndRisk"];
 const CONTAINER_FIELDS = ["responsibility", "interactions", "outcome"];
+const EDUCATION_FIELDS = ["claim", "workedExample", "counterexample", "assessment"];
 const COMPONENT_FIELDS = ["name", "responsibility", "implementation", "verification"];
 const CODE_EVIDENCE_FIELDS = ["kind", "location", "content", "explanation", "tests"];
+const ALLOWED_DIAGNOSTIC_STATUSES = new Set(["CLEAR", "ISSUE", "UNVERIFIED"]);
+const DIAGNOSTIC_FIELDS = ["contractCompleteness", "testSufficiency", "necessity"];
+const SELF_CHECK_PRAISE_PATTERN =
+  /\b(?:congratulations?|great job|well done|excellent|amazing|score|points?|grade|badge|level up)\b|축하|잘했|훌륭|대단|점수|등급|뱃지|레벨업/i;
 const COVERAGE_STATUS_LABELS = {
   en: {
     PROVEN: "Met",
@@ -380,6 +385,7 @@ function validateReviewHike(reviewHike, coverageRows, changeScope, errors) {
         errors.push(`${label}.${field} must be a non-empty string`);
       }
     }
+    validateNonEmptyStringFields(hill, EDUCATION_FIELDS, label, errors);
     if (!ALLOWED_HILL_SLICE_TYPES.has(hill.sliceType)) {
       errors.push(`${label}.sliceType must be user-flow, logical-capability, or bounded-context`);
     }
@@ -480,6 +486,29 @@ function validateReviewHike(reviewHike, coverageRows, changeScope, errors) {
   }
 }
 
+function validateReviewDiagnostics(diagnostics, errors) {
+  if (!diagnostics || typeof diagnostics !== "object" || Array.isArray(diagnostics)) {
+    errors.push("findings.json reviewDiagnostics must be an object");
+    return;
+  }
+  for (const field of DIAGNOSTIC_FIELDS) {
+    const item = diagnostics[field];
+    const label = `reviewDiagnostics.${field}`;
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      errors.push(`${label} must be an object`);
+      continue;
+    }
+    if (!ALLOWED_DIAGNOSTIC_STATUSES.has(item.status)) {
+      errors.push(`${label}.status must be CLEAR, ISSUE, or UNVERIFIED`);
+    }
+    for (const valueField of ["assessment", "evidence"]) {
+      if (typeof item[valueField] !== "string" || !item[valueField].trim()) {
+        errors.push(`${label}.${valueField} must be a non-empty string`);
+      }
+    }
+  }
+}
+
 function validateComprehensionCheck(check, errors) {
   if (check === undefined) return;
   if (!check || typeof check !== "object" || Array.isArray(check)) {
@@ -506,10 +535,54 @@ function validateComprehensionCheck(check, errors) {
       errors.push(`${label} must be an object`);
       continue;
     }
-    for (const field of ["id", "question", "answerCriteria", "evidence"]) {
+    for (const field of ["id", "question", "correctOptionId", "explanation", "evidence"]) {
       if (typeof question[field] !== "string" || !question[field].trim()) {
         errors.push(`${label}.${field} must be a non-empty string`);
       }
+    }
+    if (!Array.isArray(question.options) || question.options.length !== 4) {
+      errors.push(`${label}.options must contain exactly 4 choices`);
+    } else {
+      const optionIds = new Set();
+      const optionTexts = new Set();
+      question.options.forEach((option, optionIndex) => {
+        const optionLabel = `${label}.options[${optionIndex}]`;
+        if (!option || typeof option !== "object" || Array.isArray(option)) {
+          errors.push(`${optionLabel} must be an object`);
+          return;
+        }
+        const expectedOptionId = String.fromCharCode(65 + optionIndex);
+        if (option.id !== expectedOptionId) {
+          errors.push(`${optionLabel}.id must be ${expectedOptionId}`);
+        }
+        for (const field of ["text", "feedback"]) {
+          if (typeof option[field] !== "string" || !option[field].trim()) {
+            errors.push(`${optionLabel}.${field} must be a non-empty string`);
+          }
+        }
+        if (
+          typeof option.feedback === "string" &&
+          SELF_CHECK_PRAISE_PATTERN.test(option.feedback)
+        ) {
+          errors.push(`${optionLabel}.feedback must stay neutral and unscored`);
+        }
+        if (optionIds.has(option.id))
+          errors.push(`${label} contains duplicate option id: ${option.id}`);
+        if (optionTexts.has(option.text)) {
+          errors.push(`${label} contains duplicate option text: ${option.text}`);
+        }
+        optionIds.add(option.id);
+        optionTexts.add(option.text);
+      });
+      if (!optionIds.has(question.correctOptionId)) {
+        errors.push(`${label}.correctOptionId must reference one of its four choices`);
+      }
+    }
+    if (
+      typeof question.explanation === "string" &&
+      SELF_CHECK_PRAISE_PATTERN.test(question.explanation)
+    ) {
+      errors.push(`${label}.explanation must stay neutral and unscored`);
     }
     const expectedId = `Q${index + 1}`;
     if (question.id !== expectedId) {
@@ -769,6 +842,12 @@ function validateReport(report, data, errors) {
         errors.push(`implementation-review.md ${heading} is missing container.${field}`);
       }
     }
+    for (const field of EDUCATION_FIELDS) {
+      const value = hill[field];
+      if (typeof value === "string" && value.trim() && !body.includes(value)) {
+        errors.push(`implementation-review.md ${heading} is missing ${field}`);
+      }
+    }
     for (const [componentIndex, component] of (hill.components ?? []).entries()) {
       if (!body.includes(`Component ${component.id} · ${component.name}`)) {
         errors.push(
@@ -870,7 +949,14 @@ function validateReport(report, data, errors) {
     ) {
       errors.push(`implementation-review.md missing comprehensionCheck.questions[${index}] prompt`);
     }
-    for (const hiddenField of ["answerCriteria", "evidence"]) {
+    for (const option of question.options ?? []) {
+      if (!comprehensionBody.includes(option.id) || !comprehensionBody.includes(option.text)) {
+        errors.push(
+          `implementation-review.md missing comprehensionCheck.questions[${index}] option ${option.id}`,
+        );
+      }
+    }
+    for (const hiddenField of ["explanation", "evidence"]) {
       const hiddenValue = question[hiddenField];
       if (
         typeof hiddenValue === "string" &&
@@ -879,6 +965,17 @@ function validateReport(report, data, errors) {
       ) {
         errors.push(
           `implementation-review.md exposes comprehensionCheck.questions[${index}].${hiddenField}`,
+        );
+      }
+    }
+    for (const [optionIndex, option] of (question.options ?? []).entries()) {
+      if (
+        typeof option.feedback === "string" &&
+        option.feedback.trim() &&
+        comprehensionBody.includes(option.feedback.trim())
+      ) {
+        errors.push(
+          `implementation-review.md exposes comprehensionCheck.questions[${index}].options[${optionIndex}].feedback`,
         );
       }
     }
@@ -970,6 +1067,7 @@ function main() {
       );
       validateFindingContractLinks(data.findings ?? [], data.contractCoverage, errors);
       validateReviewHike(data.reviewHike, data.contractCoverage, data.changeScope, errors);
+      validateReviewDiagnostics(data.reviewDiagnostics, errors);
       validatePass(data, errors);
     }
 

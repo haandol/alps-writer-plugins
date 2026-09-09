@@ -159,7 +159,7 @@ export default {
       `Follow the verified payment retry or provider-failure flow where it helps. Do not default to implementation order.`,
       `Remove repeated contrast templates, ornamental one-off labels, forced numbered symmetry, filler bridges, and duplicate visuals. Do not invent a story.`,
       `Coverage and choices are read-only.`,
-      `The visible Comprehension check must include 1-5 free-response questions and this exact guidance: ${PR_GUIDANCE}`,
+      `The visible Comprehension check must include 1-5 medium-difficulty four-option single-answer questions and this exact guidance: ${PR_GUIDANCE}`,
       `Include this question exactly: ${QUIZ_QUESTION}`,
       `Do not reveal the answer criteria or evidence before the reader answers.`,
       `Keep the complete coverage, choice, and comprehension fields in the machine-readable handoff; the materializer owns their Markdown tables and visible prompts.`,
@@ -212,6 +212,10 @@ export default {
             sliceType: "user-flow",
             sliceName: "Duplicate payment settlement",
             reviewQuestion: "Can a retry create more than one completion?",
+            claim: "A retry reuses one durable completion.",
+            workedExample: "Two requests with one key produce one stored result.",
+            counterexample: "A second completion for the same key violates idempotency.",
+            assessment: "The duplicate-settlement test proves this path.",
             container: {
               responsibility: "Reuse one completion for a retry.",
               interactions: "The retry reaches the idempotency boundary and stored result.",
@@ -243,6 +247,10 @@ export default {
             sliceType: "user-flow",
             sliceName: "Provider failure settlement",
             reviewQuestion: "Can provider failure record completion?",
+            claim: "Provider failure stays outside the completion boundary.",
+            workedExample: "A failed provider call leaves the payment pending.",
+            counterexample: "Recording completion after failure violates the contract.",
+            assessment: "The provider-failure test proves the pending-state path.",
             container: {
               responsibility: "Keep provider failure outside completion.",
               interactions: "The provider failure returns to settlement.",
@@ -289,13 +297,49 @@ export default {
           whyItMatters: "changes recovery latency and upstream request rate",
         },
       ],
+      reviewDiagnostics: {
+        contractCompleteness: {
+          status: "CLEAR",
+          assessment: "Every reviewed settlement behavior has a contract row.",
+          evidence: "D0, R1, and R2 are each assigned once.",
+        },
+        testSufficiency: {
+          status: "CLEAR",
+          assessment: "Ideal and provider-failure tests pass.",
+          evidence: "Both targeted settlement tests passed.",
+        },
+        necessity: {
+          status: "CLEAR",
+          assessment: "No removable settlement change was found.",
+          evidence: "The necessity perspective found no excess scope.",
+        },
+      },
       comprehensionCheck: {
         prGuidance: PR_GUIDANCE,
         questions: [
           {
             id: "Q1",
             question: QUIZ_QUESTION,
-            answerCriteria: QUIZ_ANSWER,
+            options: [
+              {
+                id: "A",
+                text: "Record completion immediately",
+                feedback: "Provider success is still missing.",
+              },
+              { id: "B", text: "Keep the payment pending", feedback: QUIZ_ANSWER },
+              {
+                id: "C",
+                text: "Delete the payment",
+                feedback: "Deletion is not the failure contract.",
+              },
+              {
+                id: "D",
+                text: "Ignore the provider result",
+                feedback: "The provider result gates completion.",
+              },
+            ],
+            correctOptionId: "B",
+            explanation: QUIZ_ANSWER,
             evidence: QUIZ_EVIDENCE,
           },
         ],

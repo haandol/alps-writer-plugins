@@ -24,7 +24,7 @@ because the harness prompt is written in English.
 
 ## Start with the answer
 
-Lead with `At a glance` before detailed findings or evidence:
+Lead with a short `Abstract` before detailed findings or evidence:
 
 - **Verdict** — what the review concluded.
 - **Impact** — what a user, operator, or maintainer can observe.
@@ -116,26 +116,21 @@ reason to hide evidence or merge independent obligations.
   diagram.
 - **ADR sync** — visualize a changed decision flow, dependency/category movement,
   or unresolved ADR-versus-code branch. Keep semantic diffs in text.
-- **Implementation review** — after At a glance and scope, use Context for
-  intent, preconditions, contracts, and scope/risk. Then use one
-  Container/Hill per vertical user flow, logical capability, or bounded context.
-  Inside each Hill, show Component implementation detail and collapsed Code
-  evidence containing a focused diff or current excerpt plus tests. These are
-  reading zooms. Technical layers, files,
-  and review phases never define Hill boundaries. Execution order is optional.
-  Put findings after the Hiking route. The standalone HTML keeps `PROVEN` cards, scope, metrics, and
-  implementation choices collapsed, opens exceptional cards, links findings to
-  the owning Hill and contract IDs, groups them by required human action rather
-  than technical category, and preserves importance order inside each group.
-  Lead each Hill with the actual flow title and an aggregate status. Keep
-  Container/Hiking terminology as secondary metadata. Collapse the Component,
-  Code, and contract evidence for a fully proven Hill, and open that evidence
-  when any assigned contract needs a fix, verification, or conflict resolution.
-  End the report
-  with `Comprehension check` containing one to five material free-response
-  questions. Keep the check collapsed. Reveal criteria only after answer entry
-  and an explicit self-check action, and state that this comparison does not
-  make the PR comprehension-ready.
+- **Implementation review** — after the Abstract, explain related ADRs and change
+  context, then core implementation methods and algorithms, self-validation
+  methods and results, results and limitations, and conclusion and future work.
+  Use one implementation subsection per vertical user flow, logical capability,
+  or bounded context, but write its structured fields as continuous prose.
+  Technical layers, files, and review phases never define those boundaries.
+  The default body contains no verdict stamp, status pill, count chip, task card,
+  field label, or table. The standalone HTML moves Component, Code, coverage,
+  detailed findings, scope, metrics, and implementation choices into a collapsed
+  evidence appendix while preserving the important contract anchors and action controls.
+  End the evidence appendix with `Comprehension check` containing one to five
+  material four-option single-answer questions. Keep the check collapsed.
+  Reveal neutral option feedback, the correct explanation, and evidence only
+  after one option is selected and self-check is requested. Do not use scores,
+  grades, celebration, praise, ability judgments, or gamification.
 
 For the default reading path, write prose before structured evidence. Context
 and each Hill should read like a concise tutorial or senior review comment:
