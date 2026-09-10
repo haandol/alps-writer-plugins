@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 import { CATEGORY_NAMES, VERDICT_NAMES } from "./adr-impl-review-categories.mjs";
+import { mermaidBlocks, parseMermaid, proseLines } from "./adr-impl-review-diagrams.mjs";
 
 const ALLOWED_VERDICTS = VERDICT_NAMES;
 const ALLOWED_CATEGORIES = CATEGORY_NAMES;
@@ -84,7 +85,9 @@ function resolveArtifact(baseDir, value) {
 }
 
 function stripFencedBlocks(source) {
-  return source.replace(/^(```|~~~)[^\n]*\n[\s\S]*?^\1\s*$/gm, "");
+  return proseLines(source)
+    .map((line) => line.value)
+    .join("\n");
 }
 
 /**
@@ -117,11 +120,12 @@ function sectionBody(source, headingPattern, stopPattern) {
 
 function rawSectionBody(source, headingText) {
   const lines = String(source ?? "").split(/\r?\n/);
-  const start = lines.findIndex((line) => line.trim() === headingText);
+  const prose = new Set(proseLines(source).map((line) => line.index));
+  const start = lines.findIndex((line, index) => prose.has(index) && line.trim() === headingText);
   if (start < 0) return "";
   const body = [];
   for (let index = start + 1; index < lines.length; index++) {
-    if (/^##\s+/.test(lines[index])) break;
+    if (prose.has(index) && /^##\s+/.test(lines[index])) break;
     body.push(lines[index]);
   }
   return body.join("\n").trim();
@@ -189,6 +193,68 @@ function expectedContractRows(artifactDir, adrValue, errors) {
   ];
 }
 
+/**
+ * Check comparison identity against real files so aliases cannot turn the
+ * target decision into its own analogy or repeat the same comparison twice.
+ */
+function validateRelatedAdrComparisons(data, artifactDir, errors) {
+  if (!Array.isArray(data.relatedAdrComparisons)) {
+    errors.push("findings.json relatedAdrComparisons must be an array");
+    return;
+  }
+  if (data.relatedAdrComparisons.length > 2) {
+    errors.push("findings.json relatedAdrComparisons must contain at most 2 ADRs");
+  }
+  if (data.relatedAdrComparisons.length === 0) {
+    if (
+      typeof data.relatedAdrComparisonOmissionReason !== "string" ||
+      !data.relatedAdrComparisonOmissionReason.trim()
+    ) {
+      errors.push(
+        "findings.json relatedAdrComparisonOmissionReason is required when no similar ADR is used",
+      );
+    }
+    return;
+  }
+  if (
+    typeof data.relatedAdrComparisonOmissionReason === "string" &&
+    data.relatedAdrComparisonOmissionReason.trim()
+  ) {
+    errors.push(
+      "findings.json relatedAdrComparisonOmissionReason must be omitted when comparisons exist",
+    );
+  }
+
+  const targetPath = resolveAdrPath(artifactDir, data.adr);
+  const targetIdentity = targetPath && existsSync(targetPath) ? realpathSync(targetPath) : null;
+  const seenPaths = new Set();
+  for (const [index, comparison] of data.relatedAdrComparisons.entries()) {
+    const label = `relatedAdrComparisons[${index}]`;
+    if (!comparison || typeof comparison !== "object" || Array.isArray(comparison)) {
+      errors.push(`${label} must be an object`);
+      continue;
+    }
+    for (const field of ["adr", "title", "similarity", "difference", "reviewImpact", "evidence"]) {
+      if (typeof comparison[field] !== "string" || !comparison[field].trim()) {
+        errors.push(`${label}.${field} must be a non-empty string`);
+      }
+    }
+    const candidatePath = resolveAdrPath(artifactDir, comparison.adr);
+    if (!candidatePath || !existsSync(candidatePath) || !statSync(candidatePath).isFile()) {
+      errors.push(`${label}.adr does not resolve to an existing file`);
+      continue;
+    }
+    const resolved = realpathSync(candidatePath);
+    if (targetIdentity && resolved === targetIdentity) {
+      errors.push(`${label}.adr must not reference the target ADR itself`);
+    }
+    if (seenPaths.has(resolved)) {
+      errors.push(`${label}.adr duplicates another related ADR comparison`);
+    }
+    seenPaths.add(resolved);
+  }
+}
+
 function validateFinding(finding, index, errors) {
   const label = `findings[${index}]`;
   if (!finding || typeof finding !== "object" || Array.isArray(finding)) {
@@ -244,31 +310,66 @@ function validateAtAGlance(atAGlance, errors) {
   }
 }
 
-function validateVisualization(visualization, errors) {
-  if (visualization === undefined) return;
-  if (!visualization || typeof visualization !== "object" || Array.isArray(visualization)) {
-    errors.push("findings.json visualization must be an object");
+/** Check question-level diagrams and exact per-Hill allocation before prose is read. */
+function validateDiagramContract(data, errors) {
+  if (!Array.isArray(data.diagramRequirements)) {
+    errors.push("findings.json diagramRequirements must be an array");
     return;
   }
-
-  if (typeof visualization.required !== "boolean") {
-    errors.push("findings.json visualization.required must be a boolean");
+  const hills = Array.isArray(data.reviewHike?.hills) ? data.reviewHike.hills : [];
+  const sections = new Set(["Context", ...hills.map((hill) => hill?.title)]);
+  const requirements = new Map();
+  for (const [index, requirement] of data.diagramRequirements.entries()) {
+    const label = `diagramRequirements[${index}]`;
+    if (!requirement || typeof requirement !== "object" || Array.isArray(requirement)) {
+      errors.push(`${label} must be an object`);
+      continue;
+    }
+    if (requirement.id !== `V${index + 1}`) errors.push(`${label}.id must be V${index + 1}`);
+    if (requirements.has(requirement.id))
+      errors.push(`diagramRequirements contains duplicate id: ${requirement.id}`);
+    requirements.set(requirement.id, requirement);
+    for (const field of ["question", "section", "reason", "evidence"]) {
+      if (typeof requirement[field] !== "string" || !requirement[field].trim())
+        errors.push(`${label}.${field} must be a non-empty string`);
+    }
+    if (!sections.has(requirement.section))
+      errors.push(`${label}.section must name Context or a reviewHike Hill`);
+    if (!ALLOWED_DIAGRAM_TYPES.has(requirement.diagramType))
+      errors.push(
+        `${label}.diagramType must be flowchart, sequenceDiagram, stateDiagram-v2, or erDiagram`,
+      );
   }
-  if (typeof visualization.reason !== "string" || !visualization.reason.trim()) {
-    errors.push("findings.json visualization.reason must be a non-empty string");
+  const referenced = new Set();
+  for (const [index, hill] of hills.entries()) {
+    if (!hill || typeof hill !== "object") continue;
+    const label = `reviewHike.hills[${index}]`;
+    if (!Array.isArray(hill.diagramIds)) {
+      errors.push(`${label}.diagramIds must be an array`);
+      continue;
+    }
+    if (hill.diagramIds.length === 0) {
+      if (typeof hill.diagramOmissionReason !== "string" || !hill.diagramOmissionReason.trim())
+        errors.push(`${label}.diagramOmissionReason is required when diagramIds is empty`);
+    } else if (
+      typeof hill.diagramOmissionReason === "string" &&
+      hill.diagramOmissionReason.trim()
+    ) {
+      errors.push(`${label}.diagramOmissionReason must be omitted when diagrams are assigned`);
+    }
+    const ids = new Set();
+    for (const id of hill.diagramIds) {
+      if (ids.has(id)) errors.push(`${label}.diagramIds duplicates ${id}`);
+      ids.add(id);
+      const requirement = requirements.get(id);
+      if (!requirement) errors.push(`${label}.diagramIds references unknown diagram ${id}`);
+      else if (requirement.section !== "Context" && requirement.section !== hill.title)
+        errors.push(`${label}.diagramIds references a diagram owned by another Hill: ${id}`);
+      else referenced.add(id);
+    }
   }
-  if (
-    visualization.diagramType !== undefined &&
-    !ALLOWED_DIAGRAM_TYPES.has(visualization.diagramType)
-  ) {
-    errors.push(
-      "findings.json visualization.diagramType must be flowchart, sequenceDiagram, stateDiagram-v2, or erDiagram",
-    );
-  }
-  if (visualization.required && !ALLOWED_DIAGRAM_TYPES.has(visualization.diagramType)) {
-    errors.push(
-      "findings.json visualization.diagramType is required when visualization is required",
-    );
+  for (const id of requirements.keys()) {
+    if (!referenced.has(id)) errors.push(`diagramRequirements ${id} must be assigned to a Hill`);
   }
 }
 
@@ -529,6 +630,7 @@ function validateComprehensionCheck(check, errors) {
   }
 
   const seen = new Set();
+  let revisitCount = 0;
   for (const [index, question] of check.questions.entries()) {
     const label = `comprehensionCheck.questions[${index}]`;
     if (!question || typeof question !== "object" || Array.isArray(question)) {
@@ -539,6 +641,11 @@ function validateComprehensionCheck(check, errors) {
       if (typeof question[field] !== "string" || !question[field].trim()) {
         errors.push(`${label}.${field} must be a non-empty string`);
       }
+    }
+    if (typeof question.revisit !== "boolean") {
+      errors.push(`${label}.revisit must be a boolean`);
+    } else if (question.revisit) {
+      revisitCount += 1;
     }
     if (!Array.isArray(question.options) || question.options.length !== 4) {
       errors.push(`${label}.options must contain exactly 4 choices`);
@@ -592,6 +699,9 @@ function validateComprehensionCheck(check, errors) {
       errors.push(`comprehensionCheck contains duplicate question id: ${question.id}`);
     }
     seen.add(question.id);
+  }
+  if (check.questions.length > 0 && (revisitCount < 1 || revisitCount > 2)) {
+    errors.push("comprehensionCheck must mark 1 or 2 questions with revisit: true");
   }
 }
 
@@ -981,6 +1091,54 @@ function validateReport(report, data, errors) {
     }
   }
 
+  const diagramBlocks = mermaidBlocks(report);
+  const diagramRequirements = Array.isArray(data.diagramRequirements)
+    ? data.diagramRequirements.filter(
+        (requirement) => requirement && typeof requirement === "object",
+      )
+    : [];
+  for (const requirement of diagramRequirements) {
+    const matches = diagramBlocks.filter((block) => block.requirementId === requirement.id);
+    if (matches.length !== 1) {
+      errors.push(
+        `implementation-review.md must contain exactly one Mermaid fence for ${requirement.id}`,
+      );
+      continue;
+    }
+    const block = matches[0];
+    const diagram = parseMermaid(block.source);
+    if (diagram.error)
+      errors.push(`implementation-review.md ${requirement.id} must render: ${diagram.error}`);
+    if (diagram.type !== requirement.diagramType) {
+      errors.push(`implementation-review.md ${requirement.id} must use ${requirement.diagramType}`);
+    }
+    if (block.section !== requirement.section) {
+      errors.push(
+        `implementation-review.md ${requirement.id} must appear in ## ${requirement.section}`,
+      );
+    }
+    if (!block.notice) {
+      errors.push(`implementation-review.md ${requirement.id} must include a following Notice:`);
+    }
+  }
+  for (const block of diagramBlocks) {
+    if (!block.requirementId) {
+      errors.push("implementation-review.md Mermaid fence is missing %% requirement: Vn");
+    } else if (!diagramRequirements.some((requirement) => requirement.id === block.requirementId)) {
+      errors.push(
+        `implementation-review.md ${block.requirementId} is not declared in diagramRequirements`,
+      );
+    }
+    if (block.markerCount > 1) {
+      errors.push(
+        "implementation-review.md Mermaid fence must have exactly one requirement marker",
+      );
+    }
+    if (!block.closed) {
+      errors.push("implementation-review.md Mermaid fence must be closed");
+    }
+  }
+
   if (["FIX_REQUIRED", "BLOCK"].includes(data.verdict)) {
     for (const text of REQUIRED_REPAIR_TEXT) {
       if (!report.includes(text)) errors.push(`implementation-review.md missing: ${text}`);
@@ -1019,7 +1177,8 @@ function main() {
       errors.push("findings.json reviewMode must be standard or full");
     }
     validateAtAGlance(data.atAGlance, errors);
-    validateVisualization(data.visualization, errors);
+    validateDiagramContract(data, errors);
+    validateRelatedAdrComparisons(data, artifactDir, errors);
     if (typeof data.adr !== "string" || !data.adr.trim()) errors.push("findings.json missing adr");
     if (!ALLOWED_VERDICTS.has(data.verdict)) {
       errors.push(`findings.json verdict is invalid: ${data.verdict ?? "(missing)"}`);

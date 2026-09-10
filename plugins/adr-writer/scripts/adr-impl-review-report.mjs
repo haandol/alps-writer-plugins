@@ -45,12 +45,14 @@
 //       "action": "next required action, or None",
 //       "risk": "remaining uncertainty, or None"
 //     },
-//     "visualization": {
-//       "required": true,
-//       "reason": "why the whole-route map reduces reconstruction work",
-//       "diagramType": "flowchart",
-//       "readingGuide": "what this map's boxes, arrows, and Hill routes mean"
-//     },
+//     "diagramRequirements": [{
+//       "id": "V1",
+//       "question": "Who calls whom, and in what order?",
+//       "diagramType": "sequenceDiagram",
+//       "section": "Cancellation stops the upstream request",
+//       "reason": "The flow crosses a system boundary.",
+//       "evidence": "handler and upstream client call path"
+//     }],
 //     "reviewHike": {                                     // required by validator
 //       "context": {
 //         "intent": "the ADR intent and adopted direction",
@@ -64,6 +66,7 @@
 //         "sliceType": "user-flow" | "logical-capability" | "bounded-context",
 //         "sliceName": "Duplicate payment settlement",
 //         "reviewQuestion": "Can the same payment request complete more than once?",
+//         "diagramIds": ["V1"],
 //         "container": {
 //           "responsibility": "reuse one durable settlement",
 //           "interactions": "request, completion boundary, and stored result",
@@ -144,6 +147,7 @@
 //             { "id": "C", "text": "delete payment", "feedback": "deletion is not the failure result" },
 //             { "id": "D", "text": "retry forever", "feedback": "retry is bounded" }
 //           ],
+//           "revisit": true,
 //           "correctOptionId": "B",
 //           "explanation": "kept out of the visible HTML",
 //           "evidence": "kept out of the visible HTML"
@@ -176,7 +180,14 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { CATEGORIES, AUTHORITY, VERDICTS } from "./adr-impl-review-categories.mjs";
+import { CATEGORIES, AUTHORITY } from "./adr-impl-review-categories.mjs";
+import { relatedAdrComparisonProse, hillNarrativeParagraphs } from "./adr-impl-review-prose.mjs";
+import {
+  renderMermaid,
+  mermaidBlocks,
+  parseMermaid,
+  proseLines,
+} from "./adr-impl-review-diagrams.mjs";
 
 // ── arg parse ────────────────────────────────────────────────────────────────
 function parseArgs(argv) {
@@ -248,6 +259,11 @@ const UI = {
     metrics: "Review metrics",
     findings: "Findings and discussion",
     noCounterexample: "No additional work was identified.",
+    diagnosticLabels: {
+      contractCompleteness: "Missing contracts",
+      testSufficiency: "Test gaps",
+      necessity: "Excess scope",
+    },
     incomplete: "No work item was confirmed, but the review did not complete.",
     evidence: "Evidence appendix",
     hill: "Review flow · Container",
@@ -324,6 +340,21 @@ const UI = {
     exportHint: "Resolve only the findings that require a human decision, then export.",
     export: "Export decisions",
     saved: "Saved · feedback.json",
+    recallCue: "Recall your answer before viewing the choices.",
+    showChoices: "Show choices",
+    printQuizGuidance:
+      "Choose one answer for each question and explain your choice in one sentence.",
+    printEvidenceNote:
+      "Detailed code and verification evidence remain available in the HTML report.",
+    diagramSource: "Mermaid source",
+    diagramFlows: "Flows explained by this diagram",
+    stateStart: "Start",
+    stateEnd: "End",
+    teachBackCue:
+      "Before checking, explain your choice to a teammate in one sentence. Nothing is recorded or graded.",
+    revisitBadge: "revisit later",
+    revisitGuidance:
+      "Reopen this report and retry this core question later. No schedule or progress is stored.",
     selfCheck: "Check selection",
     answerRequired: "Select one choice first.",
     correct: "Correct",
@@ -359,6 +390,11 @@ const UI = {
     metrics: "리뷰 지표",
     findings: "발견 사항과 논의",
     noCounterexample: "추가로 처리할 작업이 없습니다.",
+    diagnosticLabels: {
+      contractCompleteness: "계약 누락",
+      testSufficiency: "테스트 공백",
+      necessity: "과다 변경",
+    },
     incomplete: "확정된 작업은 없지만 리뷰가 완료되지 않았습니다.",
     evidence: "근거 부록",
     hill: "리뷰 흐름 · Container",
@@ -435,6 +471,19 @@ const UI = {
     exportHint: "사용자 결정이 필요한 finding만 판단한 뒤 내보내세요.",
     export: "결정 내보내기",
     saved: "저장됨 · feedback.json",
+    recallCue: "선택지를 보기 전에 답을 먼저 떠올려 보세요.",
+    showChoices: "선택지 보기",
+    printQuizGuidance: "각 질문에서 답 하나를 고르고, 선택한 이유를 한 문장으로 설명해 보세요.",
+    printEvidenceNote: "상세 코드와 검증 근거는 HTML 보고서의 근거 부록에서 확인할 수 있습니다.",
+    diagramSource: "Mermaid 원문",
+    diagramFlows: "이 그림과 연결된 흐름",
+    stateStart: "시작",
+    stateEnd: "종료",
+    teachBackCue:
+      "확인하기 전에 선택 이유를 동료에게 한 문장으로 설명해 보세요. 입력하거나 채점하지 않습니다.",
+    revisitBadge: "후속 재점검",
+    revisitGuidance:
+      "나중에 이 보고서를 다시 열어 이 핵심 질문을 풀어보세요. 시간과 진행 상태는 저장하지 않습니다.",
     selfCheck: "선택 확인",
     answerRequired: "먼저 선택지 하나를 고르세요.",
     correct: "정답",
@@ -455,6 +504,7 @@ function detectLanguage(data) {
     return data.language.trim().toLowerCase().startsWith("ko") ? "ko" : "en";
   }
   const sample = [
+    data.title,
     data.atAGlance?.impact,
     data.atAGlance?.action,
     data.atAGlance?.risk,
@@ -465,6 +515,29 @@ function detectLanguage(data) {
     .filter(Boolean)
     .join(" ");
   return /[가-힣]/.test(sample) ? "ko" : "en";
+}
+
+/**
+ * Prefer a human headline, otherwise derive the title from the reviewed document.
+ * A missing source keeps legacy rendering usable without making a path the headline.
+ */
+function resolveReportTitle(data, inputPath) {
+  if (typeof data.title === "string" && data.title.trim()) return data.title.trim();
+  if (typeof data.adr === "string") {
+    const directory = inputPath === "-" ? process.cwd() : path.dirname(path.resolve(inputPath));
+    const candidates = new Set([path.resolve(data.adr), path.resolve(directory, data.adr)]);
+    for (const candidate of candidates) {
+      try {
+        const heading = proseLines(readFileSync(candidate, "utf8")).find((line) =>
+          /^#\s+\S/.test(line.value),
+        );
+        if (heading) return heading.value.replace(/^#\s+(?:ADR\s+\d+\s*[:：]\s*)?/, "").trim();
+      } catch {
+        // The artifact may be rendered on another machine; its source path is optional here.
+      }
+    }
+  }
+  return UI[detectLanguage(data)].title;
 }
 
 function slug(value, fallback = "section") {
@@ -487,134 +560,7 @@ function renderInlineMarkdown(value) {
   return rendered;
 }
 
-function mermaidLabel(raw, id) {
-  const quoted = raw.match(
-    /\["([^"]+)"\]|\[([^\]]+)\]|\{"([^"]+)"\}|\{([^}]+)\}|\("([^"]+)"\)|\(([^)]+)\)/,
-  );
-  return (quoted?.slice(1).find(Boolean) || id).replace(/<br\s*\/?>/gi, " · ");
-}
-
-function renderRelationshipDiagram(className, ariaLabel, relations) {
-  return `<figure class="diagram ${className}" aria-label="${esc(ariaLabel)}"><div class="flow">${relations
-    .map(
-      (relation) =>
-        `<div class="flow__edge"><span class="flow__node">${esc(relation.from)}</span><span class="flow__arrow">${esc(relation.arrow || "→")}${relation.label ? `<small>${esc(relation.label)}</small>` : ""}</span><span class="flow__node">${esc(relation.to)}</span></div>`,
-    )
-    .join("")}</div></figure>`;
-}
-
-function renderMermaid(source, ui) {
-  const lines = String(source ?? "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith("%%"));
-  const kind = lines[0] || "";
-  const body = lines.slice(1);
-
-  if (/^sequenceDiagram\b/i.test(kind)) {
-    const participants = new Map();
-    const messages = [];
-    for (const line of body) {
-      const participant = line.match(
-        /^(?:participant|actor)\s+([A-Za-z0-9_.-]+)(?:\s+as\s+(.+))?$/i,
-      );
-      if (participant) {
-        participants.set(participant[1], participant[2] || participant[1]);
-        continue;
-      }
-      const message = line.match(
-        /^([A-Za-z0-9_.-]+)\s*(-{1,2}>+|-->>|->>)\s*([A-Za-z0-9_.-]+)\s*:\s*(.+)$/,
-      );
-      if (message) {
-        participants.set(message[1], participants.get(message[1]) || message[1]);
-        participants.set(message[3], participants.get(message[3]) || message[3]);
-        messages.push({ from: message[1], to: message[3], label: message[4] });
-      }
-    }
-    if (messages.length) {
-      return `<figure class="diagram diagram--sequence" aria-label="sequence diagram">
-        <div class="diagram__participants">${[...participants.entries()]
-          .map(
-            ([id, label]) =>
-              `<span><code>${esc(id)}</code>${label === id ? "" : ` ${esc(label)}`}</span>`,
-          )
-          .join("")}</div>
-        <ol class="sequence">${messages
-          .map(
-            (message) =>
-              `<li><span class="sequence__route"><strong>${esc(participants.get(message.from))}</strong><span aria-hidden="true">→</span><strong>${esc(participants.get(message.to))}</strong></span><span>${renderInlineMarkdown(message.label)}</span></li>`,
-          )
-          .join("")}</ol>
-      </figure>`;
-    }
-  }
-
-  if (/^(?:flowchart|graph)\b/i.test(kind)) {
-    const labels = new Map();
-    const edges = [];
-    for (const line of body) {
-      for (const match of line.matchAll(
-        /([A-Za-z0-9_.-]+)(\["[^"]+"\]|\[[^\]]+\]|\{"[^"]+"\}|\{[^}]+\}|\("[^"]+"\)|\([^)]+\))/g,
-      )) {
-        labels.set(match[1], mermaidLabel(match[2], match[1]));
-      }
-      const edge = line.match(
-        /^([A-Za-z0-9_.-]+)(?:\[[^\]]+\]|\{[^}]+\}|\([^)]+\))?\s*[-.=]+>(?:\|([^|]+)\|)?\s*([A-Za-z0-9_.-]+)/,
-      );
-      if (edge) edges.push({ from: edge[1], to: edge[3], label: edge[2] || "" });
-    }
-    if (edges.length) {
-      return renderRelationshipDiagram(
-        "diagram--flow",
-        "flowchart",
-        edges.map((edge) => ({
-          from: labels.get(edge.from) || edge.from,
-          to: labels.get(edge.to) || edge.to,
-          label: edge.label,
-        })),
-      );
-    }
-  }
-
-  if (/^stateDiagram-v2\b/i.test(kind)) {
-    const transitions = body
-      .map((line) => line.match(/^([A-Za-z0-9_*.-]+)\s*-->\s*([A-Za-z0-9_*.-]+)(?:\s*:\s*(.+))?$/))
-      .filter(Boolean)
-      .map((match) => ({ from: match[1], to: match[2], label: match[3] || "" }));
-    if (transitions.length) {
-      return renderRelationshipDiagram("diagram--state", "state diagram", transitions);
-    }
-  }
-
-  if (/^erDiagram\b/i.test(kind)) {
-    const relations = body
-      .map((line) =>
-        line.match(/^([A-Za-z0-9_.-]+)\s+([|o}{.-]+)--([|o}{.-]+)\s+([A-Za-z0-9_.-]+)\s*:\s*(.+)$/),
-      )
-      .filter(Boolean)
-      .map((match) => ({
-        from: match[1],
-        relation: `${match[2]}--${match[3]}`,
-        to: match[4],
-        label: match[5],
-      }));
-    if (relations.length) {
-      return renderRelationshipDiagram(
-        "diagram--er",
-        "entity relationship diagram",
-        relations.map((relation) => ({
-          from: relation.from,
-          to: relation.to,
-          arrow: relation.relation,
-          label: relation.label,
-        })),
-      );
-    }
-  }
-
-  return `<figure class="diagram diagram--fallback"><figcaption>${esc(ui.diagramFallback)}</figcaption><pre><code>${esc(source)}</code></pre></figure>`;
-}
-
+/** Render authored prose and complete fences without reinterpreting code as headings. */
 function renderMarkdown(source, ui) {
   const lines = String(source ?? "").split(/\r?\n/);
   const out = [];
@@ -622,6 +568,7 @@ function renderMarkdown(source, ui) {
   let listType = null;
   let listItems = [];
   let fence = null;
+  let fenceMarker = "";
   let fenceLines = [];
 
   const flushParagraph = () => {
@@ -639,28 +586,25 @@ function renderMarkdown(source, ui) {
   };
 
   for (const line of lines) {
-    const fenceMatch = line.match(/^```\s*([A-Za-z0-9_-]*)\s*$/);
-    if (fenceMatch) {
-      if (fence) {
-        flushParagraph();
-        flushList();
+    if (fence) {
+      if (new RegExp(`^${fenceMarker[0]}{${fenceMarker.length},}\\s*$`).test(line)) {
         const body = fenceLines.join("\n");
         out.push(
-          fence.toLowerCase() === "mermaid"
+          fence === "mermaid"
             ? renderMermaid(body, ui)
-            : `<pre><code${fence ? ` class="language-${esc(fence)}"` : ""}>${esc(body)}</code></pre>`,
+            : `<pre><code class="language-${esc(fence)}">${esc(body)}</code></pre>`,
         );
         fence = null;
         fenceLines = [];
-      } else {
-        flushParagraph();
-        flushList();
-        fence = fenceMatch[1] || "text";
-      }
+      } else fenceLines.push(line);
       continue;
     }
-    if (fence) {
-      fenceLines.push(line);
+    const fenceMatch = line.match(/^(`{3,}|~{3,})\s*([A-Za-z0-9_-]*)\s*$/);
+    if (fenceMatch) {
+      flushParagraph();
+      flushList();
+      fenceMarker = fenceMatch[1];
+      fence = fenceMatch[2].toLowerCase() || "text";
       continue;
     }
 
@@ -789,9 +733,17 @@ function markdownSectionsBetween(source, startHeading, endHeading) {
   if (start < 0) return [];
   const sections = [];
   let current = null;
+  let fence = null;
   for (let index = start + 1; index < lines.length; index++) {
     const line = lines[index];
-    const heading = line.match(/^##\s+(.+?)\s*$/);
+    const marker = line.match(/^(`{3,}|~{3,})/);
+    if (fence) {
+      if (new RegExp(`^${fence[0]}{${fence.length},}\\s*$`).test(line)) fence = null;
+      if (current) current.body.push(line);
+      continue;
+    }
+    if (marker) fence = marker[1];
+    const heading = marker ? null : line.match(/^##\s+(.+?)\s*$/);
     if (heading) {
       if (heading[1] === endHeading) break;
       if (current) sections.push({ title: current.title, body: current.body.join("\n").trim() });
@@ -856,6 +808,10 @@ function normalizeNarrativeSections(data) {
     : [];
 }
 
+/**
+ * Normalize self-check questions so rendering can enforce recall-before-recognition
+ * and identify the small subset intended for a later, non-persistent re-check.
+ */
 function normalizeComprehensionCheck(data) {
   const value =
     data.comprehensionCheck &&
@@ -874,6 +830,7 @@ function normalizeComprehensionCheck(data) {
         text: option?.text || "",
         feedback: option?.feedback || "",
       })),
+      revisit: question.revisit === true,
       correctOptionId: question.correctOptionId || "",
       explanation: question.explanation || "",
       evidence: question.evidence || "",
@@ -913,6 +870,7 @@ function normalizeContractCoverage(data) {
   }));
 }
 
+/** Keep the structured reading route and visual references available to HTML navigation. */
 function normalizeReviewHike(data) {
   const value =
     data.reviewHike && typeof data.reviewHike === "object" && !Array.isArray(data.reviewHike)
@@ -932,6 +890,7 @@ function normalizeReviewHike(data) {
       sliceType: hill?.sliceType || "",
       sliceName: hill?.sliceName || "",
       reviewQuestion: hill?.reviewQuestion || "",
+      diagramIds: Array.isArray(hill?.diagramIds) ? hill.diagramIds : [],
       claim: hill?.claim || "",
       workedExample: hill?.workedExample || "",
       counterexample: hill?.counterexample || "",
@@ -962,6 +921,22 @@ function normalizeReviewHike(data) {
       contractIds: Array.isArray(hill?.contractIds) ? hill.contractIds : [],
     })),
   };
+}
+
+/**
+ * Normalize evidence-grounded ADR analogies so the report can connect new
+ * behavior to a familiar contract without exposing a dashboard-style schema.
+ */
+function normalizeRelatedAdrComparisons(data) {
+  const comparisons = Array.isArray(data.relatedAdrComparisons) ? data.relatedAdrComparisons : [];
+  return comparisons.map((comparison) => ({
+    adr: comparison?.adr || "",
+    title: comparison?.title || "",
+    similarity: comparison?.similarity || "",
+    difference: comparison?.difference || "",
+    reviewImpact: comparison?.reviewImpact || "",
+    evidence: comparison?.evidence || "",
+  }));
 }
 
 function stripGeneratedHillContent(body) {
@@ -1030,7 +1005,24 @@ function narrativeParagraph(label, value, className = "") {
   )}</p>`;
 }
 
-function reviewContextCard(context, ui) {
+/**
+ * Render related ADR comparisons as continuous context prose, preserving the
+ * paper reading flow while keeping similarities and differences explicit.
+ */
+function reviewContextCard(context, comparisons, ui, language, body = "", linkedHills = []) {
+  const comparisonProse = comparisons
+    .map(
+      (comparison) =>
+        `<p class="adr-comparison">${language === "ko" ? "" : "Compared with "}<strong>${esc(comparison.title)}</strong>${language === "ko" ? "와 비교하면 " : ", "}${esc(
+          relatedAdrComparisonProse(comparison, language),
+        )}</p>
+        <details class="technical-evidence">
+          <summary>${esc(ui.evidence)} · ${esc(comparison.title)}</summary>
+          <p><code>${esc(comparison.adr)}</code></p>
+          <p>${esc(comparison.evidence)}</p>
+        </details>`,
+    )
+    .join("");
   return `
   <section class="paper-section" id="review-context">
     <h2 class="explanation__title">${esc(ui.reviewContext)}</h2>
@@ -1039,7 +1031,10 @@ function reviewContextCard(context, ui) {
       <p>${esc(context.preconditions)}</p>
       <p>${esc(context.contracts)}</p>
       <p>${esc(context.scopeAndRisk)}</p>
+      ${comparisonProse}
     </div>
+    ${body ? `<div class="explanation__body">${renderMarkdown(body, ui)}</div>` : ""}
+    ${linkedHills.length ? `<p>${esc(ui.diagramFlows)}: ${linkedHills.map((hill) => `<a href="#hill-${esc(hill.id.toLowerCase())}">${esc(hill.title)}</a>`).join(" · ")}</p>` : ""}
   </section>`;
 }
 
@@ -1098,6 +1093,7 @@ function hillResult(rows, ui) {
   };
 }
 
+/** Show each explanation field once while retaining all structured contract and code evidence. */
 function reviewHillCard(hill, body, rows, ui) {
   const hillId = hill.id.toLowerCase();
   const result = hillResult(rows, ui);
@@ -1120,11 +1116,12 @@ function reviewHillCard(hill, body, rows, ui) {
         : ""
     }
     <div class="hill__narrative" aria-label="${esc(hill.title)}">
-      <p class="narrative-lead">${esc(hill.sliceName)}. ${esc(hill.claim)}</p>
-      <p>${esc(hill.workedExample)}</p>
-      <p>${esc(hill.counterexample)}</p>
-      <p>${esc(hill.container.responsibility)} ${esc(hill.container.interactions)}</p>
-      <p>${esc(hill.container.outcome)} ${esc(hill.assessment)}</p>
+      ${hillNarrativeParagraphs(hill)
+        .map(
+          (paragraph, index) =>
+            `<p${index === 0 ? ' class="narrative-lead"' : ""}>${esc(paragraph)}</p>`,
+        )
+        .join("\n")}
     </div>
     <details class="hill__details"${result.open ? " open" : ""}>
       <summary>
@@ -1180,6 +1177,10 @@ function implementationChoiceCard(choice, index, total, ui) {
   </article>`;
 }
 
+/**
+ * Render one objective self-check while withholding recognition cues until the
+ * reader explicitly completes a recall step; teach-back and revisit remain advisory.
+ */
 function comprehensionQuestionCard(question, index, ui) {
   const options = question.options
     .map(
@@ -1192,11 +1193,18 @@ function comprehensionQuestionCard(question, index, ui) {
     .join("");
   return `
   <article class="quiz">
-    <span class="quiz__id">${esc(question.id)}</span>
+    <div class="quiz__head">
+      <span class="quiz__id">${esc(question.id)}</span>
+      ${question.revisit ? `<span class="quiz__revisit">${esc(ui.revisitBadge)}</span>` : ""}
+    </div>
     <p class="quiz__question">${esc(question.question)}</p>
-    <div class="quiz__options">${options}</div>
-    <button class="quiz__check" type="button" data-question-index="${index}" data-correct="${esc(question.correctOptionId)}" data-explanation="${base64(question.explanation)}" data-evidence="${base64(question.evidence)}" data-feedback="${base64(JSON.stringify(Object.fromEntries(question.options.map((option) => [option.id, option.feedback]))))}">${esc(ui.selfCheck)}</button>
+    <p class="quiz__recall">${esc(ui.recallCue)}</p>
+    <button class="quiz__reveal" type="button" data-question-index="${index}">${esc(ui.showChoices)}</button>
+    <div class="quiz__options" data-question-index="${index}" hidden>${options}</div>
+    <p class="quiz__teach-back" data-question-index="${index}" hidden>${esc(ui.teachBackCue)}</p>
+    <button class="quiz__check" type="button" data-question-index="${index}" data-correct="${esc(question.correctOptionId)}" data-explanation="${base64(question.explanation)}" data-evidence="${base64(question.evidence)}" data-feedback="${base64(JSON.stringify(Object.fromEntries(question.options.map((option) => [option.id, option.feedback]))))}" hidden>${esc(ui.selfCheck)}</button>
     <p class="quiz__required" data-question-index="${index}" hidden>${esc(ui.answerRequired)}</p>
+    ${question.revisit ? `<p class="quiz__revisit-guidance">${esc(ui.revisitGuidance)}</p>` : ""}
     <div class="quiz__feedback" data-question-index="${index}" hidden>
       <strong class="quiz__result"></strong>
       <strong>${esc(ui.selectedFeedback)}</strong>
@@ -1210,24 +1218,16 @@ function comprehensionQuestionCard(question, index, ui) {
   </article>`;
 }
 
+/**
+ * Keep diagnostic headings in the selected report language without inferring
+ * locale from another translated label that can change independently.
+ */
 function reviewDiagnosticsCard(diagnostics, ui) {
-  const labels =
-    ui.analysis === "분석"
-      ? {
-          contractCompleteness: "계약 누락",
-          testSufficiency: "테스트 공백",
-          necessity: "과다 변경",
-        }
-      : {
-          contractCompleteness: "Missing contracts",
-          testSufficiency: "Test gaps",
-          necessity: "Excess scope",
-        };
   return ["contractCompleteness", "testSufficiency", "necessity"]
     .map((field) => {
       const item = diagnostics[field];
       return `<section class="paper-subsection">
-        <h3>${esc(labels[field])}</h3>
+        <h3>${esc(ui.diagnosticLabels[field])}</h3>
         <p>${esc(item.assessment)}</p>
         <p>${esc(item.evidence)}</p>
       </section>`;
@@ -1466,14 +1466,16 @@ function groupedFindingCards(findings, ui) {
     .join("\n");
 }
 
+/** Build the standalone reading page, keeping shared diagrams visible and audit detail folded. */
 function buildHtml(data) {
   const language = detectLanguage(data);
   const ui = UI[language];
   const adr = esc(data.adr || "(no path)");
+  const title = esc(data.title || ui.title);
+  const styles = readFileSync(new URL("./adr-impl-review-report.css", import.meta.url), "utf8");
   const reviewMode = esc(data.reviewMode || "");
   const status = esc(data.status || "");
   const verdictKey = (data.verdict || "").toUpperCase();
-  const verdictHue = VERDICTS[verdictKey]?.hue || "#566173";
   const scope = Array.isArray(data.scope) ? data.scope : [];
   const changeScope = Array.isArray(data.changeScope) ? data.changeScope : [];
   const metrics = data.metrics && typeof data.metrics === "object" ? data.metrics : null;
@@ -1481,6 +1483,7 @@ function buildHtml(data) {
   const atAGlance = normalizeAtAGlance(data);
   const narrativeSections = normalizeNarrativeSections(data);
   const reviewHike = normalizeReviewHike(data);
+  const relatedAdrComparisons = normalizeRelatedAdrComparisons(data);
   const reviewDiagnostics = normalizeReviewDiagnostics(data);
   const comprehensionCheck = normalizeComprehensionCheck(data);
   const contractCoverage = normalizeContractCoverage(data);
@@ -1521,7 +1524,29 @@ function buildHtml(data) {
   const hillCards = hillsWithRows
     .map((hill) => reviewHillCard(hill, hill.body, hill.rows, ui))
     .join("\n");
-  const contextCard = reviewContextCard(reviewHike.context, ui);
+  const contextBody = (narrativeByTitle.get("Context")?.body || "")
+    .replace(
+      /<!-- generated review context start -->[\s\S]*?<!-- generated review context end -->/g,
+      "",
+    )
+    .replace(/<!-- generated review context from findings\.json -->/g, "")
+    .trim();
+  const contextDiagramIds = new Set(
+    (data.diagramRequirements || [])
+      .filter((item) => item.section === "Context")
+      .map((item) => item.id),
+  );
+  const linkedHills = reviewHike.hills.filter((hill) =>
+    hill.diagramIds.some((id) => contextDiagramIds.has(id)),
+  );
+  const contextCard = reviewContextCard(
+    reviewHike.context,
+    relatedAdrComparisons,
+    ui,
+    language,
+    contextBody,
+    linkedHills,
+  );
   const fallbackCoverageCards = contractCoverage
     .map((row, index) => contractCoverageCard(row, index, contractCoverage.length, ui))
     .join("\n");
@@ -1544,6 +1569,7 @@ function buildHtml(data) {
       label: section.displayTitle,
       level: 0,
     })),
+    { id: "analysis", label: ui.analysis, level: 0 },
     ...reviewHike.hills.flatMap((hill) => [
       {
         id: `hill-${hill.id.toLowerCase()}`,
@@ -1563,14 +1589,13 @@ function buildHtml(data) {
         })),
       ]),
     ]),
-    { id: "analysis", label: ui.analysis, level: 0 },
     { id: "validation", label: ui.validation, level: 0 },
     { id: "findings", label: ui.discussion, level: 0 },
     { id: "conclusion", label: ui.conclusion, level: 0 },
-    coverageCount || choiceCount ? { id: "evidence", label: ui.evidence, level: 0 } : null,
     comprehensionCheck.questions.length
       ? { id: "comprehension", label: ui.comprehension, level: 0 }
       : null,
+    coverageCount || choiceCount ? { id: "evidence", label: ui.evidence, level: 0 } : null,
   ].filter(Boolean);
 
   // Embed the findings so the download echoes the original context back
@@ -1601,613 +1626,24 @@ function buildHtml(data) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(ui.title)} — ${adr}</title>
+<title>${title} — ${esc(ui.title)}</title>
 <style>
-  :root {
-    color-scheme: light dark;
-    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Code", Menlo, Consolas, monospace;
-    --paper: #e6eaee;
-    --card: #fcfdfe;
-    --ink: #1b2431;
-    --ink-2: #586372;
-    --line: #d3dae1;
-    --adr-wash: #e9eff5;   /* cool — the intended design (blueprint) */
-    --code-wash: #f5f0e9;  /* warm — the thing as built (material)   */
-    --focus: #1f5fa8;
-    --verdict: ${verdictHue};
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --paper: #14171b;
-      --card: #1e232a;
-      --ink: #e4e8ed;
-      --ink-2: #9aa4b0;
-      --line: #2c333c;
-      --adr-wash: #1b2530;
-      --code-wash: #2a2620;
-      --focus: #5b9bd8;
-    }
-  }
-  * { box-sizing: border-box; }
-  :target { scroll-margin-top: 20px; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    margin: 0; background: var(--paper); color: var(--ink);
-    font: 15px/1.65 var(--sans);
-  }
-  body.has-bar { padding-bottom: 96px; }
-  a { color: var(--focus); }
-  code {
-    font-family: var(--mono); font-size: .92em;
-    background: color-mix(in srgb, var(--ink) 7%, transparent);
-    padding: 1px 5px; border-radius: 4px;
-  }
-  pre {
-    margin: 14px 0; padding: 14px 16px; overflow: auto;
-    border: 1px solid var(--line); border-radius: 8px;
-    background: color-mix(in srgb, var(--ink) 5%, var(--card));
-    white-space: pre-wrap;
-  }
-  pre code { background: transparent; padding: 0; white-space: pre-wrap; }
-  blockquote {
-    margin: 14px 0; padding: 8px 14px; border-left: 3px solid var(--focus);
-    background: color-mix(in srgb, var(--focus) 7%, var(--card));
-  }
-  .page {
-    width: min(1180px, 100%); margin: 0 auto;
-    display: grid; grid-template-columns: 220px minmax(0, 860px); gap: 28px;
-    align-items: start; padding: 34px 20px 48px;
-  }
-  .wrap { min-width: 0; }
-  .toc {
-    position: sticky; top: 20px;
-    background: var(--card); border: 1px solid var(--line);
-    border-radius: 10px; padding: 14px;
-  }
-  .toc__title {
-    margin: 0 0 10px; font: 700 10px/1 var(--mono);
-    letter-spacing: .16em; text-transform: uppercase; color: var(--ink-2);
-  }
-  .toc ol { margin: 0; padding-left: 20px; }
-  .toc li { margin: 6px 0; font-size: 13px; }
-  .toc li[data-level="1"] { margin-left: 10px; }
-  .toc li[data-level="2"] { margin-left: 22px; font-size: 12.5px; }
-  .toc li[data-level="3"] { margin-left: 34px; font-size: 12px; color: var(--ink-2); }
-  .toc a { color: var(--ink); text-decoration: none; }
-  .toc a:hover { color: var(--focus); text-decoration: underline; }
-
-  /* ── docket header ─────────────────────────────────────────────── */
-  .doc {
-    display: flex; flex-wrap: wrap; gap: 18px 24px;
-    align-items: flex-start; justify-content: space-between;
-    padding-bottom: 18px; margin-bottom: 8px;
-    border-bottom: 2px solid var(--verdict);
-  }
-  .doc__id { min-width: 0; flex: 1 1 320px; }
-  .eyebrow {
-    font: 600 11px/1 var(--mono); letter-spacing: 0.22em; text-transform: uppercase;
-    color: var(--ink-2); margin: 0 0 10px;
-  }
-  .doc__path {
-    font: 500 15px/1.45 var(--mono); color: var(--ink);
-    word-break: break-all; margin: 0;
-  }
-  .doc__status { font: 500 12px/1 var(--mono); color: var(--ink-2); margin-top: 8px; }
-  .review-meta {
-    margin-top: 14px; border: 1px solid var(--line); border-radius: 8px;
-    background: var(--card); padding: 0 12px;
-  }
-  .review-meta summary { cursor: pointer; padding: 9px 0; font-weight: 650; color: var(--ink-2); }
-  .doc__meta { padding: 0 0 12px; font-size: 12.5px; color: var(--ink-2); }
-  .doc__meta div { margin-top: 3px; }
-  .doc__meta code {
-    font: 12px/1.5 var(--mono);
-    background: color-mix(in srgb, var(--ink) 6%, transparent);
-    padding: 1px 5px; border-radius: 4px;
-  }
-
-  /* verdict stamp */
-  .stamp {
-    flex: 0 0 auto; text-align: center;
-    border: 2px solid var(--verdict); border-radius: 8px;
-    padding: 10px 16px; box-shadow: inset 0 0 0 2px var(--card), inset 0 0 0 3px var(--verdict);
-    background: color-mix(in srgb, var(--verdict) 8%, var(--card));
-  }
-  .stamp__k { font: 600 9px/1 var(--mono); letter-spacing: 0.24em; color: var(--ink-2); }
-  .stamp__v { font: 700 20px/1.1 var(--mono); letter-spacing: 0.06em; color: var(--verdict); margin-top: 6px; }
-  .vnote { flex: 1 1 100%; font-size: 13px; color: var(--ink-2); margin: 2px 0 0; }
-
-  .overview {
-    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-    padding: 16px 18px; margin: 18px 0 8px;
-  }
-  .overview__title {
-    font: 700 11px/1 var(--mono); letter-spacing: 0.16em;
-    text-transform: uppercase; color: var(--ink-2); margin: 0 0 12px;
-  }
-  .overview__grid {
-    display: grid; gap: 0;
-  }
-  .overview__item {
-    display: grid; grid-template-columns: 76px 1fr; gap: 12px;
-    align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line);
-  }
-  .overview__item:first-child { border-top: 0; }
-  .overview__key {
-    display: block; font: 700 10px/1 var(--mono); letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--ink-2);
-  }
-  .overview__value { margin: 0; font-size: 14px; }
-  .explanation {
-    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-    padding: 16px 18px; margin: 14px 0;
-  }
-  .explanation__title {
-    font: 680 20px/1.3 var(--sans); letter-spacing: -0.01em;
-    color: var(--ink); margin: 0 0 12px;
-  }
-  .explanation__body {
-    font-size: 14px; overflow-wrap: anywhere;
-  }
-  .explanation__body p { margin: 10px 0; }
-  .explanation__body ul, .explanation__body ol { margin: 10px 0; padding-left: 24px; }
-  .hill {
-    --hill-status: #566173;
-    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-    border-top: 3px solid var(--hill-status);
-    padding: 18px; margin: 18px 0;
-  }
-  .hill--proven { --hill-status: #2e7d4f; }
-  .hill--violated { --hill-status: #c0362c; }
-  .hill--unverified { --hill-status: #b4690e; }
-  .hill--contradicted { --hill-status: #7457a6; }
-  .hill__head {
-    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
-  }
-  .hill__head .explanation__title { margin-bottom: 0; }
-  .hill__eyebrow {
-    margin: 0 0 6px; font: 700 10px/1 var(--mono);
-    letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2);
-  }
-  .hill__tag { --sev: #426b4f; }
-  .flow-status {
-    flex: 0 0 auto; border: 1px solid color-mix(in srgb, var(--hill-status) 45%, var(--line));
-    border-radius: 999px; padding: 6px 10px;
-    background: color-mix(in srgb, var(--hill-status) 8%, var(--card));
-    color: var(--hill-status); font: 700 11px/1 var(--mono);
-  }
-  .hill__question {
-    background: color-mix(in srgb, #426b4f 9%, var(--card));
-    border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; margin: 10px 0 12px;
-  }
-  .hill__question p { margin: 0; font-weight: 650; }
-  .hill__slice { margin: 8px 0 0; font-size: 13px; color: var(--ink-2); }
-  .hill__slice code { margin-left: 6px; }
-  .hill--foundation { border-color: color-mix(in srgb, #426b4f 36%, var(--line)); }
-  .zoom-disclaimer { margin: 8px 0 14px; color: var(--ink-2); font-size: 12.5px; }
-  .context-narrative, .hill__narrative, .component__narrative {
-    max-width: 74ch;
-  }
-  .context-narrative p, .hill__narrative p, .component__narrative p {
-    margin: 10px 0; font-size: 14px;
-  }
-  .context-narrative strong, .hill__narrative strong, .component__narrative strong {
-    color: var(--ink);
-  }
-  .narrative-lead {
-    font-size: 15px !important; line-height: 1.7;
-  }
-  .outcome-note, .verification-note {
-    padding: 9px 12px; border-left: 3px solid #426b4f;
-    background: color-mix(in srgb, #426b4f 7%, var(--card));
-  }
-  .hill__authored-narrative {
-    max-width: 74ch; margin: 14px 0 16px; padding-bottom: 14px;
-    border-bottom: 1px solid var(--line);
-  }
-  .component-section-title {
-    font: 700 16px/1.3 var(--sans); color: var(--ink); margin: 24px 0 10px;
-  }
-  .components { display: grid; gap: 12px; }
-  .component {
-    border: 1px solid var(--line); border-radius: 9px;
-    background: color-mix(in srgb, var(--card) 88%, var(--paper)); padding: 14px;
-  }
-  .component__head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .component__head h3 { margin: 0; font-size: 16px; }
-  .component__tag { --sev: #5b5f97; }
-  .component__code { margin-top: 10px; }
-  .hill__details {
-    margin-top: 18px; border-top: 1px solid var(--line);
-  }
-  .hill__details > summary {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-    cursor: pointer; padding: 14px 0 2px; font-weight: 700;
-  }
-  .hill__details > summary small {
-    color: var(--ink-2); font: 600 11px/1.2 var(--mono);
-  }
-  .hill__details-body { padding-top: 8px; }
-  .code-evidence {
-    border: 1px solid var(--line); border-radius: 8px;
-    background: var(--paper); margin-top: 8px; padding: 0 11px;
-  }
-  .code-evidence > summary {
-    cursor: pointer; padding: 11px 0; font: 650 12px/1.3 var(--mono);
-  }
-  .code-evidence__body { padding: 0 0 12px; }
-  .code-evidence pre {
-    overflow: auto; background: #172029; color: #edf3f7;
-    border-radius: 7px; padding: 12px; font: 12px/1.55 var(--mono);
-  }
-  .hill__evidence { margin-top: 16px; }
-
-  .section-title {
-    font: 700 11px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase;
-    color: var(--ink-2); margin: 28px 0 12px;
-  }
-  .section-disclosure {
-    margin: 22px 0; background: var(--card); border: 1px solid var(--line);
-    border-radius: 10px; padding: 0 16px;
-  }
-  .section-disclosure > summary {
-    cursor: pointer; padding: 15px 0; font-weight: 700;
-  }
-  .section-disclosure__body { padding: 0 0 16px; }
-  .coverage-summary {
-    display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 16px;
-  }
-  .coverage-summary span {
-    border: 1px solid var(--line); background: var(--card);
-    border-radius: 999px; padding: 5px 10px; font: 650 11px/1 var(--mono);
-  }
-  .coverage-index { list-style: none; padding: 0; margin: 10px 0 18px; }
-  .coverage-index li {
-    display: flex; flex-wrap: wrap; gap: 8px 12px;
-    align-items: baseline; border-bottom: 1px solid var(--line); padding: 10px 0;
-  }
-  .coverage-index li > a, .coverage-index li > span {
-    font: 700 11px/1 var(--mono);
-  }
-  .coverage-index li p { flex: 1 1 100%; margin: 0; font-size: 13px; }
-
-  /* ── finding ───────────────────────────────────────────────────── */
-  .finding {
-    background: var(--card); border: 1px solid var(--line);
-    border-left: 3px solid var(--sev); border-radius: 10px;
-    padding: 16px 18px 14px; margin-bottom: 14px;
-  }
-  .task-summary {
-    display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 18px;
-  }
-  .task-summary span {
-    border: 1px solid var(--line); border-radius: 999px;
-    background: var(--card); padding: 6px 10px; font: 650 11px/1 var(--mono);
-  }
-  .task-group { margin: 18px 0 26px; }
-  .task-group__title {
-    font: 720 15px/1.3 var(--sans); margin: 0 0 10px; color: var(--ink);
-  }
-  .task-impact, .task-field {
-    border: 1px solid var(--line); border-radius: 8px;
-    background: var(--paper); padding: 11px 13px;
-  }
-  .task-impact { margin: 12px 0; }
-  .task-impact p, .task-field p { margin: 0; font-size: 13.5px; }
-  .task-comparison {
-    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px; margin-bottom: 10px;
-  }
-  .task-next { display: grid; gap: 10px; margin-bottom: 12px; }
-  .task-field--primary {
-    background: color-mix(in srgb, var(--sev) 8%, var(--card));
-    border-color: color-mix(in srgb, var(--sev) 32%, var(--line));
-  }
-  .technical-evidence {
-    border: 1px solid var(--line); border-radius: 8px;
-    background: var(--card); margin: 12px 0;
-  }
-  .technical-evidence > summary {
-    cursor: pointer; padding: 10px 12px; font-weight: 650; color: var(--ink-2);
-  }
-  .technical-evidence .confront { margin: 0 12px 12px; }
-  .technical-evidence .meta { padding: 0 12px 12px; margin: 0; }
-  .coverage {
-    --coverage: #566173;
-    background: var(--card); border: 1px solid var(--line);
-    border-left: 3px solid var(--coverage); border-radius: 8px;
-    margin-bottom: 12px; overflow: hidden;
-  }
-  .coverage--proven { --coverage: #2e7d4f; }
-  .coverage--violated { --coverage: #c0362c; }
-  .coverage--unverified { --coverage: #b4690e; }
-  .coverage--contradicted { --coverage: #7b3f91; }
-  .coverage__status {
-    font: 700 10.5px/1 var(--mono); letter-spacing: 0.14em;
-    color: var(--coverage);
-  }
-  .coverage__summary {
-    display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center;
-    cursor: pointer; padding: 13px 15px;
-  }
-  .coverage__requirement { font-weight: 650; }
-  .coverage__body { padding: 0 16px 14px; border-top: 1px solid var(--line); }
-  .coverage__implementation {
-    background: color-mix(in srgb, var(--coverage) 8%, var(--card));
-    border: 1px solid var(--line); border-radius: 7px;
-    padding: 11px 13px; margin: 10px 0 12px;
-  }
-  .coverage__implementation p { margin: 0; font-size: 13.5px; }
-  .choice {
-    background: var(--card); border: 1px solid var(--line);
-    border-left: 3px solid #217a68; border-radius: 8px;
-    padding: 16px 18px 14px; margin-bottom: 14px;
-  }
-  .choice__tag { --sev: #217a68; }
-  .choice__value {
-    background: color-mix(in srgb, #217a68 9%, var(--card));
-    border: 1px solid var(--line); border-radius: 7px;
-    padding: 11px 13px; margin: 10px 0 12px;
-  }
-  .choice__value p { margin: 0; font: 600 13.5px/1.5 var(--mono); word-break: break-word; }
-  .quiz {
-    background: var(--card); border: 1px solid var(--line);
-    border-left: 3px solid #7457a6; border-radius: 8px;
-    padding: 14px 16px; margin-bottom: 12px;
-  }
-  .quiz__id {
-    display: block; font: 700 10.5px/1 var(--mono); letter-spacing: 0.14em;
-    color: #7457a6; margin-bottom: 8px;
-  }
-  .quiz__question { margin: 0; font-size: 14px; }
-  .quiz__options { display: grid; gap: 8px; margin-top: 12px; }
-  .quiz__option {
-    display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
-    border: 1px solid var(--line); border-radius: 8px; background: var(--paper);
-    cursor: pointer;
-  }
-  .quiz__option:has(input:checked) { border-color: var(--focus); }
-  .quiz__option input { margin-top: 3px; }
-  .quiz__check {
-    margin-top: 9px; padding: 8px 12px; border: 1px solid var(--ink);
-    border-radius: 7px; background: var(--ink); color: var(--card); cursor: pointer;
-    font-weight: 650;
-  }
-  .quiz__required { color: #c0362c; margin: 8px 0 0; }
-  .quiz__feedback {
-    margin-top: 12px; padding: 12px; border: 1px solid var(--line);
-    border-radius: 8px; background: color-mix(in srgb, #7457a6 7%, var(--card));
-  }
-  .quiz__feedback p { margin: 5px 0 10px; }
-  .quiz__limit { color: var(--ink-2); font-size: 12.5px; }
-  .diagnostics { display: grid; gap: 12px; margin: 12px 0 22px; }
-  .diagnostic {
-    border-left: 3px solid var(--line); padding: 10px 14px; background: var(--card);
-  }
-  .diagnostic header { display: flex; justify-content: space-between; gap: 12px; }
-  .diagnostic h3, .diagnostic p { margin: 0 0 8px; }
-  .diagnostic--issue { border-left-color: #c0362c; }
-  .diagnostic--unverified { border-left-color: #b4690e; }
-  .diagnostic--clear { border-left-color: #2e7d4f; }
-  .finding__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .tag {
-    font: 600 10.5px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
-    color: #fff; background: var(--sev); padding: 4px 9px; border-radius: 5px;
-  }
-  .finding__head-right { display: inline-flex; align-items: center; gap: 10px; }
-  .finding__idx { font: 600 12px/1 var(--mono); color: var(--sev); }
-  .finding__idx-total { color: var(--ink-2); font-weight: 500; }
-  .conf { font: 600 9.5px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase;
-          padding: 3px 7px; border-radius: 4px; border: 1px solid var(--line); color: var(--ink-2); }
-  .conf--high { color: #2e7d4f; border-color: color-mix(in srgb, #2e7d4f 45%, var(--line)); }
-  .conf--medium { color: #b4690e; border-color: color-mix(in srgb, #b4690e 45%, var(--line)); }
-  .conf--low { color: #c0362c; border-color: color-mix(in srgb, #c0362c 45%, var(--line)); }
-  .finding__title {
-    font: 660 17px/1.35 var(--sans); letter-spacing: -0.01em;
-    margin: 11px 0 5px;
-  }
-  .finding__blurb { font-size: 13px; color: var(--ink-2); margin: 0 0 14px; }
-  .contract-links { display: flex; flex-wrap: wrap; gap: 6px; margin: 7px 0 10px; }
-  .contract-links a {
-    font: 650 11px/1 var(--mono); text-decoration: none;
-    border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px;
-  }
-
-  /* confrontation: ADR decision vs code as built */
-  .confront {
-    display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch;
-    gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
-    margin-bottom: 12px;
-  }
-  .confront--single { grid-template-columns: 1fr; }
-  .side { padding: 11px 13px; min-width: 0; }
-  .side--adr { background: var(--adr-wash); }
-  .side--code { background: var(--code-wash); }
-  .side__label {
-    display: block; font: 600 10px/1 var(--mono); letter-spacing: 0.16em;
-    text-transform: uppercase; color: var(--ink-2); margin-bottom: 7px;
-  }
-  .side__body { margin: 0; font-size: 13.5px; }
-  .side__body--quote { font-style: normal; color: var(--ink); }
-  .side__body--mono { font: 12.5px/1.5 var(--mono); color: var(--ink); word-break: break-word; }
-  .rel {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 4px; padding: 8px 12px; background: var(--card);
-    border-left: 1px solid var(--line); border-right: 1px solid var(--line);
-  }
-  .rel__glyph { font: 600 18px/1 var(--mono); color: var(--sev); }
-  .rel__label { font: 600 9px/1.1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
-                color: var(--ink-2); text-align: center; white-space: nowrap; }
-
-  .meta { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
-  .meta__row { display: flex; gap: 10px; font-size: 13px; }
-  .meta__k { flex: 0 0 42px; font: 600 11px/1.5 var(--mono); letter-spacing: 0.08em;
-             text-transform: uppercase; color: var(--ink-2); }
-  .meta__v { flex: 1; }
-  .meta__v--mono { font: 12.5px/1.5 var(--mono); }
-
-  /* ruling — segmented control + note */
-  .ruling { border-top: 1px dashed var(--line); padding-top: 12px; }
-  .ruling__label { display: block; font: 600 10px/1 var(--mono); letter-spacing: 0.16em;
-                   text-transform: uppercase; color: var(--ink-2); margin-bottom: 8px; }
-  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px;
-         overflow: hidden; margin-bottom: 10px; }
-  .seg__input { position: absolute; opacity: 0; pointer-events: none; }
-  .seg__label {
-    font: 600 13px/1 var(--sans); padding: 8px 18px; cursor: pointer;
-    color: var(--ink-2); background: var(--card); border-left: 1px solid var(--line);
-    transition: background 0.12s, color 0.12s;
-  }
-  .seg__label:first-of-type { border-left: none; }
-  .seg__input:checked + .seg__label { background: var(--ink); color: var(--card); }
-  .seg__input:focus-visible + .seg__label { outline: 2px solid var(--focus); outline-offset: -2px; }
-  .seg__label:hover { color: var(--ink); }
-  .seg__input:checked + .seg__label:hover { color: var(--card); }
-  .ruling__note {
-    display: block; width: 100%; font: 13.5px/1.5 var(--sans);
-    padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
-    background: var(--paper); color: var(--ink); resize: vertical;
-  }
-  .ruling__note:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; border-color: var(--focus); }
-
-  /* review notes reuse the disclosure's horizontal inset */
-  .notes__v { font-size: 13.5px; color: var(--ink); margin: 0; }
-
-  /* ── grounded Mermaid render ─────────────────────────────────── */
-  .diagram {
-    margin: 16px 0; padding: 14px; border: 1px solid var(--line);
-    border-radius: 10px; background: var(--paper);
-  }
-  .diagram__participants { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-  .diagram__participants span {
-    background: var(--card); border: 1px solid var(--line);
-    border-radius: 999px; padding: 5px 9px; font-size: 12px;
-  }
-  .sequence { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
-  .sequence li {
-    display: grid; grid-template-columns: minmax(180px, .8fr) 1fr; gap: 12px;
-    padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card);
-  }
-  .sequence__route { display: flex; align-items: center; gap: 8px; }
-  .flow { display: grid; gap: 10px; }
-  .flow__edge {
-    display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center; gap: 10px;
-  }
-  .flow__node {
-    display: block; padding: 9px 10px; text-align: center;
-    border: 1px solid var(--line); border-radius: 8px; background: var(--card); font-weight: 650;
-  }
-  .flow__arrow { color: var(--focus); text-align: center; font: 700 16px/1 var(--mono); }
-  .flow__arrow small { display: block; margin-top: 5px; color: var(--ink-2); font: 11px/1.25 var(--sans); }
-  .diagram--fallback figcaption { color: #b4690e; margin-bottom: 8px; font-weight: 650; }
-
-  /* compact empty state; the header already carries the verdict stamp */
-  .conforms {
-    padding: 14px 16px; border: 1px solid var(--line); border-left: 3px solid var(--verdict);
-    border-radius: 10px; background: var(--card);
-  }
-  .conforms__lead { font: 660 15px/1.4 var(--sans); margin: 0; }
-  .conforms__sub { font-size: 13.5px; color: var(--ink-2); margin: 0; }
-
-  /* ── action bar ────────────────────────────────────────────────── */
-  .bar {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
-    background: color-mix(in srgb, var(--card) 92%, transparent);
-    backdrop-filter: saturate(180%) blur(8px);
-    border-top: 1px solid var(--line);
-    padding: 12px 20px;
-  }
-  .bar__inner { max-width: 860px; margin: 0 auto; display: flex; align-items: center;
-                justify-content: space-between; gap: 16px; }
-  .hint { font-size: 12.5px; color: var(--ink-2); }
-  button.export {
-    font: 600 14px/1 var(--sans); padding: 11px 22px; border: 1px solid var(--ink);
-    border-radius: 8px; background: var(--ink); color: var(--card); cursor: pointer;
-    transition: opacity 0.12s;
-  }
-  button.export:hover { opacity: 0.88; }
-  button.export:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-  button.export.done { background: #2e7d4f; border-color: #2e7d4f; }
-
-  /* Paper reading mode: the default body is prose; structured evidence stays collapsed. */
-  body { background: var(--card); }
-  .page {
-    width: min(860px, 100%); display: block; padding: 38px 28px 64px;
-  }
-  .wrap { font-family: Georgia, "Times New Roman", serif; }
-  .toc {
-    position: static; border: 0; border-bottom: 1px solid var(--line);
-    border-radius: 0; padding: 0 0 18px; margin-bottom: 36px; background: transparent;
-  }
-  .toc ol { columns: 2; column-gap: 32px; }
-  .doc { border-bottom: 1px solid var(--line); }
-  .review-meta { border: 0; padding: 0; background: transparent; }
-  .overview, .explanation, .paper-section, .paper-subsection {
-    border: 0; border-radius: 0; background: transparent; padding: 0; margin: 28px 0;
-  }
-  .overview__title, .section-title {
-    font: 700 22px/1.3 Georgia, "Times New Roman", serif;
-    letter-spacing: 0; text-transform: none; color: var(--ink); margin: 34px 0 14px;
-  }
-  .overview__grid { display: block; }
-  .overview__item { display: block; border: 0; padding: 0; }
-  .overview__key, .stamp, .hill__eyebrow, .hill__slice, .hill__question,
-  .flow-status, .task-summary { display: none; }
-  .overview__value, .context-narrative p, .hill__narrative p,
-  .paper-section p, .paper-subsection p {
-    font-size: 15.5px; line-height: 1.85; margin: 12px 0;
-  }
-  .explanation__title { font-family: Georgia, "Times New Roman", serif; }
-  .hill__details, .section-disclosure, #evidence {
-    font-family: var(--sans);
-  }
-  .diagnostics { display: block; }
-  .diagnostic { border: 0; padding: 0; background: transparent; }
-
-  @media (max-width: 620px) {
-    .page { display: block; padding: 18px 14px 36px; }
-    .toc { position: static; margin-bottom: 18px; }
-    .overview__item { grid-template-columns: 1fr; gap: 5px; }
-    .hill__head { flex-direction: column; }
-    .hill__details > summary { align-items: flex-start; flex-direction: column; gap: 5px; }
-    .task-comparison { grid-template-columns: 1fr; }
-    .coverage__summary { grid-template-columns: 1fr auto; }
-    .coverage__status { grid-column: 1 / -1; }
-    .confront, .confront--single { grid-template-columns: 1fr; }
-    .rel { flex-direction: row; gap: 8px; border-left: none; border-right: none;
-           border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    .rel__glyph { transform: rotate(90deg); }
-    .bar__inner { flex-direction: column; align-items: stretch; }
-    .bar .hint { text-align: center; }
-    button.export { width: 100%; }
-    .sequence li { grid-template-columns: 1fr; }
-    .flow__edge { grid-template-columns: 1fr; }
-    .flow__arrow { transform: rotate(90deg); padding: 4px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; }
-  }
+${styles}
 </style>
 </head>
 <body class="${decisionCount ? "has-bar" : ""}">
 <div class="page">
-<nav class="toc" aria-label="${esc(ui.toc)}">
-  <h2 class="toc__title">${esc(ui.toc)}</h2>
-  <ol>
-    ${tocItems.map((item) => `<li data-level="${item.level || 0}"><a href="#${esc(item.id)}">${esc(item.label)}</a></li>`).join("")}
-  </ol>
-</nav>
+
 <main class="wrap">
   <header class="doc">
     <div class="doc__id">
       <p class="eyebrow">${esc(ui.title)}</p>
-      <p class="doc__path">${adr}</p>
-      ${status ? `<div class="doc__status">${status}</div>` : ""}
+      <h1 class="doc__title">${title}</h1>
       <details class="review-meta">
       <summary>${esc(ui.reviewDetails)}</summary>
       <div class="doc__meta">
+        <p class="doc__path">${adr}</p>
+        ${status ? `<div class="doc__status">${status}</div>` : ""}
         ${reviewMode ? `<div>${esc(ui.reviewMode)} · <code>${reviewMode}</code></div>` : ""}
         ${
           scope.length
@@ -2236,12 +1672,21 @@ function buildHtml(data) {
     hasOverview
       ? `<section class="overview" id="overview">
            <h2 class="overview__title">${esc(ui.overview)}</h2>
-           <p class="overview__value">${esc(atAGlance.impact)} ${esc(atAGlance.action)} ${esc(
-             atAGlance.risk,
-           )}</p>
+           <p class="overview__value"><strong>${esc(verdictKey || "—")}.</strong> ${esc(atAGlance.impact)}</p>
+           <p class="overview__value">${esc(atAGlance.action)}</p>
+           <p class="overview__value overview__risk">${esc(atAGlance.risk)}</p>
          </section>`
       : ""
   }
+
+  <nav class="toc" aria-label="${esc(ui.toc)}">
+  <details class="toc__contents">
+    <summary>${esc(ui.toc)}</summary>
+    <ol>
+      ${tocItems.map((item) => `<li data-level="${item.level || 0}"><a href="#${esc(item.id)}">${esc(item.label)}</a></li>`).join("")}
+    </ol>
+  </details>
+</nav>
 
   ${contextCard}
   ${narrativeCards}
@@ -2267,6 +1712,23 @@ function buildHtml(data) {
     <h2 class="section-title">${esc(ui.conclusion)}</h2>
     <p>${esc(verdictKey || "—")}. ${esc(atAGlance.action)} ${esc(atAGlance.risk)}</p>
   </section>
+
+  ${
+    comprehensionCheck.questions.length
+      ? `<section class="paper-section" id="comprehension">
+          <h2 class="section-title">${esc(ui.comprehension)}</h2>
+          <div class="comprehension__body">
+            <div class="comprehension__screen-guidance">
+              <p>${esc(comprehensionCheck.prGuidance)}</p>
+            </div>
+            <p class="print-only">${esc(ui.printQuizGuidance)}</p>
+            ${comprehensionCards}
+          </div>
+        </section>`
+      : ""
+  }
+
+  <p class="print-only print-evidence-note">${esc(ui.printEvidenceNote)}</p>
 
   ${
     coverageCount || choiceCount || count
@@ -2302,19 +1764,7 @@ function buildHtml(data) {
       : ""
   }
 
-  ${
-    comprehensionCheck.questions.length
-      ? `<details class="section-disclosure" id="comprehension">
-          <summary>${esc(ui.comprehension)} · ${comprehensionCheck.questions.length}</summary>
-          <div class="section-disclosure__body">
-            <section class="overview">
-              <p class="overview__value">${esc(comprehensionCheck.prGuidance)}</p>
-            </section>
-            ${comprehensionCards}
-          </div>
-        </details>`
-      : ""
-  }
+
 </main>
 </div>
 
@@ -2335,6 +1785,27 @@ ${
     const bytes = Uint8Array.from(atob(encoded || ""), (char) => char.charCodeAt(0));
     return new TextDecoder().decode(bytes);
   };
+  document.querySelectorAll(".quiz__reveal").forEach((button) => {
+    button.addEventListener("click", () => {
+      const index = button.dataset.questionIndex;
+      const options = document.querySelector('.quiz__options[data-question-index="' + index + '"]');
+      const check = document.querySelector('.quiz__check[data-question-index="' + index + '"]');
+      if (options) options.hidden = false;
+      if (check) check.hidden = false;
+      button.hidden = true;
+    });
+  });
+  document.querySelectorAll('.quiz__option input[type="radio"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      const index = input.name.replace("quiz-", "");
+      const teachBack = document.querySelector('.quiz__teach-back[data-question-index="' + index + '"]');
+      const feedback = document.querySelector('.quiz__feedback[data-question-index="' + index + '"]');
+      const required = document.querySelector('.quiz__required[data-question-index="' + index + '"]');
+      if (teachBack) teachBack.hidden = false;
+      if (feedback) feedback.hidden = true;
+      if (required) required.hidden = true;
+    });
+  });
   document.querySelectorAll(".quiz__check").forEach((button) => {
     button.addEventListener("click", () => {
       const index = button.dataset.questionIndex;
@@ -2430,10 +1901,24 @@ function main() {
   if (!data.adr) die("findings JSON missing required field: adr");
   if (!data.verdict) die("findings JSON missing required field: verdict");
   data.narrativeSections = loadNarrativeSections(data, opts.in);
+  data.title = resolveReportTitle(data, opts.in);
   if (!opts.stdout && data.narrativeSections.length === 0) {
     die("validated report narrative is required before writing HTML");
   }
 
+  if (Array.isArray(data.diagramRequirements) && data.diagramRequirements.length) {
+    const blocks = data.narrativeSections.flatMap((section) =>
+      mermaidBlocks(`## ${section.title}\n${section.body}`),
+    );
+    for (const requirement of data.diagramRequirements) {
+      const matches = blocks.filter((block) => block.requirementId === requirement.id);
+      if (matches.length !== 1 || !matches[0].closed || parseMermaid(matches[0].source).error) {
+        die(
+          `required diagram ${requirement.id} cannot render; repair its source before writing HTML`,
+        );
+      }
+    }
+  }
   const html = buildHtml(data);
 
   if (opts.stdout) {

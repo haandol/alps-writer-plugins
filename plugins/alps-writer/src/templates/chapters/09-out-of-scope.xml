@@ -1,25 +1,19 @@
 <section id="9" title="Out of Scope">
   <description>
 - List requirements and features excluded from the MVP.
-- Provide a roadmap for managing technical debt and potential future enhancements.
+- Record only confirmed exclusions and known technical debt. Do not invent future work, technology selections, metrics, or dates to fill this section.
+- Use tables when there are actual items, naming their user/operational consequence and reason. Record a target phase only when supplied or approved; otherwise use "Not scheduled".
+- Both subsections still require confirmation. When there are no items, record that fact in a short statement rather than creating placeholder rows.
   </description>
   <subsection id="9.1" title="Deferred Features">
     <example>
-| Feature | Reason for Deferral | Target Phase |
-|---------|---------------------|--------------|
-| OAuth support | Not critical for MVP validation | Phase 2 |
-| Payment support | Requires additional compliance | Phase 2 |
-| Advanced analytics | Nice-to-have, not core | Phase 3 |
+No product behavior was explicitly deferred.
     </example>
   </subsection>
   <subsection id="9.2" title="Technical Debt Roadmap">
-    <description>Document known technical debt and plans for addressing it.</description>
+    <description>Document known technical debt and its observable consequences, not generic best-practice work. If none is known, say so. Unresolved product decisions are questions to settle, not technical debt to silently defer.</description>
     <example>
-| Item | Description | Priority | Target Phase |
-|------|-------------|----------|--------------|
-| Test coverage | Increase unit test coverage to 80% | High | Phase 2 |
-| Error logging | Implement centralized error logging | Medium | Phase 2 |
-| Code refactoring | Refactor authentication module | Low | Phase 3 |
+No known technical debt.
     </example>
   </subsection>
 </section>

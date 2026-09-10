@@ -2,6 +2,8 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { relatedAdrComparisonProse, hillNarrativeParagraphs } from "./adr-impl-review-prose.mjs";
+import { proseLines } from "./adr-impl-review-diagrams.mjs";
 
 function usage(message) {
   if (message) process.stderr.write(`adr-impl-review-materialize: ${message}\n`);
@@ -18,12 +20,17 @@ function tableCell(value) {
 
 function replaceSection(source, heading, nextHeading, body) {
   const lines = source.split(/\r?\n/);
-  const start = lines.findIndex((line) => line.trim() === `## ${heading}`);
+  const prose = new Set(proseLines(source).map((line) => line.index));
+  const start = lines.findIndex(
+    (line, index) => prose.has(index) && line.trim() === `## ${heading}`,
+  );
   if (start < 0) usage(`implementation-review.md missing: ## ${heading}`);
 
   const end = nextHeading
-    ? lines.findIndex((line, index) => index > start && line.trim() === `## ${nextHeading}`)
-    : lines.findIndex((line, index) => index > start && /^##\s+/.test(line));
+    ? lines.findIndex(
+        (line, index) => index > start && prose.has(index) && line.trim() === `## ${nextHeading}`,
+      )
+    : lines.findIndex((line, index) => index > start && prose.has(index) && /^##\s+/.test(line));
   if (nextHeading && end < 0) {
     usage(`implementation-review.md missing section after ## ${heading}: ## ${nextHeading}`);
   }
@@ -137,10 +144,17 @@ function hillEvidence(rows, language) {
 }
 
 /**
- * Materialize the C4-style Context zoom so Markdown and HTML share one source.
- * The structured JSON remains authoritative and the generated block is replaceable.
+ * Materialize the shared review context and optional ADR analogy paragraphs so
+ * Markdown and HTML teach the same evidence-grounded mental model.
  */
-function reviewContext(context, language) {
+function reviewContext(context, comparisons, language) {
+  const comparisonProse = comparisons.map((comparison) => {
+    const prose = tableCell(relatedAdrComparisonProse(comparison, language));
+    if (language === "ko") {
+      return `**${tableCell(comparison.title)}** (\`${tableCell(comparison.adr)}\`)와 비교하면 ${prose}`;
+    }
+    return `Compared with **${tableCell(comparison.title)}** (\`${tableCell(comparison.adr)}\`), ${prose}`;
+  });
   return [
     tableCell(context.intent),
     "",
@@ -149,23 +163,21 @@ function reviewContext(context, language) {
     tableCell(context.contracts),
     "",
     tableCell(context.scopeAndRisk),
+    ...(comparisonProse.length
+      ? ["", ...comparisonProse.flatMap((paragraph) => [paragraph, ""])]
+      : []),
   ].join("\n");
 }
 
-function containerZoom(hill, language) {
-  return [
-    `${tableCell(hill.sliceName)}. ${tableCell(hill.claim)}`,
-    "",
-    tableCell(hill.workedExample),
-    "",
-    tableCell(hill.counterexample),
-    "",
-    tableCell(hill.container.responsibility),
-    "",
-    tableCell(hill.container.interactions),
-    "",
-    `${tableCell(hill.container.outcome)} ${tableCell(hill.assessment)}`,
-  ].join("\n");
+/** Keep the generated explanation aligned with HTML without duplicating equal fields. */
+function containerZoom(hill) {
+  return hillNarrativeParagraphs(hill).map(tableCell).join("\n\n");
+}
+
+/** Keep any fences inside quoted evidence literal by enclosing them in a longer fence. */
+function evidenceFence(content) {
+  const runs = String(content).match(/`+/g) || [];
+  return "`".repeat(Math.max(2, ...runs.map((run) => run.length)) + 1);
 }
 
 function componentZoom(components, language) {
@@ -177,9 +189,9 @@ function componentZoom(components, language) {
           [
             `#### ${labels.code} ${index + 1} · ${tableCell(codeEvidence.kind)} · ${tableCell(codeEvidence.location)}`,
             "",
-            `\`\`\`${codeEvidence.kind === "diff" ? "diff" : ""}`,
+            `${evidenceFence(codeEvidence.content)}${codeEvidence.kind === "diff" ? "diff" : ""}`,
             String(codeEvidence.content).trim(),
-            "```",
+            evidenceFence(codeEvidence.content),
             "",
             `- ${labels.explanation}: ${tableCell(codeEvidence.explanation)}`,
             `- ${labels.tests}: ${tableCell(codeEvidence.tests)}`,
@@ -203,22 +215,30 @@ function componentZoom(components, language) {
 
 function replaceGeneratedBlock(source, heading, placeholder, generatedStart, generatedEnd, body) {
   const lines = source.split(/\r?\n/);
-  const start = lines.findIndex((line) => line.trim() === heading);
+  const prose = new Set(proseLines(source).map((line) => line.index));
+  const start = lines.findIndex((line, index) => prose.has(index) && line.trim() === heading);
   if (start < 0) usage(`implementation-review.md missing heading: ${heading}`);
-  const stopCandidate = lines.findIndex((line, index) => index > start && /^##\s+/.test(line));
+  const stopCandidate = lines.findIndex(
+    (line, index) => index > start && prose.has(index) && /^##\s+/.test(line),
+  );
   const stop = stopCandidate < 0 ? lines.length : stopCandidate;
   const placeholderIndex = lines.findIndex(
-    (line, index) => index > start && index < stop && line.trim() === placeholder,
+    (line, index) =>
+      index > start && index < stop && prose.has(index) && line.trim() === placeholder,
   );
   const generatedStartIndex = lines.findIndex(
-    (line, index) => index > start && index < stop && line.trim() === generatedStart,
+    (line, index) =>
+      index > start && index < stop && prose.has(index) && line.trim() === generatedStart,
   );
   const generatedEndIndex =
     generatedStartIndex < 0
       ? -1
       : lines.findIndex(
           (line, index) =>
-            index > generatedStartIndex && index < stop && line.trim() === generatedEnd,
+            index > generatedStartIndex &&
+            index < stop &&
+            prose.has(index) &&
+            line.trim() === generatedEnd,
         );
   const block = [generatedStart, "", body, "", generatedEnd];
   if (placeholderIndex >= 0) {
@@ -359,7 +379,11 @@ function main() {
     "<!-- generated review context from findings.json -->",
     "<!-- generated review context start -->",
     "<!-- generated review context end -->",
-    reviewContext(data.reviewHike.context, language),
+    reviewContext(
+      data.reviewHike.context,
+      Array.isArray(data.relatedAdrComparisons) ? data.relatedAdrComparisons : [],
+      language,
+    ),
   );
   for (const hill of data.reviewHike.hills) {
     report = replaceGeneratedBlock(
@@ -368,7 +392,7 @@ function main() {
       "<!-- generated container zoom from findings.json -->",
       "<!-- generated container zoom start -->",
       "<!-- generated container zoom end -->",
-      containerZoom(hill, language),
+      containerZoom(hill),
     );
     report = replaceGeneratedBlock(
       report,

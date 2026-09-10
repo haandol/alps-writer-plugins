@@ -96,7 +96,7 @@ const dc = new DocumentController(new DocumentService());
 // Template tools
 server.tool(
   "get_alps_overview",
-  "Get the ALPS template overview with all section descriptions. IMPORTANT: After calling this, you MUST call get_alps_section_guide(1) to start the interactive Q&A process.",
+  "Get the ALPS template overview and authoring order. After init/load, read get_alps_document_status: new documents start at Section 1; resumed documents continue at the first incomplete section in authoring order. Read the selected section's guide before drafting.",
   {},
   () => ({
     content: [{ type: "text", text: tc.getAlpsOverview() }],

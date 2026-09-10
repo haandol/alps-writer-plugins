@@ -48,6 +48,13 @@ multiple Hills. A state or failure path stays with the Hill whose user-visible
 or operational result it changes unless it is itself an independently
 reviewable vertical capability.
 
+## Plan the visual explanation
+
+Read `references/visualization.md` after fixing the Hills. Identify the reader's
+structural and interaction questions before selecting a diagram. Give each Hill
+`diagramIds`, or a concrete local `diagramOmissionReason` when prose alone is
+sufficient. Carry this same plan through evidence selection and the final HTML.
+
 ## Preserve review boundaries
 
 Hill sequencing is not a user approval or lifecycle gate. Keep the route and

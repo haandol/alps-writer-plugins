@@ -29,14 +29,14 @@ Before writing the report, read
 Use progressive disclosure and a paper-shaped reading order: title, abstract,
 related ADRs and context, core implementation methods and algorithms,
 self-validation methods and results, results and limitations, conclusion and
-future work, and evidence appendix. The body is continuous essay prose. Do not
+future work, optional comprehension check, and evidence appendix. The body is continuous essay prose. Do not
 show structured field labels such as `Claim`, `Worked example`,
 `Counterexample`, `Assessment`, `Responsibility`, `Interactions`, or
 `Outcome`. Do not use verdict stamps, status pills, count chips, task cards, or
 tables in the default body. Keep the structured fields for validation and
 compose them into paragraphs. The evidence appendix keeps mode, scope, contract
 coverage, implementation choices, detailed findings, code, tests, residual
-risks, and the optional comprehension check.
+and risks. The optional comprehension check is a main section immediately after the conclusion.
 Include detailed repair guidance only for `FIX_REQUIRED`, `BLOCK`, or
 when the user asks for it.
 
@@ -60,24 +60,49 @@ The results and limitations section discusses contract gaps, test gaps, excess
 scope, residual risk, and evidence-backed future work. Structured fields and
 coverage rows remain complete in JSON and collapsed evidence.
 
-The Context → Container/Hill → Component → Code tree is the report map. Do not
-create a global Trail map or visualization metadata. A Component may include a
-small Mermaid diagram only when its request, state, failure, or data relationship
-cannot be understood clearly from prose and Code evidence. Add one `Notice:`
-sentence per diagram and keep every node and edge grounded in reviewed evidence.
+Always serialize `relatedAdrComparisons` as an array with zero to two entries.
+Each entry keeps `adr`, `title`, `similarity`, `difference`, `reviewImpact`, and
+`evidence`. Candidates must share the target's architectural question,
+requirement contract, state/failure rule, or durable boundary; keyword,
+technology, file, function, or internal-call similarity is insufficient. The
+human report composes each entry into one short paragraph inside related ADR and
+change context—never a table, dashboard card, dependency, ownership claim, or
+approval item. When the array is empty, provide a non-empty
+`relatedAdrComparisonOmissionReason`.
 
-- Overall change structure: `flowchart`
-- Core request/event flow: `sequenceDiagram`
-- State transitions, if there is state: `stateDiagram-v2`
-- Relationships, if the data model changed: `erDiagram`
-- A separate `flowchart` when the failure, retry, and rollback flow is complex
+Use the already loaded mapping summaries and dependency/Related links to narrow
+candidates. Read at most two candidate bodies, starting with the closest match;
+include the second only when it explains a distinct difference. No useful match
+means an empty list and a concrete omission reason, not another search pass or
+a user question.
 
-Diagrams explain a Component relationship, not the whole report tree. Tie each
-node to confirmed code or ADR evidence and add one `Notice:` sentence naming the
-review point.
-Point clearly in the prose to where a finding occurs and the expected flow after
-the fix. Never guess at an edge you could not confirm in the actual code. Never
-use ASCII or box-drawing diagrams.
+Use `references/visualization.md` for question selection, diagram choice,
+placement, and semantic/visual verification. Prefer sequence diagrams for
+request/response order and component views for responsibilities and boundaries.
+Use a state diagram only when the lifecycle itself is the important question.
+
+Always serialize `diagramRequirements` as an array. Each entry has sequential
+`id` (`V1..Vn`), `question`, `diagramType`, `section`, `reason`, and `evidence`.
+`reason` explains why the chosen view answers the question. Supported types are
+`sequenceDiagram`, `flowchart` (component or branching view), `stateDiagram-v2`,
+and `erDiagram`. `section` is the exact owning Hill heading or `Context`.
+Each report fence has one `%% requirement: Vn` marker and a following `Notice:`
+sentence; briefly explain how to read the diagram before the fence.
+
+Every Hill has `diagramIds`. Each ID refers to a diagram in that Hill or in
+Context. Context diagrams are linked to their assigned Hills in HTML. Every
+diagram is assigned to at least one Hill. If `diagramIds` is empty, that Hill
+must have a non-empty `diagramOmissionReason` explaining why its complete
+relationship and behavior are clear in one or two sentences. Omit this reason
+when diagrams are assigned. No global boolean or global omission can substitute
+for the Hill's assessment. A shared diagram may serve several Hills only when
+it answers their actual visual questions.
+
+The validator and renderer use the same supported grammar. Missing, duplicate,
+unassigned, misplaced, or unsupported diagrams prevent artifact completion.
+Source fallback remains available for inspection but does not count as a
+rendered required diagram. Semantic review checks whether every important
+relationship is explained; HTML inspection checks the actual visual result.
 
 Render findings immediately after the narrative, before detailed evidence.
 Group them as `fix`, `decide`, `verify`, and `note` tasks; preserve the
@@ -121,8 +146,9 @@ coverage fields in JSON, but do not force them into seven visible columns or
 repeat the same detailed evidence outside its Hill.
 Never replace the four-column implementation-choice table with prose.
 
-When comprehension support is selected, end the evidence appendix with a
-generated `Comprehension check`. Keep one to five medium-difficulty,
+When comprehension support is selected, place a generated `Comprehension check`
+immediately after the conclusion and before the evidence appendix, with a heading
+at the same level as the other main sections. Keep one to five medium-difficulty,
 four-option single-answer questions in the structured check. Ask only material
 application questions about the before/after behavior, causal path, ADR
 contract, failure or boundary case, test condition, or excess scope. Do not use
@@ -133,6 +159,7 @@ For each question, keep:
 - `id` — `Q1` through `Q5` in order
 - `question` — the visible application prompt
 - `options` — exactly four `{ "id": "A".."D", "text": "...", "feedback": "..." }` objects
+- `revisit` — boolean; exactly one or two questions are marked for later re-check
 - `correctOptionId` — the one correct option id
 - `explanation` — why the correct option follows from the contract and evidence
 - `evidence` — the ADR, code, or test evidence used to grade it
@@ -144,13 +171,29 @@ State explicitly in `prGuidance`:
 - the PR must not be opened or sent until every question is answered correctly
   without reading the answer criteria.
 
-Do not manually put hidden feedback, the correct option, explanation, or
-evidence in Markdown. The materializer writes only the visible prompts and four
-options. The HTML keeps the whole check collapsed. It may reveal the selected
+Exactly one or two questions have `revisit: true`; when the check contains one
+question, that question is marked. Do not manually put hidden feedback, the
+correct option, explanation, or evidence in Markdown. The materializer writes
+only the visible prompts and four options.
+
+The HTML shows this section and its questions by default. Each question initially
+shows its prompt and a short recall cue. It reveals all four options only
+after an explicit `show choices` action. After one option is selected and before
+self-check, it shows a cue to explain the choice to a teammate in one sentence.
+The cue has no input field and is not graded. The HTML may reveal the selected
 option's feedback, correct explanation, and evidence only after the reader
-selects one option and explicitly clicks self-check. Use neutral feedback only:
-no score, grade, celebration, praise, ability judgment, or gamification. It
-never sets comprehension readiness.
+explicitly clicks self-check. Revisit questions ask the reader to reopen the
+report and retry later without a timer, notification, completion state, or
+persisted progress. Use neutral feedback only: no score, grade, celebration,
+praise, ability judgment, or gamification. It never sets comprehension
+readiness.
+
+Use a white page background for both screen and print. The handout prints the
+main narrative, diagrams, and comprehension questions with all four choices.
+Do not print answers, feedback, the reader's selected option, or interactive
+controls. Keep detailed audit evidence in the HTML. Use print margins, fit
+figures to page width, and avoid splitting a question/choice group that fits on
+one page. Screen answer disclosure remains unchanged.
 
 The HTML is one responsive page with a table of contents and section anchors. It
 renders Markdown lists, inline code, fenced `<pre>` code blocks, and supported
@@ -185,6 +228,10 @@ unless it directly helps resolve a verified finding.
 Serialize the available role artifacts and synthesized result into
 `findings.json`. This abbreviated example shows every field family:
 
+`title` is an optional human-readable headline. When omitted, the renderer uses
+the reviewed document's heading or the localized review label. It does not use
+the file path as the headline; the path remains in the collapsed review details.
+
 ```json
 {
   "language": "en",
@@ -197,12 +244,26 @@ Serialize the available role artifacts and synthesized result into
     "action": "Pass the cancellation signal through the upstream client and rerun the cancellation test.",
     "risk": "Restart recovery remains unverified because no local queue was available."
   },
-  "visualization": {
-    "required": true,
-    "reason": "Checkout cancellation crosses the handler and upstream client and has success and abort branches.",
-    "diagramType": "flowchart",
-    "readingGuide": "Read nodes as request participants or outcomes, arrows as request and cancellation paths, and the abort branch as the route reviewed in H2."
-  },
+  "relatedAdrComparisons": [],
+  "relatedAdrComparisonOmissionReason": "No other ADR shares the reviewed settlement boundary closely enough to reduce reconstruction work.",
+  "diagramRequirements": [
+    {
+      "id": "V1",
+      "question": "Who returns the stored payment result, and in what order?",
+      "diagramType": "sequenceDiagram",
+      "section": "A duplicate request reuses the completed payment",
+      "reason": "The sequence separates a retry from new provider work.",
+      "evidence": "src/checkout/handler.ts and src/checkout/client.ts cancellation path"
+    },
+    {
+      "id": "V2",
+      "question": "Which components own the stored result and new settlement?",
+      "diagramType": "flowchart",
+      "section": "A duplicate request reuses the completed payment",
+      "reason": "A component view identifies ownership that call order alone does not explain.",
+      "evidence": "checkout cancellation test and upstream abort result"
+    }
+  ],
   "reviewHike": {
     "context": {
       "intent": "Payment settlement creates one durable result.",
@@ -217,6 +278,7 @@ Serialize the available role artifacts and synthesized result into
         "sliceType": "user-flow",
         "sliceName": "Duplicate payment settlement",
         "reviewQuestion": "Can the same payment request complete more than once?",
+        "diagramIds": ["V1", "V2"],
         "container": {
           "responsibility": "Reuse one durable settlement for a retry.",
           "interactions": "The request reaches the completion boundary and stored result.",
@@ -294,6 +356,7 @@ Serialize the available role artifacts and synthesized result into
             "feedback": "The contract does not allow unbounded retry."
           }
         ],
+        "revisit": true,
         "correctOptionId": "B",
         "explanation": "Provider success is required before completion is recorded.",
         "evidence": "ADR R2; src/payments/settle.ts:42; provider failure test"
@@ -336,15 +399,23 @@ Serialize the available role artifacts and synthesized result into
 }
 ```
 
-`language`, `reviewMode`, `atAGlance`, `reviewHike`, `contractCoverage`,
+`language`, `reviewMode`, `atAGlance`,
+`diagramRequirements`, `reviewHike`, `contractCoverage`, and
 `implementationChoices` are mandatory
 even for `PASS` with zero findings or zero choices. `atAGlance` contains
 non-empty `impact`, `action`, and `risk`; use `None` only when that axis was
 checked and is empty. When present, `comprehensionCheck.questions` contains one
 to five questions with non-empty `id`, `question`, exactly four `options`, one
-`correctOptionId`, `explanation`, and `evidence`.
+boolean `revisit`, one `correctOptionId`, `explanation`, and `evidence`. Exactly
+one or two questions are marked for revisit; a one-question check marks that
+question.
 `contractCoverage` is non-empty because `D0` always represents the ADR Decision
 even when there is no explicit requirement-contract subsection.
+
+Each `diagramRequirements` entry has a sequential `V1..Vn` id, one review
+question, a supported Mermaid type, an owning section, selection reason, and
+grounded evidence. An empty list is valid only when every Hill has empty
+`diagramIds` and its own concrete `diagramOmissionReason`.
 
 `explanation` is optional. When present it points to a temporary
 `explanation.md` whose structure the validator checks; the final
@@ -363,7 +434,7 @@ Code evidence kinds are `diff` or `excerpt`; a non-empty change scope requires
 at least one `diff`. Across all Hills, every `contractCoverage.contractId` appears
 exactly once. Technical layers, file groups, modules, and review lifecycle
 phases do not define Hill boundaries. `Context` contains
-`<!-- generated review context from findings.json -->`; each Hill contains
+`<!-- generated review context from findings.json -->` and any assigned overall component diagram; each Hill contains
 `<!-- generated container zoom from findings.json -->`,
 `<!-- generated component zoom from findings.json -->`, and
 `<!-- generated hill evidence from findings.json -->` before materialization.
@@ -404,6 +475,13 @@ re-run until both exit 0. In particular, fill `perspective`, `code`, `evidence`,
 `test`, and `testResult` for every finding, and where a test could not be run,
 write `NOT RUN — <reason>` rather than leaving it blank. If HTML rendering fails
 or produces an empty file, the review is also incomplete.
+
+Inspect the materialized Markdown and rendered main narrative, not only the
+author's source, before the final non-empty check and open. Equal structured
+Hill fields are composed once automatically. Remove redundant authored
+paraphrases when they add no information, while preserving exact contracts,
+distinct conditions, examples, code evidence, and independently readable Hills.
+If prose changes, materialize, validate, and render again before delivery.
 
 In both modes, run `adr-impl-review-open.mjs` immediately after the non-empty
 check. The helper attempts the host's default browser exactly once and prints

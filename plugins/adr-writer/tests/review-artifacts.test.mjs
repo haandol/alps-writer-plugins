@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -85,6 +85,7 @@ function validComprehensionCheck() {
             feedback: "It changes the durable result.",
           },
         ],
+        revisit: true,
         correctOptionId: "B",
         explanation: "The idempotency boundary prevents duplicate completion records.",
         evidence: "ADR R1; src/stream.mjs:4; duplicate settlement test",
@@ -114,6 +115,7 @@ function validParserComprehensionCheck() {
           },
           { id: "D", text: "Callers must migrate.", feedback: "No caller migration is allowed." },
         ],
+        revisit: true,
         correctOptionId: "C",
         explanation: "The accepted inputs, validation order, and output remain unchanged.",
         evidence: "ADR R1; src/parser.mjs; parser compatibility test",
@@ -136,6 +138,9 @@ function validReviewHike() {
         title: "A duplicate request cannot create a second settlement",
         sliceType: "user-flow",
         sliceName: "Duplicate settlement request",
+        diagramIds: [],
+        diagramOmissionReason:
+          "This isolated guard has one direct result and is fully explained in two sentences.",
         reviewQuestion: "Can a duplicate request create more than one durable settlement?",
         claim: "A duplicate request reuses one durable settlement.",
         workedExample: "Two requests with one key produce one stored result.",
@@ -164,6 +169,9 @@ function validReviewHike() {
         title: "Provider failure does not cross the completion boundary",
         sliceType: "user-flow",
         sliceName: "Provider failure settlement",
+        diagramIds: [],
+        diagramOmissionReason:
+          "This isolated guard has one direct result and is fully explained in two sentences.",
         reviewQuestion: "Can provider failure appear as a completed settlement?",
         claim: "Provider failure stays outside the completion boundary.",
         workedExample: "A failed provider call leaves the payment pending.",
@@ -206,6 +214,9 @@ function validParserReviewHike() {
         title: "Existing callers see the same parser behavior",
         sliceType: "logical-capability",
         sliceName: "Parser compatibility",
+        diagramIds: [],
+        diagramOmissionReason:
+          "This isolated guard has one direct result and is fully explained in two sentences.",
         reviewQuestion: "Does helper extraction preserve parser compatibility?",
         claim: "Helper extraction preserves caller-visible parser behavior.",
         workedExample: "A supported input returns the same public output.",
@@ -522,6 +533,10 @@ function validFindings(dir) {
     adr,
     verdict: "FIX_REQUIRED",
     atAGlance: { ...FULL_AT_A_GLANCE },
+    relatedAdrComparisons: [],
+    relatedAdrComparisonOmissionReason:
+      "No other ADR shares the settlement boundary closely enough to aid this fixture.",
+    diagramRequirements: [],
     reviewHike: validReviewHike(),
     explanation: path.join(dir, "explanation.md"),
     report: path.join(dir, "implementation-review.md"),
@@ -840,10 +855,6 @@ test("review artifact validator rejects missing core headings and evidence field
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
     writeFileSync(path.join(dir, "implementation-review.md"), "# short report\n");
     const findings = validFindings(dir);
-    findings.visualization = {
-      required: false,
-      reason: "This fixture isolates missing headings and evidence fields.",
-    };
     delete findings.findings[0].evidence;
     delete findings.findings[0].whyItMatters;
     writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
@@ -868,17 +879,297 @@ test("review artifact validator accepts the zoom hierarchy without a global Trai
   });
 });
 
-test("review artifact validator accepts artifacts without visualization metadata", () => {
+test("review artifact validator rejects artifacts without diagram contract metadata", () => {
   withArtifacts((dir) => {
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
     writeFileSync(path.join(dir, "implementation-review.md"), validReport());
     const findings = validFindings(dir);
-    delete findings.visualization;
+    delete findings.diagramRequirements;
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /diagramRequirements must be an array/);
+  });
+});
+
+test("malformed diagram requirements produce actionable validation errors without crashing", () => {
+  for (const requirements of [{}, "V1", [null], [false]]) {
+    withArtifacts((dir) => {
+      const findings = validFindings(dir);
+      findings.diagramRequirements = requirements;
+      writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings));
+      writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+      writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+      const result = validate(dir);
+      assert.equal(result.status, 1, result.stderr);
+      assert.match(result.stderr, /diagramRequirements/);
+      assert.doesNotMatch(result.stderr, /TypeError|at validateReport/);
+    });
+  }
+});
+
+test("unregistered diagram markers cannot bypass the no-diagram contract", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(validFindings(dir)));
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(
+      path.join(dir, "implementation-review.md"),
+      validReport().replace(
+        "## Findings",
+        "```mermaid\nflowchart LR\n%% requirement: V99\nA --> B\n```\nNotice: Unregistered relationship.\n\n## Findings",
+      ),
+    );
+    const result = validate(dir);
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /V99.*not declared/);
+  });
+});
+
+test("diagram requirements must belong to a reviewed Hill rather than an arbitrary section", () => {
+  withArtifacts((dir) => {
+    const findings = validFindings(dir);
+    findings.diagramRequirements = [
+      {
+        id: "V1",
+        question: "What flows through the boundary?",
+        diagramType: "flowchart",
+        section: "Residual risks",
+        reason: "Three participants.",
+        evidence: "Reviewed call path.",
+      },
+    ];
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings));
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(
+      path.join(dir, "implementation-review.md"),
+      validReport().replace(
+        "## Residual risks",
+        "## Residual risks\n```mermaid\nflowchart LR\n%% requirement: V1\nA --> B\n```\nNotice: Boundary.\n",
+      ),
+    );
+    const result = validate(dir);
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /section must name Context or a reviewHike Hill/);
+  });
+});
+
+test("review artifact validator checks related ADR comparison bounds and references", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    const relatedAdr = path.join(dir, "docs/adr/related/0001-related.md");
+    mkdirSync(path.dirname(relatedAdr), { recursive: true });
+    writeFileSync(relatedAdr, "# ADR 0001: related\n");
+    findings.relatedAdrComparisons = [
+      {
+        adr: relatedAdr,
+        title: "Related settlement boundary",
+        similarity: "Both decisions preserve one durable completion boundary.",
+        difference: "The related ADR handles cancellation instead of provider failure.",
+        reviewImpact: "Reuse the completion model but verify the failure transition separately.",
+        evidence: "Both ADR Decision sections and requirement contracts.",
+      },
+    ];
+    delete findings.relatedAdrComparisonOmissionReason;
     writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
 
     const result = validate(dir);
     assert.equal(result.status, 0, result.stderr);
   });
+
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    findings.relatedAdrComparisons = [
+      {
+        adr: findings.adr,
+        title: "Self comparison",
+        similarity: "same",
+        difference: "none",
+        reviewImpact: "none",
+        evidence: "target ADR",
+      },
+    ];
+    delete findings.relatedAdrComparisonOmissionReason;
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /must not reference the target ADR itself/);
+  });
+});
+
+test("related ADR comparison identity rejects directories and aliases of the target", () => {
+  for (const candidate of ["directory", "alias"]) {
+    withArtifacts((dir) => {
+      const findings = validFindings(dir);
+      const alias = path.join(dir, "target-alias.md");
+      symlinkSync(findings.adr, alias);
+      findings.relatedAdrComparisons = [
+        {
+          adr: candidate === "directory" ? dir : alias,
+          title: "Comparison",
+          similarity: "One boundary.",
+          difference: "Another outcome.",
+          reviewImpact: "Check the outcome.",
+          evidence: "Decision.",
+        },
+      ];
+      delete findings.relatedAdrComparisonOmissionReason;
+      writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings));
+      writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+      writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+      const result = validate(dir);
+      assert.equal(result.status, 1, result.stderr);
+      assert.match(
+        result.stderr,
+        candidate === "directory"
+          ? /does not resolve to an existing file/
+          : /must not reference the target ADR itself/,
+      );
+    });
+  }
+});
+
+test("each Hill needs its own visual assignment or omission; a global reason is insufficient", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    findings.diagramOmissionReason = "Everything is simple.";
+    delete findings.reviewHike.hills[1].diagramOmissionReason;
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings));
+    const result = validate(dir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /hills\[1\].diagramOmissionReason is required/);
+  });
+});
+
+test("a sequence can explain request, state outcome, and failure without a forced state diagram", () => {
+  withArtifacts((dir) => {
+    const findings = validFindings(dir);
+    const hill = findings.reviewHike.hills[1];
+    hill.diagramIds = ["V1"];
+    delete hill.diagramOmissionReason;
+    findings.diagramRequirements = [
+      {
+        id: "V1",
+        question: "Who records completion after the provider result?",
+        diagramType: "sequenceDiagram",
+        section: hill.title,
+        reason: "The response order and failure branch explain the pending outcome.",
+        evidence: "Provider result and completion boundary.",
+      },
+    ];
+    const diagram = `\`\`\`mermaid
+%% requirement: V1
+sequenceDiagram
+  Handler->>Provider: settle
+  alt success
+    Provider-->>Handler: result
+    Handler->>Store: complete
+  else failure
+    Provider-->>Handler: error
+    Note over Handler,Store: payment remains pending
+  end
+\`\`\`
+Notice: Only a successful response reaches the completion write.`;
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings));
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(
+      path.join(dir, "implementation-review.md"),
+      validReport().replace("## Findings", `${diagram}\n\n## Findings`),
+    );
+    const result = validate(dir);
+    assert.equal(result.status, 0, result.stderr);
+  });
+});
+
+test("a shared Context component diagram can be assigned to multiple Hills", () => {
+  withArtifacts((dir) => {
+    const findings = validFindings(dir);
+    for (const hill of findings.reviewHike.hills) {
+      hill.diagramIds = ["V1"];
+      delete hill.diagramOmissionReason;
+    }
+    findings.diagramRequirements = [
+      {
+        id: "V1",
+        question: "Which boundary owns provider results and duplicate requests?",
+        diagramType: "flowchart",
+        section: "Context",
+        reason: "The same completion owner connects the two reviewed paths.",
+        evidence: "The two reviewed completion paths.",
+      },
+    ];
+    const diagram = `\`\`\`mermaid
+%% requirement: V1
+flowchart LR
+  Request["Request"] --> Boundary["Completion boundary"]
+  Provider["Provider result"] --> Boundary
+\`\`\`
+Notice: Both paths share the completion owner.`;
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings));
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(
+      path.join(dir, "implementation-review.md"),
+      validReport().replace(
+        `## ${findings.reviewHike.hills[0].title}`,
+        `${diagram}\n\n## ${findings.reviewHike.hills[0].title}`,
+      ),
+    );
+    const result = validate(dir);
+    assert.equal(result.status, 0, result.stderr);
+  });
+});
+
+test("diagram assignment rejects missing, duplicate, unowned, and unrenderable evidence", () => {
+  for (const variant of ["missing", "duplicate", "wrong-owner", "unsupported"]) {
+    withArtifacts((dir) => {
+      const findings = validFindings(dir);
+      const hill = findings.reviewHike.hills[1];
+      hill.diagramIds =
+        variant === "missing" ? ["V99"] : variant === "duplicate" ? ["V1", "V1"] : ["V1"];
+      delete hill.diagramOmissionReason;
+      findings.diagramRequirements = [
+        {
+          id: "V1",
+          question: "What is requested?",
+          diagramType: "sequenceDiagram",
+          section: variant === "wrong-owner" ? findings.reviewHike.hills[0].title : hill.title,
+          reason: "The message order matters.",
+          evidence: "Inspected request.",
+        },
+      ];
+      const code =
+        variant === "unsupported"
+          ? "sequenceDiagram\nA->>B: start\ncritical commit\nB-->>A: result\nend"
+          : "sequenceDiagram\nA->>B: request";
+      writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings));
+      writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+      writeFileSync(
+        path.join(dir, "implementation-review.md"),
+        validReport().replace(
+          "## Findings",
+          `\`\`\`mermaid\n%% requirement: V1\n${code}\n\`\`\`\nNotice: Follow the request.\n\n## Findings`,
+        ),
+      );
+      const result = validate(dir);
+      assert.equal(result.status, 1, `${variant}: ${result.stderr}`);
+      assert.match(
+        result.stderr,
+        {
+          missing: /unknown diagram V99/,
+          duplicate: /diagramIds duplicates V1/,
+          "wrong-owner": /owned by another Hill/,
+          unsupported: /V1 must render/,
+        }[variant],
+      );
+    });
+  }
 });
 
 test("review artifact validator accepts an additional Mermaid inside a Hill", () => {
@@ -887,10 +1178,11 @@ test("review artifact validator accepts an additional Mermaid inside a Hill", ()
     writeFileSync(
       path.join(dir, "implementation-review.md"),
       validReport().replace(
-        "The handler records completion only after provider success.",
-        `The handler records completion only after provider success.
+        "A failed provider call leaves the payment pending.",
+        `A failed provider call leaves the payment pending.
 
 \`\`\`mermaid
+%% requirement: V1
 stateDiagram-v2
   pending --> completed: provider success
   pending --> pending: provider failure
@@ -898,7 +1190,20 @@ stateDiagram-v2
 Notice: The Hill diagram keeps provider failure outside the completed state.`,
       ),
     );
-    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(validFindings(dir), null, 2));
+    const findings = validFindings(dir);
+    findings.diagramRequirements = [
+      {
+        id: "V1",
+        question: "How does provider outcome change settlement state?",
+        diagramType: "stateDiagram-v2",
+        section: "Provider failure does not cross the completion boundary",
+        reason: "The completion boundary is a state transition.",
+        evidence: "Provider success and failure coverage.",
+      },
+    ];
+    findings.reviewHike.hills[1].diagramIds = ["V1"];
+    delete findings.reviewHike.hills[1].diagramOmissionReason;
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
 
     const result = validate(dir);
     assert.equal(result.status, 0, result.stderr);
@@ -910,11 +1215,13 @@ test("review artifact validator accepts multiple Mermaid diagrams inside Hills",
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
     writeFileSync(
       path.join(dir, "implementation-review.md"),
-      validReport().replace(
-        "The completion boundary admits one result and rejects or reuses duplicate work.",
-        `The completion boundary admits one result and rejects or reuses duplicate work.
+      validReport()
+        .replace(
+          "Two requests with one key produce one stored result.",
+          `Two requests with one key produce one stored result.
 
 \`\`\`mermaid
+%% requirement: V1
 sequenceDiagram
   participant API
   participant Provider
@@ -923,9 +1230,60 @@ sequenceDiagram
 \`\`\`
 Notice: The second diagram explains request order separately from the completion branch.
 `,
-      ),
+        )
+        .replace(
+          "A failed provider call leaves the payment pending.",
+          `A failed provider call leaves the payment pending.
+
+\`\`\`mermaid
+%% requirement: V2
+stateDiagram-v2
+  pending --> completed: provider success
+  pending --> pending: provider failure
+\`\`\`
+Notice: The state diagram keeps failure outside the completed state.
+
+\`\`\`mermaid
+%% requirement: V3
+flowchart TD
+  Result{Provider result}
+  Result -->|success| Completed[Record completion]
+  Result -->|failure| Pending[Keep payment pending]
+\`\`\`
+Notice: The branch diagram separates the successful completion path from failure recovery.`,
+        ),
     );
-    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(validFindings(dir), null, 2));
+    const findings = validFindings(dir);
+    findings.diagramRequirements = [
+      {
+        id: "V1",
+        question: "What is the provider request order?",
+        diagramType: "sequenceDiagram",
+        section: "A duplicate request cannot create a second settlement",
+        reason: "The provider request crosses a system boundary.",
+        evidence: "Settlement request and result call path.",
+      },
+      {
+        id: "V2",
+        question: "How does provider outcome change settlement state?",
+        diagramType: "stateDiagram-v2",
+        section: "Provider failure does not cross the completion boundary",
+        reason: "Success and failure preserve different states.",
+        evidence: "Provider outcome coverage.",
+      },
+      {
+        id: "V3",
+        question: "Where do provider success and failure branch?",
+        diagramType: "flowchart",
+        section: "Provider failure does not cross the completion boundary",
+        reason: "The provider result selects completion or pending recovery.",
+        evidence: "Provider success and failure branches.",
+      },
+    ];
+    findings.reviewHike.hills[0].diagramIds = ["V1"];
+    findings.reviewHike.hills[1].diagramIds = ["V2", "V3"];
+    for (const hill of findings.reviewHike.hills) delete hill.diagramOmissionReason;
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
 
     const result = validate(dir);
     assert.equal(result.status, 0, result.stderr);
@@ -1052,10 +1410,6 @@ test("review artifact validator accepts concise standard-mode artifacts without 
     findings.reviewHike = validParserReviewHike();
     findings.verdict = "PASS";
     findings.atAGlance = { ...STANDARD_AT_A_GLANCE };
-    findings.visualization = {
-      required: false,
-      reason: "The one-file parser refactor is clear in two sentences.",
-    };
     findings.comprehensionCheck = validParserComprehensionCheck();
     findings.findings = [];
     findings.implementationChoices = [];
@@ -1100,10 +1454,6 @@ test("review artifact validator accepts PASS without metrics, comprehension, or 
     findings.reviewHike = validParserReviewHike();
     findings.verdict = "PASS";
     findings.atAGlance = { ...STANDARD_AT_A_GLANCE };
-    findings.visualization = {
-      required: false,
-      reason: "The one-file parser refactor is clear in two sentences.",
-    };
     delete findings.metrics;
     delete findings.comprehensionCheck;
     delete findings.explanation;
@@ -1285,6 +1635,7 @@ test("review artifact validator requires one to five hidden-answer comprehension
         text: `${id} option ${index + 1}`,
         feedback: `${id} feedback ${index + 1}`,
       })),
+      revisit: index < 2,
       correctOptionId: "A",
       explanation: `Answer ${index + 1}`,
       evidence: `Evidence ${index + 1}`,
@@ -1324,6 +1675,39 @@ test("review artifact validator requires one to five hidden-answer comprehension
       result.stderr,
       /exposes comprehensionCheck\.questions\[0\]\.options\[0\]\.feedback/,
     );
+  });
+});
+
+test("review artifact validator requires one or two revisit questions", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    delete findings.comprehensionCheck.questions[0].revisit;
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /questions\[0\]\.revisit must be a boolean/);
+    assert.match(result.stderr, /must mark 1 or 2 questions with revisit: true/);
+  });
+
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    const original = findings.comprehensionCheck.questions[0];
+    findings.comprehensionCheck.questions = [1, 2, 3].map((number) => ({
+      ...original,
+      id: `Q${number}`,
+      question: `Core question ${number}?`,
+      revisit: true,
+    }));
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /must mark 1 or 2 questions with revisit: true/);
   });
 });
 

@@ -181,6 +181,82 @@ test("status uses required template coverage instead of content length", () => {
   assert.match(service.getStatus(), /Section 1 \(Overview\): ✅ Written \(7\/7 subsections\)/);
 });
 
+test("empty Full subsections never count as written and clearing content preserves the save API", () => {
+  const target = path.join(temporaryDirectory(), "empty.alps.xml");
+  const service = new DocumentService();
+  service.initDocument("empty", target);
+
+  assert.match(service.saveSection(2, "1", "Purpose", ""), /Saved 2\.1/);
+  assert.match(
+    service.saveSection(2, "2", "Key Performance Indicators (KPIs)", " \n\t"),
+    /Saved 2\.2/,
+  );
+  assert.match(service.getStatus(), /Section 2 .*⬜ Not started/);
+  assert.match(service.readSection(2), /Not yet written/);
+  assert.match(
+    service.exportMarkdown(),
+    /Section 2\. MVP Goals and Key Metrics\n\n\*Not yet written\*/,
+  );
+  service.saveSection(2, "1", "Purpose", "Check the approved hypothesis.");
+  assert.match(service.getStatus(), /Section 2 .*In progress \(1\/2 subsections\)/);
+  service.saveSection(2, "2", "Key Performance Indicators (KPIs)", "The agreed metric.");
+  assert.match(service.getStatus(), /Section 2 .*Written \(2\/2 subsections\)/);
+
+  assert.match(
+    service.saveSection(2, "2", "Key Performance Indicators (KPIs)", "\u00a0\t"),
+    /Saved 2\.2/,
+  );
+  const beforeRead = fs.readFileSync(target, "utf8");
+  const resumed = new DocumentService();
+  assert.match(resumed.loadDocument(target), /In progress \(1\/2 subsections\)/);
+  assert.equal(
+    fs.readFileSync(target, "utf8"),
+    beforeRead,
+    "status reads must not rewrite user content",
+  );
+});
+
+test("empty Lite required and optional subsections remain unwritten", () => {
+  const target = path.join(temporaryDirectory(), "empty.lite.alps.xml");
+  const service = new DocumentService();
+  service.initDocument("empty", target, "lite");
+  service.saveSection(1, "1", "Target User and Core Problem", "");
+  service.saveSection(1, "2", "Desired Business Impact", "  \n ");
+  service.saveSection(3, "1", "Explicit Exclusions", "\t");
+  assert.match(service.getStatus(), /Section 1 .*⬜ Not started/);
+  assert.match(service.getStatus(), /Section 3 .*Optional — not written/);
+  service.saveSection(1, "1", "Target User and Core Problem", "An author needs a clear spec.");
+  assert.match(service.getStatus(), /Section 1 .*In progress \(1\/2 subsections\)/);
+  service.saveSection(1, "2", "Desired Business Impact", "Reduce clarification work.");
+  assert.match(service.getStatus(), /Section 1 .*Written \(2\/2 subsections\)/);
+  service.saveSection(3, "1", "Explicit Exclusions", "No explicit exclusions.");
+  assert.match(service.getStatus(), /Section 3 .*Written \(1 optional subsection\)/);
+  service.saveSection(3, "1", "Explicit Exclusions", "");
+  assert.match(service.getStatus(), /Section 3 .*Optional — not written/);
+  assert.doesNotMatch(service.exportMarkdown(), /## Section 3\. Out of Scope/);
+});
+
+test("dynamic Feature completion counts only entries with a non-empty body", () => {
+  const target = path.join(temporaryDirectory(), "empty-features.alps.xml");
+  const service = new DocumentService();
+  service.initDocument("empty-features", target);
+  service.saveSection(
+    6,
+    "1",
+    "Core Features (Functional Requirements)",
+    "- F1: Login\n- F2: Logout",
+  );
+  service.saveSection(7, "1", "Login", "");
+  service.saveSection(7, "2", "Logout", " \n ");
+  assert.match(service.getStatus(), /Section 7 .*⬜ Not started/);
+  service.saveSection(7, "1", "Login", "The complete login behavior.");
+  assert.match(service.getStatus(), /Section 7 .*In progress \(1\/2 features\)/);
+  service.saveSection(7, "2", "Logout", "The complete logout behavior.");
+  assert.match(service.getStatus(), /Section 7 .*Written \(2\/2 features\)/);
+  service.saveSection(7, "1", "Login", " ");
+  assert.match(service.getStatus(), /Section 7 .*In progress \(1\/2 features\)/);
+});
+
 test("dynamic Section 7 status follows the feature count declared in Section 6.1", () => {
   const dir = temporaryDirectory();
   const target = path.join(dir, "features.alps.xml");

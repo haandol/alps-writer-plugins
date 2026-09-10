@@ -106,6 +106,9 @@ Independently build the **complete implementation scope** for the selected ADR:
    implementation scope. A caller-provided file list is a starting floor, never
    a search limit.
 
+Build the optional related-ADR comparison exactly as
+`references/artifact-contract.md` defines.
+
 Do not infer scope from the ADR category name or the current diff. If any
 contract row or core call path cannot be fully narrowed, record the search
 limit, mark the affected coverage `UNVERIFIED`, and return `INCONCLUSIVE` rather
@@ -127,7 +130,8 @@ Create one review artifact directory and pass its path to every agent that follo
 
 ### 1.1 Build the Review Hiking route
 
-Read `references/review-hiking.md` completely. It owns Context,
+Read `references/review-hiking.md` completely. Then read
+`references/visualization.md` completely. They own Context,
 Container/Hill, Component, Code evidence, contract assignment, test selection,
 ephemeral state, and perspective isolation. Produce `reviewHike.context` and
 `reviewHike.hills` before mode selection. If
@@ -171,17 +175,18 @@ For each question, keep these machine-readable fields:
 - `question` — the visible application prompt
 - `options` — exactly `A` through `D`; each option has visible `text` and hidden,
   neutral `feedback`
+- `revisit` — boolean; mark one or two of the most important questions for a
+  later, non-persistent re-check
 - `correctOptionId` — exactly one of `A`, `B`, `C`, or `D`
 - `explanation` — why the correct option follows from the contract and causal path
 - `evidence` — the ADR, code, or test evidence used to grade it
 
-The visible report initially contains only `id`, `question`, and the four
-options. The standalone HTML may reveal the selected option's feedback, the
-correct answer explanation, and evidence only after the reader selects one
-option and explicitly requests self-check. Use neutral outcomes such as
-`Correct` and `Review this concept`; never add a score, grade, celebration,
-ability judgment, praise, or gamification. This local comparison does not mark
-the PR comprehension-ready.
+Follow `references/artifact-contract.md` for the recall-first interaction.
+Exactly one or two questions use `revisit: true` (the sole question when only
+one exists). Reveal choices only on request, show a non-graded one-sentence
+teach-back cue after selection, and reveal criteria only on self-check. Revisit
+guidance stores no schedule or progress. Never add scores, praise, gamification,
+an answer field, semantic grading, or PR-readiness state.
 
 ## Standard mode
 

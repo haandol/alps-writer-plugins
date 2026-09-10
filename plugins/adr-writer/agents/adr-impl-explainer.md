@@ -21,10 +21,10 @@ use the target ADR's dominant language. Apply it to the subject-specific
 headings and prose while preserving precise technical terms.
 
 The explanation starts with `Context`: intent, preconditions, core contracts,
-and scope/risk. Add `Trail map` when the confirmed scope needs a diagram, then
-use one subject-specific heading per Container/Hill. Within each Hill, explain
-Components and focused Code evidence. Order Hills by importance to the reader,
-not by file or implementation sequence.
+and scope/risk. Use `${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/visualization.md` to select views from the reader's questions, then place
+each question-specific diagram inside the Container/Hill it clarifies. Within
+each Hill, explain Components and focused Code evidence. Order Hills by
+importance to the reader, not by file or implementation sequence.
 
 **Why the side-by-side table matters.** The ADR and the code are the same system at two resolutions — the ADR records the contract ("a chat session is capped at 20 turns — pricing policy"), the code enforces it (the counter that cuts off past 20). Your job is to put those two resolutions next to each other **without judging**, so the necessity and sufficiency reviews and the final report can account for every contract row. A requirement you silently skip is one the review may fail to test.
 
@@ -41,10 +41,12 @@ not by file or implementation sequence.
    the implementation must preserve. Do not list every Driver or contract row.
 2. State the shared intent, preconditions and surrounding context, core
    contracts, and review scope/risk.
-3. Build the preliminary Trail map from confirmed participants, states,
-   boundaries, and important branches. It is a scope aid, not a correctness
-   claim. Omit it only when the whole relationship is clear in one or two
-   sentences.
+3. Identify each Hill's structural and interaction questions. Prefer component
+   views for responsibility and boundaries, and sequence views for request and
+   response order. A state diagram needs a lifecycle-specific question; a state
+   value alone is insufficient. Record a concrete local omission only when the
+   Hill's complete relationship is clear in one or two sentences. A Context
+   diagram may explain shared boundaries but not an unshown detailed flow.
 4. Partition the explanation into Review Hiking Container/Hills. Each Hill is one
    `user-flow`, `logical-capability`, or evidence-grounded `bounded-context`
    with one review question. Never split by technical layer, file, module, or
@@ -90,19 +92,14 @@ Return Markdown with this shape:
 
 <intent, preconditions/context, core contracts, and review scope/risk>
 
-## Trail map
-
-<grounded Mermaid plus one Notice sentence, only when the relationship requires it>
-
 ## <first Hill title>
 
-<Container responsibility/interactions/outcome, Components, focused Code evidence, counterexample, and tests>
+<Container responsibility/interactions/outcome, question-specific grounded Mermaid when required, Components, focused Code evidence, counterexample, and tests>
 
 <one further subject-specific `##` section per remaining Hill>
 
-`Context` must be the first `##` heading. `Trail map` is optional; every other
-heading is a Hill and must match the Review
-Hiking route. Do not use
+`Context` must be the first `##` heading. Every other heading is a Hill and must
+match the Review Hiking route. Do not use
 `Background`, `Intuition`, or `Code walkthrough` as a fixed template. Use
 execution order only when it is the clearest reader path.
 

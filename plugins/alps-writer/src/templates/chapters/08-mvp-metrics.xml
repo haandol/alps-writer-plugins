@@ -3,16 +3,16 @@
 - List the key data points and methods for collecting them to measure the MVP's success.
 - Define success thresholds for each key performance indicator.
 - Non-functional requirements (from Section 6.2) are also validated here or through dedicated release testing.
+- Keep each NFR's value, unit, population, and measurement condition intact. Daily active users and concurrent users are different quantities.
   </description>
   <subsection id="8.1" title="Data Collection Methods">
     <example>
 | Metric | Collection Method | Related Feature/KPI |
 |--------|-------------------|---------------------|
-| Sign-up button clicks | Event tracking (Analytics) | F1 |
-| Post creation count | Database query | F4 |
 | Revisit count within 14 days | User session tracking | KPI |
-| Average response latency | APM monitoring | NF3 |
-| Concurrent-user load test | Load testing (release gate) | NF2 |
+| Authentication and password storage checks | Release verification of protected actions and non-plaintext password storage | NF1 |
+| Daily-user workload | One-day release workload with 1,000 distinct active users; record response latency | NF2, NF3 |
+| Average response latency | Request-to-response timing, using the p95 percentile | NF3 |
     </example>
   </subsection>
   <subsection id="8.2" title="Success Thresholds">
@@ -20,10 +20,10 @@
     <example>
 | KPI | Baseline | Target | Measurement Period |
 |-----|----------|--------|-------------------|
-| Sign-up conversion rate | N/A | ≥ 20% | First 30 days |
 | Revisit rate (14 days) | N/A | ≥ 30% | Ongoing |
-| Average response latency | N/A | &lt; 3 seconds (p95) | Ongoing |
-| Concurrent users sustained | N/A | ≥ 1,000 | Release test |
+| Authentication and password storage (NF1) | N/A | Authentication required; no plaintext passwords | Release verification |
+| Daily active users served (NF2) | N/A | ≥ 1,000 daily active users while meeting NF3 | One-day release workload |
+| Response latency (NF3) | N/A | &lt; 3 seconds (p95) | Ongoing and during the NF2 workload |
     </example>
   </subsection>
 </section>

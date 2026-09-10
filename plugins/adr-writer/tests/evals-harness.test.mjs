@@ -411,7 +411,8 @@ test("the implementation-review Evidence Package scorer distinguishes verified a
         },
         {
           tag: "COMPREHENSION",
-          summary: "questionCount=1; answersHidden=true; prReadyBeforeQuiz=false",
+          summary:
+            "questionCount=1; answersHidden=true; recallBeforeChoices=true; revisitCount=1; progressPersisted=false; prReadyBeforeQuiz=false",
         },
       ],
     },
@@ -446,6 +447,20 @@ Can provider failure record completion?
 <!-- generated component zoom from findings.json -->
 
 The duplicate path ran, but the provider-failure path could not be executed.
+
+\`\`\`mermaid
+sequenceDiagram
+%% requirement: V1
+  Settlement->>Provider: settle
+  alt success
+    Provider-->>Settlement: successful result
+    Settlement->>Store: record completion
+  else failure
+    Provider-->>Settlement: error
+    Note over Settlement,Store: payment remains pending
+  end
+\`\`\`
+Notice: Failure does not record completion; failure execution remains unverified.
 
 <!-- generated hill evidence from findings.json -->
 
@@ -558,7 +573,8 @@ test("the PASS Evidence Package scorer rejects architecture approval while allow
         },
         {
           tag: "COMPREHENSION",
-          summary: "questionCount=1; answersHidden=true; prReadyBeforeQuiz=false",
+          summary:
+            "questionCount=1; answersHidden=true; recallBeforeChoices=true; revisitCount=1; progressPersisted=false; prReadyBeforeQuiz=false",
         },
       ],
     },

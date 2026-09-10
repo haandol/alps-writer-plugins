@@ -106,6 +106,16 @@ Three independent entry flows, driven by `$skill-name` in Codex or `/skill-name`
 
 Lite ALPS reuses Full ALPS's conversation-led authoring behavior but keeps an independent document lifecycle. Neither reads, updates, converts into, or shares completion state with the other.
 
+Completion counts only subsections or Features with non-empty bodies. An empty
+save can still clear content, but the section becomes incomplete; an empty
+optional section is omitted from export. Resume follows the first incomplete
+required section in the profile's authoring order.
+
+Examples illustrate supplied inputs, not product defaults. Their values, units,
+populations, and measurement conditions must remain consistent when carried into
+acceptance criteria or metrics. Delegating a value does not make a protected
+product decision an implementation tuning value.
+
 Run `/adr-sync` when review finds implementation-fact drift, after broad refactors or manual ADR edits, or as a periodic audit; it is not a mandatory deep scan after every small implementation.
 
 See the [Usage guide](./docs/usage.md) for the full cycle, walkthroughs, slash commands, hook behavior, and the mapping file, or the [ADR process overview](./docs/adr-process.md) for the same cycle drawn as diagrams.

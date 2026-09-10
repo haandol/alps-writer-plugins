@@ -6,6 +6,10 @@ export class TemplateController {
     private sectionGuideTool = "get_alps_section_guide",
   ) {}
 
+  /**
+   * Explain how to enter the profile without restarting an already written document.
+   * The caller uses document status and the profile order, so this controller stays stateless.
+   */
   getAlpsOverview(): string {
     return (
       this.service.getOverview() +
@@ -14,8 +18,11 @@ export class TemplateController {
 ---
 ## Next Step
 
-**REQUIRED**: Call \`${this.sectionGuideTool}(1)\` to begin interactive writing.
-Do NOT write any section without going through the guide's Q&A process first.`
+Read \`get_alps_document_status()\` after initializing or loading the document.
+- New document: begin with \`${this.sectionGuideTool}(1)\`.
+- Resume: use the first incomplete required section in this order: ${this.service.profile.authoringOrder.join(" → ")}. Do not restart a completed, unchanged section.
+- Follow the profile's optional-section rules; an unwritten optional section does not force a restart.
+Call \`${this.sectionGuideTool}(N)\` for the selected section. Reuse supplied context, ask only for missing information, and obtain approval before saving.`
     );
   }
 

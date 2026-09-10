@@ -33,7 +33,8 @@ anchors and established technical terms when translation would reduce precision.
 - The verified findings, tests, and normalized Notable implementation choices
 - The Review Hiking Context and route, including each Container/Hill's vertical
   slice, Components, focused Code evidence, and contract ids
-- The Trail map requirement, reason, and selected Mermaid diagram type
+- The question-level diagram requirements and each Hill's diagramIds or local omission reason
+- Up to two evidence-grounded related ADR comparisons, or the omission reason
 
 ## Core report
 
@@ -43,17 +44,28 @@ the whole implementation:
 1. What did the review conclude, and what does that mean for a user or operator?
 2. What must happen next?
 3. What intent, problem, and contract from the ADR explain why this change exists?
-4. What major algorithm or control/data flow produces the important result?
-5. Which low Review Hiking Container/Hills let the reader understand and verify the
+4. Which familiar ADR, if any, supplies a useful mental model, what differs, and
+   how does that difference change this review?
+5. What major algorithm or control/data flow produces the important result?
+6. Which low Review Hiking Container/Hills let the reader understand and verify the
    important user flows, logical capabilities, or bounded contexts one at a
    time?
-6. Which mechanism, concrete example, and background details are needed to understand that flow?
-7. Which ADR decisions and contract rows are accounted for, and what did the implementation do for each one?
-8. Which tests ran and what did they prove?
-9. What risk remains unverified?
-10. When comprehension support is warranted, which one to five important questions would reveal whether the reader can explain the implementation?
+7. Which mechanism, concrete example, and background details are needed to understand that flow?
+8. Which ADR decisions and contract rows are accounted for, and what did the implementation do for each one?
+9. Which tests ran and what did they prove?
+10. What risk remains unverified?
+11. When comprehension support is warranted, which one to five important questions would reveal whether the reader can explain the implementation?
 
 Start with `Abstract`:
+
+Optionally set `findings.json.title` to a short, concrete headline for this
+review. Otherwise the renderer derives the reviewed document's title. File paths
+belong in review details. Keep the headline, summary, topic headings, and
+supporting evidence visually distinct; do not add decorative cards to do this.
+
+Use `## At a glance` as the Markdown artifact anchor; the HTML renderer displays
+it as Abstract in the report language. The materializer and validator use the
+stable anchor, so do not rename it in the Markdown source.
 
 - `Verdict` — the supplied verdict in plain language.
 - `Impact` — the observable user or operational effect.
@@ -94,7 +106,7 @@ Use progressive disclosure. The default report is concise, including in full
 mode and for PASS. Shape the human-facing HTML like a readable paper: abstract,
 related ADRs and context, core implementation methods and algorithms,
 self-validation methods and results, results and limitations, conclusion and
-future work, and evidence appendix. Write continuous essay paragraphs. Never
+future work, optional comprehension check, and evidence appendix. Write continuous essay paragraphs. Never
 render `Claim:`, `Worked example:`, `Counterexample:`, `Assessment:`, structured
 Container labels, verdict stamps, status pills, count chips, task cards, or
 tables in the default body. Keep structured data and detailed findings in the
@@ -103,7 +115,7 @@ collapsed appendix.
 ```markdown
 # ADR implementation review
 
-## Abstract
+## At a glance
 
 <!-- generated from findings.json -->
 
@@ -115,11 +127,9 @@ collapsed appendix.
 
 <!-- generated review context from findings.json -->
 
-## Trail map
-
-<only when visualization is required>
-
 ## <first Hill title>
+
+<the Hill's exact reviewQuestion, once>
 
 <!-- generated container zoom from findings.json -->
 
@@ -148,29 +158,32 @@ collapsed appendix.
 <!-- generated from findings.json -->
 ```
 
-`Trail map` is the grounded visual route built after the complete implementation
-scope was fixed and before the review perspectives ran. When
-`visualization.required` is true, include one or more Mermaid fences whose set
-includes `diagramType`. Start the section with one plain-language `How to read
-it` line using `visualization.readingGuide`. The guide must identify what this
-map's boxes and arrows mean and which route belongs to each relevant Hill; a
-generic Mermaid definition is insufficient. Keep `visualization.reason` in the
-structured artifact only. Put the overall relationship in `Trail map`; put a
-diagram inside a Hill when it explains a distinct algorithm, state, request, or
-failure question. Add one non-empty `Notice:` sentence per diagram. When false,
-omit `Trail map` unless a diagram still materially improves a Hill.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/visualization.md` for diagram selection
+and verification. Record question-level `diagramRequirements`, assign their IDs
+to each Hill's `diagramIds`, and put each diagram beside the prose it clarifies.
+Use `diagramOmissionReason` only for a local Hill whose complete relationship is
+clear in one or two sentences. Keep one `%% requirement: Vn` inside each Mermaid
+fence and one following `Notice:` sentence. Briefly explain how to read it first.
 
-`Context` is fixed and appears before the narrative. It contains only
-`<!-- generated review context from findings.json -->`; the materializer writes
-intent, preconditions and surrounding context, core contracts, and review
-scope/risk.
+`Context` is fixed and appears before the narrative. Its generated context
+marker provides intent, preconditions, contracts, and scope/risk. Add an overall
+component view here when shared responsibilities or boundaries help explain
+several Hills; assign that diagram ID to those Hills. The overall view does not
+replace execution or failure questions it has not answered.
 
 Between `Context` and `Findings`, include exactly the Review Hiking
-Container/Hills plus optional `Trail map`. Each Hill title is the exact
+Container/Hills. Each Hill title is the exact
 `reviewHike.hills[].title` and names the actual user flow, logical capability,
 or evidence-grounded bounded context rather than a technical layer, file,
 module, review phase, or generic container such as `Background`, `Intuition`,
 or `Code walkthrough`.
+
+Write the claim, worked example, counterexample, and assessment once in the
+structured Hill fields. The generated Container block carries them into the
+report. Authored prose adds only the mechanism or connection still needed;
+do not paraphrase the same fields around their generated block. Compare before
+and after using the same verified input when a behavior changed, and state
+preserved behavior directly when the change is a refactor.
 
 - State the Hill's review question, `sliceType`, `sliceName`, and Container
   responsibility/interactions/outcome in `findings.json`.
@@ -202,22 +215,32 @@ or `Code walkthrough`.
 - When selected, `Comprehension check` contains one to five medium-difficulty
   four-option single-answer questions about the most material behavior, causal
   path, ADR contract, boundary/failure case, test condition, or excess scope.
-  Do not ask trivia, use trick wording, or add filler.
+  Mark exactly one or two of the most important questions for a later re-check;
+  a one-question check marks that question. Do not ask trivia, use trick
+  wording, or add filler.
 
 Do not manually copy the hidden quiz data into Markdown. Keep the PR guidance,
-visible questions and options, correct option, neutral option feedback,
-explanation, and ADR/code/test evidence in `findings.json`. The materializer
-writes only the guidance, prompts, and choices. Hidden feedback stays unavailable
-until the reader selects one choice. Never output scores, grades, celebration,
+visible questions and options, revisit marker, correct option, neutral option
+feedback, explanation, and ADR/code/test evidence in `findings.json`. The
+materializer writes only the guidance, prompts, and choices. In HTML, show the
+question and recall cue before options, reveal choices only on request, then
+show a non-graded one-sentence teach-back cue after selection and before
+self-check. Revisit guidance asks the reader to reopen the report later without
+timers, notifications, completion state, or persisted progress. Hidden feedback
+stays unavailable until self-check. Never output scores, grades, celebration,
 praise, ability judgments, or gamification.
+
+The standalone HTML owns progressive disclosure. Use a white background and
+print-ready typography, margins, and figure sizing. Print questions and choices
+without answers, feedback, selected-option marks, or screen controls; keep audit
+detail in the HTML.
 
 The standalone HTML owns progressive disclosure:
 
 - It is one responsive page with a table of contents and section anchors.
-- It shows an Abstract, Introduction, a plain-language
-  `Whole-route map (Trail map)` label, Review Hiking
-  Container/Hills, Components, collapsed Code evidence, and Findings before the
-  remaining evidence.
+- It shows an Abstract, Introduction, Review Hiking Container/Hills,
+  question-specific diagrams, Components, collapsed Code evidence, and Findings
+  before the remaining evidence.
 - Each Hill keeps its assigned `PROVEN` contract cards collapsed and opens its
   exceptional coverage. The actual flow title and aggregate contract status are
   the Hill's primary scan target; Container/Hiking terminology is secondary.
@@ -227,7 +250,11 @@ The standalone HTML owns progressive disclosure:
 - It renders Markdown lists, inline code, fenced `<pre>` code blocks, and supported Mermaid relationships. Unsupported Mermaid syntax keeps an explicit source fallback.
 - A finding includes `contractIds` when it relates to one or more `D0` / `R1..Rn` rows. Link it to the owning Hill's evidence card. Group findings by human action (`fix`, `decide`, `verify`, `note`), never by technical category, and preserve importance order inside each group.
 - Ruling controls appear only for findings that require human judgment: `Decision changed in code`, admitted `Undecided behavior`, material `Unverified risk`, or `Contradiction`.
-- Comprehension questions remain collapsed. The HTML may reveal hidden criteria only after the reader enters an answer and explicitly requests self-check; this never marks the PR comprehension-ready.
+- Comprehension check is a visible main section immediately after the conclusion,
+  before the evidence appendix. Questions are visible; the HTML keeps choices hidden until
+  the reader explicitly reveals them, then may reveal hidden criteria only
+  after one choice is selected and self-check is requested. The recall,
+  teach-back, and revisit cues never mark the PR comprehension-ready.
 - Use the report language for the HTML `lang` and fixed interface labels.
 
 The ADR supplies architectural decisions and contracts. **These are material
@@ -246,21 +273,18 @@ materializer owns the Markdown table.
 
 Draw only relationships confirmed in the actual code. Never use ASCII or box-drawing diagrams.
 
-Use the smallest useful Mermaid selected in `findings.json.visualization`:
+Prefer `sequenceDiagram` for request/response order and a component view using
+`flowchart` for responsibilities, dependencies, and boundaries. Use both if both
+questions matter. Choose `stateDiagram-v2` only when the lifecycle or allowed
+transitions themselves are central and explain why another view is insufficient.
+A failure branch already explained in a sequence does not require a duplicate
+flowchart. Use `erDiagram` when data ownership, relationships, or cardinality
+is the question. See the visualization reference for selection examples, before/after
+consistency, supported syntax, and actual HTML verification.
 
-- `flowchart` for branching, component relationships, retries, rollback, or dependency order
-- `sequenceDiagram` for async or cross-system request flow
-- `stateDiagram-v2` when state transitions are central
-- `erDiagram` when changed data relationships are central
-
-Build the Trail map before the review perspectives use it, then place every
-verified diagram before findings in the section whose prose it clarifies. A
-required Trail map cannot be omitted. A small local
-PASS report may contain no diagram only when `visualization.required` is false
-and the reason states why one or two sentences are sufficient. Ground every
-node and edge in code evidence and add one `Notice:` sentence explaining what
-the reader should verify. Use multiple diagrams when they answer different
-questions; do not impose a one-diagram or one-section limit.
+Every required diagram must render as a real relationship view. A source-only
+fallback is a repair signal, not completed visualization. Keep the prose
+independently reviewable and retain the Mermaid source for inspection.
 
 ## Conditional repair guide
 
@@ -308,6 +332,10 @@ derive the repair guidance from that contract.
 - Delete praise, scene-setting, repeated conclusions, generic advice,
   speculative future work, repeated contrast templates, ornamental labels,
   forced numbered symmetry, filler bridges, and duplicated evidence.
+- Apply this check to the materialized and rendered main narrative too. The
+  shared composer removes identical structured Hill fields, but authored
+  paraphrases can still repeat the same idea. Preserve required contract values
+  and independently readable Hills while removing prose that adds no information.
 - Never invent a narrative, user reaction, project outcome, measurement, or
   causal relationship to make the report read like a story.
 - A PASS report explains why the contract is covered and names residual risk; it does not simulate a repair guide.

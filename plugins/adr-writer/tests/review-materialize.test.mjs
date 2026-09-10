@@ -123,6 +123,56 @@ None.
 `;
 }
 
+test("headings, fences, and generated markers inside code evidence remain literal across rebuilds", () => {
+  withArtifact((dir) => {
+    const hike = reviewHike();
+    const content =
+      "## Findings\n<!-- generated hill evidence from findings.json -->\n```mermaid\nflowchart LR\nA --> B\n```";
+    hike.hills[0].components[0].codeEvidence[0].content = content;
+    const diagnostic = {
+      status: "CLEAR",
+      assessment: "The boundary is accounted for.",
+      evidence: "Local test.",
+    };
+    writeFileSync(path.join(dir, "implementation-review.md"), sourceReport());
+    writeFileSync(
+      path.join(dir, "findings.json"),
+      JSON.stringify({
+        language: "en",
+        verdict: "PASS",
+        atAGlance: { impact: "Stable.", action: "None.", risk: "None." },
+        reviewHike: hike,
+        contractCoverage: [
+          {
+            contractId: "D0",
+            requirement: "Keep the boundary.",
+            status: "PROVEN",
+            implementation: "Preserved.",
+            evidence: "Boundary.",
+            tests: "PASS",
+          },
+        ],
+        implementationChoices: [],
+        reviewDiagnostics: {
+          contractCompleteness: diagnostic,
+          testSufficiency: diagnostic,
+          necessity: diagnostic,
+        },
+      }),
+    );
+    const run = () => spawnSync(process.execPath, [MATERIALIZE, dir], { encoding: "utf8" });
+    const first = run();
+    assert.equal(first.status, 0, first.stderr);
+    const output = readFileSync(path.join(dir, "implementation-review.md"), "utf8");
+    assert.ok(output.includes(content));
+    assert.match(output, /````diff/);
+    assert.match(output, /### D0 · Met/);
+    const second = run();
+    assert.equal(second.status, 0, second.stderr);
+    assert.equal(readFileSync(path.join(dir, "implementation-review.md"), "utf8"), output);
+  });
+});
+
 test("materializer creates the complete Markdown evidence sections from findings JSON", () => {
   withArtifact((dir) => {
     writeFileSync(path.join(dir, "implementation-review.md"), sourceReport());
@@ -136,6 +186,16 @@ test("materializer creates the complete Markdown evidence sections from findings
           action: "None.",
           risk: "None.",
         },
+        relatedAdrComparisons: [
+          {
+            adr: "docs/adr/related/0001.md",
+            title: "Related boundary",
+            similarity: "both preserve one public result.",
+            difference: "the related decision handles cancellation.",
+            reviewImpact: "reuse the result model but verify cancellation separately.",
+            evidence: "both Decision sections",
+          },
+        ],
         reviewHike: reviewHike(),
         contractCoverage: [
           {
@@ -189,6 +249,7 @@ test("materializer creates the complete Markdown evidence sections from findings
                 { id: "C", text: "Change the output", feedback: "That breaks compatibility." },
                 { id: "D", text: "Ignore errors", feedback: "Errors remain part of the contract." },
               ],
+              revisit: true,
               correctOptionId: "B",
               explanation: "The valid request must return the expected result.",
               evidence: "src/example.ts and node --test",
@@ -212,6 +273,10 @@ test("materializer creates the complete Markdown evidence sections from findings
     assert.match(report, /\*\*Tests\.\*\* node --test — PASS/);
     assert.doesNotMatch(report, /\*\*Intent\.\*\*/);
     assert.match(report, /The request reaches a contract boundary\./);
+    assert.match(
+      report,
+      /Compared with \*\*Related boundary\*\* \(`docs\/adr\/related\/0001\.md`\), both preserve one public result\./,
+    );
     assert.doesNotMatch(report, /\*\*Vertical slice\.\*\*/);
     const containerBlock = report.match(
       /<!-- generated container zoom start -->([\s\S]*?)<!-- generated container zoom end -->/,
@@ -276,6 +341,7 @@ test("materializer rejects a report whose generated section anchor is missing", 
                 { id: "C", text: "c", feedback: "c" },
                 { id: "D", text: "d", feedback: "d" },
               ],
+              revisit: true,
               correctOptionId: "A",
               explanation: "because",
               evidence: "evidence",

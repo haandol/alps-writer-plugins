@@ -39,6 +39,13 @@ Easy wording never permits dropping a requirement value, allowed set, state rule
 permission, mandatory field, ordering rule, unit, finding, unverified axis, test
 result, or residual risk.
 
+When a related ADR supplies a genuine analogy, compare at most two. Select by a
+shared architectural question, contract, state/failure rule, or durable
+boundary—not keywords, technologies, files, or functions. Write one short prose
+paragraph per comparison: what is similar, what differs, and how that difference
+changes the implementation or tests to inspect. If no analogy helps, omit the
+paragraph and preserve the structured omission reason.
+
 ## Use plain, exact language
 
 - Name the actor and observable behavior: `The checkout API rejects a second
@@ -61,12 +68,14 @@ required when any trigger applies:
 - a changed data relationship; or
 - a refactor spanning multiple call sites or changing how work moves between them.
 
-Choose the diagram by the review question:
+Choose the diagram by the review question. Prefer a component view using
+`flowchart` for responsibility and dependency questions; state diagrams serve
+lifecycle questions that sequence or component views do not explain:
 
 | Question                                                            | Mermaid           |
 | ------------------------------------------------------------------- | ----------------- |
 | Who calls whom, and in what order?                                  | `sequenceDiagram` |
-| Which states and transitions matter?                                | `stateDiagram-v2` |
+| Which lifecycle transitions are allowed or forbidden?               | `stateDiagram-v2` |
 | Where does the flow branch, fail, retry, or depend on another item? | `flowchart`       |
 | Which changed data relationships matter?                            | `erDiagram`       |
 
@@ -74,16 +83,17 @@ Draw only relationships established by the ADR, code, diff, or executed evidence
 Use short behavior labels instead of implementation trivia. After the diagram,
 write one sentence beginning with `Notice:` that states the review point.
 
-Record the required/omitted decision and its evidence-based reason in the owning
-artifact. When required, the report must include the selected Mermaid type and
-one `Notice:` sentence per diagram; omission is a validation failure. Diagrams
-may appear in `Visual map` or any subject-specific narrative section, and
-multiple diagrams are allowed when they explain different relationships. The prose must remain
-independently reviewable when Mermaid does not render. A local one-file PASS or
-a single-document PASS may omit a diagram only when the entire relationship is
-clear in one or two sentences and the artifact records that reason. Do not add
-several diagrams to satisfy a format quota or repeat the same relationship in
-several diagram types.
+For implementation-review artifacts, apply
+`${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/visualization.md`. Assign question-level
+`diagramRequirements` to each Hill through `diagramIds`, or record that Hill's
+concrete `diagramOmissionReason`. Prefer sequence views for request/response
+order and component views for roles and boundaries. State values alone do not
+justify a state diagram. Check every important relationship and inspect the
+rendered HTML; source fallback is not a completed required visualization.
+
+The prose must remain independently reviewable when Mermaid does not render.
+Other review skills keep their own artifact format; do not create an
+implementation-review JSON package just to use this writing guide.
 
 ## Remove mechanical writing patterns
 
@@ -126,11 +136,17 @@ reason to hide evidence or merge independent obligations.
   field label, or table. The standalone HTML moves Component, Code, coverage,
   detailed findings, scope, metrics, and implementation choices into a collapsed
   evidence appendix while preserving the important contract anchors and action controls.
-  End the evidence appendix with `Comprehension check` containing one to five
-  material four-option single-answer questions. Keep the check collapsed.
-  Reveal neutral option feedback, the correct explanation, and evidence only
-  after one option is selected and self-check is requested. Do not use scores,
-  grades, celebration, praise, ability judgments, or gamification.
+  When comprehension support is warranted, put `Comprehension check` immediately
+  after the conclusion as a visible main section, before the evidence appendix.
+  It contains one to five material four-option single-answer questions; an ordinary
+  local PASS may omit it.
+  Show each question before its choices so the reader can recall an answer,
+  reveal choices only on request, and show a non-graded one-sentence
+  explanation cue after selection. Mark one or two core questions for a later
+  re-check without timers, notifications, or persisted progress. Reveal neutral
+  option feedback, the correct explanation, and evidence only after self-check.
+  Do not use scores, grades, celebration, praise, ability judgments, or
+  gamification.
 
 For the default reading path, write prose before structured evidence. Context
 and each Hill should read like a concise tutorial or senior review comment:
@@ -143,3 +159,7 @@ the reader has the causal model.
 - **Implementation refactor** — visualize before/after work flow only when several
   call sites or processing stages are involved. A local rename or extraction does
   not need one.
+
+For printed handouts, use a white background and readable page margins. Print
+questions with their choices, without answer keys, feedback, selected-option
+marks, or screen controls. Preserve detailed evidence in the HTML report.

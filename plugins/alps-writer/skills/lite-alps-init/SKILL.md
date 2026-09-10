@@ -26,8 +26,8 @@ Lite and Full keep separate document files, state, completion, and export. Never
 Full document while authoring Lite, and never present Lite completion as Full completion or
 implementation readiness.
 
-1. Confirm whether to create a new Lite ALPS document or resume an existing `.lite.alps.xml`
-   document.
+1. Use the user's request to choose a new Lite ALPS document or resume an existing
+   `.lite.alps.xml`; ask only when that choice is unclear.
 2. Call `mcp__alps-writer__init_lite_alps_document` or
    `mcp__alps-writer__load_alps_document`.
 3. Call `mcp__alps-writer__get_lite_alps_overview`.

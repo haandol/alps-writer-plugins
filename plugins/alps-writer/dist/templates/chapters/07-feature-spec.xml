@@ -92,9 +92,9 @@ Values the result must honor:
 
 - A password is at least 10 characters (security policy)
 - 5 consecutive failed sign-in attempts lock the account for 30 minutes (security policy)
-- An unverified account is deleted after 7 days (data-retention policy)
 
-> (How the password is hashed, the auth token format, and the user table's columns are architectural/implementation choices — leave them to the ADR and the code, not this section. Retry counts and cache lifetimes are tuning constants and are likewise absent. But the three values above stay: a developer choosing different ones would break the product.)
+> This example uses the account scope from Section 6: email verification is outside the MVP, so it adds no verification or unverified-account deletion policy. The values above are illustrative supplied requirements, not defaults for another product.
+> How the password is hashed, the auth token format, and the user table's columns remain architectural/implementation choices. The stated password and lockout requirements stay exact in Acceptance Criteria.
       </example>
     </subsection>
     <subsection id="7.x.4" title="Edge Cases">
@@ -126,9 +126,8 @@ Values the result must honor:
       <example>
 - [ ] User can enter email and password in the sign-up form
 - [ ] Form validates email format before submission
-- [ ] Password must be at least 10 characters with one special character
-- [ ] A 6th consecutive failed sign-in locks the account for 30 minutes
-- [ ] An account still unverified after 7 days is deleted
+- [ ] Password must be at least 10 characters
+- [ ] A 5th consecutive failed sign-in locks the account for 30 minutes
 - [ ] Successful sign-up redirects user to main screen
 - [ ] Duplicate email shows appropriate error message
 - [ ] All error states display user-friendly messages

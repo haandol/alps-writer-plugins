@@ -457,8 +457,8 @@ export class DocumentService {
 3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
 4. Get explicit "yes" confirmation before calling save_alps_section()`
       : `1. Call ${profile.sectionGuideTool}(N) before working on any section
-2. Ask 1-2 focused questions at a time - DO NOT auto-generate content
-3. Wait for user response before proceeding
+2. Reuse supplied context. Ask 1-2 focused questions at a time only for missing information. DO NOT auto-generate content that invents missing product decisions
+3. Wait when a question needs an answer; otherwise present the section's approval digest
 4. Get explicit "yes" confirmation before calling save_alps_section()`;
 
     return `⚠️ CONVERSATION MODE REQUIRED:
@@ -553,12 +553,17 @@ ${this.resumeGuidance(inspection.profile)}`;
       return `Subsection ${subId} not found.`;
     }
 
-    const display = this.isNotStarted(content)
+    const display = this.sectionIsUnwritten(content, section)
       ? "*Not yet written*"
       : this.contentToMarkdown(content, section);
     return `## Section ${section}. ${document.profile.sectionTitles[section]}\n\n${display}`;
   }
 
+  /**
+   * Count required entries with an actual body, not merely saved XML tags.
+   * Empty saves still clear content, but cannot make a section complete on resume.
+   * Reading status never rewrites older documents containing empty entries.
+   */
   getStatus(): string {
     const document = this.readWorkingDocument();
     if ("error" in document) return document.error;
@@ -572,10 +577,13 @@ ${this.resumeGuidance(inspection.profile)}`;
     for (const [number, title] of Object.entries(profile.sectionTitles)) {
       const section = Number.parseInt(number, 10);
       const content = sections.get(section) || "";
-      const subsections = this.parseSubsections(content, section);
+      const savedSubsections = this.parseSubsections(content, section);
+      const subsections = new Map(
+        [...savedSubsections].filter(([, subsection]) => subsection.content.trim().length > 0),
+      );
       let status: string;
 
-      if (subsections.size === 0 && this.isNotStarted(content)) {
+      if (subsections.size === 0 && (savedSubsections.size > 0 || this.isNotStarted(content))) {
         status = profile.optionalSections.includes(section)
           ? "⬜ Optional — not written"
           : "⬜ Not started";
@@ -628,6 +636,19 @@ ${this.resumeGuidance(inspection.profile)}`;
       .join("\n\n");
   }
 
+  /**
+   * Keep reads and exports consistent with completion after an empty save.
+   * Meaningful legacy prose is preserved even when it has no structured entries.
+   */
+  private sectionIsUnwritten(content: string, section: number): boolean {
+    if (this.isNotStarted(content)) return true;
+    const subsections = this.parseSubsections(content, section);
+    return (
+      subsections.size > 0 &&
+      [...subsections.values()].every((subsection) => subsection.content.trim().length === 0)
+    );
+  }
+
   exportMarkdown(outputPath?: string): string {
     const document = this.readWorkingDocument();
     if ("error" in document) return document.error;
@@ -639,10 +660,9 @@ ${this.resumeGuidance(inspection.profile)}`;
 
     for (const section of sectionNumbers(profile)) {
       const content = sections.get(section) || "";
-      if (profile.optionalSections.includes(section) && this.isNotStarted(content)) continue;
-      const markdown = this.isNotStarted(content)
-        ? "*Not yet written*"
-        : this.contentToMarkdown(content, section);
+      const unwritten = this.sectionIsUnwritten(content, section);
+      if (profile.optionalSections.includes(section) && unwritten) continue;
+      const markdown = unwritten ? "*Not yet written*" : this.contentToMarkdown(content, section);
       lines.push(
         `## Section ${section}. ${profile.sectionTitles[section]}\n\n${markdown}\n\n---\n`,
       );

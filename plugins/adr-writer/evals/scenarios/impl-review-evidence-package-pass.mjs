@@ -135,7 +135,11 @@ export default {
     return [
       skillText("adr-impl-review"),
       agentText("adr-impl-review-report-writer", {
-        references: ["references/review-report-writing.md", "references/reader-first-writing.md"],
+        references: [
+          "references/review-report-writing.md",
+          "references/reader-first-writing.md",
+          "skills/adr-impl-review/references/visualization.md",
+        ],
       }),
       `\n---\n\n# This run`,
       `Produce the concise human-facing Evidence Package for this completed review.`,
@@ -156,6 +160,7 @@ export default {
       `Hill H2 Container must explain provider-failure responsibility, interactions, and pending outcome. Component C1 must explain the failure branch and include a focused diff Code evidence.`,
       `Put <!-- generated container zoom from findings.json --> and <!-- generated component zoom from findings.json --> once after each Hill question.`,
       `Put <!-- generated hill evidence from findings.json --> once after each Hill Components block.`,
+      `Inside H2 include V1 sequenceDiagram showing the provider request, successful response and failure branch with the pending outcome. A separate state diagram is not needed. Include %% requirement: V1 and a following Notice: sentence. Draw the supplied code path; do not claim an unexecuted path was verified.`,
       `Follow the verified payment retry or provider-failure flow where it helps. Do not default to implementation order.`,
       `Remove repeated contrast templates, ornamental one-off labels, forced numbered symmetry, filler bridges, and duplicate visuals. Do not invent a story.`,
       `Coverage and choices are read-only.`,
@@ -169,7 +174,7 @@ export default {
       `COVERAGE_R2 | status=...; implementation=...; evidence=...; tests=...`,
       `CHOICE | value=...; evidence=...; intentFit=...; impact=...`,
       `HUMAN_REVIEW | verdict=...; decisionRequired=...; noPerRowApproval=true`,
-      `COMPREHENSION | questionCount=...; answersHidden=true; prReadyBeforeQuiz=false`,
+      `COMPREHENSION | questionCount=...; answersHidden=true; recallBeforeChoices=true; revisitCount=...; progressPersisted=false; prReadyBeforeQuiz=false`,
       CASE,
       TAIL_SPEC,
     ].join("\n");
@@ -194,10 +199,19 @@ export default {
         action: "None.",
         risk: "No unverified core risk remains.",
       },
-      visualization: {
-        required: false,
-        reason: "The supplied fixture explains two local settlement paths in two short sections.",
-      },
+      relatedAdrComparisons: [],
+      relatedAdrComparisonOmissionReason:
+        "No other fixture ADR shares the settlement boundary closely enough to aid comparison.",
+      diagramRequirements: [
+        ["sequenceDiagram", "How does the settlement request reach the provider?"],
+      ].map(([diagramType, question], index) => ({
+        id: `V${index + 1}`,
+        diagramType,
+        question,
+        section: "Provider failure leaves the payment pending",
+        reason: "The sequence explains the request order and failure outcome in one view.",
+        evidence: "The scenario's settlement decision and supplied provider-failure code path.",
+      })),
       reviewHike: {
         context: {
           intent: "Payment settlement preserves one durable result.",
@@ -212,6 +226,9 @@ export default {
             sliceType: "user-flow",
             sliceName: "Duplicate payment settlement",
             reviewQuestion: "Can a retry create more than one completion?",
+            diagramIds: [],
+            diagramOmissionReason:
+              "This isolated duplicate guard returns one existing result, fully explained in two sentences.",
             claim: "A retry reuses one durable completion.",
             workedExample: "Two requests with one key produce one stored result.",
             counterexample: "A second completion for the same key violates idempotency.",
@@ -247,6 +264,7 @@ export default {
             sliceType: "user-flow",
             sliceName: "Provider failure settlement",
             reviewQuestion: "Can provider failure record completion?",
+            diagramIds: ["V1"],
             claim: "Provider failure stays outside the completion boundary.",
             workedExample: "A failed provider call leaves the payment pending.",
             counterexample: "Recording completion after failure violates the contract.",
@@ -338,6 +356,7 @@ export default {
                 feedback: "The provider result gates completion.",
               },
             ],
+            revisit: true,
             correctOptionId: "B",
             explanation: QUIZ_ANSWER,
             evidence: QUIZ_EVIDENCE,
@@ -432,6 +451,9 @@ export default {
         pass:
           /questionCount\s*=\s*[1-5]\b/i.test(comprehension) &&
           /answersHidden\s*=\s*true/i.test(comprehension) &&
+          /recallBeforeChoices\s*=\s*true/i.test(comprehension) &&
+          /revisitCount\s*=\s*[12]\b/i.test(comprehension) &&
+          /progressPersisted\s*=\s*false/i.test(comprehension) &&
           /prReadyBeforeQuiz\s*=\s*false/i.test(comprehension) &&
           materializedVisible.includes("## Context") &&
           materializedVisible.indexOf("## Context") < materializedVisible.indexOf("## Findings") &&

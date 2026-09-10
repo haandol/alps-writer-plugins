@@ -2,6 +2,13 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-09-09 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 흰 배경의 출력용 레이아웃을 채택하고 이해도 확인을 결론 바로 아래의 본문 절로 올렸다. 화면의 선택지 공개 순서는 유지하며 핸드아웃에는 질문과 선택지만 제공하고 정답·피드백·기존 선택과 조작 UI는 제외한다.
+
+- **2026-09-09 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 종류별 다이어그램 강제를 독자의 질문과 Hill별 시각화 배정으로 바꿨다. 요청·응답은 시퀀스도, 역할·의존·경계는 구성도를 우선하고 상태도는 수명주기 자체가 핵심일 때 선택하며 실제 HTML 렌더링과 미설명 관계를 검증한다.
+
+- **2026-09-09 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 구현 리뷰는 동일·인접한 결정 질문·계약·상태·실패·지속 경계를 공유하는 유사 ADR을 최대 2개까지 비교한다. 유사점·차이점·검토 영향을 관련 맥락의 에세이로 설명하고 근거 있는 대상이 없으면 생략 이유를 남긴다.
+- **2026-09-09 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 객관식 자가점검은 질문만 먼저 보여준 뒤 사용자가 선택지를 펼치게 하고, 선택 후 근거 공개 전 입력·채점 없는 설명 유도를 제공한다. 핵심 질문 1~2개는 후속 재점검 대상으로 표시하되 시간·알림·진행 상태를 관리하지 않는다.
+- **2026-09-09 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 선택적 단일 visualization 계약을 질문별 `diagramRequirements` 배열로 교체했다. 비동기·상태·실패·데이터 트리거는 각각 독립 다이어그램을 요구하고 validator가 section별 Mermaid 종류와 Notice를 대조하며, standalone renderer는 sequence branch와 participant·state 의미를 보존하고 의미 기반 테스트로 검증한다.
 - **2026-09-09 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 사람용 기본 화면에서 verdict stamp, 상태 pill, 집계 chip, 작업 카드, 표와 `주장·사례·반례·평가` 라벨을 제거했다. 본문은 초록, 관련 ADR과 맥락, 핵심 구현·알고리즘, 자체 검증 결과, 결과 해석·한계, 결론·향후 보완을 잇는 논문형 에세이로 작성하고 구조화된 감사 자료는 근거 부록에만 유지한다.
 - **2026-09-09 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 사람용 Evidence Package를 논문형 읽기 흐름, 학습 지도, 정상·반례 사례와 주장→근거→평가 구조로 바꾸고 계약 누락·테스트 공백·과다 변경을 별도 진단한다. 이해도 확인은 중간 난이도 4지선다 단일정답형 최대 5개와 칭찬·점수 없는 중립적 자가점검 피드백만 제공한다.
 - **2026-09-07 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — Context → Container/Hill → Component → Code 트리 자체가 보고서 탐색 경로를 제공하므로 전역 Trail map과 visualization metadata를 제거했다. 목차는 Component와 접힌 Code evidence까지 계층적으로 연결하고, 다이어그램은 필요한 Component 내부에서만 선택적으로 사용한다.

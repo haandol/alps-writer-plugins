@@ -16,7 +16,7 @@ Start authoring an ALPS (PRD).
 > chain-of-thought or persist hidden state that would make the document unusable
 > after this plugin is removed.
 
-1. Confirm with the user whether to create a new document or continue an existing `.alps.xml`.
+1. Use the user's request to choose a new document or an existing `.alps.xml`; ask only when that choice is unclear.
 2. Call `mcp__alps-writer__init_alps_document` or `mcp__alps-writer__load_alps_document`.
 3. Call `mcp__alps-writer__get_alps_overview` to fetch the authoring guide for all nine sections.
 4. Select the confirmation mode:

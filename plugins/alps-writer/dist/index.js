@@ -31223,14 +31223,21 @@ var TemplateController = class {
   }
   service;
   sectionGuideTool;
+  /**
+   * Explain how to enter the profile without restarting an already written document.
+   * The caller uses document status and the profile order, so this controller stays stateless.
+   */
   getAlpsOverview() {
     return this.service.getOverview() + `
 
 ---
 ## Next Step
 
-**REQUIRED**: Call \`${this.sectionGuideTool}(1)\` to begin interactive writing.
-Do NOT write any section without going through the guide's Q&A process first.`;
+Read \`get_alps_document_status()\` after initializing or loading the document.
+- New document: begin with \`${this.sectionGuideTool}(1)\`.
+- Resume: use the first incomplete required section in this order: ${this.service.profile.authoringOrder.join(" \u2192 ")}. Do not restart a completed, unchanged section.
+- Follow the profile's optional-section rules; an unwritten optional section does not force a restart.
+Call \`${this.sectionGuideTool}(N)\` for the selected section. Reuse supplied context, ask only for missing information, and obtain approval before saving.`;
   }
   listAlpsSections() {
     return this.service.listSections();
@@ -31661,8 +31668,8 @@ ${content}
 2. Follow the guide: ask only for missing user-owned or protected context, but propose Sections 2 and 4 before asking the user to design them
 3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
 4. Get explicit "yes" confirmation before calling save_alps_section()` : `1. Call ${profile.sectionGuideTool}(N) before working on any section
-2. Ask 1-2 focused questions at a time - DO NOT auto-generate content
-3. Wait for user response before proceeding
+2. Reuse supplied context. Ask 1-2 focused questions at a time only for missing information. DO NOT auto-generate content that invents missing product decisions
+3. Wait when a question needs an answer; otherwise present the section's approval digest
 4. Get explicit "yes" confirmation before calling save_alps_section()`;
     return `\u26A0\uFE0F CONVERSATION MODE REQUIRED:
 ${steps}
@@ -31743,11 +31750,16 @@ ${this.resumeGuidance(inspection.profile)}`;
 ${subsection.content}`;
       return `Subsection ${subId} not found.`;
     }
-    const display = this.isNotStarted(content) ? "*Not yet written*" : this.contentToMarkdown(content, section);
+    const display = this.sectionIsUnwritten(content, section) ? "*Not yet written*" : this.contentToMarkdown(content, section);
     return `## Section ${section}. ${document.profile.sectionTitles[section]}
 
 ${display}`;
   }
+  /**
+   * Count required entries with an actual body, not merely saved XML tags.
+   * Empty saves still clear content, but cannot make a section complete on resume.
+   * Reading status never rewrites older documents containing empty entries.
+   */
   getStatus() {
     const document = this.readWorkingDocument();
     if ("error" in document) return document.error;
@@ -31759,9 +31771,12 @@ ${display}`;
     for (const [number4, title] of Object.entries(profile.sectionTitles)) {
       const section = Number.parseInt(number4, 10);
       const content = sections.get(section) || "";
-      const subsections = this.parseSubsections(content, section);
+      const savedSubsections = this.parseSubsections(content, section);
+      const subsections = new Map(
+        [...savedSubsections].filter(([, subsection]) => subsection.content.trim().length > 0)
+      );
       let status;
-      if (subsections.size === 0 && this.isNotStarted(content)) {
+      if (subsections.size === 0 && (savedSubsections.size > 0 || this.isNotStarted(content))) {
         status = profile.optionalSections.includes(section) ? "\u2B1C Optional \u2014 not written" : "\u2B1C Not started";
       } else if (section === profile.dynamicSection?.section) {
         const expectedItems = this.countFeatureIds(sections, profile);
@@ -31803,6 +31818,15 @@ ${display}`;
 
 ${data.content}`).join("\n\n");
   }
+  /**
+   * Keep reads and exports consistent with completion after an empty save.
+   * Meaningful legacy prose is preserved even when it has no structured entries.
+   */
+  sectionIsUnwritten(content, section) {
+    if (this.isNotStarted(content)) return true;
+    const subsections = this.parseSubsections(content, section);
+    return subsections.size > 0 && [...subsections.values()].every((subsection) => subsection.content.trim().length === 0);
+  }
   exportMarkdown(outputPath) {
     const document = this.readWorkingDocument();
     if ("error" in document) return document.error;
@@ -31813,8 +31837,9 @@ ${data.content}`).join("\n\n");
 `];
     for (const section of sectionNumbers(profile)) {
       const content = sections.get(section) || "";
-      if (profile.optionalSections.includes(section) && this.isNotStarted(content)) continue;
-      const markdown = this.isNotStarted(content) ? "*Not yet written*" : this.contentToMarkdown(content, section);
+      const unwritten = this.sectionIsUnwritten(content, section);
+      if (profile.optionalSections.includes(section) && unwritten) continue;
+      const markdown = unwritten ? "*Not yet written*" : this.contentToMarkdown(content, section);
       lines.push(
         `## Section ${section}. ${profile.sectionTitles[section]}
 
@@ -31941,7 +31966,7 @@ var liteTc = new TemplateController(
 var dc = new DocumentController(new DocumentService());
 server.tool(
   "get_alps_overview",
-  "Get the ALPS template overview with all section descriptions. IMPORTANT: After calling this, you MUST call get_alps_section_guide(1) to start the interactive Q&A process.",
+  "Get the ALPS template overview and authoring order. After init/load, read get_alps_document_status: new documents start at Section 1; resumed documents continue at the first incomplete section in authoring order. Read the selected section's guide before drafting.",
   {},
   () => ({
     content: [{ type: "text", text: tc.getAlpsOverview() }]

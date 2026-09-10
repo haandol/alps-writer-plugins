@@ -116,7 +116,7 @@
         {
           "path": "docs/adr/adr-cycle/implementation-review/0001-validated-low-risk-refactoring.md",
           "status": "Accepted (2026-09-09)",
-          "summary": "구현 리뷰는 대시보드 요소 없이 관련 ADR·핵심 구현·자체 검증·한계·향후 보완을 잇는 논문형 에세이로 읽히며 구조화된 감사 자료와 객관식 자가점검은 근거 부록에만 둔다"
+          "summary": "구현 리뷰는 위험에 비례한 계약·증거 검증과 저위험 자동 보완을 수행하며, 질문 중심 시각화·결론 뒤 이해도 확인·인쇄 가능한 흰 배경 HTML로 변경을 설명한다"
         }
       ],
       "dependsOn": []

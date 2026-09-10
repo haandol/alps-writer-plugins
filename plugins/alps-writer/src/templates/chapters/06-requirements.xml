@@ -29,7 +29,7 @@
 | ID | Requirement (measurable) | Scope | Priority |
 |----|--------------------------|-------|----------|
 | NF1 | Authentication required; passwords stored hashed (no plaintext). Email verification out of MVP scope. | F1, F2 | Must-Have |
-| NF2 | Sustain 1,000 daily active users without degradation | Global | Should-Have |
+| NF2 | Serve 1,000 daily active users while meeting the NF3 response-time requirement | Global | Should-Have |
 | NF3 | API responses return in under 3 seconds (p95) | Global | Must-Have |
     </example>
   </subsection>

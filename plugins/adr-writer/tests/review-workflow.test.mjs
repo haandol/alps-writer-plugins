@@ -11,6 +11,15 @@ function read(relativePath) {
   return readFileSync(path.join(ROOT, relativePath), "utf8");
 }
 
+test("the report-writer skeleton uses the artifact anchor accepted by the materializer", () => {
+  const writer = read("agents/adr-impl-review-report-writer.md");
+  const skeleton = writer.match(/```markdown\n([^]*?)```/)?.[1];
+  assert.ok(skeleton, "report writer provides its Markdown skeleton");
+  assert.match(skeleton, /^## At a glance$/m);
+  assert.doesNotMatch(skeleton, /^## Abstract$/m);
+  assert.match(skeleton, /reviewQuestion/);
+});
+
 test("adr-impl-review preserves role boundaries without fixing the agent topology", () => {
   const skill = read("skills/adr-impl-review/SKILL.md");
   const artifactContract = read("skills/adr-impl-review/references/artifact-contract.md");
@@ -115,7 +124,7 @@ test("implementation review leads with Context and a reader-priority narrative",
     assert.match(source, /Comprehension\s+check/);
   }
 
-  assert.match(explainer, /subject-specific heading/i);
+  assert.match(explainer, /subject-specific(?:\s+`##`)?\s+(?:heading|section)/i);
   assert.match(reportWriter, /Between `Context` and `Findings`/);
   assert.match(reportWriter, /causal explanation before the generated evidence/i);
   assert.match(artifactContract, /human-facing order is prose first, evidence second/i);
@@ -139,9 +148,14 @@ test("implementation review leads with Context and a reader-priority narrative",
     reviewContract,
     /one\s+to five medium-difficulty[\s\S]{0,80}four-option[\s\S]{0,40}single-answer questions/i,
   );
+  assert.match(reviewContract, /reveal criteria only on self-check/i);
+  assert.match(reviewContract, /prompt and a short recall cue/i);
+  assert.match(reviewContract, /reveals? all four options only\s+after an explicit/i);
+  assert.match(reviewContract, /one or two questions have `revisit: true`/i);
+  assert.match(reviewContract, /no input field and is not graded/i);
   assert.match(
     reviewContract,
-    /may reveal the selected[\s\S]{0,80}feedback[\s\S]{0,80}only after the reader selects one/i,
+    /without a timer, notification, completion state, or\s+persisted progress/i,
   );
   assert.match(skill, /`PASS` never implies comprehension readiness/);
   assert.match(skill, /Do not send the PR until the\s+check passes/);
@@ -157,6 +171,7 @@ test("implementation review leads with Context and a reader-priority narrative",
     /Never include a comprehension question, grading criterion, evidence, or answer\s+request in the ordinary main-session completion response/i,
   );
   assert.match(validator, /must contain 1 to 5 questions/);
+  assert.match(validator, /must mark 1 or 2 questions with revisit: true/);
   assert.match(validator, /exposes comprehensionCheck/);
   assert.match(validator, /Container\/Hill heading/);
 });
@@ -724,7 +739,11 @@ test("repair guidance is conditional and Mermaid may appear across narrative sec
   assert.match(writer, /erDiagram/);
   assert.match(writer, /Never use ASCII or box-drawing diagrams/);
   assert.match(writer, /Draw only relationships confirmed in the actual code/);
-  assert.match(writer, /one-diagram or one-section limit/);
+  assert.match(
+    writer,
+    /A failure branch already explained in a sequence does not require a duplicate/,
+  );
+  assert.match(writer, /%% requirement: Vn/);
   assert.match(writer, /Hill/);
   assert.doesNotMatch(writer, /Include at least:/);
   assert.match(writer, /Files and symbols to change/);
@@ -772,7 +791,8 @@ test("human-facing review reports use one junior-readable visual writing guide",
   assert.match(guide, /generic best-practice advice/i);
   assert.match(
     guide,
-    /The prose must remain\s+independently reviewable when Mermaid does not render/i,
+    /The prose must remain\s+independently reviewable when\s+Mermaid does not render/i,
   );
-  assert.match(guide, /local one-file PASS or\s+a single-document PASS may omit a diagram/i);
+  assert.match(guide, /diagramOmissionReason/);
+  assert.match(guide, /each Hill through `diagramIds`|to each Hill through `diagramIds`/i);
 });

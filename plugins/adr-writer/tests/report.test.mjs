@@ -16,6 +16,87 @@ function render(data) {
   });
 }
 
+test("the page leads with the document title and summary while paths stay in review details", () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "adr-review-title-"));
+  try {
+    const adr = path.join(dir, "0001-example.md");
+    writeFileSync(adr, "```md\n# Example inside code\n```\n# ADR 0001: 읽기 쉬운 구현 검토\n");
+    const result = render({
+      adr,
+      verdict: "PASS",
+      language: "ko",
+      atAGlance: {
+        impact: "동작을 확인했다.",
+        action: "다음 변경을 진행한다.",
+        risk: "남은 한계가 없다.",
+      },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /<h1 class="doc__title">읽기 쉬운 구현 검토<\/h1>/);
+    assert.doesNotMatch(result.stdout, /<h1[^>]*>Example inside code/);
+    const details = result.stdout.match(/<details class="review-meta">([^]*?)<\/details>/)?.[1];
+    assert.ok(details.includes(adr));
+    assert.ok(
+      result.stdout.indexOf('<h1 class="doc__title">') < result.stdout.indexOf('id="overview"'),
+    );
+    assert.ok(result.stdout.indexOf('id="overview"') < result.stdout.indexOf('<nav class="toc"'));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("an authored headline is escaped and the exported design needs no external stylesheet", () => {
+  const result = render({
+    adr: "missing.md",
+    title: '<img src=x onerror="alert(1)">',
+    verdict: "PASS",
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /<h1 class="doc__title">&lt;img/);
+  assert.doesNotMatch(result.stdout, /<img src=x/);
+  assert.match(result.stdout, /<style>[^]*--paper:/);
+  assert.doesNotMatch(result.stdout, /<link[^>]*rel=["']stylesheet/);
+});
+
+test("comprehension is a visible main section directly after the conclusion and before evidence", () => {
+  const result = render({
+    adr: "example.md",
+    language: "ko",
+    verdict: "PASS",
+    contractCoverage: [{ contractId: "D0", requirement: "Keep the result.", status: "PROVEN" }],
+    comprehensionCheck: {
+      prGuidance: "코드 판정과 이해도 확인은 별개입니다.",
+      questions: [
+        {
+          id: "Q1",
+          question: "어떤 결과가 계약을 지키나요?",
+          revisit: true,
+          options: ["A", "B", "C", "D"].map((id) => ({
+            id,
+            text: `선택 ${id}`,
+            feedback: `근거 ${id}`,
+          })),
+          correctOptionId: "B",
+          explanation: "정답의 숨긴 근거.",
+          evidence: "숨긴 테스트 근거.",
+        },
+      ],
+    },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(
+    result.stdout,
+    /<section class="paper-section" id="comprehension">\s*<h2 class="section-title">이해도 확인<\/h2>/,
+  );
+  assert.doesNotMatch(result.stdout, /<details[^>]*id="comprehension"/);
+  const conclusion = result.stdout.indexOf('<section id="conclusion">');
+  const quiz = result.stdout.indexOf('id="comprehension"');
+  const evidence = result.stdout.indexOf('id="evidence"');
+  assert.ok(conclusion < quiz && quiz < evidence);
+  assert.match(result.stdout, /class="quiz__options"[^>]*hidden/);
+  assert.doesNotMatch(result.stdout, /정답의 숨긴 근거\./);
+});
+
 test("file rendering rejects a PASS report with no junior-readable narrative", () => {
   const dir = mkdtempSync(path.join(os.tmpdir(), "adr-review-report-narrative-"));
   try {
@@ -91,6 +172,7 @@ test("standard reviews render the same standalone HTML with separate implementat
               feedback: "Callers must remain compatible.",
             },
           ],
+          revisit: true,
           correctOptionId: "B",
           explanation: "Accepted inputs and outputs remain stable.",
           evidence: "parser compatibility tests",
@@ -122,6 +204,48 @@ test("review notes appear as prose in the limitations section", () => {
   assert.match(result.stdout, /검토 범위에서 발견된 제한 사항입니다/);
   assert.match(result.stdout, /결과 해석, 한계와 향후 보완/);
   assert.doesNotMatch(result.stdout, /class="section-disclosure__body notes"/);
+});
+
+test("related ADR comparisons render as context prose instead of a table or dashboard", () => {
+  const result = render({
+    language: "ko",
+    adr: "docs/adr/review/0001.md",
+    verdict: "PASS",
+    findings: [],
+    contractCoverage: [],
+    implementationChoices: [],
+    reviewHike: {
+      context: {
+        intent: "새 검토 흐름을 이해한다.",
+        preconditions: "기존 결정 표현 ADR이 존재한다.",
+        contracts: "비교는 ADR 해상도만 사용한다.",
+        scopeAndRisk: "잘못된 유사성은 제외한다.",
+      },
+      hills: [],
+    },
+    relatedAdrComparisons: [
+      {
+        adr: "docs/adr/authoring/0001.md",
+        title: "결정 표현",
+        similarity: "두 결정 모두 독자의 재구성 비용을 줄인다.",
+        difference: "기존 ADR은 문서 변경을, 이번 ADR은 구현 검토를 다룬다.",
+        reviewImpact: "표현 원칙은 재사용하되 검증 증거는 별도로 확인한다.",
+        evidence: "두 ADR의 Decision과 requirement contract",
+      },
+    ],
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /class="adr-comparison"/);
+  assert.match(result.stdout, /결정 표현/);
+  assert.match(result.stdout, /두 결정 모두 독자의 재구성 비용을 줄인다/);
+  assert.match(result.stdout, /와 비교하면/);
+  assert.match(result.stdout, /반면/);
+  assert.match(result.stdout, /따라서/);
+  assert.match(result.stdout, /검증 증거는 별도로 확인한다/);
+  assert.doesNotMatch(result.stdout, /provides the closest comparison|However,|Therefore,/);
+  assert.doesNotMatch(result.stdout, /<table[^>]*class="adr-comparison/);
+  assert.doesNotMatch(result.stdout, /adr-comparison-card/);
 });
 
 test("arbitrary finding IDs are not interpolated into DOM selectors", () => {
@@ -327,6 +451,7 @@ test("comprehension questions render without exposing grading criteria", () => {
             { id: "C", text: "SECRET_OPTION_C", feedback: "SECRET_FEEDBACK_C" },
             { id: "D", text: "SECRET_OPTION_D", feedback: "SECRET_FEEDBACK_D" },
           ],
+          revisit: true,
           correctOptionId: "B",
           explanation: "SECRET_ANSWER_EXPLANATION",
           evidence: "SECRET_GRADING_EVIDENCE",
@@ -340,11 +465,22 @@ test("comprehension questions render without exposing grading criteria", () => {
   assert.match(result.stdout, /Q1/);
   assert.match(result.stdout, /Why does provider failure leave the payment pending/);
   assert.match(result.stdout, /Do not open or send the PR/);
+  assert.match(result.stdout, /Recall your answer before viewing the choices/);
+  assert.match(result.stdout, /class="quiz__reveal"[^>]*>Show choices/);
+  assert.match(result.stdout, /class="quiz__options"[^>]*hidden/);
   assert.match(result.stdout, /class="quiz__option"/);
   assert.match(result.stdout, /type="radio"/);
-  assert.match(result.stdout, /class="quiz__check"/);
+  assert.match(result.stdout, /class="quiz__teach-back"[^>]*hidden/);
+  assert.match(result.stdout, /explain your choice to a teammate in one sentence/);
+  assert.match(result.stdout, /class="quiz__check"[^>]*hidden/);
+  assert.match(result.stdout, /options\.hidden = false/);
+  assert.match(result.stdout, /teachBack\.hidden = false/);
+  assert.match(result.stdout, /button\.hidden = true/);
+  assert.match(result.stdout, /revisit later/);
+  assert.match(result.stdout, /No schedule or progress is stored/);
   assert.match(result.stdout, /Correct/);
   assert.match(result.stdout, /Review this concept/);
+  assert.doesNotMatch(result.stdout, /localStorage|sessionStorage|setTimeout\(/);
   assert.doesNotMatch(result.stdout, /Congratulations|Great job|Well done|10 points/);
   assert.doesNotMatch(result.stdout, /SECRET_ANSWER_EXPLANATION/);
   assert.doesNotMatch(result.stdout, /SECRET_FEEDBACK_A/);
@@ -425,6 +561,41 @@ const id = 42;
   assert.doesNotMatch(result.stdout, /```mermaid/);
 });
 
+test("sequence diagrams preserve participant names and alt branches", () => {
+  const result = render({
+    language: "en",
+    adr: "docs/adr/diarychat/0001.md",
+    verdict: "FIX_REQUIRED",
+    findings: [],
+    contractCoverage: [],
+    implementationChoices: [],
+    narrativeSections: [
+      {
+        title: "Async image generation",
+        body: `\`\`\`mermaid
+sequenceDiagram
+  participant OpenAI
+  participant Worker
+  alt image success
+    OpenAI-->>Worker: JPEG
+  else blocked or failed
+    OpenAI-->>Worker: error
+  end
+\`\`\`
+Notice: Success and failure stay separate.`,
+      },
+    ],
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /class="sequence__block"/);
+  assert.match(result.stdout, /image success/);
+  assert.match(result.stdout, /blocked or failed/);
+  assert.match(result.stdout, /data-participant="OpenAI"/);
+  assert.doesNotMatch(result.stdout, /data-participant="OpenAI-"/);
+  assert.equal((result.stdout.match(/data-from="OpenAI" data-to="Worker"/g) ?? []).length, 2);
+});
+
 test("a grounded flowchart renders as a visual relationship diagram", () => {
   const result = render({
     language: "ko",
@@ -451,6 +622,237 @@ Notice: 구현 범위에서 검증된 증거가 HTML 설명으로 이어집니�
   assert.match(result.stdout, /구현 범위 탐색/);
   assert.match(result.stdout, /HTML 렌더링/);
   assert.doesNotMatch(result.stdout, /<figure class="diagram diagram--fallback"/);
+});
+
+test("state diagrams preserve states and labeled transitions", () => {
+  const result = render({
+    language: "ko",
+    adr: "docs/adr/review/0001.md",
+    verdict: "PASS",
+    findings: [],
+    contractCoverage: [],
+    implementationChoices: [],
+    narrativeSections: [
+      {
+        title: "lease 상태 전이",
+        body: `\`\`\`mermaid
+stateDiagram-v2
+  PENDING --> PROCESSING: lease 선점
+  PROCESSING --> COMPLETED: claim 일치
+  PROCESSING --> PENDING: 실패 후 해제
+\`\`\`
+Notice: 완료와 재시도 경계가 서로 다른 전이로 유지되어야 합니다.`,
+      },
+    ],
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /class="diagram diagram--state"/);
+  assert.match(result.stdout, /PENDING/);
+  assert.match(result.stdout, /PROCESSING/);
+  assert.match(result.stdout, /COMPLETED/);
+  assert.match(result.stdout, /lease 선점/);
+  assert.match(result.stdout, /실패 후 해제/);
+  assert.doesNotMatch(result.stdout, /<figure class="diagram diagram--fallback"/);
+});
+
+function renderDiagram(source) {
+  return render({
+    adr: "docs/adr/review/0001.md",
+    language: "en",
+    verdict: "PASS",
+    narrativeSections: [
+      { title: "Behavior under review", body: `\`\`\`mermaid\n${source}\n\`\`\`` },
+    ],
+  });
+}
+
+test("unsupported or incomplete Mermaid never renders a misleading partial diagram", () => {
+  for (const source of [
+    "sequenceDiagram\nA->>B: start\ncritical commit\nB-->>A: done\nend",
+    "sequenceDiagram\nA->>+B: start\nB-->>-A: done",
+    "sequenceDiagram\nalt allowed\nA->>B: start",
+    "sequenceDiagram\nloop retry\nA->>B: start\nelse wrong branch\nB-->>A: done\nend",
+    "flowchart LR\nA --> B\nclick B callback",
+    "flowchart LR\nsubgraph outer\nsubgraph inner\nA --> B\nend\nend",
+    "stateDiagram-v2\nA --> B\nstate B {\nInner --> Done\n}",
+    "erDiagram\nUSER ||--o{ ORDER : owns\nUSER {\nstring name\n}",
+  ]) {
+    const result = renderDiagram(source);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /<figure class="diagram diagram--fallback"/, source);
+    assert.doesNotMatch(
+      result.stdout,
+      /<figure class="diagram diagram--(?:sequence|flow|state|er)"/,
+      source,
+    );
+  }
+});
+
+test("state diagrams retain initial, terminal, and named states", () => {
+  const result = renderDiagram(
+    'stateDiagram-v2\nstate "Waiting for approval" as Pending\n[*] --> Pending\nPending --> Done: approve\nDone --> [*]',
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /class="diagram diagram--state"/);
+  assert.match(result.stdout, /Waiting for approval/);
+  assert.match(result.stdout, /Start/);
+  assert.match(result.stdout, /End/);
+  assert.equal((result.stdout.match(/class="diagram-relationship"/g) ?? []).length, 3);
+});
+
+test("nested sequence branches keep their own condition, note participants, and arrow style", () => {
+  const result = renderDiagram(`sequenceDiagram
+participant A as Caller
+participant B as Service
+alt success
+  par store
+    A->>B: write
+  and audit
+    Note over A,B: request context
+    B-->>A: recorded
+  end
+else failure
+  opt retry
+    A->>B: retry
+  end
+end`);
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /<figure class="diagram diagram--fallback"/);
+  assert.match(result.stdout, /class="sequence__condition"[^]*?>success<\/tspan>/);
+  assert.match(result.stdout, /class="sequence__condition"[^]*?>store<\/tspan>/);
+  assert.match(result.stdout, /class="sequence__condition"[^]*?>audit<\/tspan>/);
+  assert.match(result.stdout, /class="sequence__condition"[^]*?>failure<\/tspan>/);
+  assert.match(result.stdout, /sequence__note[^]*Caller[^]*Service[^]*request context/);
+  assert.match(result.stdout, /sequence__arrow--dashed/);
+});
+
+test("the abstract includes the verdict before evidence or the conclusion", () => {
+  const result = render({
+    adr: "docs/adr/review/0001.md",
+    verdict: "INCONCLUSIVE",
+    atAGlance: {
+      impact: "The failure path is not verified.",
+      action: "Run the recovery check.",
+      risk: "Recovery may leave work pending.",
+    },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const overview = result.stdout.match(
+    /<section class="overview" id="overview">([^]*?)<\/section>/,
+  )?.[1];
+  assert.match(overview, /INCONCLUSIVE/);
+  assert.ok(overview.indexOf("INCONCLUSIVE") < overview.indexOf("The failure path"));
+});
+
+test("the visible Hill narrative does not repeat identical claim and responsibility text", () => {
+  const sentence = "One approved request produces one stored result.";
+  const result = render({
+    adr: "review.md",
+    verdict: "PASS",
+    reviewHike: {
+      hills: [
+        {
+          id: "H1",
+          title: "One request",
+          sliceName: "Request processing",
+          claim: sentence,
+          workedExample: "A retry reads the result.",
+          counterexample: "A duplicate write is rejected.",
+          container: {
+            responsibility: sentence,
+            interactions: "The handler reads storage.",
+            outcome: "One visible result.",
+          },
+          assessment: "One visible result.",
+          components: [],
+          contractIds: [],
+        },
+      ],
+    },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const narrative = result.stdout.match(/class="hill__narrative"[^>]*>([^]*?)<\/div>/)?.[1];
+  assert.ok(narrative);
+  assert.equal(narrative.split(sentence).length - 1, 1);
+  assert.equal(narrative.split("One visible result.").length - 1, 1);
+  assert.match(narrative, /A duplicate write is rejected/);
+});
+
+test("Korean diagnostic headings do not depend on the translated analysis title", () => {
+  const result = render({ adr: "검토 대상", language: "ko", verdict: "PASS" });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /<h3>계약 누락<\/h3>/);
+  assert.match(result.stdout, /<h3>테스트 공백<\/h3>/);
+  assert.match(result.stdout, /<h3>과다 변경<\/h3>/);
+  assert.doesNotMatch(result.stdout, /<h3>(?:Missing contracts|Test gaps|Excess scope)<\/h3>/);
+});
+
+test("a long table of contents stays collapsed so the abstract remains the first reading task", () => {
+  const result = render({
+    adr: "검토 대상",
+    language: "ko",
+    verdict: "PASS",
+    atAGlance: { impact: "변경 결과.", action: "다음 행동.", risk: "검토 한계." },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /<details class="toc__contents">\s*<summary>목차<\/summary>/);
+  assert.doesNotMatch(result.stdout, /<details class="toc__contents"[^>]*\bopen\b/);
+  assert.match(result.stdout, /href="#overview"/);
+  assert.match(result.stdout, /href="#analysis"/);
+});
+
+test("Context diagrams render visibly and link to the Hills they explain", () => {
+  const result = render({
+    adr: "Review example",
+    language: "en",
+    verdict: "PASS",
+    diagramRequirements: [{ id: "V1", section: "Context", diagramType: "flowchart" }],
+    reviewHike: {
+      context: {
+        intent: "Shared ownership.",
+        preconditions: "Two flows.",
+        contracts: "Keep ownership.",
+        scopeAndRisk: "Both flows.",
+      },
+      hills: [
+        { id: "H1", title: "Submit work", diagramIds: ["V1"], components: [], contractIds: [] },
+        { id: "H2", title: "Read results", diagramIds: ["V1"], components: [], contractIds: [] },
+      ],
+    },
+    narrativeSections: [
+      {
+        title: "Context",
+        body: "<!-- generated review context start -->\nShared ownership.\n<!-- generated review context end -->\n\n~~~mermaid\n%% requirement: V1\nflowchart LR\nCaller --> Owner --> Reader\n~~~\nNotice: Both flows share the owner.",
+      },
+    ],
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const context = result.stdout.match(
+    /<section class="paper-section" id="review-context">([^]*?)<\/section>/,
+  )?.[1];
+  assert.match(context, /<svg/);
+  assert.match(context, /data-node="Owner"/);
+  assert.match(context, /href="#hill-h1"/);
+  assert.match(context, /href="#hill-h2"/);
+  assert.equal((context.match(/Shared ownership\./g) || []).length, 1);
+});
+
+test("a required diagram cannot become a source-only completed report", () => {
+  const result = render({
+    adr: "Review example",
+    verdict: "PASS",
+    diagramRequirements: [{ id: "V1", section: "Context", diagramType: "sequenceDiagram" }],
+    narrativeSections: [
+      {
+        title: "Context",
+        body: "```mermaid\n%% requirement: V1\nsequenceDiagram\nA->>B: call\ncritical commit\nB-->>A: done\nend\n```",
+      },
+    ],
+  });
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /required diagram V1 cannot render/);
+  assert.equal(result.stdout, "");
 });
 
 test("the report uses a table of contents and progressive disclosure", () => {
