@@ -1,4 +1,4 @@
-export const JUDGE_PROMPT = `You evaluate observable execution of adr-rollup or adr-sync.
+export const JUDGE_PROMPT = `You evaluate observable behavior and artifacts of the supplied skill.
 The supplied obligations are the test's fixed expected behavior, not suggestions.
 Read the original files, final files, user turns, replies, and actual tool events.
 Do not trust the executing agent's PASS/completed declaration. Verify its work.
@@ -57,6 +57,13 @@ export function evidenceSources({ before, after, events, replies, turns, referen
   }
   events.forEach((event) => {
     sources[`event:${event.seq}`] = JSON.stringify(event);
+    for (const field of ["content", "before", "after"]) {
+      const text =
+        field === "content"
+          ? (event.arguments?.content ?? event.result?.content)
+          : event.result?.[field];
+      if (typeof text === "string") sources[`event:${event.seq}:${field}`] = text;
+    }
     for (const stream of ["stdout", "stderr"]) {
       if (typeof event.result?.[stream] === "string" && event.result[stream]) {
         sources[`event:${event.seq}:${stream}`] = event.result[stream];

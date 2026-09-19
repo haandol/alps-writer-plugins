@@ -194,7 +194,7 @@ async function runOnce(scenario, opts) {
   }
   let checks;
   try {
-    checks = (await scenario.score({ tail, output: res.stdout, dir })) ?? [];
+    checks = (await scenario.score({ tail, output: res.stdout, dir, cmd: opts.cmd })) ?? [];
   } catch (e) {
     return {
       fixture: dir,

@@ -4,9 +4,8 @@ import {
   seedMapping,
   seedRuleDocs,
   TAIL_SPEC,
-  expectNoText,
-  expectText,
 } from "../lib/harness.mjs";
+import { semanticScore } from "../lib/semantic-score.mjs";
 
 const SOURCE = `
 Section 7 Feature: 팀 작업 세션
@@ -20,6 +19,45 @@ Section 7 Feature: 팀 작업 세션
 
 구현 메모에는 PostgreSQL, Redis, 3회 재시도가 적혀 있지만 이는 요구사항이 아니다.
 `;
+
+export const obligations = [
+  {
+    id: "limit",
+    text: "The visible digest preserves a maximum of 20 turns per session, not a minimum or an unlimited session.",
+  },
+  {
+    id: "retention",
+    text: "The visible digest says unapproved sessions are deleted after 30 days. Do not reverse the approved/unapproved condition or invent a different retention rule.",
+  },
+  {
+    id: "permission",
+    text: "The visible digest permits only the workspace owner to export results; a mention of owner without exclusivity or an added non-owner permission is insufficient.",
+  },
+  {
+    id: "states",
+    text: "The visible digest preserves exactly draft, approved, archived, and prohibits archived returning to draft. Listing states without the prohibition is insufficient.",
+  },
+  {
+    id: "demo",
+    text: "The visible digest says the result appears in the team dashboard after approval.",
+  },
+  {
+    id: "options",
+    text: "The visible digest explicitly offers all three choices: approve, revise, and defer. A choice only in the machine tail is insufficient.",
+  },
+  {
+    id: "tail",
+    text: "The CONTRACT_ITEM tail repeats all five product contracts (turn cap, retention condition, export permission, states and forbidden transition, dashboard result after approval) consistently with the visible digest. Correct text in one cannot excuse reversed or missing contracts in the other.",
+  },
+  {
+    id: "save",
+    text: "The tail states both that no requirement absent from the digest may be saved and that each complete Section 7.x Feature remains a separate save unit.",
+  },
+  {
+    id: "presentation",
+    text: "The visible digest excludes PostgreSQL, Redis and the non-required three-retry implementation note and is readable raw text without Markdown tables.",
+  },
+].map((item) => ({ ...item, label: `approval digest: ${item.id}` }));
 
 export default {
   name: "alps-approval-digest-preserves-contract",
@@ -42,47 +80,13 @@ export default {
     ].join("\n");
   },
 
-  score({ tail, output }) {
+  score({ output, cmd, invoke }) {
     const visible = output.split(/---\s*\n\s*## Machine-readable tail|===\s*EVAL-VERDICT/i)[0];
-    const contracts = tail.findings
-      .filter((finding) => /CONTRACT_ITEM/i.test(finding.tag))
-      .map((finding) => finding.summary)
-      .join("\n");
-    return [
-      expectText(visible, /20\s*턴|20\s*turns/i, "keeps the 20-turn requirement"),
-      expectText(visible, /30\s*일|30\s*days/i, "keeps the 30-day retention rule"),
-      expectText(
-        visible,
-        /owner.{0,50}(내보|export)|내보.{0,50}owner/is,
-        "keeps export permission",
-      ),
-      expectText(
-        visible,
-        /draft.{0,100}approved.{0,100}archived|archived.{0,100}draft/is,
-        "keeps the allowed states and forbidden transition",
-      ),
-      expectText(visible, /Demo checkpoint|팀 대시보드|team dashboard/i, "keeps the demo outcome"),
-      expectText(
-        visible,
-        /승인|approve[\s\S]{0,120}수정|revise[\s\S]{0,120}보류|defer/i,
-        "offers approve, revise, and defer",
-      ),
-      expectText(
-        contracts,
-        /20[\s\S]*30[\s\S]*(owner|내보)[\s\S]*(archived|draft)/is,
-        "tail preserves every contract",
-      ),
-      expectText(
-        tail.raw,
-        /NO_UNSEEN_CONTRACT[\s\S]{0,200}(digest|다이제스트|요약|추가하지|absent|미노출|보이지|없는.{0,50}저장|저장.{0,50}없)/i,
-        "forbids unseen saved requirements",
-      ),
-      expectText(tail.raw, /SEPARATE_SAVE_UNIT[\s\S]{0,120}7\.x/i, "keeps the Feature save unit"),
-      expectNoText(
-        visible,
-        /PostgreSQL|Redis|3\s*회\s*재시도|retry.{0,20}3|\|[^|]+\|/,
-        "omits implementation detail and Markdown tables",
-      ),
-    ];
+    return semanticScore({
+      obligations,
+      sources: { visible, tail: output.slice(visible.length) },
+      cmd,
+      invoke,
+    });
   },
 };

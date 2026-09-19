@@ -23,6 +23,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { obligations as digestObligations } from "../evals/scenarios/alps-approval-digest-preserves-contract.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(HERE, "..");
@@ -46,14 +47,26 @@ function needsEnv(scenario) {
 
 // A stub "agent": ignores stdin, prints the canned reply. Stands in for the real
 // command so the scorer can be exercised without a model.
-function stubAgent(reply) {
+function stubAgent(reply, semanticVerdict) {
   const dir = mkdtempSync(path.join(tmpdir(), "adr-eval-stub-"));
   const script = path.join(dir, "stub.mjs");
   writeFileSync(
     script,
     `#!/usr/bin/env node
-process.stdin.resume();
+let input = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", chunk => { input += chunk; });
 process.stdin.on("end", () => {
+  if (${JSON.stringify(semanticVerdict)} && input.startsWith("You evaluate observable behavior")) {
+    const payload = JSON.parse(input.split("\\n\\nReturn only JSON")[0].split("\\n\\n").slice(1).join("\\n\\n"));
+    const judgment = { obligations: ${JSON.stringify(digestObligations)}.map(({id}) => ({
+      id, verdict: ${JSON.stringify(semanticVerdict)},
+      reason: "고정된 테스트 판정으로 실행기 전달 경로를 검증합니다.",
+      evidence: [{source: "visible", quote: payload.evidenceSources.visible.trim()}],
+    })) };
+    process.stdout.write(JSON.stringify(judgment));
+    return;
+  }
   process.stdout.write(${JSON.stringify(`${reply}\n`)});
 });
 `,
@@ -1255,6 +1268,7 @@ CONTRACT_ITEM | 세션은 최대 20턴
 CONTRACT_ITEM | 미승인 세션은 30일 뒤 삭제
 CONTRACT_ITEM | owner만 결과를 내보냄
 CONTRACT_ITEM | draft, approved, archived 상태이며 archived에서 draft 전이 금지
+CONTRACT_ITEM | 승인 후 팀 대시보드에 결과가 표시된다.
 RESPONSE_OPTIONS | 승인, 수정, 보류
 NO_UNSEEN_CONTRACT | digest에 없던 요구사항은 저장 내용에 추가하지 않음
 SEPARATE_SAVE_UNIT | Feature 7.x를 독립 저장
@@ -1598,11 +1612,12 @@ PASS_PATH | 사용자 승인 대기
   ];
 
   for (const { name, good, bad } of cases) {
-    const goodRun = runEvals(["--only", name], stubAgent(good));
+    const semantic = name === "alps-approval-digest-preserves-contract";
+    const goodRun = runEvals(["--only", name], stubAgent(good, semantic ? "PASS" : undefined));
     assert.equal(goodRun.code, 0, goodRun.out);
     assert.doesNotMatch(goodRun.out, /✗/, `${name} rejected a compliant result:\n${goodRun.out}`);
 
-    const badRun = runEvals(["--only", name], stubAgent(bad));
+    const badRun = runEvals(["--only", name], stubAgent(bad, semantic ? "FAIL" : undefined));
     assert.equal(badRun.code, 0, badRun.out);
     assert.match(badRun.out, /✗/, `${name} scorer failed to reject the collapsed behavior`);
   }

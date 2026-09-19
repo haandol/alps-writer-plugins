@@ -49,7 +49,9 @@ node evals/run.mjs --only review-catches --out /tmp/report.md \
 select scenarios affected by the branch diff, staged files, and unstaged files.
 The table does not become a source of product or ADR truth; it only avoids
 calling a live model for unrelated prompts. Shared ADR rule or eval-harness
-changes select every scenario. If no rule matches, the command exits successfully
+changes, including the runner and impact map, select every scenario. A changed
+scenario selects itself; ALPS server instructions and profile changes select the
+ALPS-related scenarios. If no rule matches, the command exits successfully
 without invoking an agent.
 
 The agent command is configurable, since this plugin ships for two clients and
@@ -144,6 +146,12 @@ disposable reproduction artifacts.
    - `alps-approval-digest-preserves-contract` checks that concise raw-text
      approval omits implementation detail without dropping values, permissions,
      state rules, or the Demo checkpoint.
+     It uses a separate semantic judge call through the selected `--cmd` /
+     `ADR_EVAL_CMD`, in a fresh directory, to compare the visible digest and tail
+     against fixed obligations. Numbers or role names alone cannot establish a
+     preserved contract. Each obligation needs an evidence-backed verdict;
+     invalid judge output or command failure is an unscorable error. This adds
+     one model call per run; other scenarios retain their existing scorers.
    - `alps-reference-routes-only-durable-context` checks the source-lifetime
      boundary: an incident or ticket may supply product and architecture
      constraints, but its ID, logs, code paths, and recoverable technology
@@ -269,20 +277,25 @@ export default {
   build(dir) {
     /* write the fixture, return the prompt */
   },
-  score({ tail, output, dir }) {
-    /* return an array of {pass, detail, label} */
+  score({ tail, output, dir, cmd }) {
+    /* return an array (or Promise) of {pass, detail, label} */
   },
 };
 ```
 
 `build` gets a fresh temp directory and returns the whole prompt. `score` gets
-the parsed tail block, the raw reply, and the fixture path — so a check can read
+the parsed tail block, the raw reply, fixture path and selected agent command — so a check can read
 what the agent wrote to disk, not just what it said.
 
 Helpers are in `lib/harness.mjs`: `skillText` / `agentText` (real instruction
 text; scenarios explicitly select any directly referenced Markdown modules),
 `seedRuleDocs` / `seedMapping` / `write`, the `expect*` scorers, and
 `expectLintClean` which runs the shipped `adr-structure-lint.mjs` over the result.
+`lib/semantic-score.mjs` reuses the obligation/citation validator for natural-language
+contracts. Its tests inject authored judge responses to verify transport and
+rejection behavior without model calls; this does not prove a live judge’s
+semantic accuracy. Controlled contract reversals and equivalent wording are
+available in `tests/fixtures/approval-digest-cases.mjs` for live checks.
 
 ## Two directions, and why both
 
