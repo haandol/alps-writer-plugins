@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync, mkdtempSync, rmSync, existsSync } from "node:fs";
+import { readFileSync, mkdtempSync, rmSync, existsSync, symlinkSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import os from "node:os";
@@ -83,6 +83,28 @@ test("report hierarchy preserves complete evidence and renders HTML/Markdown wit
   doc.sections[0].children[0].expanded = true;
   assert.equal(validateReport(doc).nodes, 2);
   assert.match(renderHtml(doc), /id="settlement" open/);
+});
+
+test("the installed CLI runs through a symlinked project path", () => {
+  const temp = mkdtempSync(path.join(os.tmpdir(), "report-cli-"));
+  try {
+    const alias = path.join(temp, "installed-skill");
+    symlinkSync(path.join(ROOT, "plugins/adr-writer/skills/report-write"), alias, "dir");
+    const input = path.join(temp, "report.json"),
+      output = path.join(temp, "report.html");
+    writeFileSync(input, JSON.stringify(sample()));
+    const result = spawnSync(
+      process.execPath,
+      [path.join(alias, "scripts/render-report.mjs"), input, "--out", output],
+      { encoding: "utf8" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(existsSync(output), true, "CLI must create the requested report");
+    assert.match(readFileSync(output, "utf8"), /observed charge count: 1/);
+    assert.equal(JSON.parse(result.stdout).evidence, 2);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
 });
 
 test("five peer units, missing evidence and hidden headings fail instead of truncating", () => {

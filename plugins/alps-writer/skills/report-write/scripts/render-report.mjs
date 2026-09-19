@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseMermaid, renderMermaid } from "./mermaid.mjs";
@@ -289,7 +289,10 @@ function main(args) {
   writeFileSync(out, format === "html" ? renderHtml(doc) : renderMarkdown(doc));
   console.log(JSON.stringify({ output: path.resolve(out), ...result }));
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href)
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(realpathSync(path.resolve(process.argv[1]))).href
+)
   try {
     main(process.argv.slice(2));
   } catch (error) {

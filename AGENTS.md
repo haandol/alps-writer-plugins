@@ -261,7 +261,11 @@ normal builds never write to the user's home directory.
 
 Both plugins advertise report-write through SessionStart independently of the ADR
 mapping. All report-producing skills and review roles load it for the final human
-presentation. Native review schemas remain complete audit input, while final
+presentation, including code, PR, ADR, architecture and document review requests
+that do not explicitly ask for a report. The owning workflow still controls
+inspection, verdicts, severity and edit permissions. The packaged skill directory
+can also be installed independently with `npx skills add`; see README for the
+explicit source path. Native review schemas remain complete audit input, while final
 reports use domain-scoped hierarchy, at most four peer units, readable paragraph
 breaks, evidence-grounded diagrams, worked calculations, and whole-output review.
 The renderer validates structure and source coverage; semantic review remains a

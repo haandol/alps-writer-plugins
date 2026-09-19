@@ -6,7 +6,7 @@ argument-hint: "[category-or-adr-path?]"
 
 # adr-review
 
-> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+> **Review results**: Apply [report-write](../report-write/SKILL.md), including when the user asks only for an ADR review.
 
 Review ADRs that already exist **as documents** and return a punch list. With no argument it sweeps every ADR; with an argument it narrows to one category or a single ADR.
 

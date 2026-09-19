@@ -6,7 +6,7 @@ argument-hint: "[adr-path-or-category] [--base <ref>] [--mode standard|full]"
 
 # adr-impl-review
 
-> **Reports**: Apply [report-write](../report-write/SKILL.md).
+> **Review results**: Apply [report-write](../report-write/SKILL.md).
 
 Disprove the implementation in this order.
 

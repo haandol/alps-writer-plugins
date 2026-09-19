@@ -219,8 +219,11 @@ positive/negative examples; its draft labels still require human review.
 
 ## Report writing across projects
 
-Both plugins include `report-write` for direct requests and reports produced by
-reviews, audits, sync, rollup, and evaluations. It keeps skill instructions in
+Both plugins include `report-write` for code, pull request, ADR, architecture,
+and document review results, as well as reports, audits, sync, rollup, and
+evaluations. A review request selects it even without a separate report request.
+The owning workflow still determines inspection scope, findings, verdicts, and
+edit permissions. It keeps skill instructions in
 English and writes the report in the user's requested language and format.
 Reports start with the answer, then drill into evidenced domains with at most
 four peer units. The shared review covers reader context, worked calculations,
@@ -239,8 +242,20 @@ node scripts/sync-report-skill.mjs --check --global
 ```
 
 This installs the same standalone skill in `~/.agents/skills/report-write`.
-No npm or npx distribution is needed. Its Node-only helper renders a validated
-report document as HTML or Markdown and preserves Mermaid source and evidence.
+To install from GitHub with the `skills` CLI:
+
+```bash
+npx skills add https://github.com/haandol/alps-writer-plugins/tree/main/plugins/adr-writer/skills/report-write --global --agent codex
+```
+
+Omit `--global` for a project-local installation. The explicit directory selects
+the packaged skill, including its references and Mermaid helper, rather than
+the development source or another same-named copy. No separate npm publication
+of this repository is required. Installing the skill alone does not install the
+plugins' SessionStart hooks or their review engines.
+
+Its Node-only helper renders a validated report document as HTML or Markdown
+and preserves Mermaid source and evidence.
 The session hook also announces the common report skill in repositories without
 an ADR mapping; it does not initialize ADRs or call a model.
 

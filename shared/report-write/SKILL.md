@@ -1,15 +1,23 @@
 ---
 name: report-write
-description: Write, revise, or review human-facing reports in any requested format. Use for direct report requests and reports produced by reviews, audits, evaluations, synchronization, or other skills. Organize by domain with at most four peer units, clear paragraph and line breaks, evidence-grounded prose, and explanatory Mermaid diagrams.
+description: Write reports and present review results in any requested format. Use for code, pull request, ADR, architecture, or document reviews, as well as reports, audits, evaluations, and synchronization results. Apply even when the user asks only for a review. Organize findings by domain with at most four peer units, clear paragraphs, evidence-grounded prose, and explanatory Mermaid diagrams.
 ---
 
 # Report writing
 
-Apply this workflow whenever delivering a human-facing report, including when
+Apply this workflow whenever delivering review findings or a human-facing report, including when
 another skill owns the underlying analysis. It governs presentation and writing
 quality without changing the caller's scope, evidence, verdict, permissions, or
 mandatory artifact schema. Ordinary acknowledgements and short progress messages
 do not need a report structure.
+
+A request to review code, a pull request, an ADR, an architecture, or a document
+also selects this skill for presenting the result; the user need not separately
+ask for a report. The owning review workflow still determines what to inspect,
+what counts as a defect, the verdict, and whether changes are authorized.
+Read [review results](references/review-results.md) for these requests. A brief
+review may stay in chat; honor the requested format and preserve required
+caller artifacts without adding empty sections.
 
 Write skill instructions and model-facing prompts in English. Write the report
 in the user's requested language. This skill governs final human-facing
