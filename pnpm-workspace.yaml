@@ -3,6 +3,10 @@ packages:
 
 allowBuilds:
   esbuild: true
+  # protobufjs only checks dependency version declarations after installation.
+  protobufjs: false
+  # Eval diagram rendering uses an existing browser or MERMAID_BROWSER_PATH.
+  puppeteer: false
 
 # Keep vulnerable transitive releases below their first patched versions.
 # Each selector applies only to the affected range, so a parent dependency can
