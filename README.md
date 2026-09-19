@@ -263,6 +263,33 @@ an ADR mapping; it does not initialize ADRs or call a model.
 
 Contributions are welcome. Before opening a PR, read [`CONTRIBUTING.md`](./CONTRIBUTING.md) for commit convention (Conventional Commits), branch naming, and code style. Open an issue first for substantial changes, make sure `pnpm lint` and `pnpm format:check` pass, and keep commits atomic.
 
+### Dependency security updates
+
+Use `pnpm audit` to inspect the locked dependency graph and `pnpm why -r <package>`
+to find which runtime or development dependency brings in an affected release.
+Dependabot alerts and the registry audit can update at different times; check
+both without treating an empty result as proof that the code has no security defects.
+
+When a parent package still selects a vulnerable version, keep a narrowly scoped
+override in `pnpm-workspace.yaml` and regenerate `pnpm-lock.yaml`. Preserve the
+parent's module format and API compatibility, then run the integration tests.
+Dependency install scripts are controlled separately through `allowBuilds`;
+patching a package does not require enabling all install scripts.
+
+```bash
+pnpm install --frozen-lockfile
+pnpm audit
+pnpm build
+pnpm test
+```
+
+The marketplace executes the committed MCP bundle, so a lockfile update alone
+does not replace bundled code. Rebuild and commit `plugins/alps-writer/dist/`,
+run the remaining lint, format, version and runtime checks, and publish a patch
+version when shipped dependencies change. Confirm CI succeeds and Dependabot
+has processed the updated default branch. Test output and alert snapshots stay
+in temporary review artifacts rather than this README.
+
 Bug reports and feature requests: [GitHub Issues](https://github.com/haandol/alps-writer-plugins/issues).
 
 ## License

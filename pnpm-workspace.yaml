@@ -8,15 +8,20 @@ allowBuilds:
   # Eval diagram rendering uses an existing browser or MERMAID_BROWSER_PATH.
   puppeteer: false
 
-# Keep vulnerable transitive releases below their first patched versions.
+# Replace vulnerable transitive ranges with patched releases.
 # Each selector applies only to the affected range, so a parent dependency can
 # adopt a newer compatible release without changing this file.
 overrides:
   "brace-expansion@>=4.0.0 <5.0.9": "5.0.9"
-  "fast-uri@>=3.0.0 <3.1.5": "3.1.5"
-  "hono@<4.12.34": "4.12.34"
+  "fast-uri@>=3.0.0 <3.1.6": "3.1.6"
+  "hono@<4.13.5": "4.13.5"
   "ip-address@>=10.1.1 <10.3.1": "10.3.1"
   "@hono/node-server@<2.0.5": ">=2.0.5"
+  "qs@>=2.2.5 <6.16.0": "6.16.0"
+  "protobufjs@>=8.0.0 <8.6.6": "8.6.6"
+  "@opentelemetry/core@>=2.0.0 <2.8.0": "2.8.0"
+  # DeepEval requires CommonJS; uuid 11 retains it while fixing the bounds check.
+  "uuid@<11.1.1": "11.1.1"
 
 patchedDependencies:
   deepeval@0.9.16: patches/deepeval@0.9.16.patch
