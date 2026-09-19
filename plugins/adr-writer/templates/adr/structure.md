@@ -227,4 +227,4 @@ When `/adr-sync`, `/adr-impl`, `/adr-rollup`, and others verify an ADR's code al
 
 **No guessing**: never assert a scope without having looked at the codebase — always confirm the real structure with `Glob`/`Grep` before verifying.
 
-<!-- adr-writer:rules-version 0.8.21 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.8.22 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
