@@ -9,6 +9,15 @@
             "command": "node \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/hooks/surface-adr-context.mjs\""
           }
         ]
+      },
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/skills/report-write/scripts/surface-report-context.mjs\""
+          }
+        ]
       }
     ]
   }

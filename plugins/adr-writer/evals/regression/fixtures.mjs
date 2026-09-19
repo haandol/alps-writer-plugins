@@ -165,6 +165,27 @@ const tokenCode = `export function compensation({duplicate, free, originalCharge
 export function duplicateResponse(async, originalJob) {
   return async && originalJob ? {job:originalJob} : {error:"already_processed",retry:false};
 }
+export function createBillingLedger() {
+  const charges = new Map();
+  const compensationRecords = new Map();
+  return {
+    charge({key, free, credits}) {
+      if (charges.has(key)) return {duplicate:true, charge:charges.get(key)};
+      const charge = {free, originalCharge:free ? 0 : credits};
+      charges.set(key, charge);
+      return {duplicate:false, charge};
+    },
+    compensate({key, status}) {
+      if (status === "COMPLETED" || compensationRecords.has(key)) return {free:0,credits:0};
+      const charge = charges.get(key);
+      if (!charge) throw new Error("unknown original charge");
+      const result = compensation({...charge, duplicate:false});
+      compensationRecords.set(key, result);
+      return result;
+    },
+    compensationRecord(key) { return compensationRecords.get(key) ?? null; },
+  };
+}
 `;
 const tokenTests = `test("compensation is symmetric and duplicates are excluded", () => {
   assert.deepEqual(policy.compensation({free:true,duplicate:false,originalCharge:5}),{free:1,credits:0});
@@ -173,7 +194,38 @@ const tokenTests = `test("compensation is symmetric and duplicates are excluded"
 });
 test("duplicate delivery never creates another job", () => {
   assert.deepEqual(policy.duplicateResponse(true,"original"),{job:"original"});
+  assert.deepEqual(policy.duplicateResponse(true,null),{error:"already_processed",retry:false});
   assert.deepEqual(policy.duplicateResponse(false),{error:"already_processed",retry:false});
+});
+test("retries cannot switch an existing free charge into a paid charge", () => {
+  const ledger = policy.createBillingLedger();
+  assert.equal(ledger.charge({key:"job",free:true,credits:15}).duplicate,false);
+  const retry = ledger.charge({key:"job",free:false,credits:15});
+  assert.equal(retry.duplicate,true);
+  assert.deepEqual(retry.charge,{free:true,originalCharge:0});
+});
+test("consumer and queue redelivery share one compensation record", () => {
+  const ledger = policy.createBillingLedger();
+  ledger.charge({key:"job",free:true,credits:15});
+  assert.deepEqual(ledger.compensate({key:"job",status:"FAILED"}),{free:1,credits:0});
+  assert.deepEqual(ledger.compensate({key:"job",status:"FAILED"}),{free:0,credits:0});
+  assert.deepEqual(ledger.compensationRecord("job"),{free:1,credits:0});
+});
+test("failure before refund still compensates the original paid amount once", () => {
+  const ledger = policy.createBillingLedger();
+  ledger.charge({key:"paid",free:false,credits:20});
+  ledger.charge({key:"paid",free:false,credits:15});
+  assert.equal(ledger.compensationRecord("paid"),null);
+  assert.deepEqual(ledger.compensate({key:"paid",status:"FAILED"}),{free:0,credits:20});
+  assert.deepEqual(ledger.compensate({key:"paid",status:"FAILED"}),{free:0,credits:0});
+});
+test("completed jobs cannot be compensated and different jobs remain independent", () => {
+  const ledger = policy.createBillingLedger();
+  ledger.charge({key:"complete",free:false,credits:12});
+  ledger.charge({key:"other",free:true,credits:0});
+  assert.deepEqual(ledger.compensate({key:"complete",status:"COMPLETED"}),{free:0,credits:0});
+  assert.equal(ledger.compensationRecord("complete"),null);
+  assert.deepEqual(ledger.compensate({key:"other",status:"FAILED"}),{free:1,credits:0});
 });
 `;
 
@@ -298,8 +350,10 @@ export function retentionLocal() {
           "자산의 보존과 즉시 접근",
           `모든 신규 객체는 Intelligent-Tiering 저장 클래스를 사용한다.
 128KB 이상 객체는 30일 미접근 시 Infrequent Access, 90일 미접근 시 Archive Instant Access로 이동한다.
+다시 접근하면 Frequent Access로 복귀하며 128KB 미만 객체는 자동 이동하지 않는다.
 복원 대기가 필요한 선택형 Archive Access와 Deep Archive Access는 사용하지 않는다.
 생성 입력만 명시적 보존 tag로 90일에 객체와 메타데이터를 만료한다.
+메타데이터 조회는 만료된 항목을 반환하지 않으며 객체와 메타데이터의 정리 순서에 의존하지 않는다.
 최종 이미지·애니메이션·프로젝트 자산은 시간 기반으로 삭제하지 않는다.
 태그가 없는 기존 객체도 시간 기반 삭제 대상이 아니다.`,
           {
@@ -310,11 +364,80 @@ export function retentionLocal() {
       },
     ],
     `export const inputRetentionDays = 90;
-export function expires(retention) { return retention === "generation-input" ? 90 : null; }\n`,
+export function expires(retention) { return retention === "generation-input" ? 90 : null; }
+export const storageClass = "INTELLIGENT_TIERING";
+export const optionalArchiveTiers = false;
+export function tier({sizeKB, inactiveDays}) {
+  if (sizeKB < 128 || inactiveDays < 30) return "FREQUENT_ACCESS";
+  return inactiveDays < 90 ? "INFREQUENT_ACCESS" : "ARCHIVE_INSTANT_ACCESS";
+}
+export function createAssetStore() {
+  const objects = new Map();
+  const metadata = new Map();
+  function expired(item, day) {
+    return expires(item.retention) !== null && day >= item.createdDay + inputRetentionDays;
+  }
+  return {
+    put({key, retention, createdDay, sizeKB}) {
+      const item = {key, retention, createdDay, sizeKB, storageClass};
+      objects.set(key, {...item});
+      metadata.set(key, {...item});
+    },
+    expireObjects(day) { for (const [key,item] of objects) if (expired(item,day)) objects.delete(key); },
+    expireMetadata(day) { for (const [key,item] of metadata) if (expired(item,day)) metadata.delete(key); },
+    metadata(key, day) { const item = metadata.get(key); return !item || expired(item,day) ? null : item; },
+    object(key) { return objects.get(key) ?? null; },
+    read(key) { const item = objects.get(key); return item ? {key, tier:tier({sizeKB:item.sizeKB,inactiveDays:0})} : null; },
+  };
+}\n`,
     `test("only tagged generation inputs expire", () => {
   assert.equal(policy.expires("generation-input"),90);
   assert.equal(policy.expires("permanent"),null);
   assert.equal(policy.expires(undefined),null);
+});
+test("128KB, 30-day and 90-day boundaries do not use restore-required archive tiers", () => {
+  assert.equal(policy.tier({sizeKB:127,inactiveDays:1000}),"FREQUENT_ACCESS");
+  assert.equal(policy.tier({sizeKB:128,inactiveDays:29}),"FREQUENT_ACCESS");
+  assert.equal(policy.tier({sizeKB:128,inactiveDays:30}),"INFREQUENT_ACCESS");
+  assert.equal(policy.tier({sizeKB:128,inactiveDays:89}),"INFREQUENT_ACCESS");
+  assert.equal(policy.tier({sizeKB:128,inactiveDays:90}),"ARCHIVE_INSTANT_ACCESS");
+  assert.equal(policy.optionalArchiveTiers,false);
+});
+test("object and metadata expiry use the same 90 days regardless of cleanup order", () => {
+  for (const order of [["expireObjects","expireMetadata"],["expireMetadata","expireObjects"]]) {
+    const store = policy.createAssetStore();
+    store.put({key:"input",retention:"generation-input",createdDay:10,sizeKB:128});
+    store.expireObjects(99);
+    store.expireMetadata(99);
+    assert.ok(store.object("input"));
+    assert.ok(store.metadata("input",99));
+    assert.equal(store.metadata("input",100),null);
+    store[order[0]](100);
+    assert.equal(store.metadata("input",100),null);
+    store[order[1]](100);
+    assert.equal(store.object("input"),null);
+    assert.equal(store.metadata("input",100),null);
+  }
+});
+test("permanent and untagged assets survive expiration and are immediately readable", () => {
+  const store = policy.createAssetStore();
+  store.put({key:"permanent",retention:"permanent",createdDay:0,sizeKB:128});
+  store.put({key:"legacy",createdDay:0,sizeKB:127});
+  store.expireObjects(1000);
+  store.expireMetadata(1000);
+  for (const key of ["permanent","legacy"]) {
+    assert.equal(store.object(key).storageClass,"INTELLIGENT_TIERING");
+    assert.ok(store.metadata(key,1000));
+    assert.deepEqual(store.read(key),{key,tier:"FREQUENT_ACCESS"});
+  }
+});
+test("repository infra agrees with the locally executable retention rules", async () => {
+  const {readFileSync} = await import("node:fs");
+  const infra = JSON.parse(readFileSync(new URL("../infra/storage.json",import.meta.url),"utf8"));
+  assert.equal(infra.storageClass,policy.storageClass);
+  assert.equal(infra.optionalArchiveTiers,policy.optionalArchiveTiers);
+  assert.deepEqual(infra.automaticTiers,[{inactiveDays:30,tier:"INFREQUENT_ACCESS"},{inactiveDays:90,tier:"ARCHIVE_INSTANT_ACCESS"}]);
+  assert.deepEqual(infra.lifecycle,[{tag:{retention:"generation-input"},days:policy.inputRetentionDays}]);
 });\n`,
     {
       "infra/storage.json":

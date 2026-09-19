@@ -571,6 +571,24 @@ test("rollup keeps numbering gaps unless exact renames are explicitly approved",
   assert.doesNotMatch(rollup, /Default \(if the user does not respond\): close it/i);
 });
 
+test("rollup grounds harvested history in original contracts rather than rewritten alternatives", () => {
+  const rollup = read("skills/adr-rollup/SKILL.md");
+  const harvest = rollup.split("### 9. Harvest")[1].split("### 10.")[0];
+  assert.match(
+    rollup,
+    /Before overwriting or deleting chain members, retain the original source passages/,
+  );
+  assert.match(harvest, /original chain ADRs, an existing decision log, or verified Git history/);
+  assert.match(harvest, /unchanged rule is preserved, not newly adopted or invalidated/);
+  assert.match(
+    harvest,
+    /rejected or hypothetical alternative[\s\S]*does not establish a previously adopted policy/,
+  );
+  assert.match(harvest, /omit an unsupported optional field/);
+  assert.match(harvest, /without adding unstated causes, pressures, or past assumptions/);
+  assert.match(harvest, /check the final log against those original sources/);
+});
+
 test("adr-impl-refactor auto-applies only locally verified behavior-preserving changes", () => {
   const skill = read("skills/adr-impl-refactor/SKILL.md");
   const reviewer = read("agents/adr-impl-refactor-reviewer.md");

@@ -6,6 +6,8 @@ argument-hint: "[adr-path-or-category] [--base <ref>]"
 
 # adr-impl-refactor
 
+> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+
 Refactor an ADR implementation conservatively before it is declared complete. One or more model-selected review passes find opportunities; the main session applies only candidates that pass every safety gate. The final `/adr-impl-review` remains report-only and reviews the resulting code.
 
 Apply `${CLAUDE_PLUGIN_ROOT}/references/non-invasive-harness.md`: the refactor

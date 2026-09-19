@@ -6,6 +6,8 @@ argument-hint: "[project-name-or-lite-alps-path]"
 
 # lite-alps-init
 
+> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+
 Create or resume a Lite ALPS document that works backward from a desired business impact to a
 minimum PoC and its executable demo.
 

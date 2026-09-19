@@ -7,7 +7,7 @@
 
 | 역할                         | 담당                                                       |
 | ---------------------------- | ---------------------------------------------------------- |
-| 고정 사례·평가용 저장소      | EncBird·Pixelbank를 참고한 기존 8개 fixture                |
+| 고정 사례·평가용 저장소      | EncBird·Pixelbank를 참고한 11개 fixture                    |
 | 스킬 실행과 증거 수집        | 격리된 MCP 도구 + Claude Code 실행 어댑터                  |
 | 평가 사례                    | DeepEval `LLMTestCase` — 한 스킬 실행 전체가 한 사례       |
 | 평가 프롬프트·점수·기준 판정 | 실제 DeepEval `GEval(strictMode: true)` + `evaluate()`     |
@@ -77,6 +77,47 @@ Bedrock 기록에는 요청한 추론 프로필 ID와 토큰 사용량을 담는
 ```bash
 pnpm eval:custom --live --only sync-encbird-turn-units
 ```
+
+## Golden set 보완과 판정기 보정
+
+현재 세트는 rollup 7개·sync 4개, 총 11개다. R1·R3은 후속 승인문 이전의 첫 계획을
+별도 의무로 판정한다. R5·R6은 정답 경로를 알려주지 않는 계획 발견, R7은 같은 폴더를
+전부 합치자는 잘못된 제안의 거부를 평가한다. 계획의 오류를 나중의 승인문으로 가리지 않는다.
+
+보상 fixture는 작업별 차감·보상 기록과 실패 후 재시도를 실행한다. 보존 fixture는
+객체·메타데이터의 같은 90일 만료, 정리 순서, 만료 조회 제외, 128KB·30/90일 경계와
+재접근을 실행한다. 실제 DB 동시성이나 클라우드 동작을 시험하는 것은 아니다.
+S4의 `metadata`, `tiering`, `archive` 의무는 이 세부 조건을 명시적으로 판정한다.
+
+`regression/provenance.json`은 참고 원본 12개 파일의 커밋·해시·구절을 고정한다.
+각 사례의 `provenance`에도 포함되므로 실행 결과와 함께 추적할 수 있다. 새로 확인한
+버전의 출처이며 최초 fixture 작성 당시의 원본 커밋을 소급해 주장하지 않는다.
+원본 저장소가 없어도 사례 생성과 테스트는 가능하다.
+
+```bash
+# 현재 입력·발화·의무·고정 출처·Mermaid 커버 범위를 HTML로 생성
+pnpm eval:golden --out .codex/reports/golden-current
+
+# 작성된 정상·반례 입력과 판정 기대 초안을 내보냄: 모델 호출 없음
+pnpm eval:calibration --prepare --out .codex/evals/calibration-prepared
+
+# 판정기만 호출: 에이전트 재실행 없음
+pnpm eval:calibration --live --jobs 2 --out .codex/evals/calibration-live
+pnpm eval:calibration --live --split holdout --runs 3
+```
+
+판정기 보정 세트는 정상 표현과 통제된 반례 21개다. 기대 점수·라벨 상태·분할 정보는
+GEval 입력에서 제외하고 판정이 끝난 뒤 비교한다. 원래 사례의 고정 의무는 그대로 쓴다.
+같은 변경이 여러 의무에 영향을 줄 수 있으므로 반례에는 주된 대상 의무를 표시한다.
+기준 산출물은 작성된 참조 행동이며, 승인 전 쓰기 반례의 시간 기록은 의도적으로 바꾼
+합성 증거다. 실제 에이전트 로그라고 주장하지 않는다.
+
+기대 라벨은 계약을 근거로 작성한 AI 초안이며 모두 `needs-human-review`다. 사람 검수
+전에는 일치율을 사람 정답 정확도로 표시하지 않는다. development와 holdout은 출력
+예시의 분할이고, 원래 사례를 공유하므로 독립적인 제품 사례의 일반화 검증은 아니다.
+이 명령은 판정 프롬프트를 자동 최적화하거나 기대 라벨에 맞춰 점수를 고치지 않는다.
+오통과·오거절·오류와 미채점 수를 분리하고 원본 증거·실제 GEval 입력·응답을 보관한다.
+생성기 원문·fixture·의무를 해시에 포함해 서로 다른 기준 출력의 결과를 구분한다.
 
 ## DeepEval의 입력과 점수
 
@@ -178,3 +219,13 @@ pnpm test
 
 공식 API 근거: `confident-ai/deepeval`의 TypeScript `GEval`, `evaluate`,
 `DeepEvalBaseLLM` 문서와 배포 패키지의 타입·구현을 확인했다.
+
+## Human report delivery
+
+Apply `../../skills/report-write/SKILL.md` to the final human-facing report.
+The generated HTML and JSON preserve the original evaluation evidence; when the
+HTML uses the legacy layout, keep it as an audit source and compose a separate
+domain-scoped final report. Preserve every case, obligation, score, reason,
+run count, model, limitation, and coverage diagram. Do not treat a successful
+renderer command as editorial or visual review. This presentation step does not
+rerun the target skill or invoke a paid judge.

@@ -151,3 +151,12 @@ inside the page. Comprehension check is a main section directly below the
 conclusion. On screen, choices remain hidden until requested; in print, questions
 and choices are visible while answers, feedback, selected-option marks, controls,
 and detailed audit disclosures are omitted. The full evidence stays in HTML.
+
+## Report writing
+
+Use `/report-write` (or `$report-write` in Codex) for standalone reports. Review,
+sync, rollup and implementation skills also load it before final human delivery.
+The skill organizes content by domain with at most four peer units, uses Mermaid
+for meaningful relationships, and reviews prose, worked calculations, paragraph
+breaks and source support. Its helper renders HTML or Markdown without installing
+packages. Existing structured review artifacts remain complete audit inputs.

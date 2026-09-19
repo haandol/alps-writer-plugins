@@ -6,6 +6,8 @@ argument-hint: "[category-or-feature-id?]"
 
 # feature-to-adr
 
+> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+
 Transfer ALPS feature specifications at the PRD → ADR ownership boundary. This
 skill owns ALPS-side discovery, complete requirement transfer, and explicit
 re-import comparison. ADR authoring remains delegated to `/adr-new` in the

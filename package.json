@@ -6,19 +6,23 @@
   "description": "Codex and Claude Code marketplace: ALPS authoring and ADR-driven development as two independent plugins.",
   "type": "module",
   "scripts": {
-    "build": "pnpm --filter alps-writer build",
+    "build": "node scripts/sync-report-skill.mjs && pnpm --filter alps-writer build",
     "lint": "pnpm --filter alps-writer lint",
-    "test": "pnpm --filter alps-writer test && node --test \"plugins/adr-writer/tests/**/*.test.mjs\" && pnpm test:deepeval",
+    "test": "pnpm report-skill:check && pnpm --filter alps-writer test && node --test \"plugins/adr-writer/tests/**/*.test.mjs\" && pnpm test:deepeval",
     "test:deepeval": "node --test \"plugins/adr-writer/evals/deepeval/*.test.mjs\"",
     "eval:regression": "node plugins/adr-writer/evals/deepeval/run.mjs",
     "eval:deepeval": "node plugins/adr-writer/evals/deepeval/run.mjs",
     "eval:report": "node plugins/adr-writer/evals/deepeval/render-report.mjs",
+    "eval:golden": "node plugins/adr-writer/evals/deepeval/golden-report.mjs",
+    "eval:calibration": "node plugins/adr-writer/evals/deepeval/calibrate.mjs",
     "eval:custom": "node plugins/adr-writer/evals/regression/run.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "bump": "node scripts/bump-version.mjs",
     "bump:check": "node scripts/bump-version.mjs --check",
-    "prepare": "husky"
+    "prepare": "husky",
+    "report-skill:sync": "node scripts/sync-report-skill.mjs",
+    "report-skill:check": "node scripts/sync-report-skill.mjs --check"
   },
   "keywords": [
     "claude-code",

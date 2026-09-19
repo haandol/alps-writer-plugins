@@ -8,6 +8,17 @@ import {
 
 const ui = { diagramFallback: "Cannot render", stateStart: "Start", stateEnd: "End" };
 
+test("diagram labels wrap at Korean word boundaries before splitting a token", () => {
+  const html = renderMermaid(
+    "sequenceDiagram\nparticipant A as 12345678901234567890 결제금액\nparticipant B as Result\nA->>B: completion",
+    ui,
+  );
+  const spans = [...html.matchAll(/<tspan[^>]*>([^<]*)<\/tspan>/g)].map((match) => match[1]);
+  assert.ok(spans.includes("결제금액"));
+  assert.ok(spans.includes("12345678901234567890"));
+  assert.ok(!spans.includes("제금액"));
+});
+
 test("sequence diagrams retain actors, request order, response style, and conditional branches", () => {
   const source = `sequenceDiagram
 participant Caller

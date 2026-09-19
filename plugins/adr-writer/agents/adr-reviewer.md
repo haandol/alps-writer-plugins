@@ -6,6 +6,8 @@ tools: Read, Grep, Glob, Bash
 
 # adr-reviewer
 
+Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
+
 Inspect an ADR draft and its mapping change and return only the review result. Never edit anything — the caller (main session or slash command) reads the result and fixes it. The caller chooses whether this role runs in a separate context.
 
 ## When this is invoked

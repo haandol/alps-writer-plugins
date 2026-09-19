@@ -7,6 +7,8 @@ disable-model-invocation: true
 
 # adr-rollup
 
+> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+
 The goal is **one logical decision = one current-state ADR.** When the same decision is scattered across several ADRs as evolution history (v1 → v2 → v3 — a remnant of the old evolution-chain model), merge that chain into one so only the decision the latest code actually implements remains. There is no reason to hold evolution history spread across several ADRs — reading the single final state should convey the latest code's business and technical decisions. But the **major transitions** the chain carried (replacing the adopted alternative, changing the core algorithm or architecture, inverting a Driver, and the like) are not deleted; they are **harvested** into the category's `decision-log.md` — Git history preserves the individual diffs, but the traceable timeline of "why was this swapped out" stays in the log (`authoring-rules.md` "What to log — minor vs major").
 
 **Reducing the ADR count is not the goal.** The goal is "tidying scattered evolution history into decision units," and a smaller count is merely the consequence. The right number of ADRs is the number of genuinely distinct logical decisions that exist in that category — never cram distinct decisions into one ADR to reduce the count. When there is no chain to merge, merging nothing is the correct outcome.
@@ -127,6 +129,8 @@ Date: <today>
    - Apply the ADR admission gate to the consolidated core subject too. If the chain only records a replaceable library, SDK, framework, credential/auth adapter, or module structure, do not preserve it as a polished ADR; report it as a retirement candidate.
 7. **Keep the error-handling strategy**: architecture-level handling such as graceful degradation and fallback stays.
 
+Before overwriting or deleting chain members, retain the original source passages needed for the step 9 harvest. The rewritten survivor is not evidence of what the earlier policy was.
+
 ### 5. Code alignment verification (performed by this skill directly)
 
 Compare the consolidated ADR against the code and align it one last time — finish here, with no separate `adr-sync` call. For the grep strategy details see `adr-sync` Pass 2.
@@ -190,6 +194,8 @@ Align every reference in one pass against the **final numbers** after step 7. Th
 ### 9. Harvest the major history → decision-log.md (last of all)
 
 Move the **major transitions** the chain carried into the category's `docs/adr/<category>/decision-log.md`. Perform this step **last**, after step 8 — step 8's stale-citation finder (`--removed`/`--renumbered`) is a pre-scan locator that walks the existing tree **before the log is written**, so creating the log first would make the finder produce false positives on the log entries you just wrote (hence the harvest comes after the finder and the repoint).
+
+**Ground history in original evidence.** Support each `What`, `Why`, and `What is now void` claim with the original chain ADRs, an existing decision log, or verified Git history. Compare the original before/after contracts: an unchanged rule is preserved, not newly adopted or invalidated. A rejected or hypothetical alternative — including one described during consolidation — does not establish a previously adopted policy. Paraphrase recorded reasons without adding unstated causes, pressures, or past assumptions. If evidence is missing, keep the supported transition and report the gap; omit an unsupported optional field instead of inventing a past state or motive. Before finishing, check the final log against those original sources, not against the newly rewritten ADR.
 
 What to record (`authoring-rules.md` "What to log — minor vs major" — major only):
 

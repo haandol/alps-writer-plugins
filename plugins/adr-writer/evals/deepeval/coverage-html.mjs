@@ -63,7 +63,7 @@ ${image ? `<div class="diagram-controls"><button type="button" data-diagram-zoom
     .join("");
   return `<section class="coverage-section" id="process-coverage">
 <h2>전체 프로세스와 eval 커버 범위</h2>
-<p>전체 평가 흐름 1장과 스킬별 세부 흐름 2장으로 나눴습니다. 도표의 <b>R1–R4 / S1–S4</b>는 eval 사례, <b>RU / SY</b>는 업무 단계 코드입니다. 단계별 표의 사례 링크를 누르면 실제 DeepEval 결과와 증거로 이동합니다.</p>
+<p>전체 평가 흐름 1장과 스킬별 세부 흐름 2장으로 나눴습니다. 도표의 <b>R1–R7 / S1–S4</b>는 eval 사례, <b>RU / SY</b>는 업무 단계 코드입니다. 단계별 표의 사례 링크를 누르면 실제 DeepEval 결과와 증거로 이동합니다.</p>
 <div class="coverage-legend"><span class="coverage-badge direct">명시 의무 연결</span><span class="coverage-badge partial">일부 조건만 평가</span><span class="coverage-badge gap">별도 eval 없음</span><span class="coverage-badge not-selected">이번 선택에 없음</span></div>
 <p class="note"><b>색은 평가 설계의 범위이며 PASS/FAIL 색이 아닙니다.</b> GEval은 케이스 전체에 한 점수를 주므로, 연결된 케이스가 PASS여도 각 노드를 독립적으로 채점했다고 보지 않습니다. P 단계의 실행기 처리와 도구 단위 테스트도 스킬의 LLM 행동 커버리지와 구분합니다.</p>
 <nav class="coverage-nav" aria-label="커버리지 지도 이동"><a href="#eval-overview">전체 흐름</a><a href="#rollup-process">rollup 흐름</a><a href="#sync-process">sync 흐름</a><a href="#coverage-matrix">단계별 연결표</a><a href="#case-code-index">eval 코드 색인</a></nav>

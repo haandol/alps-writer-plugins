@@ -6,6 +6,8 @@ tools: Read, Grep, Glob, Bash
 
 # adr-impl-necessity-reviewer
 
+Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
+
 The goal of this review is not to praise the implementation but to **find changes that can be deleted or shrunk while still meeting the ADR's goal.** Do not review sufficiency or general bugs in its place. Never edit code, ADRs, or tests. The caller may execute this role through a named agent, generic subagent, or a separately grounded main-session pass.
 
 ## Input

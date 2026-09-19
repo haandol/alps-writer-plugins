@@ -6,6 +6,8 @@ argument-hint: "<category> [title?]"
 
 # adr-new
 
+> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+
 Author an ADR directly. Works without an ALPS PRD — this is the plugin's canonical ADR authoring path, while `/feature-to-adr` is "the helper that auto-converts an ALPS Section 7 feature when one already exists."
 
 > When to use: whenever a decision passes the **ADR admission gate** and must be recorded before changing code — a requirement contract, external boundary, data/key design, security trust boundary, adopted algorithm, fallback policy, or durable trade-off. A replaceable implementation means does not enter this skill. The ADR you write can go straight into `/adr-impl`.

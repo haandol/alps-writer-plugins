@@ -127,6 +127,9 @@ Its fixture tool boundary, live opt-in, framework integration, and HTML report w
 are documented in `plugins/adr-writer/evals/deepeval/README.md`. `test:deepeval` is a
 workspace-only SDK integration suite included in `pnpm test`; the bare-Node runtime
 suite remains dependency-free. `pnpm eval:custom` retains the earlier grader.
+`eval:golden` exports the 11-case corpus and pinned provenance without model calls.
+`eval:calibration` checks the judge against 21 authored examples; labels are explicit
+AI drafts until human review, and their agreement is not human-ground-truth accuracy.
 
 ## Repository Structure
 
@@ -242,10 +245,27 @@ codex plugin add adr-writer@alps-writer
 /plugin install adr-writer@alps-writer    # ADR plugin (skills + hooks)
 ```
 
-- **alps-writer** runs its MCP server from the committed bundle plus its local `skills/`. No hooks, no npm/npx.
+- **alps-writer** runs its MCP server from the committed bundle plus its local `skills/`. Its report-writing SessionStart hook adds a compact style directive; no npm/npx is required.
 - **adr-writer** ships local `skills/`, `agents/`, `hooks/`, and `templates/adr/`. Codex requires users to review and trust the bundled hook before it runs. No MCP.
 
 The hook script (in adr-writer) is Node ESM (`.mjs`) and reads NDJSON events from stdin per the Claude Code hooks spec. It uses only Node built-ins (no extra deps), so the plugin requires nothing beyond a Node.js >= 24 runtime.
+
+### Shared report-writing skill
+
+`shared/report-write/` owns the common English skill, editorial guidance, formatting
+rules, and Node-only report helper. `scripts/sync-report-skill.mjs` copies it into
+both plugins; its Mermaid helper is copied from the existing ADR diagram module.
+Edit the canonical source, then synchronize. `report-skill:check` rejects drift.
+Use `--global` only when updating the user-level `~/.agents/skills/report-write`;
+normal builds never write to the user's home directory.
+
+Both plugins advertise report-write through SessionStart independently of the ADR
+mapping. All report-producing skills and review roles load it for the final human
+presentation. Native review schemas remain complete audit input, while final
+reports use domain-scoped hierarchy, at most four peer units, readable paragraph
+breaks, evidence-grounded diagrams, worked calculations, and whole-output review.
+The renderer validates structure and source coverage; semantic review remains a
+separate, explicitly reported step.
 
 ### Cycle hooks layout (adr-writer)
 

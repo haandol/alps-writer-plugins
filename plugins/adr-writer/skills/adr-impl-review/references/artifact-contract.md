@@ -5,6 +5,27 @@ synthesized and the verdict is known. It owns the common standard/full report,
 JSON, validation, rendering, opening, completion-response, and optional
 interactive-comprehension contract.
 
+## Final presentation policy
+
+Before writing the human-facing report, read and apply
+`${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md`. The canonical Markdown and
+JSON sections below remain complete audit inputs for the validator. Their field
+names and ordering are not a flat final-report layout requirement.
+
+Compose the final HTML by domain and reading depth, with at most four peer
+explanation units per node. Preserve all contract coverage, findings, code/test
+proof, source identifiers, and required interactions. Keep non-PROVEN evidence
+visible and PROVEN detail folded as required below. Comprehension questions keep
+their original count and four choices; connect them to the relevant domain's
+conclusion without exposing answers early.
+
+Use the common skill's HTML/Markdown helper when its document contract fits.
+For specialized ruling or quiz controls, retain the existing interaction logic
+inside the domain structure. The final artifact must pass the common editorial,
+hierarchy, line-break, evidence-completeness and rendering checks as well as this
+review's implementation checks. Do not label a flat legacy audit preview as the
+completed human report.
+
 ## 1. Generate the concise evidence report
 
 Apply the `adr-impl-review-report-writer` role contract. This step creates no new
@@ -26,17 +47,18 @@ Before writing the report, read
 `${CLAUDE_PLUGIN_ROOT}/references/review-report-writing.md` and
 `${CLAUDE_PLUGIN_ROOT}/references/reader-first-writing.md` completely.
 
-Use progressive disclosure and a paper-shaped reading order: title, abstract,
-related ADRs and context, core implementation methods and algorithms,
-self-validation methods and results, results and limitations, conclusion and
-future work, optional comprehension check, and evidence appendix. The body is continuous essay prose. Do not
+Use progressive disclosure through report-write: title and answer first, then
+domain-scoped context, implementation, verification, limitations, and conclusions.
+Keep related ADRs, any comprehension check, and detailed evidence with the
+responsibility they explain. The canonical source sections below are audit
+anchors, not a flat final-page outline. The body is continuous essay prose. Do not
 show structured field labels such as `Claim`, `Worked example`,
 `Counterexample`, `Assessment`, `Responsibility`, `Interactions`, or
 `Outcome`. Do not use verdict stamps, status pills, count chips, task cards, or
 tables in the default body. Keep the structured fields for validation and
 compose them into paragraphs. The evidence appendix keeps mode, scope, contract
 coverage, implementation choices, detailed findings, code, tests, residual
-and risks. The optional comprehension check is a main section immediately after the conclusion.
+and risks. Optional comprehension questions follow the owning domain's conclusion.
 Include detailed repair guidance only for `FIX_REQUIRED`, `BLOCK`, or
 when the user asks for it.
 
@@ -146,9 +168,10 @@ coverage fields in JSON, but do not force them into seven visible columns or
 repeat the same detailed evidence outside its Hill.
 Never replace the four-column implementation-choice table with prose.
 
-When comprehension support is selected, place a generated `Comprehension check`
-immediately after the conclusion and before the evidence appendix, with a heading
-at the same level as the other main sections. Keep one to five medium-difficulty,
+When comprehension support is selected, retain the generated `Comprehension check`
+audit section. In the human view, place questions after the owning domain's
+conclusion and before its detailed evidence; group five by actual subject.
+Keep one to five medium-difficulty,
 four-option single-answer questions in the structured check. Ask only material
 application questions about the before/after behavior, causal path, ADR
 contract, failure or boundary case, test condition, or excess scope. Do not use
@@ -465,7 +488,9 @@ Validate and build the HTML in both modes:
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-materialize.mjs <artifact-dir>
 node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-validate.mjs <artifact-dir>
-node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-report.mjs <findings.json> --out <artifact-dir>/adr-impl-review-report.html
+node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-report.mjs <findings.json> --out <artifact-dir>/adr-impl-review-audit.html
+# Apply report-write to compose and check the final adr-impl-review-report.html
+# from the validated audit inputs, preserving all required interactions.
 node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-open.mjs <artifact-dir>/adr-impl-review-report.html
 ```
 

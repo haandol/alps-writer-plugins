@@ -6,6 +6,8 @@ tools: Read, Grep, Glob, Bash
 
 # adr-impl-refactor-reviewer
 
+Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
+
 Review the implemented code for decision-neutral improvements. Focus on whether the code does the necessary work efficiently and whether reuse is justified by code that exists now. Never edit code, ADRs, tests, or the mapping.
 
 This is not the necessity review. Necessity asks whether a change belongs in the ADR implementation diff at all. You inspect the implementation that remains and ask whether its internal structure or execution can be improved without changing the ADR decision, the requirement contract, or observable behavior.

@@ -44,9 +44,9 @@ function fixture(item = cases[0]) {
   return { root, logPath, tools: makeTools({ root, pluginRoot: PLUGIN, logPath, turn: 1 }) };
 }
 
-test("the eight cases have reproducible, executable fixtures and complete source/adaptation metadata", () => {
-  assert.equal(cases.length, 8);
-  assert.equal(new Set(cases.map((item) => item.id)).size, 8);
+test("the eleven cases have reproducible, executable fixtures and complete source/adaptation metadata", () => {
+  assert.equal(cases.length, 11);
+  assert.equal(new Set(cases.map((item) => item.id)).size, 11);
   for (const item of cases) {
     assert.deepEqual(
       item.build(),
@@ -60,6 +60,8 @@ test("the eight cases have reproducible, executable fixtures and complete source
     const tests = tools.call("run_check", { kind: "policy-tests" });
     const lint = tools.call("run_check", { kind: "structure" });
     assert.equal(tests.exitCode, 0, `${item.id}: ${tests.stdout}${tests.stderr}`);
+    assert.match(tests.stdout, /\btests [1-9]\d*/, `${item.id}: policy tests must actually run`);
+    assert.doesNotMatch(tests.stderr, /skipping running files/);
     assert.equal(lint.exitCode, 0, `${item.id}: ${lint.stdout}${lint.stderr}`);
   }
 });
@@ -280,7 +282,7 @@ test("check output is available as verbatim text without nested JSON escape gues
 
 test("case selection and CLI flags reject accidental empty or mixed execution", () => {
   assert.equal(selectCases({ skill: "adr-sync" }).length, 4);
-  assert.equal(selectCases({ only: "encbird" }).length, 4);
+  assert.equal(selectCases({ only: "encbird" }).length, 6);
   assert.throws(() => selectCases({ skill: "adr-new" }));
   assert.throws(() => selectCases({ only: "not-a-case" }));
   assert.throws(() => parseArgs(["--live", "--prepare"]));

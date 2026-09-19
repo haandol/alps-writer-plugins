@@ -5,7 +5,7 @@
 
 스킬 프롬프트를 수정한 뒤에도 기능이 유지되는지, **고정 fixture에서 실제 스킬을 실행하고
 LLM이 산출물과 행동을 읽어 판정**한다. EncBird·Pixelbank의 ADR과 구현을 참고한 기본
-사례 8개가 들어 있다.
+사례 11개가 들어 있다.
 
 평가 대상에는 정답 태그나 EVAL tail을 요구하지 않는다. 실행 에이전트는 문서를 읽고,
 사용자와 주고받고, 실제 fixture 문서를 수정한다. 별도 LLM 판정은 변경 전후 파일,
@@ -21,7 +21,7 @@ Claude Code CLI가 필요하며 기존 설정의 제공자와 인증을 사용�
 # 무료: 사례 목록
 pnpm eval:custom --list
 
-# 무료: 8개 임시 저장소와 미실행 HTML 리포트 생성, 실제 로컬 테스트·ADR lint 확인
+# 무료: 11개 임시 저장소와 미실행 HTML 리포트 생성, 실제 로컬 테스트·ADR lint 확인
 pnpm eval:custom --prepare --out .codex/evals/adr-fixtures
 
 # 실제 LLM 호출: 한 사례로 실행 연결 확인
@@ -170,11 +170,22 @@ MCP 서버가 아래 동작만 제공한다.
 성공률이나 LLM 판정기의 의미 정확도를 대신하지 않는다. 중요한 live 실패는 인용
 증거를 사람이 확인한다.
 
-이번 첫 세트에는 아직 사람이 라벨링한 독립적인 판정기 보정 집합, 전체 20개 계획 사례,
+현재 세트에는 아직 사람이 라벨링한 독립적인 판정기 보정 집합, 모든 계획 사례,
 native CLI resume·장문 압축 평가는 포함하지 않았다. 결과의 적용 범위를 이 기본
 세트와 사용한 실행 환경으로 제한한다.
 평가 기준일은 한 번 정해 두 버전의 모든 발화에 동일하게 전달한다. 모델이 작성한 모든 날짜의 정확성을 자동 판정하는 별도 metric은 아직 없으므로 결과의 날짜 필드는 증거와 함께 확인한다.
 
+첫 계획 전용·잘못된 통합 제안의 거부 사례와 출처 고정, 21개 초안 판정기 보정 세트는
+[현재 DeepEval 안내](../deepeval/README.md)의 Golden set 보완 절을 참고한다.
+
 fixture·기대 동작·판정 프롬프트는 버전 관리하고, 실행 원문·승인 사건·평가 결과는
 일시적인 로컬 관찰 자료로 둔다. 기본 출력은 Git에서 제외된 `.codex/` 아래다. 결과를
 공유하기 전 내용과 경로를 확인하며 원본 고객 세션을 그대로 넣지 않는다.
+
+## Human report delivery
+
+For a final human-facing report, apply `../../skills/report-write/SKILL.md`.
+Keep generated evidence and the original HTML as audit sources; organize the
+final explanation by domain with at most four peer units, complete evidence
+links, and inspected Mermaid diagrams. State the actual semantic and visual
+review scope. A successful render alone does not complete that review.

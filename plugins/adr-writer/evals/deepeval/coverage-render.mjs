@@ -57,16 +57,21 @@ async function renderLocal(sourceFile, svgFile, id) {
 // Rebuild from trusted stage definitions and the selected case/obligation IDs.
 // Saved SVGs are not accepted as an alternative source of coverage truth.
 export async function prepareCoverageVisuals(report, directory, { render = renderLocal } = {}) {
+  report.coverageVisuals = await renderDiagrams(coverageDiagrams(report), directory, { render });
+  return report.coverageVisuals;
+}
+
+export async function renderDiagrams(diagrams, directory, { render = renderLocal } = {}) {
   const folder = path.join(directory, "coverage");
   mkdirSync(folder, { recursive: true });
   const visuals = [];
-  for (const diagram of coverageDiagrams(report)) {
+  for (const diagram of diagrams) {
+    if (!/^[a-z][a-z0-9-]*$/.test(diagram.id)) throw new Error("Invalid diagram ID");
     const sourceFile = path.join(folder, `${diagram.id}.mmd`);
     const svgFile = path.join(folder, `${diagram.id}.svg`);
     writeFileSync(sourceFile, diagram.source + "\n");
     const svg = await render(sourceFile, svgFile, diagram.id);
     visuals.push({ ...diagram, svg });
   }
-  report.coverageVisuals = visuals;
   return visuals;
 }

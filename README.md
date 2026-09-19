@@ -213,6 +213,36 @@ Claude Code CLI and uses DeepEval GEval to produce HTML/JSON results. The judge
 defaults to Bedrock `us.openai.gpt-5.6-sol`, AWS profile `default`, in `us-east-1`. See the
 [regression suite guide](./plugins/adr-writer/evals/deepeval/README.md) for
 baseline comparisons, case selection, execution boundaries, and costs.
+`pnpm eval:golden` renders the current inputs, obligations, pinned provenance, and
+Mermaid coverage. `pnpm eval:calibration --live` checks the judge against authored
+positive/negative examples; its draft labels still require human review.
+
+## Report writing across projects
+
+Both plugins include `report-write` for direct requests and reports produced by
+reviews, audits, sync, rollup, and evaluations. It keeps skill instructions in
+English and writes the report in the user's requested language and format.
+Reports start with the answer, then drill into evidenced domains with at most
+four peer units. The shared review covers reader context, worked calculations,
+paragraph breaks, diagrams, and factual/causal support.
+
+Use `$report-write` in Codex or `/report-write` in Claude Code. Existing
+structured review data remains complete; the final human presentation follows
+the common skill instead of treating a flat audit export as the final report.
+
+The canonical source is `shared/report-write/`. Plugin copies are synchronized
+and checked during development. For this computer's other projects:
+
+```bash
+node scripts/sync-report-skill.mjs --global
+node scripts/sync-report-skill.mjs --check --global
+```
+
+This installs the same standalone skill in `~/.agents/skills/report-write`.
+No npm or npx distribution is needed. Its Node-only helper renders a validated
+report document as HTML or Markdown and preserves Mermaid source and evidence.
+The session hook also announces the common report skill in repositories without
+an ADR mapping; it does not initialize ADRs or call a model.
 
 ## Contributing
 

@@ -1,7 +1,12 @@
 # Human-facing review reports
 
 Use this guide only when writing the report or chat summary a person will read.
-Internal reviewer artifacts keep their evidence-complete formats.
+Before composing the final presentation, read and apply
+`${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md` and its relevant references.
+That skill owns domain hierarchy, maximum four peer units, paragraph layout,
+worked examples, and editorial completion checks. Internal reviewer artifacts
+keep their evidence-complete formats; a flat audit export is not the final
+human-facing report.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/reader-first-writing.md` completely and
 apply it with this report-specific guide.
@@ -24,7 +29,8 @@ because the harness prompt is written in English.
 
 ## Start with the answer
 
-Lead with a short `Abstract` before detailed findings or evidence:
+Lead with a short answer before detailed domain explanations or evidence. The
+following are summary facts, not mandatory separate top-level sections:
 
 - **Verdict** — what the review concluded.
 - **Impact** — what a user, operator, or maintainer can observe.
@@ -34,7 +40,9 @@ Lead with a short `Abstract` before detailed findings or evidence:
 Keep each item to one or two sentences. A reader should understand the outcome
 without knowing the rule IDs, file layout, or internal symbol names.
 
-After this summary, preserve the complete evidence required by the owning skill.
+After this summary, organize the complete evidence by its owning domain and
+responsibility using report-write. Preserve the complete evidence required by
+the owning skill.
 Easy wording never permits dropping a requirement value, allowed set, state rule,
 permission, mandatory field, ordering rule, unit, finding, unverified axis, test
 result, or residual risk.
@@ -126,35 +134,28 @@ reason to hide evidence or merge independent obligations.
   diagram.
 - **ADR sync** — visualize a changed decision flow, dependency/category movement,
   or unresolved ADR-versus-code branch. Keep semantic diffs in text.
-- **Implementation review** — after the Abstract, explain related ADRs and change
-  context, then core implementation methods and algorithms, self-validation
-  methods and results, results and limitations, and conclusion and future work.
-  Use one implementation subsection per vertical user flow, logical capability,
-  or bounded context, but write its structured fields as continuous prose.
-  Technical layers, files, and review phases never define those boundaries.
-  The default body contains no verdict stamp, status pill, count chip, task card,
-  field label, or table. The standalone HTML moves Component, Code, coverage,
-  detailed findings, scope, metrics, and implementation choices into a collapsed
-  evidence appendix while preserving the important contract anchors and action controls.
-  When comprehension support is warranted, put `Comprehension check` immediately
-  after the conclusion as a visible main section, before the evidence appendix.
-  It contains one to five material four-option single-answer questions; an ordinary
-  local PASS may omit it.
-  Show each question before its choices so the reader can recall an answer,
-  reveal choices only on request, and show a non-graded one-sentence
-  explanation cue after selection. Mark one or two core questions for a later
-  re-check without timers, notifications, or persisted progress. Reveal neutral
-  option feedback, the correct explanation, and evidence only after self-check.
-  Do not use scores, grades, celebration, praise, ability judgments, or
-  gamification.
+- **Implementation review** — organize the final report by evidenced domain,
+  bounded context, or vertical capability. Present purpose and the important
+  behavior before implementation details. Keep claims, examples, verification,
+  findings, and limitations with their owning domain. Group more than four peers
+  semantically rather than truncating them or enforcing a flat paper outline.
+  Preserve Component, Code, contract coverage, scope, metrics, implementation
+  choices, and raw evidence as appropriate drill-down material.
+  Keep required comprehension questions and ruling controls intact. Place the
+  `Comprehension check` after the relevant domain's conclusion and before detailed
+  evidence; preserve the existing question count, four options, answer hiding,
+  neutral feedback, and separation from the code verdict. Do not start a quiz
+  without a request or invent a comprehension-ready status.
 
-For the default reading path, write prose before structured evidence. Context
-and each Hill should read like a concise tutorial or senior review comment:
-starting condition → action and branch → system response or state change →
-observable result → verification. Do not present Context, Container, or
-Component fields as equal-width table-like cards. Keep contract coverage,
-implementation choices, and code excerpts available as collapsed evidence after
-the reader has the causal model.
+For the default reading path, use connected prose before structured evidence.
+Each domain should read as a concise tutorial or senior review comment, using
+continuous essay paragraphs before the supporting structured fields.
+Context gives intent, contracts, and scope; each Container/Hill owns a vertical
+capability, Component explains its implementation, and Code supplies focused
+evidence. Keep these reading levels distinct inside the owning domain.
+Use the caller's canonical Markdown/JSON as audit input when a fixed schema is
+required. Compose the final human view with report-write; native schemas are
+not permission to deliver a flat or unreviewed human report.
 
 - **Implementation refactor** — visualize before/after work flow only when several
   call sites or processing stages are involved. A local rename or extraction does

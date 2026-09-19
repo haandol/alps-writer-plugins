@@ -9,6 +9,9 @@ export const CASE_CODES = {
   "sync-encbird-forward-only-drift": "S2",
   "sync-pixelbank-compensation-cleanup": "S3",
   "sync-pixelbank-retention-local": "S4",
+  "rollup-encbird-discover-plan": "R5",
+  "rollup-pixelbank-discover-plan": "R6",
+  "rollup-encbird-reject-wrong-plan": "R7",
 };
 
 const byCode = Object.fromEntries(Object.entries(CASE_CODES).map(([id, code]) => [code, id]));
@@ -28,7 +31,14 @@ export const STAGES = [
     "RU1",
     "대상 범위·인덱스·구현 읽기",
     "partial",
-    [ref("R1", "identity"), ref("R2", "identity"), ref("R3", "pricing")],
+    [
+      ref("R1", "identity", "plan"),
+      ref("R2", "identity"),
+      ref("R3", "pricing", "plan"),
+      ref("R5", "plan"),
+      ref("R6", "plan"),
+      ref("R7", "plan"),
+    ],
     "지정한 한 카테고리의 정상 입력만 사용한다. 무인자 전체 범위, mapping 부재, 카테고리 간 경계 판단은 별도 사례가 없다.",
   ),
   stage(
@@ -36,15 +46,28 @@ export const STAGES = [
     "RU2",
     "같은 결정의 변화 이력인지 판단",
     "direct",
-    [ref("R1", "identity"), ref("R2", "identity"), ref("R3", "pricing")],
-    "명확한 변화 이력과 명확한 독립 결정을 비교한다. 대체 관계가 모호한 이력은 별도 사례가 없다.",
+    [
+      ref("R1", "identity", "plan"),
+      ref("R2", "identity"),
+      ref("R3", "pricing", "plan"),
+      ref("R5", "plan"),
+      ref("R6", "plan"),
+      ref("R7", "plan"),
+    ],
+    "정답을 알려주지 않는 첫 계획과 잘못된 전체 통합 제안의 거부도 평가한다. 명확한 변화 이력과 독립 결정을 비교한다. 대체 관계가 모호한 이력은 별도 사례가 없다.",
   ),
   stage(
     "ru_independent",
     "RU3",
     "독립 결정·번호 공백 유지",
     "direct",
-    [ref("R1", "identity"), ref("R2", "no-change", "report")],
+    [
+      ref("R1", "identity"),
+      ref("R2", "no-change", "report"),
+      ref("R5", "independent"),
+      ref("R6", "references"),
+      ref("R7", "plan"),
+    ],
     "같은 카테고리의 독립 결정과 무통합 시 번호 공백을 보존하는지 평가한다.",
   ),
   stage(
@@ -76,7 +99,12 @@ export const STAGES = [
     "RU7",
     "승인 보류 시 변경 없이 종료",
     "direct",
-    [ref("R4", "no-change", "report")],
+    [
+      ref("R4", "no-change", "report"),
+      ref("R5", "no-change"),
+      ref("R6", "no-change"),
+      ref("R7", "no-change", "report"),
+    ],
     "계획 제시와 보류 설명만 허용한다. 잠깐 썼다가 원복한 경우도 쓰기 기록으로 평가할 수 있다.",
   ),
   stage(
@@ -148,8 +176,12 @@ export const STAGES = [
     "SY4",
     "ADR과 구현이 일치하는지 판단",
     "direct",
-    [ref("S1", "units", "contract"), ref("S2", "authority"), ref("S4", "retention")],
-    "정상 일치, 실제 금지 계약 위반, 입력·영구 자산의 보존 조건을 평가한다.",
+    [
+      ref("S1", "units", "contract"),
+      ref("S2", "authority"),
+      ref("S4", "retention", "metadata", "tiering", "archive"),
+    ],
+    "정상 일치, 실제 금지 계약 위반, 객체·메타데이터 90일, 128KB·30/90일 계층 이동과 복원 대기 계층 금지를 평가한다.",
   ),
   stage(
     "sy_conflict",

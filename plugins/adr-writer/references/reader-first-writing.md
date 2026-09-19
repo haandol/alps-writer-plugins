@@ -2,6 +2,9 @@
 
 Use this guide for ADR bodies, decision digests, and human-facing review reports.
 It changes presentation, never the underlying contract or evidence.
+For human-facing reports, first apply `${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md`;
+its domain hierarchy and editorial checks own final delivery. ADR source documents
+retain their required schema.
 
 ## Start from the reader's question
 

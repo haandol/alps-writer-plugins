@@ -13,7 +13,7 @@ const report = () => ({
   runs: [],
 });
 
-test("coverage references resolve to existing obligations for all eight cases", () => {
+test("coverage references resolve to existing obligations for all eleven cases", () => {
   const mapped = coverageFor(report());
   assert.deepEqual(mapped.invalid, []);
   assert.deepEqual(mapped.unmapped, []);
@@ -21,7 +21,7 @@ test("coverage references resolve to existing obligations for all eight cases", 
     new Set(mapped.stages.flatMap((stage) => stage.references.map((ref) => ref.caseId))),
     new Set(cases.map((item) => item.id)),
   );
-  assert.equal(Object.keys(CASE_CODES).length, 8);
+  assert.equal(Object.keys(CASE_CODES).length, 11);
   assert.ok(mapped.stages.some((stage) => stage.effective === "gap"));
 });
 

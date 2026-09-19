@@ -115,11 +115,11 @@
       "adrs": [
         {
           "path": "docs/adr/adr-cycle/implementation-review/0001-validated-low-risk-refactoring.md",
-          "status": "Accepted (2026-09-09)",
-          "summary": "구현 리뷰는 위험에 비례한 계약·증거 검증과 저위험 자동 보완을 수행하며, 질문 중심 시각화·결론 뒤 이해도 확인·인쇄 가능한 흰 배경 HTML로 변경을 설명한다"
+          "status": "Accepted (2026-09-19)",
+          "summary": "구현 리뷰는 위험에 비례한 계약·증거 검증을 수행하고 공통 보고서 스킬의 도메인별 확대 구조로 판단·동작·검증·근거와 이해도 질문을 제공한다"
         }
       ],
-      "dependsOn": []
+      "dependsOn": ["reporting/domain-navigation"]
     },
     "adr-cycle/behavior-evaluation": {
       "feature": "Prompt behavior evaluation",
@@ -150,6 +150,17 @@
           "path": "docs/adr/delivery/repository-protection/0001-protect-main-with-pr-and-ci.md",
           "status": "Accepted (2026-08-15)",
           "summary": "main 갱신은 원격 저장소가 pull request와 필수 CI 성공을 병합 조건으로 강제하고 로컬 hook은 피드백 수단으로 사용한다"
+        }
+      ],
+      "dependsOn": []
+    },
+    "reporting/domain-navigation": {
+      "feature": "Domain-first report navigation",
+      "adrs": [
+        {
+          "path": "docs/adr/reporting/domain-navigation/0001-domain-first-report-navigation.md",
+          "status": "Accepted (2026-09-19)",
+          "summary": "모든 사람용 보고서는 공통 스킬로 도메인별 확대 구조와 최대 4개 하위 설명 단위, 시각 설명과 의미·줄바꿈 검토를 적용한다"
         }
       ],
       "dependsOn": []

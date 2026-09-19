@@ -6,6 +6,8 @@ argument-hint: "[category-or-adr-path?]"
 
 # adr-review
 
+> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+
 Review ADRs that already exist **as documents** and return a punch list. With no argument it sweeps every ADR; with an argument it narrows to one category or a single ADR.
 
 > **This is the document-quality axis.** It asks "should this decision be an ADR at all, is it written at the right abstraction level, and is every requirement it must carry still in it?" — never "does the code match?" The ADR admission gate rejects replaceable libraries, SDKs, frameworks, credential/auth adapters, and module structure even when their prose is polished. Pick the right command:

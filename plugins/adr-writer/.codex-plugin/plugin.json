@@ -22,7 +22,7 @@
   "interface": {
     "displayName": "ADR Writer",
     "shortDescription": "Keep architecture decisions aligned with code",
-    "longDescription": "Author decision records before implementation, implement accepted decisions in dependency order, apply only verified low-risk refactors before completion, review decision fidelity, detect code-to-ADR drift, and consolidate superseded decision chains. A bundled hook injects the ADR admission directive when session context starts or is restored.",
+    "longDescription": "Author decision records before implementation, implement accepted decisions in dependency order, apply only verified low-risk refactors before completion, review decision fidelity, detect code-to-ADR drift, and consolidate superseded decision chains. A bundled hook injects the ADR admission directive when session context starts or is restored. Human-facing reports use the shared domain-scoped report-writing skill.",
     "developerName": "haandol",
     "category": "Developer Tools",
     "capabilities": ["Interactive", "Read", "Write"],
@@ -33,7 +33,8 @@
       "Review this ADR implementation for safe efficiency and reuse refactors, apply only verified low-risk changes, and propose the rest.",
       "Review my existing ADRs for quality and abstraction level.",
       "Adversarially review this ADR implementation and produce a junior repair guide.",
-      "Audit the current ADRs against the shipping code."
+      "Audit the current ADRs against the shipping code.",
+      "Write or revise a report with clear paragraphs, domain-scoped drill-down, and Mermaid explanations."
     ],
     "brandColor": "#B45309",
     "screenshots": []

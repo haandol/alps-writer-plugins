@@ -6,6 +6,8 @@ argument-hint: "[adr-path-or-category]"
 
 # adr-impl
 
+> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+
 Implements the specified ADR in code. Once implementation, tests, the verified refactor pass, and final implementation review pass, it automatically updates a `Proposed` target to `Accepted`; an existing `Accepted` target whose decision and requirement contract remain unchanged stays `Accepted` throughout. **If no ADR exists, apply the ADR admission gate first.** Write an ADR with `/adr-new <category>` only for a durable requirement or architectural decision; implement replaceable libraries, SDKs, frameworks, credential/auth wiring, and other code-level choices without creating one. If an ALPS Section 7 feature already exists, batch-convert with `/feature-to-adr`.
 
 > Status semantics: `Proposed` means "the ADR has been proposed but is not implemented", `Accepted` means "implementation complete". This command transitions only a `Proposed` target after completion; it never cycles an unchanged `Accepted` target through `Proposed`.

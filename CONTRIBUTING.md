@@ -199,7 +199,9 @@ The [rollup/sync regression suite](./plugins/adr-writer/evals/deepeval/README.md
 adds actual fixture edits, DeepEval GEval judgments, and local HTML/JSON reports.
 Use `pnpm eval:regression --prepare` without model calls and explicitly add
 `--live` for execution. Its dependency-free harness tests and the workspace-only `test:deepeval` integration tests are part of `pnpm test`; live results
-remain outside the CI quality gate.
+remain outside the CI quality gate. `pnpm eval:golden` exports the dataset and
+coverage; `pnpm eval:calibration --live` evaluates the judge using authored controls
+whose draft labels are separate from human-reviewed ground truth.
 
 Do not delete or weaken a test to make it pass — fix the code instead.
 
@@ -278,3 +280,15 @@ Explain why this change is needed.
 - Use squash merge by default
 - Merge commit message must follow Conventional Commits format
 - Do not push directly to `main`
+
+### Shared report-writing changes
+
+Edit `shared/report-write/`, not the generated plugin copies. Run
+`pnpm report-skill:sync` and `pnpm report-skill:check`. The dependency-free Mermaid
+implementation remains in the ADR scripts; the sync step distributes it with the
+standalone skill. Global installation is an explicit
+`node scripts/sync-report-skill.mjs --global`, never a build side effect.
+
+Test report hierarchy, evidence coverage, safe rendering and both plugin hooks.
+Inspect the actual report for paragraph flow, line wrapping, diagram semantics
+and source support; a structural pass is not an editorial pass.

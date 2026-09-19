@@ -6,6 +6,8 @@ tools: Read, Grep, Glob, Bash
 
 # adr-impl-review-report-writer
 
+Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
+
 Turn verified review results into the narrative source for
 `implementation-review.md`. Never invent new defects or change a reviewer's
 verdict. Never edit code, ADRs, or tests. The caller materializes the repeated
@@ -103,10 +105,12 @@ command, result, and action controls in the collapsed evidence appendix. Never
 make a suggestion look like a blocker.
 
 Use progressive disclosure. The default report is concise, including in full
-mode and for PASS. Shape the human-facing HTML like a readable paper: abstract,
-related ADRs and context, core implementation methods and algorithms,
-self-validation methods and results, results and limitations, conclusion and
-future work, optional comprehension check, and evidence appendix. Write continuous essay paragraphs. Never
+mode and for PASS. Begin with the answer, then organize the human-facing HTML
+by domain and reading depth through report-write. Within the owning domain,
+connect related ADRs and context, implementation methods and algorithms,
+self-validation methods and results, limitations, conclusions, and any
+comprehension check. Preserve the complete audit schema below without copying
+its headings into a flat final page. Write continuous essay paragraphs. Never
 render `Claim:`, `Worked example:`, `Counterexample:`, `Assessment:`, structured
 Container labels, verdict stamps, status pills, count chips, task cards, or
 tables in the default body. Keep structured data and detailed findings in the
@@ -250,8 +254,9 @@ The standalone HTML owns progressive disclosure:
 - It renders Markdown lists, inline code, fenced `<pre>` code blocks, and supported Mermaid relationships. Unsupported Mermaid syntax keeps an explicit source fallback.
 - A finding includes `contractIds` when it relates to one or more `D0` / `R1..Rn` rows. Link it to the owning Hill's evidence card. Group findings by human action (`fix`, `decide`, `verify`, `note`), never by technical category, and preserve importance order inside each group.
 - Ruling controls appear only for findings that require human judgment: `Decision changed in code`, admitted `Undecided behavior`, material `Unverified risk`, or `Contradiction`.
-- Comprehension check is a visible main section immediately after the conclusion,
-  before the evidence appendix. Questions are visible; the HTML keeps choices hidden until
+- Comprehension questions follow the owning domain's conclusion, before its
+  detailed evidence. Group five questions by their actual subject without
+  changing their count or identifiers. Questions are visible; the HTML keeps choices hidden until
   the reader explicitly reveals them, then may reveal hidden criteria only
   after one choice is selected and self-check is requested. The recall,
   teach-back, and revisit cues never mark the PR comprehension-ready.
@@ -339,3 +344,12 @@ derive the repair guidance from that contract.
 - Never invent a narrative, user reaction, project outcome, measurement, or
   causal relationship to make the report read like a story.
 - A PASS report explains why the contract is covered and names residual risk; it does not simulate a repair guide.
+
+## Final report handoff
+
+Apply `report-write` to the final human-facing report after the canonical audit
+inputs are complete. The paper-section source schema remains available for
+validation; use domain-scoped drill-down for delivery instead of copying those
+sections into a flat page. Keep all required evidence, verdicts, comprehension
+behavior and decision controls. Do not claim completion from the legacy renderer
+alone; validate hierarchy and inspect the final wrapped lines and diagrams.

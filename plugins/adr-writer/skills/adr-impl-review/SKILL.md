@@ -1,10 +1,12 @@
 ---
 name: adr-impl-review
-description: Review the complete code implementation of an ADR using a risk-selected standard or full path, then generate a paper-shaped standalone HTML Evidence Package that teaches the verified behavior in manageable segments and exposes contract gaps, test gaps, and excess scope. Report-only; never edits code or ADRs.
+description: Review the complete code implementation of an ADR using a risk-selected standard or full path, then generate a domain-scoped standalone HTML Evidence Package that teaches verified behavior and exposes contract gaps, test gaps, and excess scope. Report-only; never edits code or ADRs.
 argument-hint: "[adr-path-or-category] [--base <ref>] [--mode standard|full]"
 ---
 
 # adr-impl-review
+
+> **Reports**: Apply [report-write](../report-write/SKILL.md).
 
 Disprove the implementation in this order.
 
@@ -23,7 +25,7 @@ flowchart TD
 
 In full mode, the necessity and sufficiency perspectives are grounded separately and do not see each other's conclusions before synthesis (section 3). They may run in parallel or sequentially. Standard mode runs only the sufficiency perspective defined below. The user's intent and the ADR's regeneration checklist are settled before implementation; this command consumes that baseline and does not reopen it as a routine post-implementation gate.
 
-This procedure is not a proof of mathematical necessity and sufficiency. It is **a disproof-based review that hunts for unnecessary changes and missing behavior from two different perspectives.** A passing test is only evidence that no counterexample was found among the cases actually executed — not a proof of completeness.
+This is not a mathematical proof of necessity and sufficiency. It is **a disproof-based review that hunts for unnecessary changes and missing behavior from two different perspectives.** A passing test is only evidence that no counterexample was found among the cases actually executed — not a proof of completeness.
 
 > **Language**: this skill and every other harness prompt are written in English. Write the human-facing review report in the language the user explicitly requests or currently uses. If the conversation does not establish a language, use the target ADR's dominant language. Keep stable artifact anchors and technical terms when translation would reduce precision. Any user-facing phrasing below is a guide, not a literal string.
 
@@ -32,7 +34,7 @@ required perspectives, evidence, and verdicts are contractual. Subagent count,
 named/generic/main-session execution, parallelism, and model selection are chosen
 by the current model.
 
-The review has two outputs:
+Distinct outputs:
 
 - **Implementation verdict** — whether the code and tests honor the ADR.
 - **PR comprehension readiness** — whether the reader can explain the important

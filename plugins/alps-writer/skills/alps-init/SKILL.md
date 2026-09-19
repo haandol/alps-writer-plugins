@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # alps-init
 
+> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+
 Start authoring an ALPS (PRD).
 
 > **Language**: this skill and every other harness prompt are written in English, but talk to the user and write the document content in the language the user writes in. Any user-facing phrasing below is a guide, not a literal string.

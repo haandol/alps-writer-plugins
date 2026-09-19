@@ -257,8 +257,14 @@ export function makeTools({ root, pluginRoot, logPath, turn }) {
         } else {
           throw new Error("unknown local check");
         }
+        // A fixture policy suite is an independent test process. Inheriting
+        // node:test's worker marker makes Node skip nested --test execution
+        // with exit 0, so a broken fixture would appear to pass our tests.
+        const checkEnv = { ...process.env };
+        delete checkEnv.NODE_TEST_CONTEXT;
         const result = spawnSync(executable, args, {
           cwd: root,
+          env: checkEnv,
           encoding: "utf8",
           timeout: 30_000,
           maxBuffer: 2 * 1024 * 1024,

@@ -34,7 +34,7 @@ test("real DeepEval GEval/evaluate owns the strict metric; CLI is only the model
     cwd: folder(),
     invoke: async ({ prompt, schema }) => {
       calls++;
-      assert.ok(prompt.includes(EVALUATION_STEPS[0]));
+      for (const step of EVALUATION_STEPS) assert.ok(prompt.includes(step));
       assert.ok(prompt.includes(item.obligations[0].text));
       assert.equal(schema.properties.score.type, "number");
       assert.equal(schema.properties.reason.type, "string");
