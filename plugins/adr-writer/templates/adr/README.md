@@ -93,4 +93,4 @@ The ADR list is held solely by [`docs/adr/.mapping.json`](./structure.md#the-adr
 - [Michael Nygard — Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) — the original ADR article
 - [adr-writer plugin](https://github.com/haandol/alps-writer-plugins) — this plugin itself
 
-<!-- adr-writer:rules-version 0.8.19 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.8.20 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

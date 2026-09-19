@@ -1,6 +1,6 @@
 {
   "name": "adr-writer",
-  "version": "0.8.19",
+  "version": "0.8.20",
   "description": "Run an ADR-first development cycle that authors, implements, safely refactors, reviews, synchronizes, and rolls up architecture decisions.",
   "author": {
     "name": "haandol",
