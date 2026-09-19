@@ -165,6 +165,10 @@ export async function main(args) {
           timeoutMs: options.timeout * 1000,
           onCall(response) {
             record.calls.push({ ...response, text: undefined, structured: undefined });
+            writeFileSync(
+              path.join(folder, `model-response-${record.repeat}-${record.calls.length}.json`),
+              JSON.stringify(response, null, 2),
+            );
           },
         });
         Object.assign(record, result);

@@ -153,7 +153,30 @@ test("actual GEval can use Bedrock transport and the report names the selected p
     invoke: (options) =>
       invokeBedrock({
         ...options,
-        clientFactory: () => ({ send: async () => response, destroy() {} }),
+        clientFactory: () => ({
+          send: async () => ({
+            ...response,
+            output: {
+              message: {
+                content: [
+                  {
+                    text: JSON.stringify({
+                      score: 0,
+                      reason: "필수 계약을 확인할 근거가 부족합니다.",
+                      obligations: item.obligations.map(({ id }) => ({
+                        id,
+                        verdict: "UNVERIFIED",
+                        reason: "필수 계약을 확인할 근거가 부족합니다.",
+                        evidence: [],
+                      })),
+                    }),
+                  },
+                ],
+              },
+            },
+          }),
+          destroy() {},
+        }),
       }),
   });
   assert.equal(output.verdict, "NOT_PROVEN");

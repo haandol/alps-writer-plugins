@@ -1,6 +1,6 @@
 import { invokeClaude } from "../regression/claude.mjs";
 import { BEDROCK_DEFAULTS, invokeBedrock } from "./bedrock.mjs";
-import { evidenceSources } from "../regression/judge.mjs";
+import { evidenceSources, judgeSchema, validateJudgment } from "../regression/judge.mjs";
 
 // GEval owns the scoring prompt and score calculation. These steps describe
 // the same observable contract the fixtures already carry; no output exemplar
@@ -13,6 +13,7 @@ export const EVALUATION_STEPS = [
   "Distinguish an unauthorized Decision/requirement rewrite from a supported exact-path Accepted-to-Proposed correction. Code/test success does not by itself authorize changing a requirement toward the code.",
   "Award 1 only when every expected obligation is established. Award 0 if any obligation is violated OR cannot be established. Do not reward a good plan when actual edits were required. Do not infer deployed state from local files.",
   "Explain the result in Korean. Identify failed or unproven obligation IDs, distinguish a demonstrated violation from missing evidence, and cite the relevant file paths or event IDs. If all obligations hold, summarize the evidence that establishes them. Do not grade hidden reasoning, agent count, style similarity, or model identity.",
+  "Return an obligations array alongside score and reason: one {id, verdict, reason, evidence:[{source,quote}]} per expected obligation. Verdict is PASS, FAIL or UNVERIFIED. PASS/FAIL requires a verbatim quote from an existing source; insufficient evidence is UNVERIFIED. Score is 1 exactly when all obligations PASS, otherwise 0. Use before:<path> and after:<path> for original/resulting files; user:N and reply:N use one-based conversation indices; event:N identifies a complete event by seq. event:N:content is request arguments.content or result.content, event:N:before/after is result.before/after, and event:N:stdout/stderr is check output. Quotes refer to decoded source text, not JSON escaping. execution identifies the execution summary.",
 ];
 
 let sdkPromise;
@@ -62,26 +63,10 @@ export function deepEvalInput(item, evidence) {
     throw new Error("incomplete target execution evidence");
   }
   const sources = evidenceSources(evidence);
-  // Keep complete original/final files. Tool events contain all actions, but
-  // their large text payloads need not be repeated: final documents and check
-  // output have dedicated evidence sources below. Mutation requests still
-  // expose timing, scope and write attempts, including write-then-restore.
-  const events = evidence.events.map((event) => ({
-    seq: event.seq,
-    turn: event.turn,
-    kind: event.kind,
-    tool: event.tool,
-    arguments:
-      event.arguments &&
-      Object.fromEntries(Object.entries(event.arguments).filter(([key]) => key !== "content")),
-    request: event.request,
-    ok: event.ok,
-    error: event.error,
-    exitCode: event.result?.exitCode,
-    path: event.result?.path,
-    from: event.result?.from,
-    to: event.result?.to,
-  }));
+  // The final files cannot reconstruct a transient contract rewrite. Preserve
+  // requests and results, including failed writes and write-then-restore bodies.
+  // The context-budget check rejects oversized evidence instead of losing it.
+  const events = evidence.events;
   const checkOutput = Object.fromEntries(
     Object.entries(sources).filter(([key]) => /^event:\d+:(stdout|stderr)$/.test(key)),
   );
@@ -112,6 +97,8 @@ export async function makeJudge({
   timeoutMs = 300_000,
   invoke,
   onCall = () => {},
+  obligations,
+  sources,
 }) {
   if (!["bedrock", "claude"].includes(provider)) throw new Error("Unknown judge provider");
   const selectedModel = model ?? (provider === "bedrock" ? BEDROCK_DEFAULTS.model : undefined);
@@ -135,6 +122,12 @@ export async function makeJudge({
       // Zod validates the answer locally, without claiming native constrained decoding.
       const transportSchema = schema ? z.toJSONSchema(schema, { target: "draft-7" }) : undefined;
       if (transportSchema) delete transportSchema.$schema;
+      if (schema) {
+        if (!obligations?.length || !sources)
+          throw new Error("GEval requires expected obligations and evidence sources");
+        transportSchema.properties.obligations = judgeSchema.properties.obligations;
+        transportSchema.required = [...new Set([...transportSchema.required, "obligations"])];
+      }
       const response = await transport({
         prompt,
         cwd,
@@ -145,9 +138,8 @@ export async function makeJudge({
         ...(schema ? { schema: transportSchema } : {}),
       });
       await onCall(response);
-      const output = schema
-        ? schema.parse(response.structured ?? JSON.parse(response.text))
-        : response.text;
+      const raw = schema ? (response.structured ?? JSON.parse(response.text)) : response.text;
+      const output = schema ? schema.parse(raw) : raw;
       // GEval's strict mode asks for 0/1, but its generic Zod schema accepts
       // any number. Refuse an out-of-range model output instead of letting 2
       // become an accidental passing score.
@@ -156,6 +148,11 @@ export async function makeJudge({
       }
       if (schema && "reason" in output && output.reason.trim().length < 10)
         throw new Error("GEval must explain its judgment with evidence");
+      if (schema) {
+        const judgment = validateJudgment(raw, obligations, sources);
+        if (output.score !== (judgment.verdict === "PASS" ? 1 : 0))
+          throw new Error("GEval score contradicts its obligation judgments");
+      }
       return { output, cost: response.costUSD ?? null };
     }
   })();
@@ -199,6 +196,8 @@ export async function evaluateEvidence({
     timeoutMs,
     invoke,
     onCall,
+    obligations: item.obligations,
+    sources: evidenceSources(evidence),
   });
   const metric = new GEval({
     name: "ADR operation contract",
