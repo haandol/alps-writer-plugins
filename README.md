@@ -206,6 +206,14 @@ pnpm --filter alps-writer start   # Run the built bundle
 
 See [AGENTS.md](./AGENTS.md) for the full architecture, code style, and conventions.
 
+For rollup/sync prompt regression, `pnpm eval:regression --prepare` creates
+reference-based fixtures and an unexecuted HTML report without calling a model.
+`pnpm eval:regression --live` runs the selected skills through the logged-in
+Claude Code CLI and uses DeepEval GEval to produce HTML/JSON results. The judge
+defaults to Bedrock `us.openai.gpt-5.6-sol`, AWS profile `default`, in `us-east-1`. See the
+[regression suite guide](./plugins/adr-writer/evals/deepeval/README.md) for
+baseline comparisons, case selection, execution boundaries, and costs.
+
 ## Contributing
 
 Contributions are welcome. Before opening a PR, read [`CONTRIBUTING.md`](./CONTRIBUTING.md) for commit convention (Conventional Commits), branch naming, and code style. Open an issue first for substantial changes, make sure `pnpm lint` and `pnpm format:check` pass, and keep commits atomic.

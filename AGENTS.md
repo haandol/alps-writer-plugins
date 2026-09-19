@@ -94,7 +94,7 @@ Root is a private pnpm workspace; the MCP server package lives in `plugins/alps-
 
 ```bash
 pnpm install          # Install dependencies (whole workspace)
-pnpm test             # Both suites (alps-writer via tsx + adr-writer .mjs); blocks pre-push
+pnpm test             # ALPS, dependency-free ADR, and DeepEval integration tests; blocks pre-push
 pnpm build            # Bundle the alps-writer MCP server (pnpm --filter alps-writer build)
 pnpm lint             # ESLint the MCP server
 pnpm format           # Prettier across the repo
@@ -119,6 +119,14 @@ Build (inside `plugins/alps-writer/`) runs `tsc --noEmit` (typecheck), then esbu
 Tests use Node's built-in test runner. ALPS TypeScript tests run through `tsx`; ADR tests are dependency-free `.mjs` tests. Run all suites with `pnpm test`.
 
 **Behaviour evals** (`plugins/adr-writer/evals/`) are separate and NOT in `pnpm test`. `pnpm test` proves a prompt _says_ something; the evals check whether an agent given that prompt _does_ it, by running real scenarios against a live model and reporting per-check hit rates. They cost money, take minutes, and are non-deterministic, so they never gate CI — their job is reproducing a reported defect (`node evals/run.mjs --only <name> --runs 10`) and telling you whether it happens 3/10 or 10/10, which decides the fix. Use `node evals/run.mjs --changed <base> --list` to preview the disposable impact-map selection for a branch without invoking a model. The harness itself _is_ covered by `pnpm test` via a stub agent, because an eval whose scorer cannot tell a bad reply from a good one reports green and is worse than no eval. See `plugins/adr-writer/evals/README.md`.
+
+The rollup/sync artifact regression path uses `pnpm eval:regression` with DeepEval GEval.
+The judge defaults to Bedrock `us.openai.gpt-5.6-sol`, explicit AWS profile `default`,
+and region `us-east-1`; `--model` selects only the Claude Code target agent.
+Its fixture tool boundary, live opt-in, framework integration, and HTML report workflow
+are documented in `plugins/adr-writer/evals/deepeval/README.md`. `test:deepeval` is a
+workspace-only SDK integration suite included in `pnpm test`; the bare-Node runtime
+suite remains dependency-free. `pnpm eval:custom` retains the earlier grader.
 
 ## Repository Structure
 

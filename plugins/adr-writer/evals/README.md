@@ -14,6 +14,21 @@ or contradicted.
 **Not part of `pnpm test`.** These call a real model: they cost money, take
 minutes, and are non-deterministic. Never gate CI on them.
 
+For **rollup/sync prompt regression with real document edits, LLM semantic
+judgment through DeepEval GEval, and a standalone HTML report**, use the separate
+[regression suite](./deepeval/README.md). It includes eight fixed cases
+adapted from EncBird and Pixelbank and optional baseline-versus-candidate runs:
+
+```bash
+# From the repository root; no model call:
+pnpm eval:regression --prepare
+# Explicit live model execution:
+pnpm eval:regression --live --skill adr-sync --baseline HEAD --runs 1
+```
+
+The existing runner below and its `--changed` selection do not execute this
+separate suite.
+
 ## Running
 
 ```bash

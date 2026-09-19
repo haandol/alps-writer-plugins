@@ -170,7 +170,7 @@ pnpm format:check                  # Check formatting without writing
 ### Tests
 
 ```bash
-pnpm test        # both suites: alps-writer (tsx) + adr-writer (node:test, dep-free)
+pnpm test        # ALPS + dependency-free ADR + DeepEval SDK integration tests
 pnpm bump:check  # every release-version site agrees (13 of them)
 ```
 
@@ -194,6 +194,12 @@ Automated in two places, so you rarely have to remember:
 Behaviour evals (`plugins/adr-writer/evals/`) are **not** part of `pnpm test` —
 they call a real model, cost money, and are non-deterministic. Run them by hand
 when reproducing a reported LLM defect: `node evals/run.mjs --only <name> --runs 10`.
+
+The [rollup/sync regression suite](./plugins/adr-writer/evals/deepeval/README.md)
+adds actual fixture edits, DeepEval GEval judgments, and local HTML/JSON reports.
+Use `pnpm eval:regression --prepare` without model calls and explicitly add
+`--live` for execution. Its dependency-free harness tests and the workspace-only `test:deepeval` integration tests are part of `pnpm test`; live results
+remain outside the CI quality gate.
 
 Do not delete or weaken a test to make it pass — fix the code instead.
 

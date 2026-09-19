@@ -8,7 +8,12 @@
   "scripts": {
     "build": "pnpm --filter alps-writer build",
     "lint": "pnpm --filter alps-writer lint",
-    "test": "pnpm --filter alps-writer test && node --test \"plugins/adr-writer/tests/**/*.test.mjs\"",
+    "test": "pnpm --filter alps-writer test && node --test \"plugins/adr-writer/tests/**/*.test.mjs\" && pnpm test:deepeval",
+    "test:deepeval": "node --test \"plugins/adr-writer/evals/deepeval/*.test.mjs\"",
+    "eval:regression": "node plugins/adr-writer/evals/deepeval/run.mjs",
+    "eval:deepeval": "node plugins/adr-writer/evals/deepeval/run.mjs",
+    "eval:report": "node plugins/adr-writer/evals/deepeval/render-report.mjs",
+    "eval:custom": "node plugins/adr-writer/evals/regression/run.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "bump": "node scripts/bump-version.mjs",
@@ -40,8 +45,13 @@
     ]
   },
   "devDependencies": {
+    "@aws-sdk/client-bedrock-runtime": "3.1135.0",
+    "@aws-sdk/credential-providers": "3.1135.0",
+    "@mermaid-js/mermaid-cli": "11.17.0",
+    "deepeval": "0.9.16",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.5",
-    "prettier": "^3.8.3"
+    "prettier": "^3.8.3",
+    "zod": "4.3.6"
   }
 }

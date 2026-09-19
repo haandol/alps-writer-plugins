@@ -13,3 +13,6 @@ overrides:
   "hono@<4.12.34": "4.12.34"
   "ip-address@>=10.1.1 <10.3.1": "10.3.1"
   "@hono/node-server@<2.0.5": ">=2.0.5"
+
+patchedDependencies:
+  deepeval@0.9.16: patches/deepeval@0.9.16.patch
