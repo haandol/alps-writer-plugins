@@ -9,6 +9,8 @@ export const IMPACT_RULES = [
     pathPrefixes: [
       "plugins/adr-writer/templates/adr/",
       "plugins/adr-writer/evals/lib/",
+      "plugins/adr-writer/evals/run.mjs",
+      "plugins/adr-writer/evals/impact-map.mjs",
       "plugins/adr-writer/scripts/adr-lint-lib.mjs",
     ],
     allScenarios: true,
@@ -18,12 +20,18 @@ export const IMPACT_RULES = [
       "plugins/alps-writer/skills/alps-init/",
       "plugins/alps-writer/src/guides/",
       "plugins/alps-writer/src/templates/",
+      "plugins/alps-writer/src/index.ts",
+      "plugins/alps-writer/src/profiles.ts",
     ],
     scenarioPrefixes: ["alps-", "lite-alps-", "feature-handoff-"],
   },
   {
     pathPrefixes: ["plugins/alps-writer/skills/feature-to-adr/"],
     scenarioPrefixes: ["feature-handoff-"],
+  },
+  {
+    pathPrefixes: ["plugins/adr-writer/evals/regression/judge.mjs"],
+    scenarioPrefixes: ["alps-approval-digest-"],
   },
   {
     pathPrefixes: ["plugins/alps-writer/skills/lite-alps-init/"],
@@ -77,6 +85,13 @@ export const IMPACT_RULES = [
 export function scenarioNamesForChangedPaths(changedPaths, scenarios) {
   const names = new Set();
   const normalized = changedPaths.map((value) => value.replaceAll("\\", "/"));
+
+  for (const scenario of scenarios) {
+    const file = scenario.file ?? `${scenario.name}.mjs`;
+    if (normalized.includes(`plugins/adr-writer/evals/scenarios/${file}`)) {
+      names.add(scenario.name);
+    }
+  }
 
   for (const rule of IMPACT_RULES) {
     const matched = normalized.some((changedPath) =>

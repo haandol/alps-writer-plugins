@@ -46,6 +46,59 @@ test("the impact map selects related scenarios without becoming a second contrac
   );
 });
 
+test("changed scenarios select themselves and shared runners select every scenario", async () => {
+  const { scenarioNamesForChangedPaths } = await import(path.join(EVALS, "impact-map.mjs"));
+  const scenarios = [
+    {
+      name: "alps-approval-digest-preserves-contract",
+      file: "alps-approval-digest-preserves-contract.mjs",
+    },
+    { name: "lite-alps-resume-preserves-proposal-first" },
+    { name: "feature-handoff-ownership-transfer" },
+    { name: "impl-plans-without-routine-approval" },
+  ];
+  assert.deepEqual(
+    [
+      ...scenarioNamesForChangedPaths(
+        ["plugins/adr-writer/evals/scenarios/alps-approval-digest-preserves-contract.mjs"],
+        scenarios,
+      ),
+    ],
+    [scenarios[0].name],
+  );
+  assert.deepEqual(
+    [
+      ...scenarioNamesForChangedPaths(
+        ["plugins\\adr-writer\\evals\\scenarios\\impl-plans-without-routine-approval.mjs"],
+        scenarios,
+      ),
+    ],
+    [scenarios[3].name],
+  );
+  for (const file of ["run.mjs", "impact-map.mjs"]) {
+    assert.deepEqual(
+      [...scenarioNamesForChangedPaths([`plugins/adr-writer/evals/${file}`], scenarios)],
+      scenarios.map((s) => s.name),
+    );
+  }
+  for (const file of ["index.ts", "profiles.ts"]) {
+    assert.deepEqual(
+      [...scenarioNamesForChangedPaths([`plugins/alps-writer/src/${file}`], scenarios)],
+      scenarios.slice(0, 3).map((s) => s.name),
+    );
+  }
+  assert.deepEqual(
+    [...scenarioNamesForChangedPaths(["plugins/adr-writer/evals/regression/judge.mjs"], scenarios)],
+    [scenarios[0].name],
+    "the shared citation validator also affects the semantic digest scorer",
+  );
+  assert.deepEqual(
+    [...scenarioNamesForChangedPaths(["plugins/adr-writer/evals/deepeval/report.mjs"], scenarios)],
+    [],
+    "the separate regression suite does not select unrelated behavior scenarios",
+  );
+});
+
 test("the reference-input scenario distinguishes durable constraints from implementation detail", async () => {
   const scenario = (
     await import(path.join(EVALS, "scenarios", "alps-reference-routes-only-durable-context.mjs"))

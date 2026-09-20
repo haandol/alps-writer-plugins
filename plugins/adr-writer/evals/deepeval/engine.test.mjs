@@ -13,6 +13,7 @@ import {
 import { compareDeepEval, renderDeepEvalReport } from "./report.mjs";
 import { loadExecutionReport, parseDeepEvalArgs } from "./run.mjs";
 import { cases } from "../regression/cases.mjs";
+import { evidenceSources } from "../regression/judge.mjs";
 
 const item = cases.find((c) => c.id === "sync-encbird-turn-units");
 const evidence = {
@@ -24,6 +25,16 @@ const evidence = {
   referenceDate: "2026-09-19",
 };
 const folder = () => mkdtempSync(path.join(tmpdir(), "adr-deepeval-"));
+const judgmentOutput = (score, reason, verdict = score === 1 ? "PASS" : "UNVERIFIED") => ({
+  score,
+  reason,
+  obligations: item.obligations.map(({ id }) => ({
+    id,
+    verdict,
+    reason,
+    evidence: verdict === "UNVERIFIED" ? [] : [{ source: "reply:1", quote: evidence.replies[0] }],
+  })),
+});
 
 test("real DeepEval GEval/evaluate owns the strict metric; CLI is only the model adapter", async () => {
   let calls = 0;
@@ -38,10 +49,11 @@ test("real DeepEval GEval/evaluate owns the strict metric; CLI is only the model
       assert.ok(prompt.includes(item.obligations[0].text));
       assert.equal(schema.properties.score.type, "number");
       assert.equal(schema.properties.reason.type, "string");
+      assert.ok(schema.required.includes("obligations"));
       assert.equal(schema.$schema, undefined, "CLI transport must not require a 2020-12 registry");
       return {
         text: "",
-        structured: { score: 1, reason: "원문과 결과의 실제 5턴·음성 6턴 계약이 일치한다." },
+        structured: judgmentOutput(1, "원문과 결과의 실제 5턴·음성 6턴 계약이 일치한다."),
         costUSD: 0,
         models: ["stub-model"],
         ms: 1,
@@ -69,7 +81,7 @@ test("DeepEval score zero is not proof of a violation, and invalid scores remain
     cwd: folder(),
     invoke: async () => ({
       text: "",
-      structured: { score: 0, reason: "필수 계약을 확인할 실행 증거가 부족하다." },
+      structured: judgmentOutput(0, "필수 계약을 확인할 실행 증거가 부족하다."),
       models: ["stub"],
       costUSD: 0,
       ms: 1,
@@ -95,6 +107,160 @@ test("DeepEval score zero is not proof of a violation, and invalid scores remain
   });
   assert.equal(invalid.verdict, "ERROR");
   assert.match(invalid.error, /score 0 or 1/);
+});
+
+test("intermediate writes, restores, deletes, moves and failed attempts remain judge evidence", () => {
+  const file = "docs/adr/chat/0001-session-length.md";
+  const original = evidence.before[file];
+  const trace = (content) => ({
+    ...evidence,
+    events: [
+      { seq: 1, turn: 1, kind: "request", tool: "write_file", arguments: { path: file, content } },
+      {
+        seq: 2,
+        turn: 1,
+        kind: "result",
+        request: 1,
+        tool: "write_file",
+        ok: true,
+        result: { path: file, before: original, after: content },
+      },
+      {
+        seq: 3,
+        turn: 1,
+        kind: "request",
+        tool: "write_file",
+        arguments: { path: file, content: original },
+      },
+      {
+        seq: 4,
+        turn: 1,
+        kind: "result",
+        request: 3,
+        tool: "write_file",
+        ok: true,
+        result: { path: file, before: content, after: original },
+      },
+    ],
+  });
+  const normal = deepEvalInput(item, trace(original));
+  const changedEvidence = trace(original.replace("최대 5턴", "최대 999턴"));
+  const changed = deepEvalInput(item, changedEvidence);
+  assert.notEqual(changed.actualOutput, normal.actualOutput);
+  assert.match(changed.actualOutput, /999턴/);
+  const sources = evidenceSources(changedEvidence);
+  assert.match(sources["event:1:content"], /999턴/);
+  assert.equal(sources["event:2:before"], original);
+  assert.equal(sources["event:2:after"], sources["event:1:content"]);
+  for (const [tool, result] of [
+    ["delete_file", { path: file, before: "temporary contract", after: null }],
+    ["move_file", { from: file, to: "docs/moved.md", content: "moved contract" }],
+  ]) {
+    const input = deepEvalInput(item, {
+      ...evidence,
+      events: [
+        { seq: 1, turn: 1, kind: "result", tool, ok: true, result },
+        {
+          seq: 2,
+          turn: 1,
+          kind: "request",
+          tool: "write_file",
+          arguments: { path: file, content: "rejected contract" },
+        },
+        { seq: 3, turn: 1, kind: "result", tool: "write_file", ok: false, error: "write denied" },
+      ],
+    });
+    assert.deepEqual(JSON.parse(input.actualOutput).events[0].result, result);
+    assert.match(input.actualOutput, /rejected contract/);
+    assert.match(input.actualOutput, /write denied/);
+  }
+});
+
+test("invented citations, omitted obligations and contradictory scores cannot become PASS", async () => {
+  const reason = "각 의무의 실제 실행 근거를 검증했습니다.";
+  const failures = [
+    { score: 1, reason: "event:999와 docs/does-not-exist.md가 모든 의무를 증명합니다." },
+    { ...judgmentOutput(1, reason), obligations: [] },
+    {
+      ...judgmentOutput(1, reason),
+      obligations: [
+        ...judgmentOutput(1, reason).obligations,
+        judgmentOutput(1, reason).obligations[0],
+      ],
+    },
+    {
+      ...judgmentOutput(1, reason),
+      obligations: item.obligations.map(({ id }) => ({
+        id,
+        verdict: "PASS",
+        reason,
+        evidence: [{ source: "event:999", quote: "passed" }],
+      })),
+    },
+    {
+      ...judgmentOutput(1, reason),
+      obligations: item.obligations.map(({ id }) => ({
+        id,
+        verdict: "PASS",
+        reason,
+        evidence: [{ source: "reply:1", quote: "invented quotation" }],
+      })),
+    },
+    judgmentOutput(1, reason, "UNVERIFIED"),
+    judgmentOutput(0, reason, "PASS"),
+  ];
+  for (const structured of failures) {
+    const output = await evaluateEvidence({
+      item,
+      evidence,
+      name: "invalid-audit",
+      cwd: folder(),
+      invoke: async () => ({ text: "", structured, models: ["stub"], costUSD: 0, ms: 1 }),
+    });
+    assert.equal(output.verdict, "ERROR", JSON.stringify(structured));
+  }
+  const failed = await evaluateEvidence({
+    item,
+    evidence,
+    name: "valid-failure",
+    cwd: folder(),
+    invoke: async () => ({
+      text: "",
+      structured: judgmentOutput(0, reason, "FAIL"),
+      models: ["stub"],
+      costUSD: 0,
+      ms: 1,
+    }),
+  });
+  assert.equal(failed.verdict, "NOT_PROVEN", "a supported violation remains a behavior result");
+});
+
+test("oversized transient evidence fails before calling a judge instead of truncating content", async () => {
+  let calls = 0;
+  await assert.rejects(
+    evaluateEvidence({
+      item,
+      evidence: {
+        ...evidence,
+        events: [
+          {
+            seq: 1,
+            turn: 1,
+            kind: "request",
+            tool: "write_file",
+            arguments: { path: "docs/temporary.md", content: "x".repeat(240_001) },
+          },
+        ],
+      },
+      name: "oversized-intermediate-write",
+      invoke: async () => {
+        calls++;
+        throw new Error("must not invoke");
+      },
+    }),
+    /context budget/,
+  );
+  assert.equal(calls, 0);
 });
 
 test("previous custom verdicts are excluded and incomplete/empty expectations cannot pass", () => {
