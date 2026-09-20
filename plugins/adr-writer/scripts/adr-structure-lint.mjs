@@ -20,12 +20,13 @@
 //
 // Usage:
 //   node adr-structure-lint.mjs [--adr-dir docs/adr] [category] [--json]
-//                               [--no-invariants] [--warn-as-error]
+//                               [--no-invariants | --documents-only] [--warn-as-error]
 //
 //   [category]        limit to one category key (e.g. identity/login)
 //   --adr-dir DIR     ADR root (default: docs/adr)
 //   --json            emit machine-readable JSON instead of the text report
 //   --no-invariants   skip the adr-invariants.sh (a)/(b) sub-run
+//   --documents-only  keep document checks, including ADR→PRD, without scanning code
 //   --warn-as-error   treat warnings as failures (exit 1 on any warn)
 //
 // Exit: 0 = clean, 1 = at least one error (or warn with --warn-as-error),
@@ -60,12 +61,14 @@ import {
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 // ── arg parse ─────────────────────────────────────────────────────────────
+/** Select the requested evidence boundary; contradictory scan modes fail before reading files. */
 function parseArgs(argv) {
   const opts = {
     adrDir: "docs/adr",
     category: null,
     json: false,
     invariants: true,
+    documentsOnly: false,
     warnAsError: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -76,6 +79,7 @@ function parseArgs(argv) {
       opts.adrDir = v.replace(/\/+$/, "");
     } else if (a === "--json") opts.json = true;
     else if (a === "--no-invariants") opts.invariants = false;
+    else if (a === "--documents-only") opts.documentsOnly = true;
     else if (a === "--warn-as-error") opts.warnAsError = true;
     else if (a === "-h" || a === "--help") {
       printHelp();
@@ -84,6 +88,8 @@ function parseArgs(argv) {
     else if (!opts.category) opts.category = a;
     else usage(`unexpected argument: ${a}`);
   }
+  if (opts.documentsOnly && !opts.invariants)
+    usage("--documents-only cannot be combined with --no-invariants");
   return opts;
 }
 
@@ -95,7 +101,7 @@ function usage(msg) {
 function printHelp() {
   process.stdout.write(
     `adr-structure-lint — deterministic ADR structure checker\n\n` +
-      `Usage: node adr-structure-lint.mjs [--adr-dir docs/adr] [category] [--json] [--no-invariants] [--warn-as-error]\n`,
+      `Usage: node adr-structure-lint.mjs [--adr-dir docs/adr] [category] [--json] [--no-invariants | --documents-only] [--warn-as-error]\n`,
   );
 }
 
@@ -539,7 +545,9 @@ function main() {
   let invExit = 0;
   if (opts.invariants) {
     const invScript = path.join(HERE, "adr-invariants.sh");
-    const r = spawnSync("bash", [invScript, "--adr-dir", adrRoot], {
+    const invariantArgs = [invScript, "--adr-dir", adrRoot];
+    if (opts.documentsOnly) invariantArgs.push("--prd-only");
+    const r = spawnSync("bash", invariantArgs, {
       cwd: process.cwd(),
       encoding: "utf8",
     });

@@ -292,3 +292,10 @@ standalone skill. Global installation is an explicit
 Test report hierarchy, evidence coverage, safe rendering and both plugin hooks.
 Inspect the actual report for paragraph flow, line wrapping, diagram semantics
 and source support; a structural pass is not an editorial pass.
+
+### Shared authoring guidance
+
+Edit `requirement-delegation.md` and `comprehension-load.md` under
+`plugins/adr-writer/references/`, then run `pnpm authoring-guidance:sync`.
+Commit the generated alps-writer copies too. `pnpm authoring-guidance:check`
+verifies that each independently installed plugin has its own matching guidance.

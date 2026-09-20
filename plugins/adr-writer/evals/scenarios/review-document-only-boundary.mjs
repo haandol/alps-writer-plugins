@@ -44,7 +44,7 @@ ADR 문서 품질과 shipping code 일치 여부는 서로 다른 검토 질문�
 export default {
   name: "review-document-only-boundary",
   description:
-    "/adr-review and adr-reviewer must remain document-only and route implementation reality to /adr-sync regardless of available code.",
+    "Probe the declared document-only boundary; structural-lint integration tests separately exercise the actual command and code-scan exclusion.",
 
   build(dir) {
     seedRuleDocs(dir);

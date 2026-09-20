@@ -112,16 +112,13 @@ Classify each discovered gap before asking:
 4. **Contradiction** — loaded sources assert incompatible obligations. Show the
    conflict and ask which one is intended.
 
-Ask enrichment questions briefly, one item at a time unless the user supplied a
-complete structured answer covering several gaps. For an architectural choice,
-offer up to three realistic alternatives and their discriminating trade-offs,
-then let the user choose. For an unspecified requirement number, ask an
-open-ended question for the exact value and its basis. Do not suggest example
-numbers, ranges, common defaults, or numeric multiple-choice options; those
-anchor a contract the user has not chosen. Never invent a requirement value,
-allowed set, permission, failure guarantee, boundary, fallback, or decision
-rationale. If the user says a value can be "whatever is reasonable," classify it
-as a tuning value instead of recording a guessed contract.
+Before interpreting delegated choices, read
+`${CLAUDE_PLUGIN_ROOT}/references/requirement-delegation.md` completely.
+Ask only for unresolved protected choices, or present a grounded proposal with
+its basis and trade-offs for the existing ADR approval. Reuse supplied answers.
+For architectural choices, offer up to three realistic alternatives when useful.
+Keep proposals unapproved until confirmed; delegation does not turn a requirement
+into implementation tuning. Never invent an approved value, boundary or rationale.
 
 Treat confirmed answers as ephemeral handoff input. Do not persist a separate
 enrichment report or registry, and do not silently rewrite the PRD. Update the
@@ -200,7 +197,7 @@ before writing ADRs and report `Result: BLOCKED`. Do not report the Feature as
 transferred.
 
 Before scoring the Feature or ADR candidates, read
-`${CLAUDE_PLUGIN_ROOT}/../adr-writer/references/comprehension-load.md`
+`${CLAUDE_PLUGIN_ROOT}/references/comprehension-load.md`
 completely and apply its advisory score to each item.
 
 When the Feature scores 8/10 or higher, offer up to three Feature split
@@ -320,9 +317,10 @@ dependency target from a completed handoff is a real contract-owning category.
 
 ## 7. Approval and completion
 
-For two or more queued Features, show the analysis order once and get one
-approval. Each new or changed ADR still uses the adr-writer path's own baseline
-approval.
+Show the requested scope and dependency order as a non-blocking progress update.
+Do not request another approval merely because two or more Features are queued.
+Ask only when the target, added cost, or a protected decision remains unresolved.
+Each new or changed ADR still uses the adr-writer path's own baseline approval.
 
 At completion report:
 

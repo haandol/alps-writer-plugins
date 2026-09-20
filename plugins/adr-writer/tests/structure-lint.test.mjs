@@ -26,6 +26,48 @@ import {
   compareVersions,
 } from "../scripts/adr-lint-lib.mjs";
 
+test("document-only review ignores code references but still rejects ADR references to planning documents", () => {
+  withTmp((dir) => {
+    seedClean(dir);
+    write(dir, "src/session.mjs", "// docs/adr/identity/login/0001-password-policy.md\n");
+    const broad = parseLint(dir, [], { full: true });
+    assert.equal(broad.code, 1);
+    assert.ok(
+      broad.errors.some(
+        (item) => item.rule === "invariants" && item.msg.includes("src/session.mjs"),
+      ),
+    );
+    const documents = parseLint(dir, ["--documents-only"], { full: true });
+    assert.equal(documents.code, 0, JSON.stringify(documents.errors));
+    assert.equal(documents.errors.length, 0);
+    const adr = path.join(dir, "docs/adr/identity/login/0001-password-policy.md");
+    write(
+      dir,
+      "docs/adr/identity/login/0001-password-policy.md",
+      readFileSync(adr, "utf8") + "\nSee product.alps.xml.\n",
+    );
+    const planningRef = parseLint(dir, ["--documents-only"], { full: true });
+    assert.equal(planningRef.code, 1);
+    assert.ok(
+      planningRef.errors.some(
+        (item) => item.rule === "invariants" && item.msg.includes("product.alps.xml"),
+      ),
+    );
+    assert.ok(planningRef.errors.every((item) => !item.msg.includes("src/session.mjs")));
+  });
+});
+
+test("document-only mode rejects a simultaneous request to skip its invariant checks", () => {
+  withTmp((dir) => {
+    for (const args of [
+      ["--documents-only", "--no-invariants"],
+      ["--no-invariants", "--documents-only"],
+    ]) {
+      assert.equal(runStructureLint(dir, args).code, 2);
+    }
+  });
+});
+
 // ── unit: classifyStatus ────────────────────────────────────────────────
 test("classifyStatus accepts the four sanctioned forms", () => {
   assert.equal(classifyStatus("Proposed").ok, true);

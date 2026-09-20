@@ -197,6 +197,12 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 
 The two plugins are split so adr-writer never references ALPS. The only coupling is one-way: alps-writer's `/feature-to-adr` transfers each implementable Feature's complete contract into one or several ADRs and delegates each new decision owner to adr-writer's `/adr-new`. Normal implementation then reads only ADRs; explicit PRD re-import remains an alps-writer-side semantic comparison.
 
+Shared authoring guidance is owned by `plugins/adr-writer/references/`:
+`requirement-delegation.md` and `comprehension-load.md` are copied into
+alps-writer's own `references/` by `scripts/sync-authoring-guidance.mjs`.
+Both packages use plugin-local references rather than assuming sibling install
+directories. Build synchronizes them; `authoring-guidance:check` rejects drift.
+
 ADR folders are organized along two axes — a DDD **bounded context** (top-level folder / first key segment) containing one or more **features** (vertical slices, the second segment). A single-feature context stays flat (`auth/`, workshop `f1/`), so existing flat repos need no migration. The ADR index lives in `docs/adr/.mapping.json` itself (path/status/summary per ADR), and admitted work reads it on demand; the README keeps no separate ADR list. The mapping carries an optional advisory `subdomainType` (core/supporting/generic) per context and stores no PRD reference. Context grouping is only applied when ALPS already groups features or the user asks for it — `/feature-to-adr` never invents a domain boundary the PRD doesn't assert, so the one-way alps-writer → adr-writer coupling and "adr-writer never references ALPS" both hold. The DDD overlay is metadata + framing only; it adds no folder depth (keys stay ≤2 segments) and `scripts/adr-invariants.sh` is unaffected.
 
 ## Architecture
@@ -271,6 +277,14 @@ breaks, evidence-grounded diagrams, worked calculations, and whole-output review
 The renderer validates structure and source coverage; semantic review remains a
 separate, explicitly reported step.
 
+The shared report skill also owns core-content comprehension quizzes: one to five
+medium-difficulty questions per report, four choices and one answer each. Authors
+generate questions from the report; the dependency-free renderer validates and
+displays them with staged self-check and print-safe answer hiding. Implementation
+review reuses these controls and retains its native audit schema and PR-readiness
+rules. Omit quizzes only on user request or when there is no substantive concept
+to check; a PASS verdict alone is not an omission reason.
+
 ### Cycle hooks layout (adr-writer)
 
 | File                            | Event          | Purpose                                                                                                                     |
@@ -282,6 +296,11 @@ The cycle relies on the **main session model** for text understanding — the ho
 The compact directive is injected when session context starts or is replaced (`startup`, `resume`, `clear`, `compact`). This restores it after compaction without running a hook for every user message. A request that passes the admission gate must read the full mapping and plausible ADR bodies before code changes; exempt requests do not pay that context cost.
 
 ## Conventions
+
+Document-only ADR review invokes `adr-structure-lint.mjs --documents-only`.
+It checks document structure and ADR→PRD references without the code→ADR scan.
+Other callers retain the default full invariant checks. `--no-invariants` is
+the separate escape hatch for callers that explicitly supply those checks.
 
 - TypeScript strict mode, ES modules (`"type": "module"`)
 - Node.js >= 24
