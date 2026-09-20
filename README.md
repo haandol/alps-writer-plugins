@@ -217,6 +217,14 @@ baseline comparisons, case selection, execution boundaries, and costs.
 Mermaid coverage. `pnpm eval:calibration --live` checks the judge against authored
 positive/negative examples; its draft labels still require human review.
 
+## Shared authoring guidance
+
+Authoring skills share requirement-delegation and comprehension-load guidance,
+packaged inside each plugin so separate installation paths work. Clear analysis
+requests proceed after a scope update; contract changes and destructive actions
+retain their approval boundaries. Document-only ADR review excludes code scans
+while preserving document structure and ADR→PRD reference checks.
+
 ## Report writing across projects
 
 Both plugins include `report-write` for code, pull request, ADR, architecture,
@@ -228,6 +236,15 @@ English and writes the report in the user's requested language and format.
 Reports start with the answer, then drill into evidenced domains with at most
 four peer units. The shared review covers reader context, worked calculations,
 paragraph breaks, diagrams, and factual/causal support.
+
+Reports also include one to five medium-difficulty, four-choice questions about
+their core content. The aim is to support understanding and reduce cognitive
+load. Readers recall an answer, reveal the choices, and select one before
+requesting feedback and evidence. Quizzes are omitted on user request or when
+there is no substantive concept to check. They do not block task completion or
+start a conversational quiz automatically. HTML supports the staged self-check
+and prints questions without answers; Markdown separates questions from the
+answer explanations. Implementation reviews reuse the same quiz controls.
 
 Use `$report-write` in Codex or `/report-write` in Claude Code. Existing
 structured review data remains complete; the final human presentation follows

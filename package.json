@@ -6,9 +6,9 @@
   "description": "Codex and Claude Code marketplace: ALPS authoring and ADR-driven development as two independent plugins.",
   "type": "module",
   "scripts": {
-    "build": "node scripts/sync-report-skill.mjs && pnpm --filter alps-writer build",
+    "build": "node scripts/sync-authoring-guidance.mjs && node scripts/sync-report-skill.mjs && pnpm --filter alps-writer build",
     "lint": "pnpm --filter alps-writer lint",
-    "test": "pnpm report-skill:check && pnpm --filter alps-writer test && node --test \"plugins/adr-writer/tests/**/*.test.mjs\" && pnpm test:deepeval",
+    "test": "pnpm authoring-guidance:check && pnpm report-skill:check && pnpm --filter alps-writer test && node --test \"plugins/adr-writer/tests/**/*.test.mjs\" && pnpm test:deepeval",
     "test:deepeval": "node --test \"plugins/adr-writer/evals/deepeval/*.test.mjs\"",
     "eval:regression": "node plugins/adr-writer/evals/deepeval/run.mjs",
     "eval:deepeval": "node plugins/adr-writer/evals/deepeval/run.mjs",
@@ -22,7 +22,9 @@
     "bump:check": "node scripts/bump-version.mjs --check",
     "prepare": "husky",
     "report-skill:sync": "node scripts/sync-report-skill.mjs",
-    "report-skill:check": "node scripts/sync-report-skill.mjs --check"
+    "report-skill:check": "node scripts/sync-report-skill.mjs --check",
+    "authoring-guidance:sync": "node scripts/sync-authoring-guidance.mjs",
+    "authoring-guidance:check": "node scripts/sync-authoring-guidance.mjs --check"
   },
   "keywords": [
     "claude-code",

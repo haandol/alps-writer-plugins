@@ -71,8 +71,8 @@
       "adrs": [
         {
           "path": "docs/adr/alps-authoring/spec-handoff/0001-admission-aware-feature-handoff.md",
-          "status": "Accepted (2026-08-18)",
-          "summary": "PRD handoff는 ADR 해상도의 계약·결정 gap을 사용자 확인으로 보완한 뒤 완전한 ADR 소유권 이전을 완료하고 이후 명시적 재import만 의미 기준으로 처리한다"
+          "status": "Accepted (2026-09-20)",
+          "summary": "PRD handoff는 값의 효과로 요구사항을 분류하고 위임된 제안의 승인을 분리하며 완전한 계약 소유권 이전과 명시적 재import를 보장한다"
         }
       ],
       "dependsOn": ["adr-authoring/decision-boundary"]
@@ -115,7 +115,7 @@
       "adrs": [
         {
           "path": "docs/adr/adr-cycle/implementation-review/0001-validated-low-risk-refactoring.md",
-          "status": "Accepted (2026-09-19)",
+          "status": "Accepted (2026-09-20)",
           "summary": "구현 리뷰는 위험에 비례한 계약·증거 검증을 수행하고 공통 보고서 스킬의 도메인별 확대 구조로 판단·동작·검증·근거와 이해도 질문을 제공한다"
         }
       ],
@@ -159,8 +159,8 @@
       "adrs": [
         {
           "path": "docs/adr/reporting/domain-navigation/0001-domain-first-report-navigation.md",
-          "status": "Accepted (2026-09-19)",
-          "summary": "모든 사람용 보고서는 공통 스킬로 도메인별 확대 구조와 최대 4개 하위 설명 단위, 시각 설명과 의미·줄바꿈 검토를 적용한다"
+          "status": "Accepted (2026-09-20)",
+          "summary": "공통 보고서 작성은 도메인별 확대 구조와 핵심 내용 중심의 중간 난이도 1~5문항 퀴즈로 이해를 지원하고 단계별 자가 확인과 작업 판정을 분리한다"
         }
       ],
       "dependsOn": []

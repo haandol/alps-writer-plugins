@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { sectionRange } from "../scripts/adr-lint-lib.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, "..");
@@ -11,6 +12,26 @@ function read(relativePath) {
   return readFileSync(path.join(ROOT, relativePath), "utf8");
 }
 
+/** Resolve the documented load edges without requiring copied wording in each caller. */
+function markdownLinks(relativePath) {
+  const file = path.join(ROOT, relativePath);
+  return new Set(
+    [...readFileSync(file, "utf8").matchAll(/\[[^\]]+\]\(([^)]+)\)/g)]
+      .filter(([, target]) => !target.includes("://"))
+      .map(([, target]) => path.resolve(path.dirname(file), target.split("#")[0])),
+  );
+}
+
+test("review and general report entrypoints reach the same comprehension owner through references", () => {
+  const owner = path.join(ROOT, "skills/report-write/references/comprehension.md");
+  for (const entry of [
+    "skills/adr-impl-review/SKILL.md",
+    "skills/adr-impl-review/references/artifact-contract.md",
+    "skills/report-write/SKILL.md",
+  ])
+    assert.ok(markdownLinks(entry).has(owner), `${entry} must reach the common quiz workflow`);
+  assert.ok(readFileSync(owner, "utf8").trim().length > 0);
+});
 test("the report-writer skeleton uses the artifact anchor accepted by the materializer", () => {
   const writer = read("agents/adr-impl-review-report-writer.md");
   const skeleton = writer.match(/```markdown\n([^]*?)```/)?.[1];
@@ -144,19 +165,8 @@ test("implementation review leads with Context and a reader-priority narrative",
   assert.match(guide, /target ADR's dominant\s+language/i);
   assert.match(guide, /multi-ADR report/i);
   assert.doesNotMatch(reviewContract, /exactly these top-level sections/i);
-  assert.match(
-    reviewContract,
-    /one\s+to five medium-difficulty[\s\S]{0,80}four-option[\s\S]{0,40}single-answer questions/i,
-  );
-  assert.match(reviewContract, /reveal criteria only on self-check/i);
-  assert.match(reviewContract, /prompt and a short recall cue/i);
-  assert.match(reviewContract, /reveals? all four options only\s+after an explicit/i);
-  assert.match(reviewContract, /one or two questions have `revisit: true`/i);
-  assert.match(reviewContract, /no input field and is not graded/i);
-  assert.match(
-    reviewContract,
-    /without a timer, notification, completion state, or\s+persisted progress/i,
-  );
+  // The common-owner load edges are checked above. Counts, selection state and
+  // answer disclosure are exercised in report-comprehension and report tests.
   assert.match(skill, /`PASS` never implies comprehension readiness/);
   assert.match(skill, /Do not send the PR until the\s+check passes/);
   assert.match(artifactContract, /Do not persist quiz progress or pass\/fail state/);
@@ -573,7 +583,15 @@ test("rollup keeps numbering gaps unless exact renames are explicitly approved",
 
 test("rollup grounds harvested history in original contracts rather than rewritten alternatives", () => {
   const rollup = read("skills/adr-rollup/SKILL.md");
-  const harvest = rollup.split("### 9. Harvest")[1].split("### 10.")[0];
+  const section = sectionRange(
+    rollup,
+    (heading) => heading.level === 3 && heading.text.includes("decision-log.md"),
+  );
+  assert.ok(
+    section,
+    "the decision-log subject remains available regardless of its wording or step number",
+  );
+  const harvest = section.lines.slice(section.start + 1, section.end).join("\n");
   assert.match(
     rollup,
     /Before overwriting or deleting chain members, retain the original source passages/,

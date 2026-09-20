@@ -180,6 +180,11 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import {
+  renderQuestion as comprehensionQuestionCard,
+  quizLabels,
+  quizScript,
+} from "../skills/report-write/scripts/comprehension.mjs";
 import { CATEGORIES, AUTHORITY } from "./adr-impl-review-categories.mjs";
 import { relatedAdrComparisonProse, hillNarrativeParagraphs } from "./adr-impl-review-prose.mjs";
 import {
@@ -547,10 +552,6 @@ function slug(value, fallback = "section") {
     .replace(/[^a-z0-9가-힣]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return normalized || fallback;
-}
-
-function base64(value) {
-  return Buffer.from(String(value ?? ""), "utf8").toString("base64");
 }
 
 function renderInlineMarkdown(value) {
@@ -1178,47 +1179,6 @@ function implementationChoiceCard(choice, index, total, ui) {
 }
 
 /**
- * Render one objective self-check while withholding recognition cues until the
- * reader explicitly completes a recall step; teach-back and revisit remain advisory.
- */
-function comprehensionQuestionCard(question, index, ui) {
-  const options = question.options
-    .map(
-      (option) => `
-      <label class="quiz__option">
-        <input type="radio" name="quiz-${index}" value="${esc(option.id)}">
-        <span><strong>${esc(option.id)}.</strong> ${esc(option.text)}</span>
-      </label>`,
-    )
-    .join("");
-  return `
-  <article class="quiz">
-    <div class="quiz__head">
-      <span class="quiz__id">${esc(question.id)}</span>
-      ${question.revisit ? `<span class="quiz__revisit">${esc(ui.revisitBadge)}</span>` : ""}
-    </div>
-    <p class="quiz__question">${esc(question.question)}</p>
-    <p class="quiz__recall">${esc(ui.recallCue)}</p>
-    <button class="quiz__reveal" type="button" data-question-index="${index}">${esc(ui.showChoices)}</button>
-    <div class="quiz__options" data-question-index="${index}" hidden>${options}</div>
-    <p class="quiz__teach-back" data-question-index="${index}" hidden>${esc(ui.teachBackCue)}</p>
-    <button class="quiz__check" type="button" data-question-index="${index}" data-correct="${esc(question.correctOptionId)}" data-explanation="${base64(question.explanation)}" data-evidence="${base64(question.evidence)}" data-feedback="${base64(JSON.stringify(Object.fromEntries(question.options.map((option) => [option.id, option.feedback]))))}" hidden>${esc(ui.selfCheck)}</button>
-    <p class="quiz__required" data-question-index="${index}" hidden>${esc(ui.answerRequired)}</p>
-    ${question.revisit ? `<p class="quiz__revisit-guidance">${esc(ui.revisitGuidance)}</p>` : ""}
-    <div class="quiz__feedback" data-question-index="${index}" hidden>
-      <strong class="quiz__result"></strong>
-      <strong>${esc(ui.selectedFeedback)}</strong>
-      <p class="quiz__selected-feedback"></p>
-      <strong>${esc(ui.answerCriteria)}</strong>
-      <p class="quiz__criteria"></p>
-      <strong>${esc(ui.gradingEvidence)}</strong>
-      <p class="quiz__evidence"></p>
-      <p class="quiz__limit">${esc(ui.selfCheckLimit)}</p>
-    </div>
-  </article>`;
-}
-
-/**
  * Keep diagnostic headings in the selected report language without inferring
  * locale from another translated label that can change independently.
  */
@@ -1469,7 +1429,7 @@ function groupedFindingCards(findings, ui) {
 /** Build the standalone reading page, keeping shared diagrams visible and audit detail folded. */
 function buildHtml(data) {
   const language = detectLanguage(data);
-  const ui = UI[language];
+  const ui = { ...quizLabels[language], ...UI[language] };
   const adr = esc(data.adr || "(no path)");
   const title = esc(data.title || ui.title);
   const styles = readFileSync(new URL("./adr-impl-review-report.css", import.meta.url), "utf8");
@@ -1781,57 +1741,7 @@ ${
 
 <script>
   const EMBED = ${embedded};
-  const decode = (encoded) => {
-    const bytes = Uint8Array.from(atob(encoded || ""), (char) => char.charCodeAt(0));
-    return new TextDecoder().decode(bytes);
-  };
-  document.querySelectorAll(".quiz__reveal").forEach((button) => {
-    button.addEventListener("click", () => {
-      const index = button.dataset.questionIndex;
-      const options = document.querySelector('.quiz__options[data-question-index="' + index + '"]');
-      const check = document.querySelector('.quiz__check[data-question-index="' + index + '"]');
-      if (options) options.hidden = false;
-      if (check) check.hidden = false;
-      button.hidden = true;
-    });
-  });
-  document.querySelectorAll('.quiz__option input[type="radio"]').forEach((input) => {
-    input.addEventListener("change", () => {
-      const index = input.name.replace("quiz-", "");
-      const teachBack = document.querySelector('.quiz__teach-back[data-question-index="' + index + '"]');
-      const feedback = document.querySelector('.quiz__feedback[data-question-index="' + index + '"]');
-      const required = document.querySelector('.quiz__required[data-question-index="' + index + '"]');
-      if (teachBack) teachBack.hidden = false;
-      if (feedback) feedback.hidden = true;
-      if (required) required.hidden = true;
-    });
-  });
-  document.querySelectorAll(".quiz__check").forEach((button) => {
-    button.addEventListener("click", () => {
-      const index = button.dataset.questionIndex;
-      const answer = document.querySelector('input[name="quiz-' + index + '"]:checked');
-      const required = document.querySelector('.quiz__required[data-question-index="' + index + '"]');
-      const feedback = document.querySelector('.quiz__feedback[data-question-index="' + index + '"]');
-      if (!answer) {
-        if (required) required.hidden = false;
-        if (feedback) feedback.hidden = true;
-        return;
-      }
-      if (required) required.hidden = true;
-      if (feedback) {
-        const feedbackByOption = JSON.parse(decode(button.dataset.feedback) || "{}");
-        const correct = answer.value === button.dataset.correct;
-        feedback.querySelector(".quiz__result").textContent = correct
-          ? ${inlineScriptJson(ui.correct)}
-          : ${inlineScriptJson(ui.needsReview)};
-        feedback.querySelector(".quiz__selected-feedback").textContent =
-          feedbackByOption[answer.value] || "";
-        feedback.querySelector(".quiz__criteria").textContent = decode(button.dataset.explanation);
-        feedback.querySelector(".quiz__evidence").textContent = decode(button.dataset.evidence);
-        feedback.hidden = false;
-      }
-    });
-  });
+  ${quizScript(ui)}
   const exportButton = document.getElementById("export");
   if (exportButton) exportButton.addEventListener("click", () => {
     const reviews = EMBED.findings.map((f, index) => {

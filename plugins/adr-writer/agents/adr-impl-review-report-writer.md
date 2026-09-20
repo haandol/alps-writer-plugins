@@ -56,7 +56,7 @@ the whole implementation:
 8. Which ADR decisions and contract rows are accounted for, and what did the implementation do for each one?
 9. Which tests ran and what did they prove?
 10. What risk remains unverified?
-11. When comprehension support is warranted, which one to five important questions would reveal whether the reader can explain the implementation?
+11. Which core concepts should the common report-write comprehension workflow turn into questions that help the reader understand the implementation?
 
 Start with `Abstract`:
 
@@ -216,12 +216,12 @@ preserved behavior directly when the change is a refactor.
 - Order sections by reader importance. Execution and dependency order are
   optional.
 - Introduce background just in time.
-- When selected, `Comprehension check` contains one to five medium-difficulty
-  four-option single-answer questions about the most material behavior, causal
-  path, ADR contract, boundary/failure case, test condition, or excess scope.
-  Mark exactly one or two of the most important questions for a later re-check;
-  a one-question check marks that question. Do not ask trivia, use trick
-  wording, or add filler.
+- Generate `Comprehension check` through
+  `${CLAUDE_PLUGIN_ROOT}/skills/report-write/references/comprehension.md`.
+  That shared workflow owns core-content selection, medium difficulty,
+  question limits, omissions, and self-check behavior for every report.
+  Use before/after behavior, causal paths, contracts, and important boundary
+  conditions from the verified explanation as this review's subject matter.
 
 Do not manually copy the hidden quiz data into Markdown. Keep the PR guidance,
 visible questions and options, revisit marker, correct option, neutral option

@@ -13,8 +13,6 @@ The goal is **one logical decision = one current-state ADR.** When the same deci
 
 **Reducing the ADR count is not the goal.** The goal is "tidying scattered evolution history into decision units," and a smaller count is merely the consequence. The right number of ADRs is the number of genuinely distinct logical decisions that exist in that category — never cram distinct decisions into one ADR to reduce the count. When there is no chain to merge, merging nothing is the correct outcome.
 
-**The ultimate goal of the ADR structure is "a decision set that reads intuitively and linearly."** The end state rollup aims for is one where (1) each ADR body is **brought up to date with the decision the latest code implements**, (2) the **reference flow between ADRs (`Related`, `dependsOn`, and the direction of absorption into the survivor) is clear**, and (3) even as new ADRs keep accumulating, a reader can **grasp the current state by reading one ADR per decision** without back-tracing evolution history. Leaving a superseded chain in place breaks that goal, because the reader has to follow links to work out "which one is the live decision" — rollup restores that linearity by absorbing the dead members into the survivor.
-
 It does three things at once:
 
 1. **Code alignment without detail promotion**: use code to verify Status and current behavior, but apply the ADR admission gate before carrying any code fact into the consolidated ADR. Replaceable libraries, SDKs, frameworks, credential/auth wiring, internal API names, and module structure are removed rather than synchronized. Gray-zone decisions (adoption rationale, alternatives, domain rules, state transitions, fallback, the intent behind key design) are revived from the chain's ADRs rather than inferred from code. If code contradicts such a decision, follow the branch in step 5 item 3.
@@ -51,6 +49,12 @@ When the judgment is ambiguous, do not merge. Staying separate is safer — a wr
 
 ## Workflow
 
+Steps 1–9 prepare and verify a candidate changeset without modifying repository
+files. Keep original source passages and draft outputs in a temporary artifact
+directory. Step 10 obtains approval for the concrete paths and then applies the
+changeset. Source deletion is allowed only after its validated history has been
+written to the final decision log. Preparation order is not file-write order.
+
 ### 1. Load the index and mapping
 
 - Read `concepts.md` (the abstraction ladder plus the gray-zone model), `docs/adr/authoring-rules.md` (the include/exclude rules), and `docs/adr/structure.md` (category policy).
@@ -72,9 +76,11 @@ For each group:
 
 Write the consolidated ADR's **Status and admitted code-verifiable contracts** from these code facts. Do not carry ordinary implementation facts upward merely because code can verify them. Revive the **gray-zone decisions** (adoption rationale, alternatives, domain rules, state transitions, fallback, the intent behind key design) from the chain's ADRs, and if code contradicts them, branch per step 5 item 3.
 
-### 4. Write the consolidated ADR (current state only)
+### 4. Prepare the consolidated ADR (current state only)
 
-Take the chain's **lowest-numbered ADR as the survivor** and overwrite that file with the consolidated content. Never touch other groups or other categories.
+Take the chain's **lowest-numbered ADR as the survivor** and draft its consolidated
+content outside the repository. Record the intended overwrite path in the plan;
+apply it only after step 10 approval. Never touch other groups or categories.
 
 **The survivor is always the chain's lowest number — not the superseding ADR.** In a superseded chain (e.g. `0001` superseded by `0003`), the "live decision" is the latest, `0003`, but its **content** is absorbed into the lowest-numbered file `0001` and `0003` (plus any intermediate members) is deleted. The reason is rollup's "leave no trace" philosophy — keeping the low number and closing the gaps via the step 7 renumber makes the category's numbers form a straight `0001, 0002, ...` line, so readers never have to work out "which number is live" even as new ADRs accumulate. Fill the survivor file's decision with the latest state the superseding ADR carried (code-first) — that is, **the file number is the lowest, the content the newest.**
 
@@ -142,13 +148,16 @@ Compare the consolidated ADR against the code and align it one last time — fin
    - **Gray-zone decisions (the ADR is authoritative)** — when the adoption rationale, alternatives, domain rules, state transitions, external-dependency fallback, or the _intent_ behind the key design **contradict** the code, do **not** quietly change the consolidated ADR to match. This is a signal that someone skipped the ADR-first cycle and changed the decision — record it in the step 10 report's `[Code re-alignment needed] <category>` bucket and ask the user "was this an intended decision change or a violation?" (on a decision change, update the ADR first; on a violation, the code is what needs correcting). Rollup never rules on its own and overwrites the ADR.
 4. **Verification scope**: architecture-level decisions plus **the requirement contract.** Implementation tuning values (connection pools, backoff, cache TTL) and file paths are not verification targets. By contrast, requirement values (max turns, usage quotas, retention, and so on) and **non-numeric requirements** (allowed value sets, transition rules, mandatory fields, permissions, ordering, units) are — when the ADR's and the code's values differ, follow `adr-sync`'s "requirement values (the ADR is authoritative)" branch: never quietly change them toward the code, but record them under `[Code re-alignment needed]` and ask the user.
 
-### 6. Delete the rest of the chain
+### 6. Plan removal of the rest of the chain
 
-Delete the higher-numbered ADR files in the chain (do not leave them as Deprecated). Before deletion, the major transitions those files carried are preserved in `decision-log.md` by the step 9 harvest, and the individual diffs remain in Git history. Numbering gaps appear at this point — leave them, and close them all at once in step 7 (number cleanup).
+List the higher-numbered chain members to remove instead of leaving Deprecated
+stubs. Keep them untouched during preparation. Step 9 derives the log candidate
+from their original passages; the approved apply phase writes that validated log
+before deleting any source member. Plan any resulting number gaps in step 7.
 
 **Never delete an ADR that addresses a different logical decision**, even within the same category. Deletion is always per group.
 
-### 7. Number cleanup (closing gaps — rollup only)
+### 7. Plan number cleanup (closing gaps — rollup only)
 
 Close the gaps created by the deletions so the category's numbers are contiguous again. **This renumber is a step that exists only in rollup** — split (`structure.md`) and `adr-sync` still follow "keep gaps, never renumber" (those disperse rather than consolidate, so leaving a trace is normal). Rollup follows the "leave no trace of the rollup" philosophy (step 4 rule 1), and a gap is itself a trace, so it is closed here.
 
@@ -172,7 +181,7 @@ Repoint the ADRs whose paths changed by the renumber together with the deleted o
 
 A path rename is a destructive change that breaks external links. Include every old → new path in the step 10 approval scope; a generic rollup approval that omits those paths does not authorize renumbering.
 
-### 8. Update the mapping index and cross-references (reflecting deletions and the renumber together)
+### 8. Prepare mapping and cross-reference updates
 
 Align every reference in one pass against the **final numbers** after step 7. The ADR index lives in exactly one place, `.mapping.json` (the README carries no ADR list):
 
@@ -191,9 +200,14 @@ Align every reference in one pass against the **final numbers** after step 7. Th
   - Passing the two flags separately makes the script print `(c)` and `(d)` distinctly, so "to the consolidated ADR" and "to the new number" repoints are never confused. This grep shares its source of truth with the code→ADR and ADR→PRD checks.
   - **This finder is a pre-repoint target locator, not a post-hoc verification gate.** Because a renumber reuses numbers (0003→0002 and so on), re-running it with the same arguments after finishing the repoint **produces false positives on the newly and correctly placed files** — e.g. `--removed payment/0002` would catch the freshly renumbered new `0002-...md`, and `--renumbered payment/0003:...` the new `0003-...md` (the finder ignores the kebab and matches only the `<cat>/NNNN` number token). The **post-hoc oracle for confirming the repoint is complete is `adr-structure-lint`'s `related-broken` and `decision-log-link-broken` (both must be 0) plus a grep for deleted or old kebab filenames (must be 0)** — `decision-log-link-broken` is the check that confirms the `current ADR` pointer written into the log in step 9 points at the post-renumber path, and since the finder cannot match the log's relative links (`./NNNN-title.md`), this lint is the only automatic confirmation. Use this finder exactly once, before starting the repoint.
 
-### 9. Harvest the major history → decision-log.md (last of all)
+### 9. Prepare and verify the major history → decision-log.md
 
-Move the **major transitions** the chain carried into the category's `docs/adr/<category>/decision-log.md`. Perform this step **last**, after step 8 — step 8's stale-citation finder (`--removed`/`--renumbered`) is a pre-scan locator that walks the existing tree **before the log is written**, so creating the log first would make the finder produce false positives on the log entries you just wrote (hence the harvest comes after the finder and the repoint).
+Prepare the category's `decision-log.md` candidate from the original chain
+passages retained in step 3. The step 8 stale-citation locator scans the original
+repository before any approved write, so a temporary log candidate cannot create
+false positives in that scan. Verify the candidate against original sources now.
+During the approved apply phase, persist the validated log before deleting chain
+members; verify its links again once all final paths are in place.
 
 **Ground history in original evidence.** Support each `What`, `Why`, and `What is now void` claim with the original chain ADRs, an existing decision log, or verified Git history. Compare the original before/after contracts: an unchanged rule is preserved, not newly adopted or invalidated. A rejected or hypothetical alternative — including one described during consolidation — does not establish a previously adopted policy. Paraphrase recorded reasons without adding unstated causes, pressures, or past assumptions. If evidence is missing, keep the supported transition and report the gap; omit an unsupported optional field instead of inventing a past state or motive. Before finishing, check the final log against those original sources, not against the newly rewritten ADR.
 
@@ -213,7 +227,7 @@ The harvest never touches `.mapping.json` (the log is a convention file and is n
 
 ### 10. User confirmation (always, before any destructive change)
 
-**Always get the user's approval before overwriting or deleting any file — no exceptions.** A superseded-chain merge in particular entails (a) overwriting the survivor file, (b) deleting the remaining chain members, and (c) renames from the renumber, so present the summary below and perform the writes and deletions of steps 4, 6, 7, 8, and 9 only after explicit approval. Before approval, show the plan only and do not touch the disk. On a full-scope run, report grouped by category, and if the user approves only some categories, apply it to those alone.
+**Always get the user's approval before overwriting or deleting any file — no exceptions.** A superseded-chain merge in particular entails (a) overwriting the survivor file, (b) deleting the remaining chain members, and (c) renames from the renumber, so present the summary below and perform the writes and deletions of steps 4, 6, 7, 8, and 9 only after explicit approval. Before approval, show the plan and candidate content; do not modify repository files. On a full-scope run, report grouped by category, and if the user approves only some categories, apply it to those alone.
 
 ```
 ## ADR Roll-up results
@@ -244,6 +258,15 @@ The harvest never touches `.mapping.json` (the log is a convention file and is n
 
 - billing, notifications, ...
 ```
+
+After approval, apply only the approved changeset. Use the recorded pre-write
+citation targets, write the validated survivor and decision-log candidates, then
+apply the planned removals, renames, mapping and link updates in a safe order.
+Never delete an original source before its required history is persisted. If an
+apply step fails, preserve the remaining sources, report the exact partial state,
+and repair only within the approved scope. Finish with structure/link validation
+and a check for obsolete full filenames; do not rerun the pre-write number-token
+locator against renumbered files.
 
 ## Notes
 

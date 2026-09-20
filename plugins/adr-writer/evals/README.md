@@ -96,6 +96,12 @@ The shipping PRD, ADR, code, tests, and repository documents remain the durable
 authority. Fixtures, prompts, transcripts, agent topology, and eval results are
 disposable reproduction artifacts.
 
+The document-only boundary scenario asks for a declaration without tool calls;
+it does not prove which files the real harness reads. The structural-lint
+integration tests execute `--documents-only` and verify that code references are
+excluded while document references remain checked. Delegation probes load the
+same packaged guidance through both direct authoring and Feature handoff.
+
 ## Reproducing a reported bug
 
 1. **Copy the closest scenario** in `scenarios/` and rename it.

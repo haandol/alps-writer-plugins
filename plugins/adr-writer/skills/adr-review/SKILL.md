@@ -51,17 +51,20 @@ Then load `docs/adr/.mapping.json`, plus **only the rule-document sections this 
 
 **Do not load the rule documents whole here.** `adr-reviewer` owns R1-R20 and reads its own sections per ADR (see its step 1), so a full copy in this session buys nothing but pays for every token again — and the same division of labor is why step 3 tells you not to restate the reviewer's criteria. Read a further section on demand if an aggregation finding turns on it.
 
-**Announce the scope before starting a full sweep.** For more than a handful of ADRs, print the count and the per-category breakdown and confirm once ("Reviewing 23 ADRs across 6 categories. Proceed?"). The model may use one or more review contexts depending on scope and capability, so the user should see the size before that cost is incurred.
+**Announce the scope before starting a full sweep.** Show the count and category
+breakdown, then proceed when the requested scope is clear. Item count alone does
+not require another approval. Ask only for an ambiguous target, newly introduced
+cost, or a change beyond the requested scope. Keep the review read-only.
 
 ### 2. Run the deterministic harness once, for the whole scope
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs [category]   # omit the argument to lint every category
+node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs --documents-only [category]   # omit the category to lint every ADR
 ```
 
-Run this **once for the entire scope**, not per ADR — it already walks every ADR and the mapping in one pass. It mechanically settles the format, existence, and consistency half of the rules (Status enum and date format, required sections, canonical filenames, path depth, anti-pattern category segments, Decision Drivers and alternatives counts, Related links resolving, `dependsOn` integrity, mapping↔disk consistency and status↔body agreement, values written in code-constant form, and — internally via `adr-invariants.sh` — code→ADR and ADR→PRD back-references).
+Run this **once for the entire scope**, not per ADR — it already walks every ADR and the mapping in one pass. It mechanically settles the format, existence, and consistency half of the rules (Status enum and date format, required sections, canonical filenames, path depth, anti-pattern category segments, Decision Drivers and alternatives counts, Related links resolving, `dependsOn` integrity, mapping↔disk consistency and status↔body agreement, values written in code-constant form, and — internally via `adr-invariants.sh --prd-only` — ADR→PRD back-references).
 
-Keep the result and pass each ADR's slice of it to that ADR's reviewer, so the LLM never re-derives what the harness already proved. **Inherit, do not re-diagnose**: an item the harness reported as `error` goes into the final report as `FIX_REQUIRED (confirmed by harness)`.
+Keep the result and pass each ADR's slice of it to that ADR's reviewer, so the LLM never re-derives what the harness already proved. **Inherit, do not re-diagnose**: an in-scope document error goes into the final report as `FIX_REQUIRED (confirmed by harness)`. Do not import code-side findings from a broader harness run; use the document-only invocation above.
 
 **The harness never flags a bare number** — whether a value is a requirement (keep) or a tuning value (drop) is judgment, so it stays with the reviewer in step 3. This is deliberate: pushing an author to delete a requirement value is the failure mode this plugin guards against hardest.
 

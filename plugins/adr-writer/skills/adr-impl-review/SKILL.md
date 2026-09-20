@@ -8,6 +8,12 @@ argument-hint: "[adr-path-or-category] [--base <ref>] [--mode standard|full]"
 
 > **Review results**: Apply [report-write](../report-write/SKILL.md).
 
+The report-write skill owns quiz generation and staged self-check. Read its
+[comprehension workflow](../report-write/references/comprehension.md) when
+composing the report. Use the implementation's core explanation as the question
+source; a PASS alone does not omit the quiz. This skill retains review verdicts,
+native audit fields, and PR-specific comprehension readiness.
+
 Disprove the implementation in this order.
 
 ```mermaid
@@ -165,30 +171,10 @@ context. Their content remains subject-specific.
 Do not stop to show it or ask the user to reconfirm. Never pass it to either
 review perspective.
 
-When selected, prepare one to five medium-difficulty four-option,
-single-answer questions about material behavior, causal paths, contracts,
-boundaries, failures, test conditions, or excess scope. Each question applies
-the explanation to a concrete situation. Do not ask symbol or line-number
-trivia, use trick wording, or add filler.
-
-For each question, keep these machine-readable fields:
-
-- `id` — `Q1` through `Q5` in order
-- `question` — the visible application prompt
-- `options` — exactly `A` through `D`; each option has visible `text` and hidden,
-  neutral `feedback`
-- `revisit` — boolean; mark one or two of the most important questions for a
-  later, non-persistent re-check
-- `correctOptionId` — exactly one of `A`, `B`, `C`, or `D`
-- `explanation` — why the correct option follows from the contract and causal path
-- `evidence` — the ADR, code, or test evidence used to grade it
-
-Follow `references/artifact-contract.md` for the recall-first interaction.
-Exactly one or two questions use `revisit: true` (the sole question when only
-one exists). Reveal choices only on request, show a non-graded one-sentence
-teach-back cue after selection, and reveal criteria only on self-check. Revisit
-guidance stores no schedule or progress. Never add scores, praise, gamification,
-an answer field, semantic grading, or PR-readiness state.
+At report composition, use the common report-write comprehension workflow to
+prepare questions from this explanation. Preserve this review's native fields
+and readiness rules through `references/artifact-contract.md`; question
+selection and staged self-check belong to the common report skill.
 
 ## Standard mode
 

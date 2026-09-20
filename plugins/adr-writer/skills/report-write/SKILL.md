@@ -20,6 +20,13 @@ Read [review results](references/review-results.md) for these requests. A brief
 review may stay in chat; honor the requested format and preserve required
 caller artifacts without adding empty sections.
 
+Generate one to five medium-difficulty quiz questions about the report's core
+content to support understanding and reduce cognitive load. Apply
+[comprehension support](references/comprehension.md) when composing the report;
+this skill owns quiz generation, including for reviews. Omit the quiz only when
+the user excludes it or the output has no substantive concept to check. Keep
+questions in the report and start a conversational quiz only on explicit request.
+
 Write skill instructions and model-facing prompts in English. Write the report
 in the user's requested language. This skill governs final human-facing
 presentation; a caller's review strength, findings, approval boundaries, required

@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-09-20 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 구현 리뷰 전용 퀴즈 생성 조건을 공통 보고서 작성 계약으로 옮겼다. 핵심 설명을 이해하도록 문제를 생성하고, 코드 판정·PR 이해 준비도와 원본 감사 자료는 구현 리뷰가 유지한다.
+
 - **2026-09-19 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 최종 보고서의 평면적인 논문 순서를 공통 보고서 스킬의 도메인별 확대 구조로 바꿨다. 직접 하위 설명 단위를 최대 4개로 제한하고, 이해도 질문은 관련 도메인의 판단에 연결한다. 기존 검토 강도, 계약·증거와 질문·선택지·정답 숨김 규칙은 보존한다.
 
 - **2026-09-09 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 흰 배경의 출력용 레이아웃을 채택하고 이해도 확인을 결론 바로 아래의 본문 절로 올렸다. 화면의 선택지 공개 순서는 유지하며 핸드아웃에는 질문과 선택지만 제공하고 정답·피드백·기존 선택과 조작 UI는 제외한다.

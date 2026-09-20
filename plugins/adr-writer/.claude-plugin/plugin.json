@@ -1,7 +1,7 @@
 {
   "name": "adr-writer",
   "description": "ADR-driven development cycle for Claude Code: author ADRs with /adr-new, implement them with /adr-impl, apply verified low-risk refactors with /adr-impl-refactor, review them, and keep them in sync with /adr-sync — with an ADR-first hook that injects the admission directive when session context starts or is restored. Works standalone; no ALPS PRD required.",
-  "version": "0.8.22",
+  "version": "0.8.23",
   "author": {
     "name": "haandol"
   },

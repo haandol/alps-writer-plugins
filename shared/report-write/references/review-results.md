@@ -36,6 +36,14 @@ Use a Mermaid sequence diagram for a multi-participant failure or timing path
 when supported by the evidence. Keep a local wording issue or one-step fix in
 plain text. Do not turn a hypothetical failure into an observed event.
 
+## Comprehension support
+
+Use [the common comprehension workflow](comprehension.md) to generate the quiz
+from the report's core explanation. Review-specific knowledge such as important
+before/after behavior, failure conditions, contracts, and trade-offs supplies
+the subject matter. Keep the review's native evidence and readiness rules intact;
+the common skill owns question generation and self-check presentation.
+
 ## Preserve the review boundary
 
 Writing quality and system severity are separate: editing prose must not erase,

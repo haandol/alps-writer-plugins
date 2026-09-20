@@ -168,14 +168,11 @@ coverage fields in JSON, but do not force them into seven visible columns or
 repeat the same detailed evidence outside its Hill.
 Never replace the four-column implementation-choice table with prose.
 
-When comprehension support is selected, retain the generated `Comprehension check`
-audit section. In the human view, place questions after the owning domain's
-conclusion and before its detailed evidence; group five by actual subject.
-Keep one to five medium-difficulty,
-four-option single-answer questions in the structured check. Ask only material
-application questions about the before/after behavior, causal path, ADR
-contract, failure or boundary case, test condition, or excess scope. Do not use
-filler, trick wording, symbol-name trivia, or line-number recall.
+The [common comprehension workflow](../../report-write/references/comprehension.md)
+owns quiz generation, omission criteria, difficulty, count, placement and staged
+self-check. Apply it to the review's core explanation, then retain the generated
+`Comprehension check` audit section. A PASS alone is not an omission reason.
+The fields below adapt that common quiz to this review's native audit schema.
 
 For each question, keep:
 
@@ -199,17 +196,9 @@ question, that question is marked. Do not manually put hidden feedback, the
 correct option, explanation, or evidence in Markdown. The materializer writes
 only the visible prompts and four options.
 
-The HTML shows this section and its questions by default. Each question initially
-shows its prompt and a short recall cue. It reveals all four options only
-after an explicit `show choices` action. After one option is selected and before
-self-check, it shows a cue to explain the choice to a teammate in one sentence.
-The cue has no input field and is not graded. The HTML may reveal the selected
-option's feedback, correct explanation, and evidence only after the reader
-explicitly clicks self-check. Revisit questions ask the reader to reopen the
-report and retry later without a timer, notification, completion state, or
-persisted progress. Use neutral feedback only: no score, grade, celebration,
-praise, ability judgment, or gamification. It never sets comprehension
-readiness.
+The HTML uses the common staged self-check controls and never sets PR
+comprehension readiness. Preserve the shared question, recall, teach-back,
+revisit and neutral-feedback behavior when composing the review page.
 
 Use a white page background for both screen and print. The handout prints the
 main narrative, diagrams, and comprehension questions with all four choices.

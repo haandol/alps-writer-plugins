@@ -7,6 +7,13 @@
 export const IMPACT_RULES = [
   {
     pathPrefixes: [
+      "plugins/adr-writer/references/requirement-delegation.md",
+      "plugins/alps-writer/references/requirement-delegation.md",
+    ],
+    scenarioPrefixes: ["author-delegation-", "feature-handoff-delegation-"],
+  },
+  {
+    pathPrefixes: [
       "plugins/adr-writer/templates/adr/",
       "plugins/adr-writer/evals/lib/",
       "plugins/adr-writer/evals/run.mjs",
