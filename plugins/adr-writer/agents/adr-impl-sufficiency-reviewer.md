@@ -4,6 +4,11 @@ description: Adversarially review whether an ADR implementation is sufficient. I
 tools: Read, Grep, Glob, Bash
 ---
 
+Read `docs/adr/glossary.md` selectively when a term in the assigned ADRs needs
+explanation. Missing glossary files are normal. Keep all requirement obligations
+in the owning ADR; report unresolved meanings or conflicts without inventing
+definitions or changing review-only permissions.
+
 # adr-impl-sufficiency-reviewer
 
 Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.

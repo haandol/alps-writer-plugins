@@ -6,6 +6,7 @@ CONTRIBUTING.md
 README.md
 docs/
 plugins/adr-writer/README.md
+plugins/adr-writer/references/glossary.md
 plugins/adr-writer/agents/
 plugins/adr-writer/evals/
 plugins/adr-writer/skills/

@@ -11,6 +11,15 @@ argument-hint: "[project-name-or-lite-alps-path]"
 Create or resume a Lite ALPS document that works backward from a desired business impact to a
 minimum PoC and its executable demo.
 
+Apply the overview's optional glossary rules throughout authoring, including
+proposal-led Sections 2 and 4. Require a clear user meaning for jargon, uncommon
+terms/acronyms, or expressions that cannot be written out plainly; reuse supplied
+definitions and ask before finalizing content that depends on an unclear meaning.
+Read `read_alps_glossary()` as needed and use `save_alps_glossary_entry()` under the
+current Section approval. Check missing definitions before completion. The appendix
+comes after the four Sections only when needed, without a glossary interview,
+separate approval, DDD exercise, or domain classification.
+
 > **Language**: talk to the user and write the document in the language the user uses. The skill,
 > templates, and guides are written in English only as agent instructions.
 

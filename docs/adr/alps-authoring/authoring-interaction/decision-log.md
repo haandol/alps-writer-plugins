@@ -5,6 +5,13 @@ alps-authoring/authoring-interaction category. Each ADR body describes only the 
 state, while the timeline of "what changed and why" accumulates here, newest first. Git
 preserves the individual diffs.
 
+## 2026-09-21 — 대상 용어의 의미 확인과 선택적 마지막 부록 추가
+
+- **Current ADR**: [support-atomic-and-batch-approval](./0001-support-atomic-and-batch-approval.md)
+- **Change type**: requirement rule change
+- **What**: 첫 등장 설명 중심 → 미정 용어의 사용자 확인과 Full/Lite 마지막 용어 부록 보존.
+- **Why**: 일반 문서의 작성 부담 없이 사용자의 내부 용어가 잘못 해석되는 것을 막기 위해서다.
+
 ## 2026-08-26 — Feature 설명에 선택적 Mermaid와 신규 개발자 관점을 추가
 
 - **Current ADR**: [support-atomic-and-batch-approval](./0001-support-atomic-and-batch-approval.md)

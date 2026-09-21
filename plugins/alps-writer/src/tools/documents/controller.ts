@@ -23,6 +23,16 @@ export class DocumentController {
     return this.service.readSection(section, subsectionId);
   }
 
+  /** Expose approved term updates for the active Full or Lite document. */
+  saveAlpsGlossaryEntry(term: string, definition: string): string {
+    return this.service.saveGlossaryEntry(term, definition);
+  }
+
+  /** Expose existing definitions without creating an optional appendix. */
+  readAlpsGlossary(): string {
+    return this.service.readGlossary();
+  }
+
   getAlpsDocumentStatus(): string {
     return this.service.getStatus();
   }

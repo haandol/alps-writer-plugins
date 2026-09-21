@@ -15,6 +15,13 @@ import {
 } from "../../profiles.js";
 import { attribute, decodeXml, escapeXmlAttribute, escapeXmlText } from "../../xml.js";
 import { TemplateRegistry } from "../templates/registry.js";
+import {
+  buildGlossary,
+  glossaryKey,
+  glossaryMarkdown,
+  parseGlossary,
+  type GlossaryEntry,
+} from "./glossary.js";
 
 // Subsection IDs sort by their numeric components ("7.10" after "7.9"), not
 // lexically. Used wherever subsections are rendered in order.
@@ -238,10 +245,12 @@ export class DocumentService {
     return `<section id="${sectionId}" title="${escapeXmlAttribute(profile.sectionTitles[sectionId])}">\n${content}\n</section>`;
   }
 
+  /** Rebuild numbered sections while preserving the optional trailing term definitions. */
   private buildDocument(
     profile: DocumentProfile,
     projectName: string,
     sections: Map<number, string>,
+    glossary: readonly GlossaryEntry[] = [],
   ): string {
     const profileAttribute = profile.rootProfile
       ? ` profile="${escapeXmlAttribute(profile.rootProfile)}"`
@@ -252,6 +261,7 @@ export class DocumentService {
     for (const section of sectionNumbers(profile)) {
       lines.push(this.buildSection(profile, section, sections.get(section) || NOT_STARTED));
     }
+    if (glossary.length > 0) lines.push(buildGlossary(glossary));
     lines.push("</alps-document>");
     return lines.join("\n\n");
   }
@@ -266,11 +276,17 @@ export class DocumentService {
     return match ? match[1] : "Untitled";
   }
 
+  /** Validate the active profile and glossary before selecting or mutating a document. */
   private inspectDocument(content: string): { profile: DocumentProfile } | { error: string } {
     const root = content.match(/^\s*<(alps-document|prd-document)\b([^>]*)>/);
     if (!root) return { error: "Missing <alps-document> root element." };
     if (!new RegExp(`</${root[1]}>\\s*$`).test(content)) {
       return { error: `Missing closing </${root[1]}> element.` };
+    }
+    try {
+      parseGlossary(content);
+    } catch (error) {
+      return { error: (error as Error).message };
     }
 
     const profileValue = this.attribute(root[2], "profile");
@@ -463,6 +479,7 @@ export class DocumentService {
 
     return `⚠️ CONVERSATION MODE REQUIRED:
 ${steps}
+Read read_alps_glossary() when terminology is needed. Require the user's meaning for undefined jargon or acronyms before finalizing dependent content; reuse supplied definitions. Save confirmed definitions with save_alps_glossary_entry() under the current section approval. The optional appendix stays after the numbered sections and is absent when unnecessary.
 NEVER save generated content without user approval.`;
   }
 
@@ -497,6 +514,7 @@ NEVER save generated content without user approval.`;
 ${this.resumeGuidance(inspection.profile)}`;
   }
 
+  /** Save one approved subsection without dropping definitions collected elsewhere in the document. */
   saveSection(section: number, subsectionId: string, title: string, content: string): string {
     const document = this.readWorkingDocument();
     if ("error" in document) return document.error;
@@ -535,8 +553,49 @@ ${this.resumeGuidance(inspection.profile)}`;
       .map(([id, value]) => this.buildSubsection(id, value.title, value.content));
     sections.set(section, parts.join("\n"));
 
-    this.writeAtomic(this.workingDoc!, this.buildDocument(profile, projectName, sections));
+    this.writeAtomic(
+      this.workingDoc!,
+      this.buildDocument(profile, projectName, sections, parseGlossary(document.content)),
+    );
     return `Saved ${subsection.fullId}. ${title}`;
+  }
+
+  /**
+   * Save one user-confirmed meaning while preserving all other entries and section content.
+   * Semantic confirmation belongs to the conversation; blank input is rejected without a write.
+   */
+  saveGlossaryEntry(term: string, definition: string): string {
+    const document = this.readWorkingDocument();
+    if ("error" in document) return document.error;
+    term = term.trim();
+    definition = definition.trim();
+    if (!term || !definition) return "Glossary term and definition must both be non-empty.";
+
+    const entries = parseGlossary(document.content);
+    const existing = entries.find((entry) => glossaryKey(entry.term) === glossaryKey(term));
+    if (existing?.definition === definition) return `Glossary unchanged: ${existing.term}`;
+    if (existing) existing.definition = definition;
+    else entries.push({ term, definition });
+
+    const glossary = buildGlossary(entries);
+    const content = document.content.includes("<glossary>")
+      ? document.content.replace(/<glossary>[\s\S]*?<\/glossary>/, () => glossary)
+      : document.content.replace(
+          /<\/(?:alps-document|prd-document)>\s*$/,
+          (closing) => `${glossary}\n\n${closing}`,
+        );
+    this.writeAtomic(this.workingDoc!, content);
+    return `Saved glossary term: ${existing?.term ?? term}`;
+  }
+
+  /** Return definitions for reuse without creating an appendix or changing completion state. */
+  readGlossary(): string {
+    const document = this.readWorkingDocument();
+    if ("error" in document) return document.error;
+    const entries = parseGlossary(document.content);
+    return entries.length
+      ? glossaryMarkdown(entries)
+      : "No glossary: no term definitions recorded.";
   }
 
   readSection(section: number, subsectionId?: string): string {
@@ -612,6 +671,8 @@ ${this.resumeGuidance(inspection.profile)}`;
       }
       lines.push(`Section ${number} (${title}): ${status}`);
     }
+    const glossary = parseGlossary(docContent);
+    if (glossary.length > 0) lines.push(`Appendix (Glossary): ${glossary.length} defined terms`);
     return lines.join("\n");
   }
 
@@ -649,6 +710,7 @@ ${this.resumeGuidance(inspection.profile)}`;
     );
   }
 
+  /** Export numbered content followed by the glossary only when actual definitions exist. */
   exportMarkdown(outputPath?: string): string {
     const document = this.readWorkingDocument();
     if ("error" in document) return document.error;
@@ -667,6 +729,8 @@ ${this.resumeGuidance(inspection.profile)}`;
         `## Section ${section}. ${profile.sectionTitles[section]}\n\n${markdown}\n\n---\n`,
       );
     }
+    const glossary = parseGlossary(docContent);
+    if (glossary.length > 0) lines.push(glossaryMarkdown(glossary));
 
     const result = lines.join("\n");
     if (outputPath) {

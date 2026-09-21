@@ -22,7 +22,7 @@ const server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.8.23" },
+  { name: "alps-writer", version: "0.8.24" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
@@ -64,6 +64,8 @@ Keywords: PRD, ALPS, Lite ALPS, 기획서, 기획 문서, 제품 요구사항, �
 </WORKFLOW>
 
 <RULES>
+- In both profiles, require clear meanings for user jargon, uncommon terms/acronyms, or expressions that cannot be written out plainly. Read existing definitions with read_alps_glossary(); reuse meanings already supplied by the user. Ask at first use when the meaning is unclear and wait before finalizing dependent content. Never invent the meaning.
+- Include new or changed definitions in the current section's approval digest, then save each with save_alps_glossary_entry(term, definition). Do not add a separate approval or interview stage. Check missing definitions before completion. The optional Glossary Appendix appears after all numbered sections only when needed; ordinary-language documents need no glossary. Do not require DDD or domain classification, or move requirement rules out of their owning sections.
 - MUST call the overview tool matching the selected document profile first
 - NEVER proceed without user confirmation
 - ALWAYS confirm progress at the SECTION level. Lite Section 3 is optional; when no explicit exclusions were provided and the approved boundary is not materially ambiguous, state that and skip it without a dedicated question.
@@ -206,6 +208,25 @@ server.tool(
 );
 
 // Document tools
+server.tool(
+  "read_alps_glossary",
+  "Read existing term definitions in the active Full or Lite document. No glossary is created by reading.",
+  {},
+  () => ({ content: [{ type: "text", text: dc.readAlpsGlossary() }] }),
+);
+
+server.tool(
+  "save_alps_glossary_entry",
+  "Save one confirmed term and its meaning to the optional trailing Glossary Appendix in the active Full or Lite document. Reuse supplied definitions; ask the user about unclear meanings. Include new/changed meanings in the current section approval before calling. Never silently replace a conflicting definition. Do not populate a generic dictionary or classify domains.",
+  {
+    term: z.string().trim().min(1).describe("The uncommon term or acronym used in this document"),
+    definition: z.string().trim().min(1).describe("User-confirmed meaning in this document"),
+  },
+  ({ term, definition }) => ({
+    content: [{ type: "text", text: dc.saveAlpsGlossaryEntry(term, definition) }],
+  }),
+);
+
 server.tool(
   "init_alps_document",
   "Initialize a new ALPS document file.",

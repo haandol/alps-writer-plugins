@@ -72,6 +72,18 @@ It fixes the format (9 sections, explicit dependencies, vertical-slice features)
 
 **Lite ALPS** is a 4-section working-backwards simplification of Full ALPS for planners and PMs defining a minimum PoC. The user first confirms the target problem and Desired Business Impact; AI then proposes the minimum solution, a product-level C4 Context diagram, Essential User Experiences, and a concrete executable Demo Scenario for approval. Unwritten optional scope is omitted from Markdown. Lite and Full keep independent files, state, and completion.
 
+Both profiles collect a **Glossary Appendix only when needed**, after the numbered
+sections. Uncommon terms, jargon, acronyms, and expressions that cannot be written
+out plainly require a clear user meaning at first use; already supplied meanings
+are reused. Definitions use the current section approval, with no separate
+interview or domain classification. Ordinary-language documents have no glossary.
+
+`/feature-to-adr` transfers relevant definitions into `docs/adr/glossary.md`.
+Direct ADR authoring creates or updates that file when needed. Equivalent meanings
+are reused, unrelated entries are preserved, and conflicts require clarification.
+Requirements remain in their owning ADRs; the glossary has no Status or mapping
+entry and is read only when terminology needs explanation.
+
 See [`about-alps.md`](./plugins/alps-writer/templates/alps/about-alps.md) for the full design rationale and how ALPS feeds into the ADR-driven cycle.
 
 ## Quick Start

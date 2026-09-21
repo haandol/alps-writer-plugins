@@ -47,6 +47,8 @@ Load:
   graph
 - the high-level architecture constraints and external boundaries
 - `docs/adr/.mapping.json` when it exists
+- the optional trailing Glossary Appendix and any supplied term explanations needed
+  by the selected Features; read `docs/adr/glossary.md` if it exists
 
 Parse the dependency graph before processing features:
 
@@ -75,6 +77,25 @@ user explicitly requests it. Never invent a bounded context, and never use a
 technical layer name as either segment.
 
 ## 3. Enrich gaps and preflight a complete ownership transfer
+
+Carry qualifying jargon, uncommon terms/acronyms, and expressions that cannot be
+written out plainly into `docs/adr/glossary.md` when the selected transfer needs
+their meanings. Reuse already confirmed definitions; ask about an unclear meaning
+before finalizing dependent contracts. Include new or changed meanings in the
+existing ADR approval and pass them to `/adr-new` so it does not repeat questions.
+Create the Markdown glossary only when needed, with term and meaning columns.
+Preserve unrelated entries and existing layout; equivalent meanings are no-ops.
+Resolve conflicting definitions with the user before overwriting them or completing
+the affected handoff. Do not introduce DDD or domain classification.
+
+Transfer definitions without PRD paths, Section IDs, or source links. Keep short
+explanations and all requirement values, states, permissions and success conditions
+in their owning ADR bodies. The glossary is ADR-level supporting material, not an
+ADR or a mapping entry. After handoff it is maintained with the ADRs, without
+reading the PRD during ordinary implementation. Explicit re-import also compares
+term meanings: equivalent input leaves the glossary unchanged; a changed or
+removed definition requires checking affected contracts rather than automatic
+replacement or deletion.
 
 A PRD is expected to be less specific than an ADR. Do not treat every missing
 ADR-resolution fact as an immediate blocker, and do not copy the PRD into an ADR

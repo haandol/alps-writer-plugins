@@ -4,6 +4,11 @@ This directory documents the project's major architectural decisions. An ADR is 
 
 This document is the directory's index — what an ADR is, the template to write one from, and where the ADR list lives. The principle, the rules, and the layout live in sub-documents.
 
+When uncommon terminology needs explanation, `glossary.md` at this root stores
+confirmed term meanings. It is created only when needed, is not an ADR or mapping
+entry, and does not replace the requirements in ADR bodies. Read it selectively;
+normal authoring requires no upfront terminology exercise.
+
 > **Read [`concepts.md`](./concepts.md) before writing or reviewing an ADR.** It holds the one principle every rule here follows from — PRD, ADR, and code are the same system at three resolutions, and each level earns its place by what it refuses to show — plus the ADR admission gate, gray zone, regeneration test, requirement gate, dependency model, and how Status moves. The rules below are that principle applied case by case, so they read as arbitrary without it.
 
 - [`concepts.md`](./concepts.md) — how ADRs work here: the abstraction ladder, ADR admission gate, gray zone, regeneration test, requirement gate, one-way dependency model, Status and its automatic transitions
@@ -93,4 +98,4 @@ The ADR list is held solely by [`docs/adr/.mapping.json`](./structure.md#the-adr
 - [Michael Nygard — Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) — the original ADR article
 - [adr-writer plugin](https://github.com/haandol/alps-writer-plugins) — this plugin itself
 
-<!-- adr-writer:rules-version 0.8.23 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.8.24 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

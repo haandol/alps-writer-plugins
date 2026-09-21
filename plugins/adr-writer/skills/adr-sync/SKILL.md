@@ -8,6 +8,12 @@ argument-hint: "[category?] [--quick]"
 
 > **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
 
+Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
+Its absence is normal; preserve it as supporting material, not an indexed ADR.
+When this workflow permits ADR writing and a definition needs creation or change,
+apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
+boundary. Review-only work reports unclear or conflicting meanings without editing.
+
 Verify that every ADR in `docs/adr/` matches the repository implementation, including IaC and repository-local configuration. Fix drifted ADRs, resolve contradictions between related ADRs, and synchronize the `.mapping.json` index (the adrs[] path/status/summary).
 
 Alongside verification and correction, **refine each ADR into one self-contained document describing the current admitted decision and requirement contract.** Reconstruct the evolution narration that accumulated mid-body over time ("originally it was X, then changed to Y", "added Z in v2", "changed to B compared with the previous A") into a single current-state description, so reading one ADR conveys its durable decision without code-level implementation facts. Of what you strip out, **harvest major transitions** into the category's `decision-log.md` (Pass 2's step 3-E); **minor** evolutions and individual diffs are preserved by Git, so the ADR body carries no evolution history. (This is cleanup within a single ADR — merging an evolution _chain_ spread across several ADRs into one is `adr-rollup`'s job.)

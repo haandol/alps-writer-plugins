@@ -10,6 +10,12 @@ argument-hint: "<category> [title?]"
 
 Author an ADR directly. Works without an ALPS PRD — this is the plugin's canonical ADR authoring path, while `/feature-to-adr` is "the helper that auto-converts an ALPS Section 7 feature when one already exists."
 
+When qualifying jargon or an unclear acronym appears, read
+`${CLAUDE_PLUGIN_ROOT}/references/glossary.md`. Require a clear user meaning,
+reuse supplied definitions, and create or update `docs/adr/glossary.md` only when
+needed under the current ADR approval. Keep the decision and requirement contract
+self-contained in the ADR; do not add DDD classification or a glossary interview.
+
 > When to use: whenever a decision passes the **ADR admission gate** and must be recorded before changing code — a requirement contract, external boundary, data/key design, security trust boundary, adopted algorithm, fallback policy, or durable trade-off. A replaceable implementation means does not enter this skill. The ADR you write can go straight into `/adr-impl`.
 >
 > **Refactoring is out of scope** — a structural change that does not alter behavior is left to the coding agent's planning step rather than turned into an ADR (`concepts.md` "What an ADR is not"). If the user tries to record a refactor as an ADR, ask once: "Does this change alter behavior or a decision (the adopted alternative, a state transition, the key design)? If it is pure structural cleanup, planning without an ADR is the better path." If a decision does change, it is not a refactor, so proceed.

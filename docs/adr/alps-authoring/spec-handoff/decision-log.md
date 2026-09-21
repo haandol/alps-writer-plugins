@@ -6,3 +6,10 @@ Newest first. Record only major decision changes.
 
 - **2026-08-18 — current ADR: [admission-aware feature handoff](./0001-admission-aware-feature-handoff.md)** — 불완전한 PRD를 즉시 차단하는 분류 흐름을, ADR 해상도의 계약·결정 gap만 사용자에게 질문하고 확인 후 재분류하는 gap-driven enrichment handoff로 변경했다.
 - **2026-08-17 — current ADR: [admission-aware feature handoff](./0001-admission-aware-feature-handoff.md)** — PRD와 ADR의 계약을 계속 재조정하는 0..N handoff를, 완료 후 ADR이 구현 계약을 단독 소유하고 명시적 재import만 semantic no-op 또는 ADR 변경 제안으로 처리하는 완전한 소유권 이전으로 변경했다.
+
+## 2026-09-21 — 계약 인계에 필요한 용어 정의 포함
+
+- **Current ADR**: [admission-aware-feature-handoff](./0001-admission-aware-feature-handoff.md)
+- **Change type**: requirement rule change
+- **What**: 계약 중심 인계 → 필요한 용어 정의도 ADR 루트 용어집에 이전하고 반복 인계의 무변경 보장 확장.
+- **Why**: 인계 이후 PRD를 읽지 않아도 계약에 쓰인 용어의 의미를 복구할 수 있어야 하기 때문이다.

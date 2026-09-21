@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "ALPS (PRD) authoring + ADR-driven development for Claude Code, as two independent plugins.",
-    "version": "0.8.23"
+    "version": "0.8.24"
   },
   "plugins": [
     {
       "name": "alps-writer",
       "source": "./plugins/alps-writer",
       "description": "Author ALPS (PRD) documents via an MCP server — guided, section-by-section product specs. Hand Section 7 features to the adr-writer plugin with /feature-to-adr.",
-      "version": "0.8.23",
+      "version": "0.8.24",
       "author": {
         "name": "haandol"
       },
@@ -27,7 +27,7 @@
       "name": "adr-writer",
       "source": "./plugins/adr-writer",
       "description": "ADR-driven development cycle: author ADRs with /adr-new, implement with /adr-impl, apply verified low-risk refactors before completion, and sync with /adr-sync, with an ADR-first hook that re-injects the ADR map every turn. Works standalone, no ALPS PRD required.",
-      "version": "0.8.23",
+      "version": "0.8.24",
       "author": {
         "name": "haandol"
       },

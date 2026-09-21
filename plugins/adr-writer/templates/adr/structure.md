@@ -18,6 +18,7 @@ docs/adr/
 ├── structure.md                 # this document — directory layout · mapping policy
 ├── decision-log.template.md     # the decision-log.md seed (read-only — copied into a category to use)
 ├── .mapping.json                # ADR registry/index (adrs, dependsOn, subdomainType; stores no code paths and no PRD reference)
+├── glossary.md                  # optional confirmed meanings; created only when needed, not indexed as an ADR
 ├── identity/                       # BOUNDED CONTEXT (core subdomain)
 │   ├── 0001-token-rotation.md      # a cross-cutting decision for the whole context (directly under the parent folder)
 │   ├── decision-log.md             # (optional) this category's major decision-change history — a convention file, not in the mapping
@@ -227,4 +228,4 @@ When `/adr-sync`, `/adr-impl`, `/adr-rollup`, and others verify an ADR's code al
 
 **No guessing**: never assert a scope without having looked at the codebase — always confirm the real structure with `Glob`/`Grep` before verifying.
 
-<!-- adr-writer:rules-version 0.8.23 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.8.24 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

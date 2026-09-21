@@ -27,8 +27,8 @@
       "adrs": [
         {
           "path": "docs/adr/adr-authoring/decision-presentation/0001-present-decision-digest-and-semantic-diff.md",
-          "status": "Accepted (2026-09-07)",
-          "summary": "ADR 작성과 리뷰는 구체적인 문장 패턴을 점검하고 근거 품질에 따라 self-check와 독립 review를 선택한다"
+          "status": "Accepted (2026-09-21)",
+          "summary": "ADR은 읽기 쉬운 결정·계약 설명과 필요할 때 생성하는 루트 용어집으로 확인된 용어 의미를 보존한다"
         }
       ],
       "dependsOn": ["adr-authoring/current-state"]
@@ -71,8 +71,8 @@
       "adrs": [
         {
           "path": "docs/adr/alps-authoring/spec-handoff/0001-admission-aware-feature-handoff.md",
-          "status": "Accepted (2026-09-20)",
-          "summary": "PRD handoff는 값의 효과로 요구사항을 분류하고 위임된 제안의 승인을 분리하며 완전한 계약 소유권 이전과 명시적 재import를 보장한다"
+          "status": "Accepted (2026-09-21)",
+          "summary": "PRD handoff는 완전한 계약과 필요한 용어 정의를 ADR 수준으로 이전하고 명시적 재import와 의미 동일 입력의 무변경을 보장한다"
         }
       ],
       "dependsOn": ["adr-authoring/decision-boundary"]
@@ -82,8 +82,8 @@
       "adrs": [
         {
           "path": "docs/adr/alps-authoring/authoring-interaction/0001-support-atomic-and-batch-approval.md",
-          "status": "Accepted (2026-08-26)",
-          "summary": "ALPS 작성은 계약 중심 승인과 Feature 단위 저장을 유지하며 Section 7을 신규 개발자가 이해할 수 있게 설명하고 유용한 경우 개념 수준 Mermaid 다이어그램을 선택적으로 권장한다"
+          "status": "Accepted (2026-09-21)",
+          "summary": "ALPS는 대화형 계약 승인을 유지하고 필요한 용어를 첫 등장에 확인해 문서 끝의 선택적 Glossary Appendix에 보존한다"
         }
       ],
       "dependsOn": []

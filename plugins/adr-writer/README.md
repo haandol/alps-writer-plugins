@@ -6,6 +6,13 @@ ADR digests, implementation plans, and document reviews also show an ephemeral `
 
 ## Non-invasive by design
 
+Uncommon terminology is explained at first use and, when needed, preserved in
+`docs/adr/glossary.md`. ADR authoring requires a clear user meaning, reuses supplied
+definitions, and saves new or changed meanings under the existing ADR approval.
+Conflicts are resolved before updating entries; unrelated entries are preserved.
+The glossary has no ADR number, Status, or mapping entry. It is not a domain
+classification exercise and never replaces the contract in an ADR body.
+
 adr-writer is a removable harness over durable artifacts. ADRs retain admitted
 decisions, rationale, and requirement contracts; code and tests retain
 implementation truth; project conventions remain in README, AGENTS.md, and

@@ -8,6 +8,12 @@ argument-hint: "[category-or-adr-path?]"
 
 > **Review results**: Apply [report-write](../report-write/SKILL.md), including when the user asks only for an ADR review.
 
+Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
+Its absence is normal; preserve it as supporting material, not an indexed ADR.
+When this workflow permits ADR writing and a definition needs creation or change,
+apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
+boundary. Review-only work reports unclear or conflicting meanings without editing.
+
 Review ADRs that already exist **as documents** and return a punch list. With no argument it sweeps every ADR; with an argument it narrows to one category or a single ADR.
 
 > **This is the document-quality axis.** It asks "should this decision be an ADR at all, is it written at the right abstraction level, and is every requirement it must carry still in it?" — never "does the code match?" The ADR admission gate rejects replaceable libraries, SDKs, frameworks, credential/auth adapters, and module structure even when their prose is polished. Pick the right command:

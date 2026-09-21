@@ -9,6 +9,11 @@ disable-model-invocation: true
 
 > **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
 
+Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
+Preserve this optional supporting file. For permitted definition edits, apply
+`${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under existing approval.
+Review-only work reports unclear or conflicting meanings without editing.
+
 The goal is **one logical decision = one current-state ADR.** When the same decision is scattered across several ADRs as evolution history (v1 → v2 → v3 — a remnant of the old evolution-chain model), merge that chain into one so only the decision the latest code actually implements remains. There is no reason to hold evolution history spread across several ADRs — reading the single final state should convey the latest code's business and technical decisions. But the **major transitions** the chain carried (replacing the adopted alternative, changing the core algorithm or architecture, inverting a Driver, and the like) are not deleted; they are **harvested** into the category's `decision-log.md` — Git history preserves the individual diffs, but the traceable timeline of "why was this swapped out" stays in the log (`authoring-rules.md` "What to log — minor vs major").
 
 **Reducing the ADR count is not the goal.** The goal is "tidying scattered evolution history into decision units," and a smaller count is merely the consequence. The right number of ADRs is the number of genuinely distinct logical decisions that exist in that category — never cram distinct decisions into one ADR to reduce the count. When there is no chain to merge, merging nothing is the correct outcome.

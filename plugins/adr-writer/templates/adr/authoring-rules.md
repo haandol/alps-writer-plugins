@@ -4,6 +4,14 @@ What goes into an ADR body and what stays out. The principle these rules follow 
 
 An ADR records an architectural decision (Context, Decision, Consequences). To keep code changes from dragging ADR edits behind them, **implementation detail stays out of the ADR.**
 
+For jargon, uncommon terms/acronyms, or expressions that cannot be written out
+plainly, require a clear meaning from the user when it is not already supplied.
+Preserve needed definitions in the optional root `glossary.md` under the current
+ADR approval. Reuse equivalent entries, preserve unrelated terms, and resolve
+conflicting meanings before changing them. Keep short explanations and all
+requirement rules in the owning ADR. The glossary has no Status or mapping entry;
+ordinary documents need no glossary, DDD exercise, or domain classification.
+
 **Every rule in this document is one constraint on resolution.** PRD, ADR, and code are the same system at three zoom levels (like C4's context / container / component), and the point of a level is what it refuses to show — so that a reader can load one level, get its question answered, and stop. Each keep/drop call below is therefore the same question in different clothes: _does this fact belong to this level's resolution?_ Detail from a lower level makes the ADR untrustworthy alone; a requirement pushed out of it lands in no level at all. For the full principle see [`concepts.md` "The abstraction ladder"](./concepts.md#the-abstraction-ladder--the-principle-every-rule-follows-from).
 
 ## ADR admission gate — decide whether the decision belongs here
@@ -435,4 +443,4 @@ For the PR reviewer or the author before merge.
 - [ ] **One ADR = one decision** holds (no split signals)
 - [ ] **`.mapping.json`** has the matching category entry including the new ADR
 
-<!-- adr-writer:rules-version 0.8.23 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.8.24 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

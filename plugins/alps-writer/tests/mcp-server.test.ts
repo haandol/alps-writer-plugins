@@ -50,7 +50,9 @@ test("stdio MCP server exposes schemas and enforces document validation", async 
     "list_alps_sections",
     "list_lite_alps_sections",
     "load_alps_document",
+    "read_alps_glossary",
     "read_alps_section",
+    "save_alps_glossary_entry",
     "save_alps_section",
   ]);
 
@@ -92,6 +94,31 @@ test("stdio MCP server exposes schemas and enforces document validation", async 
   assert.doesNotMatch(textContent(saved), /saved through MCP/);
   assert.match(fs.readFileSync(target, "utf8"), /saved through MCP/);
 
+  assert.match(
+    textContent(await client.callTool({ name: "read_alps_glossary", arguments: {} })),
+    /No glossary/,
+  );
+  const glossaryBefore = fs.readFileSync(target, "utf8");
+  const blankDefinition = await client.callTool({
+    name: "save_alps_glossary_entry",
+    arguments: { term: "PO", definition: " " },
+  });
+  assert.equal(blankDefinition.isError, true);
+  assert.equal(fs.readFileSync(target, "utf8"), glossaryBefore);
+  assert.match(
+    textContent(
+      await client.callTool({
+        name: "save_alps_glossary_entry",
+        arguments: { term: "PO", definition: "Issued purchase order, excluding drafts" },
+      }),
+    ),
+    /Saved glossary term: PO/,
+  );
+  assert.match(
+    textContent(await client.callTool({ name: "export_alps_markdown", arguments: {} })),
+    /Appendix: Glossary[\s\S]*Issued purchase order/,
+  );
+
   const liteTarget = path.join(dir, "integration.lite.alps.xml");
   const liteInitialized = await client.callTool({
     name: "init_lite_alps_document",
@@ -110,4 +137,17 @@ test("stdio MCP server exposes schemas and enforces document validation", async 
   });
   assert.match(textContent(liteSaved), /Saved 1\.1/);
   assert.match(fs.readFileSync(liteTarget, "utf8"), /profile="lite"/);
+  assert.match(
+    textContent(await client.callTool({ name: "read_alps_glossary", arguments: {} })),
+    /No glossary/,
+  );
+  await client.callTool({
+    name: "save_alps_glossary_entry",
+    arguments: { term: "셀러", definition: "입점 승인된 판매 사업자" },
+  });
+  assert.match(
+    textContent(await client.callTool({ name: "read_alps_glossary", arguments: {} })),
+    /입점 승인된 판매 사업자/,
+  );
+  assert.doesNotMatch(fs.readFileSync(target, "utf8"), /셀러/);
 });
