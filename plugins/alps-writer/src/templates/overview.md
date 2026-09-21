@@ -48,6 +48,29 @@ Some sections depend on other sections. Before working on a section with referen
 
 ## Conversation Guide
 
+### Optional glossary appendix
+
+Keep the numbered sections and their authoring order unchanged. When the user uses
+jargon, an uncommon term or acronym, or an expression that cannot be written out
+plainly, require a clear meaning in this document. Reuse an explanation already
+supplied by the user; otherwise ask at first use and wait before finalizing content
+that depends on it. Expanding an acronym is insufficient when its product meaning
+remains ambiguous. Never substitute an inferred definition for the user's meaning.
+
+Use `read_alps_glossary()` to reuse existing definitions. Include new or changed
+definitions in the current section's approval digest, then call
+`save_alps_glossary_entry(term, definition)` for each confirmed entry. Do not add a
+separate approval, initial terminology interview, or final glossary-writing stage.
+If a definition conflicts with an existing meaning, resolve it with the user before
+updating the definition and affected content.
+
+The appendix contains only the term and its meaning in this document. It appears
+after all numbered sections only when needed; ordinary-language documents have no
+glossary or empty placeholder. Its presence is optional, but defining a qualifying
+term is mandatory. Before completion, check that all qualifying terms have clear,
+consistent definitions. Do not require DDD or domain classification. Keep short
+first-use explanations and all requirement rules in their owning body sections.
+
 <communication>
 <section-tracking>
 - Start each message with "Section" and its number (e.g., `## Section 1. Overview`).

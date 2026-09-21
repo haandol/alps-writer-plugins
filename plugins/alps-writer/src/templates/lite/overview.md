@@ -24,6 +24,27 @@ required prerequisite is incomplete, complete it first.
 
 ## Conversation Guide
 
+### Optional glossary appendix
+
+Keep the four numbered Sections and their authoring order unchanged. When the user
+uses jargon, an uncommon term or acronym, or an expression that cannot be written
+out plainly, require its meaning in this document. Reuse the user's supplied
+definition; otherwise ask at first use and wait before finalizing dependent
+content. This clarification also applies in proposal-led Sections 2 and 4.
+An acronym's expanded name alone may not explain its product meaning.
+
+Read `read_alps_glossary()` when needed. Include new or changed definitions in the
+current Section's approval digest and save them with
+`save_alps_glossary_entry(term, definition)` after that approval. Resolve conflicting
+meanings with the user before updating affected content. Never invent a confirmed
+definition or add a separate approval, upfront interview, or final writing stage.
+
+Only actual definitions create the trailing Glossary Appendix, with a term and its
+meaning per entry. Ordinary-language documents need no glossary or placeholder.
+The appendix is optional; defining a qualifying term is mandatory. Check definition
+coverage before completion. Do not require DDD or domain classification, and keep
+short first-use explanations and product requirements in the body.
+
 For every Section that needs content:
 
 1. Call `get_lite_alps_section_guide(N)`.

@@ -10,6 +10,15 @@ disable-model-invocation: true
 
 Start authoring an ALPS (PRD).
 
+When jargon, an uncommon term/acronym, or an expression that cannot be written out
+plainly appears, apply the overview's optional glossary rules throughout authoring.
+Require the user's meaning at first use when it is not already supplied; do not
+finalize dependent content while it is unclear. Read `read_alps_glossary()` as needed
+and save confirmed definitions with `save_alps_glossary_entry()` under the current
+section approval. The appendix is last and exists only when needed. Do not add a
+glossary interview, separate approval, DDD exercise, or domain classification.
+Check missing definitions before completion; keep all nine numbered sections.
+
 > **Language**: this skill and every other harness prompt are written in English, but talk to the user and write the document content in the language the user writes in. Any user-facing phrasing below is a guide, not a literal string.
 
 > **Non-invasive harness**: the saved ALPS document owns durable product

@@ -8,6 +8,12 @@ argument-hint: "[adr-path-or-category] [--base <ref>] [--mode standard|full]"
 
 > **Review results**: Apply [report-write](../report-write/SKILL.md).
 
+Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
+Its absence is normal; preserve it as supporting material, not an indexed ADR.
+When this workflow permits ADR writing and a definition needs creation or change,
+apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
+boundary. Review-only work reports unclear or conflicting meanings without editing.
+
 The report-write skill owns quiz generation and staged self-check. Read its
 [comprehension workflow](../report-write/references/comprehension.md) when
 composing the report. Use the implementation's core explanation as the question

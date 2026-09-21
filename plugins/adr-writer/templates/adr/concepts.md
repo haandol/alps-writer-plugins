@@ -47,6 +47,21 @@ user-visible workflow are preserved.
 
 Rule: never copy ALPS's user stories or acceptance-criteria prose into an ADR. Transfer only admitted motivation, decision pressures, and requirement contracts, without a PRD reference; adr-writer remains standalone. Design token values go to the design docs; function signatures and file paths go to the code and its docstrings.
 
+### Optional terminology support at the ADR level
+
+`docs/adr/glossary.md` preserves confirmed meanings for jargon, uncommon terms or
+acronyms, and expressions that cannot be written out plainly. Create it only when
+needed. It is supporting material within the ADR level, not another authority,
+an indexed ADR, or a DDD classification exercise. Read it selectively.
+
+Require the user's explanation when a needed meaning is unclear; reuse supplied
+definitions. Include new or changed meanings in the existing ADR approval.
+Preserve unrelated entries and resolve conflicting meanings before replacing them.
+The ADR body retains short first-use explanations and every requirement value,
+state, permission, ordering rule, failure guarantee and success condition. A
+glossary edit cannot silently change those contracts. Do not store upstream
+document paths or approval records in the glossary.
+
 ### Named applications of the same test
 
 Every rule and command name below is this one test applied at a different moment. They are worth knowing by name, because separately-running review agents stay aligned by citing them:
@@ -250,4 +265,4 @@ An ADR body is **a requirements and architecture document describing the current
 
 **Three layers preserve different things**: the ADR body = current state / `decision-log.md` = the timeline of major changes / Git = the verbatim diff. The log is a **convention file** rather than an ADR, so it is not registered in `.mapping.json` and the deterministic harness does not check it — for the recording criteria and format see [`authoring-rules.md` "Decision log (decision-log.md)"](./authoring-rules.md#decision-log-decision-logmd), and for the directory and non-indexing policy see [`structure.md`](./structure.md#decision-log-decision-logmd--a-convention-file-not-registered-in-the-mapping).
 
-<!-- adr-writer:rules-version 0.8.23 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.8.24 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

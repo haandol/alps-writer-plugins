@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the adr-authoring/deci
 category. Each ADR body describes only the current state, while the timeline of "what
 changed and why" accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-09-21 — 필요한 정의를 ADR 루트 용어집에 보존
+
+- **Current ADR**: [present-decision-digest-and-semantic-diff](./0001-present-decision-digest-and-semantic-diff.md)
+- **Change type**: requirement rule change
+- **What**: 본문 첫 등장 설명 → 본문의 계약을 유지하면서 필요한 용어 정의를 루트 용어집으로 재사용.
+- **Why**: 독립된 ADR 작성에서도 확인된 뜻을 잃지 않고 같은 용어의 충돌을 드러내기 위해서다.
+
 ## 2026-09-07 — 문체 품질 규칙을 구체적인 패턴 이름으로 설명
 
 - **Current ADR**: [present decision digest and semantic diff](./0001-present-decision-digest-and-semantic-diff.md)

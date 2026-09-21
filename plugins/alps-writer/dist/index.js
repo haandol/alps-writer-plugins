@@ -31607,6 +31607,59 @@ var TemplateRegistry = class {
   }
 };
 
+// src/tools/documents/glossary.ts
+function glossaryKey(term) {
+  return term.trim().normalize("NFC");
+}
+function parseGlossary(content) {
+  const blocks = [...content.matchAll(/<glossary\b[^>]*>[\s\S]*?<\/glossary>/g)];
+  if (!/<\/?glossary\b/.test(content)) return [];
+  if (blocks.length !== 1 || !blocks[0][0].startsWith("<glossary>") || !/^\s*<\/(?:alps-document|prd-document)>\s*$/.test(
+    content.slice(blocks[0].index + blocks[0][0].length)
+  ) || /<\/?glossary\b/.test(content.slice(0, blocks[0].index))) {
+    throw new Error("Glossary must appear exactly once, after all sections.");
+  }
+  const body = blocks[0][0].slice("<glossary>".length, -"</glossary>".length);
+  const entries = [];
+  const seen = /* @__PURE__ */ new Set();
+  const remainder = body.replace(/<entry\b([^>]*)>([\s\S]*?)<\/entry>/g, (_, attrs, value) => {
+    const term = attribute(attrs, "term")?.trim();
+    const definition = decodeXml(value.trim()).trim();
+    if (!term || !definition || /[<>]/.test(value)) {
+      throw new Error("Glossary entries require a term and an escaped, non-empty definition.");
+    }
+    const key = glossaryKey(term);
+    if (seen.has(key)) throw new Error(`Duplicate glossary term: ${term}`);
+    seen.add(key);
+    entries.push({ term, definition });
+    return "";
+  });
+  if (remainder.trim() || entries.length === 0) {
+    throw new Error("Glossary must contain only non-empty term definitions.");
+  }
+  return entries;
+}
+function buildGlossary(entries) {
+  if (entries.length === 0) return "";
+  return [
+    "<glossary>",
+    ...entries.map(
+      ({ term, definition }) => `<entry term="${escapeXmlAttribute(term)}">${escapeXmlText(definition)}</entry>`
+    ),
+    "</glossary>"
+  ].join("\n");
+}
+function glossaryMarkdown(entries) {
+  const cell = (value) => value.replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
+  return [
+    "## Appendix: Glossary",
+    "",
+    "| Term | Meaning in this document |",
+    "| --- | --- |",
+    ...entries.map(({ term, definition }) => `| ${cell(term)} | ${cell(definition)} |`)
+  ].join("\n");
+}
+
 // src/tools/documents/service.ts
 var bySubsectionId = ([a], [b]) => a.localeCompare(b, void 0, { numeric: true });
 var ALLOWED_ARCHITECTURE_DIAGRAMS = /* @__PURE__ */ new Set(["C4Context", "C4Container"]);
@@ -31766,7 +31819,8 @@ ${escapeXmlText(content)}
 ${content}
 </section>`;
   }
-  buildDocument(profile, projectName, sections) {
+  /** Rebuild numbered sections while preserving the optional trailing term definitions. */
+  buildDocument(profile, projectName, sections, glossary = []) {
     const profileAttribute = profile.rootProfile ? ` profile="${escapeXmlAttribute(profile.rootProfile)}"` : "";
     const lines = [
       `<alps-document project="${escapeXmlAttribute(projectName)}"${profileAttribute}>`
@@ -31774,6 +31828,7 @@ ${content}
     for (const section of sectionNumbers(profile)) {
       lines.push(this.buildSection(profile, section, sections.get(section) || NOT_STARTED));
     }
+    if (glossary.length > 0) lines.push(buildGlossary(glossary));
     lines.push("</alps-document>");
     return lines.join("\n\n");
   }
@@ -31786,11 +31841,17 @@ ${content}
     const match = content.match(/^# (.+?) (?:Lite )?(?:ALPS|PRD)/m);
     return match ? match[1] : "Untitled";
   }
+  /** Validate the active profile and glossary before selecting or mutating a document. */
   inspectDocument(content) {
     const root = content.match(/^\s*<(alps-document|prd-document)\b([^>]*)>/);
     if (!root) return { error: "Missing <alps-document> root element." };
     if (!new RegExp(`</${root[1]}>\\s*$`).test(content)) {
       return { error: `Missing closing </${root[1]}> element.` };
+    }
+    try {
+      parseGlossary(content);
+    } catch (error51) {
+      return { error: error51.message };
     }
     const profileValue = this.attribute(root[2], "profile");
     const headers = this.parseSectionHeaders(content);
@@ -31945,6 +32006,7 @@ ${content}
 4. Get explicit "yes" confirmation before calling save_alps_section()`;
     return `\u26A0\uFE0F CONVERSATION MODE REQUIRED:
 ${steps}
+Read read_alps_glossary() when terminology is needed. Require the user's meaning for undefined jargon or acronyms before finalizing dependent content; reuse supplied definitions. Save confirmed definitions with save_alps_glossary_entry() under the current section approval. The optional appendix stays after the numbered sections and is absent when unnecessary.
 NEVER save generated content without user approval.`;
   }
   /**
@@ -31974,6 +32036,7 @@ NEVER save generated content without user approval.`;
 ---
 ${this.resumeGuidance(inspection.profile)}`;
   }
+  /** Save one approved subsection without dropping definitions collected elsewhere in the document. */
   saveSection(section, subsectionId, title, content) {
     const document = this.readWorkingDocument();
     if ("error" in document) return document.error;
@@ -32005,8 +32068,43 @@ ${this.resumeGuidance(inspection.profile)}`;
     existing.set(subsection.fullId, { title, content });
     const parts = [...existing.entries()].sort(bySubsectionId).map(([id, value]) => this.buildSubsection(id, value.title, value.content));
     sections.set(section, parts.join("\n"));
-    this.writeAtomic(this.workingDoc, this.buildDocument(profile, projectName, sections));
+    this.writeAtomic(
+      this.workingDoc,
+      this.buildDocument(profile, projectName, sections, parseGlossary(document.content))
+    );
     return `Saved ${subsection.fullId}. ${title}`;
+  }
+  /**
+   * Save one user-confirmed meaning while preserving all other entries and section content.
+   * Semantic confirmation belongs to the conversation; blank input is rejected without a write.
+   */
+  saveGlossaryEntry(term, definition) {
+    const document = this.readWorkingDocument();
+    if ("error" in document) return document.error;
+    term = term.trim();
+    definition = definition.trim();
+    if (!term || !definition) return "Glossary term and definition must both be non-empty.";
+    const entries = parseGlossary(document.content);
+    const existing = entries.find((entry) => glossaryKey(entry.term) === glossaryKey(term));
+    if (existing?.definition === definition) return `Glossary unchanged: ${existing.term}`;
+    if (existing) existing.definition = definition;
+    else entries.push({ term, definition });
+    const glossary = buildGlossary(entries);
+    const content = document.content.includes("<glossary>") ? document.content.replace(/<glossary>[\s\S]*?<\/glossary>/, () => glossary) : document.content.replace(
+      /<\/(?:alps-document|prd-document)>\s*$/,
+      (closing) => `${glossary}
+
+${closing}`
+    );
+    this.writeAtomic(this.workingDoc, content);
+    return `Saved glossary term: ${existing?.term ?? term}`;
+  }
+  /** Return definitions for reuse without creating an appendix or changing completion state. */
+  readGlossary() {
+    const document = this.readWorkingDocument();
+    if ("error" in document) return document.error;
+    const entries = parseGlossary(document.content);
+    return entries.length ? glossaryMarkdown(entries) : "No glossary: no term definitions recorded.";
   }
   readSection(section, subsectionId) {
     const document = this.readWorkingDocument();
@@ -32070,6 +32168,8 @@ ${display}`;
       }
       lines.push(`Section ${number4} (${title}): ${status}`);
     }
+    const glossary = parseGlossary(docContent);
+    if (glossary.length > 0) lines.push(`Appendix (Glossary): ${glossary.length} defined terms`);
     return lines.join("\n");
   }
   countFeatureIds(sections, profile) {
@@ -32099,6 +32199,7 @@ ${data.content}`).join("\n\n");
     const subsections = this.parseSubsections(content, section);
     return subsections.size > 0 && [...subsections.values()].every((subsection) => subsection.content.trim().length === 0);
   }
+  /** Export numbered content followed by the glossary only when actual definitions exist. */
   exportMarkdown(outputPath) {
     const document = this.readWorkingDocument();
     if ("error" in document) return document.error;
@@ -32121,6 +32222,8 @@ ${markdown}
 `
       );
     }
+    const glossary = parseGlossary(docContent);
+    if (glossary.length > 0) lines.push(glossaryMarkdown(glossary));
     const result = lines.join("\n");
     if (outputPath) {
       const out = this.expandPath(outputPath);
@@ -32153,6 +32256,14 @@ var DocumentController = class {
   readAlpsSection(section, subsectionId) {
     return this.service.readSection(section, subsectionId);
   }
+  /** Expose approved term updates for the active Full or Lite document. */
+  saveAlpsGlossaryEntry(term, definition) {
+    return this.service.saveGlossaryEntry(term, definition);
+  }
+  /** Expose existing definitions without creating an optional appendix. */
+  readAlpsGlossary() {
+    return this.service.readGlossary();
+  }
   getAlpsDocumentStatus() {
     return this.service.getStatus();
   }
@@ -32167,7 +32278,7 @@ var server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.8.23" },
+  { name: "alps-writer", version: "0.8.24" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
@@ -32209,6 +32320,8 @@ Keywords: PRD, ALPS, Lite ALPS, \uAE30\uD68D\uC11C, \uAE30\uD68D \uBB38\uC11C, \
 </WORKFLOW>
 
 <RULES>
+- In both profiles, require clear meanings for user jargon, uncommon terms/acronyms, or expressions that cannot be written out plainly. Read existing definitions with read_alps_glossary(); reuse meanings already supplied by the user. Ask at first use when the meaning is unclear and wait before finalizing dependent content. Never invent the meaning.
+- Include new or changed definitions in the current section's approval digest, then save each with save_alps_glossary_entry(term, definition). Do not add a separate approval or interview stage. Check missing definitions before completion. The optional Glossary Appendix appears after all numbered sections only when needed; ordinary-language documents need no glossary. Do not require DDD or domain classification, or move requirement rules out of their owning sections.
 - MUST call the overview tool matching the selected document profile first
 - NEVER proceed without user confirmation
 - ALWAYS confirm progress at the SECTION level. Lite Section 3 is optional; when no explicit exclusions were provided and the approved boundary is not materially ambiguous, state that and skip it without a dedicated question.
@@ -32319,6 +32432,23 @@ server.tool(
   },
   ({ section }) => ({
     content: [{ type: "text", text: liteTc.getAlpsSectionGuide(section) }]
+  })
+);
+server.tool(
+  "read_alps_glossary",
+  "Read existing term definitions in the active Full or Lite document. No glossary is created by reading.",
+  {},
+  () => ({ content: [{ type: "text", text: dc.readAlpsGlossary() }] })
+);
+server.tool(
+  "save_alps_glossary_entry",
+  "Save one confirmed term and its meaning to the optional trailing Glossary Appendix in the active Full or Lite document. Reuse supplied definitions; ask the user about unclear meanings. Include new/changed meanings in the current section approval before calling. Never silently replace a conflicting definition. Do not populate a generic dictionary or classify domains.",
+  {
+    term: external_exports.string().trim().min(1).describe("The uncommon term or acronym used in this document"),
+    definition: external_exports.string().trim().min(1).describe("User-confirmed meaning in this document")
+  },
+  ({ term, definition }) => ({
+    content: [{ type: "text", text: dc.saveAlpsGlossaryEntry(term, definition) }]
   })
 );
 server.tool(

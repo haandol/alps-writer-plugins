@@ -23,6 +23,14 @@ flowchart LR
 
 `.mapping.json` records the ADR index (category → ADRs) plus `dependsOn`, and stores neither code paths nor a PRD reference. The ADR → code link is not stored anywhere: an agent finds the code by reading the ADR and searching the repo. The handoff and re-import reports are also ephemeral; neither becomes a second mapping or authority.
 
+Confirmed term meanings follow the same ownership transfer. ALPS keeps them in an
+optional trailing appendix; handoff moves only definitions needed by the selected
+work into `docs/adr/glossary.md`, without upstream links. Later ADR authoring
+maintains that file when needed. It is supporting material within the ADR level,
+not an indexed ADR or a second contract owner. Required values and rules remain in
+the owning ADR, with enough explanation for independent reading. Equivalent
+re-import does not change the glossary; conflicting meanings need user resolution.
+
 - **Ownership lifecycle**: before handoff the PRD is authoritative. Handoff commits only when every implementation-relevant item is owned by an ADR, classified as implementation discretion, or identified as legacy context, with no unresolved material. After commit the ADR set alone drives implementation, review, and sync.
 - **Explicit re-import**: a later PRD change does not propagate automatically. When the user requests re-import, alps-writer compares semantic obligations against current ADRs. Equivalent wording is a no-op; additions and changes become ADR proposals; removals never weaken the ADR automatically.
 - **No physical references in any direction** — not just ADR↔code, but ADR↔PRD too:

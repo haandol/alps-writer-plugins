@@ -233,6 +233,21 @@ ADR folders are organized along two axes — a DDD **bounded context** (top-leve
 
 **DocumentService state** — `workingDoc` holds the current document path in memory. Read/write operations require `initDocument()` or `loadDocument()` to be called first.
 
+**Optional glossary** — Both profiles keep their numbered Sections unchanged and
+append a glossary only when qualifying jargon, uncommon terms/acronyms, or
+expressions that cannot be written out plainly need confirmed definitions. Ask
+for unclear meanings at first use; reuse supplied meanings and the current
+Section approval. `read_alps_glossary` and `save_alps_glossary_entry` operate on the
+active document. The optional XML glossary follows all Sections, survives later
+saves and reloads, and exports last. Never pre-seed a dictionary or require DDD.
+
+`/feature-to-adr` transfers needed definitions to `docs/adr/glossary.md`; ADR
+authoring creates or updates it under the existing approval when needed.
+Equivalent meanings are no-ops, unrelated entries are preserved, and conflicting
+meanings are resolved before replacement. This file is supporting material at the
+ADR level, without Status or mapping registration; contract rules remain in the
+owning ADR body. Consumers read it selectively.
+
 ## Plugin distribution
 
 The repo root is a dual-client marketplace. `.agents/plugins/marketplace.json` registers the plugins for Codex and `.claude-plugin/marketplace.json` registers them for Claude Code; both point to `./plugins/alps-writer` and `./plugins/adr-writer`. Each plugin has client-specific manifests under `.codex-plugin/` and `.claude-plugin/`. Skills are shared between both clients. Codex invokes them with `$skill-name` or natural language; Claude Code exposes the same skills as `/skill-name`.
