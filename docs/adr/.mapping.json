@@ -126,8 +126,8 @@
       "adrs": [
         {
           "path": "docs/adr/adr-cycle/behavior-evaluation/0001-evaluate-critical-prompt-decisions.md",
-          "status": "Accepted (2026-08-18)",
-          "summary": "행동 eval은 숨은 계약·안전 전제 누락과 domain default 대 product decision gap 분류의 과소·과잉 escalation을 검증한다"
+          "status": "Accepted (2026-09-25)",
+          "summary": "Skill 평가는 분류·선택·실제 수행을 구분하고 동일 계약의 사용·미사용 비교와 원본 증거 기반 비차단 리포트를 제공한다"
         }
       ],
       "dependsOn": []

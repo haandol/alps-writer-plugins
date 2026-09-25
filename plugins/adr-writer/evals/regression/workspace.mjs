@@ -13,7 +13,7 @@ import {
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { SEEDED_RULE_DOCS } from "../../scripts/adr-lint-lib.mjs";
+import { SEEDED_RULE_DOCS, STAMPED_RULE_DOCS } from "../../scripts/adr-lint-lib.mjs";
 
 export const sha = (value) =>
   createHash("sha256")
@@ -81,6 +81,7 @@ export function diff(before, after) {
     }));
 }
 
+/** Give every comparison condition the same rules and mandatory log seed before model execution. */
 export function createWorkspace(root, files, pluginRoot) {
   mkdirSync(root, { recursive: true });
   for (const [file, content] of Object.entries(files)) {
@@ -88,7 +89,7 @@ export function createWorkspace(root, files, pluginRoot) {
     mkdirSync(path.dirname(target), { recursive: true });
     writeFileSync(target, content);
   }
-  for (const name of SEEDED_RULE_DOCS) {
+  for (const name of STAMPED_RULE_DOCS) {
     const dest = confined(root, `docs/adr/${name}`);
     mkdirSync(path.dirname(dest), { recursive: true });
     writeFileSync(dest, readFileSync(path.join(pluginRoot, "templates/adr", name)));
@@ -104,7 +105,15 @@ export function createWorkspace(root, files, pluginRoot) {
   }
 }
 
-export function makeTools({ root, pluginRoot, logPath, turn }) {
+/** Keep evaluation mutations inside the fixture and withhold guidance in ablation runs. */
+export function makeTools({
+  root,
+  pluginRoot,
+  logPath,
+  turn,
+  guidance = true,
+  checkerRoot = pluginRoot,
+}) {
   const events = () =>
     existsSync(logPath)
       ? readFileSync(logPath, "utf8").split("\n").filter(Boolean).map(JSON.parse)
@@ -116,6 +125,7 @@ export function makeTools({ root, pluginRoot, logPath, turn }) {
   }
   function location(file) {
     if (file.startsWith("plugin/")) {
+      if (!guidance) throw new Error("skill guidance is unavailable in this condition");
       const relative = file.slice(7);
       if (!/^(skills|agents|references|templates|scripts)\//.test(relative)) {
         throw new Error("plugin read outside advertised directories");
@@ -128,7 +138,7 @@ export function makeTools({ root, pluginRoot, logPath, turn }) {
     if (!file.startsWith("docs/") || !/\.(md|json)$/.test(file)) {
       throw new Error("only fixture docs/*.md and docs/*.json are writable");
     }
-    if (SEEDED_RULE_DOCS.some((name) => file === `docs/adr/${name}`)) {
+    if (STAMPED_RULE_DOCS.some((name) => file === `docs/adr/${name}`)) {
       throw new Error("seeded rules are read-only");
     }
     return confined(root, file);
@@ -139,6 +149,8 @@ export function makeTools({ root, pluginRoot, logPath, turn }) {
       fields: { prefix: { type: "string" } },
       required: [],
       run({ prefix = "" }) {
+        if (!guidance && prefix.startsWith("plugin/"))
+          throw new Error("skill guidance is unavailable in this condition");
         return prefix.startsWith("plugin/")
           ? listFiles(pluginRoot, prefix.slice(7)).map((file) => `plugin/${file}`)
           : listFiles(root, prefix);
@@ -233,13 +245,13 @@ export function makeTools({ root, pluginRoot, logPath, turn }) {
         let args;
         if (kind === "structure") {
           args = [
-            path.join(pluginRoot, "scripts/adr-structure-lint.mjs"),
+            path.join(checkerRoot, "scripts/adr-structure-lint.mjs"),
             ...(category ? [category] : []),
             "--json",
           ];
         } else if (kind === "invariants") {
           executable = "bash";
-          args = [path.join(pluginRoot, "scripts/adr-invariants.sh")];
+          args = [path.join(checkerRoot, "scripts/adr-invariants.sh")];
         } else if (kind === "rollup-references") {
           for (const value of [removed, renumbered]) {
             if (value.length > 500 || (value && !/^[a-z0-9/: -]+$/.test(value)))
@@ -247,7 +259,7 @@ export function makeTools({ root, pluginRoot, logPath, turn }) {
           }
           executable = "bash";
           args = [
-            path.join(pluginRoot, "scripts/adr-invariants.sh"),
+            path.join(checkerRoot, "scripts/adr-invariants.sh"),
             "--rollup-only",
             ...(removed ? ["--removed", removed] : []),
             ...(renumbered ? ["--renumbered", renumbered] : []),
@@ -286,7 +298,7 @@ export function makeTools({ root, pluginRoot, logPath, turn }) {
           throw new Error("invalid ADR path");
         const result = spawnSync(
           process.execPath,
-          [path.join(pluginRoot, "scripts/adr-status-transition.mjs"), file, "Proposed"],
+          [path.join(checkerRoot, "scripts/adr-status-transition.mjs"), file, "Proposed"],
           { cwd: root, encoding: "utf8", timeout: 30_000, maxBuffer: 2 * 1024 * 1024 },
         );
         return {

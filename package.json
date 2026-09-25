@@ -11,6 +11,7 @@
     "test": "pnpm authoring-guidance:check && pnpm report-skill:check && pnpm --filter alps-writer test && node --test \"plugins/adr-writer/tests/**/*.test.mjs\" && pnpm test:deepeval",
     "test:deepeval": "node --test \"plugins/adr-writer/evals/deepeval/*.test.mjs\"",
     "eval:regression": "node plugins/adr-writer/evals/deepeval/run.mjs",
+    "eval:skills": "node plugins/adr-writer/evals/skills/run.mjs",
     "eval:deepeval": "node plugins/adr-writer/evals/deepeval/run.mjs",
     "eval:report": "node plugins/adr-writer/evals/deepeval/render-report.mjs",
     "eval:golden": "node plugins/adr-writer/evals/deepeval/golden-report.mjs",

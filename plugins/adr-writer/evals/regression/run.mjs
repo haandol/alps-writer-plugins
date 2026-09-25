@@ -109,7 +109,8 @@ function git(args) {
   return result.stdout;
 }
 
-export function copyPlugin(destination, source, baseline) {
+/** Snapshot instructions without requiring retired skills in an ablation-capable caller. */
+export function copyPlugin(destination, source, baseline, { allowMissingSkills = false } = {}) {
   mkdirSync(destination, { recursive: true });
   const files = {};
   if (baseline) {
@@ -132,8 +133,7 @@ export function copyPlugin(destination, source, baseline) {
     }
   }
   for (const required of [
-    "skills/adr-rollup/SKILL.md",
-    "skills/adr-sync/SKILL.md",
+    ...(allowMissingSkills ? [] : ["skills/adr-rollup/SKILL.md", "skills/adr-sync/SKILL.md"]),
     "scripts/adr-structure-lint.mjs",
   ]) {
     if (!(required in files)) throw new Error(`selected plugin lacks ${required}`);
@@ -152,14 +152,18 @@ function readEvents(file) {
     : [];
 }
 
-function executionPrompt(item, pluginRoot, history, referenceDate) {
-  const skill = readFileSync(
-    path.join(pluginRoot, "skills", item.skill, "SKILL.md"),
-    "utf8",
-  ).replace(/^---\n[\s\S]*?\n---\n/, "");
-  return `Execute the following shipped skill using the available local fixture MCP tools.
+/** Give both conditions identical tools and tasks, changing only access to execution guidance. */
+export function executionPrompt(item, pluginRoot, history, referenceDate, guidance = true) {
+  const skill = guidance
+    ? readFileSync(path.join(pluginRoot, "skills", item.skill, "SKILL.md"), "utf8").replace(
+        /^---\n[\s\S]*?\n---\n/,
+        "",
+      )
+    : "";
+  return `Complete the user's task using the available local fixture MCP tools.
 This is an evaluation workspace, not either source repository.
-Read-only plugin files are addressed as plugin/skills/..., plugin/agents/..., plugin/references/..., plugin/templates/..., plugin/scripts/....
+The shared organization rules and decision-log seed are in docs/adr/. Use docs/adr/decision-log.template.md as the shared seed in either condition.
+${guidance ? "Read-only plugin files are addressed as plugin/skills/..., plugin/agents/..., plugin/references/..., plugin/templates/..., plugin/scripts/...." : "Skill execution guidance is unavailable. The fixture's product and organization contracts still apply."}
 For references relative to this skill, resolve under plugin/skills/${item.skill}/.
 CLAUDE_PLUGIN_ROOT corresponds to the virtual plugin/ directory.
 list_files/search/read_file are the available filesystem discovery tools.
@@ -171,22 +175,21 @@ No arbitrary host shell, credentials, source/test edits, or external service acc
 Respond normally in Korean. Do not emit evaluation tags or a machine-readable tail.
 Conversation replay below includes the preceding user turns and observable replies/events.
 
-<shipped-skill>
-${skill}
-</shipped-skill>
+${guidance ? `<shipped-skill>\n${skill}\n</shipped-skill>` : ""}
 
 <conversation>
 ${JSON.stringify(history, null, 2)}
 </conversation>`;
 }
 
+/** Collect observable edits and events, fixing fixture and verifier versions when comparing guidance. */
 export async function runCase(item, variant, repeat, directory, options) {
   const referenceDate = options.referenceDate ?? options["reference-date"] ?? calendarDate();
   const relative = `runs/${item.id}-${variant.name}-${repeat}`;
   const artifactDir = path.join(directory, relative);
   const root = path.join(artifactDir, "workspace");
   mkdirSync(artifactDir, { recursive: true });
-  createWorkspace(root, item.build(), variant.root);
+  createWorkspace(root, item.build(), options.fixturePluginRoot ?? variant.root);
   const before = snapshot(root);
   const result = {
     caseId: item.id,
@@ -212,6 +215,8 @@ export async function runCase(item, variant, repeat, directory, options) {
       pluginRoot: variant.root,
       logPath: path.join(artifactDir, "fixture-checks.jsonl"),
       turn: 0,
+      guidance: variant.guidance !== false,
+      checkerRoot: options.checkerRoot ?? variant.root,
     });
     const policy = tools.call("run_check", { kind: "policy-tests" });
     const lint = tools.call("run_check", { kind: "structure" });
@@ -236,13 +241,21 @@ export async function runCase(item, variant, repeat, directory, options) {
                 variant.root,
                 logPath,
                 String(index + 1),
+                variant.guidance === false ? "off" : "on",
+                options.checkerRoot ?? variant.root,
               ],
             },
           },
         }),
       );
       const response = await (options.invoke ?? invokeClaude)({
-        prompt: executionPrompt(item, variant.root, history, referenceDate),
+        prompt: executionPrompt(
+          item,
+          variant.root,
+          history,
+          referenceDate,
+          variant.guidance !== false,
+        ),
         cwd: root,
         config,
         model: options.model,

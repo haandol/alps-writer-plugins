@@ -7,6 +7,19 @@
 export const IMPACT_RULES = [
   {
     pathPrefixes: [
+      "plugins/adr-writer/references/comprehension-load.md",
+      "plugins/alps-writer/references/comprehension-load.md",
+    ],
+    scenarioPrefixes: [
+      "comprehension-load-",
+      "alps-high-load-",
+      "author-",
+      "feature-handoff-",
+      "impl-",
+    ],
+  },
+  {
+    pathPrefixes: [
       "plugins/adr-writer/references/requirement-delegation.md",
       "plugins/alps-writer/references/requirement-delegation.md",
     ],

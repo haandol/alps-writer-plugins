@@ -4,11 +4,18 @@
 import { createInterface } from "node:readline";
 import { makeTools } from "./workspace.mjs";
 
-const [root, pluginRoot, logPath, rawTurn] = process.argv.slice(2);
+const [root, pluginRoot, logPath, rawTurn, rawGuidance, checkerRoot] = process.argv.slice(2);
 if (!root || !pluginRoot || !logPath || !/^\d+$/.test(rawTurn ?? "")) {
   throw new Error("tool-server requires fixture root, plugin root, event log, turn");
 }
-const tools = makeTools({ root, pluginRoot, logPath, turn: Number(rawTurn) });
+const tools = makeTools({
+  root,
+  pluginRoot,
+  logPath,
+  turn: Number(rawTurn),
+  guidance: rawGuidance !== "off",
+  checkerRoot,
+});
 const send = (message) => process.stdout.write(JSON.stringify(message) + "\n");
 
 for await (const line of createInterface({ input: process.stdin })) {
