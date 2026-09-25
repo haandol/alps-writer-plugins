@@ -324,3 +324,13 @@ Bug reports and feature requests: [GitHub Issues](https://github.com/haandol/alp
 ## License
 
 [MIT](./LICENSE)
+
+## Skill evaluation reports
+
+Contributors can prepare a local report without model calls with
+`pnpm eval:skills --prepare --runs 1 --open` after workspace installation.
+The report separates classification responses, controlled Skill selection, and
+actual document edits. Explicit live runs support repeated Skill-on/off and
+version comparisons through the existing DeepEval adapter.
+`pnpm eval:report <run-directory>` rebuilds a saved report without rerunning models.
+See [evaluation commands and interpretation](plugins/adr-writer/evals/skills/README.md).

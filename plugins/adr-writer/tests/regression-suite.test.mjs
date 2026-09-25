@@ -7,6 +7,7 @@ import {
   readFileSync,
   symlinkSync,
   writeFileSync,
+  unlinkSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -36,6 +37,61 @@ const RUNNER = path.join(PLUGIN, "evals/regression/run.mjs");
 const SERVER = path.join(PLUGIN, "evals/regression/tool-server.mjs");
 const temp = () => mkdtempSync(path.join(tmpdir(), "adr-regression-test-"));
 
+test("retiring a skill preserves its task and leaves the no-skill condition executable", async () => {
+  const folder = temp();
+  const selected = cases.find((c) => c.id === "sync-encbird-turn-units");
+  const plugin = copyPlugin(path.join(folder, "plugin"), PLUGIN, null, {
+    allowMissingSkills: true,
+  });
+  unlinkSync(path.join(plugin.root, "skills/adr-sync/SKILL.md"));
+  const options = {
+    timeout: 5,
+    "capture-only": true,
+    fixturePluginRoot: PLUGIN,
+    checkerRoot: PLUGIN,
+    invoke: async () => ({
+      text: "Task still exists after retiring guidance.",
+      models: ["stub"],
+      ms: 1,
+    }),
+  };
+  const enabled = await runCase(selected, { ...plugin, name: "candidate" }, 1, folder, options);
+  const disabled = await runCase(
+    selected,
+    { ...plugin, name: "without-skill", guidance: false },
+    1,
+    folder,
+    options,
+  );
+  assert.equal(enabled.verdict, "ERROR");
+  assert.equal(disabled.verdict, "UNSCORED");
+  assert.deepEqual(disabled.replies, ["Task still exists after retiring guidance."]);
+});
+
+test("evaluation CLI disables installed skills as well as hooks, native tools and session reuse", async () => {
+  const directory = temp();
+  const executable = path.join(directory, "cli.mjs");
+  writeFileSync(
+    executable,
+    `#!/usr/bin/env node
+process.stdin.resume();
+process.stdin.on("end", () => process.stdout.write(JSON.stringify({result: JSON.stringify(process.argv.slice(2)), modelUsage: {"shim-model": {}}})));
+`,
+  );
+  chmodSync(executable, 0o755);
+  const response = await invokeClaude({ prompt: "/adr-sync", cwd: directory, executable });
+  const args = JSON.parse(response.text);
+  for (const flag of [
+    "--bare",
+    "--disable-slash-commands",
+    "--strict-mcp-config",
+    "--no-session-persistence",
+  ])
+    assert.ok(args.includes(flag), flag);
+  assert.equal(args[args.indexOf("--tools") + 1], "");
+  assert.deepEqual(JSON.parse(args[args.indexOf("--mcp-config") + 1]), { mcpServers: {} });
+});
+
 function fixture(item = cases[0]) {
   const directory = temp();
   const root = path.join(directory, "workspace");
@@ -43,6 +99,23 @@ function fixture(item = cases[0]) {
   createWorkspace(root, item.build(), PLUGIN);
   return { root, logPath, tools: makeTools({ root, pluginRoot: PLUGIN, logPath, turn: 1 }) };
 }
+
+test("both guidance conditions can read the shared decision-log seed without modifying its contract", () => {
+  const { root, logPath } = fixture();
+  const expected = readFileSync(
+    path.join(PLUGIN, "templates/adr/decision-log.template.md"),
+    "utf8",
+  );
+  for (const guidance of [true, false]) {
+    const tools = makeTools({ root, pluginRoot: PLUGIN, logPath, turn: 1, guidance });
+    assert.equal(tools.call("read_file", { path: "docs/adr/decision-log.template.md" }), expected);
+    assert.throws(
+      () =>
+        tools.call("write_file", { path: "docs/adr/decision-log.template.md", content: "altered" }),
+      /read-only/,
+    );
+  }
+});
 
 test("the eleven cases have reproducible, executable fixtures and complete source/adaptation metadata", () => {
   assert.equal(cases.length, 11);

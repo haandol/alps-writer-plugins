@@ -30,6 +30,17 @@ const PLUGIN_ROOT = path.resolve(HERE, "..");
 const EVALS = path.join(PLUGIN_ROOT, "evals");
 const RUN = path.join(EVALS, "run.mjs");
 
+test("comprehension scoring prompts include the shipping rubric without requiring tools", async () => {
+  const rubric = readFileSync(path.join(PLUGIN_ROOT, "references/comprehension-load.md"), "utf8");
+  for (const name of ["comprehension-load-score-only", "comprehension-load-calibration-bands"]) {
+    const scenario = await loadScenario(`${name}.mjs`);
+    const dir = mkdtempSync(path.join(tmpdir(), "adr-comprehension-input-"));
+    const prompt = await scenario.build(dir);
+    assert.ok(prompt.includes(rubric), `${name} must receive the full current rubric`);
+    assert.equal(prompt.split(rubric).length - 1, 1, `${name} receives the rubric only once`);
+  }
+});
+
 function scenarioFiles() {
   return readdirSync(path.join(EVALS, "scenarios")).filter((f) => f.endsWith(".mjs"));
 }

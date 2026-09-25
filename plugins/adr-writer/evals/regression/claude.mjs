@@ -1,7 +1,6 @@
 import { spawn } from "node:child_process";
 
-// Reuse the locally configured Claude Code provider (including Bedrock).
-// Auth material never enters our arguments, output manifest, or fixture.
+/** Isolate evaluation context and tools while reusing the configured provider credentials privately. */
 export async function invokeClaude({
   prompt,
   cwd,
@@ -13,6 +12,7 @@ export async function invokeClaude({
 }) {
   const args = [
     "--bare",
+    "--disable-slash-commands",
     "-p",
     "--output-format",
     "json",

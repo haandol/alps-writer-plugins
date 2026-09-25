@@ -120,6 +120,15 @@ Tests use Node's built-in test runner. ALPS TypeScript tests run through `tsx`; 
 
 **Behaviour evals** (`plugins/adr-writer/evals/`) are separate and NOT in `pnpm test`. `pnpm test` proves a prompt _says_ something; the evals check whether an agent given that prompt _does_ it, by running real scenarios against a live model and reporting per-check hit rates. They cost money, take minutes, and are non-deterministic, so they never gate CI — their job is reproducing a reported defect (`node evals/run.mjs --only <name> --runs 10`) and telling you whether it happens 3/10 or 10/10, which decides the fix. Use `node evals/run.mjs --changed <base> --list` to preview the disposable impact-map selection for a branch without invoking a model. The harness itself _is_ covered by `pnpm test` via a stub agent, because an eval whose scorer cannot tell a bad reply from a good one reports green and is worse than no eval. See `plugins/adr-writer/evals/README.md`.
 
+`pnpm eval:skills` is the unified workspace entry point for classification,
+controlled Skill routing and actual document-operation evaluation. Preparation is
+the default and makes no model calls; `--live` is explicit. Execution comparisons
+keep task contracts and verifiers fixed while varying instruction access.
+`pnpm eval:report` regenerates both unified and legacy DeepEval HTML without model
+calls. The source and usage contract are in `plugins/adr-writer/evals/skills/`.
+Workspace-only integration tests in `evals/deepeval/skills.test.mjs` use the real
+DeepEval SDK with stub providers; dependency-free metric tests stay in `tests/`.
+
 The rollup/sync artifact regression path uses `pnpm eval:regression` with DeepEval GEval.
 The judge defaults to Bedrock `us.openai.gpt-5.6-sol`, explicit AWS profile `default`,
 and region `us-east-1`; `--model` selects only the Claude Code target agent.

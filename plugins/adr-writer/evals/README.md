@@ -1,5 +1,11 @@
 # ADR behaviour evals
 
+For a single preparation/execution command and self-contained HTML across
+classification, controlled Skill selection and DeepEval document operations, use
+[Skill evaluation](./skills/README.md): `pnpm eval:skills --prepare --runs 1 --open`.
+It adds execution Skill-on/off comparisons and reuses the scorers below.
+`pnpm eval:report <run-directory>` regenerates either report format without model calls.
+
 `pnpm test` proves the prompts **say** something. These evals check whether an
 agent given those prompts **does** it.
 
@@ -51,7 +57,11 @@ The table does not become a source of product or ADR truth; it only avoids
 calling a live model for unrelated prompts. Shared ADR rule or eval-harness
 changes, including the runner and impact map, select every scenario. A changed
 scenario selects itself; ALPS server instructions and profile changes select the
-ALPS-related scenarios. If no rule matches, the command exits successfully
+ALPS-related scenarios. Shared comprehension-load guidance selects its scoring,
+authoring, handoff, and implementation scenarios in either plugin copy. The two
+comprehension scoring probes include the full shipping rubric, so their default
+tool-disabled runs do not depend on opening a reference file.
+If no rule matches, the command exits successfully
 without invoking an agent.
 
 The agent command is configurable, since this plugin ships for two clients and

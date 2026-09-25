@@ -5,9 +5,14 @@ import { pathToFileURL } from "node:url";
 import { prepareCoverageVisuals } from "./coverage-render.mjs";
 import { saveDeepEvalReport } from "./report.mjs";
 
+/** Rebuild the matching report format without invoking an agent or changing captured evidence. */
 export async function renderSavedReport(directory) {
   const target = path.resolve(directory);
   const report = JSON.parse(readFileSync(path.join(target, "results.json"), "utf8"));
+  if (report.framework === "skill-evals") {
+    const { saveSkillsReport } = await import("../skills/report.mjs");
+    return saveSkillsReport(target, report);
+  }
   if (
     report.framework !== "deepeval" ||
     !Array.isArray(report.cases) ||

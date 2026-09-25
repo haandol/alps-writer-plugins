@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { SEEDED_RULE_DOCS } from "../../scripts/adr-lint-lib.mjs";
+import { STAMPED_RULE_DOCS } from "../../scripts/adr-lint-lib.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PLUGIN_ROOT = path.resolve(HERE, "..", "..");
@@ -33,7 +33,7 @@ export const IMPL_REVIEW_REPORT = path.join(PLUGIN_ROOT, "scripts", "adr-impl-re
 // stubs — several rules are only judgeable against them, and a scenario that
 // stubbed them would silently measure the stub. Taken from the lint lib so a
 // scenario is scored against the same doc set the shipped harness reads.
-const RULE_DOCS = SEEDED_RULE_DOCS;
+const RULE_DOCS = STAMPED_RULE_DOCS;
 
 export function mkFixture(prefix = "adr-eval-") {
   return mkdtempSync(path.join(tmpdir(), prefix));
@@ -54,6 +54,7 @@ export function read(dir, rel) {
   }
 }
 
+/** Include the mandatory decision-log seed so fixture rules do not reference an unavailable resource. */
 export function seedRuleDocs(dir) {
   for (const f of RULE_DOCS) {
     copyFileSync(path.join(TEMPLATES, f), write(dir, `docs/adr/${f}`, ""));

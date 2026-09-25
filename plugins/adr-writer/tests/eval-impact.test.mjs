@@ -6,6 +6,28 @@ import { fileURLToPath } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EVALS = path.resolve(HERE, "..", "evals");
 
+test("shared comprehension guidance selects scoring and split-decision scenarios", async () => {
+  const { scenarioNamesForChangedPaths } = await import(path.join(EVALS, "impact-map.mjs"));
+  const names = [
+    "comprehension-load-score-only",
+    "comprehension-load-calibration-bands",
+    "alps-high-load-suggests-feature-split",
+    "impl-high-load-asks-before-split",
+    "impl-offers-stacked-pr-fallback",
+    "author-keeps-values-and-lints",
+    "feature-handoff-ownership-transfer",
+  ];
+  const scenarios = [...names, "hook-admission-routing"].map((name) => ({ name }));
+  for (const plugin of ["adr-writer", "alps-writer"]) {
+    const selected = scenarioNamesForChangedPaths(
+      [`plugins/${plugin}/references/comprehension-load.md`],
+      scenarios,
+    );
+    for (const name of names) assert.ok(selected.has(name), `${plugin}: missing ${name}`);
+    assert.ok(!selected.has("hook-admission-routing"), "unrelated admission stays excluded");
+  }
+});
+
 test("the impact map selects related scenarios without becoming a second contract", async () => {
   const { scenarioNamesForChangedPaths } = await import(path.join(EVALS, "impact-map.mjs"));
   const scenarios = [

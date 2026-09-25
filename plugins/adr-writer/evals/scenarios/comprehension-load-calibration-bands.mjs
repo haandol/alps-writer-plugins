@@ -25,7 +25,7 @@ export default {
     seedRuleDocs(dir);
     seedMapping(dir);
     return [
-      skillText("adr-new"),
+      skillText("adr-new", { references: ["references/comprehension-load.md"] }),
       `\n---\n\n# This run`,
       `Score A-D using the shipped internal calibration guide. Do not expose axis calculations.`,
       `Return one score line per case and no split proposal because the user did not request one.`,
