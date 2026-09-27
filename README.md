@@ -262,6 +262,13 @@ Use `$report-write` in Codex or `/report-write` in Claude Code. Existing
 structured review data remains complete; the final human presentation follows
 the common skill instead of treating a flat audit export as the final report.
 
+Review, audit, sync, rollup, and refactor reports accumulate locally in separate
+`.adr-review/<timestamp>-<review-kind>-<scope>-<unique>/` directories. Each run
+keeps its report and supporting evidence together. The skill verifies Git
+exclusion before writing; when needed, a local `.adr-review/.gitignore` excludes
+the outputs without modifying tracked project configuration. Repeated reviews
+preserve earlier runs and do not add review files to normal `git status` output.
+
 The canonical source is `shared/report-write/`. Plugin copies are synchronized
 and checked during development. For this computer's other projects:
 

@@ -5,3 +5,4 @@ pnpm-lock.yaml
 .devcontainer
 .claude/settings.local.json
 .DS_Store
+/.adr-review/

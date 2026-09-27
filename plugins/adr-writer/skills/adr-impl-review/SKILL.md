@@ -140,7 +140,13 @@ both scopes, prepare the following original material.
 - Whichever project conventions exist among `AGENTS.md`, `CONTRIBUTING.md`, `CLAUDE.md` — note these are the **project's own** conventions file, a different thing from `docs/adr/concepts.md` above
 - An executable project test command
 
-Create one review artifact directory and pass its path to every agent that follows. To avoid dirtying the repository, the default location is `${TMPDIR:-/tmp}/adr-impl-review-<adr-slug>-<timestamp>/`. Record the review start time when this directory is created. The final artifact records the selected mode and rationale, elapsed time, per-perspective finding counts, unverified-risk count, and executed test-command count.
+Create one review artifact directory using
+[review artifact storage](../report-write/references/review-artifacts.md):
+`.adr-review/<timestamp>-adr-impl-review-<adr-slug>-<unique>/` under the reviewed
+project, with Git exclusion verified before writing artifacts. Pass its absolute
+path to every agent that follows. Record the review start time when this directory
+is created. The final artifact records the selected mode and rationale,
+elapsed time, per-perspective finding counts, unverified-risk count, and executed test-command count.
 
 ### 1.1 Build the Review Hiking route
 

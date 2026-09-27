@@ -19,6 +19,11 @@ Read [review results](references/review-results.md) for these requests. A brief
 review may stay in chat; honor the requested format and preserve required
 caller artifacts without adding empty sections.
 
+Before creating review, audit, sync, or rollup report files or supporting
+artifacts, follow [review artifact storage](references/review-artifacts.md).
+Keep each run in its own Git-ignored `.adr-review/` subdirectory in the reviewed
+project; final reports and intermediate evidence use the same run directory.
+
 Generate one to five medium-difficulty quiz questions about the report's core
 content to support understanding and reduce cognitive load. Apply
 [comprehension support](references/comprehension.md) when composing the report;
