@@ -30,7 +30,10 @@ Read the full ADR, its `.mapping.json` entry, the raw diff, direct call paths, r
 
 If the selected diff mixes several implementations and cannot be mapped cleanly to the target ADR, stop and get a narrower base or range. Do not apply a refactor across an uncertain ownership boundary.
 
-Create an artifact directory at `${TMPDIR:-/tmp}/adr-impl-refactor-<adr-slug>-<timestamp>/`.
+Create an artifact directory at
+`.adr-review/<timestamp>-adr-impl-refactor-<adr-slug>-<unique>/` under the reviewed
+project, following [review artifact storage](../report-write/references/review-artifacts.md)
+to verify Git exclusion before writing artifacts.
 
 ## 2. Establish the test baseline
 

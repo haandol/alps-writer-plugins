@@ -289,6 +289,13 @@ Edit the canonical source, then synchronize. `report-skill:check` rejects drift.
 Use `--global` only when updating the user-level `~/.agents/skills/report-write`;
 normal builds never write to the user's home directory.
 
+Review reports and supporting artifacts belong in a unique per-run directory
+under `.adr-review/`, which is excluded from Git and formatting. Keep HTML,
+Markdown, JSON, and reproduction evidence together; never store them in `docs/`
+or the ADR index. Consumer projects follow the shared skill's local ignore
+setup so review-only runs do not modify tracked configuration. Existing runs
+remain available until the user chooses to remove them.
+
 Both plugins advertise report-write through SessionStart independently of the ADR
 mapping. All report-producing skills and review roles load it for the final human
 presentation, including code, PR, ADR, architecture and document review requests

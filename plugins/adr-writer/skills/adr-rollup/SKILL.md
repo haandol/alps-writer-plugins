@@ -55,8 +55,9 @@ When the judgment is ambiguous, do not merge. Staying separate is safer — a wr
 ## Workflow
 
 Steps 1–9 prepare and verify a candidate changeset without modifying repository
-files. Keep original source passages and draft outputs in a temporary artifact
-directory. Step 10 obtains approval for the concrete paths and then applies the
+files. Keep original source passages and draft outputs in a disposable artifact
+directory following [review artifact storage](../report-write/references/review-artifacts.md).
+Step 10 obtains approval for the concrete paths and then applies the
 changeset. Source deletion is allowed only after its validated history has been
 written to the final decision log. Preparation order is not file-write order.
 

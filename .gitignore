@@ -8,3 +8,6 @@ dist
 .codex
 .claude/settings.local.json
 .DS_Store
+
+# Disposable review reports and their supporting evidence.
+/.adr-review/

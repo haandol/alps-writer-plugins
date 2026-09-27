@@ -4,11 +4,13 @@ For HTML or Markdown delivery, the included renderer checks hierarchy and
 source coverage. It does not perform editorial judgment. Complete the semantic
 review in `editorial-review.md` before calling the report complete.
 
-Run from any project:
+Run from any project with explicit input and output paths. For a review, use
+the run directory prepared through [review artifact storage](review-artifacts.md)
+for both the source document and rendered output:
 
 ```sh
-node <skill-directory>/scripts/render-report.mjs report.json --out report.html
-node <skill-directory>/scripts/render-report.mjs report.json --out report.md --format markdown
+node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --out <run-directory>/report.html
+node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --out <run-directory>/report.md --format markdown
 ```
 
 ## Document fields

@@ -20,6 +20,12 @@ CONTRIBUTING. Plans, review transcripts, model choices, and agent topology are
 ephemeral. Uninstalling the plugin does not invalidate the artifacts or leave a
 hidden approval or execution registry behind.
 
+Review reports and their evidence stay together in a unique per-run directory
+under `.adr-review/` in the reviewed project. The shared report skill verifies
+Git exclusion, using a local `.adr-review/.gitignore` when needed so review-only
+runs leave tracked configuration unchanged. Repeated reviews preserve earlier
+runs; reports are not stored in `docs/` or registered in the ADR mapping.
+
 The skills constrain observable outputs, evidence, allowed actions, escalation,
 and lifecycle transitions. They do not request private chain-of-thought or
 prescribe a model's internal reasoning sequence. The active model decides
