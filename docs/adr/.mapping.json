@@ -27,8 +27,8 @@
       "adrs": [
         {
           "path": "docs/adr/adr-authoring/decision-presentation/0001-present-decision-digest-and-semantic-diff.md",
-          "status": "Accepted (2026-09-21)",
-          "summary": "ADR은 읽기 쉬운 결정·계약 설명과 필요할 때 생성하는 루트 용어집으로 확인된 용어 의미를 보존한다"
+          "status": "Proposed",
+          "summary": "ADR은 의도를 독립적인 계약 의무와 사전 수용 기준·증거 종류에 연결하고 의미 변경을 승인 전에 제시한다"
         }
       ],
       "dependsOn": ["adr-authoring/current-state"]
@@ -60,8 +60,8 @@
       "adrs": [
         {
           "path": "docs/adr/alps-authoring/feature-demo/0001-require-feature-level-demo.md",
-          "status": "Accepted (2026-08-17)",
-          "summary": "Section 7의 각 Feature는 Acceptance Criteria에 전체 데모 역할과 관찰 결과를 잇는 한 줄 Demo checkpoint만 기록하고 상세 데모는 기존 명세에서 요청 시 파생한다"
+          "status": "Proposed",
+          "summary": "각 Feature는 의도를 사전 수용 조건과 증거 종류에 연결하고 한 줄 Demo checkpoint로 전체 데모의 관찰 결과를 표시한다"
         }
       ],
       "dependsOn": []
@@ -104,8 +104,8 @@
       "adrs": [
         {
           "path": "docs/adr/alps-authoring/lite-format/0001-lite-alps-authoring-profile.md",
-          "status": "Accepted (2026-08-27)",
-          "summary": "Lite ALPS는 비즈니스 임팩트에서 최소 솔루션·제품 수준 C4 Context·핵심 사용자 경험·구체 데모를 역설계해 승인받는 4-Section 템플릿이다"
+          "status": "Proposed",
+          "summary": "Lite ALPS는 비즈니스 임팩트에서 최소 솔루션·핵심 경험·제품 Context와 경험별 사전 수용 조건을 담은 데모를 역설계한다"
         }
       ],
       "dependsOn": ["alps-authoring/authoring-interaction"]
@@ -137,8 +137,8 @@
       "adrs": [
         {
           "path": "docs/adr/delivery/development-flow/0001-safe-proportional-development-gates.md",
-          "status": "Accepted (2026-09-07)",
-          "summary": "ADR 구현은 수직 Hill마다 계약·구현·targeted test 결과를 확인한 뒤 전체 검증한다"
+          "status": "Proposed",
+          "summary": "ADR 구현은 수직 Hill마다 사전 수용 조건을 검증에 연결하고 필수 test·eval의 실제 증거로 완료를 판정한다"
         }
       ],
       "dependsOn": ["adr-cycle/implementation-review", "alps-authoring/spec-handoff"]

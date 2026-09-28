@@ -1,3 +1,17 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "classification",
+    text: "Classify the two existing equivalent normalization implementations as an APPLY_NOW local behavior-preserving refactor, grounded in the supplied current call sites and tests. A clear APPLY_NOW decision in the explanation is valid even if the tail uses a general Refactor category. Do not edit files in this classification-only task.",
+  },
+];
+
+/** The classification may inspect supplied evidence but may not mutate the fixture. */
+export function deterministicScore(input) {
+  return responseChecks(input, {}, { noTools: false });
+}
+
 import {
   agentText,
   ruleText,

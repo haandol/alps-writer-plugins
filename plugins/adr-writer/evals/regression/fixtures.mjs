@@ -9,7 +9,7 @@ Date: ${options.date ?? "2026-08-31"}
 
 Accepted (${options.date ?? "2026-08-31"})
 
-## Context
+## Purpose
 
 ${options.context ?? "사용자가 완료 조건과 비용을 예측할 수 있도록 기능의 계약을 일관되게 유지해야 한다."}
 

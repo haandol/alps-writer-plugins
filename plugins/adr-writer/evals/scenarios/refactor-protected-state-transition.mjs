@@ -1,3 +1,17 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "classification",
+    text: "The proposed cancelled-to-shipping transition changes the protected state contract and must never be APPLY_NOW. Rejecting it as DROP or keeping it proposal-only are both valid when the response explains the contract conflict and performs no edits.",
+  },
+];
+
+/** The classification may inspect supplied evidence but may not mutate the fixture. */
+export function deterministicScore(input) {
+  return responseChecks(input, {}, { noTools: false });
+}
+
 import {
   agentText,
   ruleText,

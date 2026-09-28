@@ -9,6 +9,13 @@ Reconstruct the ADR and its `.mapping.json` summary into direct current-state
 assertions. A reader must not derive the result from replaced terms or
 intermediate steps. Apply `authoring-rules.md` "Final-state wording".
 
+Keep the current Purpose and all currently applicable Decision Drivers beside
+the choice and its adoption rationale. Before harvesting a historical reason,
+check whether it still explains the current choice. If so, preserve that reason
+in the body as a current statement and record its role in the transition in the
+log. Reasons established before the latest revision remain in the body while
+valid; do not require the reader to reconstruct them from `decision-log.md`.
+
 ## Evolution phrasing
 
 Convert chronological narration such as "it was X at first, then changed to Y",
@@ -51,11 +58,18 @@ requirements, not transition narration.
   Status and Related.
 - Merge duplicated or contradictory descriptions into one statement based on
   the authoritative reconciliation branch.
-- Rearrange the body into the standard order from `README.md`: Status, Context,
+- Rearrange the body into the standard order from `README.md`: Status, Purpose,
   Decision Drivers, Decision, alternatives, Consequences, Related.
 - Preserve adoption rationale, alternatives, domain rules, state transitions,
   fallback, and the complete requirement contract. This is compression, not
   information loss.
+
+Read the reconstructed body without the log: does Purpose explain the present
+problem, do the Drivers explain what discriminates the choice, and does Decision
+state what was chosen and why? Restore any supported current rationale that
+cleanup left only in the log. Do not invent a missing driver or infer a historical
+reason from the implementation; report the missing evidence when sources do not
+establish it.
 
 When a gray-zone decision or requirement contradicts repository evidence, do
 not quietly rewrite it during cleanup. Follow

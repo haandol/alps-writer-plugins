@@ -16,6 +16,20 @@ const noCall = () => {
   throw new Error("A free operation called a model");
 };
 
+test("five-repeat preparation groups outcomes without dropping native trial records", async () => {
+  const item = (await catalog()).find((entry) => entry.id === "impl-uses-intent-for-file-lookup");
+  const result = await main(
+    ["--prepare", "--suite", "classification", "--runs", "5", "--out", temp()],
+    { cases: [item], target: noCall, judge: noCall },
+  );
+  assert.equal(result.status, 0);
+  assert.equal(result.report.runs.length, 5);
+  assert.ok(result.report.runs.every((run) => run.verdict === "NOT_RUN" && !run.calls.length));
+  const saved = JSON.parse(readFileSync(path.join(result.output, `case-results/${item.id}.json`)));
+  assert.equal(saved.runs.length, 5);
+  assert.ok(existsSync(result.html));
+});
+
 test("unified CLI rejects ambiguous live intent and undefined comparison conditions", () => {
   for (const args of [
     ["--live", "--prepare"],

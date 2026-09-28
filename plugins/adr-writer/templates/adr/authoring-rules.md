@@ -2,7 +2,7 @@
 
 What goes into an ADR body and what stays out. The principle these rules follow from, the gray zone, and the dependency model: [`concepts.md`](./concepts.md). Directory and mapping policy: [`structure.md`](./structure.md). The directory index and the ADR template: [`README.md`](./README.md).
 
-An ADR records an architectural decision (Context, Decision, Consequences). To keep code changes from dragging ADR edits behind them, **implementation detail stays out of the ADR.**
+An ADR records an architectural decision (Purpose, Decision, Consequences). To keep code changes from dragging ADR edits behind them, **implementation detail stays out of the ADR.**
 
 For jargon, uncommon terms/acronyms, or expressions that cannot be written out
 plainly, require a clear meaning from the user when it is not already supplied.
@@ -172,7 +172,7 @@ When an ADR points at code, **folder (directory) granularity is the limit.** Nev
 
 This applies equally to prose, tables, and Mermaid diagrams. Inside diagrams, describe the behavior rather than naming functions or method calls — Bad: `stats.IncrementSourceCount("chat")`; Good: `increment sourceCounts.<source>`. That holds for sequenceDiagram, stateDiagram, and flowchart alike. If a decision truly requires quoting a function, class, or file name, reconsider whether it belongs in a docstring, README, or inline comment instead of an ADR.
 
-Symmetrically, **code must not carry ADR IDs or paths** — not in comments, constants, or imports. Likewise, **an ADR body must not carry PRD (ALPS) paths, section numbers, or feature IDs** (Context and Related included): adr-writer is standalone, so an ADR absorbs the PRD's motivation once at import time and never points back at it, and the mapping stores no PRD reference either. The category → ADR → (searched-for) code link lives in exactly one place, [`.mapping.json`](./structure.md#the-adr-registry-mappingjson). Full rationale: [the dependency model](./concepts.md#dependencies-run-one-way-references-are-written-in-neither-direction).
+Symmetrically, **code must not carry ADR IDs or paths** — not in comments, constants, or imports. Likewise, **an ADR body must not carry PRD (ALPS) paths, section numbers, or feature IDs** (Purpose and Related included): adr-writer is standalone, so an ADR absorbs the PRD's motivation once at import time and never points back at it, and the mapping stores no PRD reference either. The category → ADR → (searched-for) code link lives in exactly one place, [`.mapping.json`](./structure.md#the-adr-registry-mappingjson). Full rationale: [the dependency model](./concepts.md#dependencies-run-one-way-references-are-written-in-neither-direction).
 
 ## What to exclude from an ADR
 
@@ -206,7 +206,7 @@ Keep only the gray zone — what code cannot reveal, or what loses its intent un
 
 - **Requirements the result must honor** — [requirement values](#concrete-numbers--keep-requirement-values-drop-tuning-values) (limits, quotas, cycles, retention, allowed ranges) and [non-numeric requirements](#non-numeric-requirements--value-sets-mandatory-fields-permissions-ordering) (allowed sets, mandatory fields, permission and visibility rules, ordering and uniqueness, units), plus user-visible behavior contracts and required validation conditions. With the code gone, this alone must be enough to rebuild code honoring the same contract
 - **Problem background and motivation** (WHY) — why this decision was needed; which constraints and assumptions forced this choice
-- **Decision-changing assumptions** — only facts or expectations that materially change which alternative is preferred. Keep each as one line in Context or the relevant Decision Driver: `<assumption> — reconsider <decision> if false`. A requirement belongs in the requirement contract instead; a replaceable implementation default belongs in code and the implementation review
+- **Decision-changing assumptions** — only facts or expectations that materially change which alternative is preferred. Keep each as one line in Purpose or the relevant Decision Driver: `<assumption> — reconsider <decision> if false`. A requirement belongs in the requirement contract instead; a replaceable implementation default belongs in code and the implementation review
 - **Decision Drivers** — the pressures, constraints, and requirements that discriminate between options (see [Decision Drivers](#decision-drivers))
 - **Decision summary** — what was decided and why over the alternatives (the rationale is the point: the decision shows up in code, but "why not the other way" does not)
 - **Alternatives table** — the options considered and why they were not adopted (see [Alternatives](#alternatives--at-least-two))
@@ -224,6 +224,14 @@ Keep only the gray zone — what code cannot reveal, or what loses its intent un
 ## Decision Drivers
 
 Record only the pressures, constraints, and requirements that **actually discriminate** between options. Not mandatory in every ADR, but almost always needed for the alternatives comparison to read as more than taste.
+
+Keep the currently governing drivers beside Purpose in the ADR body, including
+still-valid drivers established before the latest revision. When a driver
+changes, update Purpose, Decision Drivers, and the adoption rationale together.
+The reader must understand why the current choice holds without consulting
+`decision-log.md`; the log records the transition, not the only copy of its
+currently applicable reason. Retire obsolete drivers from the current explanation
+and preserve their historical role in the log when the transition is major.
 
 - 3-5 is a useful default, not a validity threshold. Keep only facts that discriminate; fewer are valid when the decision is tightly constrained and says why
 - Mix business and technical drivers — one kind alone makes the rationale look thin
@@ -244,11 +252,11 @@ Thin drivers make [alternatives](#alternatives--at-least-two) thin too — they 
 
 An assumption is not a requirement and not an implementation default. It is a fact or expectation the alternatives comparison relies on: for example, an upstream provider guarantees idempotent requests, the organization cannot operate a second data store, or traffic is expected to remain inside one region.
 
-Record an assumption only when changing it could change the adopted architecture. Put one short line in Context or the relevant Decision Driver:
+Record an assumption only when changing it could change the adopted architecture. Put one short line in Purpose or the relevant Decision Driver:
 
 `Assumption: <fact> — reconsider <decision or trade-off> if false`
 
-Do not add a separate assumptions section, confidence taxonomy, evidence table, or placeholder row. The ADR already has Context and Decision Drivers for facts that shape the choice.
+Do not add a separate assumptions section, confidence taxonomy, evidence table, or placeholder row. The ADR already has Purpose and Decision Drivers for facts that shape the choice.
 
 - A value or rule the result must honor goes in the requirement contract.
 - An unresolved assumption that changes a contract or durable boundary is a question to resolve before approval.
@@ -311,11 +319,11 @@ Split when two or more of these hold (e.g. `0003-payment.md` → `0003-payment-c
 
 Run the [decision identity check](#decision-identity-check--update-before-create) before this section. When it finds an existing owner, use the criterion below to choose **edit-in-place** over **a new superseding ADR**. It recurs often, so follow the checklist rather than deciding ad hoc. This section is the source of truth for that call; other skills and documents link here.
 
-The criterion is **whether the decision can still be expressed as one current-state record**. A changed Context, Decision Driver, adopted alternative, or direction can still belong to the same logical decision. Most changes are **edit-in-place** — overwrite the body to the current state. **A new ADR (supersede) is the exception**, and among edit-in-place cases only major transitions also get one line in the [decision log](#decision-log-decision-logmd). Three branches:
+The criterion is **whether the decision can still be expressed as one current-state record**. A changed Purpose, Decision Driver, adopted alternative, or direction can still belong to the same logical decision. Most changes are **edit-in-place** — overwrite the body to the current state. **A new ADR (supersede) is the exception**, and among edit-in-place cases only major transitions also get one line in the [decision log](#decision-log-decision-logmd). Three branches:
 
 **① Edit-in-place, no log (minor)** — the "why" is unchanged and only details shift:
 
-- Context / Decision Drivers / adoption rationale are **unchanged**; only details are adjusted.
+- Purpose / Decision Drivers / adoption rationale are **unchanged**; only details are adjusted.
 - Removing or correcting stale implementation facts — internal API paths, entity/field names, enum **identifiers and representation**, state-value **names**: things verifiable by reading the code that should normally leave the ADR instead of being mirrored there. **But a changed value set or transition rule is not ①** — if allowed states are added or removed, or a forbidden transition becomes allowed, the contract changed, so treat it as ② at minimum per [non-numeric requirements](#non-numeric-requirements--value-sets-mandatory-fields-permissions-ordering).
 - **Fine-tuning** a gray-zone decision — refining boundary or exception wording while keeping the direction.
 - Wording and structure cleanup.
@@ -344,6 +352,12 @@ Choosing supersede means handling, **as one change unit**: the old ADR's Status 
 
 An ADR body is **a requirements and architecture document describing the current admitted decision and contract**, not the current shape of the code — no timeline narration ("it was X at first, then became Y") and no synchronized copy of implementation identifiers. But burying the rationale for major transitions in Git commits alone makes "why was this algorithm replaced?" hard to trace later. So **major decision changes only** go into a per-category `docs/adr/<category>/decision-log.md`, newest first, one line each. **ADR body = current admitted decision, log = timeline of major changes, Git = verbatim diff** — three layers preserving different things.
 
+History extraction never removes the current Purpose, Decision Drivers,
+adopted choice, requirement contract, or adoption rationale from the ADR. A reason
+may explain both a historical transition in the log and the current choice in
+the body; preserve it in both roles when needed. Reading the log must not be a
+prerequisite for understanding the current ADR.
+
 ### What to log — minor vs major
 
 Reached from ②/③ of [edit-in-place vs supersede](#changing-an-adr--edit-in-place-vs-supersede).
@@ -369,7 +383,7 @@ When an ADR is created or edited, write the currently valid result as a direct a
 | "타임아웃을 10초에서 30초로 변경한다."                                         | "타임아웃은 30초다."                  |
 | "The service uses the primary queue rather than the legacy queue."             | "The service uses the primary queue." |
 
-Apply this rewrite to the current-state parts of Context, Decision, the requirement contract, Consequences, diagrams, and the matching `.mapping.json` summary:
+Apply this rewrite to the current-state parts of Purpose, Decision, the requirement contract, Consequences, diagrams, and the matching `.mapping.json` summary:
 
 1. Identify the actor or subject and the currently valid behavior, value, state, or identifier.
 2. State that result directly in the present tense.
@@ -378,13 +392,81 @@ Apply this rewrite to the current-state parts of Context, Decision, the requirem
 
 This is not a blanket ban on negative sentences. A prohibition that the current system must still enforce is a requirement and survives the rewrite: "PII never leaves the region" and "a cancelled order never moves to shipping" state present contracts. Apply the [requirement gate](#the-requirement-gate-and-two-filters) before deleting any negative wording. The test is whether the earlier term or comparison changes what rebuilt code must honor today; if not, it is history or drafting residue, not ADR content.
 
+## Reading order — intent before detail
+
+Intent belongs in an ADR because the contract cannot enumerate every detail an
+agent will decide. `Purpose` records whose problem the decision serves, the
+outcome to protect, and the supplied scope or priorities that bound suitable
+choices. This reduces the risk that an autonomous agent fills a gap with a
+locally reasonable default that pursues a different purpose.
+
+Make that context useful for judgment: explain the concrete problem and intended
+outcome, and preserve a stated priority or non-goal when it distinguishes an
+acceptable choice from an unwanted one. Do not invent exclusions or repeat every
+contract in Purpose. This is a boundary for interpreting incomplete detail, not
+a new DDD bounded context, fixed framework, or additional authority.
+
+The requirement contract remains exact. Within it and the authorized scope,
+intent guides reversible implementation choices without routine questions.
+Conventions and convenience do not override the user's purpose. Intent alone
+cannot authorize new policy, weaken a guarantee, or expand scope. When a material
+choice remains ambiguous, ask only for that decision. The shared
+`references/requirement-delegation.md` explains this boundary in detail.
+
+Observable acceptance criteria should check the intended result and relevant
+intent-defeating outcomes, not merely the presence of a feature or a passing
+existing test. Different implementations may meet the same purpose and contract;
+do not pin replaceable details or invent a numeric target to make intent look
+measurable. Evaluate the connection semantically rather than checking for named
+framework headings.
+
+The canonical ADR heading is `Purpose`. Accept legacy `Context` as the same
+section when reading or reviewing existing ADRs. When a permitted edit renames
+it, preserve its problem, background, assumptions, and rationale; do not create
+both sections or change lifecycle Status solely for the rename. Review-only
+work does not rewrite the document. This alias does not rename agent context,
+DDD bounded contexts, or the report's C4 Context zoom level.
+
+A reader opening an ADR should understand the problem and the chosen direction
+before evaluating the detailed contract. Keep the existing Status, Purpose,
+Decision Drivers, Decision, and Consequences structure; improve the reading
+order inside it rather than adding a mandatory executive summary or intent field.
+
+- **Purpose opens with the decision's purpose.** Name the affected actor or
+  system, the concrete condition or problem, and the consequence that makes a
+  decision necessary. State the outcome to protect and briefly preview the
+  proposed or adopted direction. Use only established motivation; a plausible
+  risk is not a claim that an incident occurred. Keep this opening compact and
+  self-contained, without requiring the PRD, code, or conversation. Add only
+  background and assumptions that the reader needs to judge the choice.
+- **Decision turns that purpose into a choice.** Start with the current
+  architectural choice and connect it to the discriminating driver. Then explain
+  the behavior or boundary and the exact requirement contract. The preview in
+  Purpose supplies orientation; Decision owns the full choice and contract.
+  Do not duplicate the contract table, Alternatives, or Consequences as a second
+  summary. Preserve all values, rules, and their basis at their owning location.
+- **Each deeper section answers a narrower question.** Within the required
+  sections, keep the current Decision Drivers beside Purpose so the reader sees
+  which criteria connect the problem to the choice. Group a dense contract by
+  coherent obligation or behavior and name
+  the scope in its heading. Introduce actors and unfamiliar terms before a
+  diagram or comparison depends on them. Explain each alternative against the
+  same drivers, and tie consequences to what the choice enables, costs, or risks.
+  Do not split one decision merely to shorten the document or add empty levels.
+- **Check a fast read separately from a complete read.** Read the title and
+  Purpose opening alone for the problem, intended outcome, and direction. Then
+  scan section openings for the choice, rationale, and material trade-off before
+  checking the full contract with the regeneration test. Keep any condition that
+  changes an overview claim beside that claim. Clear navigation never excuses a
+  missing requirement, an unsupported motive, or detail pulled up from code.
+
 ## Prose style — say it in the fewest words, in the active voice
 
 An ADR is read under time pressure, by someone deciding whether to trust it. Padding costs the reader attention they would otherwise spend on the decision, and the passive voice hides **who acts**, which is exactly what a decision record exists to state. These rules are about how a sentence is written; they never license dropping content — [requirements](#requirements--what-the-result-must-honor) survive regardless of length.
 
 - **Active voice by default.** "The gateway rejects a duplicate payment", not "duplicate payments are rejected." The passive drops the actor, and in a decision record the actor is often the point — who validates, who retries, who owns the state. Keep the passive only where the actor is genuinely unknown, irrelevant, or is the system as a whole ("the token is rotated every 7 days" is fine when nothing turns on which component rotates it).
 - **Cut the words that carry no information.** Hedges ("basically", "essentially", "it is worth noting that"), throat-clearing openers ("In order to achieve this, we decided that we would"), and doubled phrasing ("각각의 개별", "future roadmap ahead"). "In order to" → "to". "Has the ability to" → "can". "At this point in time" → "now".
-- **One idea per sentence.** A sentence with three clauses chained by "and" is three sentences. This is what makes an ADR skimmable — a reader scanning for the decision should not have to parse a subordinate clause to find it.
+- **One idea per sentence, with its conditions and consequences.** Put the actor and main action early. Keep a condition with its result and a cause with its consequence when they read naturally; split when the actor or point changes. Do not turn a coherent explanation into isolated slogans to meet a sentence-length rule.
 - **Prefer the concrete noun to the abstract one.** "The retry budget" beats "the relevant mechanism"; "the checkout handler" beats "the appropriate component." Vague nouns are where a decision quietly stops being verifiable.
 - **State the decision, do not narrate the deciding or the transition.** "Payments use an idempotency key" — not "we discussed several options and eventually concluded that…" and not "payments no longer use the previous key strategy." The rationale belongs in Decision Drivers and Alternatives; major transition history belongs in `decision-log.md`.
 - **Never trade completeness for brevity.** Deleting a requirement value, a permission rule, or a fallback policy to shorten a paragraph is a defect, not a style improvement. Compress the wording; keep the content. Prose padding is noise, but a missing contract is a wrong product.
@@ -422,25 +504,26 @@ For the PR reviewer or the author before merge.
 - [ ] **Observable evidence** — each obligation has an implementation-independent result that distinguishes compliance from violation; no test file, command, library, function, class, fixture, or internal representation is pinned
 - [ ] **Requirement values appear verbatim** — numbers the result must honor (max turns, count limits, retention, size caps, NFR targets) are not blurred into "appropriately" or "is limited". Does each carry a scrap of justification (policy, contract, regulation)?
 - [ ] **Non-numeric requirements survived too** — allowed value sets, mandatory fields, permission and visibility rules, ordering and uniqueness, units and formats, forbidden transitions were not dropped as "obvious from the code" ([non-numeric requirements](#non-numeric-requirements--value-sets-mandatory-fields-permissions-ordering))
-- [ ] **Decision-changing assumptions are explicit and correctly routed** — every assumption that could change the adopted alternative appears in Context or the relevant Driver with what must be reconsidered if false; requirements remain in the contract, implementation defaults remain in code
+- [ ] **Decision-changing assumptions are explicit and correctly routed** — every assumption that could change the adopted alternative appears in Purpose or the relevant Driver with what must be reconsidered if false; requirements remain in the contract, implementation defaults remain in code
 - [ ] **No unresolved material assumption is hidden** — an assumption affecting the requirement contract or durable architecture boundary was resolved before approval, or remains an explicit blocking question
 - [ ] **No tuning values** — values a developer may change without violating a requirement (pool sizes, backoff, cache TTL, worker counts) are absent
 - [ ] **Code-readthrough test** — for every paragraph, asking "is this obvious from reading the code this ADR governs?", nothing obvious remains (the code is the source of truth for those). Items that passed the requirement gate stay even when obvious
 - [ ] **Final-state wording** — the body and `.mapping.json` summary state the current result directly. No evolution narration ("originally it was", "added in v2", "changed from before") or comparison residue ("not X but Y", "`LEGACY_EVENT`와 `CURRENT_EVENT`를 혼용하지 않고 `CURRENT_EVENT`만") remains outside Alternatives or [`decision-log.md`](#decision-log-decision-logmd). Current prohibitions and forbidden transitions that passed the requirement gate remain intact
-- [ ] **Prose style** — active voice by default (the actor is named where it matters), no hedges or throat-clearing, one idea per sentence, concrete nouns over vague ones ([Prose style](#prose-style--say-it-in-the-fewest-words-in-the-active-voice)). Tightening wording must never have dropped a requirement
+- [ ] **Top-down reading** — the Purpose opening explains the verified problem, intended outcome, and direction; section openings lead to the choice, discriminating rationale, and material trade-off before detail. Overviews retain conclusion-changing conditions, and the full requirement contract remains complete ([Reading order](#reading-order--intent-before-detail))
+- [ ] **Prose style** — active voice by default (the actor is named where it matters), no hedges or throat-clearing, connected conditions and results, concrete nouns over vague ones ([Prose style](#prose-style--say-it-in-the-fewest-words-in-the-active-voice)). Tightening wording must never have dropped a requirement
 - [ ] **Gray-zone check** — the body actually contains **at least one** of: (a) adoption rationale / alternatives, (b) business rules translated into system behavior, (c) domain rules and state transitions, (d) external-dependency fallback (without these the ADR has little value)
 - [ ] **ADR admission gate** — the core decision changes a requirement contract, durable system/security boundary, external provider/model/fallback, data/key design, or cross-implementation trade-off. A replaceable library, SDK, framework, credential/auth adapter, or module structure is not the ADR's subject
 - [ ] **Decision identity check** — before adding a new ADR, existing mapping summaries and plausible ADR bodies were checked for the same architectural question and owned boundary. A provider/alternative change or reversal that remains one current-state decision updates the existing ADR
 - [ ] **No code references below folder level** anywhere in prose, tables, or diagrams
 - [ ] **No back-references from code** — the code this ADR governs (comments, constants, imports) carries no ADR ID or path. If the code exists, check via adr-reviewer R17 or `/adr-sync` step 5(a) grep; for a new `Proposed` with no code yet, `/adr-sync` checks after implementation
 - [ ] **No forbidden items** (code snippets, tuning values, call graphs, field-type tables, env var names, pseudocode, full JSON, migration commands) — requirement values and business limits are _not_ forbidden items
-- [ ] **Decision Drivers** are discriminating facts or constraints; 3-5 is a default, not a quota
+- [ ] **Decision Drivers** are discriminating facts or constraints; 3-5 is a default, not a quota. All currently applicable drivers and the current adoption rationale remain understandable from the body without reading `decision-log.md`
 - [ ] **At least two alternatives**, each with pros and cons weighed against the Decision Drivers (no strawmen)
 - [ ] **A grounded Mermaid diagram** is not missing where a flow, state, boundary, or alternative relationship is clearer visually, and no diagram copies a code call graph or invents a relationship
 - [ ] **If a DB key pattern changed**, `docs/tables/{name}.md` (or the equivalent) exists with bidirectional links
-- [ ] **No PRD back-references** — no ALPS path, section number, or feature ID in the body (Context and Related included)
+- [ ] **No PRD back-references** — no ALPS path, section number, or feature ID in the body (Purpose and Related included)
 - [ ] **Related** dependency ADR links (if any) resolve — ADR ↔ ADR references are fine; PRD links are not
 - [ ] **One ADR = one decision** holds (no split signals)
 - [ ] **`.mapping.json`** has the matching category entry including the new ADR
 
-<!-- adr-writer:rules-version 0.8.27 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.8.28 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

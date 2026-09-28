@@ -14,8 +14,34 @@ Before drafting, identify:
 - the intent or problem the artifact must explain;
 - the evidence level of each statement: observed fact, supported inference, or proposal.
 
-Lead with the load-bearing answer. Put prerequisites and background where the
-reader first needs them, rather than collecting them in a generic opening section.
+Connect the concrete problem and intended outcome to the answer before supporting
+detail. Keep an urgent finding visible immediately; supply only the context the
+reader needs to interpret it. Put prerequisites where they first matter.
+
+For ADRs, apply `authoring-rules.md` "Reading order — intent before detail"
+(from the repository's ADR rules, falling back to the plugin templates). Purpose
+orients the reader to the problem and direction; the adjacent Decision Drivers
+state all currently applicable selection criteria; Decision states the choice,
+why it fits, and its exact contract. Keep current rationale in the body even
+when it also explains a transition in `decision-log.md`. Keep the required schema.
+The Decision Digest follows the same intent-to-choice order before classification
+or scoring.
+
+Intent is needed because agents must choose details the document cannot fully
+specify. Explain the user's original problem and intended outcome, and preserve
+supplied scope and priorities so those choices remain directed toward that
+purpose. For ADRs, Purpose and the exact contract bound autonomy. For reports,
+explain how a material autonomous choice serves that intent and what evidence
+supports the result. A familiar framework or tidy heading order is not evidence
+that this judgment context exists.
+
+For example, a **hypothetical** ADR about repeated payments could open Purpose
+with: "A customer may retry a payment after losing the response. The same payment
+must not be charged twice, so repeated requests need one identifiable result.
+The proposed decision associates retries with one payment identity." Decision
+then specifies the actual guarantee, its conditions, and failure behavior. This
+opening illustrates the purpose; it does not supply an approved contract or
+assert that duplicate charges occurred.
 
 ## Prefer a causal path to a catalog
 
@@ -97,9 +123,9 @@ it does not reduce the contract.
 
 Read the artifact once in the reader's order and ask:
 
-1. Does the intent appear before supporting detail?
+1. Can the title and opening alone explain the problem, intended outcome, and answer or proposed direction, with any qualification that changes the claim?
 2. Does the most important behavior or decision appear before implementation trivia?
-3. Could a causal flow replace a forced list?
+3. Do section openings let the reader choose a narrower question to inspect, and could a causal flow replace a forced list?
 4. Does every table or diagram add a relationship rather than repeat prose?
 5. Did any statement become more certain, personal, or dramatic than its evidence?
 6. Can any repeated contrast, bridge phrase, label, or summary be removed without losing meaning?

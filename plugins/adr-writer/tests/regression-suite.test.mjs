@@ -92,6 +92,57 @@ process.stdin.on("end", () => process.stdout.write(JSON.stringify({result: JSON.
   assert.deepEqual(JSON.parse(args[args.indexOf("--mcp-config") + 1]), { mcpServers: {} });
 });
 
+test("explicit Bedrock credentials use only the chosen profile and do not mutate parent credentials", async () => {
+  const directory = temp();
+  const executable = path.join(directory, "profile-cli.mjs");
+  writeFileSync(
+    executable,
+    `#!/usr/bin/env node
+process.stdin.resume();
+process.stdin.on("end", () => process.stdout.write(JSON.stringify({
+  result: JSON.stringify({ args: process.argv.slice(2), profile: process.env.AWS_PROFILE,
+    region: process.env.AWS_REGION, bedrock: process.env.CLAUDE_CODE_USE_BEDROCK,
+    bearer: Boolean(process.env.AWS_BEARER_TOKEN_BEDROCK), staticKey: Boolean(process.env.AWS_ACCESS_KEY_ID) }),
+  modelUsage: {"profile-test":{}}
+})));
+`,
+  );
+  chmodSync(executable, 0o755);
+  const previous = process.env.AWS_BEARER_TOKEN_BEDROCK;
+  process.env.AWS_BEARER_TOKEN_BEDROCK = "fixture-only-bearer";
+  try {
+    const response = await invokeClaude({
+      prompt: "test",
+      cwd: directory,
+      executable,
+      model: "test-model",
+      bedrock: { profile: "fixture-profile", region: "us-east-1" },
+    });
+    const actual = JSON.parse(response.text);
+    assert.equal(actual.profile, "fixture-profile");
+    assert.equal(actual.region, "us-east-1");
+    assert.equal(actual.bedrock, "1");
+    assert.equal(actual.bearer, false);
+    assert.equal(actual.staticKey, false);
+    assert.equal(actual.args[actual.args.indexOf("--setting-sources") + 1], "");
+    assert.doesNotMatch(actual.args.join(" "), /fixture-only-bearer/);
+    assert.equal(process.env.AWS_BEARER_TOKEN_BEDROCK, "fixture-only-bearer");
+    await assert.rejects(
+      () =>
+        invokeClaude({
+          prompt: "test",
+          cwd: directory,
+          executable,
+          bedrock: { profile: "fixture-profile", region: "us-east-1" },
+        }),
+      /requires profile, region and model/,
+    );
+  } finally {
+    if (previous === undefined) delete process.env.AWS_BEARER_TOKEN_BEDROCK;
+    else process.env.AWS_BEARER_TOKEN_BEDROCK = previous;
+  }
+});
+
 function fixture(item = cases[0]) {
   const directory = temp();
   const root = path.join(directory, "workspace");

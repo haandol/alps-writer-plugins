@@ -1,3 +1,31 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "demo",
+    text: "Show a concrete complete Section 4 demo using the supplied business-travel/self-introduction context: starting state, representative input, ordered user actions and visible outcomes. Cover all three essential experiences: the initial English question for a chosen situation, response-dependent English continuation and next question, and user termination with a visible completed state.",
+  },
+  {
+    id: "coverage",
+    text: "Connect the demo to reduced preparation time or readiness, and make the overall success condition require observation of all three essential experiences. Equivalent expressions such as '3/3' are valid.",
+  },
+  {
+    id: "approval",
+    text: "Show the full proposed scenario before offering approval, revision or deferral. Do not ask the user to supply the demo flow, expose acceptance-test implementation jargon, invoke tools or save content. The required tail agrees with the proposal.",
+  },
+];
+
+/** Keep the response-only scope and requested records exact; judge meaning with GEval. */
+export function deterministicScore(input) {
+  return responseChecks(input, {
+    AUTO_GENERATED_DEMO: [],
+    COVERS_ALL_ESSENTIAL_EXPERIENCES: [],
+    SHOWS_FULL_SCENARIO: [],
+    NO_RESTATEMENT_QUESTION: [],
+    OVERALL_PASS_SHOWS_ALL: [],
+  });
+}
+
 import {
   alpsLiteGuideText,
   alpsSkillText,

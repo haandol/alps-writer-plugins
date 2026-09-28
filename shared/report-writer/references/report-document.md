@@ -16,6 +16,9 @@ node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --o
 ## Document fields
 
 - `title`, `language` (`en` or `ko`), and `summary` (one to four paragraphs).
+  Use the existing `summary` for the concrete problem, answer, implication, and
+  any conclusion-changing limitation. Do not add a second mandatory abstract or
+  an `intent` field. A brief report can cover these in one paragraph.
 - `sections`: one to four domain nodes. Each has `id`, `title`, `domain`, `scope`,
   optional `paragraphs`, optional `children`, optional `diagram`, and optional
   `evidence` and `expanded`. Set `expanded: true` for material non-PROVEN
@@ -33,7 +36,14 @@ node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --o
 
 A domain node names a known responsibility or explicitly identified editorial
 scope. Paragraphs contain plain text with blank lines for semantic breaks.
+Use these existing paragraphs to connect the user's intent and scope to material
+autonomous choices and their evidenced result. This explains how unspecified
+details stayed within the original purpose; no intent registry or new fields
+are required.
 Do not embed extra headings or lists to bypass the child limit.
+Make its title and opening paragraph useful together: name the responsibility
+and state the outcome or finding before mechanism and evidence. Use `scope` to
+bound that claim, not to repeat a generic domain label.
 
 An evidence item has `id`, `label`, `source`, and optional `excerpt`.
 Use a local path, fragment, or HTTP(S) source. Full originals may remain in
@@ -95,7 +105,7 @@ questions before rendering.
   "title": "Repeated requests keep one payment result",
   "language": "en",
   "summary": [
-    "The duplicate-request check passed. Provider timeout recovery still needs verification."
+    "Payment retries must not create a second charge. The completed-payment retry check passed: the same key returned the recorded result. Provider timeout recovery still needs verification, so this result does not establish safety for every retry path."
   ],
   "requiredEvidenceIds": ["R1"],
   "review": {
@@ -145,7 +155,7 @@ questions before rendering.
       "domain": "Payments",
       "scope": "One result for repeated requests with the same key",
       "paragraphs": [
-        "A retry returns the previously recorded result instead of starting another charge."
+        "For an already completed payment, a retry with the same key returns the recorded result and creates no second charge. This check covers completed payments; it leaves the provider-timeout path unresolved."
       ],
       "diagram": {
         "source": "sequenceDiagram\nparticipant U as Caller\nparticipant P as Payment service\nparticipant S as Stored result\nU->>P: Retry with the same key\nP->>S: Read existing result\nS-->>P: Recorded completion\nP-->>U: Return the same result",

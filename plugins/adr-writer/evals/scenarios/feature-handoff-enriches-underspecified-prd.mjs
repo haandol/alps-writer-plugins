@@ -1,3 +1,25 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "questions",
+    text: "Ask targeted questions for the invitation expiry period and policy basis, active duplicate-invitation behavior, and delivery-failure guarantee for the user and invitation state. Do not treat unspecified values as approved. A clearly labeled example inside a clarification question is not an adopted requirement.",
+  },
+  {
+    id: "boundary",
+    text: "Keep the replaceable email SDK/provider in implementation discretion without asking the user to choose it. Return ASK rather than final BLOCKED, do not draft an ADR or declare handoff complete, and preserve the admin-only invitation permission.",
+  },
+];
+
+/** Exact output/scope checks supplement the semantic obligations. */
+export function deterministicScore(input) {
+  return responseChecks(
+    input,
+    { IMPLEMENTATION_DISCRETION: [], NOT_TRANSFERRED: [] },
+    { noTools: false },
+  );
+}
+
 import {
   alpsSkillText,
   seedRuleDocs,

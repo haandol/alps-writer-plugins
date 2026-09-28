@@ -245,9 +245,21 @@ evaluations. A review request selects it even without a separate report request.
 The owning workflow still determines inspection scope, findings, verdicts, and
 edit permissions. It keeps skill instructions in
 English and writes the report in the user's requested language and format.
-Reports start with the answer, then drill into evidenced domains with at most
-four peer units. The shared review covers reader context, worked calculations,
-paragraph breaks, diagrams, and factual/causal support.
+Reports connect the concrete problem to the answer and its material limitations
+in the opening, then drill into evidenced domains with at most four peer units.
+Each domain states its outcome before explaining behavior and evidence, so the
+reader can choose the depth they need. Urgent findings remain visible at the top.
+The shared review checks this reading order as well as reader context, worked
+calculations, paragraph breaks, diagrams, and factual/causal support.
+
+ADR and report writing preserve intent so agents can make unspecified decisions
+within the user's original purpose. `Purpose` records the problem, intended
+outcome, and supplied priorities or scope. The exact contract sets the limits;
+intent helps choose suitable reversible details inside them. Conventions or
+convenience do not justify pursuing a different outcome, inventing policy, or
+expanding scope. Reports connect material autonomous choices and test/eval
+evidence to that intent. Existing ADRs with `Context` remain compatible. No
+named writing framework or new schema is required.
 
 Reports also include one to five medium-difficulty, four-choice questions about
 their core content. The aim is to support understanding and reduce cognitive
@@ -341,5 +353,9 @@ Contributors can prepare a local report without model calls with
 The report separates classification responses, controlled Skill selection, and
 actual document edits. Explicit live runs support repeated Skill-on/off and
 version comparisons through the existing DeepEval adapter.
+`pnpm eval:llm --prepare --runs 1` selects the LLM response probes. Every probe
+uses DeepEval GEval for semantic judgment during an explicit `--live` run;
+existing local checks remain independent gates. This includes report-writing
+and report-review probes for numerical accuracy and unsupported claims.
 `pnpm eval:report <run-directory>` rebuilds a saved report without rerunning models.
 See [evaluation commands and interpretation](plugins/adr-writer/evals/skills/README.md).

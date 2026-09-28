@@ -28,7 +28,8 @@ const groups = [
   ["결정 관리", "작성", "소유권과 승인", ["author-delegation-", "author-routes-"]],
   ["결정 관리", "문서 검토", ["review-"]],
   ["결정 관리", "동기화와 통합", ["sync-", "rollup-", "hook-"]],
-  ["구현 보장", "의존성과 계획", ["impl-blocks-", "impl-plans-", "impl-resolves-"]],
+  ["구현 보장", "의존성과 계획", "선행 상태와 계획", ["impl-blocks-", "impl-plans-"]],
+  ["구현 보장", "의존성과 계획", "의도와 기본값 판단", ["impl-resolves-", "impl-uses-intent-"]],
   ["구현 보장", "완료와 검증", ["impl-completes-", "impl-requires-"]],
   ["구현 보장", "규모와 전달", ["impl-high-", "impl-offers-"]],
   ["구현 보장", "실행 수단", ["refactor-", "bedrock-"]],
@@ -47,7 +48,8 @@ const groups = [
     "이해도 확인",
     ["impl-review-comprehension-", "impl-review-completion-", "impl-review-selects-useful-"],
   ],
-  ["리뷰와 설명", "인지부하", ["comprehension-"]],
+  ["리뷰와 설명", "보고서 품질", "인지부하", ["comprehension-"]],
+  ["리뷰와 설명", "보고서 품질", "근거 보존", ["report-"]],
 ];
 
 /** Preserve the complete case records while grouping the human view by the responsibility being evaluated. */
@@ -158,6 +160,11 @@ export function saveSkillsReport(directory, report) {
           ? "배포된 이름·설명에서 필요한 Skill을 고르는 통제된 평가입니다. 실제 클라이언트의 설치·자동 호출 검증은 포함하지 않습니다."
           : "실제 문서 변경과 도구 사건을 고정된 의무에 대조합니다. 승인 전 변경 후 되돌리기 같은 중간 행동도 증거에 보존됩니다.",
     ];
+    if (type === "classification" && cases.some((c) => c.semanticObligations)) {
+      section.paragraphs.push(
+        "의미 평가가 설정된 사례는 DeepEval GEval로 응답·결과물·도구 기록을 고정된 행동 기준과 대조합니다. 기존 로컬 검사도 있는 경우 두 판정을 모두 충족해야 합니다. 태그나 완료 선언만으로 실제 행동이 입증되지는 않습니다.",
+      );
+    }
     if (type === "routing") {
       const s = summarizeRouting(report.runs.filter((r) => r.type === type));
       section.paragraphs.push(
@@ -188,19 +195,28 @@ export function saveSkillsReport(directory, report) {
         expanded: runs.some((r) => ["ERROR", "NOT_PROVEN"].includes(r.verdict)),
         paragraphs: [
           summaryText(runs),
-          runs
-            .map(
-              (r) =>
-                `${r.variant} #${r.repeat}: ${statuses[r.verdict]}${r.error || r.notRunReason ? ` — ${prose(r.error ?? r.notRunReason)}` : ""}${
-                  r.checks?.some((c) => !c.pass)
-                    ? ` — ${r.checks
-                        .filter((c) => !c.pass)
-                        .map((c) => `${prose(c.label)}: ${prose(c.detail)}`)
-                        .join("; ")}`
-                    : ""
-                }${r.testResult?.metricsData?.[0]?.reason ? ` — ${prose(r.testResult.metricsData[0].reason)}` : ""}`,
-            )
-            .join("\n\n"),
+          ...["NOT_PROVEN", "ERROR", "NOT_RUN"].flatMap((verdict) => {
+            const selected = runs.filter((run) => run.verdict === verdict);
+            if (!selected.length) return [];
+            const trials = selected.map((run) => `${run.variant} #${run.repeat}`).join(", ");
+            const reasons = [
+              ...new Set(
+                selected
+                  .flatMap((run) => [
+                    run.error || run.notRunReason,
+                    ...(run.checks ?? [])
+                      .filter((check) => !check.pass)
+                      .map((check) => `${check.label}: ${check.detail}`),
+                    run.testResult?.metricsData?.[0]?.reason,
+                  ])
+                  .filter(Boolean)
+                  .map(prose),
+              ),
+            ];
+            return [
+              `${statuses[verdict]} ${selected.length}회 (${trials}). ${reasons.join(" / ")}`,
+            ];
+          }),
         ],
         evidence: [{ id: eid, label: "사례·반복별 판정과 원본 증거 위치", source }],
       };

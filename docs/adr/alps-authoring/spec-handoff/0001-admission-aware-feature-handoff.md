@@ -6,7 +6,7 @@ Date: 2026-08-15
 
 Accepted (2026-09-21)
 
-## Context
+## Purpose
 
 PRD는 제품 기획 단계에서 사용자 의도, 기능 계약, NFR과 시스템 제약을 모은다. 구현 단계에서도 PRD를 계속 읽고 ADR과 대조하면 두 문서가 같은 계약의 공동 권위가 된다. 독자는 현재 기준을 알기 위해 두 수준을 함께 읽어야 하고, 오래된 PRD 문구가 ADR 변경을 되돌릴 수도 있다.
 
@@ -27,6 +27,11 @@ Handoff 이후에는 ADR만으로 요구사항을 지키는 구현을 재생성�
 ## Decision
 
 `/feature-to-adr`는 PRD에서 구현에 필요한 내용을 ADR 집합으로 이전하는 **소유권 handoff**를 수행한다.
+
+인계는 계약 목록과 함께 이후의 자율 판단에 필요한 의도를 보존한다. 대상 사용자의 문제,
+원하는 결과, 확인된 범위와 우선순위가 ADR의 Purpose와 계약에 남아야 한다. 기능 목록이나
+수용 조건만 옮겨 사용자의 목적을 잃지 않으며, 인계 후에는 PRD를 다시 읽지 않고도 같은
+판단 경계를 복구할 수 있어야 한다.
 
 Importer는 최종 분류 전에 **gap-driven enrichment**를 수행한다. PRD에서 확인된 계약은 그대로 보존하고, regeneration test로 ADR만 읽을 때 빠질 수 있는 요구사항 값과 규칙, 상태와 권한, 실패 보장, 외부 경계와 fallback, Decision Driver, 대안 선택 근거와 observable evidence를 찾는다.
 

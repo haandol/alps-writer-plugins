@@ -5,9 +5,48 @@ any language or format. Report-only requests remain report-only.
 
 ## Establish the reader's context
 
+### Explain intent as the boundary for judgment
+
+A report should make it possible to judge whether an agent's discretionary
+choices served the user's original purpose. Explicit requirements leave details
+open; clear intent reduces the risk of filling those gaps with choices aimed at
+a different outcome. Preserve the affected user, problem, desired result, and
+any supplied priority or scope that materially distinguishes a suitable choice.
+Do not invent intent, incidents, business impact, or exclusions to justify the
+implementation after the fact.
+
+For each material autonomous choice, explain the relevant intent, the choice
+and its basis, and the observed consequence. Use a concrete example when it
+helps: a hypothetical review assistant may group findings to help a person
+inspect risk, but automatically approving changes to save time exceeds that
+purpose and authority. A passing test or a common convention does not by itself
+show that a choice serves the user's intended outcome.
+
+Distinguish a safe detail chosen within the contract and scope from a protected
+product policy or scope expansion requiring a decision. Several suitable local
+implementations are not a reason to ask for approval. If intent is unclear only
+on a material choice, identify that gap and the smallest needed decision; do
+not label every unspecified detail a missing requirement.
+
+Keep the answer and material limitation visible early. Use the existing domain
+hierarchy to connect purpose, behavior, and evidence; no named framework, fixed
+three-part sequence, or extra schema field is required. Review meaning: could a
+reader use this intent to distinguish a plausible but purpose-defeating choice,
+and do the reported acceptance checks actually cover the intended outcome?
+Preserve unverified limits and do not mistake expected benefits for measured
+results.
+
+### Check continuity at each reading depth
+
 Source verification and reader comprehension are separate. A fact in the
 conversation may be true but still missing from the report the reader receives.
 
+- Read the title and opening alone: can a reader identify the concrete problem,
+  the answer, its significance, and any condition that changes the conclusion?
+  Then scan headings and each domain's first paragraph: can the reader choose
+  where to inspect the explanation or evidence without reconstructing the
+  author's investigation? A title such as "Analysis" or a list of component
+  names does not supply that orientation by itself.
 - At a meaningful transition, identify what the reader has learned so far and
   what the next paragraph assumes. Locate the earlier passage that establishes
   the task, event, constraint, or referent; a repeated noun alone is insufficient.
@@ -18,6 +57,10 @@ conversation may be true but still missing from the report the reader receives.
   a smoother connector.
 - Re-read entry and exit transitions after moving or rewriting a passage.
   Preserve useful answer-first openings and do not repeat background everywhere.
+- Check every reading depth for a misleading simplification. A shorter overview
+  may defer exact evidence, but must retain a caveat, failure, or exception that
+  changes its answer. Details must substantiate or qualify the parent claim;
+  a new unrelated claim needs its own meaningful scope.
 
 When reporting a material flow finding, give its location, assumed context,
 missing or misplaced premise, and reader impact. For a substantial report,

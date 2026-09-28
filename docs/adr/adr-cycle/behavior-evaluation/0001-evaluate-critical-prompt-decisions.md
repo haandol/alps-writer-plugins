@@ -6,7 +6,7 @@ Date: 2026-08-15
 
 Accepted (2026-09-25)
 
-## Context
+## Purpose
 
 정적 테스트는 prompt에 특정 문구가 존재하는지 확인하지만 실제 model이 상충하는 지시 사이에서 어떤 행동을 선택하는지는 확인하지 못한다. Admission, dependency, 요구사항 보존과 review routing은 한 번의 오분류가 잘못된 ADR이나 완료 상태를 만들 수 있다.
 

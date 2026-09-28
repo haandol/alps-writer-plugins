@@ -49,20 +49,8 @@ export default {
   },
 
   score({ tail, output, dir }) {
-    const mapping = JSON.parse(read(dir, "docs/adr/.mapping.json") ?? '{"categories":{}}');
-    const numbered = findNumberedAdrFiles(path.join(dir, "docs", "adr"));
-
     return [
-      {
-        pass: numbered.length === 0,
-        detail: numbered.length ? `unexpected ADRs: ${numbered.join(", ")}` : "no ADR created",
-        label: "creates no ADR for replaceable SDK and credential plumbing",
-      },
-      {
-        pass: Object.keys(mapping.categories ?? {}).length === 0,
-        detail: `mapping categories: ${Object.keys(mapping.categories ?? {}).join(", ") || "none"}`,
-        label: "creates no mapping entry",
-      },
+      ...deterministicScore({ dir }),
       expectText(
         output,
         /admission gate|implementation substitution/i,
@@ -91,6 +79,35 @@ export default {
     ];
   },
 };
+
+export const obligations = [
+  {
+    id: "admission",
+    text: "The SDK, credential-provider and signing-adapter changes are exempt implementation choices because the GPT-5.6/Bedrock provider boundary, fallback, trust boundary and observable behavior stay unchanged. Explain this in the visible reply without recommending a new ADR for this SDK change. Discussion of a separate provider-boundary decision is not a recommendation to record the SDK plumbing.",
+  },
+  {
+    id: "scope",
+    text: "No ADR or mapping entry is created. The response treats this as outside ADR admission, not a defective ADR requiring implementation blockage. Actual unchanged artifacts must agree with the report.",
+  },
+];
+
+/** File/index absence is exact; natural-language routing is evaluated by GEval. */
+export function deterministicScore({ dir }) {
+  const mapping = JSON.parse(read(dir, "docs/adr/.mapping.json") ?? '{"categories":{}}');
+  const numbered = findNumberedAdrFiles(path.join(dir, "docs", "adr"));
+  return [
+    {
+      pass: numbered.length === 0,
+      detail: numbered.length ? `unexpected ADRs: ${numbered.join(", ")}` : "no ADR created",
+      label: "creates no ADR for replaceable SDK and credential plumbing",
+    },
+    {
+      pass: Object.keys(mapping.categories ?? {}).length === 0,
+      detail: `mapping categories: ${Object.keys(mapping.categories ?? {}).join(", ") || "none"}`,
+      label: "creates no mapping entry",
+    },
+  ];
+}
 
 function findNumberedAdrFiles(root) {
   const out = [];

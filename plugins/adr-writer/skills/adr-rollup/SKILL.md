@@ -110,9 +110,9 @@ Date: <today>
 
 {per the current code state — see rule 0 in step 4}
 
-## Context
+## Purpose
 
-{the problem as defined from the present standpoint. No evolution narration such as "originally it did X, then changed to Y"}
+{why this decision is needed: the affected actor or system, current problem, intended outcome, and supplied scope or priorities that bound future autonomous choices; preserve decision-relevant background and assumptions. Follow authoring-rules.md "Reading order — intent before detail". No evolution narration such as "originally it did X, then changed to Y"}
 
 ## Decision Drivers
 
@@ -120,7 +120,7 @@ Date: <today>
 
 ## Decision
 
-{the system behaves this way today. No chronological listing}
+{the current architectural choice and the driver explaining why it addresses Purpose's problem; then the behavior and complete requirement contract. No chronological listing}
 
 ### Alternatives
 
@@ -144,7 +144,7 @@ Date: <today>
 0. **Status preserves verified completion rather than re-inferring it**: keep the consolidation target `Accepted` only when every decision included in it came from already-`Accepted` ADRs and still exists in the current code and tests. If any included decision was `Proposed`, lacks implementation, or needs a new completion judgment, leave the consolidated ADR as `Proposed` and let `/adr-impl` run the tests and final implementation review before promotion — do not ask the user to hand-set Status.
 1. **Seamless merge**: leave no trace of the rollup in the result. Never mark `(Roll-up)` in a filename, title, or README link. **Never create an Evolution History section in the ADR body** — the body describes only the current state. The rationale behind the major transitions the chain carried is not discarded: it is harvested into `decision-log.md` in step 9, and Git preserves the individual diffs.
 2. **Describe the final state directly**: "consists of ~" rather than "added ~", and "이벤트 이름은 `CURRENT_EVENT`다" rather than "`LEGACY_EVENT`와 `CURRENT_EVENT`를 혼용하지 않고 `CURRENT_EVENT`만 사용한다." Remove replaced identifiers, previous values, and migration steps from the body and mapping summary when they add no current contract. Keep rejected choices in Alternatives, harvest major old → new transitions into `decision-log.md`, and preserve current prohibitions that passed the requirement gate.
-3. **Keep Decision Drivers and alternatives ≥ 2**: the consolidated ADR follows the ordinary authoring rules (`authoring-rules.md`) exactly. Revive the real alternatives that lived somewhere in the chain.
+3. **Keep Decision Drivers and alternatives ≥ 2**: the consolidated ADR follows the ordinary authoring rules (`authoring-rules.md`) exactly. Keep the current Purpose, all still-valid drivers, and the current adoption rationale together in the survivor, including reasons established before the latest revision. Harvesting history must never leave the current choice explained only in `decision-log.md`. Revive the real alternatives that lived somewhere in the chain.
 4. **Keep the important decisions**: state transitions, behavioral rules, entity relationships, integration mechanisms, business logic.
    4-a. **Carry the requirement contract over without loss**: every **requirement value** (limits, quotas, cycles, retention, caps, targets), **non-numeric requirement** (allowed value sets, transition rules, mandatory fields, ordering, uniqueness, units — `authoring-rules.md` "Non-numeric requirements"), permission rule, and required validation condition that lived in any ADR of the chain moves into the consolidated ADR **without a single omission.** If a value changed within the chain, write **the latest value** in the body and leave that transition in `decision-log.md` via the step 9 harvest. Consolidation is compression, not requirement loss — after writing the consolidated ADR, verify it once with the [regeneration test](../../templates/adr/authoring-rules.md) ("with the code deleted, can requirement-honoring code be rebuilt from this ADR alone?").
 5. **Preserve Mermaid diagrams**: consolidate or amend the currently valid ones and keep them.

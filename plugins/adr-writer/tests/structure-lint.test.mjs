@@ -135,7 +135,7 @@ const GOOD_BODY = `# ADR 0001: x
 ## Status
 Proposed
 
-## Context
+## Purpose
 c
 
 ## Decision Drivers
@@ -168,6 +168,35 @@ test("checkSections finds all hard sections + alternatives + drivers present", (
 test("checkSections reports a missing hard section", () => {
   const noConseq = GOOD_BODY.replace(/## Consequences\nok\n/, "");
   assert.deepEqual(checkSections(noConseq).missingHard, ["Consequences"]);
+});
+
+test("Purpose is canonical and legacy Context satisfies the same required section", () => {
+  const legacy = GOOD_BODY.replace("## Purpose", "## Context");
+  assert.deepEqual(checkSections(GOOD_BODY).missingHard, []);
+  assert.deepEqual(checkSections(legacy), checkSections(GOOD_BODY));
+  const absent = GOOD_BODY.replace("## Purpose\nc\n", "");
+  assert.deepEqual(checkSections(absent).missingHard, ["Purpose"]);
+  for (const heading of ["Purpose", "Context"]) {
+    assert.deepEqual(checkSections(absent + `\n\`\`\`md\n## ${heading}\n\`\`\`\n`).missingHard, [
+      "Purpose",
+    ]);
+    assert.deepEqual(checkSections(absent + `\n### ${heading}\n`).missingHard, ["Purpose"]);
+  }
+});
+
+test("the CLI accepts Purpose and legacy Context without changing either document", () => {
+  withTmp((dir) => {
+    seedClean(dir);
+    const relative = "docs/adr/identity/login/0001-password-policy.md";
+    const original = readFileSync(path.join(dir, relative), "utf8");
+    for (const heading of ["Purpose", "Context"]) {
+      const body = original.replace(/^## (?:Purpose|Context)$/m, `## ${heading}`);
+      write(dir, relative, body);
+      const result = parseLint(dir, ["--documents-only"], { full: true });
+      assert.equal(result.code, 0, JSON.stringify(result.errors));
+      assert.equal(readFileSync(path.join(dir, relative), "utf8"), body);
+    }
+  });
 });
 
 test("countDrivers counts bullets under Decision Drivers", () => {

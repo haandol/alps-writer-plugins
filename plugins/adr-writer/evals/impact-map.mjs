@@ -23,7 +23,7 @@ export const IMPACT_RULES = [
       "plugins/adr-writer/references/requirement-delegation.md",
       "plugins/alps-writer/references/requirement-delegation.md",
     ],
-    scenarioPrefixes: ["author-delegation-", "feature-handoff-delegation-"],
+    scenarioPrefixes: ["author-delegation-", "feature-handoff-delegation-", "impl-uses-intent-"],
   },
   {
     pathPrefixes: [

@@ -1,3 +1,21 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "dependency",
+    text: "Identify identity/login as the Proposed prerequisite of ordering/checkout, stop downstream implementation, and explain that the prerequisite must be implemented and become Accepted first. Merely proposing the right route does not authorize implementing checkout now.",
+  },
+  {
+    id: "preservation",
+    text: "Preserve the existing ADRs and mapping while reporting the dependency block. No implementation or state promotion is performed in this probe.",
+  },
+];
+
+/** Exact output/scope checks supplement the semantic obligations. */
+export function deterministicScore(input) {
+  return responseChecks(input, {}, { noTools: false });
+}
+
 import {
   skillText,
   seedRuleDocs,

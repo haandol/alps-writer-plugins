@@ -19,7 +19,7 @@ normal authoring requires no upfront terminology exercise.
 
 An Architecture Decision Record (ADR) documents an important architectural decision made during software development. Each ADR contains:
 
-- **Context**: the background and problem that required the decision
+- **Purpose**: why the decision is needed, whose problem it addresses, and the outcome to protect
 - **Decision Drivers**: the pressures, constraints, and requirements used to evaluate the options (only those that genuinely discriminate between them)
 - **Decision**: the decision made and why
 - **Alternatives**: **at least two** realistic alternatives and why they were not adopted
@@ -28,6 +28,19 @@ An Architecture Decision Record (ADR) documents an important architectural decis
 An ADR first has to pass the **ADR admission gate**: its core subject must change a durable requirement, boundary, provider/model/fallback, key design, algorithm, or cross-implementation trade-off. It then records only the **gray zone** between business requirements and code — the rationale a reader cannot recover from the code, plus the requirement contract the result must honor. Replaceable libraries, SDKs, frameworks, credential/auth wiring, and module structure stay at code resolution.
 
 ## ADR template
+
+Use `Purpose` for the ADR's motivation section. Existing ADRs headed `Context`
+remain readable and pass structure checks; a heading-only rename preserves the
+section's content and Status. Agent context, bounded contexts, and C4 Context
+views keep their distinct meanings.
+
+Intent gives later agents a basis for decisions the ADR does not spell out.
+`Purpose` explains whose problem is being solved, the intended outcome, and any
+supplied priorities or scope that distinguish suitable choices from unwanted
+ones. `Decision` and its exact contract turn that purpose into architectural
+behavior; observable acceptance criteria check whether the outcome is met.
+Intent guides autonomous choices within the contract and authorized scope. It
+does not authorize a new policy or an expanded goal.
 
 ```markdown
 # ADR XXXX: title
@@ -40,20 +53,27 @@ Proposed | Accepted (YYYY-MM-DD) | Deprecated (YYYY-MM-DD) | Superseded by [ADR 
 
 <!-- The Accepted/Deprecated parentheses hold the transition date only — no trailing references or explanations. -->
 
-## Context
+## Purpose
 
-The background and problem requiring the decision. _Absorb_ the PRD's business motivation and narrate it here — never write an ALPS file path, section number, or feature ID in the body. Never point at the PRD (adr-writer does not reference ALPS).
+Give an agent enough context to choose unspecified details without drifting from
+the user's purpose: whose problem matters, the outcome to protect, and any
+supplied priority, scope, or non-goal that distinguishes acceptable choices.
+Use confirmed information. A general benefit such as "improve efficiency" is
+insufficient when different interpretations would lead to different outcomes.
+
+Open with the affected actor or system, the concrete problem or condition, and why it matters. State the outcome this decision protects and briefly preview the proposed or adopted direction, so the reader understands the intent before reaching the drivers and contract. Add only decision-relevant background after that opening. Follow `authoring-rules.md` "Reading order — intent before detail"; do not add a second contract summary or invent an incident to motivate the decision. _Absorb_ the PRD's business motivation and explain it here — never write an ALPS file path, section number, or feature ID in the body. Never point at the PRD (adr-writer does not reference ALPS).
 
 When the adopted alternative depends on an assumption, add one short line here or under the relevant Decision Driver: `Assumption: <fact> — reconsider <decision> if false`. Do not add a separate assumptions section or confidence table. Requirement values and rules belong in the requirement contract below. Replaceable libraries, SDKs, adapters, internal structures, and tuning defaults belong in code and the implementation review's ephemeral Notable implementation choices.
 
 ## Decision Drivers
 
+- Keep all currently governing decision criteria here, beside Purpose, including still-valid criteria from earlier revisions. The current adoption rationale must be understandable from this ADR alone; `decision-log.md` preserves how and why it changed over time.
 - The 3-5 pressures, constraints, and requirements that discriminate this decision. Not generic quality attributes ("maintainability") but only what genuinely decides between the options.
 - Examples: "handle 10k concurrent users", "PII must not leave the system", "the team has Go experience only".
 
 ## Decision
 
-The currently valid decision and why. State the result directly; do not describe it as a transition from a previous identifier, value, or approach.
+State the currently valid architectural choice first and connect it to the driver that explains why it addresses the problem in Purpose. Then explain the behavior or boundary and its exact contract below. State the result directly; do not describe it as a transition from a previous identifier, value, or approach.
 
 ### Requirement contract
 
@@ -72,6 +92,8 @@ Compare **at least two** realistic alternatives. Real alternatives only — neve
 ## Consequences
 
 ### Positive / Negative / Risks
+
+Connect the benefits, costs, and material risks to the chosen direction. Keep conditions that change a claim beside it; omit empty subsections.
 
 ## Implementation Notes
 
@@ -98,4 +120,4 @@ The ADR list is held solely by [`docs/adr/.mapping.json`](./structure.md#the-adr
 - [Michael Nygard — Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) — the original ADR article
 - [adr-writer plugin](https://github.com/haandol/alps-writer-plugins) — this plugin itself
 
-<!-- adr-writer:rules-version 0.8.27 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.8.28 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

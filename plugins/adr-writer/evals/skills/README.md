@@ -2,7 +2,8 @@
 
 One workspace command prepares or runs classification probes, controlled Skill
 selection, and actual ADR document operations. The existing scorers and the
-DeepEval GEval adapter are reused. No evaluation dependency enters the shipped
+DeepEval GEval adapter are reused. `pnpm eval:llm` is the classification-only
+entry point to the same runner. No evaluation dependency enters the shipped
 ALPS MCP bundle or the dependency-free ADR runtime tests.
 
 ## Prepare and inspect
@@ -11,6 +12,7 @@ From the workspace root after `pnpm install`:
 
 ```bash
 pnpm eval:skills --prepare --runs 1 --open
+pnpm eval:llm --prepare --runs 1 --open
 pnpm eval:skills --list --suite execution
 pnpm eval:skills --prepare --suite execution --compare without-skill --runs 3
 ```
@@ -21,8 +23,8 @@ preflight checks under a fresh `.codex/evals/skills-*` directory. The report say
 **미실행**, not PASS. It is safe to inspect the report before choosing a paid run.
 `--out` selects a new/empty directory. `--open` opens only the generated local file.
 
-The catalog includes 52 existing classification scenarios, eight controlled
-routing cases and eleven execution cases. The real-repository classification
+The catalog includes 52 existing classification scenarios and two report-writing
+probes, eight controlled routing cases and eleven execution cases. The real-repository classification
 probe remains in the report as unrun unless selected explicitly with `--only
 review-real-repo-adr` and its existing environment inputs. Ordinary runs never
 silently read the user's separate real repository.
@@ -35,6 +37,8 @@ pnpm eval:skills --live --suite execution --compare without-skill --runs 5 --ope
 pnpm eval:skills --live --suite execution --compare both --baseline HEAD~1 --runs 3
 pnpm eval:skills --live --suite routing --runs 3
 pnpm eval:skills --live --suite classification --only comprehension-load --runs 3
+pnpm eval:llm --live --only lite-alps- --runs 3
+pnpm eval:llm --live --only report- --runs 3
 
 # Preview branch + staged + unstaged + untracked impact without calling models:
 pnpm eval:skills --list --changed main
@@ -63,13 +67,26 @@ confined fixture MCP tools: no host shell, native filesystem tool, external MCP,
 user hooks or automatically discovered Skills. This measures the execution
 instruction bundle, not removing the product/organization contract itself.
 
-`--model` selects the Claude target. Semantic classification and execution use
+`--model` selects the Claude target. All catalog classification probes and execution use
 DeepEval with the existing Bedrock defaults: profile `default`, region
 `us-east-1`, model `us.openai.gpt-5.6-sol`. `--judge-model`, `--judge-profile`,
 `--judge-region` and `--judge-provider bedrock|claude` override the judge separately.
-There is no automatic provider fallback. Deterministic classification and routing
-checks do not invoke a semantic judge. Routing includes a second target call to
+There is no automatic provider fallback. A classification trial normally calls
+the semantic judge once. An unsupported source/quotation permits one citation
+repair call against the same evidence and criteria; both raw calls are retained.
+Other schema/score/transport errors are not retried, and a second invalid
+citation remains ERROR. Local checks add no model call. Routing is scored
+deterministically and includes a second target call to
 read selected Skill bodies; no second call is needed for an empty selection.
+
+If the target must use a specific AWS profile independently of the user's Claude
+settings, supply all three options: `--target-profile default --target-region
+us-east-1 --model <Bedrock-model-id>`. This explicitly selects Bedrock for the
+target, ignores user/project/local Claude settings in that child process, and
+removes inherited static/bearer AWS credentials there so the selected profile
+is used. It does not edit user settings or change the judge's separate profile.
+Without these options the existing configured Claude provider remains in use;
+the runner never automatically switches credentials after an error.
 
 ## Read the result
 
@@ -77,7 +94,7 @@ The three suites deliberately report different evidence:
 
 | Suite          | Evidence and limits                                                                                                                                                                                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Classification | Existing response/scorer checks, sometimes with artifact checks. Never labeled task completion rate. Natural-language digest obligations use GEval.                                                                                                                                    |
+| Classification | DeepEval GEval judges the response, files and tool events against fixed behavior obligations. Existing local checks also gate success where present. Never labeled task completion rate.                                                                                               |
 | Routing        | Shipped name/description catalog → selected set → selected bodies. Required omissions and irrelevant selections are separate; optional allowed report support is excluded from required-route precision/recall. This is not native client installation/automatic routing verification. |
 | Execution      | Actual files, replies, intermediate tool events, final deterministic checks and GEval obligation judgments. A passing judge cannot cancel a failed mandatory deterministic check.                                                                                                      |
 
@@ -86,6 +103,30 @@ violation **or insufficient evidence**. `ERROR` and `NOT_RUN` stay outside the
 behavior-rate denominator but remain in requested/completed/error counts.
 The report retains every case and trial, including failures and exclusion reasons.
 Unknown cost is shown as unpriced calls rather than zero-cost service use.
+
+The default semantic obligation uses the scenario's authored description, scoped
+to the exact task and evidence. It is not generated from the model response,
+machine tail or local scorer result. A scenario's explicit `obligations` export
+takes precedence, as in the approval digest; that path skips its legacy semantic
+scorer to avoid double judging. The report-writer probes have separate obligations
+for counts/denominators, evidence limits and presentation or review scope.
+A scenario may also export `deterministicScore` alongside its explicit obligations.
+The unified runner then uses only those exact local checks plus GEval, while the
+legacy runner retains `score`. Feature splitting keeps numeric ranges and tail
+cardinalities local; SDK admission keeps file/index absence local. Their prose
+meaning is judged by GEval so word order or nearby negation does not cause a
+keyword-based false failure. A review-only report permits read-only evidence
+lookup and forbids mutations; its rubric does not invent a no-tools restriction.
+Generic description-based obligations are a starting rubric, not a claim of
+human-calibrated judge accuracy. Existing keyword checks can still reject valid
+paraphrases; inspect the separate local checks and GEval result when they disagree.
+
+`test-case.json` stores the actual DeepEval input, output evidence and fixed
+expected obligations. Target files and tool events are captured before local
+scorers can create validation artifacts. The semantic judge therefore sees
+transient writes/restores but never mistakes scorer-generated files for work
+performed by the target. A semantic PASS cannot cancel a failed local check;
+judge errors stay ERROR instead of falling back to regex success.
 
 Skill Lift uses valid pairs of the same case and repeat: candidate success rate
 minus no-skill success rate, in percentage points. For example, **hypothetical**

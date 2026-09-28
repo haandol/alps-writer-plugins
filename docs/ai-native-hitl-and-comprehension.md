@@ -633,7 +633,7 @@ Exploration에서 얻은 모든 사실을 ALPS나 ADR에 추가하면 문서가 
 | ------------------------------------------ | -------------------------------- |
 | 사용자 의도와 제품 계약                    | ALPS                             |
 | durable decision, rationale와 contract     | ADR                              |
-| decision-changing assumption               | ADR Context 또는 Decision Driver |
+| decision-changing assumption               | ADR Purpose 또는 Decision Driver |
 | 구현 사실과 replaceable choice             | 코드와 테스트                    |
 | exploration scope, plan과 evidence mapping | 일시적 artifact                  |
 

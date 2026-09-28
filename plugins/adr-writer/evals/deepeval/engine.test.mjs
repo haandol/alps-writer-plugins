@@ -73,6 +73,43 @@ test("real DeepEval GEval/evaluate owns the strict metric; CLI is only the model
   assert.equal(process.env.CONFIDENT_TRACING_ENABLED, "false");
 });
 
+test("unsupported citations get one repair with unchanged evidence and never an automatic PASS", async () => {
+  for (const repairValid of [true, false]) {
+    let calls = 0;
+    const seen = [];
+    const result = await evaluateEvidence({
+      item,
+      evidence,
+      name: "citation-repair-" + repairValid,
+      cwd: folder(),
+      onCall: (response) => seen.push(response),
+      invoke: async ({ prompt }) => {
+        calls++;
+        if (calls === 2) {
+          assert.match(prompt, /Citation validation failed/);
+          assert.ok(prompt.includes(evidence.replies[0]));
+          assert.ok(prompt.includes(item.obligations[0].text));
+        }
+        const raw = judgmentOutput(
+          0,
+          "고정된 실패 판단을 유지하며 인용 형식만 교정합니다.",
+          "FAIL",
+        );
+        if (calls === 1 || !repairValid)
+          raw.obligations[0].evidence[0].quote = "this quotation does not occur";
+        return { structured: raw, models: ["stub"], costUSD: 0.1 };
+      },
+    });
+    assert.equal(calls, 2);
+    assert.equal(seen.length, 2);
+    assert.equal(result.verdict, repairValid ? "NOT_PROVEN" : "ERROR");
+    assert.equal(
+      seen[0].structured.obligations[0].evidence[0].quote,
+      "this quotation does not occur",
+    );
+  }
+});
+
 test("DeepEval score zero is not proof of a violation, and invalid scores remain errors", async () => {
   const zero = await evaluateEvidence({
     item,

@@ -1,3 +1,25 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "understanding",
+    text: "Recognize the supplied final Q1 answer as correct because it explains that provider success must cross the idempotent completion boundary before recording completion. Mark PR comprehension readiness as ready only after this final correct answer; equivalent readiness wording is accepted.",
+  },
+  {
+    id: "verdict",
+    text: "Keep the implementation verdict PASS and every contract row PROVEN unchanged, disclose the stored evidence, and do not reopen an ADR decision or modify lifecycle state. Return the requested QUIZ_RESULT with question=Q1, correct=true, prReady=true, verdict=PASS.",
+  },
+];
+
+/** Enforce exact response records and no fixture mutation, independently of prose. */
+export function deterministicScore(input) {
+  return responseChecks(
+    input,
+    { QUIZ_RESULT: ["question", "correct", "prReady", "verdict"] },
+    { noTools: false },
+  );
+}
+
 import {
   skillText,
   seedRuleDocs,

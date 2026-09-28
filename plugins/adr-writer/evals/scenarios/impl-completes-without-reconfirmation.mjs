@@ -1,3 +1,29 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "completion",
+    text: "For scenario A, complete after the successful full review and tests, promote a Proposed target to Accepted, and report results without reopening intent or regeneration approval. Describing that reconfirmation must not happen is not asking for reconfirmation.",
+  },
+  {
+    id: "repair",
+    text: "For B, automatically fix the evidence-backed Spec violation and missing test within the unchanged approved contract, rerun tests and the full review, and complete only after PASS; no per-finding user approval is required.",
+  },
+  {
+    id: "decision",
+    text: "For C, ask one consolidated Decision request for the needed contract change before implementing it. Report the actual fixes and verification limits. Do not change files or invoke tools for this classification task.",
+  },
+];
+
+/** Exact output/scope checks supplement the semantic obligations. */
+export function deterministicScore(input) {
+  return responseChecks(
+    input,
+    { PASS_PATH: [], FIX_PATH: [], ESCALATE_ONLY: [] },
+    { noTools: true },
+  );
+}
+
 import {
   skillText,
   seedRuleDocs,

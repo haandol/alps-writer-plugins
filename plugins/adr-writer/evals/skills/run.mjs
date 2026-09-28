@@ -32,9 +32,13 @@ const HELP = `Skill evaluation — classification, routing, execution
 
 Defaults: --prepare, --suite all, --runs 3, --compare none. --live explicitly
 permits target and semantic-judge calls. Deterministic scorers do not call a judge.
+All catalog classification responses receive DeepEval GEval judgments; existing
+local checks remain independent gates. Routing is scored deterministically.
 --only filters case IDs; --changed <git-base> selects impacted cases.
 --model chooses the Claude target; --judge-model/profile/region/provider choose
 the existing DeepEval judge (Bedrock defaults). No provider fallback.
+--target-profile <AWS-profile> --target-region <region> with --model selects
+explicit Bedrock target credentials without loading user/project settings.
 --out must be new/empty. --report regenerates HTML with no model calls.
 Quality failures are findings, not CI gates. Exit 2 means setup/no scorable result.
 `;
@@ -54,6 +58,8 @@ export function parseSkillsArgs(args) {
     "out",
     "baseline",
     "model",
+    "target-profile",
+    "target-region",
     "judge-model",
     "judge-profile",
     "judge-region",
@@ -101,6 +107,13 @@ export function parseSkillsArgs(args) {
     if (o[`judge-${key}`]) o.judge[key] = o[`judge-${key}`];
   if (!["bedrock", "claude"].includes(o.judge.provider)) throw new Error("Unknown judge provider");
   if (o.judge.provider === "claude" && !o["judge-model"]) o.judge.model = undefined;
+  if (o["target-profile"] || o["target-region"]) {
+    if (!o["target-profile"] || !o["target-region"] || !o.model)
+      throw new Error(
+        "Explicit Bedrock target requires --target-profile, --target-region and --model",
+      );
+    o.targetBedrock = { profile: o["target-profile"], region: o["target-region"] };
+  }
   return o;
 }
 
@@ -128,7 +141,7 @@ export function selectImpacted(cases, paths) {
     cases.filter((c) => c.type === "classification").map((c) => ({ ...c, name: c.id })),
   );
   const shared = paths.some((p) =>
-    /^(shared\/report-writer\/|plugins\/adr-writer\/skills\/report-writer\/|plugins\/adr-writer\/evals\/(skills|lib)\/)/.test(
+    /^(shared\/report-writer\/|plugins\/adr-writer\/skills\/report-writer\/|plugins\/adr-writer\/evals\/(skills|lib|deepeval)\/|plugins\/adr-writer\/evals\/regression\/(judge|claude|workspace|tool-server)\.mjs$)/.test(
       p,
     ),
   );
@@ -296,16 +309,34 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
   recordCall(record, "target", response);
   json(folder, "response.json", response);
   const tail = parseTail(response.text);
+  // Capture target evidence before local scorers can materialize review files.
+  // Keep it even when tail validation or the judge subsequently fails.
+  const files = snapshot(root);
+  const rawEvents = existsSync(log) ? readFileSync(log, "utf8") : "";
+  const events = rawEvents
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+  json(folder, "evidence.json", { reply: response.text, tail, files, events: rawEvents });
   if (!response.text?.trim() || !tail.complete)
     throw new Error("Missing scorable reply or machine-readable tail");
+  if (!item.semanticObligations || item.supplementalChecks) {
+    record.checks = await item.score({ tail, output: response.text, dir: root, events });
+    if (
+      !Array.isArray(record.checks) ||
+      !record.checks.length ||
+      record.checks.some((c) => typeof c.pass !== "boolean")
+    )
+      throw new Error("No valid scorer checks");
+  }
   if (item.semanticObligations) {
     const input = JSON.parse(readFileSync(path.join(folder, "input.json"), "utf8"));
     await judgeEvidence(
       { ...item, obligations: item.semanticObligations, turns: [prompt] },
       {
         before: input.files,
-        after: snapshot(root),
-        events: [],
+        after: files,
+        events,
         turns: [prompt],
         replies: [response.text],
         referenceDate: options.referenceDate,
@@ -315,28 +346,18 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
       options,
       dependencies,
     );
+    if (record.verdict === "PASS" && record.checks?.some((c) => !c.pass))
+      record.verdict = "NOT_PROVEN";
   } else {
-    record.checks = await item.score({ tail, output: response.text, dir: root });
-    if (
-      !Array.isArray(record.checks) ||
-      !record.checks.length ||
-      record.checks.some((c) => typeof c.pass !== "boolean")
-    )
-      throw new Error("No valid scorer checks");
     record.verdict = record.checks.every((c) => c.pass) ? "PASS" : "NOT_PROVEN";
   }
-  json(folder, "evidence.json", {
-    reply: response.text,
-    tail,
-    files: snapshot(root),
-    events: existsSync(log) ? readFileSync(log, "utf8") : "",
-  });
 }
 
 /** Use one citation-validated DeepEval path for semantic probes and actual document operations. */
 async function judgeEvidence(item, evidence, record, folder, options, dependencies) {
-  const { evaluateEvidence } = await import("../deepeval/engine.mjs");
+  const { evaluateEvidence, deepEvalInput } = await import("../deepeval/engine.mjs");
   json(folder, "judge-input-evidence.json", evidence);
+  json(folder, "test-case.json", deepEvalInput(item, evidence));
   const result = await (dependencies.evaluate ?? evaluateEvidence)({
     item,
     evidence,
@@ -395,6 +416,7 @@ async function runExecution(
     tools: "fixture-documents-v1",
     checker: candidate.hash,
     judge: options.judge,
+    targetBedrock: options.targetBedrock ?? null,
     harness: report.runtime.harnessHash,
     date: options.referenceDate,
   });
@@ -510,7 +532,14 @@ export async function main(args, injected = {}) {
     "skill-catalog.json",
     entries.map(({ name, description, hash }) => ({ name, description, hash })),
   );
-  const dependencies = { target: invokeClaude, ...injected };
+  const dependencies = {
+    ...injected,
+    target: (request) =>
+      (injected.target ?? invokeClaude)({
+        ...request,
+        ...(options.targetBedrock ? { bedrock: options.targetBedrock } : {}),
+      }),
+  };
   const version = options.live
     ? spawnSync("claude", ["--version"], { encoding: "utf8", timeout: 10_000 })
     : null;
@@ -535,11 +564,12 @@ export async function main(args, injected = {}) {
       client: "claude-bare-fixture",
       clientVersion: version?.status === 0 ? version.stdout.trim() : null,
       requestedModel: options.model ?? null,
+      targetBedrock: options.targetBedrock ?? null,
       judge: options.judge,
       candidateHash: candidate.hash,
       catalogHash: sha(entries.map(({ name, description, hash }) => ({ name, description, hash }))),
       harnessHash: sha(
-        ["skills", "regression", "deepeval"].flatMap((dir) =>
+        ["skills", "regression", "deepeval", "lib"].flatMap((dir) =>
           listFiles(path.join(PLUGIN, "evals"), dir)
             .filter((f) => f.endsWith(".mjs"))
             .map((f) => readFileSync(path.join(PLUGIN, "evals", f), "utf8")),

@@ -1,3 +1,17 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "boundary",
+    text: "This is a tool-free boundary probe, not an actual document review. State that adr-review checks ADR document quality only, does not inspect product code or claim code consistency, and routes implementation reality to adr-sync. Do not require reading/reviewing the fixture ADR in this probe: the task expressly says not to call tools. DOCUMENT_ONLY and SYNC_ROUTE must agree with the visible response.",
+  },
+];
+
+/** Validate requested response structure and scope; preserve semantic contract distinctions. */
+export function deterministicScore(input) {
+  return responseChecks(input, { DOCUMENT_ONLY: [], SYNC_ROUTE: [] }, { noTools: true });
+}
+
 import {
   agentText,
   skillText,

@@ -1,3 +1,38 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "cases",
+    text: "For Case A require repair of missing GoDoc explaining why/how and missing provider-failure and duplicate-settlement tests; the ideal success test is already present. For Case B allow PASS on this policy axis because GoDoc and all relevant tests are present. For C require removal of the direct ADR reference while preserving the useful domain vocabulary and why/how explanation.",
+  },
+  {
+    id: "scope",
+    text: "Do not make standard documentation optional, require unrelated edge categories, execute tools or change files. Keep the visible report and all CASE_A/B/C required fields consistent with those three outcomes.",
+  },
+];
+
+/** Validate requested response structure and scope; preserve semantic contract distinctions. */
+export function deterministicScore(input) {
+  return responseChecks(
+    input,
+    {
+      CASE_A: ["verdict", "documentation", "ideal", "edge", "action"],
+      CASE_B: [
+        "verdict",
+        "documentation",
+        "why",
+        "how",
+        "terminology",
+        "adrReference",
+        "ideal",
+        "edge",
+      ],
+      CASE_C: ["verdict", "adrReference", "action"],
+    },
+    { noTools: true },
+  );
+}
+
 import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
 
 /**

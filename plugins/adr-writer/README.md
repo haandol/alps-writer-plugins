@@ -60,7 +60,7 @@ codex plugin add adr-writer@alps-writer
 
 | Command                          | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/adr-new <category>`            | Apply the admission gate, then author a durable architectural decision directly; assumptions that could change the decision stay in Context or Decision Drivers, while implementation-only choices create no ADR                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `/adr-new <category>`            | Apply the admission gate, then author a durable architectural decision directly; assumptions that could change the decision stay in Purpose or Decision Drivers, while implementation-only choices create no ADR                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `/adr-impl [category]`           | Implement an ADR as vertical user-flow/capability/context Hills. Before the next Hill starts, record the current Hill's context, design/contracts, cross-layer implementation, targeted ideal/edge command, and observed result. Run full project tests and Review Hiking after every Hill has verified results. Comments reuse contract vocabulary but never cite an ADR. An unchanged approved ADR proceeds after a non-blocking plan update; project/domain defaults are resolved automatically and product-policy gaps become one Decision request. With no argument, lists Proposed ADRs and asks which to build |
 | `/adr-impl-refactor [category]`  | Review efficiency, complexity, coupling, duplication, and proportionate reuse; apply only high-confidence local behavior-preserving refactors with before/after tests, using the smallest model-selected review strategy that preserves the safety gates                                                                                                                                                                                                                                                                                                                                                              |
 | `/adr-impl-review [category]`    | Derive the complete implementation scope, write Context, classify question-level diagram requirements, and review each vertical Container/Hill through Component detail and focused Code diff/excerpt evidence. Select `standard` or `full` by risk and open the validated report through a content-fingerprinted local URL. Comprehension questions are optional and appear only on request or for high-load/broad reviews (report-only)                                                                                                                                                                             |
@@ -169,7 +169,26 @@ and detailed audit disclosures are omitted. The full evidence stays in HTML.
 
 Use `/report-writer` (or `$report-writer` in Codex) for standalone reports. Review,
 sync, rollup and implementation skills also load it before final human delivery.
-The skill organizes content by domain with at most four peer units, uses Mermaid
-for meaningful relationships, and reviews prose, worked calculations, paragraph
-breaks and source support. Its helper renders HTML or Markdown without installing
-packages. Existing structured review artifacts remain complete audit inputs.
+The opening connects the concrete problem, answer, and material limitations.
+Domains have at most four peer units and state their outcome before behavior
+and evidence. The skill uses Mermaid for meaningful relationships and checks
+reading order, prose, worked calculations, paragraph breaks, and source support.
+Its helper renders HTML or Markdown without installing packages. Existing
+structured review artifacts remain complete audit inputs.
+
+ADR authoring keeps the required sections: Purpose opens with the problem,
+intended outcome, and a brief direction preview; the adjacent Decision Drivers
+state all currently applicable selection criteria; Decision connects the choice
+to its discriminating reason before the exact requirement contract. Current
+reasons stay in the body even when the log explains their role in a change. The author
+and reviewer check both a fast read of the openings and the complete document.
+The Decision Digest likewise presents intent and choice before category or score.
+
+Purpose preserves the judgment context agents need for unspecified details:
+whose problem matters, the intended outcome, and supplied priorities or scope.
+Agents can choose purpose-aligned reversible details within the explicit
+contract and authority; intent cannot justify new policy or scope. Reports
+explain how material choices and evidence serve that original purpose. This
+adds no fixed framework headings, approval stage, or schema fields.
+The ADR structure checker also accepts legacy `Context`; a heading-only rename
+preserves the ADR's content and Status. C4 Context and agent context keep their names.

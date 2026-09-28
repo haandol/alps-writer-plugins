@@ -6,7 +6,7 @@ Date: 2026-08-15
 
 Accepted (2026-09-02)
 
-## Context
+## Purpose
 
 ALPS PRD의 High-Level Architecture는 제품과 시스템의 전체 경계를 설명해야 한다. C4 Context와 Container는 사용자, 외부 시스템과 주요 실행 경계를 한눈에 보여주지만, 이 Section에 프레임워크·SDK·ORM·내부 배포 도구까지 함께 기록하면 코드에서 다시 찾을 수 있는 구현 사실이 PRD로 올라온다.
 

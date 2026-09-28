@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the adr-authoring/deci
 category. Each ADR body describes only the current state, while the timeline of "what
 changed and why" accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-09-28 — 의도와 수용 판정 기준을 구현 전에 연결
+
+- **Current ADR**: [present-decision-digest-and-semantic-diff](./0001-present-decision-digest-and-semantic-diff.md)
+- **Change type**: requirement rule change
+- **What**: 계약별 관찰 기준 → 의도 연결, 증거 종류, 필수·탐색적 평가 구분과 수용 판정 규칙을 포함한 사전 계약을 제안했다.
+- **Why**: 구현이나 평가 결과에 맞춰 완료 기준을 뒤늦게 정하는 일을 막기 위해서다.
+
 ## 2026-09-21 — 필요한 정의를 ADR 루트 용어집에 보존
 
 - **Current ADR**: [present-decision-digest-and-semantic-diff](./0001-present-decision-digest-and-semantic-diff.md)

@@ -28,6 +28,18 @@ Note that the ADR row's "7-day" stays intact rather than blurring into "a short 
 
 ### Harnesses are removable; artifacts are authoritative
 
+Intent is durable because requirements leave room for autonomous judgment.
+An agent should be able to recover whose problem a decision serves, the outcome
+to protect, and any stated scope or priority before choosing an unspecified
+detail. That context narrows the set of suitable choices and reduces the chance
+of a locally reasonable implementation pursuing a different purpose.
+
+`Purpose` supplies this judgment context; the requirement contract fixes what
+must hold. Intent helps choose within the contract and authorized scope, but
+does not override explicit rules or authorize new policy. The boundary is about
+interpretation, not a new DDD context or a second source of authority. Preserve
+it in the owning artifact so it remains available after plugin removal.
+
 Skills, hooks, reviewers, reports, and evals are a management harness over the
 abstraction ladder. They are not another rung and do not own durable product or
 implementation context. Removing the plugin leaves each level readable:
@@ -190,7 +202,7 @@ References are **written directly on neither edge (PRD↔ADR, ADR↔code).** PRD
 
 - **No ADR → code references**: never write files, functions, or line numbers in an ADR. For the detailed rule see [`authoring-rules.md`](./authoring-rules.md#code-references--folder-level-only).
 - **No code → ADR references**: never leave an ADR ID or path in comments, constants, or imports. ADR numbers move through split / rollup / supersede, so code holding an ADR ID forces a cascade of code edits on a structural change even when the decision did not change.
-- **No ADR → PRD references**: never write an ALPS file path, section number, or feature ID in the ADR body (Context and Related included). An ADR _absorbs_ the PRD's motivation but never _points at_ it — because after handoff the ADR must stand alone even when the legacy PRD is stale, moved, or absent. Never copy the PRD's user stories or acceptance-criteria prose into an ADR either; transfer independently reviewable obligations at ADR resolution.
+- **No ADR → PRD references**: never write an ALPS file path, section number, or feature ID in the ADR body (Purpose and Related included). An ADR _absorbs_ the PRD's motivation but never _points at_ it — because after handoff the ADR must stand alone even when the legacy PRD is stale, moved, or absent. Never copy the PRD's user stories or acceptance-criteria prose into an ADR either; transfer independently reviewable obligations at ADR resolution.
 - **No PRD → ADR references**: an ALPS document never writes a specific ADR ID or path in its body. Handoff evidence is ephemeral, and the legacy PRD does not track downstream artifacts.
 - **When an ADR decision changes, the code changes. A PRD edit alone changes nothing after handoff.** Only an explicit re-import may propose an ADR contract change, and the existing ADR remains authoritative until that change is approved. The reverse (a code change dragging the ADR, or an ADR change dragging the legacy PRD) must never happen.
 - **Keep the linkage in the external mapping layer**: [`docs/adr/.mapping.json`](./structure.md#the-adr-registry-mappingjson) records the ADR index (categories → adrs, each with path, status, summary) and the `dependsOn` between categories in one place. **PRD references are not stored in the mapping** — adr-writer does not reference ALPS. ADR↔code is likewise not pointed at from the body (the code is searched for as needed), and this mapping is the only coupling point joining categories, ADRs, and dependencies.
@@ -261,8 +273,15 @@ Status is **not a value a human asks about and changes by hand, but one the cycl
 
 ### Where evolution history lives — decision-log.md
 
+The ADR body keeps the current Purpose, all currently applicable Decision
+Drivers, the adopted choice, its rationale, and the complete requirement
+contract together. This includes still-valid reasons established before the
+latest revision. A reader must understand the current decision from this ADR
+alone. The log explains how and why the decision changed over time; it never
+becomes the sole owner of a reason that still justifies the current choice.
+
 An ADR body is **a requirements and architecture document describing the current admitted decision and contract**, not the current shape of the code. State the final decision directly: "Amazon Bedrock is the external model-provider boundary", not "the direct API client was replaced by Bedrock and the old client is no longer used." Timeline narration, replaced implementation identifiers, previous values, and migration steps belong outside the current-state body. When the same decision evolves, **overwriting the existing ADR to current state (edit-in-place) is the default**, and if that transition is major (replacing the adopted alternative, changing the core algorithm or architecture, inverting a Driver, retirement), leave one line, newest first, in the per-category `docs/adr/<category>/decision-log.md`. Create a new ADR (a supersede) only when the decision topic forks and the old decision must coexist as a separate record (for the judgment call see [`authoring-rules.md` "Changing an ADR — edit-in-place vs supersede"](./authoring-rules.md#changing-an-adr--edit-in-place-vs-supersede)).
 
 **Three layers preserve different things**: the ADR body = current state / `decision-log.md` = the timeline of major changes / Git = the verbatim diff. The log is a **convention file** rather than an ADR, so it is not registered in `.mapping.json` and the deterministic harness does not check it — for the recording criteria and format see [`authoring-rules.md` "Decision log (decision-log.md)"](./authoring-rules.md#decision-log-decision-logmd), and for the directory and non-indexing policy see [`structure.md`](./structure.md#decision-log-decision-logmd--a-convention-file-not-registered-in-the-mapping).
 
-<!-- adr-writer:rules-version 0.8.27 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.8.28 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
