@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the reporting/domain-n
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-09-28 — 보고서 기능을 adr-writer에서만 제공
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 두 플러그인의 공통 보고서 스킬·세션 지침 제공 → adr-writer만 보고서 기능을 제공하고 alps-writer의 보고서 의존을 제거한다.
+- **Why**: 두 플러그인을 함께 설치할 때 같은 스킬과 지침이 중복 노출되는 문제를 없애고, 리뷰·평가를 담당하는 플러그인에 보고서 책임을 둔다.
+
 ## 2026-09-20 — 보고서 작성에서 핵심 내용 퀴즈 생성
 
 - **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)

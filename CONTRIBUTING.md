@@ -283,13 +283,14 @@ Explain why this change is needed.
 
 ### Shared report-writing changes
 
-Edit `shared/report-write/`, not the generated plugin copies. Run
+Edit `shared/report-writer/`, not the generated adr-writer copy. Run
 `pnpm report-skill:sync` and `pnpm report-skill:check`. The dependency-free Mermaid
 implementation remains in the ADR scripts; the sync step distributes it with the
 standalone skill. Global installation is an explicit
 `node scripts/sync-report-skill.mjs --global`, never a build side effect.
 
-Test report hierarchy, evidence coverage, safe rendering and both plugin hooks.
+Test report hierarchy, evidence coverage, safe rendering and the adr-writer report hook.
+Verify that alps-writer has no report skill, hook, or report-writer dependency.
 Inspect the actual report for paragraph flow, line wrapping, diagram semantics
 and source support; a structural pass is not an editorial pass.
 

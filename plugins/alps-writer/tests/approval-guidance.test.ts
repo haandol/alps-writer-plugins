@@ -73,11 +73,14 @@ test("Lite reuses Full's focused-question authoring without changing Full", () =
   const server = read("src/index.ts");
   const documents = read("src/tools/documents/service.ts");
 
-  assert.match(fullSkill, /ask the user 1-2 questions/i);
+  assert.match(fullSkill, /ask one focused question or at most two closely related questions/i);
+  assert.match(fullSkill, /only when required information is missing/i);
   assert.match(fullOverview, /Ask ONE or at most TWO focused questions/i);
   assert.doesNotMatch(`${fullSkill}\n${fullOverview}`, /inference-first|Ask ZERO/i);
 
   assert.match(liteSkill, /same conversational authoring flow as Full ALPS/i);
+  assert.match(liteSkill, /Sections 2 and 4 start with AI proposals/i);
+  assert.match(liteSkill, /ask only for unresolved protected product decisions/i);
   assert.match(liteOverview, /Ask one focused question, or at most two closely related questions/i);
   assert.match(server, /same conversational approval pattern as Full ALPS/i);
   assert.match(documents, /Ask 1-2 focused questions at a time/i);

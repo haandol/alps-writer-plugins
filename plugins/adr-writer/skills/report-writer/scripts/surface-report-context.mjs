@@ -9,7 +9,7 @@ try {
 }
 const skill = fileURLToPath(new URL("../SKILL.md", import.meta.url));
 const directive = [
-  "[Report-writing directive] Before writing or revising a human-facing report, read and apply the report-write skill at " +
+  "[Report-writing directive] Before writing or revising a human-facing report, read and apply the report-writer skill at " +
     skill +
     ". Reuse it if already loaded in this context.",
   "This applies to code, pull request, ADR, architecture and document review results even when the user does not separately request a report, plus evaluations, audits, sync and rollup in every requested format.",

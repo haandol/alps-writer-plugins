@@ -6,8 +6,6 @@ disable-model-invocation: true
 
 # alps-init
 
-> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
-
 Start authoring an ALPS (PRD).
 
 When jargon, an uncommon term/acronym, or an expression that cannot be written out
@@ -39,7 +37,7 @@ Check missing definitions before completion; keep all nine numbered sections.
    - After loading an existing document, call `mcp__alps-writer__get_alps_document_status`, summarize the completed sections once, and resume at the first section in that order that is not `✅ Written`.
    - Do not reopen or re-confirm a completed unchanged section unless the user requests a full review or an edited prerequisite requires that section to be revisited.
 6. From the selected starting point:
-   - `get_alps_section_guide(N)` → `get_alps_section(N)` → ask the user 1-2 questions → show a concise plain-text approval digest and confirm → call `save_alps_section(N, ...)` once per approved `X.n` subsection → move to the next section only once confirmed
+   - Read `get_alps_section_guide(N)` and `get_alps_section(N)`. Reuse supplied context; ask one focused question or at most two closely related questions only when required information is missing. Then show a concise plain-text approval digest, confirm, and call `save_alps_section(N, ...)` once per approved `X.n` subsection before advancing.
    - In batch mode, repeat the guide/read step for every included section before drafting, present the sections as separate approval units, and save them separately after approval.
    - Never skip an incomplete section at your own discretion. Even one that looks trivial must be seen and approved by the user before moving on.
    - The digest must remain readable as raw text. Label the approval unit, then show only its purpose/user value, scope and non-goals, mandatory requirements, contract-bearing values and rules with their basis, success or demo outcome, and unresolved questions. End with clear approve, revise, and defer choices.

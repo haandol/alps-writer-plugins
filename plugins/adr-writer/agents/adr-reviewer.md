@@ -11,7 +11,7 @@ definitions or changing review-only permissions.
 
 # adr-reviewer
 
-Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
+Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-writer/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
 
 Inspect an ADR draft and its mapping change and return only the review result. Never edit anything — the caller (main session or slash command) reads the result and fixes it. The caller chooses whether this role runs in a separate context.
 
@@ -21,7 +21,10 @@ Inspect an ADR draft and its mapping change and return only the review result. N
 - When a human hand-edited an ADR and wants a second opinion
 - When the user asks for an independent read of an ADR `/adr-new` just wrote
 
-**Not from `/adr-new`.** That command judges its own draft against the same rules (its step 6(b) walks the `authoring-rules.md` review checklist), because its author was walked through those rules one turn earlier — a review there re-derives a judgment just made. So the ADRs reaching this agent are ones **nobody holds an authoring context for**: edited by hand, written by another session, or inherited. Assume nothing about what the author was told, and evaluate every rule below.
+`/adr-new` defaults to its own checklist pass and may select this role when length,
+novelty, uncertainty, or a known blind spot warrants an independent read. In every
+invocation, assume nothing about what the author was told; ground the result in
+the assigned ADR and rules, without relying on the author's earlier conclusion.
 
 The caller passes:
 

@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash
 
 # adr-impl-review-report-writer
 
-Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
+Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-writer/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
 
 Turn verified review results into the narrative source for
 `implementation-review.md`. Never invent new defects or change a reviewer's
@@ -56,7 +56,7 @@ the whole implementation:
 8. Which ADR decisions and contract rows are accounted for, and what did the implementation do for each one?
 9. Which tests ran and what did they prove?
 10. What risk remains unverified?
-11. Which core concepts should the common report-write comprehension workflow turn into questions that help the reader understand the implementation?
+11. Which core concepts should the common report-writer comprehension workflow turn into questions that help the reader understand the implementation?
 
 Start with `Abstract`:
 
@@ -106,7 +106,7 @@ make a suggestion look like a blocker.
 
 Use progressive disclosure. The default report is concise, including in full
 mode and for PASS. Begin with the answer, then organize the human-facing HTML
-by domain and reading depth through report-write. Within the owning domain,
+by domain and reading depth through report-writer. Within the owning domain,
 connect related ADRs and context, implementation methods and algorithms,
 self-validation methods and results, limitations, conclusions, and any
 comprehension check. Preserve the complete audit schema below without copying
@@ -217,7 +217,7 @@ preserved behavior directly when the change is a refactor.
   optional.
 - Introduce background just in time.
 - Generate `Comprehension check` through
-  `${CLAUDE_PLUGIN_ROOT}/skills/report-write/references/comprehension.md`.
+  `${CLAUDE_PLUGIN_ROOT}/skills/report-writer/references/comprehension.md`.
   That shared workflow owns core-content selection, medium difficulty,
   question limits, omissions, and self-check behavior for every report.
   Use before/after behavior, causal paths, contracts, and important boundary
@@ -347,7 +347,7 @@ derive the repair guidance from that contract.
 
 ## Final report handoff
 
-Apply `report-write` to the final human-facing report after the canonical audit
+Apply `report-writer` to the final human-facing report after the canonical audit
 inputs are complete. The paper-section source schema remains available for
 validation; use domain-scoped drill-down for delivery instead of copying those
 sections into a flat page. Keep all required evidence, verdicts, comprehension

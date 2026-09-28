@@ -6,7 +6,7 @@ argument-hint: "[category-or-adr-path?]"
 
 # adr-review
 
-> **Review results**: Apply [report-write](../report-write/SKILL.md), including when the user asks only for an ADR review.
+> **Review results**: Apply [report-writer](../report-writer/SKILL.md), including when the user asks only for an ADR review.
 
 Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Its absence is normal; preserve it as supporting material, not an indexed ADR.
@@ -29,7 +29,7 @@ Review ADRs that already exist **as documents** and return a punch list. With no
 >
 > Reach for this one when you want ADR quality judged **without reading code** — a periodic audit, an inherited ADR set, or a check after hand-editing several ADRs. Since it never opens the codebase, it is far cheaper than `/adr-sync` and does not care whether the code exists yet.
 >
-> **This is the review path for an ADR nobody holds an authoring context for.** `/adr-new` does not call a reviewer: its author was walked through these same rules one turn before writing, so it self-checks at its step 6 and saves. That context dies with the session — so the moment an ADR is **edited by hand, changed by another session, or inherited**, nobody knows what its author was told, and this command is what supplies the missing independent read. Run it when the user asks, not on a schedule.
+> **This is the review path for an inherited or hand-edited ADR.** `/adr-new` defaults to self-check and may use an independent reviewer when risk warrants it. This command applies the document-review contract to existing ADRs without relying on their authoring context. Run it when the user asks, not on a schedule.
 
 > **Report-only**: never edit an ADR, `.mapping.json`, or code. Return findings and let the user decide. That is what makes a full sweep safe — a sweep that also edited would fan one misjudgment across every ADR at once.
 
@@ -187,7 +187,7 @@ This command stays report-only. Route what the user approves:
 - **R18a (a missing requirement value or rule)** → this needs the user, not a guess. The code cannot tell you whether a value is a contract, so ask what the requirement is and record it with its basis (`authoring-rules.md` "Concrete numbers" / "Non-numeric requirements"). **Never invent a number.**
 - **R12/R13/R14 (admission failure, weak gray zone, Drivers, alternatives)** → if the core subject is a replaceable implementation means, recommend retiring the ADR and moving useful detail down; otherwise strengthen the admitted decision.
 - **A contradiction between ADRs** → the user rules on which value holds; then whichever ADR changes gets a `decision-log.md` line if the change is major (`authoring-rules.md` "What to log — minor vs major").
-- **A wrong category boundary or a decision split across categories** → `/adr-sync` (its step 3.5 owns category realignment).
+- **A wrong category boundary or a decision split across categories** → `/adr-sync`; its `references/repository-hygiene.md` "Category slice integrity" rules own category realignment.
 - **Anything needing the code** → `/adr-sync [category]`, or `/adr-impl-review [category]` when the question is whether the implementation honored the decision.
 
 ## Prohibited

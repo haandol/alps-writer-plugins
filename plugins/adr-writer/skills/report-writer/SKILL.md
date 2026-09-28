@@ -1,5 +1,5 @@
 ---
-name: report-write
+name: report-writer
 description: Write reports and present review results in any requested format. Use for code, pull request, ADR, architecture, or document reviews, as well as reports, audits, evaluations, and synchronization results. Apply even when the user asks only for a review. Organize findings by domain with at most four peer units, clear paragraphs, evidence-grounded prose, and explanatory Mermaid diagrams.
 argument-hint: "[report-topic-or-source] [format]"
 ---
@@ -98,49 +98,20 @@ force C4 diagram types or technical-layer headings onto every report.
   material. If rendering fails, identify the limitation rather than calling the
   diagram verified or substituting an invented picture.
 
-## Review prose and reading layout
+## Review and deliver
 
-### Meaning and continuity
+Apply the loaded [editorial review](references/editorial-review.md) and
+[format and layout](references/format-and-layout.md) guidance to the latest whole
+output, including folded details. Those references own prose, continuity,
+quantitative examples, paragraph spacing, wrapping, and the High/Medium/Low
+editorial checks; do not repeat their checklists in another report artifact.
 
-Remove context-free introductions, exaggerated claims, ornamental terminology,
-repetitive contrasts or conclusions, and transitions that add no meaning. Keep
-useful conversational signals and supported narrative detail. Explain unfamiliar
-terms where first needed, and make actors, conditions, actions, and results clear.
-
-Read across paragraph and section boundaries: the reader must have the context
-needed for the next example or judgment. Do not make individual sentences sound
-smoother while leaving a missing premise or unsupported causal claim.
-
-### Paragraphs, line breaks, and spacing
-
-- Break paragraphs when the actor or topic changes, or when introducing a new
-  example or condition. Keep connected conditions, causes, and results together.
-  Do not turn every sentence into a separate line or fragment connected prose.
-- Distinguish semantic paragraph breaks from visual wrapping. Adapt text width,
-  line height, and paragraph spacing to the format and viewport. Do not insert
-  hard breaks merely to meet a fixed character count.
-- Check numbers and units, conditions and negations, and identifiers as reading
-  units. Avoid awkward splits that obscure their meaning. Do not alter quoted
-  evidence, source code, or contract meaning just to make a line fit.
-- Inspect spacing around headings, lists, tables, figures, labels, and captions.
-  Check the actual supported screen and export layouts for stranded headings,
-  dense paragraphs, clipped text, or awkwardly split explanations.
-
-### Completion checks
-
-- Read the final artifact in the reader's order, including its title, hierarchy,
-  prose, diagrams, tables, and folded details. Check that each level answers its
-  own question and supplies a useful route to supporting detail.
-- Check maximum fan-out, evidence completeness, links, wrapping, and rendering
-  separately from meaning. Word scans, sentence counts, and AI-detection scores
-  are not proof of clear prose or successful semantic review.
-- Repair material factual, logical, or reading-flow problems and inspect the
-  affected transitions again. Do not weaken evidence, downgrade an unresolved
-  issue, or invent certainty to claim completion.
-- Report the changes and verification actually performed. Distinguish missing
-  evidence and unverified rendering, and do not claim independent review when
-  only self-review occurred. Do not introduce paid calls or external publication
-  solely to satisfy this writing workflow without existing authorization.
+Verify hierarchy, complete evidence, links, and actual rendering separately from
+semantic review. Fix supported material issues and recheck affected transitions.
+Never weaken findings or invent evidence to pass. Report the changes and checks
+actually performed, with unresolved evidence or rendering limits. A self-review
+is not an independent review. Do not introduce paid calls or publication solely
+to satisfy this workflow without existing authorization.
 
 For HTML or Markdown, use [the report document contract](references/report-document.md)
 and `scripts/render-report.mjs` when a structured output helps validate hierarchy

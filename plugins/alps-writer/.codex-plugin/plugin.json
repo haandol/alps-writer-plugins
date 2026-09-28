@@ -15,7 +15,7 @@
   "interface": {
     "displayName": "ALPS Writer",
     "shortDescription": "Write guided Full or Lite product requirements",
-    "longDescription": "Create and resume nine-section Full ALPS documents or four-section Lite ALPS documents for mockups and PoCs, with guided questions, explicit approval, dependency tracking, Markdown export, and an optional Full ALPS handoff to ADR Writer. Human-facing reports use the shared domain-scoped report-writing skill.",
+    "longDescription": "Create and resume nine-section Full ALPS documents or four-section Lite ALPS documents for mockups and PoCs, with guided questions, explicit approval, dependency tracking, Markdown export, and an optional Full ALPS handoff to ADR Writer.",
     "developerName": "haandol",
     "category": "Developer Tools",
     "capabilities": ["Interactive", "Read", "Write"],
@@ -24,11 +24,9 @@
       "Start a new ALPS product requirements document.",
       "Start a Lite ALPS document for a mockup or PoC.",
       "Resume my existing ALPS document.",
-      "Convert the approved ALPS features into ADR drafts.",
-      "Write a clear report with domain-scoped drill-down, evidence, and Mermaid explanations."
+      "Convert the approved ALPS features into ADR drafts."
     ],
     "brandColor": "#0F766E",
     "screenshots": []
-  },
-  "hooks": "./hooks/hooks.json"
+  }
 }

@@ -188,7 +188,7 @@ test("shared instruction changes select the appropriate suites and metadata come
   assert.ok(affected.some((c) => c.type === "routing"));
   assert.ok(affected.some((c) => c.type === "execution"));
   assert.equal(selectImpacted(all, ["README.md"]).length, 0);
-  assert.equal(selectImpacted(all, ["shared/report-write/SKILL.md"]).length, all.length);
+  assert.equal(selectImpacted(all, ["shared/report-writer/SKILL.md"]).length, all.length);
   for (const e of skillCatalog()) assert.ok(readFileSync(e.file, "utf8").includes(e.description));
   assert.throws(
     () => checkReferences("${CLAUDE_PLUGIN_ROOT}/references/missing.md", PLUGIN),

@@ -275,18 +275,18 @@ codex plugin add adr-writer@alps-writer
 /plugin install adr-writer@alps-writer    # ADR plugin (skills + hooks)
 ```
 
-- **alps-writer** runs its MCP server from the committed bundle plus its local `skills/`. Its report-writing SessionStart hook adds a compact style directive; no npm/npx is required.
+- **alps-writer** runs its MCP server from the committed bundle plus its local `skills/`; no npm/npx is required.
 - **adr-writer** ships local `skills/`, `agents/`, `hooks/`, and `templates/adr/`. Codex requires users to review and trust the bundled hook before it runs. No MCP.
 
 The hook script (in adr-writer) is Node ESM (`.mjs`) and reads NDJSON events from stdin per the Claude Code hooks spec. It uses only Node built-ins (no extra deps), so the plugin requires nothing beyond a Node.js >= 24 runtime.
 
 ### Shared report-writing skill
 
-`shared/report-write/` owns the common English skill, editorial guidance, formatting
+`shared/report-writer/` owns the common English skill, editorial guidance, formatting
 rules, and Node-only report helper. `scripts/sync-report-skill.mjs` copies it into
-both plugins; its Mermaid helper is copied from the existing ADR diagram module.
+adr-writer only; its Mermaid helper is copied from the existing ADR diagram module.
 Edit the canonical source, then synchronize. `report-skill:check` rejects drift.
-Use `--global` only when updating the user-level `~/.agents/skills/report-write`;
+Use `--global` only when updating the user-level `~/.agents/skills/report-writer`;
 normal builds never write to the user's home directory.
 
 Review reports and supporting artifacts belong in a unique per-run directory
@@ -296,8 +296,11 @@ or the ADR index. Consumer projects follow the shared skill's local ignore
 setup so review-only runs do not modify tracked configuration. Existing runs
 remain available until the user chooses to remove them.
 
-Both plugins advertise report-write through SessionStart independently of the ADR
-mapping. All report-producing skills and review roles load it for the final human
+Only adr-writer includes report-writer and advertises it through SessionStart
+independently of the ADR mapping. ALPS Writer has no report skill, report hook, or
+report-writer dependency; installing both plugins exposes the report skill and
+directive once per session event. ADR Writer's report-producing skills and review
+roles load it for the final human
 presentation, including code, PR, ADR, architecture and document review requests
 that do not explicitly ask for a report. The owning workflow still controls
 inspection, verdicts, severity and edit permissions. The packaged skill directory

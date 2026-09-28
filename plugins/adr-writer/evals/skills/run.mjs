@@ -128,7 +128,7 @@ export function selectImpacted(cases, paths) {
     cases.filter((c) => c.type === "classification").map((c) => ({ ...c, name: c.id })),
   );
   const shared = paths.some((p) =>
-    /^(shared\/report-write\/|plugins\/(adr-writer|alps-writer)\/skills\/report-write\/|plugins\/adr-writer\/evals\/(skills|lib)\/)/.test(
+    /^(shared\/report-writer\/|plugins\/adr-writer\/skills\/report-writer\/|plugins\/adr-writer\/evals\/(skills|lib)\/)/.test(
       p,
     ),
   );

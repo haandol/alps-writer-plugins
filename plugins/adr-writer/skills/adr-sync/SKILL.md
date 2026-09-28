@@ -6,7 +6,7 @@ argument-hint: "[category?] [--quick]"
 
 # adr-sync
 
-> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+> **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Its absence is normal; preserve it as supporting material, not an indexed ADR.
@@ -37,6 +37,10 @@ If the argument is a category, target only that category (`/adr-sync auth`).
 
 ### 1. Load the index and mapping
 
+Use the repository's rule documents when present; otherwise use the matching
+`${CLAUDE_PLUGIN_ROOT}/templates/adr/` files. Reuse unchanged sections already
+loaded in this context. Load conditional references only on their active path.
+
 - Read `concepts.md` (the abstraction ladder, the gray zone, the dependency model, Status and its automatic transitions), `docs/adr/README.md` (the index and the ADR template), `docs/adr/authoring-rules.md` (authoring rules and the review checklist), and `docs/adr/structure.md` (directory and mapping policy). In a repo seeded before the README/concepts split, all of the concepts material sits inside `README.md` — read it there instead
 - Read `docs/adr/.mapping.json` (the single ADR index — categories → adrs[] with path, status, summary, plus `dependsOn`). The mapping stores neither ADR↔code paths nor a PRD reference — locate the code an ADR governs by **reading the ADR's Decision body and searching the repo each time** (see "Finding the related code" below).
 - Enumerate every ADR file on disk: **only `NNNN-*.md` (ADR files that start with a number)** under `docs/adr/<category>/`. An ADR file on disk that is absent from `.mapping.json`'s adrs[], or an adrs[] path pointing at a file that does not exist, is itself drift (two-way disk↔mapping consistency). **`decision-log.md` is a convention file, not an ADR, so exclude it from this enumeration** — it is not registered in the mapping (`structure.md` "Decision log") and must never be reported as orphan drift. (The deterministic harness likewise does not enumerate this file as an ADR, since it does not start with `NNNN-`.)
@@ -59,7 +63,7 @@ If `docs/adr/.mapping.json` does not exist yet or is empty, infer category candi
 
 For each ADR, extract the adrs[] summary from `.mapping.json` (the one-line Key Decision) and grep the scope narrowed by "Finding the related code". Mark the repository result **In Sync**, **Drift Suspected**, or **Unverified**. `In Sync` means ADR ↔ repository implementation only.
 
-Quick mode performs only this step plus the index-based **detection and proposal** of stale `fN` naming in 3.7 (detecting stale `fN` naming from the adrs[] paths in `.mapping.json`) — it skips the remaining 3.x deep checks and any actual file moves.
+Quick mode performs only this step plus the index-based **detection and proposal** of stale `fN` naming from the adrs[] paths in `.mapping.json`; it skips Pass 2 and any actual file moves.
 
 If those paths reveal stale `fN` naming, read `references/repository-hygiene.md` completely and apply only its "Canonical stale Feature-ID naming" detection and proposal rules. Do not read that reference or perform repository-hygiene checks when no candidate exists.
 
@@ -191,8 +195,8 @@ be rendered as `Unchanged`.
 ## Notes
 
 - An ADR records **why this decision was made.** A small bug fix or style change is not a reason to update an ADR.
-- Numbers increase sequentially within a category. A number vacated by a split stays as a gap (never renumber). Sync does not rearrange numbers — closing gaps (renumbering) is a step performed only by `adr-rollup` when it merges a chain and deletes ADRs. **The canonicalization in 3.7 is not a renumber** — removing an `fN-` filename prefix and re-keying a folder leave the number (`NNNN`) untouched, so they do not conflict with the renumber ban above.
-- The Feature-ID naming canonicalization in 3.7 only detects and proposes even under `--quick` (the adrs[] paths in `.mapping.json` alone reveal stale naming) — in both modes the actual move happens only after user confirmation.
+- Numbers increase sequentially within a category. A number vacated by a split stays as a gap (never renumber). Sync does not rearrange numbers — closing gaps is exclusive to `adr-rollup`. The "Canonical stale Feature-ID naming" path in `references/repository-hygiene.md` removes an `fN-` prefix or re-keys a folder while preserving `NNNN`; it is not a renumber.
+- Feature-ID naming detection may run under `--quick` from the mapping paths alone. Quick mode only detects and proposes; in either mode, an actual move requires user confirmation under `references/repository-hygiene.md`.
 - Apply the **ADR admission gate before suggesting `[New ADR needed?]`**. A library, SDK, framework, credential/auth adapter, or module-structure choice that preserves the same contracts and boundaries is ordinary implementation discretion, not missing architecture.
 - `/adr-sync` never expands into a live infrastructure audit. IaC and repository-local configuration are code evidence; cloud APIs, consoles, clusters, remote state, databases, and SaaS administration are outside scope even when access is read-only.
 - After admission, apply the **decision identity check before suggesting a new ADR**. Search the mapping summaries and plausible ADR bodies for the same architectural question and owned boundary. If one current-state record can hold the intended result, route the change to that existing ADR; provider/alternative changes and reversals are edit-in-place, not new identities. Suggest a new ADR only when no owner exists or the topic truly forks.

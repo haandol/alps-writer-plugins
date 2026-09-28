@@ -6,7 +6,7 @@ argument-hint: "[adr-path-or-category] [--base <ref>]"
 
 # adr-impl-refactor
 
-> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+> **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Refactor an ADR implementation conservatively before it is declared complete. One or more model-selected review passes find opportunities; the main session applies only candidates that pass every safety gate. The final `/adr-impl-review` remains report-only and reviews the resulting code.
 
@@ -32,7 +32,7 @@ If the selected diff mixes several implementations and cannot be mapped cleanly 
 
 Create an artifact directory at
 `.adr-review/<timestamp>-adr-impl-refactor-<adr-slug>-<unique>/` under the reviewed
-project, following [review artifact storage](../report-write/references/review-artifacts.md)
+project, following [review artifact storage](../report-writer/references/review-artifacts.md)
 to verify Git exclusion before writing artifacts.
 
 ## 2. Establish the test baseline

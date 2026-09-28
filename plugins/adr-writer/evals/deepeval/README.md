@@ -234,7 +234,7 @@ pnpm test
 
 ## Human report delivery
 
-Apply `../../skills/report-write/SKILL.md` to the final human-facing report.
+Apply `../../skills/report-writer/SKILL.md` to the final human-facing report.
 The generated HTML and JSON preserve the original evaluation evidence; when the
 HTML uses the legacy layout, keep it as an audit source and compose a separate
 domain-scoped final report. Preserve every case, obligation, score, reason,

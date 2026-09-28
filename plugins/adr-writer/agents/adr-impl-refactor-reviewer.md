@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash
 
 # adr-impl-refactor-reviewer
 
-Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
+Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-writer/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
 
 Review the implemented code for decision-neutral improvements. Focus on whether the code does the necessary work efficiently and whether reuse is justified by code that exists now. Never edit code, ADRs, tests, or the mapping.
 

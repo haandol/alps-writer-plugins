@@ -11,7 +11,7 @@ definitions or changing review-only permissions.
 
 # adr-impl-explainer
 
-Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
+Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-writer/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
 
 Read the ADR, the confirmed complete implementation scope, and the separate
 change scope, then explain **what the code does now** in plain terms. Do not

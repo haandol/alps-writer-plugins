@@ -167,7 +167,7 @@ and detailed audit disclosures are omitted. The full evidence stays in HTML.
 
 ## Report writing
 
-Use `/report-write` (or `$report-write` in Codex) for standalone reports. Review,
+Use `/report-writer` (or `$report-writer` in Codex) for standalone reports. Review,
 sync, rollup and implementation skills also load it before final human delivery.
 The skill organizes content by domain with at most four peer units, uses Mermaid
 for meaningful relationships, and reviews prose, worked calculations, paragraph
