@@ -27,11 +27,13 @@ when it also explains a transition in `decision-log.md`. Keep the required schem
 The Decision Digest follows the same intent-to-choice order before classification
 or scoring.
 
-For ADRs, the Golden Circle connection is Purpose (Why), Decision (How), and
-the requirement contract with observable acceptance criteria (What). For
-reports, follow report-writer's corresponding purpose, approach, and evidenced
-result guidance. Preserve the required artifact structure and do not turn the
-three questions into repeated headings or unsupported claims of impact.
+Intent is needed because agents must choose details the document cannot fully
+specify. Explain the user's original problem and intended outcome, and preserve
+supplied scope and priorities so those choices remain directed toward that
+purpose. For ADRs, Purpose and the exact contract bound autonomy. For reports,
+explain how a material autonomous choice serves that intent and what evidence
+supports the result. A familiar framework or tidy heading order is not evidence
+that this judgment context exists.
 
 For example, a **hypothetical** ADR about repeated payments could open Purpose
 with: "A customer may retry a payment after losing the response. The same payment

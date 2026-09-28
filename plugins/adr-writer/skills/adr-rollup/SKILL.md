@@ -112,7 +112,7 @@ Date: <today>
 
 ## Purpose
 
-{why this decision is needed: the affected actor or system, current problem, intended outcome, and brief direction preview; preserve decision-relevant background and assumptions. Follow authoring-rules.md "Reading order — intent before detail". No evolution narration such as "originally it did X, then changed to Y"}
+{why this decision is needed: the affected actor or system, current problem, intended outcome, and supplied scope or priorities that bound future autonomous choices; preserve decision-relevant background and assumptions. Follow authoring-rules.md "Reading order — intent before detail". No evolution narration such as "originally it did X, then changed to Y"}
 
 ## Decision Drivers
 

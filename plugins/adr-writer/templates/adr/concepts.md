@@ -28,6 +28,18 @@ Note that the ADR row's "7-day" stays intact rather than blurring into "a short 
 
 ### Harnesses are removable; artifacts are authoritative
 
+Intent is durable because requirements leave room for autonomous judgment.
+An agent should be able to recover whose problem a decision serves, the outcome
+to protect, and any stated scope or priority before choosing an unspecified
+detail. That context narrows the set of suitable choices and reduces the chance
+of a locally reasonable implementation pursuing a different purpose.
+
+`Purpose` supplies this judgment context; the requirement contract fixes what
+must hold. Intent helps choose within the contract and authorized scope, but
+does not override explicit rules or authorize new policy. The boundary is about
+interpretation, not a new DDD context or a second source of authority. Preserve
+it in the owning artifact so it remains available after plugin removal.
+
 Skills, hooks, reviewers, reports, and evals are a management harness over the
 abstraction ladder. They are not another rung and do not own durable product or
 implementation context. Removing the plugin leaves each level readable:

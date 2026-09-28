@@ -394,21 +394,31 @@ This is not a blanket ban on negative sentences. A prohibition that the current 
 
 ## Reading order — intent before detail
 
-Apply Simon Sinek's **Golden Circle (Why → How → What)** as a causal connection,
-not a replacement document schema. `Purpose` owns Why: the affected actor,
-concrete problem, and outcome worth protecting. `Decision` owns How: the adopted
-architectural approach and why it fits the Decision Drivers. The requirement
-contract and observable evidence express What: the behavior and constraints a
-conforming result must deliver. The result stays at ADR resolution; it is not a
-list of files, functions, libraries, or implementation tasks.
+Intent belongs in an ADR because the contract cannot enumerate every detail an
+agent will decide. `Purpose` records whose problem the decision serves, the
+outcome to protect, and the supplied scope or priorities that bound suitable
+choices. This reduces the risk that an autonomous agent fills a gap with a
+locally reasonable default that pursues a different purpose.
 
-Check the connection in both directions: each major choice should serve the
-stated purpose or an explicit constraint, and its observable acceptance criteria
-should show whether that purpose is met. Existing test success alone does not
-establish fitness for an unstated purpose. Preserve uncertainty and use only
-supported motivation; do not invent a business impact or a numeric target to
-complete the circle. These are meaning checks, not three mandatory new headings
-or additional approval stages.
+Make that context useful for judgment: explain the concrete problem and intended
+outcome, and preserve a stated priority or non-goal when it distinguishes an
+acceptable choice from an unwanted one. Do not invent exclusions or repeat every
+contract in Purpose. This is a boundary for interpreting incomplete detail, not
+a new DDD bounded context, fixed framework, or additional authority.
+
+The requirement contract remains exact. Within it and the authorized scope,
+intent guides reversible implementation choices without routine questions.
+Conventions and convenience do not override the user's purpose. Intent alone
+cannot authorize new policy, weaken a guarantee, or expand scope. When a material
+choice remains ambiguous, ask only for that decision. The shared
+`references/requirement-delegation.md` explains this boundary in detail.
+
+Observable acceptance criteria should check the intended result and relevant
+intent-defeating outcomes, not merely the presence of a feature or a passing
+existing test. Different implementations may meet the same purpose and contract;
+do not pin replaceable details or invent a numeric target to make intent look
+measurable. Evaluate the connection semantically rather than checking for named
+framework headings.
 
 The canonical ADR heading is `Purpose`. Accept legacy `Context` as the same
 section when reading or reviewing existing ADRs. When a permitted edit renames

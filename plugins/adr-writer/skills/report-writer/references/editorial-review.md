@@ -5,34 +5,36 @@ any language or format. Report-only requests remain report-only.
 
 ## Establish the reader's context
 
-### Connect purpose, approach, and result
+### Explain intent as the boundary for judgment
 
-Apply Simon Sinek's **Golden Circle (Why → How → What)** to the explanation:
+A report should make it possible to judge whether an agent's discretionary
+choices served the user's original purpose. Explicit requirements leave details
+open; clear intent reduces the risk of filling those gaps with choices aimed at
+a different outcome. Preserve the affected user, problem, desired result, and
+any supplied priority or scope that materially distinguishes a suitable choice.
+Do not invent intent, incidents, business impact, or exclusions to justify the
+implementation after the fact.
 
-- **Why:** identify the reader's problem or decision and the outcome at stake.
-  Use the supplied intent or verified conditions. Do not invent a benefit,
-  incident, or measured impact to give the report a stronger opening.
-- **How:** explain the relevant approach, behavior, or assessment criteria and
-  why they address that purpose. Use domain mechanisms and evidence; a recap
-  of the author's searches and tool calls rarely answers this question.
-- **What:** state the concrete finding, observed outcome, deliverable, or action
-  and its limits. Distinguish an intended outcome from one actually verified.
-  When test or eval evidence supports acceptance, show which purpose or
-  obligation its criterion checks; test success by itself proves no broader
-  product outcome.
+For each material autonomous choice, explain the relevant intent, the choice
+and its basis, and the observed consequence. Use a concrete example when it
+helps: a hypothetical review assistant may group findings to help a person
+inspect risk, but automatically approving changes to save time exceeds that
+purpose and authority. A passing test or a common convention does not by itself
+show that a choice serves the user's intended outcome.
 
-Keep the answer and material limitation visible in the opening. A short opening
-can connect purpose and answer in one paragraph before explaining the approach;
-an urgent finding can come first. Use the domain hierarchy for depth and do not
-force `Why`, `How`, and `What` headings, repeat the same purpose in every child,
-or add a purpose field to a native schema. A short result may need only one
-paragraph. A missing causal connection calls for explanation or an explicit
-evidence gap, not persuasive filler.
+Distinguish a safe detail chosen within the contract and scope from a protected
+product policy or scope expansion requiring a decision. Several suitable local
+implementations are not a reason to ask for approval. If intent is unclear only
+on a material choice, identify that gap and the smallest needed decision; do
+not label every unspecified detail a missing requirement.
 
-For example, in a hypothetical retry review, the purpose is preventing repeated
-charges, the approach reuses the result for the same payment identity, and the
-verified outcome is one charge in the tested retry situation. If a timeout path
-was not exercised, that test does not establish the outcome for that path.
+Keep the answer and material limitation visible early. Use the existing domain
+hierarchy to connect purpose, behavior, and evidence; no named framework, fixed
+three-part sequence, or extra schema field is required. Review meaning: could a
+reader use this intent to distinguish a plausible but purpose-defeating choice,
+and do the reported acceptance checks actually cover the intended outcome?
+Preserve unverified limits and do not mistake expected benefits for measured
+results.
 
 ### Check continuity at each reading depth
 

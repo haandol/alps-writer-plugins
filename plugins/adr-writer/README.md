@@ -184,9 +184,11 @@ reasons stay in the body even when the log explains their role in a change. The 
 and reviewer check both a fast read of the openings and the complete document.
 The Decision Digest likewise presents intent and choice before category or score.
 
-Simon Sinek's Golden Circle connects Purpose (Why), Decision (How), and the
-requirement contract with observable acceptance criteria (What). Reports use the
-same purpose–approach–result connection within their domain hierarchy. This is
-a writing lens, not a fixed set of report headings or additional schema fields.
+Purpose preserves the judgment context agents need for unspecified details:
+whose problem matters, the intended outcome, and supplied priorities or scope.
+Agents can choose purpose-aligned reversible details within the explicit
+contract and authority; intent cannot justify new policy or scope. Reports
+explain how material choices and evidence serve that original purpose. This
+adds no fixed framework headings, approval stage, or schema fields.
 The ADR structure checker also accepts legacy `Context`; a heading-only rename
 preserves the ADR's content and Status. C4 Context and agent context keep their names.

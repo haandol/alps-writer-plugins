@@ -8,6 +8,13 @@ disable-model-invocation: true
 
 Start authoring an ALPS (PRD).
 
+Preserve intent because later agents must judge details the specification does
+not enumerate. Use the existing problem, User Story, scope, and success fields
+to explain whose outcome matters and which stated priorities bound acceptable
+choices. When interpreting missing or delegated choices, read the plugin-local
+`references/requirement-delegation.md`. Propose details that serve that intent
+within the existing approval boundary; do not invent policy or extra non-goals.
+
 When jargon, an uncommon term/acronym, or an expression that cannot be written out
 plainly appears, apply the overview's optional glossary rules throughout authoring.
 Require the user's meaning at first use when it is not already supplied; do not

@@ -99,6 +99,9 @@ A PRD is expected to be less specific than an ADR. Do not treat every missing
 ADR-resolution fact as an immediate blocker, and do not copy the PRD into an ADR
 unchanged. Before final classification, run a **gap-driven enrichment** pass.
 
+Transfer the problem, intended outcome, and supplied priorities/scope into
+Purpose to bound future autonomous choices without reopening the PRD.
+
 Start with the regeneration test: if the PRD disappeared after handoff, identify
 which missing fact could let rebuilt code violate the Feature contract or leave
 the adopted architectural decision unknowable. Probe these areas only when the

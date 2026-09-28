@@ -30,6 +30,7 @@ Rel(worker, practiceService, "Practices a selected work conversation with")
     <description>
 - Propose every user experience the first PoC must not omit.
 - Give each essential experience a distinct name, user-observable result, and contribution to the Desired Business Impact.
+- Make that contribution useful for judgment: show whose problem and outcome the experience serves, retaining supplied priorities and scope so later details do not pursue a different purpose. Do not invent policy, exclusions, or a separate intent field.
 - Do not require a starting condition, user-action sequence, screen flow, or demo procedure; Section 4 owns those execution choices.
 - Preserve confirmed values, permissions, limits, and failure guarantees when they affect whether an experience is complete.
 - Use only user-visible or otherwise directly observable results. Do not use implementation functions, internal state, technical layers, or subjective impressions.

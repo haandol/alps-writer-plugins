@@ -28,7 +28,8 @@ const groups = [
   ["결정 관리", "작성", "소유권과 승인", ["author-delegation-", "author-routes-"]],
   ["결정 관리", "문서 검토", ["review-"]],
   ["결정 관리", "동기화와 통합", ["sync-", "rollup-", "hook-"]],
-  ["구현 보장", "의존성과 계획", ["impl-blocks-", "impl-plans-", "impl-resolves-"]],
+  ["구현 보장", "의존성과 계획", "선행 상태와 계획", ["impl-blocks-", "impl-plans-"]],
+  ["구현 보장", "의존성과 계획", "의도와 기본값 판단", ["impl-resolves-", "impl-uses-intent-"]],
   ["구현 보장", "완료와 검증", ["impl-completes-", "impl-requires-"]],
   ["구현 보장", "규모와 전달", ["impl-high-", "impl-offers-"]],
   ["구현 보장", "실행 수단", ["refactor-", "bedrock-"]],
@@ -194,19 +195,28 @@ export function saveSkillsReport(directory, report) {
         expanded: runs.some((r) => ["ERROR", "NOT_PROVEN"].includes(r.verdict)),
         paragraphs: [
           summaryText(runs),
-          runs
-            .map(
-              (r) =>
-                `${r.variant} #${r.repeat}: ${statuses[r.verdict]}${r.error || r.notRunReason ? ` — ${prose(r.error ?? r.notRunReason)}` : ""}${
-                  r.checks?.some((c) => !c.pass)
-                    ? ` — ${r.checks
-                        .filter((c) => !c.pass)
-                        .map((c) => `${prose(c.label)}: ${prose(c.detail)}`)
-                        .join("; ")}`
-                    : ""
-                }${r.testResult?.metricsData?.[0]?.reason ? ` — ${prose(r.testResult.metricsData[0].reason)}` : ""}`,
-            )
-            .join("\n\n"),
+          ...["NOT_PROVEN", "ERROR", "NOT_RUN"].flatMap((verdict) => {
+            const selected = runs.filter((run) => run.verdict === verdict);
+            if (!selected.length) return [];
+            const trials = selected.map((run) => `${run.variant} #${run.repeat}`).join(", ");
+            const reasons = [
+              ...new Set(
+                selected
+                  .flatMap((run) => [
+                    run.error || run.notRunReason,
+                    ...(run.checks ?? [])
+                      .filter((check) => !check.pass)
+                      .map((check) => `${check.label}: ${check.detail}`),
+                    run.testResult?.metricsData?.[0]?.reason,
+                  ])
+                  .filter(Boolean)
+                  .map(prose),
+              ),
+            ];
+            return [
+              `${statuses[verdict]} ${selected.length}회 (${trials}). ${reasons.join(" / ")}`,
+            ];
+          }),
         ],
         evidence: [{ id: eid, label: "사례·반복별 판정과 원본 증거 위치", source }],
       };

@@ -208,6 +208,64 @@ test("GEval rejects keyword-only success, local failure cannot be averaged away,
   }
 });
 
+test("intent probes keep record correctness and semantic evidence as independent gates", async () => {
+  const probes = (await catalog()).filter((item) => item.id.startsWith("impl-uses-intent-"));
+  assert.deepEqual(probes.map((item) => item.id).sort(), [
+    "impl-uses-intent-for-file-lookup",
+    "impl-uses-intent-to-bound-discretion",
+    "impl-uses-intent-with-safe-alternatives",
+  ]);
+  const prepared = await main(
+    ["--prepare", "--suite", "classification", "--runs", "1", "--out", temp()],
+    { cases: probes, target: noCall, judge: noCall },
+  );
+  assert.equal(prepared.status, 0);
+  assert.equal(prepared.report.runs.length, probes.length);
+  assert.ok(prepared.report.runs.every((run) => run.verdict === "NOT_RUN" && !run.calls.length));
+  const item = probes.find((entry) => entry.id === "impl-uses-intent-to-bound-discretion");
+  const inconsistent = "검토 편의를 위해 수정을 자동 적용하고 삭제 시점도 정하겠습니다.";
+  const consistent = "중요한 위험부터 보여주되 수정은 하지 않고, 삭제 정책만 확인하겠습니다.";
+  for (const [choice, prose, semantic, expected] of [
+    ["IMPACT_FIRST", inconsistent, 0, "NOT_PROVEN"],
+    ["ALPHABETICAL", consistent, 1, "NOT_PROVEN"],
+    ["IMPACT_FIRST", consistent, 1, "PASS"],
+  ]) {
+    const reply = `${prose}
+=== EVAL-VERDICT: PASS ===
+=== EVAL-FINDINGS ===
+A | choice=${choice}; basis=중요한 위험을 먼저 확인; question=none
+B | choice=KEEP_REVIEW_ONLY; basis=수정 권한 없음; question=none
+C | choice=ASK_RETENTION; basis=정책 미정; question=어떤 보고서를 언제 삭제할까요?
+=== EVAL-END ===`;
+    const localPass = item
+      .score({ output: reply, tail: parseTail(reply), events: [] })
+      .every((check) => check.pass);
+    assert.equal(localPass, choice === "IMPACT_FIRST");
+    let judgeCalls = 0;
+    const result = await main(
+      ["--live", "--suite", "classification", "--runs", "1", "--out", temp()],
+      {
+        cases: [item],
+        target: async () => ({ text: reply, models: ["target-stub"], costUSD: 0 }),
+        judge: async ({ prompt }) => {
+          judgeCalls++;
+          assert.ok(prompt.includes(prose));
+          assert.ok(
+            prompt.includes(item.semanticObligations.find((o) => o.id === "evidence").text),
+          );
+          return judge(item, semantic, prose);
+        },
+      },
+    );
+    assert.equal(result.report.runs[0].verdict, expected);
+    assert.equal(judgeCalls, 1);
+    assert.equal(
+      result.report.runs[0].testResult.metricsData[0].name,
+      "Skill response contract [GEval]",
+    );
+  }
+});
+
 test("semantic input retains transient writes and excludes files materialized by the scorer", async () => {
   const item = (await catalog()).find(
     (c) => c.id === "lite-alps-proposes-solution-from-business-impact",

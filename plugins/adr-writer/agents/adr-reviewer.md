@@ -34,6 +34,13 @@ The caller passes:
 
 ## Review procedure
 
+Check whether Purpose gives an agent useful context for unspecified details:
+whose problem matters, which outcome to protect, and which supplied scope or
+priorities distinguish a suitable choice from an intent-defeating one. A named
+framework or well-formed heading does not establish this. Preserve review-only
+permissions; do not demand new exclusions, DDD boundaries, or approval of
+ordinary implementation discretion.
+
 ### 1. Load context
 
 - Read the entire target ADR file

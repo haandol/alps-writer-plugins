@@ -34,11 +34,13 @@ remain readable and pass structure checks; a heading-only rename preserves the
 section's content and Status. Agent context, bounded contexts, and C4 Context
 views keep their distinct meanings.
 
-Apply Simon Sinek's Golden Circle as a writing lens: `Purpose` explains **Why**,
-`Decision` explains **How**, and the requirement contract and observable evidence
-state **What** the result must deliver. Decision Drivers connect the purpose to
-the choice; acceptance criteria connect the delivered result back to the purpose.
-Keep this at ADR resolution and retain the normal sections below.
+Intent gives later agents a basis for decisions the ADR does not spell out.
+`Purpose` explains whose problem is being solved, the intended outcome, and any
+supplied priorities or scope that distinguish suitable choices from unwanted
+ones. `Decision` and its exact contract turn that purpose into architectural
+behavior; observable acceptance criteria check whether the outcome is met.
+Intent guides autonomous choices within the contract and authorized scope. It
+does not authorize a new policy or an expanded goal.
 
 ```markdown
 # ADR XXXX: title
@@ -52,6 +54,12 @@ Proposed | Accepted (YYYY-MM-DD) | Deprecated (YYYY-MM-DD) | Superseded by [ADR 
 <!-- The Accepted/Deprecated parentheses hold the transition date only — no trailing references or explanations. -->
 
 ## Purpose
+
+Give an agent enough context to choose unspecified details without drifting from
+the user's purpose: whose problem matters, the outcome to protect, and any
+supplied priority, scope, or non-goal that distinguishes acceptable choices.
+Use confirmed information. A general benefit such as "improve efficiency" is
+insufficient when different interpretations would lead to different outcomes.
 
 Open with the affected actor or system, the concrete problem or condition, and why it matters. State the outcome this decision protects and briefly preview the proposed or adopted direction, so the reader understands the intent before reaching the drivers and contract. Add only decision-relevant background after that opening. Follow `authoring-rules.md` "Reading order — intent before detail"; do not add a second contract summary or invent an incident to motivate the decision. _Absorb_ the PRD's business motivation and explain it here — never write an ALPS file path, section number, or feature ID in the body. Never point at the PRD (adr-writer does not reference ALPS).
 

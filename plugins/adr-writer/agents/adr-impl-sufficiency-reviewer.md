@@ -243,6 +243,13 @@ PASS | FIX_REQUIRED | INCONCLUSIVE | BLOCK
 
 ### Notable implementation choices
 
+Check material choices for unstated details against the recorded Purpose as well
+as the explicit contract. A conventional or well-tested choice can still defeat
+the user's intended outcome. Explain that mismatch with an observable effect;
+do not demand approval merely because several suitable implementations exist.
+Intent cannot justify a new protected policy or expanded scope. If the purpose
+does not resolve a material product choice, report the actual ambiguity.
+
 | Selected value or behavior | Code evidence | Why it fits the ADR intent | Why it matters |
 | -------------------------- | ------------- | -------------------------- | -------------- |
 

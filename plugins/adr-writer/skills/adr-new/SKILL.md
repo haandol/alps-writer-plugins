@@ -102,11 +102,13 @@ If the user answers everything at once, take it as given; if they answer briefly
 
 ### 3. Draft the ADR
 
-Use the Golden Circle connection from `authoring-rules.md` "Reading order —
-intent before detail": Purpose (Why), Decision (How), and the requirement
-contract with observable acceptance criteria (What). Author `Purpose`; read
-legacy `Context` as its compatible name. Keep the normal ADR structure and
-preserve background and decision-changing assumptions when renaming.
+Make Purpose useful to an agent resolving unspecified details: preserve the
+user's problem, intended outcome, and supplied priorities or boundaries that
+would change a reasonable choice. Do not stop at an aspirational benefit or
+invent exclusions. Apply the shared requirement-delegation guidance to preserve
+autonomy within the contract and identify only material unresolved decisions.
+Author `Purpose`; accept legacy `Context` without losing its background or
+assumptions. Keep the normal ADR structure.
 
 Follow `concepts.md`, `authoring-rules.md`, and `structure.md` under `docs/adr/` strictly (falling back to the same files under `${CLAUDE_PLUGIN_ROOT}/templates/adr/`).
 

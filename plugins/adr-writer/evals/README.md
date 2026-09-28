@@ -385,6 +385,28 @@ Be honest about the gap when reading a result.
   `/adr-impl-review`: no counterexample was found among the runs executed. Ten
   green runs do not make an eleventh green.
 
+## Intent-guided discretion probes
+
+The `impl-uses-intent-*` cases keep the task, neighboring convention, edit
+authority, and unresolved retention policy fixed while changing Purpose:
+
+- Risk triage should select impact-first grouping.
+- Known-file lookup should select alphabetical grouping.
+- A purpose with no ordering preference permits either reversible choice,
+  without a routine approval question.
+
+All three preserve review-only authority and leave the retention decision to the
+user. Their shared helper validates unique decision records without accepting
+duplicate keys or hidden extra cases. It tolerates field/row ordering and harmless
+whitespace. The unified skill evaluator additionally checks captured tool calls
+and judges the visible explanation with fixed GEval obligations; the legacy
+runner's record checks alone do not establish semantic intent fit.
+
+Prepare these cases without model calls using `pnpm eval:skills --prepare --only
+impl-uses-intent --runs 1 --out <ignored-run-directory>`. The SDK integration
+tests use stub providers to verify that semantic failure and local failure each
+prevent PASS. They do not measure a real model's adherence rate.
+
 ## Human report delivery
 
 Apply `../skills/report-writer/SKILL.md` when presenting evaluation results to a

@@ -355,7 +355,7 @@ test("the authoring rules gate requirements ahead of the code-readthrough filter
   assert.doesNotMatch(rules, /no constants in an ADR/i);
 });
 
-test("the ADR admission gate keeps replaceable implementation means out of every decision path", () => {
+test("the ADR admission gate keeps replaceable implementation means out of skill and agent decision paths", () => {
   const rules = read(path.join(ADR_ROOT, "templates", "adr", "authoring-rules.md"));
   const concepts = read(path.join(ADR_ROOT, "templates", "adr", "concepts.md"));
 
@@ -374,10 +374,6 @@ test("the ADR admission gate keeps replaceable implementation means out of every
   assert.doesNotMatch(concepts, /Secret management strategy/);
 
   const stages = {
-    "hooks/surface-adr-context.mjs": [
-      /ADR admission gate/,
-      /Replaceable implementation choices are exempt/,
-    ],
     "skills/adr-new/SKILL.md": [/Apply the ADR admission gate before eliciting or drafting/],
     "skills/adr-impl/SKILL.md": [/replaceable implementation means changes/],
     "skills/adr-sync/SKILL.md": [/Retire low-level ADR/, /New ADR needed.*admission gate/s],
@@ -413,7 +409,6 @@ test("decision identity is checked before a new ADR is created", () => {
   );
   const impl = read(path.join(ADR_ROOT, "skills", "adr-impl", "SKILL.md"));
   const sync = read(path.join(ADR_ROOT, "skills", "adr-sync", "SKILL.md"));
-  const hook = read(path.join(ADR_ROOT, "hooks", "surface-adr-context.mjs"));
 
   for (const source of [rules, concepts]) {
     assert.match(source, /Decision identity check/i);
@@ -439,8 +434,6 @@ test("decision identity is checked before a new ADR is created", () => {
   assert.match(featureToAdr, /Existing decision changed/);
   assert.match(impl, /same provider-boundary ADR/);
   assert.match(sync, /decision identity check/i);
-  assert.match(hook, /already owns the same architectural question and boundary/);
-  assert.match(hook, /reverting to a former choice/);
 });
 
 // An ADR is read under time pressure by someone deciding whether to trust it, so
@@ -632,20 +625,8 @@ test("README is the index and links to concepts.md, which holds the principle", 
   assert.doesNotMatch(concepts, /^#{1,3}.*\bAGENTS\.md\b/m);
 });
 
-// The compact lifecycle hook seeds the main session even when a user later says
-// "bump 7 turns to 10" without invoking a skill. It must route admitted work to
-// the mapping before code while keeping implementation-only edits exempt.
-test("the lifecycle directive treats a requirement-value change as in-scope", () => {
-  const hook = read(path.join(ADR_ROOT, "hooks", "surface-adr-context.mjs"));
-  assert.match(
-    hook,
-    /requirement value or rule change is admitted even when it looks like a one-line constant edit/,
-  );
-  assert.match(hook, /before code read the full/);
-  assert.match(hook, /update that owner in place/);
-  assert.match(hook, /Keep replaceable libraries, SDKs, adapters, tuning values[^"]*in code/);
-});
-
+// Directive publication and routing guards are exercised through the running
+// hook in hook.test.mjs; this suite owns plugin packaging and skill metadata.
 test("the hook command accepts either Codex or Claude plugin-root variables", () => {
   const hooks = JSON.parse(read(path.join(ADR_ROOT, "hooks", "hooks.json")));
   assert.deepEqual(Object.keys(hooks.hooks), ["SessionStart"]);

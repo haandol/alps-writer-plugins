@@ -325,11 +325,15 @@ major transition. Review both the opening alone and the whole document. The ADR 
 order is owned by `plugins/adr-writer/templates/adr/authoring-rules.md`; report
 presentation is owned by `shared/report-writer/`.
 
-Both use Simon Sinek's Golden Circle as a writing lens. ADR Purpose explains Why,
-Decision explains How, and the requirement contract with observable acceptance
-criteria explains What. Reports connect purpose, approach, and evidenced result
-inside their existing domain hierarchy while keeping the answer visible early.
-This adds no fixed Why/How/What headings, schema fields, or approval stages.
+Intent is durable judgment context for details an agent must decide autonomously.
+Preserve the user's problem, intended outcome, and supplied priorities or scope
+so a plausible local choice does not pursue a different purpose. Purpose and the
+exact contract bound those choices; project conventions and convenience do not
+override intent. Reversible details within the contract and authorized scope can
+be chosen without routine approval. Intent does not authorize new policy or scope;
+ask only when a material choice remains unresolved. This interpretation boundary
+is not a new DDD context, fixed writing framework, schema, or approval registry.
+Reports show how material autonomous choices and evidence serve that intent.
 ADR readers and structure checks accept legacy `Context` as the Purpose section;
 agent context, bounded contexts, and C4 Context views retain their names.
 

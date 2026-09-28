@@ -252,12 +252,14 @@ reader can choose the depth they need. Urgent findings remain visible at the top
 The shared review checks this reading order as well as reader context, worked
 calculations, paragraph breaks, diagrams, and factual/causal support.
 
-ADR and report writing use Simon Sinek's Golden Circle to connect purpose,
-approach, and result. ADRs express Why in `Purpose`, How in `Decision`, and What
-in the requirement contract and observable acceptance criteria. Existing ADRs
-with `Context` remain compatible. Reports express the same connection inside
-their domain hierarchy, keeping conclusions visible early and distinguishing
-intended outcomes from verified results. No fixed Why/How/What headings are required.
+ADR and report writing preserve intent so agents can make unspecified decisions
+within the user's original purpose. `Purpose` records the problem, intended
+outcome, and supplied priorities or scope. The exact contract sets the limits;
+intent helps choose suitable reversible details inside them. Conventions or
+convenience do not justify pursuing a different outcome, inventing policy, or
+expanding scope. Reports connect material autonomous choices and test/eval
+evidence to that intent. Existing ADRs with `Context` remain compatible. No
+named writing framework or new schema is required.
 
 Reports also include one to five medium-difficulty, four-choice questions about
 their core content. The aim is to support understanding and reduce cognitive

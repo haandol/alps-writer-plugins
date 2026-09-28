@@ -36,9 +36,10 @@ node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --o
 
 A domain node names a known responsibility or explicitly identified editorial
 scope. Paragraphs contain plain text with blank lines for semantic breaks.
-Express the Golden Circle connection through these existing paragraphs: the
-purpose the domain serves, the relevant approach or reasoning, and the evidenced
-result or action. No `why`/`how`/`what` fields or fixed heading order are required.
+Use these existing paragraphs to connect the user's intent and scope to material
+autonomous choices and their evidenced result. This explains how unspecified
+details stayed within the original purpose; no intent registry or new fields
+are required.
 Do not embed extra headings or lists to bypass the child limit.
 Make its title and opening paragraph useful together: name the responsibility
 and state the outcome or finding before mechanism and evidence. Use `scope` to

@@ -18,7 +18,8 @@ entry.
    - **Preconditions and surrounding context** — starting state, prerequisites,
      neighboring systems, and durable boundaries;
    - **Core design and contracts** — the ADR decision, requirement rows,
-     derived obligations, invariants, and failure guarantees owned by this Hill;
+     derived obligations, invariants, and failure guarantees owned by this Hill,
+     plus the recorded intent that bounds any unspecified implementation choice;
    - **Implementation** — every UI, API, data, and external-system change needed
      to make the vertical result work;
    - **Verification** — the targeted ideal case, relevant counterexample,

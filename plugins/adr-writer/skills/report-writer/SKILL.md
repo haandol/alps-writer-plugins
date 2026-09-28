@@ -44,12 +44,11 @@ context. The same instructions apply inside another skill.
 
 ## Establish the reader's question
 
-Use Simon Sinek's Golden Circle as a writing lens: connect **Why** the subject
-matters to **How** the approach or evaluation addresses it and **What** the
-evidence establishes or the reader should do. Apply the detailed connection
-check in [editorial review](references/editorial-review.md). Preserve the early
-answer, domain hierarchy, native schema, and exact evidence; these are not
-three mandatory headings or another approval gate.
+Preserve intent as the basis for judgment when the request leaves details open.
+Explain the user's problem, intended outcome, and supplied scope or priorities;
+connect material autonomous choices and evidence to that purpose. Follow
+[editorial review](references/editorial-review.md) for this meaning check. Keep
+the early answer, domain hierarchy, native schema, and exact evidence.
 
 - Identify the reader, the question or decision, the requested language and
   format, and the evidence available. Follow the user's current preferences.

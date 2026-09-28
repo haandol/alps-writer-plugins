@@ -9,6 +9,13 @@ argument-hint: "[project-name-or-lite-alps-path]"
 Create or resume a Lite ALPS document that works backward from a desired business impact to a
 minimum PoC and its executable demo.
 
+Intent bounds the details AI proposes: preserve whose problem is being solved,
+the intended outcome, and supplied priorities or scope so plausible proposals
+do not drift toward a different purpose. Use the existing Overview, experience
+contribution, and optional exclusions; do not add an intent section or invent
+exclusions. Read the plugin-local `references/requirement-delegation.md` for
+missing or delegated choices and retain the existing Section approval boundary.
+
 Apply the overview's optional glossary rules throughout authoring, including
 proposal-led Sections 2 and 4. Require a clear user meaning for jargon, uncommon
 terms/acronyms, or expressions that cannot be written out plainly; reuse supplied
