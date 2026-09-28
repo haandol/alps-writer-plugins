@@ -29,6 +29,10 @@ Keep the overview readable without expanded evidence. Put detailed mechanisms
 and exact sources with their owning domain. In HTML, collapsible details and
 anchors can provide drill-down; in Markdown or text, use nested headings and
 clear references. Do not hide an unstructured report inside one giant detail.
+Show the problem, answer, and conclusion-changing limitations before long
+tables or audit material. Use disclosure labels that name the question or
+evidence inside, so readers can choose what to open. Keep material findings and
+required actions visible; expandable evidence must not conceal their existence.
 
 Native evidence files and required schemas remain intact. Link to complete
 source material while keeping enough explanation in the report to understand

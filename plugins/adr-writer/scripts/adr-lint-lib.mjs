@@ -77,7 +77,7 @@ const CONTROL_CHAR_RE = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/;
 // must be present (structural well-formedness). SOFT = expected but their
 // absence is advisory (Decision Drivers / alternatives / Related — their deeper quality
 // is an LLM call, so only presence is checked, and only as a warning).
-export const HARD_SECTIONS = ["Status", "Context", "Decision", "Consequences"];
+export const HARD_SECTIONS = ["Status", "Purpose", "Decision", "Consequences"];
 
 // ── dependsOn graph integrity (R16) ──────────────────────────────────────
 // These three lived only inside tests/mapping.test.mjs; promoted here so the
@@ -287,10 +287,11 @@ export function sectionRange(body, pred) {
 // R14's count check silently skip it.
 const ALTERNATIVES_HEADING = /^(?:대안\s*검토|alternatives(?:\s*[-—:].*)?)$/i;
 
-// presence of each HARD_SECTIONS heading (## level) + soft-section presence.
+/** Check the document spine while accepting Context as the legacy Purpose heading. */
 export function checkSections(body) {
   const { heads } = parseHeadings(body);
   const h2 = new Set(heads.filter((h) => h.level === 2).map((h) => h.text.trim()));
+  if (h2.has("Context")) h2.add("Purpose");
   const missingHard = HARD_SECTIONS.filter((s) => !h2.has(s));
   const hasDrivers = h2.has("Decision Drivers");
   // The alternatives section is authored at ## or ### depending on the template variant.

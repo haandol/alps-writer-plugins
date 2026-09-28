@@ -5,9 +5,46 @@ any language or format. Report-only requests remain report-only.
 
 ## Establish the reader's context
 
+### Connect purpose, approach, and result
+
+Apply Simon Sinek's **Golden Circle (Why → How → What)** to the explanation:
+
+- **Why:** identify the reader's problem or decision and the outcome at stake.
+  Use the supplied intent or verified conditions. Do not invent a benefit,
+  incident, or measured impact to give the report a stronger opening.
+- **How:** explain the relevant approach, behavior, or assessment criteria and
+  why they address that purpose. Use domain mechanisms and evidence; a recap
+  of the author's searches and tool calls rarely answers this question.
+- **What:** state the concrete finding, observed outcome, deliverable, or action
+  and its limits. Distinguish an intended outcome from one actually verified.
+  When test or eval evidence supports acceptance, show which purpose or
+  obligation its criterion checks; test success by itself proves no broader
+  product outcome.
+
+Keep the answer and material limitation visible in the opening. A short opening
+can connect purpose and answer in one paragraph before explaining the approach;
+an urgent finding can come first. Use the domain hierarchy for depth and do not
+force `Why`, `How`, and `What` headings, repeat the same purpose in every child,
+or add a purpose field to a native schema. A short result may need only one
+paragraph. A missing causal connection calls for explanation or an explicit
+evidence gap, not persuasive filler.
+
+For example, in a hypothetical retry review, the purpose is preventing repeated
+charges, the approach reuses the result for the same payment identity, and the
+verified outcome is one charge in the tested retry situation. If a timeout path
+was not exercised, that test does not establish the outcome for that path.
+
+### Check continuity at each reading depth
+
 Source verification and reader comprehension are separate. A fact in the
 conversation may be true but still missing from the report the reader receives.
 
+- Read the title and opening alone: can a reader identify the concrete problem,
+  the answer, its significance, and any condition that changes the conclusion?
+  Then scan headings and each domain's first paragraph: can the reader choose
+  where to inspect the explanation or evidence without reconstructing the
+  author's investigation? A title such as "Analysis" or a list of component
+  names does not supply that orientation by itself.
 - At a meaningful transition, identify what the reader has learned so far and
   what the next paragraph assumes. Locate the earlier passage that establishes
   the task, event, constraint, or referent; a repeated noun alone is insufficient.
@@ -18,6 +55,10 @@ conversation may be true but still missing from the report the reader receives.
   a smoother connector.
 - Re-read entry and exit transitions after moving or rewriting a passage.
   Preserve useful answer-first openings and do not repeat background everywhere.
+- Check every reading depth for a misleading simplification. A shorter overview
+  may defer exact evidence, but must retain a caveat, failure, or exception that
+  changes its answer. Details must substantiate or qualify the parent claim;
+  a new unrelated claim needs its own meaningful scope.
 
 When reporting a material flow finding, give its location, assumed context,
 missing or misplaced premise, and reader impact. For a substantial report,

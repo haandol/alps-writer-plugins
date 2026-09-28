@@ -4,6 +4,9 @@ For a single preparation/execution command and self-contained HTML across
 classification, controlled Skill selection and DeepEval document operations, use
 [Skill evaluation](./skills/README.md): `pnpm eval:skills --prepare --runs 1 --open`.
 It adds execution Skill-on/off comparisons and reuses the scorers below.
+`pnpm eval:llm --prepare --runs 1` selects the response probes. Its explicit
+`--live` path adds DeepEval GEval semantic judgment to every catalog probe and
+retains the existing local checks; the legacy runner below keeps its original scorers.
 `pnpm eval:report <run-directory>` regenerates either report format without model calls.
 
 `pnpm test` proves the prompts **say** something. These evals check whether an

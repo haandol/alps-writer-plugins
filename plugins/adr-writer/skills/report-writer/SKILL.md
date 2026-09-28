@@ -44,10 +44,22 @@ context. The same instructions apply inside another skill.
 
 ## Establish the reader's question
 
+Use Simon Sinek's Golden Circle as a writing lens: connect **Why** the subject
+matters to **How** the approach or evaluation addresses it and **What** the
+evidence establishes or the reader should do. Apply the detailed connection
+check in [editorial review](references/editorial-review.md). Preserve the early
+answer, domain hierarchy, native schema, and exact evidence; these are not
+three mandatory headings or another approval gate.
+
 - Identify the reader, the question or decision, the requested language and
   format, and the evidence available. Follow the user's current preferences.
-- Lead with the answer, material implications, remaining uncertainty, and next
-  action. Supply background where the reader first needs it.
+- Make the opening understandable on its own: connect the concrete problem or
+  decision being examined, who or what it affects, and the answer with its
+  material implication. Start with the problem when the reader needs that
+  context; for an urgent finding or a question already stated in the report,
+  lead with the answer and attach the minimum context immediately. Keep any
+  limitation that changes the answer beside it, along with a required next
+  action. Do not delay the answer with project history or a process recap.
 - Preserve exact requirements, values, units, conditions, permissions, ordering,
   findings, tests, and sources. Distinguish facts, supported inferences, and
   proposals; never invent outcomes, historical policies, motives, or measurements.
@@ -74,6 +86,12 @@ force C4 diagram types or technical-layer headings onto every report.
 - Make parent-child scope and drill-down paths clear. A brief answer may fit in
   one node; do not add empty levels. If a grouping is editorial rather than an
   established architectural boundary, say so.
+- Let readers stop at the depth they need. The opening explains the problem and
+  answer; each domain's opening states its relevant outcome or finding and why
+  it matters; deeper passages explain behavior, conditions, and evidence. Use
+  informative headings and a short reading route only when it helps readers
+  choose a branch. Introduce an unfamiliar actor or term before relying on it.
+  A parent supplies the point of its children, not a repeated inventory of them.
 - Keep complete source evidence reachable at the appropriate depth. Use a
   focused excerpt for explanation and a full original artifact when needed.
   The grouping limit must never erase an independent obligation or failure.

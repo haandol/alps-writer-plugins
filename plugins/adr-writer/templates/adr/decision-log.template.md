@@ -4,6 +4,10 @@ This document is the **major decision-change history** of the <category> categor
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+The current Purpose, all still-valid Decision Drivers, adopted choice, rationale,
+and requirement contract remain together in the ADR body. Reading this log is
+optional for understanding the current decision.
+
 <!-- Rules:
   - Reverse order (newest first). Major changes only — replacing the adopted alternative,
     inverting a Driver, a core algorithm/architecture change, a bug fix that changes
@@ -19,6 +23,9 @@ accumulates here, newest first. Git preserves the individual diffs.
     changed, write it on the "What" line as old → new (that is the content of the transition).
     This log and the ADR's Alternatives section are the only places where a replaced
     identifier or previous value should be named for comparison.
+    A reason that explains this transition and still supports the current choice
+    also belongs in the ADR's current Purpose, Drivers, or adoption rationale.
+    Do not remove it from the body merely because it appears on this log's "Why" line.
   - Never reference the PRD (ALPS).
   - Never embed an ADR number in the prose — point at it only through the single
     "Current ADR" link.

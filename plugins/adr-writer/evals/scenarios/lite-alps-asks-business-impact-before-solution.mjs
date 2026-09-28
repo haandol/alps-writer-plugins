@@ -1,3 +1,26 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "impact",
+    text: "Ask one focused question about the missing Desired Business Impact, including why that outcome matters to the target user. Wait for the answer before drafting or saving.",
+  },
+  {
+    id: "sequence",
+    text: "Do not ask the user to design a solution, screen or demo flow at this stage. Mentioning that solution/demo details will wait is not prematurely asking for them. The visible response and required tail agree.",
+  },
+];
+
+/** Keep the response-only scope and requested records exact; judge meaning with GEval. */
+export function deterministicScore(input) {
+  return responseChecks(input, {
+    BUSINESS_IMPACT_QUESTION: [],
+    BEFORE_SOLUTION: [],
+    FOCUSED_QUESTION: [],
+    WAIT_FOR_ANSWER: [],
+  });
+}
+
 import {
   alpsLiteGuideText,
   alpsSkillText,

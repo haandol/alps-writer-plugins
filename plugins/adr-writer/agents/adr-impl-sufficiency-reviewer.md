@@ -65,7 +65,7 @@ The caller passes:
 
 ### 1. Load context
 
-- Read the entire target ADR body — Context / Decision Drivers / Decision / alternatives / Consequences / Implementation Notes (if present). Extract the **gray-zone decisions** (adoption rationale, business rules translated into system behavior, domain rules, state transitions, external-dependency fallback, the intent behind the key design) as spec items — they are the baseline you compare the code against.
+- Read the entire target ADR body — Purpose (legacy Context) / Decision Drivers / Decision / alternatives / Consequences / Implementation Notes (if present). Extract the **gray-zone decisions** (adoption rationale, business rules translated into system behavior, domain rules, state transitions, external-dependency fallback, the intent behind the key design) as spec items — they are the baseline you compare the code against.
 - Confirm the vertical-slice model, source-of-truth scope, and dependency model from `concepts.md`, `authoring-rules.md`, and `structure.md` (falling back to the same files under `${CLAUDE_PLUGIN_ROOT}/templates/adr/`).
 - That category's entry in `docs/adr/.mapping.json` (`status`, `dependsOn`, `tableDocs`).
 - **Project convention documents** (`AGENTS.md`, `CONTRIBUTING.md`, `CLAUDE.md`) — the **primary** basis for best-practice judgments. Project-defined conventions outrank language or framework generalities.

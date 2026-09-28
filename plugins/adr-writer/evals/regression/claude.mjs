@@ -9,9 +9,45 @@ export async function invokeClaude({
   schema,
   timeoutMs = 300_000,
   executable = "claude",
+  bedrock,
 }) {
+  if (bedrock && (!bedrock.profile || !bedrock.region || !model))
+    throw new Error("Explicit Bedrock target requires profile, region and model");
+  const environment = { ...process.env };
+  if (bedrock) {
+    // The caller selected an AWS profile. Do not let unrelated static/bearer
+    // credentials or another provider override it in the child process.
+    for (const name of [
+      "AWS_BEARER_TOKEN_BEDROCK",
+      "AWS_ACCESS_KEY_ID",
+      "AWS_SECRET_ACCESS_KEY",
+      "AWS_SESSION_TOKEN",
+      "CLAUDE_CODE_USE_VERTEX",
+      "CLAUDE_CODE_USE_FOUNDRY",
+    ])
+      delete environment[name];
+    Object.assign(environment, {
+      CLAUDE_CODE_USE_BEDROCK: "1",
+      AWS_PROFILE: bedrock.profile,
+      AWS_REGION: bedrock.region,
+    });
+  }
   const args = [
     "--bare",
+    ...(bedrock
+      ? [
+          "--setting-sources",
+          "",
+          "--settings",
+          JSON.stringify({
+            env: {
+              CLAUDE_CODE_USE_BEDROCK: "1",
+              AWS_PROFILE: bedrock.profile,
+              AWS_REGION: bedrock.region,
+            },
+          }),
+        ]
+      : []),
     "--disable-slash-commands",
     "-p",
     "--output-format",
@@ -28,7 +64,12 @@ export async function invokeClaude({
   ];
   const started = Date.now();
   const result = await new Promise((resolve) => {
-    const child = spawn(executable, args, { cwd, stdio: ["pipe", "pipe", "pipe"], detached: true });
+    const child = spawn(executable, args, {
+      cwd,
+      env: environment,
+      stdio: ["pipe", "pipe", "pipe"],
+      detached: true,
+    });
     let stdout = "";
     let stderr = "";
     let failure = null;

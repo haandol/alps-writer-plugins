@@ -31,7 +31,7 @@ function visibleScore(lines, label) {
       (line) =>
         line.match(
           new RegExp(
-            `^${label}\\s*(?:[.—:-])?\\s*(?:(?:기능|Feature|ADR)\\s*(?:[.—:-])?\\s*)?${scoreLabel}\\s*:\\s*(10|[1-9])\\s*\\/\\s*10\\s*$`,
+            `^${label}\\s*(?:\\(\\s*(?:ALPS\\s+)?(?:기능|Feature|ADR)\\s*\\)\\s*)?(?:[.—:-])?\\s*(?:(?:기능|Feature|ADR)\\s*(?:[.—:-])?\\s*)?${scoreLabel}\\s*:\\s*(10|[1-9])\\s*\\/\\s*10\\s*$`,
             "i",
           ),
         ) ??

@@ -1,3 +1,26 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "optional",
+    text: "Skip optional Section 3 because the user stated no explicit exclusions; do not invent excluded personas, features or screens to fill it. Continue to the required Section 4 Demo Scenario rather than declaring all work complete.",
+  },
+  {
+    id: "independence",
+    text: "Keep completion inside Lite ALPS without proposing a Full ALPS transition or another planning document. Explaining that Full ALPS is not required is allowed. The required tail agrees with the visible response.",
+  },
+];
+
+/** Keep the response-only scope and requested records exact; judge meaning with GEval. */
+export function deterministicScore(input) {
+  return responseChecks(input, {
+    SKIP_SECTION_3: [],
+    NO_INVENTED_EXCLUSIONS: [],
+    LITE_INDEPENDENT: [],
+    DEMO_READY: [],
+  });
+}
+
 import {
   alpsLiteGuideText,
   alpsSkillText,

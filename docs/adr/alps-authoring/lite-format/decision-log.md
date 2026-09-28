@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the alps-authoring/lit
 Each ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-09-28 — 경험별 데모 수용 조건을 사전에 제시
+
+- **Current ADR**: [lite-alps-authoring-profile](./0001-lite-alps-authoring-profile.md)
+- **Change type**: requirement rule change
+- **What**: 경험별 관찰 결과 → 적용 상황과 통과·실패 기준을 함께 제시하는 데모 계약을 제안했다.
+- **Why**: 화면이나 응답의 존재만으로 핵심 사용자 경험의 의도를 달성했다고 판정하지 않기 위해서다.
+
 ## 2026-08-27 — Lite Solution Strategy에 Product Context를 포함
 
 - **Current ADR**: [lite-alps-authoring-profile](./0001-lite-alps-authoring-profile.md)

@@ -47,7 +47,8 @@ const groups = [
     "이해도 확인",
     ["impl-review-comprehension-", "impl-review-completion-", "impl-review-selects-useful-"],
   ],
-  ["리뷰와 설명", "인지부하", ["comprehension-"]],
+  ["리뷰와 설명", "보고서 품질", "인지부하", ["comprehension-"]],
+  ["리뷰와 설명", "보고서 품질", "근거 보존", ["report-"]],
 ];
 
 /** Preserve the complete case records while grouping the human view by the responsibility being evaluated. */
@@ -158,6 +159,11 @@ export function saveSkillsReport(directory, report) {
           ? "배포된 이름·설명에서 필요한 Skill을 고르는 통제된 평가입니다. 실제 클라이언트의 설치·자동 호출 검증은 포함하지 않습니다."
           : "실제 문서 변경과 도구 사건을 고정된 의무에 대조합니다. 승인 전 변경 후 되돌리기 같은 중간 행동도 증거에 보존됩니다.",
     ];
+    if (type === "classification" && cases.some((c) => c.semanticObligations)) {
+      section.paragraphs.push(
+        "의미 평가가 설정된 사례는 DeepEval GEval로 응답·결과물·도구 기록을 고정된 행동 기준과 대조합니다. 기존 로컬 검사도 있는 경우 두 판정을 모두 충족해야 합니다. 태그나 완료 선언만으로 실제 행동이 입증되지는 않습니다.",
+      );
+    }
     if (type === "routing") {
       const s = summarizeRouting(report.runs.filter((r) => r.type === type));
       section.paragraphs.push(

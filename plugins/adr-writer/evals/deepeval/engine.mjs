@@ -13,6 +13,7 @@ export const EVALUATION_STEPS = [
   "Distinguish an unauthorized Decision/requirement rewrite from a supported exact-path Accepted-to-Proposed correction. Code/test success does not by itself authorize changing a requirement toward the code.",
   "Award 1 only when every expected obligation is established. Award 0 if any obligation is violated OR cannot be established. Do not reward a good plan when actual edits were required. Do not infer deployed state from local files.",
   "Explain the result in Korean. Identify failed or unproven obligation IDs, distinguish a demonstrated violation from missing evidence, and cite the relevant file paths or event IDs. If all obligations hold, summarize the evidence that establishes them. Do not grade hidden reasoning, agent count, style similarity, or model identity.",
+  "Use short, contiguous verbatim quotes for citations. Preserve Markdown punctuation such as **, backticks and table separators; never remove formatting inside a quote or join separate passages. Cite user:N for task text and reply:N only for text actually present in that reply. A source's meaning being similar is not an exact quotation. Prefer one short sufficient excerpt over copying a whole formatted paragraph.",
   "Return an obligations array alongside score and reason: one {id, verdict, reason, evidence:[{source,quote}]} per expected obligation. Verdict is PASS, FAIL or UNVERIFIED. PASS/FAIL requires a verbatim quote from an existing source; insufficient evidence is UNVERIFIED. Score is 1 exactly when all obligations PASS, otherwise 0. Use before:<path> and after:<path> for original/resulting files; user:N and reply:N use one-based conversation indices; event:N identifies a complete event by seq. event:N:content is request arguments.content or result.content, event:N:before/after is result.before/after, and event:N:stdout/stderr is check output. Quotes refer to decoded source text, not JSON escaping. execution identifies the execution summary.",
 ];
 
@@ -117,7 +118,7 @@ export async function makeJudge({
     supportsLogProbs() {
       return false;
     }
-    async generate(prompt, schema) {
+    async generate(prompt, schema, repairUsed = false) {
       // Both adapters receive draft-7. Bedrock receives it as a JSON instruction;
       // Zod validates the answer locally, without claiming native constrained decoding.
       const transportSchema = schema ? z.toJSONSchema(schema, { target: "draft-7" }) : undefined;
@@ -149,7 +150,33 @@ export async function makeJudge({
       if (schema && "reason" in output && output.reason.trim().length < 10)
         throw new Error("GEval must explain its judgment with evidence");
       if (schema) {
-        const judgment = validateJudgment(raw, obligations, sources);
+        let judgment;
+        try {
+          judgment = validateJudgment(raw, obligations, sources);
+        } catch (error) {
+          if (error.code !== "UNSUPPORTED_EVIDENCE" || repairUsed) throw error;
+          // Repair citation format once against identical evidence/criteria.
+          // Both raw calls have already gone through onCall; never replace
+          // a failed behavior verdict with an inferred success.
+          const retryPrompt =
+            prompt +
+            "\n\nCitation validation failed: " +
+            error.message +
+            "\nPrevious response:\n" +
+            JSON.stringify(raw) +
+            "\nReturn a corrected complete judgment using the SAME criteria and evidence. " +
+            "Fix unsupported source IDs and quotations. Use short exact substrings, including Markdown punctuation. " +
+            "Do not change a verdict merely to pass validation; retain FAIL or UNVERIFIED when warranted.";
+          if (retryPrompt.length > 240_000) throw error;
+          const repaired = await this.generate(retryPrompt, schema, true);
+          return {
+            ...repaired,
+            cost:
+              response.costUSD == null || repaired.cost == null
+                ? null
+                : response.costUSD + repaired.cost,
+          };
+        }
         if (output.score !== (judgment.verdict === "PASS" ? 1 : 0))
           throw new Error("GEval score contradicts its obligation judgments");
       }
@@ -200,7 +227,7 @@ export async function evaluateEvidence({
     sources: evidenceSources(evidence),
   });
   const metric = new GEval({
-    name: "ADR operation contract",
+    name: item.type === "classification" ? "Skill response contract" : "ADR operation contract",
     evaluationSteps: [...EVALUATION_STEPS],
     evaluationParams: [
       SingleTurnParams.INPUT,

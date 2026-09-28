@@ -1,3 +1,34 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "choice",
+    text: "Retain the given 8/10 plan score and ask whether to review splitting or proceed with the original approved ADR. The user has not chosen, so wait rather than implementing or assuming an answer.",
+  },
+  {
+    id: "candidates",
+    text: "Do not generate concrete split candidates before the choice. Do not call tools or change files. The visible reply and PLAN_SCORE, NEXT_STEP, CANDIDATE_STATE and EXECUTION_STATE records agree.",
+  },
+];
+
+/** Exact output/scope checks supplement the semantic obligations. */
+export function deterministicScore(input) {
+  return [
+    ...responseChecks(
+      input,
+      { PLAN_SCORE: [], NEXT_STEP: [], CANDIDATE_STATE: [], EXECUTION_STATE: [] },
+      { noTools: true },
+    ),
+    {
+      label: "retains the 8/10 plan score",
+      pass: /\b8\s*\/\s*10\b/.test(
+        input.tail.findings.find((f) => f.tag === "PLAN_SCORE")?.summary ?? "",
+      ),
+      detail: "PLAN_SCORE must remain 8/10",
+    },
+  ];
+}
+
 import {
   expectNoText,
   expectText,

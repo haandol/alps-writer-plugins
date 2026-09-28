@@ -286,8 +286,14 @@ function promptText(entryPath, pluginRoot, { references = [] } = {}) {
 
 function directMarkdownReferences(source, skillDir, pluginRoot) {
   const files = new Set();
-  for (const match of source.matchAll(/`([^`\n]*references\/[^`\n]+\.md)`/g)) {
-    const reference = match[1];
+  // Skills use both inline-code paths and ordinary local Markdown links.
+  // Remote links are citations, not files to load into the fixture prompt.
+  const references = [
+    ...source.matchAll(/`([^`\n]*references\/[^`\n]+\.md)`/g),
+    ...source.matchAll(/\]\(([^()\s]+\.md)(?:#[^()\s]*)?\)/g),
+  ];
+  for (const [, reference] of references) {
+    if (/^[a-z][a-z0-9+.-]*:/i.test(reference)) continue;
     const full = reference.startsWith("${CLAUDE_PLUGIN_ROOT}/")
       ? path.join(pluginRoot, reference.slice("${CLAUDE_PLUGIN_ROOT}/".length))
       : path.join(skillDir, reference);

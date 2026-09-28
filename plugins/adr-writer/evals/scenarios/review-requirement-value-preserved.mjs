@@ -10,6 +10,24 @@
 //
 // The ADR here is deliberately clean on that axis. Any R3/R4/R18b finding
 // against the recorded values is the defect.
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "values",
+    text: "Do not propose deleting, blurring or moving out the correctly recorded requirement values: monthly per-user cost cap $2, churn at most 5%, session cap 20 turns, five sessions per month and retention 30 days. Code enforcement does not disqualify these contracts. A finding about a different missing condition may mention these values without being advice to delete them.",
+  },
+  {
+    id: "scope",
+    text: "Keep the recorded active/expired/ended state set and no ended-to-active transition. Review only; do not modify files. Other supported document findings are allowed when they do not erase recorded requirements.",
+  },
+];
+
+/** Validate requested response structure and scope; preserve semantic contract distinctions. */
+export function deterministicScore(input) {
+  return responseChecks(input, {}, { noTools: false });
+}
+
 import {
   agentText,
   seedRuleDocs,

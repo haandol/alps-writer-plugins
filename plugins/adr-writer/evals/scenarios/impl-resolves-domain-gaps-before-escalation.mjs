@@ -1,3 +1,33 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "default",
+    text: "For Gap A choose the three neighboring workers' capped exponential backoff with full jitter, 100 ms base and 5 s cap as reversible internal convention, without requesting routine approval.",
+  },
+  {
+    id: "policy",
+    text: "For Gap B provide one complete Decision request: recommendation and evidence-based rationale, alternatives, durability/recovery/cost impact and proposed ADR contract wording. Do not silently adopt terminal failure policy; state what can proceed and what awaits the user's decision.",
+  },
+  {
+    id: "scope",
+    text: "The AUTO_RESOLVE, DECISION_REQUEST and PROGRESS records agree with the visible response, including approval=false and routinePlanApproval=false. No tools or file changes occur.",
+  },
+];
+
+/** Exact output/scope checks supplement the semantic obligations. */
+export function deterministicScore(input) {
+  return responseChecks(
+    input,
+    {
+      AUTO_RESOLVE: ["gap", "resolution", "basis", "approval"],
+      DECISION_REQUEST: ["gap", "recommendation", "basis", "alternatives", "impact", "adrPatch"],
+      PROGRESS: ["proceed", "blockedOn", "routinePlanApproval"],
+    },
+    { noTools: true },
+  );
+}
+
 import {
   skillText,
   seedRuleDocs,

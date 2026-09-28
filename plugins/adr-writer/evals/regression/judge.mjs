@@ -167,7 +167,9 @@ export function validateJudgment(raw, obligations, sources) {
         evidence.quote.trim().length < 3 ||
         !sources[evidence.source].includes(evidence.quote)
       ) {
-        throw new Error(`judge cited unsupported evidence: ${evidence.source}`);
+        const error = new Error(`judge cited unsupported evidence: ${evidence.source}`);
+        error.code = "UNSUPPORTED_EVIDENCE";
+        throw error;
       }
     }
   }

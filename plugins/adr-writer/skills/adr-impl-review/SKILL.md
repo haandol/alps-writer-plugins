@@ -209,7 +209,7 @@ Create `review-baseline.md` from:
 
 - the current ADR and mapping summary
 - the Decision, Decision Drivers, every numeric and non-numeric requirement row, explicit out-of-scope items, and recorded risk tolerance
-- any decision-changing assumption recorded in Context or a Decision Driver, including what must be reconsidered if it is false
+- any decision-changing assumption recorded in Purpose (legacy Context) or a Decision Driver, including what must be reconsidered if it is false
 - the pre-implementation approval summary supplied by `/adr-impl`, when available
 - a regeneration checklist marking where each contract is stated in the ADR
 - the implementation-independent observable evidence recorded for each contract row

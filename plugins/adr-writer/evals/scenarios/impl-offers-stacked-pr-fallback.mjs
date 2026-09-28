@@ -1,3 +1,32 @@
+import { responseChecks } from "../lib/response-checks.mjs";
+
+export const obligations = [
+  {
+    id: "delivery",
+    text: "Keep the Feature and its single ADR decision intact. Offer dependency-ordered cumulative Stacked PR delivery steps, each answering a conceptual review question and preserving the same contract. Do not split by technical layer.",
+  },
+  {
+    id: "scope",
+    text: "Keep the Stack plan ephemeral, create no branch or PR, and make publishing depend on an explicit user request and available GitHub capability. No layer alone promotes the ADR: keep Proposed until the entire implementation and final review pass, then transition to Accepted. All requested tail items agree with the visible plan.",
+  },
+];
+
+/** Enforce exact response records and no fixture mutation, independently of prose. */
+export function deterministicScore(input) {
+  return responseChecks(
+    input,
+    {
+      KEEP_ONE_ADR: [],
+      STACK_FALLBACK: [],
+      STACK_BOUNDARY: [],
+      EPHEMERAL: [],
+      NO_AUTOPUBLISH: [],
+      STATUS_LIFECYCLE: [],
+    },
+    { noTools: false },
+  );
+}
+
 import { skillText, seedRuleDocs, seedMapping, TAIL_SPEC, expectNoText } from "../lib/harness.mjs";
 
 export default {

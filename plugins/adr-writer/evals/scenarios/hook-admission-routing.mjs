@@ -27,7 +27,8 @@ export default {
     const wronglyAdmitted = tail.findings.filter(
       (finding) =>
         /ADR_FIRST/i.test(finding.tag) &&
-        /(?:^|\s)A(?:\s|:)|SDK|credential adapter/i.test(finding.summary),
+        (/(?:^|\s)A(?:\s|:)/.test(finding.summary) ||
+          /SDK|credential adapter/i.test(finding.summary)),
     );
     return [
       expectText(all, /EXEMPT.{0,180}(SDK|credential|adapter)/is, "routes the SDK swap to code"),
