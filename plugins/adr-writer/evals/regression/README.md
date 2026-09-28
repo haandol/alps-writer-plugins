@@ -184,7 +184,7 @@ fixture·기대 동작·판정 프롬프트는 버전 관리하고, 실행 원�
 
 ## Human report delivery
 
-For a final human-facing report, apply `../../skills/report-write/SKILL.md`.
+For a final human-facing report, apply `../../skills/report-writer/SKILL.md`.
 Keep generated evidence and the original HTML as audit sources; organize the
 final explanation by domain with at most four peer units, complete evidence
 links, and inspected Mermaid diagrams. State the actual semantic and visual

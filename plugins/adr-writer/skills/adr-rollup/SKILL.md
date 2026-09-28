@@ -7,16 +7,23 @@ disable-model-invocation: true
 
 # adr-rollup
 
-> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+> **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Preserve this optional supporting file. For permitted definition edits, apply
 `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under existing approval.
 Review-only work reports unclear or conflicting meanings without editing.
 
-The goal is **one logical decision = one current-state ADR.** When the same decision is scattered across several ADRs as evolution history (v1 → v2 → v3 — a remnant of the old evolution-chain model), merge that chain into one so only the decision the latest code actually implements remains. There is no reason to hold evolution history spread across several ADRs — reading the single final state should convey the latest code's business and technical decisions. But the **major transitions** the chain carried (replacing the adopted alternative, changing the core algorithm or architecture, inverting a Driver, and the like) are not deleted; they are **harvested** into the category's `decision-log.md` — Git history preserves the individual diffs, but the traceable timeline of "why was this swapped out" stays in the log (`authoring-rules.md` "What to log — minor vs major").
+The goal is **one logical decision = one current-state ADR.** Consolidate an
+evolution chain only when its ADRs record successive answers to the same
+architectural question. Preserve the current decision and complete requirement
+contract in the survivor, and the evidence-backed major transitions in the
+category's `decision-log.md`; Git keeps the individual diffs.
 
-**Reducing the ADR count is not the goal.** The goal is "tidying scattered evolution history into decision units," and a smaller count is merely the consequence. The right number of ADRs is the number of genuinely distinct logical decisions that exist in that category — never cram distinct decisions into one ADR to reduce the count. When there is no chain to merge, merging nothing is the correct outcome.
+**Reducing the ADR count is not the goal.** Distinct decisions stay separate.
+When no evolution chain exists, leave the ADRs unchanged. The rules below own
+chain detection, survivor selection, history preservation, and destructive
+approval.
 
 It does three things at once:
 
@@ -56,12 +63,16 @@ When the judgment is ambiguous, do not merge. Staying separate is safer — a wr
 
 Steps 1–9 prepare and verify a candidate changeset without modifying repository
 files. Keep original source passages and draft outputs in a disposable artifact
-directory following [review artifact storage](../report-write/references/review-artifacts.md).
+directory following [review artifact storage](../report-writer/references/review-artifacts.md).
 Step 10 obtains approval for the concrete paths and then applies the
 changeset. Source deletion is allowed only after its validated history has been
 written to the final decision log. Preparation order is not file-write order.
 
 ### 1. Load the index and mapping
+
+Use the repository's rule documents when present; otherwise use the matching
+`${CLAUDE_PLUGIN_ROOT}/templates/adr/` files. Reuse unchanged material already
+loaded in this context, including chain bodies needed in later steps.
 
 - Read `concepts.md` (the abstraction ladder plus the gray-zone model), `docs/adr/authoring-rules.md` (the include/exclude rules), and `docs/adr/structure.md` (category policy).
 - Read `docs/adr/.mapping.json` — the single ADR index (categories → adrs[] with path, status, summary) plus `dependsOn`. Since the mapping holds neither code paths nor a PRD reference, find the code needed for alignment verification by reading the ADR's Decision and using `Glob`/`Grep` (`structure.md` "Finding the related code"). If the mapping is absent, infer categories from the `docs/adr/<category>/` directory names on disk and proceed.

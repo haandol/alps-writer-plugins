@@ -9,7 +9,7 @@ import {
   validateReport,
   renderHtml,
   renderMarkdown,
-} from "../skills/report-write/scripts/render-report.mjs";
+} from "../skills/report-writer/scripts/render-report.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const read = (relative) => readFileSync(path.join(ROOT, relative), "utf8");
@@ -71,7 +71,7 @@ test("report hierarchy preserves complete evidence and renders HTML/Markdown wit
   });
   const html = renderHtml(doc),
     markdown = renderMarkdown(doc);
-  assert.match(html, /data-report|report-write-policy/);
+  assert.match(html, /data-report|report-writer-policy/);
   assert.match(html, /data-rendered="true"/);
   assert.match(html, /observed charge count: 1/);
   assert.match(markdown, /## Payments/);
@@ -89,7 +89,7 @@ test("the installed CLI runs through a symlinked project path", () => {
   const temp = mkdtempSync(path.join(os.tmpdir(), "report-cli-"));
   try {
     const alias = path.join(temp, "installed-skill");
-    symlinkSync(path.join(ROOT, "plugins/adr-writer/skills/report-write"), alias, "dir");
+    symlinkSync(path.join(ROOT, "plugins/adr-writer/skills/report-writer"), alias, "dir");
     const input = path.join(temp, "report.json"),
       output = path.join(temp, "report.html");
     writeFileSync(input, JSON.stringify(sample()));
@@ -187,7 +187,7 @@ test("source text cannot execute markup and unsupported diagrams are never label
   assert.match(renderHtml(doc), /editorial review is not complete/);
 });
 
-test("both plugins carry identical report behavior and announce it outside an ADR project", () => {
+test("installing both plugins exposes one report skill and one report directive per session event", () => {
   const check = spawnSync(process.execPath, ["scripts/sync-report-skill.mjs", "--check"], {
     cwd: ROOT,
     encoding: "utf8",
@@ -195,39 +195,60 @@ test("both plugins carry identical report behavior and announce it outside an AD
   assert.equal(check.status, 0, check.stdout + check.stderr);
   const temp = mkdtempSync(path.join(os.tmpdir(), "report-hook-"));
   try {
+    let reportSkills = 0;
+    const directives = { startup: 0, resume: 0, clear: 0, compact: 0 };
     for (const plugin of ["adr-writer", "alps-writer"]) {
       const base = `plugins/${plugin}`;
-      const hook = path.join(ROOT, base, "skills/report-write/scripts/surface-report-context.mjs");
-      const out = spawnSync(process.execPath, [hook], { cwd: temp, input: "{}", encoding: "utf8" });
-      assert.equal(out.status, 0, out.stderr);
-      const text = JSON.parse(out.stdout).hookSpecificOutput.additionalContext;
-      assert.match(text, /Report-writing directive/);
-      assert.match(text, /at most four/);
-      assert.match(text, /report-write[/\\]SKILL\.md/);
-      assert.doesNotMatch(text, /ADR-first directive/);
-      assert.equal(existsSync(path.join(temp, "docs/adr")), false);
-      const config = JSON.parse(read(`${base}/hooks/hooks.json`));
-      assert.ok(
-        config.hooks.SessionStart.some((entry) =>
-          entry.hooks.some((h) => h.command.includes("surface-report-context")),
-        ),
-      );
-      assert.equal(
-        JSON.parse(read(`${base}/.codex-plugin/plugin.json`)).hooks,
-        "./hooks/hooks.json",
-      );
+      const installedSkill = existsSync(path.join(ROOT, base, "skills/report-writer"));
+      assert.equal(installedSkill, plugin === "adr-writer");
+      if (installedSkill) reportSkills++;
+      const manifest = JSON.parse(read(`${base}/.codex-plugin/plugin.json`));
+      const configPath = path.join(ROOT, base, "hooks/hooks.json");
+      if (plugin === "alps-writer") {
+        assert.equal(manifest.hooks, undefined);
+        assert.equal(existsSync(configPath), false, "Claude must not auto-discover a report hook");
+        assert.doesNotMatch(JSON.stringify(manifest), /report/i);
+        continue;
+      }
+      assert.equal(manifest.hooks, "./hooks/hooks.json");
+      const config = JSON.parse(readFileSync(configPath, "utf8"));
+      for (const source of Object.keys(directives)) {
+        for (const entry of config.hooks.SessionStart) {
+          if (!new RegExp(`^(?:${entry.matcher})$`).test(source)) continue;
+          for (const hook of entry.hooks) {
+            if (!hook.command.includes("surface-report-context")) continue;
+            const out = spawnSync(hook.command, {
+              shell: true,
+              cwd: temp,
+              env: { ...process.env, PLUGIN_ROOT: path.join(ROOT, base) },
+              input: JSON.stringify({ hook_event_name: "SessionStart", source }),
+              encoding: "utf8",
+            });
+            assert.equal(out.status, 0, out.stderr);
+            const text = JSON.parse(out.stdout).hookSpecificOutput.additionalContext;
+            assert.match(text, /Report-writing directive/);
+            assert.match(text, /at most four/);
+            assert.match(text, /report-writer[/\\]SKILL\.md/);
+            assert.doesNotMatch(text, /ADR-first directive/);
+            directives[source]++;
+          }
+        }
+      }
     }
+    assert.equal(reportSkills, 1);
+    assert.deepEqual(directives, { startup: 1, resume: 1, clear: 1, compact: 1 });
+    assert.equal(existsSync(path.join(temp, "docs/adr")), false);
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
 });
 
 test("report entrypoints route to the shared English skill without changing native schemas", () => {
-  const skill = read("shared/report-write/SKILL.md");
+  const skill = read("shared/report-writer/SKILL.md");
   assert.match(skill, /editorial-review\.md/);
   assert.match(skill, /format-and-layout\.md/);
   assert.doesNotMatch(skill, /\p{Script=Hangul}/u);
-  const editorial = read("shared/report-write/references/editorial-review.md");
+  const editorial = read("shared/report-writer/references/editorial-review.md");
   assert.match(editorial, /latest whole/);
   assert.match(editorial, /High and Medium/);
   assert.match(editorial, /hypothetical/);
@@ -242,7 +263,7 @@ test("report entrypoints route to the shared English skill without changing nati
     "adr-impl-review",
     "adr-impl-refactor",
   ])
-    assert.match(read(`plugins/adr-writer/skills/${name}/SKILL.md`), /\[report-write\]/);
+    assert.match(read(`plugins/adr-writer/skills/${name}/SKILL.md`), /\[report-writer\]/);
   for (const name of ["alps-init", "lite-alps-init", "feature-to-adr"])
-    assert.match(read(`plugins/alps-writer/skills/${name}/SKILL.md`), /\[report-write\]/);
+    assert.doesNotMatch(read(`plugins/alps-writer/skills/${name}/SKILL.md`), /report-writer/);
 });

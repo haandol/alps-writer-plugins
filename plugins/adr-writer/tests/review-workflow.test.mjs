@@ -23,11 +23,11 @@ function markdownLinks(relativePath) {
 }
 
 test("review and general report entrypoints reach the same comprehension owner through references", () => {
-  const owner = path.join(ROOT, "skills/report-write/references/comprehension.md");
+  const owner = path.join(ROOT, "skills/report-writer/references/comprehension.md");
   for (const entry of [
     "skills/adr-impl-review/SKILL.md",
     "skills/adr-impl-review/references/artifact-contract.md",
-    "skills/report-write/SKILL.md",
+    "skills/report-writer/SKILL.md",
   ])
     assert.ok(markdownLinks(entry).has(owner), `${entry} must reach the common quiz workflow`);
   assert.ok(readFileSync(owner, "utf8").trim().length > 0);

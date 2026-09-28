@@ -4,8 +4,8 @@ import {
   renderHtml,
   renderMarkdown,
   validateReport,
-} from "../skills/report-write/scripts/render-report.mjs";
-import { installQuiz, quizLabels } from "../skills/report-write/scripts/comprehension.mjs";
+} from "../skills/report-writer/scripts/render-report.mjs";
+import { installQuiz, quizLabels } from "../skills/report-writer/scripts/comprehension.mjs";
 
 const question = (index = 1, sectionId = "retries") => ({
   id: `Q${index}`,

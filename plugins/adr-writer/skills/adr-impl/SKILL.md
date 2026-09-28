@@ -6,7 +6,7 @@ argument-hint: "[adr-path-or-category]"
 
 # adr-impl
 
-> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+> **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Its absence is normal; preserve it as supporting material, not an indexed ADR.
@@ -137,7 +137,7 @@ Implements the specified ADR in code. Once implementation, tests, the verified r
 
 5. **Test**
    - Before moving to the next Implementation Hill, run its targeted ideal case and relevant counterexample and record the command and observed result. After every Hill has verified results, run the project's full test command.
-   - Run the project's test command (see `AGENTS.md` or `package.json`).
+   - Find the project's test command in `AGENTS.md` or `package.json`; the full run above satisfies this check.
    - Apply the ideal-case, relevant-edge, test-naming, and missing-test-path rules from `${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md`.
    - If tests fail, do not move on to step 6 — if it is an implementation bug go back to step 4; if the ADR made the wrong decision, fix the ADR first and then go back to step 4.
    - Once the initial implementation tests pass, assess whether a separate `/adr-impl-refactor <category>` pass is warranted. Run it for multi-call-site changes, concrete duplication or unnecessary work, broad diffs, or non-trivial efficiency/complexity risk. For a local change whose final sufficiency review can cover the same axis, skip the separate pass and record that basis. When selected, its model-chosen strategy applies only high-confidence, local, behavior-preserving candidates with before/after tests.

@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
-import { renderHtml, validateReport } from "../../skills/report-write/scripts/render-report.mjs";
+import { renderHtml, validateReport } from "../../skills/report-writer/scripts/render-report.mjs";
 import { summarize, summarizeRouting, comparePairs } from "./metrics.mjs";
 import { sha, confined } from "../regression/workspace.mjs";
 

@@ -8,7 +8,7 @@ interactive-comprehension contract.
 ## Final presentation policy
 
 Before writing the human-facing report, read and apply
-`${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md`. The canonical Markdown and
+`${CLAUDE_PLUGIN_ROOT}/skills/report-writer/SKILL.md`. The canonical Markdown and
 JSON sections below remain complete audit inputs for the validator. Their field
 names and ordering are not a flat final-report layout requirement.
 
@@ -47,7 +47,7 @@ Before writing the report, read
 `${CLAUDE_PLUGIN_ROOT}/references/review-report-writing.md` and
 `${CLAUDE_PLUGIN_ROOT}/references/reader-first-writing.md` completely.
 
-Use progressive disclosure through report-write: title and answer first, then
+Use progressive disclosure through report-writer: title and answer first, then
 domain-scoped context, implementation, verification, limitations, and conclusions.
 Keep related ADRs, any comprehension check, and detailed evidence with the
 responsibility they explain. The canonical source sections below are audit
@@ -168,7 +168,7 @@ coverage fields in JSON, but do not force them into seven visible columns or
 repeat the same detailed evidence outside its Hill.
 Never replace the four-column implementation-choice table with prose.
 
-The [common comprehension workflow](../../report-write/references/comprehension.md)
+The [common comprehension workflow](../../report-writer/references/comprehension.md)
 owns quiz generation, omission criteria, difficulty, count, placement and staged
 self-check. Apply it to the review's core explanation, then retain the generated
 `Comprehension check` audit section. A PASS alone is not an omission reason.
@@ -478,7 +478,7 @@ Validate and build the HTML in both modes:
 node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-materialize.mjs <artifact-dir>
 node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-validate.mjs <artifact-dir>
 node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-report.mjs <findings.json> --out <artifact-dir>/adr-impl-review-audit.html
-# Apply report-write to compose and check the final adr-impl-review-report.html
+# Apply report-writer to compose and check the final adr-impl-review-report.html
 # from the validated audit inputs, preserving all required interactions.
 node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-open.mjs <artifact-dir>/adr-impl-review-report.html
 ```

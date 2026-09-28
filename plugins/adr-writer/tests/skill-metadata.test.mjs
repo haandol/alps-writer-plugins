@@ -115,10 +115,8 @@ test("adr-review sweeps ADR documents, report-only, and stays out of the code", 
 });
 
 // /adr-new authors under the same rules adr-reviewer applies, so reviewing the
-// draft it just wrote re-derives a judgment made one turn earlier — and a punch
-// list of items the author already got right is how a user learns to skim the
-// findings that matter. So the reviewer subagent runs only from /adr-review, on
-// ADRs whose authoring context is gone (hand-edited, inherited, another session).
+// draft it just wrote may repeat a judgment made one turn earlier. Self-check
+// remains the default; an independent read is available when risk warrants it.
 //
 // The danger of removing that call is silent: the reviewer was the only stage
 // carrying R18a (a missing requirement value) and R19 (the regeneration test),
@@ -149,17 +147,19 @@ test("/adr-new defaults to self-check and permits a risk-selected independent re
   // the user is told which axes were self-judged, and how to get a second opinion
   assert.match(adrNew, /independent read: <used\|not needed>/);
 
-  // the reviewer agent names /adr-review as its path, and disclaims /adr-new
+  // the reviewer accepts a risk-selected read without making it mandatory
   const reviewer = read(path.join(ADR_ROOT, "agents", "adr-reviewer.md"));
   const reviewerDescription = reviewer.match(/^description:\s*(.+)$/m)?.[1] ?? "";
   assert.match(reviewerDescription, /existing|hand-edited|independent/i);
   assert.doesNotMatch(reviewerDescription, /before finalizing a new ADR via \/adr-new/i);
-  assert.match(reviewer, /\*\*Not from `\/adr-new`\.\*\*/);
-  assert.match(reviewer, /nobody holds an authoring context for/);
-  // the sweep owns the independent read, and runs on request rather than always
+  assert.match(reviewer, /`\/adr-new` defaults to its own checklist pass/);
+  assert.match(reviewer, /may select this role/);
+  assert.doesNotMatch(reviewer, /\*\*Not from `\/adr-new`\.\*\*/);
+  // the sweep agrees with the authoring path's optional independent read
   const sweep = read(path.join(ADR_ROOT, "skills", "adr-review", "SKILL.md"));
-  assert.match(sweep, /`\/adr-new` does not call a reviewer/);
-  assert.match(sweep, /edited by hand, changed by another session, or inherited/);
+  assert.match(sweep, /`\/adr-new` defaults to self-check/);
+  assert.match(sweep, /may use an independent reviewer when risk warrants it/);
+  assert.match(sweep, /inherited or hand-edited ADR/);
 });
 
 // Removing the reviewer call made /adr-new's step 6(b) DEPEND on the seeded

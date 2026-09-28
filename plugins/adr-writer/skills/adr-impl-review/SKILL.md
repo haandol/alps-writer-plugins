@@ -6,7 +6,7 @@ argument-hint: "[adr-path-or-category] [--base <ref>] [--mode standard|full]"
 
 # adr-impl-review
 
-> **Review results**: Apply [report-write](../report-write/SKILL.md).
+> **Review results**: Apply [report-writer](../report-writer/SKILL.md).
 
 Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Its absence is normal; preserve it as supporting material, not an indexed ADR.
@@ -14,13 +14,13 @@ When this workflow permits ADR writing and a definition needs creation or change
 apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
 boundary. Review-only work reports unclear or conflicting meanings without editing.
 
-The report-write skill owns quiz generation and staged self-check. Read its
-[comprehension workflow](../report-write/references/comprehension.md) when
+The report-writer skill owns quiz generation and staged self-check. Read its
+[comprehension workflow](../report-writer/references/comprehension.md) when
 composing the report. Use the implementation's core explanation as the question
 source; a PASS alone does not omit the quiz. This skill retains review verdicts,
 native audit fields, and PR-specific comprehension readiness.
 
-Disprove the implementation in this order.
+The review establishes the following evidence dependencies; orchestration remains model-selected.
 
 ```mermaid
 flowchart TD
@@ -120,9 +120,6 @@ Independently build the **complete implementation scope** for the selected ADR:
    implementation scope. A caller-provided file list is a starting floor, never
    a search limit.
 
-Build the optional related-ADR comparison exactly as
-`references/artifact-contract.md` defines.
-
 Do not infer scope from the ADR category name or the current diff. If any
 contract row or core call path cannot be fully narrowed, record the search
 limit, mark the affected coverage `UNVERIFIED`, and return `INCONCLUSIVE` rather
@@ -141,7 +138,7 @@ both scopes, prepare the following original material.
 - An executable project test command
 
 Create one review artifact directory using
-[review artifact storage](../report-write/references/review-artifacts.md):
+[review artifact storage](../report-writer/references/review-artifacts.md):
 `.adr-review/<timestamp>-adr-impl-review-<adr-slug>-<unique>/` under the reviewed
 project, with Git exclusion verified before writing artifacts. Pass its absolute
 path to every agent that follows. Record the review start time when this directory
@@ -183,19 +180,19 @@ context. Their content remains subject-specific.
 Do not stop to show it or ask the user to reconfirm. Never pass it to either
 review perspective.
 
-At report composition, use the common report-write comprehension workflow to
+At report composition, use the common report-writer comprehension workflow to
 prepare questions from this explanation. Preserve this review's native fields
 and readiness rules through `references/artifact-contract.md`; question
 selection and staged self-check belong to the common report skill.
 
 ## Standard mode
 
-For `standard`, execute this section and then continue at section 7. Sections 2-6 are the full-mode path.
+For `standard`, execute this section and then continue at **Report and artifact stage**. The full-mode baseline and perspective sections below do not apply.
 
 1. Build a decision ledger containing every ADR decision and each independently reviewable requirement-contract row, including its implementation-independent observable evidence. The sufficiency pass also extracts Notable implementation choices once from the complete implementation scope.
 2. Apply the `adr-impl-sufficiency-reviewer` role to the original material, Hills, and ledger with the smallest suitable execution strategy.
 3. Review Hills in reader-priority order; record contract status, implementation evidence, and targeted test results. An unexecuted core path yields `INCONCLUSIVE`.
-4. Verify and synthesize findings using section 4's evidence rules. Standard mode has no necessity pass, separate report-writing requirement, fixed Mermaid quota, or post-implementation spec-fitness gate.
+4. Verify and synthesize findings using section 4's evidence rules. Standard mode has no necessity pass, mandatory separate reporting role, fixed Mermaid quota, or post-implementation spec-fitness gate. The validated HTML report remains required.
 5. Continue at **Report and artifact stage** below. In standard mode,
    `reviewMode` is `standard`, `necessityFindingCount` is zero, and `PASS`
    requires every contract-coverage row to be `PROVEN`, all required targeted
@@ -204,7 +201,7 @@ For `standard`, execute this section and then continue at section 7. Sections 2-
 
 ## Full mode
 
-The rest of sections 2-6 applies only to `full`.
+Sections 2 and 3 apply only to `full`. Section 4's evidence rules serve both modes.
 
 ## 2. Build the review baseline without a post-implementation gate
 
@@ -303,6 +300,9 @@ common standard/full `implementation-review.md`, `findings.json`,
 materialization, validation, HTML rendering/opening, completion response, and
 optional interactive comprehension behavior. Do not load it during scope
 discovery or the independent review perspectives.
+
+At this stage, build the optional related-ADR comparison under that contract;
+perform any additional source reads needed to ground it before reporting.
 
 ## Finding routing
 

@@ -6,8 +6,6 @@ argument-hint: "[project-name-or-lite-alps-path]"
 
 # lite-alps-init
 
-> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
-
 Create or resume a Lite ALPS document that works backward from a desired business impact to a
 minimum PoC and its executable demo.
 
@@ -28,10 +26,10 @@ separate approval, DDD exercise, or domain classification.
 > orchestration remain disposable. Do not request private chain-of-thought or
 > create hidden state required to use the document after plugin removal.
 
-Lite ALPS is a smaller template, not a separate authoring method. Follow the same interaction used
-by Full ALPS: explain the current Section, ask one focused question or at most two closely related
-questions, integrate the user's answer, present a plain-text approval digest, and save only after
-explicit approval.
+Lite shares Full ALPS's approval and saving boundary. Explain the current Section, reuse supplied
+context, present a plain-text approval digest, and save only after explicit approval. Section 1
+collects missing problem and business-impact context; Sections 2 and 4 start with AI proposals
+and ask only for unresolved protected product decisions under step 7.
 
 Lite and Full keep separate document files, state, completion, and export. Never read or update a
 Full document while authoring Lite, and never present Lite completion as Full completion or
@@ -64,9 +62,9 @@ implementation readiness.
    - Read every prerequisite named by the guide with
      `mcp__alps-writer__read_alps_section`.
    - Briefly explain the Section's purpose.
-   - Ask one focused question from the guide, or at most two closely related questions, when
-     required context is missing. Section 3 may skip this step under its optional rule.
-   - Wait for the user's answer and integrate it into the Section.
+   - Follow step 7's Section-specific question and proposal rules. When a question is needed,
+     ask one focused question or at most two closely related questions from the guide, wait for
+     the answer, and integrate it. Otherwise continue with the proposal or optional skip.
    - When the Section is complete, present a concise plain-text approval digest.
    - Save each approved subsection separately with
      `mcp__alps-writer__save_alps_section`.

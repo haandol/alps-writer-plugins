@@ -2,7 +2,7 @@
 
 Use this guide only when writing the report or chat summary a person will read.
 Before composing the final presentation, read and apply
-`${CLAUDE_PLUGIN_ROOT}/skills/report-write/SKILL.md` and its relevant references.
+`${CLAUDE_PLUGIN_ROOT}/skills/report-writer/SKILL.md` and its relevant references.
 That skill owns domain hierarchy, maximum four peer units, paragraph layout,
 worked examples, and editorial completion checks. Internal reviewer artifacts
 keep their evidence-complete formats; a flat audit export is not the final
@@ -41,7 +41,7 @@ Keep each item to one or two sentences. A reader should understand the outcome
 without knowing the rule IDs, file layout, or internal symbol names.
 
 After this summary, organize the complete evidence by its owning domain and
-responsibility using report-write. Preserve the complete evidence required by
+responsibility using report-writer. Preserve the complete evidence required by
 the owning skill.
 Easy wording never permits dropping a requirement value, allowed set, state rule,
 permission, mandatory field, ordering rule, unit, finding, unverified axis, test
@@ -154,7 +154,7 @@ Context gives intent, contracts, and scope; each Container/Hill owns a vertical
 capability, Component explains its implementation, and Code supplies focused
 evidence. Keep these reading levels distinct inside the owning domain.
 Use the caller's canonical Markdown/JSON as audit input when a fixed schema is
-required. Compose the final human view with report-write; native schemas are
+required. Compose the final human view with report-writer; native schemas are
 not permission to deliver a flat or unreviewed human report.
 
 - **Implementation refactor** — visualize before/after work flow only when several

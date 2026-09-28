@@ -239,7 +239,7 @@ while preserving document structure and ADR→PRD reference checks.
 
 ## Report writing across projects
 
-Both plugins include `report-write` for code, pull request, ADR, architecture,
+Only adr-writer includes `report-writer` for code, pull request, ADR, architecture,
 and document review results, as well as reports, audits, sync, rollup, and
 evaluations. A review request selects it even without a separate report request.
 The owning workflow still determines inspection scope, findings, verdicts, and
@@ -258,7 +258,7 @@ start a conversational quiz automatically. HTML supports the staged self-check
 and prints questions without answers; Markdown separates questions from the
 answer explanations. Implementation reviews reuse the same quiz controls.
 
-Use `$report-write` in Codex or `/report-write` in Claude Code. Existing
+Use `$report-writer` in Codex or `/report-writer` in Claude Code. Existing
 structured review data remains complete; the final human presentation follows
 the common skill instead of treating a flat audit export as the final report.
 
@@ -269,19 +269,21 @@ exclusion before writing; when needed, a local `.adr-review/.gitignore` excludes
 the outputs without modifying tracked project configuration. Repeated reviews
 preserve earlier runs and do not add review files to normal `git status` output.
 
-The canonical source is `shared/report-write/`. Plugin copies are synchronized
-and checked during development. For this computer's other projects:
+The canonical source is `shared/report-writer/`. The adr-writer copy is synchronized
+and checked during development. ALPS Writer has no report skill or report-writing
+SessionStart hook, so installing both plugins provides one copy of the skill and
+one report directive per session event. For this computer's other projects:
 
 ```bash
 node scripts/sync-report-skill.mjs --global
 node scripts/sync-report-skill.mjs --check --global
 ```
 
-This installs the same standalone skill in `~/.agents/skills/report-write`.
+This installs the same standalone skill in `~/.agents/skills/report-writer`.
 To install from GitHub with the `skills` CLI:
 
 ```bash
-npx skills add https://github.com/haandol/alps-writer-plugins/tree/main/plugins/adr-writer/skills/report-write --global --agent codex
+npx skills add https://github.com/haandol/alps-writer-plugins/tree/main/plugins/adr-writer/skills/report-writer --global --agent codex
 ```
 
 Omit `--global` for a project-local installation. The explicit directory selects

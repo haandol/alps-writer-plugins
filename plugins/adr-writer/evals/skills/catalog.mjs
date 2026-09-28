@@ -14,14 +14,14 @@ export const routingCases = [
     title: "문서만 검토",
     prompt: "ADR 문서의 요구값 누락과 추상화 수준만 검토해줘. 코드나 문서를 수정하지 마.",
     required: ["adr-review"],
-    allowed: ["adr-review", "report-write"],
+    allowed: ["adr-review", "report-writer"],
   },
   {
     id: "routing-sync",
     title: "구현과 문서 대조",
     prompt: "배포된 코드와 ADR의 결정이 맞는지 확인하고 입증된 문서 차이를 고쳐줘.",
     required: ["adr-sync"],
-    allowed: ["adr-sync", "report-write"],
+    allowed: ["adr-sync", "report-writer"],
   },
   {
     id: "routing-lite",
@@ -43,14 +43,14 @@ export const routingCases = [
     prompt:
       "같은 결정의 변경 이력이 여러 ADR에 흩어졌어. 현재 결정 하나로 합치고 큰 전환은 이력에 남겨줘.",
     required: ["adr-rollup"],
-    allowed: ["adr-rollup", "report-write"],
+    allowed: ["adr-rollup", "report-writer"],
   },
   {
     id: "routing-implementation",
     title: "기록된 결정 구현",
     prompt: "이미 승인한 Proposed ADR을 코드로 구현하고 테스트와 완료 리뷰까지 진행해줘.",
     required: ["adr-impl"],
-    allowed: ["adr-impl", "adr-impl-refactor", "adr-impl-review", "report-write"],
+    allowed: ["adr-impl", "adr-impl-refactor", "adr-impl-review", "report-writer"],
   },
   {
     id: "routing-arithmetic",

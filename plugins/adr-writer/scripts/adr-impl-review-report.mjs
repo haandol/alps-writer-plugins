@@ -184,7 +184,7 @@ import {
   renderQuestion as comprehensionQuestionCard,
   quizLabels,
   quizScript,
-} from "../skills/report-write/scripts/comprehension.mjs";
+} from "../skills/report-writer/scripts/comprehension.mjs";
 import { CATEGORIES, AUTHORITY } from "./adr-impl-review-categories.mjs";
 import { relatedAdrComparisonProse, hillNarrativeParagraphs } from "./adr-impl-review-prose.mjs";
 import {

@@ -6,7 +6,7 @@ argument-hint: "<category> [title?]"
 
 # adr-new
 
-> **Reports**: Before human-facing reports, apply [report-write](../report-write/SKILL.md).
+> **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Author an ADR directly. Works without an ALPS PRD — this is the plugin's canonical ADR authoring path, while `/feature-to-adr` is "the helper that auto-converts an ALPS Section 7 feature when one already exists."
 
@@ -33,22 +33,14 @@ Before interpreting delegated choices, read
 
 ## Authoritative working model
 
-Read the target repository's `docs/adr/concepts.md` abstraction ladder and
-`docs/adr/authoring-rules.md` requirement gate, falling back to the plugin
-templates. They own the single-level read and regeneration tests.
-
-**PRD, ADR, and code are the same system at three resolutions** — like C4's context / container / component zoom, not three documents about three topics. The value of a level is what it **refuses** to show, because that is what lets a reader load one level, get its question answered, and stop.
-
-So an ADR answers exactly one question: **"why this decision, and what must the result honor?"** Two ways to get that wrong, and you are guarding both directions at once:
-
-- **Pulling detail up from the code level** (signatures, field types, pool sizes, pseudocode, file paths) — the ADR stops being trustworthy on its own, because it asserts things the code may already have changed. The reader must open the code to learn which half still holds, and the level no longer answers its question.
-- **Pushing a requirement out** ("the PRD or code already has that number") — code shows enforcement and the PRD shows user intent, but neither explains the admitted architectural contract and rationale. This is the more expensive failure, which is why step 2 makes you ask about requirement values even unprompted.
-
-The one test behind both, applied when you finish the draft:
-
-> **Can this ADR be read alone and answer its own question — with nothing in it that belongs to the code level, and nothing missing that no other level holds?**
-
-The regeneration test in step 3 is that test's second half; the "record only the gray zone" bullet is its first half. Full principle: `concepts.md` "The abstraction ladder".
+Read the target repository's `docs/adr/concepts.md` and
+`docs/adr/authoring-rules.md`, falling back to the plugin templates. Reuse
+unchanged guidance already loaded in this context. They own the abstraction
+ladder, single-level read test, and regeneration test: the ADR must explain the
+decision and complete requirement contract independently, while replaceable
+implementation detail stays in code. Apply the requirement gate before the
+code-readthrough and litmus tests. The procedure below supplies this skill's
+authoring, approval, and persistence boundaries.
 
 ## Procedure
 
@@ -60,7 +52,7 @@ The regeneration test in step 3 is that test's second half; the "record only the
 
   For the category rules (top level = bounded context, sub-folder = feature, forbidden categories, cross-cutting and subdomain conditions), see `structure.md` "Directory structure" / "Anti-pattern categories". If the user supplies an anti-pattern category (`frontend`, `backend`, `api`, `db`, and the like — whether as the context folder or the feature sub-folder), ask once: "Does this decision belong to one feature (e.g. `identity/login`, `ordering/checkout`)? If two or more share it, a system-wide cross-cutting context (`infra`, `data`, `integration`, `security`, `platform`) is the better fit."
 
-- **`[title]`** (optional) — if a title arrives as an argument, start from it. Otherwise ask the user once ("Which decision should this ADR record? One line for the title.").
+- **`[title]`** (optional) — use the supplied title or derive it from the established decision. Ask which decision to record only when the request leaves that unclear.
 
 Apply `authoring-rules.md` "ADR admission gate" **before any filesystem write or mapping initialization**:
 
@@ -93,7 +85,7 @@ Check for category bloat — once the category is settled, follow the inspect-an
 
 ### 2. Elicit the decision's motivation
 
-Writing a good ADR without an ALPS requires the following. Ask briefly, one item at a time:
+Establish the following from the request, supplied sources, and existing context. Ask only for missing decision information; group closely related gaps when useful. The items are coverage requirements, not a mandatory interview script:
 
 1. **What problem or need is driving this decision?** (Context)
 2. **Which pressures, constraints, or requirements discriminate between the options?** (Decision Drivers — usually 3-5, but keep only real discriminators. Not generic quality attributes like "scalability" or "maintainability".) If the decision is tightly constrained, record why fewer drivers are sufficient.

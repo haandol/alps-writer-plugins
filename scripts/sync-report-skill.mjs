@@ -5,16 +5,13 @@ import os from "node:os";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const source = path.join(ROOT, "shared/report-write");
+const source = path.join(ROOT, "shared/report-writer");
 if (process.argv.slice(2).some((arg) => !["--check", "--global"].includes(arg)))
   throw new Error("Usage: sync-report-skill.mjs [--check] [--global]");
 const check = process.argv.includes("--check");
 const global = process.argv.includes("--global");
-const targets = [
-  "plugins/adr-writer/skills/report-write",
-  "plugins/alps-writer/skills/report-write",
-].map((p) => path.join(ROOT, p));
-if (global) targets.push(path.join(os.homedir(), ".agents/skills/report-write"));
+const targets = [path.join(ROOT, "plugins/adr-writer/skills/report-writer")];
+if (global) targets.push(path.join(os.homedir(), ".agents/skills/report-writer"));
 function files(folder, prefix = "") {
   return readdirSync(path.join(folder, prefix), { withFileTypes: true }).flatMap((entry) => {
     const name = path.join(prefix, entry.name);
@@ -55,5 +52,5 @@ for (const target of targets)
 if (mismatch) process.exitCode = 1;
 else
   console.log(
-    `${check ? "Verified" : "Synchronized"} report-write in ${targets.length} locations.`,
+    `${check ? "Verified" : "Synchronized"} report-writer in ${targets.length} location${targets.length === 1 ? "" : "s"}.`,
   );
