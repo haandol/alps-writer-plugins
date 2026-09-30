@@ -6,6 +6,10 @@ argument-hint: "<category> [title?]"
 
 # adr-new
 
+Before classifying features, read
+`${CLAUDE_PLUGIN_ROOT}/references/feature-boundaries.md`: inspect existing project
+topology, then use bounded contexts and vertical user stories by default.
+
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Author an ADR directly. Works without an ALPS PRD — this is the plugin's canonical ADR authoring path, while `/feature-to-adr` is "the helper that auto-converts an ALPS Section 7 feature when one already exists."
@@ -14,7 +18,7 @@ When qualifying jargon or an unclear acronym appears, read
 `${CLAUDE_PLUGIN_ROOT}/references/glossary.md`. Require a clear user meaning,
 reuse supplied definitions, and create or update `docs/adr/glossary.md` only when
 needed under the current ADR approval. Keep the decision and requirement contract
-self-contained in the ADR; do not add DDD classification or a glossary interview.
+self-contained in the ADR; glossary work adds no separate classification interview.
 
 > When to use: whenever a decision passes the **ADR admission gate** and must be recorded before changing code — a requirement contract, external boundary, data/key design, security trust boundary, adopted algorithm, fallback policy, or durable trade-off. A replaceable implementation means does not enter this skill. The ADR you write can go straight into `/adr-impl`.
 >
@@ -48,6 +52,8 @@ approval. Steps 3–6 prepare candidates, and step 7 applies only approved chang
 Writing the live files and then reverting them is still a pre-approval write.
 Step 1's initial rule-document seeding and separately approved refresh retain
 their existing permissions; neither authorizes an ADR body or mapping change.
+
+Reuse caller answers and approvals; ask only about new gaps.
 
 ## Procedure
 
@@ -103,7 +109,10 @@ Establish the following from the request, supplied sources, and existing context
 
 4. **Were other options considered and rejected? Collect the realistic alternatives that actually existed.** Two or more are useful when available. If policy, regulation, or an external boundary left only one valid path, record that constraint instead of inventing a strawman.
 5. **Is there another category that must be implemented before this one (a prerequisite)?** (Upstream dependency — e.g. "checkout needs the cart working first".) If so, collect that **prerequisite category key** (otherwise "none"). This answer is stored as `dependsOn` in `.mapping.json` in step 4 and read by `/adr-impl`'s prerequisite gate — the "Prerequisites" line on step 7's confirmation screen comes from here too. In a project that also has an ALPS PRD, `/feature-to-adr` carries dependencies over from Section 6.3, so you need not ask again.
-6. **(Optional) Which bounded context does this decision belong to, and what is its DDD subdomain classification?** — ask lightly only when the category is two-segment (`identity/login`) or the user cares about domain classification ("Is this context core to the product's competitiveness, supporting, or generic enough to be replaced by an off-the-shelf product?"). If they answer, store it as the context entry's `subdomainType` in step 4. **If they do not know, or the structure is flat and single-feature, skip the question** — it is advisory metadata and never forced.
+6. Identify the bounded context from the shared feature-boundary model and reuse
+   confirmed grouping. Ask only about materially unclear business ownership.
+   **Optional:** `subdomainType` (core/supporting/generic) remains advisory; skip
+   that metadata question when unknown, without skipping the context itself.
 
 If the user answers everything at once, take it as given; if they answer briefly, break it into one or two rounds. If they say they do not know, do not guess — agree on "shall we leave this blank, save as Proposed, and fill it in during /adr-impl?"
 

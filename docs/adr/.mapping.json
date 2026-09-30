@@ -5,8 +5,8 @@
       "adrs": [
         {
           "path": "docs/adr/adr-authoring/current-state/0001-record-only-the-final-decision-state.md",
-          "status": "Accepted (2026-08-15)",
-          "summary": "ADR 작성 경로는 새 파일보다 기존 결정 소유자 확인을 우선하고 같은 결정의 대안 변경과 원복을 기존 ADR의 현재 상태로 갱신한다"
+          "status": "Accepted (2026-09-30)",
+          "summary": "같은 결정은 한 ADR에 유지하고 충돌 시 실제 기록·커밋의 최신 의미 변경을 우선하며 불명확한 의도는 확인한다"
         }
       ],
       "dependsOn": []
@@ -27,8 +27,8 @@
       "adrs": [
         {
           "path": "docs/adr/adr-authoring/decision-presentation/0001-present-decision-digest-and-semantic-diff.md",
-          "status": "Proposed",
-          "summary": "ADR은 의도를 독립적인 계약 의무와 사전 수용 기준·증거 종류에 연결하고 의미 변경을 승인 전에 제시한다"
+          "status": "Accepted (2026-09-30)",
+          "summary": "ADR의 의도와 계약을 먼저 설명하고 sync·rollup·import의 남은 의도·충돌 질문을 리포트로 모아 답변 후 자동 반영한다"
         }
       ],
       "dependsOn": ["adr-authoring/current-state"]
@@ -164,6 +164,34 @@
         }
       ],
       "dependsOn": []
+    },
+    "document-authoring/domain-organization": {
+      "feature": "Domain-oriented feature documentation",
+      "adrs": [
+        {
+          "path": "docs/adr/document-authoring/domain-organization/0001-organize-features-by-bounded-context.md",
+          "status": "Accepted (2026-09-30)",
+          "summary": "제품 기획과 ADR은 프로젝트 형태를 먼저 조사하고 바운디드 컨텍스트 안의 버티컬 슬라이스 또는 사용자 스토리별로 구성한다"
+        }
+      ],
+      "dependsOn": ["adr-authoring/current-state", "adr-authoring/decision-boundary"]
+    },
+    "adr-authoring/project-import": {
+      "feature": "Existing project ADR import",
+      "adrs": [
+        {
+          "path": "docs/adr/adr-authoring/project-import/0001-import-existing-project-decisions.md",
+          "status": "Accepted (2026-09-30)",
+          "summary": "기존 프로젝트의 기능과 계약 후보를 발견하고 ADR별 의도 질문을 하나의 리포트로 모아 확인한 뒤 문서화한다"
+        }
+      ],
+      "dependsOn": [
+        "adr-authoring/current-state",
+        "adr-authoring/decision-boundary",
+        "reporting/domain-navigation",
+        "document-authoring/domain-organization",
+        "adr-authoring/decision-presentation"
+      ]
     }
   }
 }

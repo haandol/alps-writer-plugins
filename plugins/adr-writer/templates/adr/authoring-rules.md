@@ -58,6 +58,26 @@ A provider replacement is normally an evolution of the provider-boundary decisio
 
 **Do not create a new ADR and immediately supersede or deprecate the old one merely to preserve history.** The current body owns the present decision, `decision-log.md` owns major transitions, and Git owns the verbatim diff.
 
+## Resolving conflicting accounts of a decision
+
+Compare the same obligation and application scope before choosing a current
+meaning. Prefer the later recorded or committed semantic change, using the
+original passages and introducing change history. File modification time,
+formatting, file moves, ADR numbers, or a stricter value do not establish a new
+contract. Preserve all unaffected requirements and still-valid rationale.
+
+Current explicit user intent takes precedence. A newer implementation alone
+cannot prove an intentional contract change: present it as the default candidate
+and resolve unclear intent before changing the contract. Unordered branches,
+conflicting chronology, and uncertain adoption remain visible questions; do not
+manufacture certainty from timestamps. Confirmed decisions can be restored
+without repeating the same approval, within the owning workflow's permissions.
+
+Recency does not alter decision ownership, merge scope, Status completion gates,
+or destructive approval. Keep source evidence and unresolved obligations until
+the relevant questions are settled; preserve concurrent edits when applying an
+approved candidate.
+
 ## What an ADR must satisfy — the regeneration test
 
 An ADR's goal is **not to reproduce the same code, but to make regenerated code satisfy the business requirements.** So completeness reduces to one question:

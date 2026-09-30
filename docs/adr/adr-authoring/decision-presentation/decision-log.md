@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the adr-authoring/deci
 category. Each ADR body describes only the current state, while the timeline of "what
 changed and why" accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-09-30 — 의도·충돌의 일괄 질문과 자동 재개를 제안
+
+- **Current ADR**: [present-decision-digest-and-semantic-diff](./0001-present-decision-digest-and-semantic-diff.md)
+- **Change type**: requirement rule change
+- **What**: 단일 결정 요약과 의미 차이 표시 → 동기화·병합·가져오기의 남은 질문과 변경 승인을 기능별 리포트로 수집하고 답변 반영·검증까지 이어가는 상호작용을 제안했다.
+- **Why**: 사용자가 ADR마다 대화를 멈추지 않고 필요한 의도와 충돌 판단을 모아 답한 뒤 자동으로 작업이 이어지기를 요청했다.
+
 ## 2026-09-30 — 승인 전 초안 검증과 권위 문서 저장을 분리
 
 - **Current ADR**: [present-decision-digest-and-semantic-diff](./0001-present-decision-digest-and-semantic-diff.md)

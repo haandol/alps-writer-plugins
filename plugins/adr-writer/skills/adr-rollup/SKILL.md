@@ -39,6 +39,12 @@ It does three things at once:
 
 **Consolidation always happens within a single category (the leaf — a feature sub-folder or a single-feature context).** Category classification is per vertical slice (feature) and is the trust foundation `.mapping.json` and the hook depend on, so never merge across a category boundary even when the decisions look like the same logical decision — in particular, **never merge ADRs from different feature sub-folders (`identity/login` and `identity/signup`) merely because they share a bounded context.** A cross-cutting ADR directly under a context (`identity/0001-...`) also merges its chain only in place. If you suspect the category itself is split incorrectly, do not consolidate — report it under `Suggestions` (re-classification follows the `adr-sync` / `structure.md` procedure).
 
+Before choosing current content, read
+`${CLAUDE_PLUGIN_ROOT}/references/decision-reconciliation.md`. Prefer the later
+recorded or committed semantic change to the same obligation and scope, while
+respecting current user intent and established adoption. Raw dates or newer code
+alone do not establish a contract or grant destructive permission.
+
 ## What to merge and what to leave
 
 A merge requires the same architectural question, owned contract boundary, and
@@ -68,6 +74,15 @@ independent candidate preparation continues.
 When the judgment is ambiguous, do not merge. Staying separate is safer — a wrong consolidation loses decisions.
 
 > **Language**: this skill and every other harness prompt are written in English, but talk to the user and write the ADR body in the language the user writes in (`authoring-rules.md` "Conventions"). Any user-facing phrasing below is a guide, not a literal string.
+
+## Questions and continuation
+
+When intent, conflicts or concrete change approval remain unresolved, read
+`${CLAUDE_PLUGIN_ROOT}/references/decision-questions.md`. Prepare independent
+work first and collect questions by feature in one report. All instructions below
+to ask or confirm use that batch, not an interruption per ADR. Reuse confirmed
+answers and exact existing approval; after answers, apply the authorized scope
+and continue validation automatically. Keep each unresolved choice identifiable.
 
 ## Workflow
 
@@ -200,7 +215,9 @@ Compare the consolidated ADR against the code and align it one last time — fin
      sets, transitions, permissions, required fields, ordering, units, public
      compatibility, key design, fallback and adoption rationale remain the ADR's
      authority. Never correct them toward code. Record `[Code re-alignment needed]`
-     and request a ruling: intended change (ADR first) or implementation violation.
+     and collect a ruling: intended change (ADR first) or implementation violation.
+     When code is newer, recommend its behavior as a candidate while intent stays
+     unconfirmed; established adopted decisions need no repeated question.
    - **Non-requirement implementation fact** — remove stale internal identifiers,
      libraries, SDKs, auth wiring and module layouts instead of synchronizing them.
      Status preserves verified completion under step 4 rule 0; code presence alone
@@ -210,7 +227,7 @@ Compare the consolidated ADR against the code and align it one last time — fin
    that fail the requirement gate stay at code level. For authority details use
    `adr-sync`'s `references/reconciliation-boundary.md`.
 
-**One decision request per unresolved choice.** Include both original claims and
+**One report with one identified request per unresolved choice.** Include both original claims and
 sources, applicable conditions, the recommended resolution and why, the exact
 contract change, and its history impact. Hold only the affected decision and
 continue independent preparation. Generic approval of file consolidation does
@@ -293,7 +310,12 @@ The harvest never touches `.mapping.json` (the log is a convention file and is n
 
 ### 10. User confirmation (always, before any destructive change)
 
-**Always get the user's approval before overwriting or deleting any file — no exceptions.** A superseded-chain merge in particular entails (a) overwriting the survivor file, (b) deleting the remaining chain members, and (c) any separately requested renames, so present the summary below and perform the writes and deletions of steps 4, 6, 7, 8, and 9 only after explicit approval. Before approval, show the plan and candidate content; do not modify repository files. On a full-scope run, report grouped by category, and if the user approves only some categories, apply it to those alone.
+Prepare the concrete summary below and combine its required approvals with the
+remaining intent/conflict questions under `decision-questions.md`. Reuse explicit
+approval already covering these exact contracts and paths; otherwise confirm
+before overwriting or deleting any file. Apply only the approved categories and
+paths, preserving unanswered decisions and concurrent edits. A general rollup
+request alone does not approve unshown destructive paths.
 
 ```
 ## ADR Roll-up results

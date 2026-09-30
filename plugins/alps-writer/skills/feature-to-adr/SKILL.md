@@ -6,6 +6,9 @@ argument-hint: "[category-or-feature-id?]"
 
 # feature-to-adr
 
+Apply `${CLAUDE_PLUGIN_ROOT}/references/feature-boundaries.md` before grouping
+features: inspect topology, then identify business contexts and vertical slices.
+
 Transfer ALPS feature specifications at the PRD → ADR ownership boundary. This
 skill owns ALPS-side discovery, complete requirement transfer, and explicit
 re-import comparison. ADR authoring remains delegated to `/adr-new` in the
@@ -69,10 +72,9 @@ dependency.
 - If the user explicitly asks to inspect only one Feature, still show its
   prerequisites as handoff context.
 
-Derive each category key canonically from the Feature name. Use a two-segment
-`<context>/<feature>` key only when the PRD already supplies the grouping or the
-user explicitly requests it. Never invent a bounded context, and never use a
-technical layer name as either segment.
+Preserve established PRD boundaries. For missing boundaries, propose grounded
+candidates and confirm material ambiguity. Single-feature contexts stay flat;
+others use `<context>/<feature>`. Never invent boundaries or use technical layers.
 
 ## 3. Enrich gaps and preflight a complete ownership transfer
 
@@ -84,7 +86,7 @@ existing ADR approval and pass them to `/adr-new` so it does not repeat question
 Create the Markdown glossary only when needed, with term and meaning columns.
 Preserve unrelated entries and existing layout; equivalent meanings are no-ops.
 Resolve conflicting definitions with the user before overwriting them or completing
-the affected handoff. Do not introduce DDD or domain classification.
+the affected handoff. Do not introduce DDD or domain classification as a separate glossary task.
 
 Transfer definitions without PRD paths, Section IDs, or source links. Keep short
 explanations and all requirement values, states, permissions and success conditions

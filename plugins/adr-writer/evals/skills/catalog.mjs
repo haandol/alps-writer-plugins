@@ -12,6 +12,21 @@ export const ROOT = path.resolve(PLUGIN, "../..");
 // These are task expectations, not descriptions copied into the routing prompt.
 export const routingCases = [
   {
+    id: "routing-project-import",
+    title: "기존 프로젝트에 ADR 도입",
+    prompt:
+      "기획 문서 없이 기존 프로젝트의 코드를 읽어 기능별 ADR로 정리하고, 빠진 의도는 리포트로 모아 물어봐줘.",
+    required: ["adr-import"],
+    allowed: ["adr-import", "adr-new", "report-writer"],
+  },
+  {
+    id: "routing-product-handoff",
+    title: "기획 기능의 계약 이전",
+    prompt: "승인된 Full ALPS 문서의 Feature들을 ADR로 이전해줘.",
+    required: ["feature-to-adr"],
+    allowed: ["feature-to-adr", "adr-new", "report-writer"],
+  },
+  {
     id: "routing-document-review",
     title: "문서만 검토",
     prompt: "ADR 문서의 요구값 누락과 추상화 수준만 검토해줘. 코드나 문서를 수정하지 마.",

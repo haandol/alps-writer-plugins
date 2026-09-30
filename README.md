@@ -110,8 +110,9 @@ Invoke skills with `$alps-init`, `$lite-alps-init`, `$feature-to-adr`, `$adr-new
 
 > `/feature-to-adr` (in alps-writer) delegates ADR authoring to `/adr-new` (in adr-writer), so install **both** if you want the ALPS → ADR bridge. adr-writer on its own works without any ALPS PRD.
 
-Three independent entry flows, driven by `$skill-name` in Codex or `/skill-name` in Claude Code:
+Four independent entry flows, driven by `$skill-name` in Codex or `/skill-name` in Claude Code:
 
+- **Existing project** — `/adr-import` → one intent/conflict report → confirmed `Proposed` ADRs; `/adr-impl` handles later completion
 - **PoC authoring** — `/lite-alps-init` → minimum PoC scope and demo
 - **PRD-first** — `/alps-init` → `/feature-to-adr` → `/adr-impl` → `/adr-impl-refactor` (automatic) → `/adr-impl-review` (completion gate) → `Accepted`
 - **ADR-only** — `/adr-new` → `/adr-impl` → `/adr-impl-refactor` (automatic) → `/adr-impl-review` (completion gate) → `Accepted`
@@ -127,6 +128,15 @@ Examples illustrate supplied inputs, not product defaults. Their values, units,
 populations, and measurement conditions must remain consistent when carried into
 acceptance criteria or metrics. Delegating a value does not make a protected
 product decision an implementation tuning value.
+
+Existing-project import first distinguishes repository organization from execution
+and deployment shape, then groups by DDD bounded context and vertical user story.
+Full/Lite planning and direct ADR authoring use the same business-boundary model.
+Service folders and frontend/backend/database layers are not feature categories.
+Sync and rollup prefer later semantic changes in the same scope, gather unresolved
+intent/conflicts and exact change approvals in one report, and resume the confirmed
+work automatically. Report question IDs are visible in titles; answer them together
+in conversation. Newer code alone does not approve a contract change.
 
 Run `/adr-sync` when review finds implementation-fact drift, after broad refactors or manual ADR edits, or as a periodic audit; it is not a mandatory deep scan after every small implementation.
 

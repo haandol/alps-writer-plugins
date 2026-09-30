@@ -432,6 +432,11 @@ question.
 `contractCoverage` is non-empty because `D0` always represents the ADR Decision
 even when there is no explicit requirement-contract subsection.
 
+For contract IDs, enumerate top-level bullets and table data rows under the
+canonical Requirement contract in source order. Preserve a bullet verbatim in
+`adrBasis`; for a table row, join trimmed source cells with `|`, excluding the
+header and separator. Retain both the obligation and its observable evidence.
+
 Each `diagramRequirements` entry has a sequential `V1..Vn` id, one review
 question, a supported Mermaid type, an owning section, selection reason, and
 grounded evidence. An empty list is valid only when every Hill has empty

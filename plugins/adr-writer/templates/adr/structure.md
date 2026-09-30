@@ -4,6 +4,16 @@ Collects the folder layout of `docs/adr/`, the category-splitting rules, and the
 
 ## Directory structure — DDD domain (bounded context) × feature (vertical slice)
 
+Before grouping an existing project, distinguish repository organization
+(monorepo/multirepo) from execution and deployment organization
+(monolith/microservices/hybrid). Use accessible evidence and state unknown
+scope. These axes guide discovery, not ADR categories: bounded contexts follow
+business language and rule ownership, and features follow user stories or
+vertical slices. A monolith can contain several contexts, and one context can
+span services or repositories. Apply this model by default, preserve confirmed
+boundaries, and ask only about material uncertainty. For a project without code,
+propose boundaries from product intent without inventing an existing topology.
+
 The folder tree is organized along **two axes** — both expressed within the existing two-level key, adding no new depth.
 
 - **Top-level folder = a bounded context (a DDD domain unit).** It is a model boundary named in the domain expert's ubiquitous language (`identity/`, `ordering/`, `catalog/`). One context usually **holds several features.**

@@ -77,7 +77,11 @@ test("preparation and regeneration never call a model and preserve captured JSON
     judge: noCall,
   });
   assert.equal(result.status, 0);
-  assert.equal(result.report.runs.length, 8);
+  assert.equal(result.report.runs.length, routingCases.length);
+  assert.deepEqual(
+    result.report.runs.map((r) => r.caseId).sort(),
+    routingCases.map((c) => c.id).sort(),
+  );
   assert.ok(result.report.runs.every((r) => r.verdict === "NOT_RUN"));
   assert.ok(existsSync(result.html));
   const before = readFileSync(path.join(out, "results.json"), "utf8");

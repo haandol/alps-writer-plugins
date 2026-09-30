@@ -4,6 +4,12 @@ Read this file completely before semantic reconciliation in deep mode. It
 defines which side is authoritative and prevents implementation changes from
 silently redefining a requirement or admitted decision.
 
+Before choosing between conflicting accounts, read the plugin-local
+`references/decision-reconciliation.md`. Prefer the later recorded or committed
+semantic change to the same obligation. Reuse established intent; collect only
+unresolved intent or chronology for the consolidated report. This default never
+turns a newer code value into an approved contract by itself.
+
 ## Status and implementation facts
 
 Status follows whether the repository implementation and tests exist, subject to
@@ -23,8 +29,10 @@ and repository code says 30, record:
 
 `[Requirement value drift] <category> — ADR "20 turns" ↔ code "30 turns"`
 
-Do not overwrite the ADR to match code. Ask whether the code embodies an
-intended contract change or violates the existing contract.
+Use the shared reconciliation guidance to inspect the introducing change.
+When intent remains unknown, recommend the newer behavior in the consolidated
+question report and ask whether it is an intended contract change or a violation.
+Do not overwrite the ADR solely to match code.
 
 For an intended change, preserve ADR-first order: update the ADR requirement
 contract, add one major-transition line to `decision-log.md`, then align the
@@ -53,8 +61,10 @@ The ADR is authoritative for adoption rationale, alternatives, domain rules,
 state transitions, external-dependency fallback, and the intent behind the key
 design.
 
-When repository evidence contradicts such a decision, do not match the ADR to
-the implementation by default. Ask the user to rule one branch:
+When repository evidence contradicts such a decision, first inspect semantic
+history and existing user intent. Restore a known later adopted decision within
+the authorized scope. If intent remains unclear, collect a question with the
+newer content as the default recommendation and these branches:
 
 - **An intended decision change** — update the existing ADR in place to the
   current decision, log a major transition when required, return an Accepted

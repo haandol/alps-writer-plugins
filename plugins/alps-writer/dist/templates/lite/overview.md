@@ -42,7 +42,7 @@ definition or add a separate approval, upfront interview, or final writing stage
 Only actual definitions create the trailing Glossary Appendix, with a term and its
 meaning per entry. Ordinary-language documents need no glossary or placeholder.
 The appendix is optional; defining a qualifying term is mandatory. Check definition
-coverage before completion. Do not require DDD or domain classification, and keep
+coverage before completion. Do not require DDD or domain classification for glossary maintenance, and keep
 short first-use explanations and product requirements in the body.
 
 For every Section that needs content:
@@ -136,3 +136,15 @@ detailed Feature specifications, implementation plans, or ADR handoff.
 
 Lite and Full keep separate document state, resume, completion, and export. Completing Lite never
 changes or completes a Full document.
+
+## Feature organization
+
+Before grouping an existing project, inspect repository organization
+(monorepo/multirepo) separately from execution and deployment shape
+(monolith/microservices/hybrid); state inaccessible or unknown scope. Organize
+features by DDD bounded contexts (business meaning and rule ownership), then
+vertical user stories from trigger to observable result. Repository/service
+boundaries are not automatically business boundaries. Use this grouping by
+default; propose grounded candidates and clarify only material ambiguity.
+Preserve the profile's existing sections, approval units and diagram levels.
+Keep implementation detail and topology inventories outside the product document.

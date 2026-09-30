@@ -6,6 +6,10 @@ argument-hint: "[project-name-or-lite-alps-path]"
 
 # lite-alps-init
 
+Before classifying features, read
+`${CLAUDE_PLUGIN_ROOT}/references/feature-boundaries.md`: inspect existing project
+topology, then use bounded contexts and vertical user stories by default.
+
 Create or resume a Lite ALPS document that works backward from a desired business impact to a
 minimum PoC and its executable demo.
 
@@ -23,7 +27,7 @@ definitions and ask before finalizing content that depends on an unclear meaning
 Read `read_alps_glossary()` as needed and use `save_alps_glossary_entry()` under the
 current Section approval. Check missing definitions before completion. The appendix
 comes after the four Sections only when needed, without a glossary interview,
-separate approval, DDD exercise, or domain classification.
+separate approval, or extra domain-classification exercise.
 
 > **Language**: talk to the user and write the document in the language the user uses. The skill,
 > templates, and guides are written in English only as agent instructions.

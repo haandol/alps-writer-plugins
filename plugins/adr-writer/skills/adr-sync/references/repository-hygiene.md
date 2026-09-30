@@ -54,7 +54,7 @@ Follow Related links of each corrected ADR and check:
 - A superseding ADR that fails to cover all decisions from the superseded ADR.
 - Stale cross-references after category migration.
 
-Record resolvable conflicts under `Contradictions Resolved`; use `Suggestions` when user judgment is required.
+Apply the shared decision reconciliation reference to resolve known later semantic changes. Record resolved cases under `Contradictions Resolved`; collect unresolved intent, chronology and dependencies in the single question report. After answers, continue the confirmed work automatically.
 
 ## Companion documents and invariants
 

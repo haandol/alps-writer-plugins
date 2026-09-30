@@ -40,6 +40,22 @@ Every named function or method created or materially changed for ADR behavior us
 
 **Standalone**: adr-writer requires no ALPS PRD and never references the `alps-writer` plugin. ADRs are its first-class artifact; code is implemented from ADRs. `docs/adr/.mapping.json` (the ADR index) stores no PRD reference. The ADR ↔ code link is not stored anywhere — an agent finds the code an ADR governs by reading the ADR and searching the repo, so refactors never churn a stored mapping.
 
+## Adopt an existing project
+
+Use `/adr-import [project-path-or-feature-scope]` to inspect an existing codebase.
+It identifies repository and deployment shape, discovers business contexts and
+vertical features, and prepares ADR candidates. One report collects missing
+purpose, rationale, contract confirmation and conflicts. Reply with its visible
+decision IDs; confirmed work continues through document/index validation without
+another routine proceed question. The application code stays unchanged.
+
+New ADRs are saved as `Proposed`; existing equivalent contracts are unchanged on
+repeat import. Known later semantic decisions resolve stale accounts, while
+unknown intent remains pending. `/adr-sync` and `/adr-rollup` reuse the same batch
+question and automatic-continuation flow within their existing scope and approval
+boundaries. A single HTML report opens with the default operating-system opener;
+no automation browser or report server is required.
+
 ## Install
 
 **Codex**
@@ -60,6 +76,7 @@ codex plugin add adr-writer@alps-writer
 
 | Command                          | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/adr-import [scope]`            | Discover existing business features, gather intent and conflicts in one report, and save confirmed ADR contracts without changing application code.                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `/adr-new <category>`            | Apply the admission gate, then author a durable architectural decision directly; assumptions that could change the decision stay in Purpose or Decision Drivers, while implementation-only choices create no ADR                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `/adr-impl [category]`           | Implement an ADR as vertical user-flow/capability/context Hills. Before the next Hill starts, record the current Hill's context, design/contracts, cross-layer implementation, targeted ideal/edge command, and observed result. Run full project tests and Review Hiking after every Hill has verified results. Comments reuse contract vocabulary but never cite an ADR. An unchanged approved ADR proceeds after a non-blocking plan update; project/domain defaults are resolved automatically and product-policy gaps become one Decision request. With no argument, lists Proposed ADRs and asks which to build |
 | `/adr-impl-refactor [category]`  | Review efficiency, complexity, coupling, duplication, and proportionate reuse; apply only high-confidence local behavior-preserving refactors with before/after tests, using the smallest model-selected review strategy that preserves the safety gates                                                                                                                                                                                                                                                                                                                                                              |
