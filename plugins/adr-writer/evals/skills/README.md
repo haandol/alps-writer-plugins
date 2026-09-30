@@ -23,7 +23,7 @@ preflight checks under a fresh `.codex/evals/skills-*` directory. The report say
 **미실행**, not PASS. It is safe to inspect the report before choosing a paid run.
 `--out` selects a new/empty directory. `--open` opens only the generated local file.
 
-The catalog includes 52 existing classification scenarios and two report-writing
+The catalog includes 52 existing classification scenarios and five report-writing
 probes and controlled routing cases. Execution includes the eleven original rollup/sync cases and three existing-project import cases. The real-repository classification
 probe remains in the report as unrun unless selected explicitly with `--only
 review-real-repo-adr` and its existing environment inputs. Ordinary runs never
@@ -134,6 +134,12 @@ machine tail or local scorer result. A scenario's explicit `obligations` (named 
 takes precedence, as in the approval digest; that path skips its legacy semantic
 scorer to avoid double judging. The report-writer probes have separate obligations
 for counts/denominators, evidence limits and presentation or review scope.
+The drill-down probes add a comparison report, a causal incident explanation,
+and a paired review of useful versus shallow nesting using the same supplied
+facts. They check prerequisites, new explanatory content at each depth, and
+visible limitations without requiring one heading list. Preparation only checks
+the registered scenarios and artifacts; live model behavior and reader learning
+gains are separate claims.
 A scenario may also supply `deterministicScore` alongside its explicit obligations,
 using a named export or a property on the default object. The registered catalog
 uses that same function, including its tool-scope guards. Named exports win when

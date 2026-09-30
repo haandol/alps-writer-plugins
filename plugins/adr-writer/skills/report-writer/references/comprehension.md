@@ -32,9 +32,12 @@ report's review basis when using the structured renderer.
 
 ## Place questions with their explanation
 
-Place each question after the owning domain's explanation and before detailed
-evidence. Keep at most four immediate peer explanation units; distribute five
-questions by their actual subject, not arbitrary numbered batches.
+Place each question after the explanation needed to answer it, including child
+explanations, and before the owning domain's detailed evidence in every format.
+If those explanations can be collapsed, provide a route back to them. Questions
+are supporting material, not extra explanation branches: apply the one-to-five
+question limit across the whole report separately from the four-child limit.
+Assign questions by actual subject, not arbitrary numbered batches.
 
 Keep question identifiers, four choices, the single correct choice, neutral
 feedback for every option, an explanation, and the grading evidence in the

@@ -1,4 +1,5 @@
 import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
+import { drilldownCases } from "./report-drilldown-cases.mjs";
 
 const source = `Recorded evaluation evidence:
 10 requested runs: 6 successful tasks, 2 failed tasks, 2 provider errors.
@@ -47,7 +48,8 @@ Report under review: "모든 10회 요청이 성공해 성공률은 100%다. 운
       },
     ],
   },
-].map(({ task, ...item }) => ({
+  ...drilldownCases,
+].map(({ task, source: caseSource = source, ...item }) => ({
   ...item,
   name: item.id,
   description: item.title,
@@ -65,7 +67,7 @@ Report under review: "모든 10회 요청이 성공해 성공률은 100%다. 운
         ],
       }),
       "# This run",
-      source,
+      caseSource,
       task,
       TAIL_SPEC,
     ].join("\n\n");

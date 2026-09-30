@@ -29,13 +29,32 @@ Keep the overview readable without expanded evidence. Put detailed mechanisms
 and exact sources with their owning domain. In HTML, collapsible details and
 anchors can provide drill-down; in Markdown or text, use nested headings and
 clear references. Do not hide an unstructured report inside one giant detail.
-Keep the short request-and-background paragraph directly below the title and
-visible without expanding details. It explains the report's reason and intended
-goal. Follow it immediately with the answer and conclusion-changing limitations,
+Place the standalone, localized "Background and goals" heading directly below
+the title. Keep the short request-context paragraph visible without expanding
+details. It explains the report's reason and intended goal. Follow it immediately
+with a visually distinct answer and conclusion-changing limitations,
 before navigation, long tables, or audit material. Preserve this reading order
 in HTML, Markdown, text, and print. Use disclosure labels that name the question or
 evidence inside, so readers can choose what to open. Keep material findings and
 required actions visible; expandable evidence must not conceal their existence.
+Choose subsequent headings and organization for the report's subject and reader
+questions; preserve mandatory content without imposing common section names.
+The answer may have an authored heading when useful, but no universal answer
+title is required. For existing inputs with no separate background, preserve
+their text without guessing which sentences are background.
+
+A collapsed branch shows its title and a brief description of what it will
+clarify. Keep substantive parent explanations understandable without opening
+source material. Supporting sources and quizzes occupy their own regions under
+the explanation; count the independent explanation branches toward the
+four-child limit, not each source or question. Keep original sources reachable
+inside the evidence group and retain each source's owning scope.
+
+In every format, place a node's child explanations before its comprehension
+questions and detailed source evidence. Label parent support material with its
+owning scope when a linear format resumes it after child sections. A question
+depending on collapsed child explanations provides a route back to them;
+reading them is never an approval or task-completion gate.
 
 Native evidence files and required schemas remain intact. Link to complete
 source material while keeping enough explanation in the report to understand

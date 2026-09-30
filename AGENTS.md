@@ -310,16 +310,23 @@ that do not explicitly ask for a report. The owning workflow still controls
 inspection, verdicts, severity and edit permissions. The packaged skill directory
 can also be installed independently with `npx skills add`; see README for the
 explicit source path. Native review schemas remain complete audit input, while final
-reports use domain-scoped hierarchy, at most four peer units, readable paragraph
+reports use domain-scoped hierarchy, at most four child explanation branches, readable paragraph
 breaks, evidence-grounded diagrams, worked calculations, and whole-output review.
 The renderer validates structure and source coverage; semantic review remains a
 separate, explicitly reported step.
 
-Report openings place a short request-and-background paragraph directly below
-the title: why the report is being written and what the user wants to understand,
+Report openings place a standalone localized `Background and goals` heading
+directly below the title, followed by a short paragraph:
+why the report is being written and what the user wants to understand,
 decide, or achieve, using confirmed task context. The answer and material
 limitations follow immediately; domain openings state their outcome before
-behavior and evidence.
+behavior and evidence. Subsequent headings and organization follow the report's
+subject and reader questions; preserve mandatory content without a fixed outline.
+Background and answer occupy distinct display areas. Collapsed branches explain
+what opening them will clarify. Sources and quizzes support their owning
+explanation without consuming its four-child allowance; both output formats
+place child explanations before the parent's quiz and source evidence. Review
+what the reader learns with details closed and after opening one branch.
 ADR writing preserves its required sections: Purpose introduces the problem,
 intended outcome, and direction; the adjacent Decision Drivers retain all current
 selection criteria; Decision owns the full choice, rationale, and exact contract.

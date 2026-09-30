@@ -131,7 +131,7 @@ test("five peer units, missing evidence and hidden headings fail instead of trun
   assert.throws(() => validateReport(paragraphDump), /0..4/);
 });
 
-test("mixed child and evidence disclosures cannot exceed four peers", () => {
+test("supporting evidence does not consume the four explanation branches", () => {
   const doc = sample();
   const parent = doc.sections[0];
   parent.children = Array.from({ length: 4 }, (_, index) => ({
@@ -142,7 +142,8 @@ test("mixed child and evidence disclosures cannot exceed four peers", () => {
     paragraphs: ["Its supported behavior."],
   }));
   parent.evidence = sample().sections[0].children[0].evidence;
-  assert.throws(() => renderHtml(doc), /together exceed four/);
+  assert.equal(validateReport(doc).nodes, 5);
+  assert.ok(renderHtml(doc).includes("observed charge count: 1"));
   parent.children = parent.children.slice(0, 2);
   assert.equal(validateReport(doc).evidence, 2);
 });
@@ -157,7 +158,8 @@ test("Markdown preserves parent evidence ownership, node anchors and known rende
   child.diagram.source = "unknownDiagram\n```";
   child.diagram.required = false;
   const markdown = renderMarkdown(doc);
-  assert.ok(markdown.indexOf("[Contract]") < markdown.indexOf("### Request replay"));
+  assert.ok(markdown.indexOf("[Contract]") > markdown.indexOf("### Request replay"));
+  assert.ok(markdown.includes("**Payments · Evidence**"));
   assert.match(markdown, /<a id="settlement"><\/a>/);
   assert.match(markdown, /\[Contract\]\(<#settlement>\)/);
   assert.match(markdown, /Diagram not rendered/);

@@ -141,12 +141,6 @@ test("question caps, distinct choices, one answer, evidence and revisit boundari
     ],
     [
       (d) => {
-        d.comprehensionCheck.questions = Array.from({ length: 5 }, (_, i) => question(i + 1));
-      },
-      /four peer/,
-    ],
-    [
-      (d) => {
         d.comprehensionCheck.questions[0].answerLeak = "B";
       },
       /would be lost/,
@@ -162,6 +156,9 @@ test("question caps, distinct choices, one answer, evidence and revisit boundari
     () => renderHtml(noQuiz),
     "legacy and explicitly omitted quizzes remain readable",
   );
+  const sameScope = report();
+  sameScope.comprehensionCheck.questions = Array.from({ length: 5 }, (_, i) => question(i + 1));
+  assert.equal((renderHtml(sameScope).match(/<article class="quiz">/g) || []).length, 5);
 });
 
 test("HTML keeps answer data out of visible markup and escapes authored question text", () => {

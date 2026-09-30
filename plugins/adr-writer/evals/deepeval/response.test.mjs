@@ -136,7 +136,13 @@ test("every shipped classification probe has a fixed GEval contract and prepares
   }
   assert.throws(() => responseObligations({ name: "empty" }), /Missing authored/);
   const selected = items.filter((c) => c.skill === "report-writer");
-  assert.equal(selected.length, 2);
+  assert.deepEqual(selected.map((c) => c.id).sort(), [
+    "report-drilldown-comparison",
+    "report-drilldown-distinguishes-shallow",
+    "report-drilldown-incident",
+    "report-preserves-evaluation-evidence",
+    "report-rejects-unsupported-success",
+  ]);
   const result = await main(
     ["--prepare", "--suite", "classification", "--runs", "1", "--out", temp()],
     {
@@ -153,7 +159,14 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     );
     assert.match(input.prompt, /# Report writing/);
     assert.match(input.prompt, /# Editorial review/);
-    assert.match(input.prompt, /USD 0.48/);
+    if (run.caseId.startsWith("report-drilldown-")) {
+      assert.doesNotMatch(input.prompt, /Total provider-reported cost: USD 0.48/);
+      assert.match(input.prompt, /Supplied hypothetical (comparison|incident)/);
+      if (run.caseId === "report-drilldown-distinguishes-shallow") {
+        assert.match(input.prompt, /Excerpt A:/);
+        assert.match(input.prompt, /Excerpt B:/);
+      }
+    } else assert.match(input.prompt, /USD 0.48/);
     assert.doesNotMatch(input.prompt, /"semanticObligations"|"supplementalChecks"/);
   }
 });

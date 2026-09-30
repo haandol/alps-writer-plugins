@@ -6,9 +6,9 @@ relevant sources through the owning review workflow before presenting findings.
 
 ## Orient the reader, then give the result
 
-Use the common opening: a short request-and-background paragraph below the title
+Use the common opening: a localized "Background and goals" heading and short paragraph below the title
 explaining why this review was requested and what the user wants to learn or
-decide. Follow it immediately with material findings and required actions, before
+decide. Follow it immediately with visibly separate findings and required actions, before
 extended background or evidence. State what was reviewed and any limitation
 that changes how the result should be read. A clean
 review reports no actionable findings within the checked scope, not universal

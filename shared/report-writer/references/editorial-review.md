@@ -28,8 +28,10 @@ implementations are not a reason to ask for approval. If intent is unclear only
 on a material choice, identify that gap and the smallest needed decision; do
 not label every unspecified detail a missing requirement.
 
-Open with the short request context below the title, then immediately state the
-answer and material limitation. Check that the opening explains why the report
+Open with the localized "Background and goals" heading and short request context
+below the title, then immediately state the answer and material limitation.
+Check that subsequent headings fit this report rather than fill a universal
+outline, while retaining mandatory content. Check that the opening explains why the report
 exists and what the user wants to understand, decide, or achieve, not merely
 which operation was requested. Retain only supplied background; an absent motive
 is not permission to invent one. Use the existing domain hierarchy to connect
@@ -66,6 +68,21 @@ conversation may be true but still missing from the report the reader receives.
   may defer exact evidence, but must retain a caveat, failure, or exception that
   changes its answer. Details must substantiate or qualify the parent claim;
   a new unrelated claim needs its own meaningful scope.
+
+Inspect the output with details closed, then open one branch at a time. At the
+closed level, the reader should recover the answer, material limitations, and
+why a branch is worth opening. After opening it, identify the new reason,
+mechanism, condition, or example it teaches. Reject a child that only repeats
+its parent, assumes a prerequisite introduced elsewhere without orientation,
+or makes the reader reconstruct the explanation from raw evidence. Substantive
+parents explain the relationship among their children; a simple source list
+does not need a filler paragraph. Keep these as meaning checks, not a fixed
+outline, mandatory number of levels, or paragraph quota.
+
+When evaluating this behavior, compare grounded examples and counterexamples
+using the same facts across different report subjects. Check the initial view
+and the next branch separately; valid nesting, source coverage, or a passing
+model judgment alone does not establish reader learning gains.
 
 When reporting a material flow finding, give its location, assumed context,
 missing or misplaced premise, and reader impact. For a substantial report,

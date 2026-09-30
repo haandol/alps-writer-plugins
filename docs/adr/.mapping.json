@@ -159,8 +159,8 @@
       "adrs": [
         {
           "path": "docs/adr/reporting/domain-navigation/0001-domain-first-report-navigation.md",
-          "status": "Accepted (2026-09-28)",
-          "summary": "adr-writer만 보고서 작성 기능을 제공하며, 첫머리의 요청 맥락과 결론에서 도메인별 근거로 확대하고 1~5문항 자가 확인을 작업 판정과 분리한다"
+          "status": "Accepted (2026-09-30)",
+          "summary": "리포트는 배경과 답을 구분하고 설명 가지 최대 4개와 근거·퀴즈를 분리하며 단계별 이해를 검증하고 본문 목차는 고정하지 않는다"
         }
       ],
       "dependsOn": []

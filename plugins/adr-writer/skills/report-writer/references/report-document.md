@@ -15,22 +15,27 @@ node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --o
 
 ## Document fields
 
-- `title`, `language` (`en` or `ko`), and `summary` (one to four paragraphs).
-  For a newly authored report, use the first `summary` paragraph for the short
-  request context, labeled "Request and background:" in the report's language.
-  Explain why the report is being written and what the user wants to understand,
-  decide, or achieve, using the confirmed task, subject, background, and scope.
-  Put the answer, implication, and any conclusion-changing limitation in the
-  following paragraph(s). The renderer already places these paragraphs below
-  the title and before navigation. Reuse this field rather than adding an
-  `intent` field or changing the caller's audit schema. Existing one-paragraph
-  inputs remain readable; structural validity does not verify request context.
+- `title`, `language` (`en` or `ko`), `background`, and `summary`.
+  Newly authored reports put the confirmed request context in `background`
+  (one to four paragraphs) and the answer, implication, and material limitations
+  in `summary` (one to four paragraphs). The renderer gives only `background`
+  the localized "Background and goals" heading, then presents the answer in a
+  separate area before navigation. An optional `summaryTitle` supplies an
+  authored answer heading; no default title is imposed. Do not repeat headings
+  as paragraph labels or invent missing context. Legacy inputs may omit
+  `background`: their summary remains intact without being relabeled or split
+  by a guessed meaning. These presentation fields do not alter a caller's
+  original audit schema or store approval state.
 - `sections`: one to four domain nodes. Each has `id`, `title`, `domain`, `scope`,
-  optional `paragraphs`, optional `children`, optional `diagram`, and optional
+  optional `preview`, optional `paragraphs`, optional `children`, optional `diagram`, and optional
   `evidence` and `expanded`. Set `expanded: true` for material non-PROVEN
   evidence or actionable findings that the caller requires visible.
-  Child explanation nodes and evidence disclosures together have at most four
-  peer items under their parent. Paragraph groups also have at most four items.
+  Each parent has at most four child explanation nodes. Supporting evidence
+  and quizzes are counted separately, so adding a source or question does not
+  force another explanation level. Paragraph groups have at most four items.
+  Authors choose node titles and organization for the subject and reader's
+  questions; there is no prescribed set of body section names. Preserve the
+  owning workflow's mandatory content without adding empty template sections.
   Node identifiers are unique across the document and retained as anchors in
   HTML and Markdown. Report-local fragment links must name an existing node.
 - `requiredEvidenceIds`: the caller's complete list of evidence or contract
@@ -51,10 +56,20 @@ Make its title and opening paragraph useful together: name the responsibility
 and state the outcome or finding before mechanism and evidence. Use `scope` to
 bound that claim, not to repeat a generic domain label.
 
+Use `preview` for a short statement of what opening a branch will clarify. HTML
+shows it with the collapsed title; older nodes fall back to their existing
+`scope`. Markdown includes it below the title. Do not duplicate a whole paragraph
+or hide a material limitation only in the preview. Substantive parents explain
+their children's relationship; structural validity alone cannot verify this,
+and simple source lists need no artificial summary.
+
 An evidence item has `id`, `label`, `source`, and optional `excerpt`.
 Use a local path, fragment, or HTTP(S) source. Full originals may remain in
 companion files. Empty evidence is permitted only when the caller has no
 required evidence identifiers; do not invent sources.
+Sources appear in an evidence group after the owning explanation and its quiz.
+There is no source-count quota; preserve every required source and group by the
+claim it supports rather than inventing explanation nodes to fit a count.
 
 ## Diagrams
 
@@ -89,14 +104,16 @@ question contains:
   document passage or original source that supports the answer.
 - `revisit`: boolean; one or two questions are true, or the sole question is true.
 
-There are one to five questions across the whole report. A node's questions,
-children, and evidence disclosures together may not exceed four peer items.
-Group by meaningful subject when necessary. The renderer rejects unknown
+There are one to five questions across the whole report, independent of the
+four-child explanation limit. Group by meaningful subject when necessary.
+The renderer rejects unknown
 section references, ambiguous choice structure, excess questions, and missing
 answer evidence; it does not judge whether a question is central or of medium
 difficulty.
 
-HTML places each question with its owning explanation and supplies staged
+HTML and Markdown place child explanations before their parent's questions and
+source evidence. Parent support material in Markdown names its owning scope.
+HTML provides links back to child explanations when a parent has a quiz, and supplies staged
 choice/answer disclosure. Print excludes answers, feedback, controls and
 selection marks. Markdown places the questions and choices first, then a
 clearly separated answer and explanation block. Omit `comprehensionCheck` only
@@ -110,8 +127,10 @@ questions before rendering.
 {
   "title": "Repeated requests keep one payment result",
   "language": "en",
+  "background": [
+    "The user requested a review of completed-payment retries to determine whether retrying with the same key could create a second charge. This report checks that behavior and identifies any verification still needed before relying on the retry guarantee."
+  ],
   "summary": [
-    "Request and background: The user requested a review of completed-payment retries to determine whether retrying with the same key could create a second charge. This report checks that behavior and identifies any verification still needed before relying on the retry guarantee.",
     "Payment retries must not create a second charge. The completed-payment retry check passed: the same key returned the recorded result. Provider timeout recovery still needs verification, so this result does not establish safety for every retry path."
   ],
   "requiredEvidenceIds": ["R1"],
@@ -161,6 +180,7 @@ questions before rendering.
       "title": "Payment settlement",
       "domain": "Payments",
       "scope": "One result for repeated requests with the same key",
+      "preview": "Why completed retries reuse one result and what remains unverified.",
       "paragraphs": [
         "For an already completed payment, a retry with the same key returns the recorded result and creates no second charge. This check covers completed payments; it leaves the provider-timeout path unresolved."
       ],
