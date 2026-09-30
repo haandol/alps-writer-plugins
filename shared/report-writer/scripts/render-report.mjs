@@ -253,15 +253,15 @@ export function renderHtml(doc) {
     return items
       .map((node) => {
         const tag = depth === 0 ? "section" : "details";
+        const nodeQuestions = questions.filter((q) => q.sectionId === node.id);
         return `<${tag} class="report-node" data-domain="${esc(node.domain)}" data-depth="${depth}" id="${esc(node.id)}"${depth > 0 && node.expanded ? " open" : ""}>
 ${depth === 0 ? `<h2>${esc(node.title)}</h2>${node.preview ? `<p class="branch-preview">${esc(node.preview)}</p>` : ""}` : `<summary>${esc(node.title)}<span class="branch-preview">${esc(node.preview ?? node.scope)}</span></summary>`}
 ${depth === 0 || node.preview ? `<p class="scope">${esc(node.scope)}</p>` : ""}${paragraphs(node.paragraphs)}
 ${node.diagram ? `<p class="diagram-scroll">${esc(ui.diagramScroll)}</p>${renderMermaid(node.diagram.source, { diagramSource: ui.source, diagramFallback: ui.fallback, idPrefix: node.id })}<p>${esc(node.diagram.explanation)}</p>` : ""}
 ${node.children ? `<div class="report-children">${nodes(node.children, depth + 1)}</div>` : ""}
 ${
-  questions.some((q) => q.sectionId === node.id)
-    ? `<div class="comprehension"><h3>${esc(quizUi.comprehension)}</h3>${node.children?.length ? `<p class="revisit-explanation">${esc(ui.revisitExplanation)}: ${node.children.map((child) => `<a href="#${esc(child.id)}">${esc(child.title)}</a>`).join(" · ")}</p>` : ""}${questions
-        .filter((q) => q.sectionId === node.id)
+  nodeQuestions.length
+    ? `<div class="comprehension"><h3>${esc(quizUi.comprehension)}</h3>${node.children?.length ? `<p class="revisit-explanation">${esc(ui.revisitExplanation)}: ${node.children.map((child) => `<a href="#${esc(child.id)}">${esc(child.title)}</a>`).join(" · ")}</p>` : ""}${nodeQuestions
         .map((q) => renderQuestion(q, questions.indexOf(q), quizUi))
         .join("")}</div>`
     : ""
