@@ -42,4 +42,4 @@ optional for understanding the current decision.
 - **Why**: <the change in the driver or constraint that prompted this>
 - **What is now void** (optional): <the Consequences the previous decision left that no longer apply>
 
-<!-- adr-writer:rules-version 0.9.0 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.9.1 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
