@@ -149,17 +149,18 @@ test("e2e: authoring under an anti-pattern category (api) → harness flags it",
   });
 });
 
-test("e2e: authoring with only 1 alternative → harness flags alternatives-count", () => {
+test("e2e: one realistic alternative is sufficient for the structural gate", () => {
   withTmp((dir) => {
     seedScaffold(dir);
     const adr = authorAdr(dir, {
       category: "identity/login",
       slug: "password-policy",
-      alternatives: ["대안 A: 이것만"],
+      alternatives: ["중앙 인증: 계정 관리는 단순하지만 오프라인 로그인을 제공할 수 없다."],
     });
     registerMapping(dir, { key: "identity/login", feature: "Login", adr });
     const r = lint(dir);
-    assert.ok(rules(r).includes("alternatives-count"), rules(r).join(","));
+    assert.equal(r.code, 0, JSON.stringify(r));
+    assert.ok(!rules(r).includes("alternatives-count"), rules(r).join(","));
   });
 });
 

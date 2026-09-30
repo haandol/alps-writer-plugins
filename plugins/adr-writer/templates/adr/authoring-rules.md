@@ -58,6 +58,26 @@ A provider replacement is normally an evolution of the provider-boundary decisio
 
 **Do not create a new ADR and immediately supersede or deprecate the old one merely to preserve history.** The current body owns the present decision, `decision-log.md` owns major transitions, and Git owns the verbatim diff.
 
+## Resolving conflicting accounts of a decision
+
+Compare the same obligation and application scope before choosing a current
+meaning. Prefer the later recorded or committed semantic change, using the
+original passages and introducing change history. File modification time,
+formatting, file moves, ADR numbers, or a stricter value do not establish a new
+contract. Preserve all unaffected requirements and still-valid rationale.
+
+Current explicit user intent takes precedence. A newer implementation alone
+cannot prove an intentional contract change: present it as the default candidate
+and resolve unclear intent before changing the contract. Unordered branches,
+conflicting chronology, and uncertain adoption remain visible questions; do not
+manufacture certainty from timestamps. Confirmed decisions can be restored
+without repeating the same approval, within the owning workflow's permissions.
+
+Recency does not alter decision ownership, merge scope, Status completion gates,
+or destructive approval. Keep source evidence and unresolved obligations until
+the relevant questions are settled; preserve concurrent edits when applying an
+approved candidate.
+
 ## What an ADR must satisfy — the regeneration test
 
 An ADR's goal is **not to reproduce the same code, but to make regenerated code satisfy the business requirements.** So completeness reduces to one question:
@@ -209,7 +229,7 @@ Keep only the gray zone — what code cannot reveal, or what loses its intent un
 - **Decision-changing assumptions** — only facts or expectations that materially change which alternative is preferred. Keep each as one line in Purpose or the relevant Decision Driver: `<assumption> — reconsider <decision> if false`. A requirement belongs in the requirement contract instead; a replaceable implementation default belongs in code and the implementation review
 - **Decision Drivers** — the pressures, constraints, and requirements that discriminate between options (see [Decision Drivers](#decision-drivers))
 - **Decision summary** — what was decided and why over the alternatives (the rationale is the point: the decision shows up in code, but "why not the other way" does not)
-- **Alternatives table** — the options considered and why they were not adopted (see [Alternatives](#alternatives--at-least-two))
+- **Alternatives table** — the options considered and why they were not adopted (see [Alternatives](#alternatives--realistic-comparison-not-a-quota))
 - **Business rules translated into system behavior** — how a rule like "7-day grace period after signup" maps onto triggers, state values, and events (conceptual, not a call chain). **Values carried by the rule (7 days) are written verbatim, never rounded or blurred into "a certain period"**
 - **Entity relationships** (conceptual) — "Flashcard is a separate entity from Vocabulary, linked by phrase hash" (not a field list)
 - **DB key design** — PK/SK/GSI patterns, whether an index is sparse — key structure shifts the decision, so it stays (per-field types go in `docs/tables/`)
@@ -234,7 +254,7 @@ currently applicable reason. Retire obsolete drivers from the current explanatio
 and preserve their historical role in the log when the transition is major.
 
 - 3-5 is a useful default, not a validity threshold. Keep only facts that discriminate; fewer are valid when the decision is tightly constrained and says why
-- Mix business and technical drivers — one kind alone makes the rationale look thin
+- Include business and technical drivers when they actually affect the choice; do not add either kind just to balance a list
 - State facts and constraints. Opinions and preferences ("we like a modern stack") are not drivers
 - They must discriminate — an item every option satisfies equally is not a driver, just a shared premise
 
@@ -246,7 +266,7 @@ and preserve their historical role in the log when the transition is major.
 
 Note that every Good entry **keeps its numbers and constraints intact** — blur a driver's figures and it can no longer discriminate, so it stops being a driver. A target used as a driver ("p95 within 3s") is itself a requirement the result must honor, so do not blur it in the Decision body either.
 
-Thin drivers make [alternatives](#alternatives--at-least-two) thin too — they come as a pair.
+Unsupported drivers weaken the [alternatives comparison](#alternatives--realistic-comparison-not-a-quota); a short, well-grounded list does not.
 
 ## Decision-changing assumptions — use the existing structure
 
@@ -271,12 +291,12 @@ An ADR should record realistic alternatives when they existed. Two or more usual
 - **No strawmen** — do not pad the count with options nobody would take ("just hand-write everything"). Only options that genuinely reached the table
 - Describe each alternative in one or two paragraphs at the architecture level — implementation detail like signatures or directory layout is caught by the [code-readthrough test](#the-requirement-gate-and-two-filters)
 - Assess vertical-slice viability too — which option lets one feature be built and tested independently from UI → API → Data
-- Never leave it as "no alternatives considered." If the user insists there are none, ask once whether this belongs in ALPS Section 7 or a docstring instead
+- If no other valid path exists, explain the policy, regulation, or external boundary that constrains the choice. This is a valid comparison outcome, not a reason to invent an option or ask again. If neither realistic alternatives nor a constraining reason is established, report the missing rationale; consider a different document only if the core subject fails the ADR admission gate
 
 Common failures:
 
 - Only one option with no explanation of why the choice was constrained → fails review rule R14
-- Two options that are "do this" and "do nothing" — not real alternatives
+- "Do nothing" included merely to fill the count, without a credible status-quo option and its consequences
 - Pros and cons that are generalities unrelated to the drivers ("there's a learning curve", "it's flexible")
 
 ## API section
@@ -526,4 +546,4 @@ For the PR reviewer or the author before merge.
 - [ ] **One ADR = one decision** holds (no split signals)
 - [ ] **`.mapping.json`** has the matching category entry including the new ADR
 
-<!-- adr-writer:rules-version 0.8.28 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.9.0 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

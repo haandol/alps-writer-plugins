@@ -68,7 +68,7 @@ The appendix contains only the term and its meaning in this document. It appears
 after all numbered sections only when needed; ordinary-language documents have no
 glossary or empty placeholder. Its presence is optional, but defining a qualifying
 term is mandatory. Before completion, check that all qualifying terms have clear,
-consistent definitions. Do not require DDD or domain classification. Keep short
+consistent definitions. Do not require DDD or domain classification for glossary maintenance. Keep short
 first-use explanations and all requirement rules in their owning body sections.
 
 <communication>
@@ -169,3 +169,15 @@ When user provides PDF, ALPS (PRD), or any reference:
 - In Section 4.1, ALWAYS include both Mermaid `C4Context` and `C4Container` diagrams. These are the only C4 levels allowed; never generate Component, Dynamic, Deployment, or Code-level C4 diagrams.
 - In Section 4.2, record only Architecture Constraints that regenerated implementations must preserve. Never persist a replaceable technology inventory.
 </rules>
+
+## Feature organization
+
+Before grouping an existing project, inspect repository organization
+(monorepo/multirepo) separately from execution and deployment shape
+(monolith/microservices/hybrid); state inaccessible or unknown scope. Organize
+features by DDD bounded contexts (business meaning and rule ownership), then
+vertical user stories from trigger to observable result. Repository/service
+boundaries are not automatically business boundaries. Use this grouping by
+default; propose grounded candidates and clarify only material ambiguity.
+Preserve the profile's existing sections, approval units and diagram levels.
+Keep implementation detail and topology inventories outside the product document.

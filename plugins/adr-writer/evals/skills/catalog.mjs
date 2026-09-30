@@ -5,12 +5,28 @@ import { cases as executionCases } from "../regression/cases.mjs";
 import { sha, confined, listFiles } from "../regression/workspace.mjs";
 import { responseObligations } from "./response-contract.mjs";
 import { reportCases } from "./report-cases.mjs";
+import { importExecutionCases } from "./import-execution.mjs";
 
 export const PLUGIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 export const ROOT = path.resolve(PLUGIN, "../..");
 
 // These are task expectations, not descriptions copied into the routing prompt.
 export const routingCases = [
+  {
+    id: "routing-project-import",
+    title: "기존 프로젝트에 ADR 도입",
+    prompt:
+      "기획 문서 없이 기존 프로젝트의 코드를 읽어 기능별 ADR로 정리하고, 빠진 의도는 리포트로 모아 물어봐줘.",
+    required: ["adr-import"],
+    allowed: ["adr-import", "adr-new", "report-writer"],
+  },
+  {
+    id: "routing-product-handoff",
+    title: "기획 기능의 계약 이전",
+    prompt: "승인된 Full ALPS 문서의 Feature들을 ADR로 이전해줘.",
+    required: ["feature-to-adr"],
+    allowed: ["feature-to-adr", "adr-new", "report-writer"],
+  },
   {
     id: "routing-document-review",
     title: "문서만 검토",
@@ -108,17 +124,19 @@ export async function catalog() {
       obligations,
       deterministicScore,
     } = await import(path.join(folder, file));
+    const authoredObligations = obligations ?? scenario.obligations;
+    const localScore = deterministicScore ?? scenario.deterministicScore;
     classification.push({
       ...scenario,
-      score: deterministicScore ?? scenario.score,
+      score: localScore ?? scenario.score,
       id: scenario.name,
       title: scenario.description,
       type: "classification",
       file,
       scorerHash: sha(readFileSync(path.join(folder, file), "utf8")),
-      semanticObligations: obligations ?? responseObligations(scenario),
+      semanticObligations: authoredObligations ?? responseObligations(scenario),
       // An explicit semantic scorer must not also invoke its legacy LLM judge.
-      supplementalChecks: Boolean(deterministicScore) || !obligations,
+      supplementalChecks: Boolean(localScore) || !authoredObligations,
       group: scenario.name.split("-")[0],
     });
   }
@@ -126,7 +144,11 @@ export async function catalog() {
     ...classification,
     ...reportCases,
     ...routingCases,
-    ...executionCases.map((c) => ({ ...c, type: "execution", group: c.skill })),
+    ...[...executionCases, ...importExecutionCases].map((c) => ({
+      ...c,
+      type: "execution",
+      group: c.skill,
+    })),
   ];
 }
 

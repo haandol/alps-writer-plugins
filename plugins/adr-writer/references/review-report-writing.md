@@ -27,9 +27,13 @@ Keep stable artifact anchors and established technical terms in their original
 form when translation would reduce precision. Do not switch languages merely
 because the harness prompt is written in English.
 
-## Start with the answer
+## Establish the request, then give the answer
 
-Lead with a short answer before detailed domain explanations or evidence. The
+Follow report-writer's opening: directly below the title, briefly explain the
+requested task, why the report is being written, and what the user wants to
+understand, decide, or achieve. Preserve confirmed context that distinguishes
+this task from concurrent work. Follow it immediately with a short answer before
+detailed domain explanations or evidence. The
 following are summary facts, not mandatory separate top-level sections:
 
 - **Verdict** — what the review concluded.
@@ -105,11 +109,12 @@ implementation-review JSON package just to use this writing guide.
 
 ## Remove mechanical writing patterns
 
-Every sentence must contribute a verdict, contract, evidence, impact, action, or
-risk. Delete:
+Every sentence must contribute useful reader context, a verdict, contract,
+evidence, impact, action, or risk. Delete:
 
 - praise, reassurance, and conversational applause;
-- scene-setting, throat-clearing, and restating the user's request;
+- empty scene-setting, throat-clearing, and repeated request recaps after the
+  opening; preserve the initial request context that explains the reason and goal;
 - repeated conclusions, findings, evidence, or diagram narration;
 - generic best-practice advice without a project rule, code location, and concrete
   failure or maintenance cost;

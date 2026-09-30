@@ -14,7 +14,7 @@ import {
   categoryDepth,
   checkSections,
   countDrivers,
-  countAlternatives,
+  alternativesText,
   relatedLinkTargets,
   decisionLogLinkTargets,
   codeRefHits,
@@ -203,30 +203,61 @@ test("countDrivers counts bullets under Decision Drivers", () => {
   assert.deepEqual(countDrivers(GOOD_BODY), { present: true, count: 3 });
 });
 
-test("countAlternatives counts bullet-form alternatives", () => {
-  assert.deepEqual(countAlternatives(GOOD_BODY), { present: true, count: 2 });
+test("alternativesText preserves the comparison without including the next section", () => {
+  assert.equal(alternativesText(GOOD_BODY), "- opt A\n- opt B");
+  assert.equal(alternativesText("## Decision\nNo comparison section\n"), null);
 });
+
+for (const [label, content, empty] of [
+  ["one rejected option", "- Central authentication cannot serve offline login.", false],
+  [
+    "a constrained decision in prose",
+    "Regulation requires the accredited provider; other providers cannot serve this market.",
+    false,
+  ],
+  ["an empty comparison", "", true],
+]) {
+  test(`CLI accepts rationale without an option quota: ${label}`, () => {
+    withTmp((dir) => {
+      seedClean(dir);
+      const relative = "docs/adr/identity/login/0001-password-policy.md";
+      const body = readFileSync(path.join(dir, relative), "utf8").replace(
+        /### 대안 검토[\s\S]*?(?=## Consequences)/,
+        `### Alternatives\n${content}\n\n`,
+      );
+      write(dir, relative, body);
+      const result = parseLint(dir, ["--documents-only"], { full: true });
+      assert.equal(result.code, 0, JSON.stringify(result.errors));
+      assert.equal(
+        result.warnings.some((w) => w.rule === "alternatives-empty"),
+        empty,
+      );
+      assert.ok(
+        ![...result.errors, ...result.warnings].some((w) => w.rule === "alternatives-count"),
+      );
+    });
+  });
+}
 
 // Harness prompts and rule docs are English, but an ADR BODY follows the language
 // the user writes in (authoring-rules "Conventions"). So the alternatives heading
 // arrives either way, and the checkers must accept both: matching only one spelling
-// would report `alternatives-missing` on a perfectly good ADR and make R14's count
-// check silently skip it. The fixtures above cover the Korean spelling; these cover
+// would report `alternatives-missing` on a perfectly good ADR and skip its empty-explanation check. The fixtures above cover the Korean spelling; these cover
 // the English one.
-test("checkSections and countAlternatives accept an English alternatives heading", () => {
+test("alternative section parsing accepts English and legacy qualified headings", () => {
   const english = GOOD_BODY.replace("### 대안 검토", "### Alternatives");
   assert.equal(checkSections(english).hasAlternatives, true);
-  assert.deepEqual(countAlternatives(english), { present: true, count: 2 });
+  assert.equal(alternativesText(english), "- opt A\n- opt B");
   // the README template's fuller form, with a trailing qualifier after a dash
   const withQualifier = GOOD_BODY.replace("### 대안 검토", "### Alternatives — at least two");
   assert.equal(checkSections(withQualifier).hasAlternatives, true);
-  assert.deepEqual(countAlternatives(withQualifier), { present: true, count: 2 });
+  assert.equal(alternativesText(withQualifier), "- opt A\n- opt B");
   // an unrelated heading must still not be mistaken for the alternatives section
   const unrelated = GOOD_BODY.replace("### 대안 검토", "### Alternative payment providers we use");
   assert.equal(checkSections(unrelated).hasAlternatives, false);
 });
 
-test("countAlternatives counts table rows minus the header", () => {
+test("alternative section extraction preserves a comparison table", () => {
   const body = `## Decision
 d
 ### 대안 검토
@@ -236,7 +267,10 @@ d
 | B | p | c |
 ## Consequences
 `;
-  assert.deepEqual(countAlternatives(body), { present: true, count: 2 });
+  assert.equal(
+    alternativesText(body),
+    "| 옵션 | pros | cons |\n| --- | --- | --- |\n| A | p | c |\n| B | p | c |",
+  );
 });
 
 test("parsers ignore headings inside fenced code blocks", () => {
@@ -667,7 +701,7 @@ test("CLI: usage error (unknown flag) exits 2", () => {
 const gapAdr = (n, title) =>
   `# ADR ${n}: ${title}\n\nDate: 2026-07-01\n\n## Status\nProposed\n\n## Context\nc\n\n## Decision Drivers\n- a\n- b\n- c\n\n## Decision\nd\n\n### 대안 검토\n- a\n- b\n\n## Consequences\nok\n\n## Related\n`;
 
-test("CLI: a numbering gap is a WARNING, not an error (rollup renumber pending)", () => {
+test("CLI: a numbering gap stays advisory without requesting a renumber", () => {
   withTmp((dir) => {
     // auth/0001 + auth/0003 — 0002 was deleted by a rollup, renumber not done.
     write(dir, "docs/adr/auth/0001-session-key.md", gapAdr("0001", "세션 키"));
@@ -678,7 +712,8 @@ test("CLI: a numbering gap is a WARNING, not an error (rollup renumber pending)"
     const gap = r.warnings.find((w) => w.rule === "numbering-gap");
     assert.ok(gap, "numbering-gap warning must be present");
     assert.match(gap.msg, /0002/, "names the missing number");
-    assert.match(gap.msg, /renumber/, "points the LLM at rollup step 7");
+    assert.match(gap.msg, /explicit user request/, "renumber remains opt-in");
+    assert.doesNotMatch(gap.msg, /ask the user/, "a warning must not reopen the choice");
   });
 });
 

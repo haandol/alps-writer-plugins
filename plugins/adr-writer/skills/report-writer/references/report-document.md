@@ -16,9 +16,15 @@ node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --o
 ## Document fields
 
 - `title`, `language` (`en` or `ko`), and `summary` (one to four paragraphs).
-  Use the existing `summary` for the concrete problem, answer, implication, and
-  any conclusion-changing limitation. Do not add a second mandatory abstract or
-  an `intent` field. A brief report can cover these in one paragraph.
+  For a newly authored report, use the first `summary` paragraph for the short
+  request context, labeled "Request and background:" in the report's language.
+  Explain why the report is being written and what the user wants to understand,
+  decide, or achieve, using the confirmed task, subject, background, and scope.
+  Put the answer, implication, and any conclusion-changing limitation in the
+  following paragraph(s). The renderer already places these paragraphs below
+  the title and before navigation. Reuse this field rather than adding an
+  `intent` field or changing the caller's audit schema. Existing one-paragraph
+  inputs remain readable; structural validity does not verify request context.
 - `sections`: one to four domain nodes. Each has `id`, `title`, `domain`, `scope`,
   optional `paragraphs`, optional `children`, optional `diagram`, and optional
   `evidence` and `expanded`. Set `expanded: true` for material non-PROVEN
@@ -105,6 +111,7 @@ questions before rendering.
   "title": "Repeated requests keep one payment result",
   "language": "en",
   "summary": [
+    "Request and background: The user requested a review of completed-payment retries to determine whether retrying with the same key could create a second charge. This report checks that behavior and identifies any verification still needed before relying on the retry guarantee.",
     "Payment retries must not create a second charge. The completed-payment retry check passed: the same key returned the recorded result. Provider timeout recovery still needs verification, so this result does not establish safety for every retry path."
   ],
   "requiredEvidenceIds": ["R1"],

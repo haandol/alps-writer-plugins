@@ -32278,7 +32278,7 @@ var server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.8.28" },
+  { name: "alps-writer", version: "0.9.0" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
@@ -32320,8 +32320,9 @@ Keywords: PRD, ALPS, Lite ALPS, \uAE30\uD68D\uC11C, \uAE30\uD68D \uBB38\uC11C, \
 </WORKFLOW>
 
 <RULES>
+- Before grouping an existing project, distinguish repository organization (monorepo/multirepo) from execution/deployment shape (monolith/microservices/hybrid), using accessible evidence and marking unknown scope. Group product features by bounded context (business meaning and rule ownership) and vertical user story by default. Never divide Features by frontend/backend/database layers or assume service boundaries are business boundaries. Reuse confirmed grouping; propose grounded candidates and clarify material ambiguity. Preserve Full/Lite sections and their permitted C4 levels.
 - In both profiles, require clear meanings for user jargon, uncommon terms/acronyms, or expressions that cannot be written out plainly. Read existing definitions with read_alps_glossary(); reuse meanings already supplied by the user. Ask at first use when the meaning is unclear and wait before finalizing dependent content. Never invent the meaning.
-- Include new or changed definitions in the current section's approval digest, then save each with save_alps_glossary_entry(term, definition). Do not add a separate approval or interview stage. Check missing definitions before completion. The optional Glossary Appendix appears after all numbered sections only when needed; ordinary-language documents need no glossary. Do not require DDD or domain classification, or move requirement rules out of their owning sections.
+- Include new or changed definitions in the current section's approval digest, then save each with save_alps_glossary_entry(term, definition). Do not add a separate approval or interview stage. Check missing definitions before completion. The optional Glossary Appendix appears after all numbered sections only when needed; ordinary-language documents need no glossary. Do not require DDD or domain classification for glossary maintenance, or move requirement rules out of their owning sections.
 - MUST call the overview tool matching the selected document profile first
 - NEVER proceed without user confirmation
 - ALWAYS confirm progress at the SECTION level. Lite Section 3 is optional; when no explicit exclusions were provided and the approved boundary is not materially ambiguous, state that and skip it without a dedicated question.

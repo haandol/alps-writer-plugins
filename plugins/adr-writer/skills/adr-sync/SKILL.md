@@ -33,6 +33,16 @@ If the argument is a category, target only that category (`/adr-sync auth`).
 
 > **Language**: this skill and every other harness prompt are written in English, but talk to the user and write the ADR body in the language the user writes in (`authoring-rules.md` "Conventions"). Any user-facing phrasing below is a guide, not a literal string.
 
+## Questions and continuation
+
+When intent, conflicts or concrete change approval remain unresolved, read
+`${CLAUDE_PLUGIN_ROOT}/references/decision-questions.md`. Prepare independent
+work first, collect questions by feature in one report, and reuse already
+confirmed answers. All instructions below to ask or confirm use that batch;
+they do not require interrupting once per ADR. After answers, apply the
+confirmed scope and continue validation automatically. Preserve the caller's
+read-only/quick modes and destructive approval boundaries.
+
 ## Workflow
 
 ### 1. Load the index and mapping
@@ -69,7 +79,7 @@ If those paths reveal stale `fN` naming, read `references/repository-hygiene.md`
 
 ### 3. Pass 2 — deep verification (always run in deep mode)
 
-Before starting Pass 2, read `references/repository-hygiene.md` completely and read `references/reconciliation-boundary.md` completely. They own repository hygiene and ADR ↔ repository authority respectively. Apply their checks after the per-ADR semantic verification below and before the report.
+Before starting Pass 2, read `references/repository-hygiene.md` completely and read `references/reconciliation-boundary.md` completely. When accounts conflict, also apply `${CLAUDE_PLUGIN_ROOT}/references/decision-reconciliation.md` to the original passages and local change history. They own repository hygiene and ADR ↔ repository authority respectively. Apply their checks after the per-ADR semantic verification below and before the report.
 
 **Secure structure and consistency with the deterministic harness first** — filter out the mechanical rules before the LLM spends tokens on filenames, the Status enum, or index consistency:
 
@@ -106,15 +116,15 @@ For each target ADR:
    - **The requirement gate (the do-not-remove line)**: "if this fact were missing, could code rebuilt from the ADR alone violate a requirement?" YES means **keep it** even when it looks obvious in the code — requirement values (limits, cycles, retention, caps, targets), and **non-numeric requirements** (allowed value sets, transition rules, mandatory fields, permissions, visibility, ordering, uniqueness, units — `authoring-rules.md` "Non-numeric requirements"), required validation conditions, and behavior guaranteed on failure. If sync strips requirements in the name of removing bloat, the ADR becomes a formally tidy but empty document and the next implementation loses that contract.
    - **The code-readthrough test** (`concepts.md` "What an ADR covers — the gray zone between business and code"): is a paragraph that failed the gate obvious from reading the related code? If it is, take it out of the ADR (function responsibilities, module dependency graphs, field-type tables, error message wording and UI labels, env var names, pseudocode, and the like).
    - **The forbidden-items table** (`authoring-rules.md` "What to exclude from an ADR" — read the "exception when it is a requirement" column alongside it): file paths (below folder level), code snippets, **implementation tuning values** (connection pools, backoff, cache TTL, worker counts — values a developer may change without violating a requirement), detailed entity field tables, migration commands, full JSON.
-   - **Look for omissions at the same time** — if the code clearly holds a requirement contract (e.g. a session turn cap, a per-plan usage quota) that the ADR body lacks, ask the user whether it is a requirement or an implementation tuning value, and if it is a requirement add it to the ADR with its value and basis. This is the opposite direction from removing bloat; record it in `Suggestions` as `[Missing requirement] <what>`. **But never conclude a value in code is a requirement and quietly copy it over** — the code does not tell you whether a value is a contract or a coincidence, so always confirm with the user.
+   - **Look for omissions at the same time** — if the code clearly holds a requirement contract (e.g. a session turn cap, a per-plan usage quota) that the ADR body lacks, collect whether it is a requirement or an implementation tuning value in the question report, and if it is a requirement add it to the ADR with its value and basis. This is the opposite direction from removing bloat; record it in `Suggestions` as `[Missing requirement] <what>`. **But never conclude a value in code is a requirement and quietly copy it over** — the code does not tell you whether a value is a contract or a coincidence, so confirm unknown intent through the question report.
      3-E. **Final-state reconstruction — keep the result, remove the transition.** When the body or mapping summary contains evolution narration, replaced identifiers or values, migration steps, comparison carriers, embedded history, or duplicated decision descriptions, read `references/current-state-reconstruction.md` completely and apply it. Keep `Final-state reconstruction` current-state-only, preserve genuine prohibitions and the complete requirement contract, and harvest major transitions to `decision-log.md`.
 4. Check ADR admission and gray-zone substance — if the core subject fails the admission gate, record `[Retire low-level ADR]` rather than strengthening it. If it passes but the body contains none of (a) alternatives comparison / adoption rationale (b) business rules translated into system behavior (c) domain rules and state transitions (d) external-dependency fallback, record in `Suggestions` as "strengthen the gray zone or consider retiring the ADR".
    4-b. **The regeneration test** (`authoring-rules.md` "What an ADR must satisfy") — ask "if all the code in this category were deleted and only this ADR survived, could requirement-honoring code be rebuilt from it alone?" Differences in implementation, structure, and naming are normal, so ignore them and look **only for missing result contracts** — requirement values, **allowed value sets, transition rules, mandatory fields, ordering, uniqueness, units** (`authoring-rules.md` "Non-numeric requirements"), permission and visibility rules, required validation conditions, state transitions and invariants, and the behavior guaranteed to the user on failure. When you spot an omission, record it in `Suggestions` as `[Missing requirement] <what is missing — which code behavior is the basis>` and confirm with the user to fill it in. This check is the counterpart to the bloat removal in step 3 — sync is not a command that only takes away, it is a command that **keeps the contract whole**.
-5. Check Decision Drivers and alternatives ≥ 2 (`authoring-rules.md` "Decision Drivers" / "Alternatives — at least two"):
+5. Check the quality of Decision Drivers and alternatives (`authoring-rules.md` "Decision Drivers" / "Alternatives — realistic comparison, not a quota"):
    - Verify that Purpose, all currently applicable Drivers, and the adoption rationale explain the current choice in the body itself. Restore supported current reasons left only in `decision-log.md`; preserve still-valid reasons from earlier revisions and distinguish obsolete ones. If the sources do not establish a reason, report the gap instead of inventing it.
-   - If the Decision Drivers are thin (0-2) or consist entirely of generic quality attributes ("maintainability", "scalability") → record in `Suggestions` as "strengthen the Drivers into discriminating facts and constraints"
-   - If there is only one alternative, or they are strawmen → record in `Suggestions` as "add realistic alternatives or consider retiring the ADR" (an already-`Accepted` ADR is the common omission case — record the options that were on the table at the time, even retrospectively)
-6. Reconcile the ADR and code according to ownership — but **what follows the code is decided by "Scope of the source of truth" below.** Status follows verified implementation. Non-requirement implementation facts generally leave the ADR instead of being synchronized detail-for-detail. Only an admitted public contract or architecture-level fact may be corrected in place. When a gray-zone decision contradicts the code, do not match the ADR to the code but treat it as a decision violation. Update the corresponding adrs[] summary (the one-line Key Decision) in `.mapping.json` as a final-state assertion too; never leave the old identifier or transition wording in the summary after cleaning the body.
+   - If the Drivers do not explain the choice or consist only of generic quality attributes ("maintainability", "scalability"), identify the missing discriminating facts in `Suggestions`. A smaller count is valid when the recorded constraints explain the choice; count warnings alone do not require additions.
+   - Preserve realistic alternatives supported by the sources, including those recorded for an already-`Accepted` decision. One credible rejected alternative, or an explanation of why policy, regulation, or an external boundary left no other valid path, is sufficient. Report strawmen or missing rationale in `Suggestions`; never invent past options, require another option merely for its count, or suggest retirement solely because alternatives are constrained. Retirement follows the admission gate in item 4.
+6. Reconcile the ADR and code according to ownership — but **what follows the code is decided by "Scope of the source of truth" below.** Status follows verified implementation. Non-requirement implementation facts generally leave the ADR instead of being synchronized detail-for-detail. Only an admitted public contract or architecture-level fact may be corrected in place. When a gray-zone decision contradicts the code, inspect semantic history first; a newer implementation is a recommended candidate, not proof of either an intended change or a violation. Resolve unknown intent through the consolidated report. Update the corresponding adrs[] summary (the one-line Key Decision) in `.mapping.json` as a final-state assertion too; never leave the old identifier or transition wording in the summary after cleaning the body.
 
 **Caution**: never add new implementation detail to an ADR. An ADR covers only the gray zone between business and code (the rationale for the decision, domain rules, trade-offs) and **the requirement contract the result must honor** — facts discoverable by reading the code that are also not requirements go to the code and its docstrings. Conversely, **a requirement contract missing from the ADR is an omission to be added**, so handle it through step 3's `[Missing requirement]` branch (after user confirmation).
 
@@ -124,74 +134,20 @@ Apply `references/reconciliation-boundary.md`; it is the full authority for this
 
 - Status and non-requirement implementation facts follow repository evidence, and stale low-level facts usually leave the ADR.
 - Requirement values and **Non-numeric requirements (the ADR is authoritative)** never follow code silently. In particular, allowed states being added or removed, or a formerly forbidden transition becoming allowed, is a contract change.
-- Gray-zone decisions remain ADR-authoritative. On contradiction ask the user to rule **An intended decision change** versus implementation violation, and use `decision-log.md` for a major transition.
+- Gray-zone decisions remain ADR-authoritative. Use semantic history and current user intent to select a known later decision. Collect only unresolved **An intended decision change** versus implementation violation questions, and use `decision-log.md` for a major transition.
 - Repository behavior that looks like an omitted contract is `[Missing requirement]`, not proof that the ADR should copy it.
 - Infrastructure repository evidence follows the local-only boundary; deployed state remains unverified.
 
-### 7. Report
+### 7. Report and resume
 
-Before writing the human-facing report or chat summary, read
-`${CLAUDE_PLUGIN_ROOT}/references/review-report-writing.md` completely and apply
-it.
-
-```
-## ADR Sync Results (mode: deep|quick)
-
-### At a glance
-- Verdict: <what is aligned, changed, or unresolved>
-- Impact: <what a developer or operator can observe>
-- Action: <the next required action, or "None">
-- Risk: <what remains unverified or contradictory, or "None">
-
-### Scope
-- Categories: <list or "all">
-- ADRs inspected: <n>
-
-### Evidence boundary
-- Repository evidence inspected: <source/IaC/config/tests/local-only outputs>
-- Live environment access: Not performed — outside adr-sync scope
-- Runtime-only claims: <none | [Runtime state unverified] ...>
-
-### Visual map
-<the smallest grounded Mermaid required by the shared report guide, or omit this section>
-Notice: <the decision, dependency, or unresolved branch the reader should verify>
-
-### Fixed
-- [ADR <category>/NNNN: semantic diff]
-  - Decision: <Changed: old meaning → current meaning | Unchanged | Unverified>
-  - Requirement contract: <Changed: exact values/rules | Unchanged | Unverified>
-  - Decision Drivers: <Changed: old pressure → current pressure | Unchanged | Unverified>
-  - Consequences: <Changed: old risk/trade-off → current risk/trade-off | Unchanged | Unverified>
-- [ADR <category>/NNNN: document cleanup] — removed evolution narration / rewrote in present tense: <what, and how>. Gray-zone decisions preserved: <rationale, alternatives>. (only for the ADRs affected)
-- [decision-log <category>] — major transitions harvested: <what>. (only when major narration was moved into the log)
-
-### Contradictions Resolved
-- [ADR A ↔ ADR B] — what conflicted and how it was reconciled
-
-### In Sync
-- [ADR ...], ...
-
-### Index Hygiene
-- .mapping.json changes (path/status/summary)
-- decision-log: <lightweight verification result — newest-first order, current-ADR links valid, no PRD citations or old numbers; corrections applied>
-
-### Suggestions
-- [New ADR needed?] — an unrecorded decision that passes the ADR admission gate
-- [Retire low-level ADR] — <category>: the core subject is a replaceable implementation means. Move useful guidance to code/project docs; do not synchronize it as an architectural decision
-- [Supersede recommended?] — only when the decision topic has branched and the old decision must coexist as a separate record (i.e. when edit-in-place + decision-log cannot hold it — `authoring-rules.md` "Changing an ADR — edit-in-place vs supersede"). A plain decision switch is absorbed by edit-in-place + decision-log, not a supersede
-- [Sub-folder split recommended] — <category>: <n> ADRs, candidate sub-features ...
-- [Feature-ID naming] — <category>: old fN naming, canonicalization deferred (when the user declined)
-- [Runtime state unverified] — <claim>: repository evidence was inspected, but deployed state would require live access outside adr-sync
-- [Missing requirement] — <category>: a contract the code honors (<what>) is absent from the ADR. If it is a requirement, add it with its value and basis (user confirmation required)
-- [Requirement value drift] — <category>: ADR "<value/set/rule>" ↔ code "<value/set/rule>". Needs a ruling on whether it was an intended change or a violation (this bucket covers not only numbers but also mismatched allowed value sets, mandatory fields, permissions, and transition rules)
-```
-
-In chat, lead with At a glance, then show each changed ADR's `Decision` and
-`Requirement contract` semantic diff. Keep file locations, code evidence, and
-harness detail in the full report unless they explain an unresolved
-contradiction. `Unchanged` means that axis was inspected and still matches.
-`Unverified` means the available evidence could not establish it and must never
-be rendered as `Unchanged`.
+Apply `${CLAUDE_PLUGIN_ROOT}/references/review-report-writing.md` and
+`references/report.md` for the complete result fields and evidence boundary.
+Lead with At a glance, then the semantic diff of each changed Decision and Requirement contract.
+New ADR needed findings must pass the ADR admission gate.
+`Unchanged` means that axis was inspected and still matches.
+`Unverified` means the available evidence could not establish it. When user input is needed, follow
+`references/decision-questions.md` from the plugin root: present one report,
+apply confirmed answers, then continue rather than ending at the question list.
 
 ## Notes
 

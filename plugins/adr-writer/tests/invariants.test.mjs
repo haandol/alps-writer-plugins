@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 import { withTmp, write, initRepo, runInvariants, seedRuleDocs, TEMPLATES } from "./helpers.mjs";
 
 // A minimal but realistic canonical fixture: DDD context × feature folders,
@@ -169,6 +170,42 @@ test("FIX inv-grep-error-silent-pass: a grep that errors (exit 2) fails CLOSED, 
   });
 });
 
+for (const args of [
+  ["--rollup-only", "--removed", "auth/0002"],
+  ["--rollup-only", "--renumbered", "auth/0003:auth/0002"],
+]) {
+  test(`rollup ${args[1]} fails when the real file search errors after a successful probe`, () => {
+    withTmp((dir) => {
+      seedCanonicalRepo(dir);
+      const stub = path.join(dir, "stub");
+      fs.mkdirSync(stub);
+      fs.writeFileSync(
+        path.join(stub, "grep"),
+        '#!/bin/sh\nif [ "$1" = "-nE" ]; then exit 1; fi\nprintf "src/policy.mjs:1:partial match\\n"\nexit 2\n',
+        { mode: 0o755 },
+      );
+      const { code, stdout } = runInvariants(dir, args, {
+        PATH: `${stub}:${process.env.PATH}`,
+      });
+      assert.equal(code, 2, "partial results cannot hide a failed file search");
+      assert.doesNotMatch(stdout, /invariants clean/);
+    });
+  });
+  test(`rollup ${args[1]} propagates a search failure without reporting clean`, () => {
+    withTmp((dir) => {
+      seedCanonicalRepo(dir);
+      const stub = path.join(dir, "stub");
+      fs.mkdirSync(stub);
+      fs.writeFileSync(path.join(stub, "grep"), "#!/bin/sh\nexit 2\n", { mode: 0o755 });
+      const { code, stdout } = runInvariants(dir, args, {
+        PATH: `${stub}:${process.env.PATH}`,
+      });
+      assert.equal(code, 2, "an unperformed search cannot establish clean references");
+      assert.doesNotMatch(stdout, /invariants clean/);
+    });
+  });
+}
+
 test("FIX inv-b-section-overmatch: a non-ALPS 'Section N.N' (RFC) in an ADR body does NOT trip check (b)", () => {
   withTmp((dir) => {
     seedCanonicalRepo(dir);
@@ -208,6 +245,18 @@ test("check (b) catches a feature-id (F-LOGIN-01) in an ADR body", () => {
 });
 
 // ── rollup checks (c)/(d) happy paths ─────────────────────────────────────
+
+test("a tracked source removed from the working tree does not make reference scanning fail", () => {
+  withTmp((dir) => {
+    seedCanonicalRepo(dir);
+    // A rollup may remove a tracked file before the user stages the changes.
+    const source = "docs/adr/identity/login/0001-password-policy.md";
+    assert.equal(spawnSync("git", ["add", source], { cwd: dir }).status, 0);
+    fs.unlinkSync(path.join(dir, source));
+    const { code, stdout } = runInvariants(dir, ["--rollup-only", "--removed", "auth/0002"]);
+    assert.equal(code, 0, stdout);
+  });
+});
 
 test("check (c) --removed flags a kebab-title link to a removed ADR", () => {
   withTmp((dir) => {

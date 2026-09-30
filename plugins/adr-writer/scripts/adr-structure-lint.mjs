@@ -46,7 +46,7 @@ import {
   categoryDepth,
   checkSections,
   countDrivers,
-  countAlternatives,
+  alternativesText,
   relatedLinkTargets,
   decisionLogLinkTargets,
   codeRefHits,
@@ -331,10 +331,14 @@ function main() {
     if (dr.present && (dr.count < 3 || dr.count > 5))
       rep.warn("drivers-count", where, `${dr.count} Decision Drivers (3-5 recommended)`);
 
-    // R14: alternatives ≥2 (count only; strawman is LLM)
-    const alt = countAlternatives(body);
-    if (alt.present && alt.count < 2)
-      rep.error("alternatives-count", where, `${alt.count} alternative(s) (at least 2 required)`);
+    // R14: one credible alternative or a constraint explanation can suffice.
+    // Structure can detect an empty section; judging its rationale needs semantic review.
+    if (alternativesText(body) === "")
+      rep.warn(
+        "alternatives-empty",
+        where,
+        "empty alternatives section; explain the comparison or constraint",
+      );
 
     // R10: Related-link targets resolve on disk
     for (const target of relatedLinkTargets(body)) {
@@ -389,10 +393,8 @@ function main() {
   // ── numbering gaps (rollup advisory, warning-only) ────────────────────
   // Group in-scope on-disk ADRs by category (directory under the ADR root) and
   // flag any category whose NNNN sequence has a hole. This is NOT an error:
-  // split/adr-sync intentionally keep gaps ("keep gaps"). It's a heads-up that
-  // if adr-rollup just deleted a chain member, its step 7 renumber may be
-  // pending — the rollup skill reads this warning and asks the user whether to
-  // fill the gap. Skipped when --category narrows to one leaf with no siblings.
+  // split, sync and rollup preserve gaps by default. A warning grants no
+  // permission to rename files or reopen a settled user choice.
   {
     const byCategory = new Map();
     for (const file of files) {
@@ -409,7 +411,7 @@ function main() {
         `docs/adr/${g.category}`,
         `numbering gap: ${g.missing.map((n) => String(n).padStart(4, "0")).join(", ")} missing ` +
           `(present: ${g.present.map((n) => String(n).padStart(4, "0")).join(", ")}). ` +
-          `If you just ran adr-rollup, its step-7 renumber may still be pending — ask the user whether to close the gap. ` +
+          `Keep existing numbers by default; adr-rollup renumbers only on an explicit user request and approved old → new paths. Do not repeat a settled gap choice. ` +
           `(A gap left by split or adr-sync is normal; leave it alone.)`,
       );
   }

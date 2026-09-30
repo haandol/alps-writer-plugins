@@ -183,7 +183,7 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 ├── .claude-plugin/plugin.json   # Claude metadata; hooks/ is auto-discovered
 ├── .codex-plugin/plugin.json    # Codex metadata; registers skills + hooks
 ├── README.md
-├── skills/               # adr-new, adr-impl, adr-impl-refactor, adr-impl-review, adr-sync, adr-rollup
+├── skills/               # adr-import, adr-new, adr-impl, adr-impl-refactor, adr-impl-review, adr-sync, adr-rollup
 ├── agents/               # ADR authoring reviewer + isolated refactor/impl explainer/review/report roles
 ├── evals/                # behaviour evals (real model; NOT in pnpm test)
 │   ├── run.mjs           # runner — N runs per scenario, hit rates, shareable report
@@ -211,12 +211,12 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 The two plugins are split so adr-writer never references ALPS. The only coupling is one-way: alps-writer's `/feature-to-adr` transfers each implementable Feature's complete contract into one or several ADRs and delegates each new decision owner to adr-writer's `/adr-new`. Normal implementation then reads only ADRs; explicit PRD re-import remains an alps-writer-side semantic comparison.
 
 Shared authoring guidance is owned by `plugins/adr-writer/references/`:
-`requirement-delegation.md` and `comprehension-load.md` are copied into
+`requirement-delegation.md`, `comprehension-load.md`, and `feature-boundaries.md` are copied into
 alps-writer's own `references/` by `scripts/sync-authoring-guidance.mjs`.
 Both packages use plugin-local references rather than assuming sibling install
 directories. Build synchronizes them; `authoring-guidance:check` rejects drift.
 
-ADR folders are organized along two axes — a DDD **bounded context** (top-level folder / first key segment) containing one or more **features** (vertical slices, the second segment). A single-feature context stays flat (`auth/`, workshop `f1/`), so existing flat repos need no migration. The ADR index lives in `docs/adr/.mapping.json` itself (path/status/summary per ADR), and admitted work reads it on demand; the README keeps no separate ADR list. The mapping carries an optional advisory `subdomainType` (core/supporting/generic) per context and stores no PRD reference. Context grouping is only applied when ALPS already groups features or the user asks for it — `/feature-to-adr` never invents a domain boundary the PRD doesn't assert, so the one-way alps-writer → adr-writer coupling and "adr-writer never references ALPS" both hold. The DDD overlay is metadata + framing only; it adds no folder depth (keys stay ≤2 segments) and `scripts/adr-invariants.sh` is unaffected.
+ADR folders are organized along two axes — a DDD **bounded context** (top-level folder / first key segment) containing one or more **features** (vertical slices, the second segment). A single-feature context stays flat (`auth/`, workshop `f1/`), so existing flat repos need no migration. The ADR index lives in `docs/adr/.mapping.json` itself (path/status/summary per ADR), and admitted work reads it on demand; the README keeps no separate ADR list. The mapping carries an optional advisory `subdomainType` (core/supporting/generic) per context and stores no PRD reference. Context discovery is the default for product and ADR authoring. Inspect repository organization separately from execution/deployment shape, then group by business language and rule ownership, not service or technical-layer folders. Preserve confirmed grouping; propose grounded candidates when absent and confirm only material ambiguity. `/feature-to-adr` preserves that meaning in plugin-local guidance, while adr-writer stays independent of the PRD. Category keys remain at most two segments; a valid single-feature context can stay flat. Code refactoring or moving existing ADRs requires its own authorized scope.
 
 ## Architecture
 
@@ -252,7 +252,7 @@ expressions that cannot be written out plainly need confirmed definitions. Ask
 for unclear meanings at first use; reuse supplied meanings and the current
 Section approval. `read_alps_glossary` and `save_alps_glossary_entry` operate on the
 active document. The optional XML glossary follows all Sections, survives later
-saves and reloads, and exports last. Never pre-seed a dictionary or require DDD.
+saves and reloads, and exports last. Never pre-seed a dictionary or add a separate DDD exercise for glossary maintenance.
 
 `/feature-to-adr` transfers needed definitions to `docs/adr/glossary.md`; ADR
 authoring creates or updates it under the existing approval when needed.
@@ -315,8 +315,11 @@ breaks, evidence-grounded diagrams, worked calculations, and whole-output review
 The renderer validates structure and source coverage; semantic review remains a
 separate, explicitly reported step.
 
-Report openings connect the concrete problem to the answer and material
-limitations; domain openings state their outcome before behavior and evidence.
+Report openings place a short request-and-background paragraph directly below
+the title: why the report is being written and what the user wants to understand,
+decide, or achieve, using confirmed task context. The answer and material
+limitations follow immediately; domain openings state their outcome before
+behavior and evidence.
 ADR writing preserves its required sections: Purpose introduces the problem,
 intended outcome, and direction; the adjacent Decision Drivers retain all current
 selection criteria; Decision owns the full choice, rationale, and exact contract.
@@ -453,3 +456,15 @@ release script. The test asserts the two agree.
 ## References
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — Commit messages, branching, code style, PR rules
+
+### Existing-project onboarding and maintenance questions
+
+`adr-import` reads local project evidence, distinguishes repository organization
+from execution/deployment shape, and proposes business-context/vertical-feature
+ADR contracts. It uses `feature-boundaries.md`, `decision-reconciliation.md` and
+`decision-questions.md` from adr-writer's local references. Missing intent and
+conflicts are presented together with visible decision IDs; confirmed answers
+resume authorized application and validation. New ADRs stay Proposed until the
+completion cycle passes; identical re-imports are no-ops. No application refactor,
+live-system access, hidden approval registry or code-path mapping is introduced.
+Sync and rollup share that question flow, preserving their own mutation limits.

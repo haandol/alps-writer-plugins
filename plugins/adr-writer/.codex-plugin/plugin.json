@@ -1,7 +1,7 @@
 {
   "name": "adr-writer",
-  "version": "0.8.28",
-  "description": "Run an ADR-first development cycle that authors, implements, safely refactors, reviews, synchronizes, and rolls up architecture decisions.",
+  "version": "0.9.0",
+  "description": "Discover existing project features and adopt ADRs with batched intent questions, then author, implement, review, synchronize and consolidate decisions by business context.",
   "author": {
     "name": "haandol",
     "url": "https://github.com/haandol"
@@ -22,12 +22,13 @@
   "interface": {
     "displayName": "ADR Writer",
     "shortDescription": "Keep architecture decisions aligned with code",
-    "longDescription": "Author decision records before implementation, implement accepted decisions in dependency order, apply only verified low-risk refactors before completion, review decision fidelity, detect code-to-ADR drift, and consolidate superseded decision chains. A bundled hook injects the ADR admission directive when session context starts or is restored. Human-facing reports use the shared domain-scoped report-writing skill.",
+    "longDescription": "Discover existing project features, collect missing intent and conflicts in one report, and save confirmed ADR contracts. Organize decisions by bounded context and vertical feature, then implement, review, synchronize and consolidate them with evidence and explicit scope.",
     "developerName": "haandol",
     "category": "Developer Tools",
     "capabilities": ["Interactive", "Read", "Write"],
     "websiteURL": "https://github.com/haandol/alps-writer-plugins/tree/main/plugins/adr-writer",
     "defaultPrompt": [
+      "Read this existing project and organize its features into ADRs, collecting missing intent in one report.",
       "Write an ADR for this architectural decision.",
       "Implement the next proposed ADR and verify it.",
       "Review this ADR implementation for safe efficiency and reuse refactors, apply only verified low-risk changes, and propose the rest.",

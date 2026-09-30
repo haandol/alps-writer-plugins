@@ -9,6 +9,7 @@ For installation see the [README Quick Start](../README.md#quick-start). For the
 ```mermaid
 flowchart LR
     A["Apply admission gate<br/>(read mapping if admitted)"] --> B["Author/edit ADR<br/>(/adr-new — default)<br/>or /feature-to-adr<br/>(ALPS helper)"]
+    Existing["Existing project<br/>/adr-import → intent report"] --> B
     B --> C["Write code<br/>(/adr-impl)"]
     C --> D["Initial test<br/>(project commands)"]
     D --> F["/adr-impl-refactor<br/>(verified low-risk changes applied,<br/>the rest proposed)"]
@@ -21,7 +22,7 @@ flowchart LR
     E -.-> R
 ```
 
-ADRs are the primary artifact the adr-writer plugin manages. The default authoring path is `/adr-new <category>` — write the decision directly, with or without an ALPS PRD. `/feature-to-adr` transfers each implementable Section 7 Feature's complete contract into one or several ADRs and delegates each new decision owner to `/adr-new`. After handoff, normal implementation no longer reads the PRD.
+ADRs are the primary artifact the adr-writer plugin manages. The direct single-decision authoring path is `/adr-new <category>` — write the decision directly, with or without an ALPS PRD. `/feature-to-adr` transfers each implementable Section 7 Feature's complete contract into one or several ADRs and delegates each new decision owner to `/adr-new`. After handoff, normal implementation no longer reads the PRD.
 
 The default for the same logical decision is edit-in-place plus a decision-log entry for a major transition. Add a new ADR when the topic is a distinct durable decision or the old decision must remain separately referenceable. Use `/adr-rollup` only when one logical decision's evolution history was already scattered across several ADRs.
 
@@ -98,7 +99,7 @@ flowchart TD
 
 **How to read it:**
 
-- **Two entry points.** PRD-first starts at `/alps-init` and crosses into the ADR layer via `/feature-to-adr`. A successful transfer makes ADRs the implementation authority and leaves the PRD as a legacy planning document. ADR-only skips the PRD box entirely and starts at `/adr-new`.
+- **Three ADR entry points.** Existing-project onboarding starts at `/adr-import`, discovers business features and gathers intent in one report before confirmed ADR creation. PRD-first starts at `/alps-init` and crosses into the ADR layer via `/feature-to-adr`. A successful transfer makes ADRs the implementation authority and leaves the PRD as a legacy planning document. ADR-only skips the PRD box entirely and starts at `/adr-new`.
 - **`/feature-to-adr` owns the ownership handoff.** It classifies every implementation-relevant item as ADR-owned, implementation discretion, legacy context, or unresolved. Transfer commits only with full coverage and no unresolved material. Each transferred Feature has `1..N` real ADRs, including at least one requirement-contract owner; replaceable implementation means stay in code. Explicit re-import compares a changed PRD with current ADRs, leaves equivalent semantics untouched, and never removes a contract automatically.
 - **The gate is mandatory.** `/adr-impl` never skips straight to coding — it reads `dependsOn`, walks prerequisites transitively, and refuses to build on a `Proposed` or dangling prerequisite until you implement it first (in topological order). Status flips to `Accepted` only after tests and final review pass — it records a fact, not an intent.
 - **Planning is informative unless the contract changes or load is very high.** When the exact ADR revision is already approved, `/adr-impl` reports scope, tests, comprehension load, derived obligations, and chosen project/domain defaults. At `8/10` or higher it asks whether to review a split or proceed with the original ADR, without generating split candidates yet; candidates appear only after the user chooses split review. Below that threshold it proceeds without another approval. It first fills gaps implied by the explicit contract, sibling conventions, and authoritative reversible domain defaults. Only unresolved product-policy choices become one Decision request with a recommendation, alternatives, impact, and exact ADR wording.
@@ -141,6 +142,22 @@ uses the other as source material, or treats the other as a next step.
 
 After handoff the PRD remains on disk as a legacy planning document, but implementation, review, and sync read only ADRs. Re-run `/feature-to-adr` only when you explicitly want to import a changed PRD. Equivalent semantics are a no-op; additions and changes become ADR-first proposals; removals require confirmation. Current ADRs remain authoritative until a change is approved.
 
+### Existing project — discover, confirm, and record
+
+Run `/adr-import [project-path-or-feature-scope]` to read existing code and prepare
+feature contracts. It distinguishes repository organization from execution and
+deployment shape, then organizes by bounded context and vertical user story.
+Answer the visible decision IDs in its single intent/conflict report. The agent
+applies confirmed contracts, validates the index and resumes without another
+routine proceed question. New ADRs stay Proposed; repeated equivalent imports
+leave the existing documents unchanged. Application code is not changed.
+
+Sync and rollup reuse this batch question flow for missing intent and unresolved
+conflicts. Later semantic records/commits provide the default current meaning;
+newer code alone cannot approve a policy change. Exact destructive scope remains
+visible in the same approval report. A single HTML opens with the OS default
+opener; browser automation is requested separately.
+
 ### C. ADR-only — no PRD (adr-writer standalone)
 
 1. `/adr-new <category>` → apply the ADR admission gate, then describe a durable requirement or architectural decision directly. Replaceable libraries, SDKs, frameworks, and credential/auth wiring stay in code. No ALPS document required.
@@ -170,6 +187,7 @@ In all flows the hook runs automatically once adr-writer is installed. Session s
 
 | Command                                               | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/adr-import [scope]`                                 | Discover existing project features and batch missing-intent questions before saving confirmed contracts.                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `/adr-new <category>`                                 | Apply the admission gate and author a durable decision directly; implementation-only choices create no ADR                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `/adr-impl [category]`                                | Implement an ADR with language-standard why/how function documentation and ideal plus relevant edge tests; comments reuse contract vocabulary but never cite an ADR. Unchanged approved ADRs proceed from a non-blocking plan update; derived obligations and established domain defaults are automatic, while unresolved product policy is returned as one Decision request. On request, use Stacked PR delivery when semantic Feature/ADR splitting is inappropriate. With no argument, lists Proposed ADRs and asks which to build |
 | `/adr-impl-refactor [category]`                       | Review concrete efficiency and proportionate reuse, apply only high-confidence local behavior-preserving refactors with before/after tests, and leave wider or weakly verified opportunities as proposals                                                                                                                                                                                                                                                                                                                             |

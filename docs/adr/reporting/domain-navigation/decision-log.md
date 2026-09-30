@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the reporting/domain-n
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-09-30 — 요청 맥락을 보고서 첫머리에 제공
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 결론과 배경을 자유롭게 배치하는 개요 → 제목 아래에 요청한 작업·대상·확인된 배경·의도를 짧게 정리하고 곧바로 결론과 중요한 한계를 제공한다.
+- **Why**: 여러 작업을 병행하는 사용자가 대화 기록으로 돌아가지 않고 보고서의 작성 계기와 당시 목적을 구분할 수 있어야 한다.
+
 ## 2026-09-28 — 보고서 기능을 adr-writer에서만 제공
 
 - **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)

@@ -93,6 +93,7 @@ MCP 서버가 아래 동작만 제공한다.
 
 - fixture와 선택한 플러그인의 파일 읽기·검색
 - fixture의 `docs/` Markdown·JSON 생성·수정·삭제·이동
+- 사례가 `artifactPaths`로 지정한 `.adr-review/`의 정확한 보고서 파일 쓰기. 다른 파일·소스·규칙 문서로 권한을 확대하지 않으며 보고서 삭제·이동은 허용하지 않는다
 - 읽기 전용 ADR lint·invariant·로컬 정책 테스트 실행과, 별도 `demote_adr_status` 도구의 명시적인 Proposed 상태 변경
 - 실제 원격 접속 없이 요청만 기록하고 거절하는 `inspect_runtime`
 

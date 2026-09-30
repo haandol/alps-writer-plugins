@@ -171,6 +171,7 @@ The evaluation calendar date is ${referenceDate}. Use this fixed date for "today
 run_check performs read-only structure/invariant/policy checks.
 demote_adr_status explicitly changes one ADR and its mapping entry to Proposed using the shipped transition script; it is not a status-reading tool.
 write_file/delete_file/move_file are the available document editing tools.
+Additional report paths allowed for writing in this case: ${JSON.stringify(item.artifactPaths ?? [])}.
 No arbitrary host shell, credentials, source/test edits, or external service access are available.
 Respond normally in Korean. Do not emit evaluation tags or a machine-readable tail.
 Conversation replay below includes the preceding user turns and observable replies/events.
@@ -207,6 +208,7 @@ export async function runCase(item, variant, repeat, directory, options) {
   const started = Date.now();
   const logPath = path.join(artifactDir, "events.jsonl");
   const history = [];
+  const checkpoints = [];
   let phase = "execution";
   let sources;
   try {
@@ -217,6 +219,7 @@ export async function runCase(item, variant, repeat, directory, options) {
       turn: 0,
       guidance: variant.guidance !== false,
       checkerRoot: options.checkerRoot ?? variant.root,
+      artifactPaths: item.artifactPaths,
     });
     const policy = tools.call("run_check", { kind: "policy-tests" });
     const lint = tools.call("run_check", { kind: "structure" });
@@ -243,6 +246,7 @@ export async function runCase(item, variant, repeat, directory, options) {
                 String(index + 1),
                 variant.guidance === false ? "off" : "on",
                 options.checkerRoot ?? variant.root,
+                JSON.stringify(item.artifactPaths ?? []),
               ],
             },
           },
@@ -269,6 +273,7 @@ export async function runCase(item, variant, repeat, directory, options) {
         role: "observed-tool-events",
         content: readEvents(logPath).filter((event) => event.turn === index + 1),
       });
+      checkpoints.push({ turn: index + 1, files: snapshot(root) });
     }
     sources = evidenceSources({
       before,
@@ -341,6 +346,7 @@ export async function runCase(item, variant, repeat, directory, options) {
         turns: item.turns,
         referenceDate,
         replies: result.replies,
+        checkpoints,
         evidenceSources: sources,
       },
       null,

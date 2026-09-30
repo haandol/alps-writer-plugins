@@ -14,11 +14,10 @@ When this workflow permits ADR writing and a definition needs creation or change
 apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
 boundary. Review-only work reports unclear or conflicting meanings without editing.
 
-The report-writer skill owns quiz generation and staged self-check. Read its
-[comprehension workflow](../report-writer/references/comprehension.md) when
-composing the report. Use the implementation's core explanation as the question
-source; a PASS alone does not omit the quiz. This skill retains review verdicts,
-native audit fields, and PR-specific comprehension readiness.
+When composing the report, apply report-writer's
+[comprehension workflow](../report-writer/references/comprehension.md) to the
+implementation explanation. A PASS alone does not omit questions. Preserve
+review verdicts, native audit fields, and PR-specific comprehension readiness.
 
 The review establishes the following evidence dependencies; orchestration remains model-selected.
 
@@ -52,8 +51,10 @@ Distinct outputs:
 - **PR comprehension readiness** — whether the reader can explain the important
   behavior and causal path.
 
-`PASS` never implies comprehension readiness. Do not send the PR until the
-check passes, and never turn it into an ADR or code verdict.
+`PASS` never implies comprehension readiness. Quiz passing blocks publishing
+only under an explicit user/team gate; authorization and repository checks
+remain required. Interactive quizzes require explicit request. The report-stage
+artifact contract governs gate application and self-check.
 
 ## The abstraction ladder — which level owns each disagreement
 
@@ -251,9 +252,9 @@ Apply the `adr-impl-sufficiency-reviewer` role contract.
 - **Compare requirement values value by value** — put each limit, quota, cycle, retention period, cap, and target the ADR records as its own ledger row and compare it directly against the number in the code. "There is limit logic" is not an accounting. A value mismatch or an unenforced value is a `Spec violation`. For a self-imposed value absent from the ADR, apply the admission gate: admitted requirement or boundary choices become `Undecided behavior`; replaceable choices go into Notable implementation choices; an unknown becomes `Unverified risk` only when it could affect safety or the ADR contract.
 - **Compare non-numeric requirements item by item too** — allowed value sets, transition rules, mandatory fields, permissions, visibility, ordering, uniqueness, and units are each ledger rows as well. An added or removed set member, a forbidden transition becoming allowed, and mandatory → optional are all `Spec violation`. **Split enums** — a differing identifier name is `Impl-fact mismatch` (correct the ADR), while a differing allowed set or transition rule is `Spec violation` (correct the code).
 - **Inspect hidden implementation premises** — for every material choice and every contract-critical call path, ask which externally checkable fact must hold for the implementation to preserve the ADR contract and safety. Verify provider guarantees, caller authentication, input provenance, ordering, uniqueness, trust boundaries, and platform behavior from code, tests, configuration, or an authoritative external contract. If a premise is not verified and its falsehood could break a contract row or safety property, emit `Unverified risk`, mark the affected coverage row `UNVERIFIED`, and do not return `PASS`. Do not reconstruct the implementer's private reasoning.
-- **Complete each Hill's evidence in order** — apply
-  `references/review-hiking.md`; missing status, evidence, or test results
-  prevent `PASS`.
+- **Complete every Hill's evidence before synthesis** — apply
+  `references/review-hiking.md`. Independent Hills may run in parallel or batches;
+  missing status, evidence, or test results prevent `PASS` regardless of order.
 - **Resolve apparent requirement gaps before escalating** — connect a logical consequence to its explicit parent contract, recognize an established project/domain default as implementation discretion, and escalate only when several valid product behaviors remain or the missing rule affects money, permissions, legal/compliance behavior, retention, irreversible data, a public contract, or durable fallback. For an escalation, produce the complete Decision request instead of a bare ambiguity note.
 - Before checking documentation and tests, read
   `${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md` completely and
@@ -278,7 +279,7 @@ The main session does not merge the two reviews by vote. Verify findings with th
 4. Downgrade to `Unverified risk` any claim you could not execute or whose call path you could not fully confirm.
 5. Distinguish the fact that a test exists from the fact that a test detects the defect.
 6. A necessity PASS means "no unnecessary change was found"; a sufficiency PASS means "no counterexample was found at present and the decision ledger is accounted for."
-7. Normalize the decision ledger into contract coverage independently from findings. Derive deterministic IDs from the ADR: `D0` is the Decision and `R1..Rn` are every top-level bullet under `### Requirement contract` in source order. Every derived ID gets exactly one row with `contractId`, `requirement`, `status`, `adrBasis`, `implementation`, `evidence`, and `tests`; omissions, duplicates, and invented IDs are invalid. `D0.adrBasis` is `Decision`; each `Rn.adrBasis` is the complete source bullet verbatim. Use only `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`. `PROVEN` means the inspected or executed evidence supports the row and no counterexample was found; it is not a mathematical proof.
+7. Normalize coverage independently from findings. `D0` is the Decision; `R1..Rn` follow top-level bullets and table data rows under `### Requirement contract` in source order. Each ID has exactly one `contractId`, `requirement`, `status`, `adrBasis`, `implementation`, `evidence`, and `tests` row. `D0.adrBasis` is `Decision`; preserve each source bullet verbatim, or join a table row's trimmed cells with `|`, excluding its header/separator. Use `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`. `PROVEN` means inspected/executed evidence supports the obligation without a found counterexample, not mathematical proof. Reject omissions, duplicates, and invented IDs.
 8. Before normalizing implementation choices, inspect their externally checkable premises. A premise confirmed by code, tests, configuration, or an authoritative external contract may remain part of the choice's evidence. If the premise is unverified and could violate safety or an ADR contract row when false, create an `Unverified risk`, mark the affected coverage `UNVERIFIED`, and block `PASS`. Do not infer private reasoning.
 9. Normalize Notable implementation choices independently from findings. Every row has only a concrete selected value or behavior, code evidence, why it fits the ADR intent, and why it matters. Explain fit by naming the preserved contract or boundary, not by guessing why the implementer chose it. A row that changes a requirement contract or durable boundary is removed from the list and raised as `Undecided behavior`.
 10. Normalize the wide view into `reviewHike.context` and the Container,

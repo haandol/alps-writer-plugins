@@ -6,6 +6,10 @@ disable-model-invocation: true
 
 # alps-init
 
+Before classifying features, read
+`${CLAUDE_PLUGIN_ROOT}/references/feature-boundaries.md`: inspect existing project
+topology, then use bounded contexts and vertical user stories by default.
+
 Start authoring an ALPS (PRD).
 
 Preserve intent because later agents must judge details the specification does
@@ -21,7 +25,7 @@ Require the user's meaning at first use when it is not already supplied; do not
 finalize dependent content while it is unclear. Read `read_alps_glossary()` as needed
 and save confirmed definitions with `save_alps_glossary_entry()` under the current
 section approval. The appendix is last and exists only when needed. Do not add a
-glossary interview, separate approval, DDD exercise, or domain classification.
+glossary interview, separate approval, or extra domain-classification exercise.
 Check missing definitions before completion; keep all nine numbered sections.
 
 > **Language**: this skill and every other harness prompt are written in English, but talk to the user and write the document content in the language the user writes in. Any user-facing phrasing below is a guide, not a literal string.

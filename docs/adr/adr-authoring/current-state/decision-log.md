@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the adr-authoring/curr
 category. Each ADR body describes only the current state, while the timeline of "what
 changed and why" accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-09-30 — 충돌 시 최신 의미 변경 우선과 의도 확인을 제안
+
+- **Current ADR**: [record-only-the-final-decision-state](./0001-record-only-the-final-decision-state.md)
+- **Change type**: requirement rule change
+- **What**: 현재 상태 기록과 결정 소유자 재사용 → 기록·커밋의 최신 의미 변경을 기본 우선안으로 선택하고, 선후 관계와 의도가 불명확한 경우만 묶어 확인하는 정책을 제안했다.
+- **Why**: 사용자가 충돌은 이후 기록·커밋을 기본으로 우선하고 불명확한 의도와 충돌만 모아 질문하도록 요청했다.
+
 ## 2026-08-15 — 기존 결정 소유자 확인을 새 ADR 생성보다 우선
 
 - **Current ADR**: [record only the final decision state](./0001-record-only-the-final-decision-state.md)

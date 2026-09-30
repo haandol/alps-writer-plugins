@@ -14,20 +14,42 @@ const prose = (text) => String(text ?? "").replace(/\r?\n/g, " ");
 
 // Presentation-only hierarchy. It does not change prompts, expectations, or scores.
 const groups = [
-  ["제품 계약", "Full ALPS", ["alps-"]],
+  ["제품 계약", "Full ALPS", "계약과 승인", ["alps-approval-", "alps-batch-", "alps-reference-"]],
+  ["제품 계약", "Full ALPS", "기능 구성", ["alps-groups-", "alps-high-"]],
   ["제품 계약", "Lite ALPS", "문제 정의", ["lite-alps-asks-", "lite-alps-follows-"]],
   [
     "제품 계약",
     "Lite ALPS",
     "해결 전략과 데모",
-    ["lite-alps-generates-", "lite-alps-proposes-", "lite-alps-resume-"],
+    ["lite-alps-generates-", "lite-alps-proposes-", "lite-alps-resume-", "lite-alps-groups-"],
   ],
   ["제품 계약", "Lite ALPS", "범위", ["lite-alps-records-", "lite-alps-skips-"]],
-  ["제품 계약", "계약 이전", ["feature-handoff-"]],
+  [
+    "제품 계약",
+    "계약 이전",
+    "완전성과 반복 인계",
+    ["feature-handoff-enriches-", "feature-handoff-idempotent-", "feature-handoff-ownership-"],
+  ],
+  [
+    "제품 계약",
+    "계약 이전",
+    "업무 경계와 승인",
+    ["feature-handoff-preserves-", "feature-handoff-delegation-"],
+  ],
   ["결정 관리", "작성", "요구사항", ["author-keeps-", "author-rejects-", "author-self-"]],
   ["결정 관리", "작성", "소유권과 승인", ["author-delegation-", "author-routes-"]],
+  ["결정 관리", "작성", "업무 경계", ["author-groups-", "author-discovers-"]],
+  ["결정 관리", "작성", "기존 프로젝트", ["import-"]],
   ["결정 관리", "문서 검토", ["review-"]],
-  ["결정 관리", "동기화와 통합", ["sync-", "rollup-", "hook-"]],
+  [
+    "결정 관리",
+    "동기화와 통합",
+    "의도와 계약",
+    ["sync-batches-", "sync-resumes-", "sync-prefers-"],
+  ],
+  ["결정 관리", "동기화와 통합", "표현과 검증", ["sync-rewrites-", "sync-stays-"]],
+  ["결정 관리", "동기화와 통합", "통합 범위", ["rollup-"]],
+  ["결정 관리", "동기화와 통합", "세션 분류", ["hook-"]],
   ["구현 보장", "의존성과 계획", "선행 상태와 계획", ["impl-blocks-", "impl-plans-"]],
   ["구현 보장", "의존성과 계획", "의도와 기본값 판단", ["impl-resolves-", "impl-uses-intent-"]],
   ["구현 보장", "완료와 검증", ["impl-completes-", "impl-requires-"]],
@@ -56,11 +78,24 @@ const groups = [
 function casePath(item) {
   if (item.type === "execution") {
     if (item.skill === "adr-sync") return ["동기화"];
+    if (item.skill === "adr-import") return ["기존 프로젝트 도입"];
     return ["통합", /discover|reject/.test(item.id) ? "계획 발견" : "승인과 계약 보존"];
   }
   if (item.type === "routing") {
     if (!item.required.length) return ["불필요한 호출"];
-    return ["필요한 호출", /lite|full/.test(item.id) ? "제품 문서" : "ADR 작업"];
+    if (
+      item.required.some((skill) =>
+        ["alps-init", "lite-alps-init", "feature-to-adr"].includes(skill),
+      )
+    )
+      return ["필요한 호출", "제품 문서"];
+    return [
+      "필요한 호출",
+      "ADR 작업",
+      item.required.some((skill) => ["adr-import", "adr-new", "adr-impl"].includes(skill))
+        ? "작성과 구현"
+        : "문서 관리",
+    ];
   }
   const entry = groups.find((g) => g.at(-1).some((prefix) => item.id.startsWith(prefix)));
   if (!entry) throw new Error(`Add a report responsibility for new scenario ${item.id}`);

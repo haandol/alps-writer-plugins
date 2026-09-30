@@ -154,6 +154,60 @@ function topLevelBullets(source) {
   return bullets;
 }
 
+function markdownTableCells(line) {
+  if (!/^ {0,3}\S/.test(line)) return null;
+  const text = line.trim();
+  if (/^(?:[-*+]\s+|\d+[.)]\s+|#{1,6}\s+|>)/.test(text)) return null;
+  const cells = [];
+  let start = 0;
+  for (let index = 0; index < text.length; index++) {
+    if (text[index] === "\\") {
+      index += 1;
+    } else if (text[index] === "|") {
+      cells.push(text.slice(start, index).trim());
+      start = index + 1;
+    }
+  }
+  if (cells.length === 0) return null;
+  cells.push(text.slice(start).trim());
+  if (cells[0] === "") cells.shift();
+  if (cells.at(-1) === "") cells.pop();
+  return cells;
+}
+
+/**
+ * Account for bullets and table data rows in document order, excluding table headings.
+ * A table's source basis joins trimmed cells with " | ", preserving requirement and
+ * observable-evidence text (including Markdown escapes) for exact coverage comparison.
+ */
+function requirementRows(source) {
+  const lines = source.split(/\r?\n/);
+  const rows = [];
+  let bulletStart = 0;
+  for (let index = 0; index < lines.length - 1; index++) {
+    const header = markdownTableCells(lines[index]);
+    const separator = markdownTableCells(lines[index + 1]);
+    if (
+      !header?.length ||
+      header.length !== separator?.length ||
+      !separator.every((cell) => /^:?-{3,}:?$/.test(cell))
+    ) {
+      continue;
+    }
+    rows.push(...topLevelBullets(lines.slice(bulletStart, index).join("\n")));
+    index += 2;
+    for (; index < lines.length; index++) {
+      const cells = markdownTableCells(lines[index]);
+      if (!cells?.length) break;
+      rows.push(cells.join(" | "));
+    }
+    bulletStart = index;
+    index -= 1;
+  }
+  rows.push(...topLevelBullets(lines.slice(bulletStart).join("\n")));
+  return rows;
+}
+
 function resolveAdrPath(artifactDir, value) {
   if (!value || typeof value !== "string") return null;
   if (path.isAbsolute(value)) return value;
@@ -186,7 +240,7 @@ function expectedContractRows(artifactDir, adrValue, errors) {
   );
   return [
     { contractId: "D0", adrBasis: "Decision" },
-    ...topLevelBullets(requirementContract).map((adrBasis, index) => ({
+    ...requirementRows(requirementContract).map((adrBasis, index) => ({
       contractId: `R${index + 1}`,
       adrBasis,
     })),

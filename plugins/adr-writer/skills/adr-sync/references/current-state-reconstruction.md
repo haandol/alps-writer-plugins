@@ -71,7 +71,8 @@ cleanup left only in the log. Do not invent a missing driver or infer a historic
 reason from the implementation; report the missing evidence when sources do not
 establish it.
 
-When a gray-zone decision or requirement contradicts repository evidence, do
-not quietly rewrite it during cleanup. Follow
-`references/reconciliation-boundary.md` and leave the contradiction unresolved
-until the user rules intended decision change versus implementation violation.
+When a gray-zone decision or requirement contradicts repository evidence, inspect
+the semantic change history using `references/reconciliation-boundary.md` and the
+shared `references/decision-reconciliation.md`. Restore known later decisions
+within scope; keep only unresolved intent or chronology for the question report.
+Newer implementation alone cannot approve a contract change.

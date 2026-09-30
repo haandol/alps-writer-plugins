@@ -51,13 +51,22 @@ the early answer, domain hierarchy, native schema, and exact evidence.
 
 - Identify the reader, the question or decision, the requested language and
   format, and the evidence available. Follow the user's current preferences.
-- Make the opening understandable on its own: connect the concrete problem or
-  decision being examined, who or what it affects, and the answer with its
-  material implication. Start with the problem when the reader needs that
-  context; for an urgent finding or a question already stated in the report,
-  lead with the answer and attach the minimum context immediately. Keep any
-  limitation that changes the answer beside it, along with a required next
-  action. Do not delay the answer with project history or a process recap.
+- Directly below the title, start with a short "Request and background"
+  paragraph, labeled in the report's language: why this report is being written
+  and what the user wants to understand, decide, or achieve. Name the requested task and
+  its subject, and include the supplied trigger, relevant context, and intended
+  outcome. Include scope, comparison targets, or priorities when they distinguish
+  this task from concurrent work. Use only conversation or source-supported
+  context; do not invent motives or fill absent background with generic prose.
+  A reader reopening the report should recognize the task and its purpose
+  without returning to the conversation. Merely repeating "review X" is not
+  enough when the reason and goal are known.
+- Follow that paragraph immediately with the answer, its material implication,
+  any conclusion-changing limitation, and the required next action. Keep the
+  request context brief so urgent findings remain visible early; put navigation,
+  detailed evidence, and process history after the answer. Do not repeat the
+  request throughout the report or force this structure onto short completion
+  notices and progress messages.
 - Preserve exact requirements, values, units, conditions, permissions, ordering,
   findings, tests, and sources. Distinguish facts, supported inferences, and
   proposals; never invent outcomes, historical policies, motives, or measurements.

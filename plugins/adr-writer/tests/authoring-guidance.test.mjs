@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process";
 import { withTmp, write, PLUGIN_ROOT } from "./helpers.mjs";
 
 const root = path.resolve(PLUGIN_ROOT, "../..");
-const names = ["requirement-delegation.md", "comprehension-load.md"];
+const names = ["requirement-delegation.md", "comprehension-load.md", "feature-boundaries.md"];
 
 test("both authoring plugins carry the same locally resolvable guidance in separate version directories", () => {
   withTmp((dir) => {

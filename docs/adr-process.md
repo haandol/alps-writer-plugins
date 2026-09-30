@@ -29,12 +29,13 @@
 
 ```mermaid
 flowchart TD
-    subgraph entry["진입 — 둘 중 하나"]
+    subgraph entry["ADR 작성 진입"]
         direction TB
         AlpsInit(["/alps-init<br/>ALPS PRD를 섹션 단위로 작성"])
         S7["Section 7 기능 명세<br/>+ 6.3 의존성 그래프"]
         AlpsInit --> S7
         ADROnly(["ADR-only 진입<br/>PRD 없음"])
+        Existing(["/adr-import<br/>기존 프로젝트 분석과 의도 질문 리포트"])
     end
 
     subgraph author["ADR 작성 (adr-writer)"]
@@ -46,6 +47,7 @@ flowchart TD
         Proposed["Proposed ADR<br/>+ .mapping.json 기록<br/>adrs: {path, status: Proposed, summary}<br/>+ dependsOn"]
         F2A -->|"결정 후보별 admission"| Admit
         ADROnly --> Admit
+        Existing --> Admit
         Admit -->|"요구사항/아키텍처 결정"| New
         Admit -->|"교체 가능한 구현 수단"| Detail
         New --> Proposed
@@ -95,13 +97,13 @@ flowchart TD
 
     classDef cmd fill:#e8f0fe,stroke:#4285f4,color:#111;
     classDef gate fill:#fef7e0,stroke:#f9ab00,color:#111;
-    class AlpsInit,F2A,New,Impl,Refactor,Review,Sync,Rollup,ADROnly cmd;
+    class AlpsInit,F2A,New,Impl,Refactor,Review,Sync,Rollup,ADROnly,Existing cmd;
     class Gate gate;
 ```
 
 **읽는 법**
 
-- **진입점은 둘이지만 ADR 생성보다 admission gate가 먼저다.** PRD-first는 `/feature-to-adr`가 `/adr-new`에 위임하고, ADR-only는 직접 결정을 제시한다. 두 경로 모두 요구사항 계약이나 지속적인 아키텍처 경계를 바꾸는 결정만 ADR로 만들며, SDK·라이브러리·credential wiring처럼 교체 가능한 구현 수단은 코드와 테스트로 내려보낸다.
+- **기존 프로젝트·PRD·직접 결정 모두 ADR 생성 전에 admission gate를 적용한다.** 기존 프로젝트는 `/adr-import`가 저장소와 배포 구조를 파악하고 업무 경계별 기능 후보와 의도 질문 리포트를 준비한다. PRD-first는 `/feature-to-adr`가 `/adr-new`에 위임하고, ADR-only는 직접 결정을 제시한다. 두 경로 모두 요구사항 계약이나 지속적인 아키텍처 경계를 바꾸는 결정만 ADR로 만들며, SDK·라이브러리·credential wiring처럼 교체 가능한 구현 수단은 코드와 테스트로 내려보낸다.
 - **`/feature-to-adr`는 소유권 handoff를 소유한다.** 구현 관련 입력을 ADR 소유, 구현 재량, legacy context, unresolved로 분류하고 빠짐없이 소유자가 정해진 경우에만 완료한다. 이전된 Feature는 실제 계약 소유 ADR을 1개 이상 가지며, 완료 후 PRD는 legacy 문서가 된다. 명시적 재import만 현재 ADR과 의미를 비교하며 동일한 입력은 no-op이다.
 - **새 초안은 한 번 검증하고, 두 번 리뷰하지 않는다.** `/adr-new`는 `adr-reviewer`가 적용하는 것과 같은 규칙(R1-R20)으로 작성하므로, 결정론적 하네스를 돌린 뒤 판단 규칙에 대한 자체 점검을 수행한다 — 방금 제대로 해낸 것을 대부분 되풀이할 리뷰어를 띄우지 않는다. `/adr-review`는 그 작성 컨텍스트가 사라진 자리에 독립적인 읽기를 공급한다. **손으로 고친, 다른 세션에서 바뀐, 물려받은** ADR이 그 대상이며, 작성 직후 자동으로가 아니라 요청 시에 실행된다.
 - **의존성 게이트는 필수다.** `/adr-impl`은 곧장 코딩으로 가지 않는다. `dependsOn`을 전이적으로 순회하고, 선행이 `Proposed`이거나 dangling이면 그것을 위상 순서로 먼저 구현한다.
@@ -431,7 +433,7 @@ Status는 사람이 손으로 정하는 값이 아니라 사이클이 자동으�
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Proposed: /adr-new · /feature-to-adr
+    [*] --> Proposed: /adr-new · /feature-to-adr · /adr-import
     Proposed --> Accepted: /adr-impl 테스트 + 최종 리뷰 PASS
     Accepted --> Proposed: 결정 변경 → 재구현 대기
     Accepted --> Deprecated: 대체 없이 폐기

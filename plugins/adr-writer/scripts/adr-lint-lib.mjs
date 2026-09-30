@@ -284,8 +284,19 @@ export function sectionRange(body, pred) {
 // (authoring-rules "Conventions"), so a Korean-authored ADR titles this section
 // "대안 검토" and an English-authored one "Alternatives". Matching only one
 // spelling would report `alternatives-missing` on a perfectly good ADR and let
-// R14's count check silently skip it.
+// the empty-explanation check silently skip it.
 const ALTERNATIVES_HEADING = /^(?:대안\s*검토|alternatives(?:\s*[-—:].*)?)$/i;
+
+/** Return the comparison or constraint prose without judging the number or quality of options. */
+export function alternativesText(body) {
+  const sec = sectionRange(body, (h) => ALTERNATIVES_HEADING.test(h.text.trim()));
+  return sec
+    ? sec.lines
+        .slice(sec.start + 1, sec.end)
+        .join("\n")
+        .trim()
+    : null;
+}
 
 /** Check the document spine while accepting Context as the legacy Purpose heading. */
 export function checkSections(body) {
@@ -308,33 +319,6 @@ export function countDrivers(body) {
   if (!sec) return { present: false, count: 0 };
   let count = 0;
   for (let i = sec.start + 1; i < sec.end; i++) if (/^\s*[-*]\s+\S/.test(sec.lines[i])) count++;
-  return { present: true, count };
-}
-
-// ── alternatives count (R14 — count only; strawman detection is LLM) ──────
-// Alternatives are authored as a table, a bullet list, or #### option blocks.
-// Take the strongest structural signal available so a table-based ADR and a
-// bullet-based one both yield a sensible count.
-export function countAlternatives(body) {
-  const sec = sectionRange(body, (h) => ALTERNATIVES_HEADING.test(h.text.trim()));
-  if (!sec) return { present: false, count: 0 };
-  let bullets = 0;
-  let subheads = 0;
-  let tableRows = 0;
-  let tableSeen = false;
-  for (let i = sec.start + 1; i < sec.end; i++) {
-    const l = sec.lines[i];
-    if (/^\s*[-*]\s+\S/.test(l)) bullets++;
-    if (/^#{4}\s+\S/.test(l)) subheads++;
-    if (/^\s*\|.*\|\s*$/.test(l)) {
-      // skip the header separator row (|---|---|)
-      if (/^\s*\|[\s:|-]+\|\s*$/.test(l)) tableSeen = true;
-      else tableRows++;
-    }
-  }
-  // In a table, the first non-separator row is the header → subtract it.
-  const tableCount = tableSeen ? Math.max(0, tableRows - 1) : 0;
-  const count = Math.max(bullets, subheads, tableCount);
   return { present: true, count };
 }
 

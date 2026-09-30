@@ -136,7 +136,7 @@
 //       }
 //     ],
 //     "comprehensionCheck": {                             // required by validator
-//       "prGuidance": "Do not open or send the PR until all questions pass.",
+//       "prGuidance": "Code PASS is separate from comprehension readiness. Publishing requires authorization and repository checks; quiz passing is an explicit user/team opt-in gate only.",
 //       "questions": [
 //         {
 //           "id": "Q1",

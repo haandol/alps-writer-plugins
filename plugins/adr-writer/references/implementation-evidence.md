@@ -4,18 +4,22 @@ Use this contract when implementing, refactoring, or reviewing code governed by
 an ADR. Project conventions and established sibling style remain the primary
 basis; this contract supplies the completion floor when they are silent.
 
-## Language-standard function documentation
+## Documentation at meaningful boundaries
 
-Every named function or method created or materially changed in handwritten code
-for the target behavior uses the repository's language-native documentation
-form: GoDoc, Python docstring, JSDoc/TSDoc, Rustdoc, JavaDoc/KDoc, or the local
-equivalent.
+Require documentation for the target behavior's public interfaces, material
+contract, state, permission, and failure boundaries, and nonobvious rationale.
+This includes ordering and fallback rules when they affect the contract.
+Follow project conventions, including any stricter documentation requirement.
+For function or method contracts, use the repository's language-native form:
+GoDoc, Python docstring, JSDoc/TSDoc, Rustdoc, JavaDoc/KDoc, or the local equivalent.
+Document a nonobvious constraint or rationale where it is relevant rather than
+repeating it on every internal helper.
 
-The documentation states both:
-
-- why the function is needed;
-- how it enforces the contract-relevant state, permission, ordering, failure, or
-  fallback behavior.
+Required documentation explains why the interface or boundary exists and how
+its contract-relevant behavior works. Ordinary internal functions can rely on
+clear names, types, and tests when those explain the behavior and project rules
+do not require a separate comment. An internal function that owns a material
+boundary or nonobvious rationale still needs that explanation.
 
 A name/signature restatement is insufficient. Reuse the ADR's domain and
 requirement-contract vocabulary so repository search can find the implementation,
@@ -62,8 +66,10 @@ requires a scope decision. Never substitute a manual check and claim completion.
 
 ## Review classification
 
-- Missing or inadequate language-standard documentation, or a direct ADR
-  reference in code, is `Best practice` weighted `now` and prevents `PASS`.
+- Missing or inadequate documentation at a required boundary or under project
+  conventions, or a direct ADR reference in code, is `Best practice` weighted
+  `now` and prevents `PASS`. Name the missing contract or rationale; do not flag
+  an ordinary internal function solely because it lacks a doc comment.
 - A missing ideal case, relevant edge case, or execution result is `Test gap` and
   prevents `PASS`.
 - A fully tested long inline behavior comment is a decision-neutral `Refactor`
