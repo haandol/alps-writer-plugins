@@ -160,7 +160,7 @@
         {
           "path": "docs/adr/reporting/domain-navigation/0001-domain-first-report-navigation.md",
           "status": "Accepted (2026-09-30)",
-          "summary": "리포트는 배경과 답을 구분하고 설명 가지 최대 4개와 근거·퀴즈를 분리하며 단계별 이해를 검증하고 본문 목차는 고정하지 않는다"
+          "summary": "리포트는 기본 HTML 생성·검증·기본 브라우저 열기로 전달하고 자유로운 본문 안에서 배경·답과 단계별 설명·근거·퀴즈를 구분한다"
         }
       ],
       "dependsOn": []

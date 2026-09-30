@@ -254,7 +254,11 @@ and document review results, as well as reports, audits, sync, rollup, and
 evaluations. A review request selects it even without a separate report request.
 The owning workflow still determines inspection scope, findings, verdicts, and
 edit permissions. It keeps skill instructions in
-English and writes the report in the user's requested language and format.
+English and writes the report in the user's requested language. With no explicit
+format or delivery constraint, it generates standalone HTML, verifies the final
+file, opens it once in the default browser, and returns the path. Other-format,
+chat-only, no-file, no-open and browser requests take precedence. Required
+Markdown/JSON remain supporting artifacts; a brief review still uses HTML.
 Reports open with a standalone localized `Background and goals` heading,
 connect the concrete problem to the answer and its
 material limitations in a distinct answer area, then drill into evidenced domains

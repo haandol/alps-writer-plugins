@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the reporting/domain-n
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-09-30 — HTML 생성과 기본 브라우저 열기를 기본 전달로 채택
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 형식 미지정 시 채팅이나 Markdown으로 끝낼 수 있는 전달 → HTML 보고서를 생성·검증한 뒤 기본 브라우저에서 한 번 열고 경로를 제공한다. 명시적인 형식·파일 생성·열기 제한은 우선한다.
+- **Why**: 보고서가 만들어져도 사용자가 결과를 직접 찾아야 하는 누락을 방지하고, 같은 요청에 일관된 읽기 경험을 제공하기 위해서다.
+
 ## 2026-09-30 — 설명 가지와 읽기 보조 영역을 구분
 
 - **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)

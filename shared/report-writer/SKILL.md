@@ -1,6 +1,6 @@
 ---
 name: report-writer
-description: Write reports and present review results in any requested format. Use for code, pull request, ADR, architecture, or document reviews, as well as reports, audits, evaluations, and synchronization results. Apply even when the user asks only for a review. Organize findings by domain with at most four explanation branches, clear paragraphs, evidence-grounded prose, and explanatory Mermaid diagrams.
+description: Write reports and review results as standalone HTML by default, then open them in the default browser. Honor explicitly requested formats. Use for code, pull request, ADR, architecture and document reviews, reports, audits, evaluations and synchronization results. Organize findings by domain with at most four explanation branches, clear paragraphs and evidence-grounded diagrams.
 ---
 
 # Report writing
@@ -15,9 +15,14 @@ A request to review code, a pull request, an ADR, an architecture, or a document
 also selects this skill for presenting the result; the user need not separately
 ask for a report. The owning review workflow still determines what to inspect,
 what counts as a defect, the verdict, and whether changes are authorized.
-Read [review results](references/review-results.md) for these requests. A brief
-review may stay in chat; honor the requested format and preserve required
-caller artifacts without adding empty sections.
+Read [review results](references/review-results.md) for these requests. Unless
+the user specifies another format or delivery constraint, create a standalone
+HTML report even for a brief review, validate it, and open the final file once
+in the operating system's default browser. A chat summary accompanies the HTML;
+it does not replace it. Preserve caller-required Markdown or JSON as supporting
+artifacts rather than treating their format as the user's delivery choice.
+Explicit chat-only, no-file, no-open, other-format or browser requests take
+precedence within their scope. Ordinary completion notices need no new report.
 
 Before creating review, audit, sync, or rollup report files or supporting
 artifacts, follow [review artifact storage](references/review-artifacts.md).
@@ -155,6 +160,12 @@ For HTML or Markdown, use [the report document contract](references/report-docum
 and `scripts/render-report.mjs` when a structured output helps validate hierarchy
 and evidence coverage. It runs with Node.js and no package installation. Other
 formats follow the same reading hierarchy using their available authoring tools.
+
+For HTML delivery, follow [format and layout](references/format-and-layout.md#final-delivery)
+to verify the final file and open it once, subject to the user's delivery constraints.
+Include its absolute path in the final
+response. If opening is unavailable or fails, keep the generated HTML and
+report the actual reason and path; do not claim that it opened.
 
 If a caller's existing renderer forces a flat legacy layout, keep that output as
 an audit source and compose the final human-facing report through this skill.

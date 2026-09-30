@@ -4,6 +4,12 @@ Apply this guidance to code, pull request, ADR, architecture, document, and othe
 review outputs. It governs the explanation, not the inspection method. Read the
 relevant sources through the owning review workflow before presenting findings.
 
+Unless the user specifies another format or delivery constraint, deliver even
+a short review as standalone HTML and open the verified final file once in the
+default browser. Keep a caller's required Markdown/JSON as supporting evidence.
+Follow [final delivery](format-and-layout.md#final-delivery) for overrides and
+opening failures; a chat summary alone does not replace the default report.
+
 ## Orient the reader, then give the result
 
 Use the common opening: a localized "Background and goals" heading and short paragraph below the title

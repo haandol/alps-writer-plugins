@@ -1,6 +1,7 @@
 # Structured report document
 
-For HTML or Markdown delivery, the included renderer checks hierarchy and
+HTML is the default delivery format unless the user requests otherwise. For
+HTML or Markdown delivery, the included renderer checks hierarchy and
 source coverage. It does not perform editorial judgment. Complete the semantic
 review in `editorial-review.md` before calling the report complete.
 
@@ -12,6 +13,10 @@ for both the source document and rendered output:
 node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --out <run-directory>/report.html
 node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --out <run-directory>/report.md --format markdown
 ```
+
+The CLI defaults to HTML and writes the output without opening a browser.
+After final verification, follow [final delivery](format-and-layout.md#final-delivery)
+to open the HTML once in the default browser and return its absolute path.
 
 ## Document fields
 

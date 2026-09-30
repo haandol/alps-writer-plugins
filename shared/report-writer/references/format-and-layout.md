@@ -74,6 +74,14 @@ hypothetical values must be labeled.
 
 ## Final delivery
 
+Default to a standalone local HTML report when the user has not specified a
+format or delivery constraint. A short review still uses this default; an
+ordinary acknowledgement, progress update or completion notice is not a report.
+Keep required Markdown/JSON audit artifacts alongside the final human view.
+Explicit other-format, chat-only, no-file, no-open or browser requests override
+the default within their scope. Do not add an HTML copy when the user requests
+only another format.
+
 Verify the actual format produced. A Markdown source is not proof that its HTML,
 PDF, or slide export is readable. Inspect wrapping, clipping, broken links,
 orphan headings, page breaks, and diagram consistency where applicable.
@@ -82,3 +90,18 @@ Use available format tools without changing the user's requested medium or
 introducing unapproved external publication. Keep mandatory review interactions
 and evidence when reorganizing a caller's report. If a format or diagram cannot
 be rendered, state that limitation and retain source; do not claim visual success.
+
+After the content and structural checks, confirm that the final HTML exists and
+is nonempty, then open its absolute path once using the operating system's
+default file opener. On macOS, use `open "<absolute-report-path>"`; on Windows,
+use `Start-Process` with a literal path, or `xdg-open` on Linux. Respect an explicit
+browser choice. Do not open drafts or open again after every render. The renderer
+itself stays usable without launching a browser; opening is the delivery step.
+
+Do not start an automation browser, dedicated browser session or local server
+merely to show one local HTML file. Automate browser verification only when the
+user explicitly requests it, and keep that session separate from their work.
+Opening the file is not proof of visual verification. If the opener is absent
+or fails, preserve the HTML and return its absolute path and the actual failure
+reason without claiming success. The final response briefly states the result
+and links to the report.

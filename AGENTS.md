@@ -315,6 +315,14 @@ breaks, evidence-grounded diagrams, worked calculations, and whole-output review
 The renderer validates structure and source coverage; semantic review remains a
 separate, explicitly reported step.
 
+Reports and reviews default to standalone HTML, including brief reviews. After
+final verification, open the nonempty file once in the operating system's default
+browser and return its absolute path. Explicit format or delivery constraints
+take precedence. Keep native Markdown/JSON as supporting artifacts. Do not open
+drafts or create an automation browser or local server merely to display a file.
+If opening fails, preserve the HTML and report the path and actual reason.
+Ordinary completion notices need no new report.
+
 Report openings place a standalone localized `Background and goals` heading
 directly below the title, followed by a short paragraph:
 why the report is being written and what the user wants to understand,
