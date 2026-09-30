@@ -254,11 +254,20 @@ and document review results, as well as reports, audits, sync, rollup, and
 evaluations. A review request selects it even without a separate report request.
 The owning workflow still determines inspection scope, findings, verdicts, and
 edit permissions. It keeps skill instructions in
-English and writes the report in the user's requested language and format.
-Reports connect the concrete problem to the answer and its material limitations
-in the opening, then drill into evidenced domains with at most four peer units.
+English and writes the report in the user's requested language. With no explicit
+format or delivery constraint, it generates standalone HTML, verifies the final
+file, opens it once in the default browser, and returns the path. Other-format,
+chat-only, no-file, no-open and browser requests take precedence. Required
+Markdown/JSON remain supporting artifacts; a brief review still uses HTML.
+Reports open with a standalone localized `Background and goals` heading,
+connect the concrete problem to the answer and its
+material limitations in a distinct answer area, then drill into evidenced domains
+with at most four child explanation branches. Subsequent headings and organization fit the subject and reader's
+questions rather than a fixed outline, while retaining mandatory content.
 Each domain states its outcome before explaining behavior and evidence, so the
-reader can choose the depth they need. Urgent findings remain visible at the top.
+reader can choose the depth they need. Collapsed branches show what opening
+them will clarify. Sources and quizzes support their explanation separately
+from the child-branch limit. Urgent findings remain visible at the top.
 The shared review checks this reading order as well as reader context, worked
 calculations, paragraph breaks, diagrams, and factual/causal support.
 

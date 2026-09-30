@@ -1,6 +1,6 @@
 ---
 name: report-writer
-description: Write reports and present review results in any requested format. Use for code, pull request, ADR, architecture, or document reviews, as well as reports, audits, evaluations, and synchronization results. Apply even when the user asks only for a review. Organize findings by domain with at most four peer units, clear paragraphs, evidence-grounded prose, and explanatory Mermaid diagrams.
+description: Write reports and review results as standalone HTML by default, then open them in the default browser. Honor explicitly requested formats. Use for code, pull request, ADR, architecture and document reviews, reports, audits, evaluations and synchronization results. Organize findings by domain with at most four explanation branches, clear paragraphs and evidence-grounded diagrams.
 ---
 
 # Report writing
@@ -15,9 +15,14 @@ A request to review code, a pull request, an ADR, an architecture, or a document
 also selects this skill for presenting the result; the user need not separately
 ask for a report. The owning review workflow still determines what to inspect,
 what counts as a defect, the verdict, and whether changes are authorized.
-Read [review results](references/review-results.md) for these requests. A brief
-review may stay in chat; honor the requested format and preserve required
-caller artifacts without adding empty sections.
+Read [review results](references/review-results.md) for these requests. Unless
+the user specifies another format or delivery constraint, create a standalone
+HTML report even for a brief review, validate it, and open the final file once
+in the operating system's default browser. A chat summary accompanies the HTML;
+it does not replace it. Preserve caller-required Markdown or JSON as supporting
+artifacts rather than treating their format as the user's delivery choice.
+Explicit chat-only, no-file, no-open, other-format or browser requests take
+precedence within their scope. Ordinary completion notices need no new report.
 
 Before creating review, audit, sync, or rollup report files or supporting
 artifacts, follow [review artifact storage](references/review-artifacts.md).
@@ -51,8 +56,9 @@ the early answer, domain hierarchy, native schema, and exact evidence.
 
 - Identify the reader, the question or decision, the requested language and
   format, and the evidence available. Follow the user's current preferences.
-- Directly below the title, start with a short "Request and background"
-  paragraph, labeled in the report's language: why this report is being written
+- Directly below the title, show the standalone heading "Background and goals",
+  localized in the report's language (see `references/report-document.md`).
+  Start with a short paragraph explaining why this report is being written
   and what the user wants to understand, decide, or achieve. Name the requested task and
   its subject, and include the supplied trigger, relevant context, and intended
   outcome. Include scope, comparison targets, or priorities when they distinguish
@@ -62,8 +68,9 @@ the early answer, domain hierarchy, native schema, and exact evidence.
   without returning to the conversation. Merely repeating "review X" is not
   enough when the reason and goal are known.
 - Follow that paragraph immediately with the answer, its material implication,
-  any conclusion-changing limitation, and the required next action. Keep the
-  request context brief so urgent findings remain visible early; put navigation,
+  any conclusion-changing limitation, and the required next action in a distinct
+  display area. An answer heading is optional and follows the report's subject.
+  Keep the request context brief so urgent findings remain visible early; put navigation,
   detailed evidence, and process history after the answer. Do not repeat the
   request throughout the report or force this structure onto short completion
   notices and progress messages.
@@ -82,6 +89,10 @@ Use C4's idea of changing resolution: overview first, then domain responsibiliti
 and interactions, followed by detailed behavior and evidence when needed. Do not
 force C4 diagram types or technical-layer headings onto every report.
 
+- Only the opening heading is fixed. Choose subsequent headings and organization
+  for the report's subject and the reader's questions; do not impose a universal
+  outline or add empty sections. Preserve the early answer, domain hierarchy,
+  required evidence, and the owning workflow's mandatory content and verdict.
 - Name the scope and reader question at each level. Prefer evidenced subdomains
   and bounded contexts; within them, divide by business responsibility or concept.
   Do not substitute file order, technical layers, or work phases for domain scope.
@@ -89,7 +100,9 @@ force C4 diagram types or technical-layer headings onto every report.
 - Keep at most four immediate child explanation units. When there are five or
   more peer sections, list items, cards, or comparison items, add meaningful
   domain grouping or depth. Do not truncate, hide a giant unstructured dump, or
-  use arbitrary numbered batches to satisfy the limit.
+  use arbitrary numbered batches to satisfy the limit. Supporting sources and
+  comprehension questions belong to their explanation and do not consume its
+  child-branch allowance; keep sources in an accessible evidence group.
 - Make parent-child scope and drill-down paths clear. A brief answer may fit in
   one node; do not add empty levels. If a grouping is editorial rather than an
   established architectural boundary, say so.
@@ -99,6 +112,11 @@ force C4 diagram types or technical-layer headings onto every report.
   informative headings and a short reading route only when it helps readers
   choose a branch. Introduce an unfamiliar actor or term before relying on it.
   A parent supplies the point of its children, not a repeated inventory of them.
+  Each child adds a reason, mechanism, condition, or worked example the parent
+  did not explain. When the conclusion depends on cross-domain relationships,
+  introduce those relationships before splitting into domain branches.
+  A collapsed branch's title and brief preview should explain what opening it
+  will clarify. Simple source lists need no artificial summary or extra depth.
 - Keep complete source evidence reachable at the appropriate depth. Use a
   focused excerpt for explanation and a full original artifact when needed.
   The grouping limit must never erase an independent obligation or failure.
@@ -142,6 +160,12 @@ For HTML or Markdown, use [the report document contract](references/report-docum
 and `scripts/render-report.mjs` when a structured output helps validate hierarchy
 and evidence coverage. It runs with Node.js and no package installation. Other
 formats follow the same reading hierarchy using their available authoring tools.
+
+For HTML delivery, follow [format and layout](references/format-and-layout.md#final-delivery)
+to verify the final file and open it once, subject to the user's delivery constraints.
+Include its absolute path in the final
+response. If opening is unavailable or fails, keep the generated HTML and
+report the actual reason and path; do not claim that it opened.
 
 If a caller's existing renderer forces a flat legacy layout, keep that output as
 an audit source and compose the final human-facing report through this skill.

@@ -71,6 +71,7 @@ const groups = [
     ["impl-review-comprehension-", "impl-review-completion-", "impl-review-selects-useful-"],
   ],
   ["리뷰와 설명", "보고서 품질", "인지부하", ["comprehension-"]],
+  ["리뷰와 설명", "보고서 품질", "단계별 이해", ["report-drilldown-"]],
   ["리뷰와 설명", "보고서 품질", "근거 보존", ["report-"]],
 ];
 
@@ -283,6 +284,9 @@ export function saveSkillsReport(directory, report) {
   const doc = {
     title: "Skill 평가 결과",
     language: "ko",
+    background: [
+      "이 보고서는 기록된 Skill 평가 결과를 읽고, 선택한 사례와 실행 조건 안에서 어떤 동작이 확인됐는지 판단하기 위한 자료입니다. 원본 판정과 검증 한계를 함께 제공합니다.",
+    ],
     summary: [
       summaryText(report.runs),
       "분류 응답, Skill 선택, 실제 수행을 구분해 읽으세요. 사례를 펼치면 반복별 판정과 원본 증거에 접근할 수 있습니다.",

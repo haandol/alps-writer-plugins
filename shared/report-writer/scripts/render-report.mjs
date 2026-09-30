@@ -60,7 +60,9 @@ export function validateReport(doc) {
     [
       "title",
       "language",
+      "background",
       "summary",
+      "summaryTitle",
       "sections",
       "requiredEvidenceIds",
       "review",
@@ -69,6 +71,9 @@ export function validateReport(doc) {
     "report",
   );
   strings(doc.summary, "summary", { min: 1 });
+  if (doc.background !== undefined) strings(doc.background, "background", { min: 1 });
+  if (doc.summaryTitle !== undefined && !nonempty(doc.summaryTitle))
+    throw new Error("summaryTitle must be a nonempty string when supplied");
   if (
     !doc.review ||
     !["reviewed", "draft"].includes(doc.review.status) ||
@@ -84,11 +89,10 @@ export function validateReport(doc) {
   )
     throw new Error("requiredEvidenceIds must contain unique source identifiers");
   const ids = new Set(),
-    peerCounts = new Map(),
     evidenceIds = new Set(),
     fragments = [],
     warnings = [];
-  /** Count domain children and source disclosures before assigning quiz questions. */
+  /** Limit explanation branches; sources and quizzes support their owning branch. */
   function visit(nodes, at, minimum = 1) {
     if (!Array.isArray(nodes) || nodes.length < minimum || nodes.length > 4)
       throw new Error(`${at}: provide one to four children grouped by domain responsibility`);
@@ -103,6 +107,7 @@ export function validateReport(doc) {
           "title",
           "domain",
           "scope",
+          "preview",
           "paragraphs",
           "children",
           "diagram",
@@ -115,14 +120,15 @@ export function validateReport(doc) {
         throw new Error(`${node.id}: title, domain and scope are required`);
       if (node.expanded !== undefined && typeof node.expanded !== "boolean")
         throw new Error(`${node.id}: expanded must be boolean`);
+      if (node.preview !== undefined && !nonempty(node.preview))
+        throw new Error(`${node.id}: preview must be a nonempty string when supplied`);
       if (node.paragraphs !== undefined) {
         strings(node.paragraphs, `${node.id}.paragraphs`);
         if (node.paragraphs.some((p) => /^#{1,6}\s|^\s*(?:[-*+]|\d+[.)])\s/m.test(p)))
           throw new Error(`${node.id}: encode headings and peer lists as child nodes`);
       }
       if (node.evidence !== undefined) {
-        if (!Array.isArray(node.evidence) || node.evidence.length > 4)
-          throw new Error(`${node.id}: split evidence into meaningful groups of at most four`);
+        if (!Array.isArray(node.evidence)) throw new Error(`${node.id}: evidence must be an array`);
         for (const item of node.evidence) {
           if (!item || !nonempty(item.id) || evidenceIds.has(item.id) || !nonempty(item.label))
             throw new Error(`${node.id}: evidence identifiers must be unique and labeled`);
@@ -150,11 +156,6 @@ export function validateReport(doc) {
         }
       }
       if (node.children !== undefined) visit(node.children, node.id, 0);
-      if ((node.children?.length ?? 0) + (node.evidence?.length ?? 0) > 4)
-        throw new Error(
-          `${node.id}: child explanations and evidence together exceed four peer units; regroup by responsibility`,
-        );
-      peerCounts.set(node.id, (node.children?.length ?? 0) + (node.evidence?.length ?? 0));
       if (
         !(node.paragraphs?.length || node.children?.length || node.evidence?.length || node.diagram)
       )
@@ -187,12 +188,6 @@ export function validateReport(doc) {
         keys(option, ["id", "text", "feedback"], `${question.id}.${option.id}`);
       if (!ids.has(question.sectionId))
         throw new Error(`${question.id}: unknown question sectionId`);
-      const count = peerCounts.get(question.sectionId) + 1;
-      if (count > 4)
-        throw new Error(
-          `${question.sectionId}: questions, children and evidence together exceed four peer units`,
-        );
-      peerCounts.set(question.sectionId, count);
     }
   }
   for (const fragment of fragments)
@@ -213,6 +208,8 @@ export function validateReport(doc) {
 
 const labels = {
   en: {
+    backgroundGoals: "Background and goals",
+    revisitExplanation: "Revisit the explanation",
     scope: "Scope",
     evidence: "Evidence",
     source: "Mermaid source",
@@ -223,6 +220,8 @@ const labels = {
     diagramScroll: "Scroll horizontally to read the full diagram.",
   },
   ko: {
+    backgroundGoals: "배경과 목표",
+    revisitExplanation: "관련 설명 다시 보기",
     scope: "설명 범위",
     evidence: "근거",
     source: "Mermaid 원문",
@@ -254,20 +253,20 @@ export function renderHtml(doc) {
     return items
       .map((node) => {
         const tag = depth === 0 ? "section" : "details";
+        const nodeQuestions = questions.filter((q) => q.sectionId === node.id);
         return `<${tag} class="report-node" data-domain="${esc(node.domain)}" data-depth="${depth}" id="${esc(node.id)}"${depth > 0 && node.expanded ? " open" : ""}>
-${depth === 0 ? `<h2>${esc(node.title)}</h2>` : `<summary>${esc(node.title)}</summary>`}
-<p class="scope">${esc(node.scope)}</p>${paragraphs(node.paragraphs)}
+${depth === 0 ? `<h2>${esc(node.title)}</h2>${node.preview ? `<p class="branch-preview">${esc(node.preview)}</p>` : ""}` : `<summary>${esc(node.title)}<span class="branch-preview">${esc(node.preview ?? node.scope)}</span></summary>`}
+${depth === 0 || node.preview ? `<p class="scope">${esc(node.scope)}</p>` : ""}${paragraphs(node.paragraphs)}
 ${node.diagram ? `<p class="diagram-scroll">${esc(ui.diagramScroll)}</p>${renderMermaid(node.diagram.source, { diagramSource: ui.source, diagramFallback: ui.fallback, idPrefix: node.id })}<p>${esc(node.diagram.explanation)}</p>` : ""}
 ${node.children ? `<div class="report-children">${nodes(node.children, depth + 1)}</div>` : ""}
 ${
-  questions.some((q) => q.sectionId === node.id)
-    ? `<div class="comprehension"><h3>${esc(quizUi.comprehension)}</h3>${questions
-        .filter((q) => q.sectionId === node.id)
+  nodeQuestions.length
+    ? `<div class="comprehension"><h3>${esc(quizUi.comprehension)}</h3>${node.children?.length ? `<p class="revisit-explanation">${esc(ui.revisitExplanation)}: ${node.children.map((child) => `<a href="#${esc(child.id)}">${esc(child.title)}</a>`).join(" · ")}</p>` : ""}${nodeQuestions
         .map((q) => renderQuestion(q, questions.indexOf(q), quizUi))
         .join("")}</div>`
     : ""
 }
-${node.evidence?.length ? `<div class="evidence-group">${node.evidence.map((e) => `<details class="evidence"><summary>${esc(e.label)}</summary><p><a href="${esc(sourceUrl(e.source))}">${esc(e.source)}</a></p>${e.excerpt !== undefined ? `<pre><code>${esc(e.excerpt)}</code></pre>` : ""}</details>`).join("")}</div>` : ""}
+${node.evidence?.length ? `<details class="evidence-group"><summary>${esc(ui.evidence)} · ${node.evidence.length}</summary>${node.evidence.map((e) => `<details class="evidence"><summary>${esc(e.label)}</summary><p><a href="${esc(sourceUrl(e.source))}">${esc(e.source)}</a></p>${e.excerpt !== undefined ? `<pre><code>${esc(e.excerpt)}</code></pre>` : ""}</details>`).join("")}</details>` : ""}
 </${tag}>`;
       })
       .join("");
@@ -276,7 +275,9 @@ ${node.evidence?.length ? `<div class="evidence-group">${node.evidence.map((e) =
 *{box-sizing:border-box}body{margin:0;background:#fff;color:#19384c;font:16px/1.85 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}main{max-width:1140px;margin:auto;padding:28px 28px 60px}header{border-bottom:2px solid #69899e;padding-bottom:22px}h1{font-size:32px;line-height:1.45;word-break:keep-all}h2{font-size:24px;line-height:1.55;word-break:keep-all}p{max-inline-size:48rem;margin:1em 0;word-break:keep-all;overflow-wrap:break-word}summary{cursor:pointer;color:#265987;word-break:keep-all;overflow-wrap:anywhere}a{color:#265987;overflow-wrap:anywhere}.scope,.review{font-size:13px;color:#5b7285}.report-node{margin-top:24px;padding-top:18px;border-top:1px solid #d6e1e9}.report-children>.report-node{border:1px solid #d6e1e9;border-radius:7px;padding:13px 17px;margin-top:14px}.report-children>.report-node>summary{font-size:18px;font-weight:600}.evidence{border-left:3px solid #bdd0dd;padding:8px 14px;margin:12px 0}.evidence-group{margin-top:18px}nav{display:flex;flex-wrap:wrap;gap:18px;margin:22px 0}.draft{padding:15px;background:#fff2d8}.diagram{margin:20px 0}.diagram__viewport{overflow:auto}.diagram svg{display:block;color:#355b70}.diagram svg text{font:14px sans-serif;fill:#19384c}.diagram-node rect,.diagram-node path,.sequence__participant rect{fill:#f3f7fa;stroke:#69899e}.diagram-boundary rect,.sequence__frame{fill:none;stroke:#98afbe}.sequence__note rect{fill:#fff7dd;stroke:#baa566}.sequence__lifeline{stroke:#a7bac6;stroke-dasharray:5 5}.diagram-source{margin-top:12px}pre{max-height:620px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#173145;color:#eff6fb;padding:17px;border-radius:7px;font:12px/1.8 ui-monospace,monospace}footer{margin-top:28px;border-top:1px solid #d6e1e9;padding-top:16px}@media(max-width:700px){main{padding:17px}h1{font-size:26px}.report-children>.report-node{padding:12px}.diagram svg{min-width:600px}}@media print{main{padding:0}.diagram__viewport{overflow:visible}.diagram svg{width:100%!important;min-width:0;max-width:100%!important}.diagram-source{display:none}pre{max-height:none}h2,summary{break-after:avoid}}
 .diagram-scroll{display:none}@media(max-width:700px){.diagram-scroll{display:block;font-size:13px;color:#5b7285}}@media print{.diagram-scroll{display:none}.evidence{break-inside:avoid}}
 ${quizCss}
-</style></head><body><main><header><h1>${esc(doc.title)}</h1>${paragraphs(doc.summary)}${doc.review.status === "draft" ? `<p class="draft">${ui.draft}</p>` : ""}</header>
+.branch-preview{display:block;font-size:15px;font-weight:400;line-height:1.65;color:#425e70;margin-top:5px;max-inline-size:48rem}.report-answer{margin:24px 0}.evidence-group{padding:12px 0;border-top:1px solid #d6e1e9}
+</style></head><body><main><header><h1>${esc(doc.title)}</h1>${doc.background ? `<section class="report-background"><h2>${ui.backgroundGoals}</h2>${paragraphs(doc.background)}</section>` : ""}</header>
+<section class="report-answer">${doc.summaryTitle ? `<h2>${esc(doc.summaryTitle)}</h2>` : ""}${paragraphs(doc.summary)}${doc.review.status === "draft" ? `<p class="draft">${ui.draft}</p>` : ""}</section>
 <nav aria-label="Domains">${doc.sections.map((n) => `<a href="#${esc(n.id)}">${esc(n.title)}</a>`).join("")}</nav>
 ${nodes(doc.sections)}<footer><p class="review">${ui.review}: ${esc(doc.review.basis)}</p>${doc.review.limitations ? `<p class="review">${ui.limitations}: ${esc(doc.review.limitations)}</p>` : ""}${result.warnings.map((w) => `<p class="draft">${esc(w)}</p>`).join("")}</footer>
 </main><script>document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',()=>{let n=document.getElementById(a.hash.slice(1));while(n){if(n.tagName==='DETAILS')n.open=true;n=n.parentElement;}}));
@@ -298,7 +299,17 @@ export function renderMarkdown(doc) {
   validateReport(doc);
   const ui = labels[doc.language];
   const quizUi = quizLabels[doc.language];
-  const lines = [`# ${md(doc.title)}`, "", ...doc.summary.flatMap((p) => [md(p), ""])];
+  const lines = [`# ${md(doc.title)}`, ""];
+  if (doc.background)
+    lines.push(
+      `## ${ui.backgroundGoals}`,
+      "",
+      ...doc.background.flatMap((p) => [md(p), ""]),
+      "---",
+      "",
+    );
+  if (doc.summaryTitle) lines.push(`## ${md(doc.summaryTitle)}`, "");
+  lines.push(...doc.summary.flatMap((p) => [md(p), ""]));
   if (doc.review.status === "draft") lines.push(`> ${ui.draft}`, "");
   /** Preserve domain ownership while separating printable choices from answer explanations. */
   function visit(items, depth = 2) {
@@ -312,6 +323,7 @@ export function renderMarkdown(doc) {
         "",
         `${"#".repeat(depth)} ${md(node.title)}`,
         "",
+        ...(node.preview ? [md(node.preview), ""] : []),
         md(node.scope),
         "",
       );
@@ -321,10 +333,11 @@ export function renderMarkdown(doc) {
         if (diagram.error) lines.push(`> ${ui.fallback} ${md(diagram.error)}`, "");
         lines.push(...fenced(node.diagram.source, "mermaid"), md(node.diagram.explanation), "");
       }
+      if (node.children) visit(node.children, depth + 1);
       const questions =
         doc.comprehensionCheck?.questions.filter((q) => q.sectionId === node.id) ?? [];
       if (questions.length) {
-        lines.push(`**${quizUi.comprehension}**`, "");
+        lines.push(`**${md(node.title)} · ${quizUi.comprehension}**`, "");
         for (const q of questions) {
           lines.push(`**${q.id}. ${md(q.question)}**`, "", quizUi.recallCue, "");
           for (const option of q.options) lines.push(`${option.id}. ${md(option.text)}`, "");
@@ -343,13 +356,13 @@ export function renderMarkdown(doc) {
         }
         lines.push(quizUi.selfCheckLimit, "", "---", "");
       }
+      if (node.evidence?.length) lines.push(`**${md(node.title)} · ${ui.evidence}**`, "");
       for (const evidence of node.evidence ?? []) {
         lines.push(`[${md(evidence.label)}](<${encodeURI(sourceUrl(evidence.source))}>)`, "");
         if (evidence.excerpt !== undefined) {
           lines.push(...fenced(evidence.excerpt, "text"));
         }
       }
-      if (node.children) visit(node.children, depth + 1);
     }
   }
   visit(doc.sections);
