@@ -168,7 +168,18 @@ test("implementation review leads with Context and a reader-priority narrative",
   // The common-owner load edges are checked above. Counts, selection state and
   // answer disclosure are exercised in report-comprehension and report tests.
   assert.match(skill, /`PASS` never implies comprehension readiness/);
-  assert.match(skill, /Do not send the PR until the\s+check passes/);
+  assert.match(skill, /Quiz passing blocks publishing\s+only under an explicit user\/team gate/);
+  assert.match(skill, /authorization and repository checks\s+remain required/);
+  assert.match(
+    artifactContract,
+    /unverified or failed comprehension does not block PR publishing by default/,
+  );
+  assert.match(
+    artifactContract,
+    /only an explicitly selected user\/team quiz gate requires every prepared\s+question to pass/,
+  );
+  assert.match(artifactContract, /Do not infer a publishing gate from a quiz request/);
+  assert.match(artifactContract, /Passing the quiz does not grant\s+publishing permission/);
   assert.match(artifactContract, /Do not persist quiz progress or pass\/fail state/);
   assert.match(artifactContract, /Do not automatically begin the comprehension check/i);
   assert.match(
@@ -695,17 +706,34 @@ test("sufficiency reviewer tests the tests — mutation and static analysis as v
   assert.match(evidence, /Do not install new tools/);
 });
 
-// Language-native documentation carries why/how, while tests carry executable ideal and
-// edge behavior. Direct ADR references are forbidden even inside those comments: shared
-// domain vocabulary improves search without coupling code to a decision-file location.
-test("adr implementation requires standard function docs plus ideal and edge tests", () => {
+// Required boundary documentation carries why/how; ordinary helpers can be explained
+// by names, types, and tests. Keep that exception bounded by the repository's rules.
+test("adr implementation requires boundary docs and ideal plus relevant edge tests", () => {
   const impl = read("skills/adr-impl/SKILL.md");
   const evidence = read("references/implementation-evidence.md");
   assert.match(impl, /implementation-evidence\.md/);
   assert.match(evidence, /GoDoc/);
   assert.match(evidence, /Python docstring/);
-  assert.match(evidence, /why the function is needed/i);
-  assert.match(evidence, /how it enforces/i);
+  assert.match(
+    evidence,
+    /public interfaces, material\s+contract, state, permission, and failure boundaries/,
+  );
+  assert.match(
+    evidence,
+    /why the interface or boundary exists and how\s+its contract-relevant behavior works/i,
+  );
+  assert.match(
+    evidence,
+    /Ordinary internal functions can rely on\s+clear names, types, and tests when those explain the behavior and project rules\s+do not require a separate comment/,
+  );
+  assert.match(
+    evidence,
+    /An internal function that owns a material\s+boundary or nonobvious rationale still needs that explanation/,
+  );
+  assert.match(
+    evidence,
+    /Follow project conventions, including any stricter documentation requirement/,
+  );
   assert.match(evidence, /requirement-contract vocabulary/i);
   assert.match(evidence, /never cite the ADR itself/i);
   assert.match(evidence, /no ADR number/);
@@ -821,8 +849,9 @@ test("human-facing review reports use one junior-readable visual writing guide",
   assert.match(guide, /junior developer seeing the subject for the first time/i);
   assert.match(
     guide,
-    /Every sentence must contribute a verdict, contract, evidence, impact, action, or\s+risk/i,
+    /Every sentence must contribute useful reader context, a verdict, contract,\s+evidence, impact, action, or risk/i,
   );
+  assert.match(guide, /preserve the initial request context that explains the reason and goal/i);
   assert.match(guide, /praise, reassurance, and conversational applause/i);
   assert.match(guide, /generic best-practice advice/i);
   assert.match(

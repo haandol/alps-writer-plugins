@@ -4,10 +4,13 @@ Apply this guidance to code, pull request, ADR, architecture, document, and othe
 review outputs. It governs the explanation, not the inspection method. Read the
 relevant sources through the owning review workflow before presenting findings.
 
-## Lead with the result and scope
+## Orient the reader, then give the result
 
-Show material findings and required actions before background. State what was
-reviewed and any limitation that changes how the result should be read. A clean
+Use the common opening: a short request-and-background paragraph below the title
+explaining why this review was requested and what the user wants to learn or
+decide. Follow it immediately with material findings and required actions, before
+extended background or evidence. State what was reviewed and any limitation
+that changes how the result should be read. A clean
 review reports no actionable findings within the checked scope, not universal
 correctness. Keep confirmed defects, unresolved questions, and optional
 suggestions distinguishable; do not invent an issue quota or severity.

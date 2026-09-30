@@ -188,8 +188,16 @@ State explicitly in `prGuidance`:
 
 - the code verdict and comprehension readiness are separate;
 - a `PASS` verdict does not prove the reader understands the implementation;
-- the PR must not be opened or sent until every question is answered correctly
-  without reading the answer criteria.
+- unverified or failed comprehension does not block PR publishing by default;
+- publishing still requires user authorization and repository checks;
+- only an explicitly selected user/team quiz gate requires every prepared
+  question to pass without consulting answers or criteria before publishing.
+
+When a gate applies, identify its basis in the current user instruction or team
+convention. Do not infer a publishing gate from a quiz request or the presence of
+questions. Do not infer permission to start an interactive quiz from gate
+selection; interactive mode still requires an explicit request. Keep this
+guidance in the existing field, without adding a progress or approval registry.
 
 Exactly one or two questions have `revisit: true`; when the check contains one
 question, that question is marked. Do not manually put hidden feedback, the
@@ -341,7 +349,7 @@ the file path as the headline; the path remains in the collapsed review details.
     }
   ],
   "comprehensionCheck": {
-    "prGuidance": "Do not open or send the PR until every comprehension question is answered correctly without reading the answer criteria.",
+    "prGuidance": "Code PASS and comprehension readiness are separate; PASS does not establish understanding. Unverified or failed comprehension does not block publishing by default. Publishing requires user authorization and repository checks. Only an explicitly selected user/team quiz gate requires every question to pass without consulting answers or criteria.",
     "questions": [
       {
         "id": "Q1",
@@ -527,7 +535,11 @@ Do not automatically begin the comprehension check after the report or
 lifecycle result. Keep the prepared questions and hidden grading data inside the
 HTML/JSON artifacts. When the user does not explicitly request an interactive
 comprehension check, leave PR comprehension readiness unverified and complete
-the main-session response without a question.
+the main-session response without a question. This unverified state does not
+block publishing by default. If the user or team explicitly selected a quiz
+gate, preserve that publishing condition and report it without starting the
+quiz automatically. Publishing permission and repository checks remain required
+whether a quiz gate applies or not.
 
 Only when the user explicitly asks to run the comprehension check, load the
 prepared artifact and ask one primary question at a time with all four choices.
@@ -546,5 +558,9 @@ Do not reveal the correct option, feedback, explanation, or evidence first.
 
 This interactive check does not reopen the implementation verdict, block
 evidence-backed remediation, or delay an otherwise valid ADR Status transition.
+An incorrect, skipped, or unanswered question blocks publishing only under an
+explicitly selected user/team quiz gate. Passing the quiz does not grant
+publishing permission or waive repository checks. HTML self-check does not
+establish comprehension readiness or satisfy the opt-in publishing gate.
 Do not persist quiz progress or pass/fail state in the ADR, mapping, repository,
 or another registry.

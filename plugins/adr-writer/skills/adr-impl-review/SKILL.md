@@ -14,11 +14,10 @@ When this workflow permits ADR writing and a definition needs creation or change
 apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
 boundary. Review-only work reports unclear or conflicting meanings without editing.
 
-The report-writer skill owns quiz generation and staged self-check. Read its
-[comprehension workflow](../report-writer/references/comprehension.md) when
-composing the report. Use the implementation's core explanation as the question
-source; a PASS alone does not omit the quiz. This skill retains review verdicts,
-native audit fields, and PR-specific comprehension readiness.
+When composing the report, apply report-writer's
+[comprehension workflow](../report-writer/references/comprehension.md) to the
+implementation explanation. A PASS alone does not omit questions. Preserve
+review verdicts, native audit fields, and PR-specific comprehension readiness.
 
 The review establishes the following evidence dependencies; orchestration remains model-selected.
 
@@ -52,8 +51,10 @@ Distinct outputs:
 - **PR comprehension readiness** — whether the reader can explain the important
   behavior and causal path.
 
-`PASS` never implies comprehension readiness. Do not send the PR until the
-check passes, and never turn it into an ADR or code verdict.
+`PASS` never implies comprehension readiness. Quiz passing blocks publishing
+only under an explicit user/team gate; authorization and repository checks
+remain required. Interactive quizzes require explicit request. The report-stage
+artifact contract governs gate application and self-check.
 
 ## The abstraction ladder — which level owns each disagreement
 
@@ -251,9 +252,9 @@ Apply the `adr-impl-sufficiency-reviewer` role contract.
 - **Compare requirement values value by value** — put each limit, quota, cycle, retention period, cap, and target the ADR records as its own ledger row and compare it directly against the number in the code. "There is limit logic" is not an accounting. A value mismatch or an unenforced value is a `Spec violation`. For a self-imposed value absent from the ADR, apply the admission gate: admitted requirement or boundary choices become `Undecided behavior`; replaceable choices go into Notable implementation choices; an unknown becomes `Unverified risk` only when it could affect safety or the ADR contract.
 - **Compare non-numeric requirements item by item too** — allowed value sets, transition rules, mandatory fields, permissions, visibility, ordering, uniqueness, and units are each ledger rows as well. An added or removed set member, a forbidden transition becoming allowed, and mandatory → optional are all `Spec violation`. **Split enums** — a differing identifier name is `Impl-fact mismatch` (correct the ADR), while a differing allowed set or transition rule is `Spec violation` (correct the code).
 - **Inspect hidden implementation premises** — for every material choice and every contract-critical call path, ask which externally checkable fact must hold for the implementation to preserve the ADR contract and safety. Verify provider guarantees, caller authentication, input provenance, ordering, uniqueness, trust boundaries, and platform behavior from code, tests, configuration, or an authoritative external contract. If a premise is not verified and its falsehood could break a contract row or safety property, emit `Unverified risk`, mark the affected coverage row `UNVERIFIED`, and do not return `PASS`. Do not reconstruct the implementer's private reasoning.
-- **Complete each Hill's evidence in order** — apply
-  `references/review-hiking.md`; missing status, evidence, or test results
-  prevent `PASS`.
+- **Complete every Hill's evidence before synthesis** — apply
+  `references/review-hiking.md`. Independent Hills may run in parallel or batches;
+  missing status, evidence, or test results prevent `PASS` regardless of order.
 - **Resolve apparent requirement gaps before escalating** — connect a logical consequence to its explicit parent contract, recognize an established project/domain default as implementation discretion, and escalate only when several valid product behaviors remain or the missing rule affects money, permissions, legal/compliance behavior, retention, irreversible data, a public contract, or durable fallback. For an escalation, produce the complete Decision request instead of a bare ambiguity note.
 - Before checking documentation and tests, read
   `${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md` completely and

@@ -315,8 +315,11 @@ breaks, evidence-grounded diagrams, worked calculations, and whole-output review
 The renderer validates structure and source coverage; semantic review remains a
 separate, explicitly reported step.
 
-Report openings connect the concrete problem to the answer and material
-limitations; domain openings state their outcome before behavior and evidence.
+Report openings place a short request-and-background paragraph directly below
+the title: why the report is being written and what the user wants to understand,
+decide, or achieve, using confirmed task context. The answer and material
+limitations follow immediately; domain openings state their outcome before
+behavior and evidence.
 ADR writing preserves its required sections: Purpose introduces the problem,
 intended outcome, and direction; the adjacent Decision Drivers retain all current
 selection criteria; Decision owns the full choice, rationale, and exact contract.

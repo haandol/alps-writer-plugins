@@ -40,7 +40,7 @@ review independently before the final verdict is synthesized.
 8. Select targeted tests from each Hill's contracts and the relevant
    counterexample that could break the vertical result. Record status,
    implementation evidence, and test results for every assigned coverage row
-   before moving to the next Hill.
+   before synthesizing the final verdict.
 
 A local implementation with one coherent vertical capability may have one low
 Hill. Multiple user flows, logical capabilities, or bounded contexts must become
@@ -57,9 +57,15 @@ sufficient. Carry this same plan through evidence selection and the final HTML.
 
 ## Preserve review boundaries
 
+Independent Hills may be reviewed in parallel or batches. Sequence only work
+with actual evidence dependencies or shared-resource conflicts; preserve the
+same per-contract evidence and targeted tests in every execution order. Hill ids
+and the report's reading order do not prescribe execution order. Account for all
+Hills before synthesizing the final verdict.
+
 Hill sequencing is not a user approval or lifecycle gate. Keep the route and
-intermediate Hill state ephemeral in the artifact directory; never
-persist them in the ADR, mapping, code, or another registry.
+intermediate Hill state ephemeral in the artifact directory; never persist them
+in the ADR, mapping, code, or another registry.
 
 The necessity and sufficiency perspectives derive conclusions independently
 from the original ADR, code, tests, change scope, and baseline, and never read

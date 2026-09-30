@@ -22,7 +22,7 @@ An Architecture Decision Record (ADR) documents an important architectural decis
 - **Purpose**: why the decision is needed, whose problem it addresses, and the outcome to protect
 - **Decision Drivers**: the pressures, constraints, and requirements used to evaluate the options (only those that genuinely discriminate between them)
 - **Decision**: the decision made and why
-- **Alternatives**: **at least two** realistic alternatives and why they were not adopted
+- **Alternatives**: realistic alternatives and why they were not adopted; one credible alternative or an explanation of the constraint can suffice
 - **Consequences**: the positive and negative effects of the decision
 
 An ADR first has to pass the **ADR admission gate**: its core subject must change a durable requirement, boundary, provider/model/fallback, key design, algorithm, or cross-implementation trade-off. It then records only the **gray zone** between business requirements and code — the rationale a reader cannot recover from the code, plus the requirement contract the result must honor. Replaceable libraries, SDKs, frameworks, credential/auth wiring, and module structure stay at code resolution.
@@ -87,7 +87,7 @@ If a flow, state, boundary, or alternative relationship is clearer visually, add
 
 ### Alternatives
 
-Compare **at least two** realistic alternatives. Real alternatives only — never include a strawman (an option nobody would take). Write each alternative's pros and cons against the Decision Drivers above. If it truly was the only path, reconsider whether the decision needs an ADR at all.
+Compare realistic alternatives against the Decision Drivers. One credible rejected alternative, or an explanation of why policy, regulation, or an external boundary left no other valid path, is sufficient. Preserve the actual rationale; never invent an option to satisfy a count. Whether the decision needs an ADR follows the ADR admission gate, not the number of alternatives.
 
 ## Consequences
 

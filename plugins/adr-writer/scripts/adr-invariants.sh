@@ -189,13 +189,8 @@ EXCLUDES=(
 # come out relative and unprefixed ("src/x.ts:3:…"), which is why the
 # post-filters below accept an optional "./".
 #
-# xargs runs grep once per batch, so its rc is the LAST batch's: 1 (no match) on
-# a final clean batch would mask a real error in an earlier one. Set -o pipefail
-# is already on, and `xargs` itself returns 123 if any invocation exits 1-125 —
-# so a genuine grep error (2) and a benign no-match (1) both surface as 123 and
-# can't be told apart. Hence we don't rely on xargs' rc: `-r` (skip empty input)
-# plus checking whether grep produced output gives 0/1, and a real grep failure
-# is caught by the explicit rc=2 probe on the first batch.
+# Normalize grep's no-match status inside each batch so xargs reports only
+# actual failures. Preserve pipeline errors even when another batch found hits.
 scan_tree() { # $1=extended regex → stdout: hits; return: 0=hits 1=none 2=error
   local re="$1" hits rc
   if [ -z "${AUTHORED_FILES_MODE:-}" ]; then
@@ -213,8 +208,15 @@ scan_tree() { # $1=extended regex → stdout: hits; return: 0=hits 1=none 2=erro
       printf ''
       return 2
     fi
+    # Unstaged deletions remain in Git's index but contain no text to inspect.
     hits="$(git ls-files -z --cached --others --exclude-standard \
-      | xargs -0 -r grep -HnE "$re" 2>/dev/null)"
+      | while IFS= read -r -d '' file; do
+          if [ -f "$file" ]; then printf '%s\0' "$file"; fi
+        done \
+      | xargs -0 -r sh -c 'grep -HnE -- "$0" "$@"; rc=$?; [ "$rc" -le 1 ]' "$re" 2>/dev/null)"; rc=$?
+    if [ "$rc" -ne 0 ]; then
+      return 2
+    fi
   else
     hits="$(grep -rnE "$re" "${EXCLUDES[@]}" . 2>/dev/null)"; rc=$?
     if [ "$rc" -ge 2 ]; then
@@ -332,7 +334,7 @@ fi
 # repoint to the CONSOLIDATED (survivor) ADR — the decision lives there now.
 if [ "$RUN_ROLLUP" -eq 1 ] && [ -n "$REMOVED" ]; then
   for ref in $REMOVED; do
-    hits="$(scan_citation "$ref")"
+    hits="$(scan_citation "$ref")" || exit "$?"
     if [ -n "$hits" ]; then
       echo "✗ (c) stale citation of removed ADR '${ref}' (repoint to the consolidated ADR):"
       printf '%s\n' "$hits"
@@ -357,7 +359,7 @@ if [ "$RUN_ROLLUP" -eq 1 ] && [ -n "$RENUMBERED" ]; then
       echo "adr-invariants: --renumbered expects '<old>:<new>' pairs, got '$pair'" >&2
       exit 2
     fi
-    hits="$(scan_citation "$old")"
+    hits="$(scan_citation "$old")" || exit "$?"
     if [ -n "$hits" ]; then
       echo "✗ (d) stale citation of renumbered ADR '${old}' (repoint to its new number '${new}'):"
       printf '%s\n' "$hits"

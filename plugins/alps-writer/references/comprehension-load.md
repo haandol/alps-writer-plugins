@@ -29,6 +29,10 @@ A low score never requires merging. A high score does not by itself block work.
 The calling skill owns what happens at 8/10 or higher, including whether it
 offers a split review, split candidates, or a delivery fallback.
 
-Show only `Comprehension load: <N>/10`. The score is advisory and ephemeral:
-never write it to an ALPS document, ADR, `.mapping.json`, Status, code, review
-artifact, or another registry.
+Show only `Comprehension load: <N>/10`. The score is advisory and ephemeral.
+It may appear in conversation or a disposable review report under the report
+skill's artifact-storage rules, as a reading aid for that review.
+Never write it to an ALPS document, ADR, `.mapping.json`, Status, code, or a
+durable registry.
+A saved review score is not implementation authority, approval evidence, or a
+reusable completion gate; a later review assesses its own current material.

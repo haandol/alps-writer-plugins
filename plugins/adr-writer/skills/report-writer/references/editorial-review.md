@@ -28,9 +28,12 @@ implementations are not a reason to ask for approval. If intent is unclear only
 on a material choice, identify that gap and the smallest needed decision; do
 not label every unspecified detail a missing requirement.
 
-Keep the answer and material limitation visible early. Use the existing domain
-hierarchy to connect purpose, behavior, and evidence; no named framework, fixed
-three-part sequence, or extra schema field is required. Review meaning: could a
+Open with the short request context below the title, then immediately state the
+answer and material limitation. Check that the opening explains why the report
+exists and what the user wants to understand, decide, or achieve, not merely
+which operation was requested. Retain only supplied background; an absent motive
+is not permission to invent one. Use the existing domain hierarchy to connect
+purpose, behavior, and evidence. Review meaning: could a
 reader use this intent to distinguish a plausible but purpose-defeating choice,
 and do the reported acceptance checks actually cover the intended outcome?
 Preserve unverified limits and do not mistake expected benefits for measured
@@ -41,8 +44,9 @@ results.
 Source verification and reader comprehension are separate. A fact in the
 conversation may be true but still missing from the report the reader receives.
 
-- Read the title and opening alone: can a reader identify the concrete problem,
-  the answer, its significance, and any condition that changes the conclusion?
+- Read the title and opening alone: can a reader distinguish this task from
+  concurrent work, identify why it was requested and the intended outcome, then
+  find the answer, its significance, and any condition that changes the conclusion?
   Then scan headings and each domain's first paragraph: can the reader choose
   where to inspect the explanation or evidence without reconstructing the
   author's investigation? A title such as "Analysis" or a list of component
@@ -56,7 +60,8 @@ conversation may be true but still missing from the report the reader receives.
   situation better without losing meaning, remove the setup rather than adding
   a smoother connector.
 - Re-read entry and exit transitions after moving or rewriting a passage.
-  Preserve useful answer-first openings and do not repeat background everywhere.
+  Preserve useful answer-first domain openings after the initial request context;
+  do not repeat background everywhere.
 - Check every reading depth for a misleading simplification. A shorter overview
   may defer exact evidence, but must retain a caveat, failure, or exception that
   changes its answer. Details must substantiate or qualify the parent claim;

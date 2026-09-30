@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the adr-authoring/deci
 category. Each ADR body describes only the current state, while the timeline of "what
 changed and why" accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-09-30 — 승인 전 초안 검증과 권위 문서 저장을 분리
+
+- **Current ADR**: [present-decision-digest-and-semantic-diff](./0001-present-decision-digest-and-semantic-diff.md)
+- **Change type**: requirement rule change
+- **What**: 새 ADR의 본문·매핑 후보를 폐기 가능한 공간에서 검증하고 승인 후 실제 경로에 적용하도록 저장 경계를 명시했다. 규칙 문서 시딩·갱신 권한과 동일 계약의 승인 재사용은 유지한다.
+- **Why**: 매핑 갱신과 저장 전 검증 지시가 승인 전에 권위 문서를 써도 된다는 뜻으로 해석되지 않아야 한다.
+
 ## 2026-09-28 — 의도와 수용 판정 기준을 구현 전에 연결
 
 - **Current ADR**: [present-decision-digest-and-semantic-diff](./0001-present-decision-digest-and-semantic-diff.md)

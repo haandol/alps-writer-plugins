@@ -58,7 +58,14 @@ the whole implementation:
 10. What risk remains unverified?
 11. Which core concepts should the common report-writer comprehension workflow turn into questions that help the reader understand the implementation?
 
-Start with `Abstract`:
+In the final human-facing report, place the common skill's short request context
+below the title: why this report is being written and what the user wants to
+understand, decide, or achieve. Use confirmed conversation context, not an
+inferred motive or only the ADR's architectural intent. If the native renderer
+cannot carry this opening, use its output as audit input and compose the final
+view through report-writer. Preserve all native evidence and required controls.
+
+Start the canonical audit summary with `Abstract`:
 
 Optionally set `findings.json.title` to a short, concrete headline for this
 review. Otherwise the renderer derives the reviewed document's title. File paths
@@ -233,6 +240,16 @@ self-check. Revisit guidance asks the reader to reopen the report later without
 timers, notifications, completion state, or persisted progress. Hidden feedback
 stays unavailable until self-check. Never output scores, grades, celebration,
 praise, ability judgments, or gamification.
+
+PR guidance separates code verdict, comprehension readiness, and publishing
+permission. Unverified or failed comprehension does not block publishing by
+default; user authorization and repository checks remain required. Only an
+explicit user/team quiz gate makes passing every prepared question without
+consulting answers or criteria a publishing condition. Identify the applicable
+instruction or team convention when such a gate exists. A quiz request alone
+does not select a gate, and gate selection alone does not request interactive
+mode. Keep questions in the report; start interactive grading only on explicit
+request. HTML self-check never establishes readiness or grants permission.
 
 The standalone HTML owns progressive disclosure. Use a white background and
 print-ready typography, margins, and figure sizing. Print questions and choices
