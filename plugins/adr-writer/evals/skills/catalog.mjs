@@ -5,6 +5,7 @@ import { cases as executionCases } from "../regression/cases.mjs";
 import { sha, confined, listFiles } from "../regression/workspace.mjs";
 import { responseObligations } from "./response-contract.mjs";
 import { reportCases } from "./report-cases.mjs";
+import { importExecutionCases } from "./import-execution.mjs";
 
 export const PLUGIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 export const ROOT = path.resolve(PLUGIN, "../..");
@@ -123,17 +124,19 @@ export async function catalog() {
       obligations,
       deterministicScore,
     } = await import(path.join(folder, file));
+    const authoredObligations = obligations ?? scenario.obligations;
+    const localScore = deterministicScore ?? scenario.deterministicScore;
     classification.push({
       ...scenario,
-      score: deterministicScore ?? scenario.score,
+      score: localScore ?? scenario.score,
       id: scenario.name,
       title: scenario.description,
       type: "classification",
       file,
       scorerHash: sha(readFileSync(path.join(folder, file), "utf8")),
-      semanticObligations: obligations ?? responseObligations(scenario),
+      semanticObligations: authoredObligations ?? responseObligations(scenario),
       // An explicit semantic scorer must not also invoke its legacy LLM judge.
-      supplementalChecks: Boolean(deterministicScore) || !obligations,
+      supplementalChecks: Boolean(localScore) || !authoredObligations,
       group: scenario.name.split("-")[0],
     });
   }
@@ -141,7 +144,11 @@ export async function catalog() {
     ...classification,
     ...reportCases,
     ...routingCases,
-    ...executionCases.map((c) => ({ ...c, type: "execution", group: c.skill })),
+    ...[...executionCases, ...importExecutionCases].map((c) => ({
+      ...c,
+      type: "execution",
+      group: c.skill,
+    })),
   ];
 }
 

@@ -24,7 +24,7 @@ preflight checks under a fresh `.codex/evals/skills-*` directory. The report say
 `--out` selects a new/empty directory. `--open` opens only the generated local file.
 
 The catalog includes 52 existing classification scenarios and two report-writing
-probes, eight controlled routing cases and eleven execution cases. The real-repository classification
+probes and controlled routing cases. Execution includes the eleven original rollup/sync cases and three existing-project import cases. The real-repository classification
 probe remains in the report as unrun unless selected explicitly with `--only
 review-real-repo-adr` and its existing environment inputs. Ordinary runs never
 silently read the user's separate real repository.
@@ -88,6 +88,30 @@ is used. It does not edit user settings or change the judge's separate profile.
 Without these options the existing configured Claude provider remains in use;
 the runner never automatically switches credentials after an error.
 
+## Existing-project import execution
+
+The unified execution catalog includes `import-confirmed-adoption-and-repeat`,
+`import-partial-approval-and-repeat`, and `import-unknown-answer-stays-pending`.
+Each runs three real fixture-tool turns: question report, user response and
+adoption (or deferral), then an equivalent repeat. Turn snapshots plus recorded
+mutations check approval timing, exact scope, Proposed state, original-file
+preservation, and no-op behavior. Content and rationale remain semantic-judge
+obligations; structural checks do not claim to understand prose.
+
+```bash
+pnpm eval:skills --prepare --suite execution --only import- --runs 1
+# Explicit model execution, separate from preparation and CI:
+pnpm eval:skills --live --suite execution --only import- --runs 1
+```
+
+Cases may declare exact `artifactPaths` under `.adr-review/` for Markdown, JSON
+or HTML reports. Only those additional files may be written; source/test files,
+seeded rules, traversal and symlinks remain protected. This does not add report
+move/delete permissions or expand other cases' default document access.
+The same declarations reach the actual MCP transport and both comparison variants.
+Discovery evidence requires a successful result paired to its read request and
+the exact confined path; a request or matching filename suffix is insufficient.
+
 ## Read the result
 
 The three suites deliberately report different evidence:
@@ -106,11 +130,14 @@ Unknown cost is shown as unpriced calls rather than zero-cost service use.
 
 The default semantic obligation uses the scenario's authored description, scoped
 to the exact task and evidence. It is not generated from the model response,
-machine tail or local scorer result. A scenario's explicit `obligations` export
+machine tail or local scorer result. A scenario's explicit `obligations` (named export first, then the default object)
 takes precedence, as in the approval digest; that path skips its legacy semantic
 scorer to avoid double judging. The report-writer probes have separate obligations
 for counts/denominators, evidence limits and presentation or review scope.
-A scenario may also export `deterministicScore` alongside its explicit obligations.
+A scenario may also supply `deterministicScore` alongside its explicit obligations,
+using a named export or a property on the default object. The registered catalog
+uses that same function, including its tool-scope guards. Named exports win when
+both forms are present.
 The unified runner then uses only those exact local checks plus GEval, while the
 legacy runner retains `score`. Feature splitting keeps numeric ranges and tail
 cardinalities local; SDK admission keeps file/index absence local. Their prose

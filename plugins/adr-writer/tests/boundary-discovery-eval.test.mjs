@@ -1,12 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { withTmp } from "./helpers.mjs";
 import scenario, {
   score,
   fixtureFiles,
 } from "../evals/scenarios/author-discovers-existing-boundaries.mjs";
+
+import { makeTools } from "../evals/regression/workspace.mjs";
 
 test("discovery verification requires inspected evidence and preserves every input", () =>
   withTmp((dir) => {
@@ -17,9 +19,21 @@ test("discovery verification requires inspected evidence and preserves every inp
       report,
       "# Discovery\nOne monorepo has independently deployed services. Ordering and Billing own separate business models. The fulfillment repository is unavailable. Intent questions remain pending.\n",
     );
-    const events = ["package.json", "deploy.md", "packages/checkout/backend/submit.mjs"].map(
-      (file) => ({ kind: "request", tool: "read_file", arguments: { path: file } }),
-    );
+    const logPath = path.join(dir, "events.jsonl");
+    const tools = makeTools({
+      root: dir,
+      pluginRoot: path.resolve("plugins/adr-writer"),
+      logPath,
+      turn: 1,
+      artifactPaths: scenario.artifactPaths,
+    });
+    for (const file of ["package.json", "deploy.md", "packages/checkout/backend/submit.mjs"])
+      tools.call("read_file", { path: file });
+    tools.call("write_file", {
+      path: scenario.artifactPaths[0],
+      content: readFileSync(report, "utf8"),
+    });
+    const events = readFileSync(logPath, "utf8").trim().split("\n").map(JSON.parse);
     assert.ok(score({ dir, events }).every((c) => c.pass));
     assert.ok(
       score({ dir, events: [] }).some((c) => !c.pass),

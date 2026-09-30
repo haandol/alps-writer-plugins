@@ -187,7 +187,7 @@ function recordCall(record, stage, response) {
 }
 
 /** Provide a confined MCP filesystem for old probes without granting a host shell or external tools. */
-function toolConfig(directory, root, pluginRoot, logPath) {
+function toolConfig(directory, root, pluginRoot, logPath, artifactPaths = []) {
   const file = path.join(directory, "mcp.json");
   writeFileSync(
     file,
@@ -201,6 +201,9 @@ function toolConfig(directory, root, pluginRoot, logPath) {
             pluginRoot,
             logPath,
             "1",
+            "on",
+            pluginRoot,
+            JSON.stringify(artifactPaths),
           ],
         },
       },
@@ -293,7 +296,7 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
   const prompt = await item.build(root);
   checkReferences(prompt, pluginRoot);
   const log = path.join(folder, "events.jsonl");
-  const config = toolConfig(folder, root, pluginRoot, log);
+  const config = toolConfig(folder, root, pluginRoot, log, item.artifactPaths);
   const wrapped = `This is an isolated classification probe, not a native client routing test.\nUse only the local fixture MCP tools. Fixture root ${root}; use relative paths for fixture reads/writes. CLAUDE_PLUGIN_ROOT is plugin/. Resolve referenced skills and guidance through plugin/skills and plugin/references.\n${prompt}`;
   json(folder, "input.json", { prompt: wrapped, files: snapshot(root) });
   record.promptHash = sha(prompt.split(root).join("<FIXTURE>"));
@@ -400,6 +403,7 @@ async function runExecution(
     pluginRoot: candidate.root,
     logPath: path.join(folder, "checks.jsonl"),
     turn: 0,
+    artifactPaths: item.artifactPaths,
   });
   const checks = [
     tools.call("run_check", { kind: "policy-tests" }),
@@ -413,7 +417,8 @@ async function runExecution(
     task: item.turns,
     obligations: item.obligations,
     timeout: options.timeout,
-    tools: "fixture-documents-v1",
+    tools: "fixture-documents-v2",
+    artifactPaths: item.artifactPaths ?? [],
     checker: candidate.hash,
     judge: options.judge,
     targetBedrock: options.targetBedrock ?? null,
@@ -445,6 +450,7 @@ async function runExecution(
     pluginRoot: candidate.root,
     logPath: path.join(folder, "final-checks.jsonl"),
     turn: item.turns.length,
+    artifactPaths: item.artifactPaths,
   });
   record.checks = ["policy-tests", "structure"].map((kind) => {
     const result = finalTools.call("run_check", { kind });
@@ -454,6 +460,13 @@ async function runExecution(
       detail: result.stdout + result.stderr,
     };
   });
+  if (item.verifyEvidence) {
+    const checks = item.verifyEvidence(evidence);
+    if (!Array.isArray(checks) || !checks.length || checks.some((c) => typeof c.pass !== "boolean"))
+      throw new Error("Invalid execution evidence checks");
+    record.checks.push(...checks);
+    json(folder, "execution-checks.json", checks);
+  }
   await judgeEvidence(item, evidence, record, folder, options, dependencies);
   if (record.verdict === "PASS" && record.checks.some((c) => !c.pass))
     record.verdict = "NOT_PROVEN";

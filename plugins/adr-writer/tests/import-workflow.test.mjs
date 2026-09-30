@@ -1,11 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { withTmp } from "./helpers.mjs";
 import scenario from "../evals/scenarios/import-asks-intent-before-writing.mjs";
 import { skillCatalog, routingCases } from "../evals/skills/catalog.mjs";
 import { scenarioNamesForChangedPaths } from "../evals/impact-map.mjs";
+
+import { makeTools } from "../evals/regression/workspace.mjs";
 
 test("existing-project import and product handoff have distinct discoverable entrypoints", () => {
   const catalog = skillCatalog();
@@ -36,10 +38,21 @@ test("the import fixture requires source discovery and rejects preapproval index
       report,
       "# decision-1 — Order intent\nThe project is a monorepo with independent services. Ordering owns member orders of one through three items; Billing owns payment completion. The unavailable repository remains unverified. Confirm the purpose and contract before saving.\n",
     );
-    const events = ["package.json", "deploy.md", "packages/checkout/backend/submit.mjs"].map(
-      (path) => ({ kind: "request", tool: "read_file", arguments: { path } }),
-    );
-    events.push({ kind: "request", tool: "write_file", arguments: { path: report } });
+    const logPath = path.join(dir, "events.jsonl");
+    const tools = makeTools({
+      root: dir,
+      pluginRoot: path.resolve("plugins/adr-writer"),
+      logPath,
+      turn: 1,
+      artifactPaths: scenario.artifactPaths,
+    });
+    for (const file of ["package.json", "deploy.md", "packages/checkout/backend/submit.mjs"])
+      tools.call("read_file", { path: file });
+    tools.call("write_file", {
+      path: scenario.artifactPaths[0],
+      content: readFileSync(report, "utf8"),
+    });
+    const events = readFileSync(logPath, "utf8").trim().split("\n").map(JSON.parse);
     assert.ok(scenario.score({ dir, events }).every((c) => c.pass));
     assert.ok(scenario.score({ dir, events: [] }).some((c) => !c.pass));
     mkdirSync(path.join(dir, "docs/adr"), { recursive: true });

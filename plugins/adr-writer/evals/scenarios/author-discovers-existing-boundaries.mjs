@@ -1,8 +1,10 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { skillText, write, read, TAIL_SPEC } from "../lib/harness.mjs";
+import { confined } from "../regression/workspace.mjs";
 
 export const fixtureFiles = {
+  ".gitignore": ".adr-review/\n",
   "package.json": '{"private":true,"workspaces":["packages/*"]}\n',
   "README.md":
     "Ordering owns order submission and confirmation across checkout and worker packages. Billing owns payment settlement with a separate model. Historical limit rationale is unknown.\n",
@@ -20,9 +22,29 @@ export const fixtureFiles = {
 export function score({ dir, events = [] }, reportPath = ".adr-review/discovery/report.md") {
   const report = read(dir, reportPath) ?? "";
   const requests = events.filter((e) => e.kind === "request");
+  const location = (file) => {
+    try {
+      return confined(dir, file);
+    } catch {
+      return null;
+    }
+  };
   const readPaths = requests
-    .filter((e) => e.tool === "read_file")
-    .map((e) => e.arguments?.path ?? "");
+    .filter((request) => {
+      if (request.tool !== "read_file" || !Number.isSafeInteger(request.seq) || request.seq < 1)
+        return false;
+      if (requests.filter((e) => e.seq === request.seq).length !== 1) return false;
+      const results = events.filter((e) => e.kind === "result" && e.request === request.seq);
+      return (
+        results.length === 1 &&
+        results[0].tool === "read_file" &&
+        results[0].ok === true &&
+        Number.isSafeInteger(results[0].seq) &&
+        results[0].seq > request.seq
+      );
+    })
+    .map((e) => location(e.arguments?.path))
+    .filter(Boolean);
   return [
     {
       label: "a discovery report was produced",
@@ -39,8 +61,7 @@ export function score({ dir, events = [] }, reportPath = ".adr-review/discovery/
       pass: requests.every(
         (e) =>
           !["write_file", "delete_file", "move_file", "demote_adr_status"].includes(e.tool) ||
-          (e.tool === "write_file" &&
-            path.resolve(dir, e.arguments?.path ?? "") === path.join(dir, reportPath)),
+          (e.tool === "write_file" && location(e.arguments?.path) === location(reportPath)),
       ),
       detail: "reject transient source writes even if restored",
     },
@@ -52,7 +73,7 @@ export function score({ dir, events = [] }, reportPath = ".adr-review/discovery/
     {
       label: "fixture execution captured repository discovery",
       pass: ["package.json", "deploy.md", "packages/checkout/backend/submit.mjs"].every((file) =>
-        readPaths.some((p) => p === file || p.endsWith("/" + file)),
+        readPaths.includes(location(file)),
       ),
       detail: readPaths.join(", "),
     },
@@ -61,6 +82,7 @@ export function score({ dir, events = [] }, reportPath = ".adr-review/discovery/
 
 export default {
   name: "author-discovers-existing-boundaries",
+  artifactPaths: [".adr-review/discovery/report.md"],
   description:
     "Inspect an existing layered monorepo before proposing business-scoped ADRs, preserving exact rules and unavailable-repository limits without saving unapproved contracts.",
   obligations: [

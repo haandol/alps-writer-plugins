@@ -113,7 +113,22 @@ export function makeTools({
   turn,
   guidance = true,
   checkerRoot = pluginRoot,
+  artifactPaths = [],
 }) {
+  // Case-owned report files are write-only additions to the existing document
+  // boundary. They cannot grant source access, rule edits, moves or deletions.
+  if (!Array.isArray(artifactPaths) || new Set(artifactPaths).size !== artifactPaths.length)
+    throw new Error("artifactPaths must contain unique report paths");
+  for (const file of artifactPaths) {
+    if (
+      typeof file !== "string" ||
+      !file.startsWith(".adr-review/") ||
+      !/\.(md|json|html)$/.test(file)
+    )
+      throw new Error("artifactPaths must name report files under .adr-review/");
+    confined(root, file);
+  }
+  const artifacts = new Set(artifactPaths);
   const events = () =>
     existsSync(logPath)
       ? readFileSync(logPath, "utf8").split("\n").filter(Boolean).map(JSON.parse)
@@ -134,7 +149,8 @@ export function makeTools({
     }
     return confined(root, file);
   }
-  function writable(file) {
+  function writable(file, { report = false } = {}) {
+    if (report && artifacts.has(file)) return confined(root, file);
     if (!file.startsWith("docs/") || !/\.(md|json)$/.test(file)) {
       throw new Error("only fixture docs/*.md and docs/*.json are writable");
     }
@@ -184,10 +200,10 @@ export function makeTools({
     },
     write_file: {
       description:
-        "Write a complete UTF-8 Markdown/JSON document inside fixture docs/. Each change is recorded. Source, tests and plugin rules cannot be edited.",
+        "Write a complete UTF-8 document inside fixture docs/ or an explicitly configured report file. Each change is recorded. Source, tests and plugin rules cannot be edited.",
       fields: { path: { type: "string" }, content: { type: "string" } },
       run({ path: file, content }) {
-        const full = writable(file);
+        const full = writable(file, { report: true });
         if (typeof content !== "string" || content.length > 100_000)
           throw new Error("invalid document size");
         const before = existsSync(full) ? readFileSync(full, "utf8") : null;

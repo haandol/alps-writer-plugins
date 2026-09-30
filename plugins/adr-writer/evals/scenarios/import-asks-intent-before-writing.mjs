@@ -5,6 +5,7 @@ export const score = (input) => discoveryScore(input, ".adr-review/import/report
 
 export default {
   name: "import-asks-intent-before-writing",
+  artifactPaths: [".adr-review/import/report.md"],
   description:
     "Use adr-import on an existing layered repository to discover business features, preserve source evidence and collect unknown intent before official ADR/index writes.",
   obligations: [
