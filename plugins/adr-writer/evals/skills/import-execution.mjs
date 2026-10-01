@@ -1,20 +1,9 @@
 import { fixtureFiles } from "../scenarios/author-discovers-existing-boundaries.mjs";
-import {
-  sectionRange,
-  validateMappingShape,
-  STAMPED_RULE_DOCS,
-} from "../../scripts/adr-lint-lib.mjs";
+import { officialAdrFiles, mutationRequests, sectionText } from "../lib/import-evidence.mjs";
+import { sectionRange, validateMappingShape } from "../../scripts/adr-lint-lib.mjs";
 
 const REPORT = ".adr-review/import/report.md";
-const MUTATIONS = new Set(["write_file", "delete_file", "move_file", "demote_adr_status"]);
 const domainOf = (key) => /^(ordering|billing)(?:\/[a-z0-9-]+)?$/.exec(key)?.[1];
-const official = (files = {}) =>
-  Object.fromEntries(
-    Object.entries(files).filter(
-      ([p]) =>
-        p.startsWith("docs/adr/") && !STAMPED_RULE_DOCS.some((name) => p === `docs/adr/${name}`),
-    ),
-  );
 const same = (a, b) => {
   const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])];
   return keys.every((key) => a[key] === b[key]);
@@ -45,7 +34,7 @@ test('provider failure cannot complete payment and completed results are reused'
 
 /** Validate adoption structure without pretending regex can judge the natural-language contract. */
 function adoptedDocuments(files, domains, referenceDate) {
-  if (!domains.length) return !Object.keys(official(files)).length;
+  if (!domains.length) return !Object.keys(officialAdrFiles(files)).length;
   let mapping;
   try {
     mapping = JSON.parse(files["docs/adr/.mapping.json"]);
@@ -76,28 +65,15 @@ function adoptedDocuments(files, domains, referenceDate) {
     const status = sectionRange(body, (h) => h.level === 2 && h.text === "Status");
     const contract = sectionRange(body, (h) => h.level === 3 && h.text === "Requirement contract");
     const decision = sectionRange(body, (h) => h.level === 2 && h.text === "Decision");
-    if (
-      !status ||
-      status.lines
-        .slice(status.start + 1, status.end)
-        .join("\n")
-        .trim() !== "Proposed"
-    )
-      return false;
+    if (!status || sectionText(status) !== "Proposed") return false;
     if (!contract || !decision || contract.start <= decision.start || contract.end > decision.end)
       return false;
-    if (
-      !contract.lines
-        .slice(contract.start + 1, contract.end)
-        .join("\n")
-        .trim()
-    )
-      return false;
+    if (!sectionText(contract)) return false;
     if (!body.includes(`Date: ${referenceDate}`)) return false;
     paths.push(record.path);
   }
   const allowed = new Set(["docs/adr/.mapping.json", ...paths]);
-  return Object.keys(official(files)).every((file) => allowed.has(file));
+  return Object.keys(officialAdrFiles(files)).every((file) => allowed.has(file));
 }
 
 /** Check every turn and recorded write so restoration or identical rewrites cannot hide violations. */
@@ -109,9 +85,7 @@ export function verifyImportExecution(evidence, domains) {
   const first = checkpoints[0]?.files ?? {},
     adopted = checkpoints[1]?.files ?? {},
     repeated = checkpoints[2]?.files ?? {};
-  const requests = (evidence.events ?? []).filter(
-    (e) => e.kind === "request" && MUTATIONS.has(e.tool),
-  );
+  const requests = mutationRequests(evidence.events ?? []);
   const targets = (e) => [e.arguments?.path, e.arguments?.from, e.arguments?.to].filter(Boolean);
   const reportOnly = (e) => e.tool === "write_file" && e.arguments?.path === REPORT;
   const permitted = (e) =>
@@ -143,13 +117,7 @@ export function verifyImportExecution(evidence, domains) {
       }
     }
     const status = sectionRange(e.arguments.content, (h) => h.level === 2 && h.text === "Status");
-    return (
-      status &&
-      status.lines
-        .slice(status.start + 1, status.end)
-        .join("\n")
-        .trim() === "Proposed"
-    );
+    return status && sectionText(status) === "Proposed";
   });
   return [
     {
@@ -161,7 +129,7 @@ export function verifyImportExecution(evidence, domains) {
       label: "approval-pending turn only produces its report",
       pass:
         complete &&
-        !Object.keys(official(first)).length &&
+        !Object.keys(officialAdrFiles(first)).length &&
         typeof first[REPORT] === "string" &&
         first[REPORT].trim().length > 100 &&
         requests.filter((e) => e.turn === 1).every(reportOnly),
@@ -195,7 +163,7 @@ export function verifyImportExecution(evidence, domains) {
       label: "equivalent repeat performs no official writes or content changes",
       pass:
         complete &&
-        same(official(adopted), official(repeated)) &&
+        same(officialAdrFiles(adopted), officialAdrFiles(repeated)) &&
         requests.filter((e) => e.turn === 3).every(reportOnly),
       detail: "checks events as well as byte-equivalent document contents",
     },

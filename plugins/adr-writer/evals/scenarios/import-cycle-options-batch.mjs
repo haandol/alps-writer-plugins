@@ -1,4 +1,5 @@
 import { skillText, seedRuleDocs, write, read, TAIL_SPEC } from "../lib/harness.mjs";
+import { mutationRequests } from "../lib/import-evidence.mjs";
 import { listFiles } from "../regression/workspace.mjs";
 import { hasCycle, STAMPED_RULE_DOCS } from "../../scripts/adr-lint-lib.mjs";
 
@@ -221,11 +222,8 @@ function graphMatches(text, { nodes, after }) {
 export function deterministicScore({ dir, tail, events }) {
   if (!Array.isArray(events))
     throw new Error("Cycle options scoring requires captured tool events");
-  const requests = events.filter((e) => e.kind === "request");
   const rows = tail?.findings ?? [];
-  const mutations = requests.filter((e) =>
-    ["write_file", "delete_file", "move_file", "demote_adr_status"].includes(e.tool),
-  );
+  const mutations = mutationRequests(events);
   return [
     {
       label: "one actual batch report exists",
