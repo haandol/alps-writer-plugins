@@ -1,6 +1,6 @@
-# Decision Log: <category>
+# Decision Log: adr-authoring/project-import
 
-This document is the **major decision-change history** of the <category> category. Each
+This document is the **major decision-change history** of the adr-authoring/project-import category. Each
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
@@ -34,12 +34,18 @@ optional for understanding the current decision.
     not start with NNNN-).
   - Replace the example entry below with real content when recording the first major transition. -->
 
-## YYYY-MM-DD — <one-line change summary>
+## 2026-10-01 — 순환 정리 세 옵션과 도메인별 일괄 판단
 
-- **Current ADR**: [<kebab-title>](./NNNN-kebab-title.md)
-- **Change type**: algorithm | architecture | adopted alternative replaced | Driver inverted | requirement value change | requirement rule change | behavior-changing bug fix | retirement
-- **What**: <previous approach → current approach, one or two sentences at the decision level>
-- **Why**: <the change in the driver or constraint that prompted this>
-- **What is now void** (optional): <the Consequences the previous decision left that no longer apply>
+- **Current ADR**: [import-existing-project-decisions](./0001-import-existing-project-decisions.md)
+- **Change type**: requirement rule change
+- **What**: 순환의 보류·소유권 질문 → 공통 추상 개념 도입, ADR 통합, 한쪽 기준 정리의 구체안을 비교하고 도메인별로 모아 한 번에 확인한다.
+- **Why**: 개발자가 계약 소유권의 실제 변경을 비교하고 결정할 수 있어야 하며, 링크 이름 변경이나 반복 질문으로 순환 정리를 대신하지 않도록 하기 위해서다.
 
-<!-- adr-writer:rules-version 0.9.2 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+## 2026-10-01 — 업무 맵에서 결정과 선행 계약을 검토하는 네 단계 도입
+
+- **Current ADR**: [import-existing-project-decisions](./0001-import-existing-project-decisions.md)
+- **Change type**: requirement rule change
+- **What**: 기능과 계약 후보 중심의 조사 → 업무 흐름 복원·경계 검토·결정 추출·선행 관계 확인의 검토 결과를 제공한다.
+- **Why**: 큰 프로젝트에서 사건과 규칙의 근거로 업무 경계를 찾고, 실행 중 상호작용을 계약 의존성으로 오인하지 않도록 하기 위해서다.
+
+<!-- adr-writer:rules-version 0.9.1 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

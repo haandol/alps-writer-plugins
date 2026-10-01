@@ -43,11 +43,30 @@ Every named function or method created or materially changed for ADR behavior us
 ## Adopt an existing project
 
 Use `/adr-import [project-path-or-feature-scope]` to inspect an existing codebase.
-It identifies repository and deployment shape, discovers business contexts and
-vertical features, and prepares ADR candidates. One report collects missing
+It identifies repository and deployment shape, then builds four reviewable
+views: business workflows and events, context boundaries, decision/contract
+candidates, and contract prerequisites. Start with important business outcomes
+and deepen local source evidence incrementally; a complete detailed system map
+is not a prerequisite for preparing independent candidates. One report collects missing
 purpose, rationale, contract confirmation and conflicts. Reply with its visible
 decision IDs; confirmed work continues through document/index validation without
 another routine proceed question. The application code stays unchanged.
+
+Workflow and context maps explain observed behavior and ownership; the
+decision-level graph explains which guarantee each prerequisite supplies.
+Request/result timing alone does not create an ADR dependency. The existing
+index registers individual ADRs but `dependsOn` connects categories; ambiguous
+or cyclic projections remain questions rather than silently changing the schema.
+Discovery maps stay in the disposable report, while confirmed contracts belong
+in their owning ADRs.
+
+For a cycle, the report compares three contract-level options: extract an
+independent shared concept, merge one inseparable decision, or orient around an
+existing contract owner. It explains applicability, recommends a concrete draft,
+and shows the guarantee owners and document changes before asking. All pending
+questions are collected once by domain and bounded context; cross-context cycles
+appear once with their affected owners. Adding an interface or relabeling a link
+does not resolve an ADR decision cycle.
 
 New ADRs are saved as `Proposed`; existing equivalent contracts are unchanged on
 repeat import. Known later semantic decisions resolve stale accounts, while

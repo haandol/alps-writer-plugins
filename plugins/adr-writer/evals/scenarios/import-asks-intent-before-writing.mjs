@@ -7,11 +7,11 @@ export default {
   name: "import-asks-intent-before-writing",
   artifactPaths: [".adr-review/import/report.md"],
   description:
-    "Use adr-import on an existing layered repository to discover business features, preserve source evidence and collect unknown intent before official ADR/index writes.",
+    "Use adr-import on an existing layered repository to map observed workflows, context ownership, decisions and guarantee-based prerequisites before collecting unknown intent and saving any official ADR/index.",
   obligations: [
     {
       id: "import",
-      text: "Inspect repository and deployment evidence, group business contexts and vertical features, preserve the member/1..3-item/submitted-to-confirmed and payment-failure contracts as candidates, and visibly distinguish unknown historical intent. Ask remaining questions together with visible IDs and do not save official ADR/index or modify application code before approval. Declare unavailable repository scope honestly.",
+      text: "Inspect repository and deployment evidence, group business contexts and vertical features, preserve the member/1..3-item/submitted-to-confirmed and payment-failure contracts as candidates, and visibly distinguish unknown historical intent. Ask remaining questions together with visible IDs and do not save official ADR/index or modify application code before approval. Declare unavailable repository scope honestly. The report connects the observed order submission/confirmation and payment settlement flows to Ordering/Billing ownership and ADR candidates. It provides workflow and context maps, distinguishes observed facts from proposed contracts and unknowns, and does not equate three deployments with three contexts. Order rejection and payment failure remain visible; no broker, order-to-payment call or inaccessible fulfillment behavior is invented. The report shows decision-level prerequisites with a required guarantee for each edge, or explicitly explains the absence of established edges. These fixture functions establish no Ordering/Billing contract prerequisite; their coexistence, business plausibility and event chronology do not create one. The existing index registers ADRs but stores category-level dependsOn, and the report must not claim exact ADR edges are already encoded there or create an official index before approval.",
     },
   ],
   score,

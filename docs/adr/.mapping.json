@@ -181,8 +181,8 @@
       "adrs": [
         {
           "path": "docs/adr/adr-authoring/project-import/0001-import-existing-project-decisions.md",
-          "status": "Accepted (2026-09-30)",
-          "summary": "기존 프로젝트의 기능과 계약 후보를 발견하고 ADR별 의도 질문을 하나의 리포트로 모아 확인한 뒤 문서화한다"
+          "status": "Accepted (2026-10-01)",
+          "summary": "기존 프로젝트의 업무·경계·결정·선행 관계를 검토하고 순환의 세 정리안과 계약 질문을 도메인별 리포트로 모아 일괄 확인한다"
         }
       ],
       "dependsOn": [

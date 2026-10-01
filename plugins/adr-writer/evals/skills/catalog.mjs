@@ -6,6 +6,7 @@ import { sha, confined, listFiles } from "../regression/workspace.mjs";
 import { responseObligations } from "./response-contract.mjs";
 import { reportCases } from "./report-cases.mjs";
 import { importExecutionCases } from "./import-execution.mjs";
+import { importPrerequisiteCases } from "./import-prerequisites.mjs";
 
 export const PLUGIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 export const ROOT = path.resolve(PLUGIN, "../..");
@@ -144,7 +145,7 @@ export async function catalog() {
     ...classification,
     ...reportCases,
     ...routingCases,
-    ...[...executionCases, ...importExecutionCases].map((c) => ({
+    ...[...executionCases, ...importExecutionCases, ...importPrerequisiteCases].map((c) => ({
       ...c,
       type: "execution",
       group: c.skill,
