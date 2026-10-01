@@ -79,7 +79,11 @@ const groups = [
 function casePath(item) {
   if (item.type === "execution") {
     if (item.skill === "adr-sync") return ["동기화"];
-    if (item.skill === "adr-import") return ["기존 프로젝트 도입"];
+    if (item.skill === "adr-import")
+      return [
+        "기존 프로젝트 도입",
+        item.id.startsWith("import-prerequisites-") ? "선행 보장과 분류" : "의도 확인과 채택",
+      ];
     return ["통합", /discover|reject/.test(item.id) ? "계획 발견" : "승인과 계약 보존"];
   }
   if (item.type === "routing") {

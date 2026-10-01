@@ -476,7 +476,19 @@ release script. The test asserts the two agree.
 
 `adr-import` reads local project evidence, distinguishes repository organization
 from execution/deployment shape, and proposes business-context/vertical-feature
-ADR contracts. It uses `feature-boundaries.md`, `decision-reconciliation.md` and
+ADR contracts through four reviewable views: business workflows/events, context
+boundaries, decision candidates, and contract prerequisites. Source discovery
+starts from important business outcomes and deepens incrementally. Each
+prerequisite edge identifies a required guarantee; interaction timing is not a
+dependency. Decision-level graphs remain disposable report evidence and are
+checked against the category-level `dependsOn` representation before saving.
+On a cycle, `import-cycle-resolution.md` compares three contract-level options:
+independent shared concept, one-decision merge, or orientation around an existing
+owner. Concrete drafts and ownership changes are prepared before all pending
+questions are collected once by domain/bounded context; a cross-context cycle
+is reviewed once. Implementation interfaces and renamed links are not substitutes
+for resolving decision contracts.
+It uses `feature-boundaries.md`, `decision-reconciliation.md` and
 `decision-questions.md` from adr-writer's local references. Missing intent and
 conflicts are presented together with visible decision IDs; confirmed answers
 resume authorized application and validation. New ADRs stay Proposed until the

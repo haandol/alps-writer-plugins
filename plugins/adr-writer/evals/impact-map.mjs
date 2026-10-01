@@ -5,7 +5,13 @@
 // behaviour; this table only avoids running unrelated live-model scenarios.
 
 export const IMPACT_RULES = [
-  { pathPrefixes: ["plugins/adr-writer/skills/adr-import/"], scenarioPrefixes: ["import-"] },
+  {
+    pathPrefixes: [
+      "plugins/adr-writer/skills/adr-import/",
+      "plugins/adr-writer/references/import-cycle-resolution.md",
+    ],
+    scenarioPrefixes: ["import-"],
+  },
   {
     pathPrefixes: [
       "plugins/adr-writer/references/feature-boundaries.md",

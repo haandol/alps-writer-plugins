@@ -24,7 +24,7 @@ preflight checks under a fresh `.codex/evals/skills-*` directory. The report say
 `--out` selects a new/empty directory. `--open` opens only the generated local file.
 
 The catalog includes 52 existing classification scenarios and five report-writing
-probes and controlled routing cases. Execution includes the eleven original rollup/sync cases and three existing-project import cases. The real-repository classification
+probes and controlled routing cases. Execution includes the eleven original rollup/sync cases and existing-project import cases. The real-repository classification
 probe remains in the report as unrun unless selected explicitly with `--only
 review-real-repo-adr` and its existing environment inputs. Ordinary runs never
 silently read the user's separate real repository.
@@ -97,6 +97,22 @@ adoption (or deferral), then an equivalent repeat. Turn snapshots plus recorded
 mutations check approval timing, exact scope, Proposed state, original-file
 preservation, and no-op behavior. Content and rationale remain semantic-judge
 obligations; structural checks do not claim to understand prose.
+
+Prerequisite cases also cover guarantee ownership across and within categories,
+and decision graphs whose category projection would create a cycle. They check
+that affected document writes remain pending while independent approved work can
+proceed. Local verifier tests exercise missing guarantees or owners, dropped
+dependencies and unauthorized writes; they validate the evidence checks, not
+general model reliability. Use the same `--only import-` filter to include these
+cases.
+
+The `import-cycle-options-batch` classification scenario exercises one question
+report across Commerce, Wallet, Access and Support. It compares independent
+concept extraction, an inseparable merge and existing-owner orientation, with
+exact guarantee ownership and proposed document changes. Local tests check
+declared graph/record coverage and forbidden mutations; false prose explanations
+are retained as GEval inputs, not classified by keyword checks. Select it with
+`--suite classification --only import-cycle-options-batch`.
 
 ```bash
 pnpm eval:skills --prepare --suite execution --only import- --runs 1

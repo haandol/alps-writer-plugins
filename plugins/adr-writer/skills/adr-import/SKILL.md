@@ -1,6 +1,6 @@
 ---
 name: adr-import
-description: Read an existing project's code and structure, organize its business features into ADR candidates, and collect missing intent or conflicts in one report before saving confirmed contracts. Use to adopt ADRs in an existing codebase; use adr-sync to reconcile an already documented decision.
+description: Adopt ADRs in an existing codebase through evidence-based event mapping, context boundaries, decision candidates and prerequisite analysis, then collect intent and contract confirmation in one report. Use adr-sync to reconcile an already documented decision.
 argument-hint: "[project-path-or-feature-scope]"
 ---
 
@@ -31,12 +31,8 @@ deployment/configuration files, relevant source and tests. Prefer authored sourc
 over generated bundles when both exist. Follow actual behavior across layers
 instead of treating directories or imports as the feature list.
 
-Find bounded contexts from business vocabulary, rule ownership and observable
-flows. Group each context by vertical slice or user story, from actor/event to
-result. A service or repository is not automatically a context. Do not split
-features into frontend/backend/API/database ADRs or invent a screen for a
-headless job. Report inaccessible related repositories and unclear deployment
-claims; do not clone repositories, contact live systems, or discover credentials.
+Report inaccessible related repositories and unclear deployment claims;
+do not clone repositories, contact live systems, or discover credentials.
 Local checks are allowed only when known not to contact external services.
 
 Read the full `docs/adr/.mapping.json` when present and relevant ADR bodies
@@ -46,13 +42,48 @@ present, otherwise the plugin templates. Read an existing glossary only when
 needed. A corrupt index is a reported repair question, not permission to replace
 it; independent source discovery may continue.
 
-## Prepare feature and contract candidates
+## Build four discovery views
+
+Present a reviewable path from workflow evidence to boundaries, decisions and
+prerequisites. Use EventStorming as a way to reconstruct business events and
+rules from local evidence, not as a claim that domain experts have confirmed
+their meaning. Start with a thin overview of actors, important business outcomes
+and scope; deepen representative flows and revise hypotheses as evidence arrives.
+Do not require a complete detailed system map before preparing independent
+candidates. These four stages organize observable results, not private reasoning,
+agent topology or a fixed source-reading order. Keep maps and precise code
+evidence in the ignored run report; they are not permanent registries.
+
+### 1. Reconstruct business workflows
+
+Build an evidence-backed event/rule map: actor or trigger → requested action →
+applicable rule → business event or observable result. A business event describes
+something that happened; it need not be a broker message. Cover relevant rejection,
+cancellation, retry and partial-failure paths as well as success. Include queries,
+operator actions and batch jobs through their results and access rules even when
+they emit no event. Mark paths not inspected instead of inventing outcomes.
 
 For each discovered feature, identify its user/operational result, rule owner,
 trigger, allowed/rejected behavior, failure guarantees and external boundaries.
 Read enough of the connected source and tests to distinguish implemented behavior
-from declarations. Capture precise code evidence in the disposable report, not
-in the ADR or index.
+from declarations. Event mapping does not authorize conversion to event-driven
+architecture or event sourcing.
+
+### 2. Review business boundaries
+
+Build a context map from changes in term meaning, rule ownership, data-change
+authority, external contracts and conditions that must hold together. Event
+adjacency, shared storage, service or repository boundaries alone do not establish
+a bounded context. Distinguish observed coupling from a proposed boundary and
+preserve already confirmed grouping. Collect material ownership ambiguity with
+the other intent questions.
+
+Within each context, group by vertical slice or user story from actor/event to
+result. Do not split features into frontend/backend/API/database ADRs or invent
+a screen for a headless job. A consistency boundary is evidence for grouping,
+not an automatic one-to-one context boundary.
+
+### 3. Extract decisions and contract candidates
 
 Apply the **ADR admission gate**. A replaceable library, helper, folder layout,
 adapter or tuning choice does not become an ADR merely because it exists.
@@ -90,6 +121,34 @@ evidence/intent. State the inspected and uninspected scope; do not claim complet
 project coverage when some input was inaccessible. This inventory is disposable,
 not another persistent architecture or code-to-ADR registry.
 
+### 4. Establish contract prerequisites
+
+Draw the decision-level prerequisite graph, identifying existing ADR owners or
+report-local candidate IDs and the guarantee required on each edge. Ask of each
+edge: which guarantee from B is necessary to satisfy A's contract? Distinguish
+business interaction, context relationships and contract prerequisites. Calls,
+event chronology, request/result round trips, imports and convenient work order
+alone do not establish a prerequisite. Label arrow direction explicitly. If no
+prerequisites are established, show isolated decisions or state that result;
+do not manufacture edges to fill a diagram.
+
+Check how the decision-level relationships project into the existing category
+`dependsOn` graph. Individual ADR records are indexed, but `dependsOn` targets
+category keys. Do not silently change that schema or claim it encodes exact
+ADR-to-ADR edges. Explain relationships within a category in the working report
+without creating self-edges. If grouping introduces a cycle or distorts the
+required guarantees, keep the affected document apply pending and collect the
+ownership/prerequisite question while continuing independent candidates.
+
+For a cycle or a distorted category projection, read
+`${CLAUDE_PLUGIN_ROOT}/references/import-cycle-resolution.md`. Preserve the
+observed relationship and compare three contract-level options: extract an
+independent shared concept, merge one inseparable decision, or orient the base
+contract around an existing owner. Show inapplicable reasons and a supported
+recommendation with contract ownership and before/after graphs. An interface,
+new label or renamed link does not resolve a decision prerequisite. Prepare all
+independent cycle groups before the single domain-grouped question report.
+
 ## Ask once through the report
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/decision-questions.md` and apply the local
@@ -99,6 +158,19 @@ boundary, complete proposed contract, rationale already known, and the missing
 intent or conflict question. Give each question a visible report-local ID.
 Known answers need no repeated question; collect the remaining candidates in
 one domain/feature report so the user can answer together.
+For cycle questions, group by domain and bounded context and handle a
+cross-context cycle once with all affected owners. Do not ask after each ADR,
+cycle or context; collect all remaining questions in the same report. Keep exact
+contract changes and any document moves/removals in that approval scope.
+
+Make the workflow map, context map, decision candidates and prerequisite graph
+reachable in that same report, grouped by business scope. Use Mermaid sequences
+for meaningful request/result timing and flowcharts for boundaries or dependency
+relationships, retaining source and rendered views in HTML. Connect each
+candidate to the observed workflow, boundary basis and required guarantees.
+Keep confirmed facts, inferred candidates and unknowns visible in each view;
+the maps alone are not contract approval. Reuse known answers and ask only about
+material gaps, not for four separate stage approvals.
 
 Draft in an ignored per-run directory. Use `/adr-new`'s authoring rules and
 R18a/R19 checks to make each candidate independently readable. The proposed ADR
@@ -156,6 +228,11 @@ or contract prerequisite, not an import statement or convenient processing order
 Check that references exist and the graph has no cycle or self-edge before saving.
 Do not add code paths, scan inventories, approval records or upstream document
 references. Preserve unrelated entries and already established glossary meanings.
+Persist confirmed meanings, boundaries and exact contracts in their owning ADRs.
+State each confirmed prerequisite guarantee and its owner in the dependent ADR
+at decision resolution, including within-category relationships; a Related link
+alone does not explain the guarantee. The documents must remain readable and
+their prerequisite relationships recoverable without the disposable maps.
 
 Recheck source and destination changes before each approved apply. Preserve other
 work and refresh affected candidates rather than overwriting them with old report
