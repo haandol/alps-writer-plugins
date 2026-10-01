@@ -12,7 +12,7 @@ import scenario, {
 } from "../evals/scenarios/import-cycle-options-batch.mjs";
 import { parseTail } from "../evals/lib/harness.mjs";
 import { createWorkspace, makeTools, snapshot } from "../evals/regression/workspace.mjs";
-import { deepEvalInput } from "../evals/deepeval/engine.mjs";
+import { deepEvalInput } from "../evals/deepeval/input.mjs";
 import { catalog } from "../evals/skills/catalog.mjs";
 import { scenarioNamesForChangedPaths } from "../evals/impact-map.mjs";
 import { PLUGIN_ROOT } from "./helpers.mjs";
