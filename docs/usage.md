@@ -26,6 +26,17 @@ ADRs are the primary artifact the adr-writer plugin manages. The direct single-d
 
 The default for the same logical decision is edit-in-place plus a decision-log entry for a major transition. Add a new ADR when the topic is a distinct durable decision or the old decision must remain separately referenceable. Use `/adr-rollup` only when one logical decision's evolution history was already scattered across several ADRs.
 
+Rollup starts from the requested ADR scope, candidate chains and directly related
+contracts. It follows farther references only to resolve concrete ownership or
+conflict questions and checks only the source/tests needed for those contracts.
+It reuses unchanged evidence during the run. Clear chains need a contract table
+and change summary, not a full system map; small local diagrams help only when a
+cycle, partial replacement or difficult ownership/reference change needs one.
+Global index/link/cycle validation and the pre-apply source check still run.
+Tools and reading batches are chosen by the agent; their names or call counts
+are not the correctness criterion. Evidence reuse depends on current contents
+and verified results. Renumbering details are loaded only when requested.
+
 ## End-to-end flow — from ALPS to ADR management
 
 The loop above is the steady-state summary. The full picture — from an ALPS PRD through ownership handoff, dependency-gated implementation, and ongoing maintenance — is below.

@@ -75,6 +75,19 @@ question and automatic-continuation flow within their existing scope and approva
 boundaries. A single HTML report opens with the default operating-system opener;
 no automation browser or report server is required.
 
+## Consolidate existing decisions
+
+`/adr-rollup` consolidates adopted evolution chains of the same decision within
+each category. It starts with the target ADRs and their related contracts,
+expanding only for a concrete ownership, conflict or reference question. Source
+and tests verify the candidate contracts; it does not require an application-wide
+event or context map. Clear chains use contract tables and summaries, with small
+local diagrams only when they help a difficult judgment. Global index/link/cycle
+checks, complete contract preservation and exact approval remain required.
+The agent chooses suitable tools and work order within those boundaries.
+Unchanged evidence is reused, changed evidence is refreshed, and detailed
+renumbering instructions are loaded only for an explicit number-cleanup request.
+
 ## Install
 
 **Codex**

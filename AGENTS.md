@@ -495,3 +495,15 @@ resume authorized application and validation. New ADRs stay Proposed until the
 completion cycle passes; identical re-imports are no-ops. No application refactor,
 live-system access, hidden approval registry or code-path mapping is introduced.
 Sync and rollup share that question flow, preserving their own mutation limits.
+
+Rollup uses target-centred discovery: selected ADRs, complete candidate chains
+and related contracts first, then only the source/tests or farther references
+needed for an actual ownership, conflict or reference question. It reuses
+unchanged evidence and does not require whole-system event/context maps. Clear
+chains use contract tables and summaries; difficult cases may need small local
+diagrams. Global mechanical checks, original contract preservation, exact
+approval and pre-apply freshness checks remain required.
+Rollup leaves tool choice and equivalent local verification methods to the
+agent. Command examples are available implementations; evidence, check results
+and mandatory approval/history/freshness boundaries determine correctness.
+Requested renumbering details live in its conditional skill-local reference.

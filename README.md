@@ -4,10 +4,10 @@
 
 A Codex and Claude Code **marketplace** that ships two independent plugins for spec-driven development: **alps-writer** (PRD authoring) and **adr-writer** (ADR-driven cycle). Both install from the marketplace alone — **no npm, no npx, no build step** for end users. The alps-writer MCP server is bundled (dependencies inlined) and committed at `plugins/alps-writer/dist/`.
 
-| Plugin                  | Scope                                                                                                                          | Depends on                       |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| **`alps-writer`** (PRD) | Write Full ALPS or lightweight mockup/PoC product documents conversationally. Bridges Full ALPS Section 7 features to ADRs.    | adr-writer (only for the bridge) |
-| **`adr-writer`** (ADR)  | ADR-driven development: author, implement, adversarially review, and sync; an ADR-first hook runs when session context starts. | nothing — fully standalone       |
+| Plugin                  | Scope                                                                                                                                   | Depends on                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **`alps-writer`** (PRD) | Write Full ALPS or lightweight mockup/PoC product documents conversationally. Bridges Full ALPS Section 7 features to ADRs.             | adr-writer (only for the bridge) |
+| **`adr-writer`** (ADR)  | Adopt ADRs in existing projects, author new decisions, implement, review, and sync; an ADR-first hook runs when session context starts. | nothing — fully standalone       |
 
 The two are split so that **adr-writer never references ALPS**. The only coupling is one-way (`alps-writer → adr-writer`): `/feature-to-adr` transfers each implementable Feature's complete contract into one or several ADRs. After handoff the PRD remains a legacy planning document; explicit re-import compares it with authoritative ADRs and applies only approved semantic changes.
 
@@ -98,14 +98,14 @@ codex plugin add alps-writer@alps-writer
 codex plugin add adr-writer@alps-writer
 ```
 
-Invoke skills with `$alps-init`, `$lite-alps-init`, `$feature-to-adr`, `$adr-new`, `$adr-impl`, `$adr-impl-refactor`, `$adr-impl-review`, `$adr-review`, `$adr-sync`, and `$adr-rollup`, or ask for the workflow in natural language. On first use, review and trust ADR Writer's single `SessionStart` hook when Codex prompts you. It restores context on startup, resume, clear, and compaction; it does not run for every user prompt.
+Invoke skills with `$alps-init`, `$lite-alps-init`, `$feature-to-adr`, `$adr-import`, `$adr-new`, `$adr-impl`, `$adr-impl-refactor`, `$adr-impl-review`, `$adr-review`, `$adr-sync`, and `$adr-rollup`, or ask for the workflow in natural language. On first use, review and trust ADR Writer's single `SessionStart` hook when Codex prompts you. It restores context on startup, resume, clear, and compaction; it does not run for every user prompt.
 
 **Claude Code**
 
 ```
 /plugin marketplace add haandol/alps-writer-plugins
 /plugin install alps-writer@alps-writer   # PRD authoring (/alps-init, /lite-alps-init, /feature-to-adr)
-/plugin install adr-writer@alps-writer    # ADR cycle (/adr-new, /adr-impl, /adr-impl-refactor, /adr-impl-review, /adr-review, /adr-sync, hooks)
+/plugin install adr-writer@alps-writer    # ADR cycle (/adr-import, /adr-new, /adr-impl, /adr-impl-refactor, /adr-impl-review, /adr-review, /adr-sync, hooks)
 ```
 
 > `/feature-to-adr` (in alps-writer) delegates ADR authoring to `/adr-new` (in adr-writer), so install **both** if you want the ALPS → ADR bridge. adr-writer on its own works without any ALPS PRD.
@@ -129,10 +129,11 @@ populations, and measurement conditions must remain consistent when carried into
 acceptance criteria or metrics. Delegating a value does not make a protected
 product decision an implementation tuning value.
 
-Existing-project import first distinguishes repository organization from execution
-and deployment shape, then groups by DDD bounded context and vertical user story.
-Full/Lite planning and direct ADR authoring use the same business-boundary model.
-Service folders and frontend/backend/database layers are not feature categories.
+Full/Lite planning, direct ADR authoring, and existing-project import group features
+by business responsibility and user outcomes. Service folders and
+frontend/backend/database layers are not feature categories. The
+[existing-project workflow](#adopt-an-existing-project) below explains how import
+reconstructs those boundaries from source evidence.
 Sync and rollup prefer later semantic changes in the same scope, gather unresolved
 intent/conflicts and exact change approvals in one report, and resume the confirmed
 work automatically. Report question IDs are visible in titles; answer them together
@@ -140,9 +141,105 @@ in conversation. Newer code alone does not approve a contract change.
 
 Run `/adr-sync` when review finds implementation-fact drift, after broad refactors or manual ADR edits, or as a periodic audit; it is not a mandatory deep scan after every small implementation.
 
+`/adr-rollup` keeps discovery local to candidate decision chains and their related
+contracts. It verifies the necessary source and tests, expanding only when an
+ownership, conflict or reference question requires it. Clear chains use contract
+tables and change summaries; difficult cases may add a small local before/after
+diagram. A whole-system map is not required. Complete contract preservation,
+global index/link/cycle checks and exact approval still apply.
+The agent chooses suitable tools and reading batches; evidence and verified
+results determine correctness. Detailed renumbering guidance is loaded only
+when number cleanup is explicitly requested.
+
 See the [Usage guide](./docs/usage.md) for the full cycle, walkthroughs, slash commands, hook behavior, and the mapping file, or the [ADR process overview](./docs/adr-process.md) for the same cycle drawn as diagrams.
 
 Codex users on Amazon Bedrock should disable multi-agent before running ADR review skills; see [ADR Writer troubleshooting](./plugins/adr-writer/README.md#amazon-bedrock-rejects-a-subagent-request).
+
+## Adopt an existing project
+
+Use `$adr-import [project-path-or-feature-scope]` in Codex or
+`/adr-import [project-path-or-feature-scope]` in Claude Code to bring an existing
+codebase into the ADR workflow. Without an argument, the current repository is
+the scope. ADR Writer works on its own; no PRD is required. Import prepares and
+records document contracts without refactoring application code or accessing
+live systems.
+
+### From source evidence to decision candidates
+
+Import distinguishes repository organization from execution and deployment shape,
+then reconstructs business events and rules from local source, tests and documents.
+This EventStorming approach maps what happens in the business; it does not require
+a message broker or an event-driven implementation. A bounded context is the scope
+where business terms and rules have a consistent meaning and owner.
+
+| Stage                          | What the reader can review                                                                                                         |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **1. Reconstruct workflows**   | Actors, triggers, rules and observable results, including relevant rejection and failure paths, queries and batch jobs             |
+| **2. Review boundaries**       | Context candidates grounded in terminology, rule ownership and data-change authority                                               |
+| **3. Extract decisions**       | Existing or new ADR owners for durable choices and exact contract candidates, with observation distinguished from confirmed intent |
+| **4. Establish prerequisites** | Decision-level relationships that name the guarantee each dependent decision needs from its owner                                  |
+
+Start with important business outcomes and deepen the evidence incrementally.
+A complete detailed system map is not required before preparing independent
+candidates. Existing ADR owners and confirmed boundaries are reused. Missing
+evidence and historical reasons remain explicit rather than being invented.
+
+### Compare three ways to resolve an ADR cycle
+
+The report distinguishes a real decision cycle from one created by grouping
+decisions into categories. The index registers individual ADRs, while `dependsOn`
+connects categories and must remain acyclic. Request/response timing and code
+imports alone do not establish those prerequisites.
+
+| Option                                    | Contract ownership after the change                                                                                                                    |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Extract an independent shared concept** | A common decision C owns the shared rules; A and B depend on C and retain their independent responsibilities. C must not depend back on its consumers. |
+| **Merge one inseparable decision**        | One surviving ADR owns the complete contract and rationale that were split across A and B.                                                             |
+| **Orient around an existing owner**       | A owns the base contract; B keeps its independent additional rules and depends on A. Both ADRs remain when both still own distinct decisions.          |
+
+For example, project membership and roles can be a shared contract used by
+document-reading and document-editing decisions. It must define eligibility
+independently of whether reading or editing succeeds. Adding an interface, a new
+label or a different link type does not resolve a circular decision.
+
+Each cycle group shows all three options, reasons for any inapplicable options,
+and a supported recommendation. Reviewable drafts show before/after graphs,
+where every required guarantee remains, and the exact document, index and link
+changes. Unresolved cycles stay visible in drafts; import does not erase a
+required edge or change the dependency schema to pass validation.
+
+### Answer once across domains and contexts
+
+All independent investigation and drafts are prepared before the remaining
+questions are presented in one HTML report, grouped by domain and bounded
+context. Import does not pause for approval after each ADR, cycle or context.
+A cross-context cycle appears once with all affected owners. Reply by visible
+question ID, select options, revise or defer items, or approve recommendations
+for an explicit set of IDs. Contract changes and any proposed deletions are part
+of that same confirmation.
+
+```mermaid
+sequenceDiagram
+    participant U as Developer
+    participant I as ADR import
+    participant R as Local repository
+    participant A as ADR documents and index
+    U->>I: Select project or feature scope
+    I->>R: Inspect workflows, rules and existing decision owners
+    I-->>U: One domain-grouped report with drafts, options and questions
+    U->>I: Confirm, revise or defer by question ID
+    I->>A: Save and validate independently confirmed contracts
+    I-->>U: Report applied, unchanged and deferred scope
+```
+
+New ADRs start as `Proposed` even when code already exists. Implementation and
+completion review own the later `Accepted` transition. Equivalent repeat imports
+leave documents, dates and the index unchanged. Discovery maps and code evidence
+stay disposable under `.adr-review/`; confirmed intent, exact contracts and
+prerequisite guarantees remain in their owning ADRs.
+
+See [ADR Writer's adoption guide](./plugins/adr-writer/README.md#adopt-an-existing-project)
+for the plugin's entry points and lifecycle rules.
 
 ## Features
 
@@ -161,7 +258,7 @@ Codex users on Amazon Bedrock should disable multi-agent before running ADR revi
 
 **adr-writer (ADR)**
 
-- **ADR-driven development cycle** — author ADRs directly with `/adr-new`, implement them with `/adr-impl`, and keep them in sync with `/adr-sync`
+- **ADR-driven development cycle** — adopt existing projects with `/adr-import`, author decisions with `/adr-new`, implement them with `/adr-impl`, and keep them in sync with `/adr-sync`
 - **Domain-aware gap resolution** — `/adr-impl` derives obligations already implied by the contract, reuses established project/domain defaults for reversible implementation choices, and packages only real product-policy gaps as one recommendation-led Decision request
 - **Searchable implementation documentation and executable cases** — `/adr-impl` requires language-standard why/how comments for changed functions, reuses contract terminology without citing ADR files, and tests both the ideal path and relevant edge cases
 - **Junior-readable review reports** — document, sync, implementation, and refactor reviews lead with verdict, impact, action, and risk, explain unfamiliar terms once, preserve exact evidence below, and use grounded Mermaid for multi-participant, state, dependency, data, and failure flows. Implementation-review HTML adds a table of contents, renders the narrative and Mermaid relationships, shows findings before detailed evidence, and collapses proven coverage, scope, metrics, choices, and comprehension by default
@@ -203,7 +300,7 @@ alps-writer-plugins/                 # marketplace root (this repo)
     └── adr-writer/                  # ADR plugin (standalone, ALPS-agnostic)
         ├── .codex-plugin/plugin.json
         ├── .claude-plugin/plugin.json
-        ├── skills/                  # /adr-new, /adr-impl, /adr-impl-refactor, /adr-impl-review, /adr-review, /adr-sync, /adr-rollup
+        ├── skills/                  # /adr-import, /adr-new, /adr-impl, /adr-impl-refactor, /adr-impl-review, /adr-review, /adr-sync, /adr-rollup
         ├── agents/                  # ADR authoring + isolated refactor/implementation review roles
         ├── hooks/                   # ADR-first directive hook (SessionStart)
         └── templates/adr/           # README + concepts + authoring-rules + structure + mapping.schema.json

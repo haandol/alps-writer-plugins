@@ -39,7 +39,7 @@
         {
           "path": "docs/adr/adr-authoring/rollup-safety/0001-require-explicit-approval-for-destructive-rollup.md",
           "status": "Proposed",
-          "summary": "ADR rollup은 확정된 계약과 잔여 소유권을 보존하고 번호 유지·충돌별 보류·정확한 승인 범위 안에서 통합한다"
+          "summary": "ADR rollup은 대상 중심의 근거·현재성·검증 결과를 보존하고 도구는 자율적으로 선택하며 명시 승인된 범위만 통합한다"
         }
       ],
       "dependsOn": ["adr-authoring/current-state"]
