@@ -128,6 +128,18 @@ The same declarations reach the actual MCP transport and both comparison variant
 Discovery evidence requires a successful result paired to its read request and
 the exact confined path; a request or matching filename suffix is insufficient.
 
+## Rollup evidence checks
+
+Rollup has separate planning and local execution-evidence checks.
+`rollup-targeted-discovery` evaluates a proposed scope without executing reads.
+`tests/rollup-execution-evidence.test.mjs` uses real fixture-tool results and
+phase snapshots to check retrieved content, bounded exploration, evidence reuse
+and changes between preparation and resume. Repeated/reordered reads and complete
+search evidence are accepted; filenames or partial snippets cannot replace a
+required original. These are instrumented local traces, not live-agent success
+rates or a prescribed production tool sequence. Optional renumbering-reference
+loading is checked separately.
+
 ## Read the result
 
 The three suites deliberately report different evidence:

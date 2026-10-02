@@ -1,6 +1,6 @@
 ---
 name: adr-rollup
-description: Roll up ADRs so each logical decision lives in exactly one current-state ADR, preserving adopted contracts and checking repository alignment. Default scope is **every category** when no argument is given; an argument narrows to one category or an explicit ADR bundle. Within each category, merge the evolution chain of the same logical decision (refine / supersede / replace) into its lowest-numbered ADR, harvest the chain's major transitions into the category's decision-log.md, and delete the rest — distinct decisions and separate categories stay untouched. Keywords - "adr rollup", "ADR 정리", "ADR 개수 줄이기", "같은 결정 합치기", "evolution chain merge", "Superseded chain 정리".
+description: Consolidate adopted evolution chains of the same decision within each category, preserving contracts, verified history and approval boundaries. Inspect target ADRs and necessary related evidence; default scope is all categories.
 argument-hint: "[category-or-adr-bundle?]"
 disable-model-invocation: true
 ---
@@ -25,11 +25,11 @@ When no evolution chain exists, leave the ADRs unchanged. The rules below own
 chain detection, survivor selection, history preservation, and destructive
 approval.
 
-It does three things at once:
-
-1. **Code alignment without detail promotion**: use code to verify Status and current behavior, but apply the ADR admission gate before carrying any code fact into the consolidated ADR. Replaceable libraries, SDKs, frameworks, credential/auth wiring, internal API names, and module structure are removed rather than synchronized. Gray-zone decisions (adoption rationale, alternatives, domain rules, state transitions, fallback, the intent behind key design) are revived from the chain's ADRs rather than inferred from code. If code contradicts such a decision, follow the branch in step 5 item 3.
-2. **Harvesting major history (log)**: move the major transitions the chain carried into the category's `decision-log.md` — the consolidated body describes only the current state, while the timeline of "which transitions brought this decision to where it is" stays in the log, newest first (step 9).
-3. **Down to a manageable count (merge)**: merge the chain of one decision into its lowest-numbered ADR and delete the rest, reducing scattered evolution history to a manageable number of ADRs.
+Verify candidate contracts against local implementation. The survivor preserves
+the adopted decision, rationale and exact contract; the decision log preserves
+verified major transitions before source deletion. Code shows implementation
+state; original ADRs, history and user decisions establish adoption. Leave
+replaceable implementation details in code.
 
 ## Scope
 
@@ -44,6 +44,33 @@ Before choosing current content, read
 recorded or committed semantic change to the same obligation and scope, while
 respecting current user intent and established adoption. Raw dates or newer code
 alone do not establish a contract or grant destructive permission.
+
+## Evidence selection and reuse
+
+Choose available local tools, batching and exploration order to obtain the
+required evidence. Tool names and call counts do not establish correctness.
+Use existing validators when suitable; command examples below are available
+implementations, not a requirement to use one tool. Equivalent methods must
+establish the same checks. Approval before mutation, history before source
+deletion and pre-apply freshness remain mandatory ordering boundaries.
+
+Start with the requested ADR scope and index, all original candidate-chain
+content and directly related contracts. Follow farther evidence only for an
+actual ownership, conflict or reference question. Do not build a whole-system
+workflow/context/event map or import the four-view `adr-import` workflow by
+default. Global mechanical checks do not authorize unrelated deep exploration.
+
+Reuse complete evidence and verified results while the relevant source,
+contract and supporting context remain unchanged. An absent or failed check is
+not reusable success. Reinspect changed or uncovered obligations and affected
+owners/references; do not repeat unrelated discovery or tests. Preserve valid
+evidence for independent candidates. Keep this working context disposable.
+
+Evidence reuse never replaces the step 10 comparison of every affected source
+and destination immediately before apply. Necessary freshness reads or content
+comparisons are allowed even when semantic evidence is reused. If anything
+material changed, refresh that candidate and reconcile its approval scope before
+writing; do not overwrite the change using stale evidence.
 
 ## What to merge and what to leave
 
@@ -84,6 +111,15 @@ to ask or confirm use that batch, not an interruption per ADR. Reuse confirmed
 answers and exact existing approval; after answers, apply the authorized scope
 and continue validation automatically. Keep each unresolved choice identifiable.
 
+For clear chains, a contract comparison table and concise change summary are
+sufficient. Add a small candidate-local before/after Mermaid only when it helps
+judge a cycle, partial replacement, ownership conflict or complex reference
+change. ADR count, routine deletion or link repointing alone does not require a
+diagram. Do not regenerate a complete dependency map for the report. Group all
+remaining questions by domain/bounded context in one report before asking; do
+not interrupt after each ADR or category. This presentation rule does not relax
+contract coverage, exact destructive scope or any verification below.
+
 ## Workflow
 
 Steps 1–9 prepare and verify a candidate changeset without modifying repository
@@ -100,8 +136,12 @@ Use the repository's rule documents when present; otherwise use the matching
 loaded in this context, including chain bodies needed in later steps.
 
 - Read `concepts.md` (the abstraction ladder plus the gray-zone model), `docs/adr/authoring-rules.md` (the include/exclude rules), and `docs/adr/structure.md` (category policy).
-- Read `docs/adr/.mapping.json` — the single ADR index (categories → adrs[] with path, status, summary) plus `dependsOn`. Since the mapping holds neither code paths nor a PRD reference, find the code needed for alignment verification by reading the ADR's Decision and using `Glob`/`Grep` (`structure.md` "Finding the related code"). If the mapping is absent, infer categories from the `docs/adr/<category>/` directory names on disk and proceed.
+- Read `docs/adr/.mapping.json` — the single ADR index (categories → adrs[] with path, status, summary) plus `dependsOn`. Since it holds no code paths or PRD reference, use the Decision's meaning to locate relevant implementation evidence with suitable tools (`structure.md` "Finding the related code"). If the index is absent, infer categories from the `docs/adr/<category>/` directory names and proceed.
 - Decide the target categories: with no argument, every `docs/adr/<category>/` on disk.
+
+Reading or validating the whole index is not a request to deeply inspect every
+feature's implementation. Keep global structure, link and dependency-cycle
+checks with the deterministic tools; a full human-facing map is unnecessary.
 
 ### 2. Identify chains per category
 
@@ -109,21 +149,29 @@ In each category, read all the ADR bodies, the adrs[] records in `.mapping.json`
 
 On a full-scope run, repeat this for every category, but keep consolidation inside each category.
 
+Apply Evidence selection and reuse to candidate groups and their incoming/outgoing
+contract references. A category without a chain needs no implementation
+discovery. Follow a delegated owner or residual obligation until resolved or
+explicitly held; direct references are a starting point, not a fixed one-hop cap.
+
 ### 3. Establish the adopted contract and inspect repository evidence
 
 For each group:
 
-1. Read **every ADR body** in the chain — so no important decision, alternative, or diagram is missed.
+1. Account for **every original ADR body** in the chain using current or valid reusable evidence, so no decision, alternative or diagram is missed.
 2. Establish which changes were adopted and what they replaced from the chain,
    existing decision log, verified history, and available user decisions. Never
    select a contract merely because its date or number is highest, its value is
    stricter, or the code already implements it. A difference is a transition to
    harvest only when adoption and replacement scope are established.
-3. `Glob`/`Grep` the related code using Decision keywords to check the selected
-   contracts and implementation state. Code reveals enforcement and drift; it
-   does not decide which requirement or rationale is authoritative. Keep this
-   verification repository-local, including source, tests, IaC and local config;
-   report live state as unverified rather than querying deployed systems.
+3. Use Decision keywords to locate the source, tests, IaC or local configuration
+   needed to verify the selected contracts and implementation state. Follow
+   connected behavior when a contract requires it, without inventorying unrelated
+   features or reconstructing the whole application. Code reveals enforcement
+   and drift; it does not decide which requirement or rationale is authoritative.
+   Keep verification repository-local and report live state as unverified rather
+   than querying deployed systems. Apply Evidence selection and reuse across
+   this step and step 5.
 
 `Proposed` does not establish approval: it can contain an adopted but unfinished
 target or an unadopted proposal. Include an unfinished target only when its
@@ -194,7 +242,10 @@ Date: <today>
 3. **Preserve actual Drivers and realistic alternatives**: the consolidated ADR follows the ordinary authoring rules (`authoring-rules.md`) exactly. Keep the current Purpose, all still-valid drivers, and the current adoption rationale together in the survivor, including reasons established before the latest revision. Harvesting history must never leave the current choice explained only in `decision-log.md`. Revive the real alternatives that lived somewhere in the chain. One credible rejected alternative, or the evidenced constraint leaving no other valid path, suffices; missing rationale is a finding, not permission to invent another option.
 4. **Keep the important decisions**: state transitions, behavioral rules, entity relationships, integration mechanisms, business logic.
    4-a. **Carry the requirement contract over without loss**: every **requirement value** (limits, quotas, cycles, retention, caps, targets), **non-numeric requirement** (allowed value sets, transition rules, mandatory fields, ordering, uniqueness, units — `authoring-rules.md` "Non-numeric requirements"), permission rule, and required validation condition that lived in any ADR of the chain moves into the consolidated ADR **without a single omission.** If a value was replaced by an adopted change, write the currently adopted value for that scope and harvest the supported transition. Retire only demonstrably replaced contracts; unresolved conflicts stay out of destructive changesets. Consolidation is compression, not requirement loss — after writing the consolidated ADR, verify it once with the [regeneration test](../../templates/adr/authoring-rules.md) ("with the code deleted, can requirement-honoring code be rebuilt from this ADR alone?").
-5. **Preserve Mermaid diagrams**: consolidate or amend the currently valid ones and keep them.
+5. **Preserve Mermaid diagrams**: consolidate or amend the currently valid ones
+   and keep them. Preserving an existing ADR diagram does not require a new
+   global map or a diagram in every rollup report. Apply the candidate-local
+   reporting rule under Questions and continuation.
 6. **Exclude implementation detail**: apply the "What to exclude from an ADR" table in `authoring-rules.md` (plus its "exception when it is a requirement" column) and the "code-readthrough test" in `concepts.md` — if items that are obvious from the code and **also not requirements** (function responsibilities, field types, env var names, pseudocode, implementation tuning values, and so on) were mixed into the old ADRs, remove them from the consolidated ADR. **Items that passed the requirement gate are not removal targets** (see 4-a above).
    - Apply the ADR admission gate to the consolidated core subject too. If the chain only records a replaceable library, SDK, framework, credential/auth adapter, or module structure, do not preserve it as a polished ADR; report it as a retirement candidate.
 7. **Keep the error-handling strategy**: architecture-level handling such as graceful degradation and fallback stays.
@@ -203,10 +254,11 @@ Before overwriting or deleting chain members, retain the original source passage
 
 ### 5. Code alignment verification (performed by this skill directly)
 
-Compare the consolidated ADR against the code and align it one last time — finish here, with no separate `adr-sync` call. For the grep strategy details see `adr-sync` Pass 2.
+Finish alignment here using Evidence selection and reuse, without a separate
+`adr-sync` call or fresh full-repository discovery pass.
 
 1. Extract the verifiable claims from the consolidated ADR — Status, entity names, fields, state values, API method+path, error codes, enum/type values, cross-system integration mechanisms, the error-handling strategy, and features explicitly used or unused.
-2. Verify each claim by grepping the related code found via the ADR Decision's keywords.
+2. Match each claim to valid implementation evidence and check results. Obtain additional evidence only for changed, uncovered or mismatching claims, using suitable local tools.
 3. **On a mismatch, preserve ownership**:
    - **Known adopted target awaiting implementation** — preserve that target as
      `Proposed`, report the remaining implementation/review work, and do not ask
@@ -245,24 +297,15 @@ before deleting any source member. Keep any resulting number gaps unless step 7 
 
 ### 7. Optional number cleanup (only on user request)
 
-**Preserve existing numbers and gaps by default.** A `numbering-gap` warning is
-advisory, not a reason to propose or perform renumbering. If the user already
-chose to keep gaps, do not ask again for the same gaps.
-
-Only when the user requests number cleanup, prepare all old → new paths and
-explain external-link breakage. Keep relative order within the approved leaf
-category and include independent ADRs affected by a rename in the explicit
-scope. Renumber only categories participating in this rollup; other categories
-remain untouched. Use `git mv` where applicable and update each title number,
-index entry, Related link, and decision-log current-ADR link together. Detect
-occupied destinations and source changes before applying; do not overwrite a
-file merely to obtain consecutive numbers. Plan moves without destination
-collisions, using temporary names within the approved scope when necessary.
-
+Preserve numbers and gaps by default; warnings do not request renumbering.
+Do not ask again when the user already chose to keep them.
 **Default when the user does not respond or the answer is unclear: leave the gap.**
-Include every old → new path in step 10. Generic rollup approval that omits these
-paths does not authorize renumbering. No reply is not approval to apply any other
-unapproved destructive action either.
+Only for an explicit
+number-cleanup request, read
+`${CLAUDE_PLUGIN_ROOT}/skills/adr-rollup/references/renumbering.md` before preparing
+moves. Include every old → new path, external-link impact and affected independent
+ADR in the same approval; generic rollup approval or silence does not authorize
+renumbering. Check source/destination freshness before any approved move.
 
 ### 8. Prepare mapping and cross-reference updates
 
@@ -270,7 +313,10 @@ Align every reference in one pass against the **final numbers** after step 7. Th
 
 - In `docs/adr/.mapping.json`, remove the deleted ADR records from that category's `adrs` array, update the `path` of records changed by the renumber to the new paths, and update the consolidated (survivor) ADR record's `summary` and `status` to match the current decision.
 - Change Related links in other ADRs that reference a deleted or renumbered ADR to the final numbers.
-- Correct stale ADR citations left in code comments and documents. **Deletions and renumbers repoint in different directions, so pass them to the script with different flags** — a single call can carry both:
+- Identify affected citations in the original repository before repointing.
+  Keep absorption and renumbering separate: a removed chain member points to
+  its survivor; a renamed independent decision points to its own new path.
+  The bundled locator is one available implementation:
 
   ```bash
   ${CLAUDE_PLUGIN_ROOT}/scripts/adr-invariants.sh --rollup-only \
@@ -278,10 +324,14 @@ Align every reference in one pass against the **final numbers** after step 7. Th
     --renumbered "<cat>/<old-NNNN>:<cat>/<new-NNNN> ..."
   ```
 
-  - `--removed` (check **(c)**) — the ids of ADRs **deleted** from the chain. The output says "repoint to the consolidated ADR" — move those citations to the **consolidated (survivor) ADR** (since the decision was absorbed there).
-  - `--renumbered` (check **(d)**) — `old:new` pairs for the same ADR whose number alone changed. The output says "repoint to its new number" — move those citations to **that ADR's new number** (the decision did not move to another ADR; only the number changed).
-  - Passing the two flags separately makes the script print `(c)` and `(d)` distinctly, so "to the consolidated ADR" and "to the new number" repoints are never confused. This grep shares its source of truth with the code→ADR and ADR→PRD checks.
-  - **This finder is a pre-repoint target locator, not a post-hoc verification gate.** Because a renumber reuses numbers (0003→0002 and so on), re-running it with the same arguments after finishing the repoint **produces false positives on the newly and correctly placed files** — e.g. `--removed payment/0002` would catch the freshly renumbered new `0002-...md`, and `--renumbered payment/0003:...` the new `0003-...md` (the finder ignores the kebab and matches only the `<cat>/NNNN` number token). The **post-hoc oracle for confirming the repoint is complete is `adr-structure-lint`'s `related-broken` and `decision-log-link-broken` (both must be 0) plus a grep for deleted or old kebab filenames (must be 0)** — `decision-log-link-broken` is the check that confirms the `current ADR` pointer written into the log in step 9 points at the post-renumber path, and since the finder cannot match the log's relative links (`./NNNN-title.md`), this lint is the only automatic confirmation. Use this finder exactly once, before starting the repoint.
+  When using it, preserve the pre-write target results and refresh them if the
+  relevant originals change. Its number-token matches are not final validation:
+  after renumbering, old numbers may identify valid new occupants. Do not treat
+  such matches as stale references. Final evidence must establish zero broken
+  Related or decision-log links and no remaining deleted/old full-filename
+  citations. `adr-structure-lint` supplies the link checks; suitable searches or
+  equivalent local checks can verify stale full filenames. Tool choice does not
+  change these required outcomes.
 
 ### 9. Prepare and verify the major history → decision-log.md
 
@@ -367,8 +417,8 @@ renames, mapping and link updates in a safe order. If an apply step fails,
 preserve remaining sources, report the exact partial state, and repair only
 within the approved scope. Before retrying, inspect what actually applied; do not
 blindly replay deletions, renames or log additions. Finish with structure/link
-validation and a check for obsolete full filenames; do not rerun the pre-write
-number-token locator against renumbered files. A failed locator or validator is
+validation and a check for obsolete full filenames; do not use pre-write
+number-token matches as proof of stale references after renumbering. A failed locator or validator is
 unverified work, never a clean result.
 
 ## Notes
@@ -376,12 +426,3 @@ unverified work, never a clean result.
 - Roll-up is **information compression, not information loss.** Never omit an important decision — the consolidated ADR (current state) plus `decision-log.md` (the major-transition history) together preserve the chain's decisions.
 - When in doubt, do not merge. Staying separate is safe.
 - The code is authoritative for Status and code-level facts, but code-level facts usually leave the ADR instead of being mirrored there. Apply the ADR admission gate before carrying anything from code into the consolidated document. **Gray-zone decisions and requirements remain the ADR's authority.** When code contradicts such a decision, branch into "decision change vs violation" as in step 5 item 3.
-
-### External impact of a renumber (be aware of this when applying step 7)
-
-The step 7 renumber corrects every reference inside the repo in step 8, but effects remain outside the repo and in history tools. These are trade-offs rather than losses, so proceed with them in mind:
-
-- **External links break**: URLs in PRs, issues, wikis, and bookmarks that pointed at the old path (`docs/adr/<cat>/0004-...md`) return 404 after the renumber (GitHub gives no redirect for a file rename). If you renumber a frequently cited ADR, leave an "old path → new path" table in the step 10 report so the user can update external references.
-- **Reading git blame**: line history follows because the move used `git mv`, but immediately after the renumber commit, `git blame` may attribute every line to that commit's rename. To see the real decision-change history, use `git log --follow` (which skips renames) or `git show` on the rollup commit.
-- Keeping gaps avoids these path changes and is the default. Only prepare the
-  number-cleanup option when the user requests it.

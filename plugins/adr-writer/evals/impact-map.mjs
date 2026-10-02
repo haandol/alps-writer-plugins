@@ -103,7 +103,10 @@ export const IMPACT_RULES = [
     scenarioPrefixes: ["sync-"],
   },
   {
-    pathPrefixes: ["plugins/adr-writer/skills/adr-rollup/"],
+    pathPrefixes: [
+      "plugins/adr-writer/skills/adr-rollup/",
+      "plugins/adr-writer/references/review-report-writing.md",
+    ],
     scenarioPrefixes: ["rollup-"],
   },
   {

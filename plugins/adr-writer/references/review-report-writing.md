@@ -70,8 +70,14 @@ settlement`, not `idempotency is handled`.
 
 ## Visualize relationships the reader would reconstruct
 
-Classify the visual map from the confirmed implementation scope. Mark it
-required when any trigger applies:
+For rollup reports, apply the caller's target-centred diagram rule: clear chains
+may use contract tables and change summaries alone; use small candidate-local
+views only when they help explain difficult ownership, partial replacement,
+cycles or reference changes. The counts and routine operations below do not
+override that rule or require a whole-system map.
+
+For other reviews, classify the visual map from the confirmed implementation
+scope. Mark it required when any trigger applies:
 
 - three or more participants, processing steps, states, components, or ADRs;
 - a system boundary, dependency, or contradiction;
@@ -139,6 +145,9 @@ reason to hide evidence or merge independent obligations.
   diagram.
 - **ADR sync** — visualize a changed decision flow, dependency/category movement,
   or unresolved ADR-versus-code branch. Keep semantic diffs in text.
+- **ADR rollup** — use tables and summaries for clear chains, expanding into a
+  small local view when needed to judge the affected contracts. Preserve complete
+  evidence and global mechanical checks without requiring global visual discovery.
 - **Implementation review** — organize the final report by evidenced domain,
   bounded context, or vertical capability. Present purpose and the important
   behavior before implementation details. Keep claims, examples, verification,
