@@ -303,11 +303,15 @@ remain available until the user chooses to remove them.
 Only adr-writer includes report-writer and advertises it through SessionStart
 independently of the ADR mapping. ALPS Writer has no report skill, report hook, or
 report-writer dependency; installing both plugins exposes the report skill and
-directive once per session event. ADR Writer's report-producing skills and review
-roles load it for the final human
-presentation, including code, PR, ADR, architecture and document review requests
-that do not explicitly ask for a report. The owning workflow still controls
-inspection, verdicts, severity and edit permissions. The packaged skill directory
+directive once per session event. Select a report for explicit report requests or
+when complex explanations and review findings need structured depth to be understood.
+Answer short, simple requests in chat without report files, browser opening or quizzes.
+If report usefulness is unclear, ask once before generating it, reuse the user's
+choice for the same scope and continue independent work while waiting. Technical
+subjects, review labels and length alone do not require reports. Preserve artifacts
+explicitly required by a specialized workflow the user selected; do not infer that
+requirement from a task label. The owning workflow still controls inspection,
+verdicts, severity and edit permissions. The packaged skill directory
 can also be installed independently with `npx skills add`; see README for the
 explicit source path. Native review schemas remain complete audit input, while final
 reports use domain-scoped hierarchy, at most four child explanation branches, readable paragraph
@@ -315,7 +319,7 @@ breaks, evidence-grounded diagrams, worked calculations, and whole-output review
 The renderer validates structure and source coverage; semantic review remains a
 separate, explicitly reported step.
 
-Reports and reviews default to standalone HTML, including brief reviews. After
+Once a report is selected, default to standalone HTML. After
 final verification, open the nonempty file once in the operating system's default
 browser and return its absolute path. Explicit format or delivery constraints
 take precedence. Keep native Markdown/JSON as supporting artifacts. Do not open

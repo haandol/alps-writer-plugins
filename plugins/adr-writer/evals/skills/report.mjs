@@ -72,6 +72,32 @@ const groups = [
   ],
   ["리뷰와 설명", "보고서 품질", "인지부하", ["comprehension-"]],
   ["리뷰와 설명", "보고서 품질", "단계별 이해", ["report-drilldown-"]],
+  [
+    "리뷰와 설명",
+    "보고서 품질",
+    "생성 범위",
+    "간단한 답변",
+    ["report-scope-simple-", "report-scope-local-"],
+  ],
+  [
+    "리뷰와 설명",
+    "보고서 품질",
+    "생성 범위",
+    "이해 복잡도",
+    ["report-scope-complex-", "report-scope-ambiguous"],
+  ],
+  [
+    "리뷰와 설명",
+    "보고서 품질",
+    "생성 범위",
+    "명시적 전달 계약",
+    [
+      "report-scope-explicit-",
+      "report-scope-chat-",
+      "report-scope-known-",
+      "report-scope-required-",
+    ],
+  ],
   ["리뷰와 설명", "보고서 품질", "근거 보존", ["report-"]],
 ];
 

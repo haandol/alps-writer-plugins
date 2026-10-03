@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the reporting/domain-n
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-10-03 — 이해에 필요한 복잡도로 보고서 생성 범위를 제한
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 짧은 리뷰도 HTML로 생성하는 기본값 → 명시적 보고서 요청을 우선하고, 일반 설명·리뷰는 복잡하면 자동 생성·단순하면 대화·애매하면 한 번 확인한다. 선택된 전문 워크플로의 필수 산출물과 생성한 보고서의 전달·품질 계약은 유지한다.
+- **Why**: 짧은 기술 설명까지 파일을 만들고 브라우저를 여는 부담을 줄이면서, 복잡한 내용에는 단계별 설명과 근거 탐색을 자동으로 제공하기 위해서다.
+
 ## 2026-09-30 — HTML 생성과 기본 브라우저 열기를 기본 전달로 채택
 
 - **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)

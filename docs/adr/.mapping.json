@@ -160,7 +160,7 @@
         {
           "path": "docs/adr/reporting/domain-navigation/0001-domain-first-report-navigation.md",
           "status": "Accepted (2026-09-30)",
-          "summary": "리포트는 기본 HTML 생성·검증·기본 브라우저 열기로 전달하고 자유로운 본문 안에서 배경·답과 단계별 설명·근거·퀴즈를 구분한다"
+          "summary": "리포트는 명시적 요청과 이해 복잡도로 생성 여부를 정하고, 복잡하면 자동 생성·단순하면 대화·애매하면 확인한 뒤 공통 전달·읽기 계약을 적용한다"
         }
       ],
       "dependsOn": []

@@ -142,6 +142,14 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     "report-drilldown-incident",
     "report-preserves-evaluation-evidence",
     "report-rejects-unsupported-success",
+    "report-scope-ambiguous",
+    "report-scope-chat-override",
+    "report-scope-complex-flow",
+    "report-scope-explicit-short-report",
+    "report-scope-known-choice",
+    "report-scope-local-review",
+    "report-scope-required-artifact",
+    "report-scope-simple-definition",
   ]);
   const result = await main(
     ["--prepare", "--suite", "classification", "--runs", "1", "--out", temp()],
@@ -158,7 +166,12 @@ test("every shipped classification probe has a fixed GEval contract and prepares
       readFileSync(path.join(result.output, run.artifactDirectory, "input.json")),
     );
     assert.match(input.prompt, /# Report writing/);
-    assert.match(input.prompt, /# Editorial review/);
+    if (run.caseId.startsWith("report-scope-")) {
+      assert.match(input.prompt, /\[Report-writing directive\]/);
+      assert.doesNotMatch(input.prompt, /Total provider-reported cost: USD 0.48/);
+      const item = selected.find((c) => c.id === run.caseId);
+      assert.ok(!input.prompt.includes(item.semanticObligations[0].text));
+    } else assert.match(input.prompt, /# Editorial review/);
     if (run.caseId.startsWith("report-drilldown-")) {
       assert.doesNotMatch(input.prompt, /Total provider-reported cost: USD 0.48/);
       assert.match(input.prompt, /Supplied hypothetical (comparison|incident)/);
@@ -166,7 +179,7 @@ test("every shipped classification probe has a fixed GEval contract and prepares
         assert.match(input.prompt, /Excerpt A:/);
         assert.match(input.prompt, /Excerpt B:/);
       }
-    } else assert.match(input.prompt, /USD 0.48/);
+    } else if (!run.caseId.startsWith("report-scope-")) assert.match(input.prompt, /USD 0.48/);
     assert.doesNotMatch(input.prompt, /"semanticObligations"|"supplementalChecks"/);
   }
 });

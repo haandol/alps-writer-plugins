@@ -346,16 +346,22 @@ while preserving document structure and ADR→PRD reference checks.
 
 ## Report writing across projects
 
-Only adr-writer includes `report-writer` for code, pull request, ADR, architecture,
-and document review results, as well as reports, audits, sync, rollup, and
-evaluations. A review request selects it even without a separate report request.
-The owning workflow still determines inspection scope, findings, verdicts, and
-edit permissions. It keeps skill instructions in
-English and writes the report in the user's requested language. With no explicit
-format or delivery constraint, it generates standalone HTML, verifies the final
-file, opens it once in the default browser, and returns the path. Other-format,
-chat-only, no-file, no-open and browser requests take precedence. Required
-Markdown/JSON remain supporting artifacts; a brief review still uses HTML.
+Only adr-writer includes `report-writer`. Explicit report requests use it even
+for a short topic. Otherwise, it automatically creates a report when complex
+explanations or review findings need structured depth, diagrams or evidence
+navigation to be understood. Short, simple explanations and local review results
+stay in chat without report files, browser opening or quizzes. If report usefulness
+is unclear, it asks once before generating a file and reuses a delivery choice
+already established for the same scope. Technical subjects, review labels and
+length alone do not trigger reports.
+
+The owning workflow still determines inspection scope, findings, verdicts and
+edit permissions; explicitly required report/audit artifacts are preserved.
+For selected reports, instructions stay in English and the report uses the user's
+requested language. With no explicit format or delivery constraint, it generates
+standalone HTML, verifies the final file, opens it once in the default browser
+and returns the path. Other-format, chat-only, no-file, no-open and browser
+requests take precedence. Required Markdown/JSON remain supporting artifacts.
 Reports open with a standalone localized `Background and goals` heading,
 connect the concrete problem to the answer and its
 material limitations in a distinct answer area, then drill into evidenced domains
