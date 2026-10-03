@@ -89,6 +89,20 @@ missing or misplaced premise, and reader impact. For a substantial report,
 briefly ground the connection assessment in one actual transition even when
 no actionable issue remains; do not create a paragraph-by-paragraph audit table.
 
+### Omit obvious commentary and excessive elaboration
+
+Do not explain an example's purpose after its framing already makes that purpose
+clear. `예를 들어` / `for example` or a conditional usually distinguishes an
+illustration without an added sentence such as `이는 개인화의 차이를 설명하기 위한
+예시다` / `This is an example illustrating personalization`. Add an explicit
+hypothetical label only when readers could otherwise mistake a scenario or value
+for observed evidence.
+
+Remove summaries that merely repeat the preceding point and caveats repeated
+around a figure or across adjacent paragraphs. Keep useful transitions, required
+report fields, missing reader context, and conditions that change the conclusion.
+Judge their function in context rather than enforcing a phrase ban.
+
 ## Explain quantitative claims
 
 When a formula or ratio supports a judgment, show a worked example close to it.
@@ -97,8 +111,9 @@ calculation, and the practical meaning of the result. Explain operators such as
 `min` in ordinary language. Reuse a scenario across related formulas when useful.
 
 Check arithmetic and units. Show a nontrivial value when a variable disappears
-at a convenient value such as 1. Label hypothetical numbers and conceptual
-curves; do not present them as measurements.
+at a convenient value such as 1. Make invented values and conceptual curves
+distinguishable from measurements where they are introduced; clear example
+framing or an inline qualifier is sufficient. Do not repeat the same disclaimer.
 
 For example, in a **hypothetical** evaluation with 10 requests, 8 valid judgments
 and 2 errors, 6 matching judgments give `6 / 8 = 75%` agreement among valid
