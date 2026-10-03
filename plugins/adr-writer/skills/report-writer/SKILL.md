@@ -1,29 +1,54 @@
 ---
 name: report-writer
-description: Write reports and review results as standalone HTML by default, then open them in the default browser. Honor explicitly requested formats. Use for code, pull request, ADR, architecture and document reviews, reports, audits, evaluations and synchronization results. Organize findings by domain with at most four explanation branches, clear paragraphs and evidence-grounded diagrams.
+description: Create or revise requested reports, and automatically explain complex topics or review findings through a report when structured depth materially helps understanding. Answer short, simple requests in chat; ask when report usefulness is unclear. For selected reports, default to standalone HTML and open it in the default browser, honoring delivery preferences.
 argument-hint: "[report-topic-or-source] [format]"
 ---
 
 # Report writing
 
-Apply this workflow whenever delivering review findings or a human-facing report, including when
-another skill owns the underlying analysis. It governs presentation and writing
-quality without changing the caller's scope, evidence, verdict, permissions, or
-mandatory artifact schema. Ordinary acknowledgements and short progress messages
-do not need a report structure.
+Decide whether a report is useful before starting the report workflow. These
+rules apply to technical explanations, reviews, audits, evaluations, sync and
+rollup results; the task's name alone does not require a report.
 
-A request to review code, a pull request, an ADR, an architecture, or a document
-also selects this skill for presenting the result; the user need not separately
-ask for a report. The owning review workflow still determines what to inspect,
-what counts as a defect, the verdict, and whether changes are authorized.
-Read [review results](references/review-results.md) for these requests. Unless
-the user specifies another format or delivery constraint, create a standalone
-HTML report even for a brief review, validate it, and open the final file once
-in the operating system's default browser. A chat summary accompanies the HTML;
-it does not replace it. Preserve caller-required Markdown or JSON as supporting
-artifacts rather than treating their format as the user's delivery choice.
-Explicit chat-only, no-file, no-open, other-format or browser requests take
-precedence within their scope. Ordinary completion notices need no new report.
+## Choose the delivery
+
+- **Explicit request:** Create or revise a report when the user asks for one or
+  directly invokes this skill, even for a short topic. Honor explicit chat-only,
+  no-file, no-open, other-format and browser requests within their scope.
+- **Complex content:** Automatically create a report when the reader needs to
+  connect conditions, relationships, comparisons or evidence that structured
+  depth, diagrams or evidence navigation would materially clarify. A failure
+  path across several components or a comparison with interacting constraints
+  may qualify. Do not ask for routine permission in this case.
+- **Short, simple content:** Answer in chat when a short explanation or small
+  list can convey the complete answer and necessary evidence. A term definition,
+  one-step instruction or local review finding often fits. Do not create a
+  report file, open a browser or add a quiz. Technical vocabulary, a review
+  request, word count or item count alone is not a complexity threshold.
+- **Unclear usefulness:** Ask one brief question about whether the user wants a
+  report before generating it. Keep the clarification to that question and only
+  the context needed to choose; do not repeat it after an explanation or turn it
+  into a report outline. Reuse a delivery choice already established for
+  the same scope. Continue independent investigation or task work while waiting;
+  silence is not permission to create a file.
+
+Apply the delivery criteria without narrating the skill or its routing rules to
+the user. On chat and clarification paths, answer or ask directly.
+
+Preserve report and audit artifacts explicitly required by a specialized
+workflow the user has selected. Do not infer such a requirement merely because
+the task is a review or evaluation. This skill does not change the caller's
+inspection scope, evidence, verdict, permissions or mandatory artifact schema.
+
+Stop here for chat delivery; the report structure and quiz rules below do not
+apply. Once a report is selected, read [review results](references/review-results.md)
+for review presentation and follow the workflow below. Unless the user specifies
+another format or delivery constraint, create standalone HTML, validate it, open
+the final file once in the operating system's default browser and return its
+absolute path. A chat summary accompanies a selected HTML report rather than
+replacing it. Keep caller-required Markdown or JSON as supporting artifacts.
+
+## Compose a selected report
 
 Before creating review, audit, sync, or rollup report files or supporting
 artifacts, follow [review artifact storage](references/review-artifacts.md).

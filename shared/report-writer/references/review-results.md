@@ -1,11 +1,13 @@
 # Presenting review results
 
-Apply this guidance to code, pull request, ADR, architecture, document, and other
-review outputs. It governs the explanation, not the inspection method. Read the
+Apply this guidance after the [delivery decision](../SKILL.md#choose-the-delivery)
+selects a report for code, pull request, ADR, architecture, document or other
+review results. A review request alone does not require a report; short, simple
+findings can be delivered in chat. It governs the explanation, not the inspection method. Read the
 relevant sources through the owning review workflow before presenting findings.
 
-Unless the user specifies another format or delivery constraint, deliver even
-a short review as standalone HTML and open the verified final file once in the
+Unless the user specifies another format or delivery constraint, deliver the
+selected report as standalone HTML and open the verified final file once in the
 default browser. Keep a caller's required Markdown/JSON as supporting evidence.
 Follow [final delivery](format-and-layout.md#final-delivery) for overrides and
 opening failures; a chat summary alone does not replace the default report.

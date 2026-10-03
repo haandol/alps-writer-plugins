@@ -74,9 +74,11 @@ hypothetical values must be labeled.
 
 ## Final delivery
 
-Default to a standalone local HTML report when the user has not specified a
-format or delivery constraint. A short review still uses this default; an
-ordinary acknowledgement, progress update or completion notice is not a report.
+Apply the [delivery decision](../SKILL.md#choose-the-delivery) before this section.
+For a selected report, default to standalone local HTML when the user has not
+specified a format or delivery constraint. Short, simple explanations and review
+results delivered in chat do not need a report file, browser opening or quiz.
+An ordinary acknowledgement, progress update or completion notice is not a report.
 Keep required Markdown/JSON audit artifacts alongside the final human view.
 Explicit other-format, chat-only, no-file, no-open or browser requests override
 the default within their scope. Do not add an HTML copy when the user requests

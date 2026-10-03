@@ -20,7 +20,14 @@ CONTRIBUTING. Plans, review transcripts, model choices, and agent topology are
 ephemeral. Uninstalling the plugin does not invalidate the artifacts or leave a
 hidden approval or execution registry behind.
 
-Review reports and their evidence stay together in a unique per-run directory
+The shared report skill honors explicit report requests, automatically creates
+reports when complex explanations or findings need structured depth, and answers
+short, simple requests in chat without files, browser opening or quizzes. If
+usefulness is unclear, it asks once and reuses an existing delivery choice for
+the same scope. Artifacts explicitly required by a selected specialized workflow
+remain required; a generic review request alone does not require a report.
+
+Selected review reports and their evidence stay together in a unique per-run directory
 under `.adr-review/` in the reviewed project. The shared report skill verifies
 Git exclusion, using a local `.adr-review/.gitignore` when needed so review-only
 runs leave tracked configuration unchanged. Repeated reviews preserve earlier

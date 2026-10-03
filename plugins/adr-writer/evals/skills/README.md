@@ -39,6 +39,7 @@ pnpm eval:skills --live --suite routing --runs 3
 pnpm eval:skills --live --suite classification --only comprehension-load --runs 3
 pnpm eval:llm --live --only lite-alps- --runs 3
 pnpm eval:llm --live --only report- --runs 3
+pnpm eval:llm --live --only report-scope- --runs 2
 
 # Preview branch + staged + unstaged + untracked impact without calling models:
 pnpm eval:skills --list --changed main
@@ -168,6 +169,11 @@ facts. They check prerequisites, new explanatory content at each depth, and
 visible limitations without requiring one heading list. Preparation only checks
 the registered scenarios and artifacts; live model behavior and reader learning
 gains are separate claims.
+The eight `report-scope-` probes load the shipped report hook, skill and delivery
+references. They cover simple explanations, local reviews, complex flows,
+unclear usefulness, explicit reports, chat-only overrides, an existing delivery
+choice and mandatory workflow artifacts. They judge the proposed next response
+and actions, not actual file creation, browser opening or native client routing.
 A scenario may also supply `deterministicScore` alongside its explicit obligations,
 using a named export or a property on the default object. The registered catalog
 uses that same function, including its tool-scope guards. Named exports win when

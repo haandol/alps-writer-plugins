@@ -5,6 +5,7 @@ import { cases as executionCases } from "../regression/cases.mjs";
 import { sha, confined, listFiles } from "../regression/workspace.mjs";
 import { responseObligations } from "./response-contract.mjs";
 import { reportCases } from "./report-cases.mjs";
+import { reportScopeCases } from "./report-scope-cases.mjs";
 import { importExecutionCases } from "./import-execution.mjs";
 import { importPrerequisiteCases } from "./import-prerequisites.mjs";
 
@@ -144,6 +145,7 @@ export async function catalog() {
   return [
     ...classification,
     ...reportCases,
+    ...reportScopeCases,
     ...routingCases,
     ...[...executionCases, ...importExecutionCases, ...importPrerequisiteCases].map((c) => ({
       ...c,
