@@ -71,6 +71,10 @@ reviewing prose, and [format and layout](references/format-and-layout.md) for th
 chosen delivery format. Reuse instructions already loaded in the current
 context. The same instructions apply inside another skill.
 
+Omit commentary that explains what the reader already understands, including
+obvious example labels, repeated conclusions, and repeated caveats. Keep context
+and qualifications that change the meaning; follow the editorial guidance below.
+
 ## Establish the reader's question
 
 Preserve intent as the basis for judgment when the request leaves details open.

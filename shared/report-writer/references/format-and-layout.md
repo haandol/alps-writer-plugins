@@ -70,7 +70,8 @@ should notice. Check rendered labels, arrows, and reading order.
 A table should expose a comparison or mapping, not duplicate neighboring prose.
 Keep independent peer items within the hierarchy limit by domain grouping.
 Worked calculations show inputs, units, substitution, results, and interpretation;
-hypothetical values must be labeled.
+hypothetical values must be distinguishable from measurements through their
+framing or an inline qualifier, without a redundant explanatory sentence.
 
 ## Final delivery
 
