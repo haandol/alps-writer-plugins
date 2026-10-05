@@ -15,29 +15,35 @@ export class DocumentController {
     return this.service.loadDocument(docPath);
   }
 
-  saveAlpsSection(section: number, subsectionId: string, title: string, content: string): string {
-    return this.service.saveSection(section, subsectionId, title, content);
+  saveAlpsSection(
+    docPath: string,
+    section: number,
+    subsectionId: string,
+    title: string,
+    content: string,
+  ): string {
+    return this.service.forDocument(docPath).saveSection(section, subsectionId, title, content);
   }
 
-  readAlpsSection(section: number, subsectionId?: string): string {
-    return this.service.readSection(section, subsectionId);
+  readAlpsSection(docPath: string, section: number, subsectionId?: string): string {
+    return this.service.forDocument(docPath).readSection(section, subsectionId);
   }
 
-  /** Expose approved term updates for the active Full or Lite document. */
-  saveAlpsGlossaryEntry(term: string, definition: string): string {
-    return this.service.saveGlossaryEntry(term, definition);
+  /** Expose approved term updates only for the explicitly selected document. */
+  saveAlpsGlossaryEntry(docPath: string, term: string, definition: string): string {
+    return this.service.forDocument(docPath).saveGlossaryEntry(term, definition);
   }
 
   /** Expose existing definitions without creating an optional appendix. */
-  readAlpsGlossary(): string {
-    return this.service.readGlossary();
+  readAlpsGlossary(docPath: string): string {
+    return this.service.forDocument(docPath).readGlossary();
   }
 
-  getAlpsDocumentStatus(): string {
-    return this.service.getStatus();
+  getAlpsDocumentStatus(docPath: string): string {
+    return this.service.forDocument(docPath).getStatus();
   }
 
-  exportAlpsMarkdown(outputPath?: string): string {
-    return this.service.exportMarkdown(outputPath);
+  exportAlpsMarkdown(docPath: string, outputPath?: string): string {
+    return this.service.forDocument(docPath).exportMarkdown(outputPath);
   }
 }

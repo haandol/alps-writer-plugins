@@ -13905,14 +13905,14 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
       return `shape[${k}]._zod.run({ value: input[${k}], issues: [] }, ctx)`;
     };
     doc.write(`const input = payload.value;`);
-    const ids = /* @__PURE__ */ Object.create(null);
+    const ids2 = /* @__PURE__ */ Object.create(null);
     let counter = 0;
     for (const key of normalized.keys) {
-      ids[key] = `key_${counter++}`;
+      ids2[key] = `key_${counter++}`;
     }
     doc.write(`const newResult = {};`);
     for (const key of normalized.keys) {
-      const id = ids[key];
+      const id = ids2[key];
       const k = esc(key);
       const schema = shape[key];
       const isOptionalIn = schema?._zod?.optin === "optional";
@@ -31474,7 +31474,7 @@ ${inner.trim()}
     const refs = this.profile.sectionReferences[section];
     if (refs) {
       const refNames = refs.map((r) => `Section ${r} (${this.profile.sectionTitles[r]})`);
-      const readCalls = refs.map((r) => `read_alps_section(${r})`).join(", ");
+      const readCalls = refs.map((r) => `read_alps_section(doc_path, ${r})`).join(", ");
       return `\u26A0\uFE0F REQUIRED: This section depends on ${refNames.join(", ")}.
 Before proceeding, you MUST:
 1. Call ${readCalls} to review every referenced section
@@ -31607,6 +31607,48 @@ var TemplateRegistry = class {
   }
 };
 
+// src/tools/documents/feature-coverage.ts
+var FEATURE_ID = /\bF(?:[1-9]\d*|(?:-[A-Z0-9]+)+)\b/gi;
+var ids = (text) => [
+  ...new Set((text.match(FEATURE_ID) ?? []).map((id) => id.toUpperCase()))
+];
+var plain = (text) => text.replace(/[*_`]/g, "").trim();
+function featureCoverage(source, entries) {
+  const required2 = ids(source);
+  const counts = /* @__PURE__ */ new Map();
+  const names = /* @__PURE__ */ new Map();
+  for (const line of source.split(/\r?\n/)) {
+    const boldDeclaration = line.match(
+      /(?:\*\*|__)(F(?:[1-9]\d*|(?:-[A-Z0-9]+)+)\s*:[\s\S]*?)(?:\*\*|__)/i
+    );
+    const normalized = plain(boldDeclaration?.[1] ?? line);
+    const declaration = normalized.match(
+      /^\s*(?:\|\s*|[-+]\s*|\d+[.)]\s*)?(F(?:[1-9]\d*|(?:-[A-Z0-9]+)+))\s*(?:\|\s*([^|]+)|:\s*(.+))/i
+    );
+    if (declaration) {
+      names.set(declaration[1].toUpperCase(), (declaration[2] ?? declaration[3]).trim());
+    }
+  }
+  for (const [sectionId, entry] of entries) {
+    if (!entry.content.trim()) continue;
+    const titleIds = ids(entry.title);
+    const headerIds = ids(
+      entry.content.replace(/```[\s\S]*?```|~~~[\s\S]*?~~~/g, "").split(/\r?\n/).filter((line) => /^\s*(?:#{1,6}\s*)?(?:\*\*|__)?Feature ID\s*:/i.test(line)).map((line) => line.split("|")[0]).join("\n")
+    );
+    const explicit = [.../* @__PURE__ */ new Set([...titleIds, ...headerIds])];
+    if (explicit.length > 1) continue;
+    const ordinal = `F${sectionId.split(".").at(-1)}`;
+    const namedMatches = [...names].filter(([, name]) => name === plain(entry.title));
+    const id = explicit[0] ?? (required2.includes(ordinal) ? ordinal : namedMatches.length === 1 ? namedMatches[0][0] : ordinal);
+    if (!required2.includes(id)) continue;
+    if (/^F\d+$/.test(id) && id !== ordinal) continue;
+    if (!explicit.length && names.has(id) && plain(entry.title) !== names.get(id)) continue;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  const missing = required2.filter((id) => counts.get(id) !== 1);
+  return { expected: required2.length, written: required2.length - missing.length, missing };
+}
+
 // src/tools/documents/glossary.ts
 function glossaryKey(term) {
   return term.trim().normalize("NFC");
@@ -31693,7 +31735,7 @@ function liteProductContextDiagramError(content) {
   }
   return null;
 }
-var DocumentService = class {
+var DocumentService = class _DocumentService {
   workingDoc = null;
   templates;
   constructor(alpsTemplates = new TemplateRegistry(), liteTemplates = new TemplateRegistry(
@@ -31704,6 +31746,12 @@ var DocumentService = class {
       alps: alpsTemplates,
       lite: liteTemplates
     };
+  }
+  /** Bind one tool operation to its explicit document, sharing only immutable templates. */
+  forDocument(docPath) {
+    const scoped = new _DocumentService(this.templates.alps, this.templates.lite);
+    scoped.loadDocument(docPath);
+    return scoped;
   }
   attribute(attributes, name) {
     return attribute(attributes, name);
@@ -31922,18 +31970,23 @@ ${content}
   }
   readWorkingDocument() {
     if (!this.workingDoc) {
-      return {
-        error: "No document loaded. Call init_alps_document(), init_lite_alps_document(), or load_alps_document() first."
-      };
+      throw new Error(
+        "No document loaded. Call init_alps_document(), init_lite_alps_document(), or load_alps_document() first."
+      );
     }
     let content;
     try {
       content = fs3.readFileSync(this.workingDoc, "utf-8");
     } catch (error51) {
-      return { error: `Unable to read ${this.workingDoc}: ${error51.message}` };
+      throw new Error(`Unable to read ${this.workingDoc}: ${error51.message}`, {
+        cause: error51
+      });
     }
     const inspection = this.inspectDocument(content);
-    return "error" in inspection ? { error: `Invalid ALPS document at ${this.workingDoc}: ${inspection.error}` } : { content, profile: inspection.profile };
+    if ("error" in inspection) {
+      throw new Error(`Invalid ALPS document at ${this.workingDoc}: ${inspection.error}`);
+    }
+    return { content, profile: inspection.profile };
   }
   writeAtomic(filepath, content) {
     const temporary = `${filepath}.tmp-${process.pid}-${Date.now()}`;
@@ -31972,9 +32025,11 @@ ${content}
     let filepath = this.expandPath(outputPath);
     if (!path4.extname(filepath)) filepath += profile.filenameSuffix;
     const pathError = this.pathError(filepath, profile);
-    if (pathError) return pathError;
+    if (pathError) throw new Error(pathError);
     if (fs3.existsSync(filepath)) {
-      return `Document already exists at ${filepath}. Use load_alps_document() to resume.`;
+      throw new Error(
+        `Document already exists at ${filepath}. Use load_alps_document() to resume.`
+      );
     }
     fs3.mkdirSync(path4.dirname(filepath), { recursive: true });
     try {
@@ -31984,7 +32039,10 @@ ${content}
       });
     } catch (error51) {
       if (error51.code === "EEXIST") {
-        return `Document already exists at ${filepath}. Use load_alps_document() to resume.`;
+        throw new Error(
+          `Document already exists at ${filepath}. Use load_alps_document() to resume.`,
+          { cause: error51 }
+        );
       }
       throw error51;
     }
@@ -32000,13 +32058,13 @@ ${content}
     const steps = isLiteProfile(profile) ? `1. Call ${profile.sectionGuideTool}(N) before working on any section
 2. Follow the guide: ask only for missing user-owned or protected context, but propose Sections 2 and 4 before asking the user to design them
 3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
-4. Get explicit "yes" confirmation before calling save_alps_section()` : `1. Call ${profile.sectionGuideTool}(N) before working on any section
+4. Get explicit "yes" confirmation before calling save_alps_section(doc_path)` : `1. Call ${profile.sectionGuideTool}(N) before working on any section
 2. Reuse supplied context. Ask 1-2 focused questions at a time only for missing information. DO NOT auto-generate content that invents missing product decisions
 3. Wait when a question needs an answer; otherwise present the section's approval digest
-4. Get explicit "yes" confirmation before calling save_alps_section()`;
+4. Get explicit "yes" confirmation before calling save_alps_section(doc_path)`;
     return `\u26A0\uFE0F CONVERSATION MODE REQUIRED:
 ${steps}
-Read read_alps_glossary() when terminology is needed. Require the user's meaning for undefined jargon or acronyms before finalizing dependent content; reuse supplied definitions. Save confirmed definitions with save_alps_glossary_entry() under the current section approval. The optional appendix stays after the numbered sections and is absent when unnecessary.
+Read read_alps_glossary(doc_path) when terminology is needed. Require the user's meaning for undefined jargon or acronyms before finalizing dependent content; reuse supplied definitions. Save confirmed definitions with save_alps_glossary_entry(doc_path) under the current section approval. The optional appendix stays after the numbered sections and is absent when unnecessary.
 NEVER save generated content without user approval.`;
   }
   /**
@@ -32017,19 +32075,22 @@ NEVER save generated content without user approval.`;
     this.workingDoc = null;
     const filepath = this.expandPath(docPath);
     if (!filepath.toLowerCase().endsWith(ALPS_PROFILE.filenameSuffix)) {
-      return `Invalid document path: ${filepath}. ALPS documents must use the .alps.xml extension.`;
+      throw new Error(
+        `Invalid document path: ${filepath}. ALPS documents must use the .alps.xml extension.`
+      );
     }
-    if (!fs3.existsSync(filepath)) return `Document not found at ${filepath}`;
+    if (!fs3.existsSync(filepath)) throw new Error(`Document not found at ${filepath}`);
     let content;
     try {
       content = fs3.readFileSync(filepath, "utf-8");
     } catch (error51) {
-      return `Unable to read ${filepath}: ${error51.message}`;
+      throw new Error(`Unable to read ${filepath}: ${error51.message}`, { cause: error51 });
     }
     const inspection = this.inspectDocument(content);
-    if ("error" in inspection) return `Invalid ALPS document at ${filepath}: ${inspection.error}`;
+    if ("error" in inspection)
+      throw new Error(`Invalid ALPS document at ${filepath}: ${inspection.error}`);
     const pathError = this.pathError(filepath, inspection.profile);
-    if (pathError) return pathError;
+    if (pathError) throw new Error(pathError);
     this.workingDoc = filepath;
     return `${this.getStatus()}
 
@@ -32039,30 +32100,33 @@ ${this.resumeGuidance(inspection.profile)}`;
   /** Save one approved subsection without dropping definitions collected elsewhere in the document. */
   saveSection(section, subsectionId, title, content) {
     const document = this.readWorkingDocument();
-    if ("error" in document) return document.error;
     const { profile } = document;
     if (!(section in profile.sectionTitles)) {
-      return `Invalid section number: ${section}. Must be ${sectionRange(profile)} for ${profile.label}.`;
+      throw new Error(
+        `Invalid section number: ${section}. Must be ${sectionRange(profile)} for ${profile.label}.`
+      );
     }
     const subsection = this.templates[profile.id].validateSubsection(section, subsectionId, title);
-    if (!subsection.ok) return `Invalid subsection: ${subsection.message}`;
+    if (!subsection.ok) throw new Error(`Invalid subsection: ${subsection.message}`);
     if (profile.id === "alps" && subsection.fullId === "4.1") {
       const diagramError = architectureDiagramError(content);
-      if (diagramError) return `Invalid subsection content: ${diagramError}`;
+      if (diagramError) throw new Error(`Invalid subsection content: ${diagramError}`);
     }
     if (profile.id === "lite" && subsection.fullId === "2.1") {
       const diagramError = liteProductContextDiagramError(content);
-      if (diagramError) return `Invalid subsection content: ${diagramError}`;
+      if (diagramError) throw new Error(`Invalid subsection content: ${diagramError}`);
     }
     const projectName = this.extractProjectName(document.content);
     const sections = this.parseSections(document.content);
     if (isLiteProfile(profile) && section === profile.dynamicSection?.section) {
       const featureError = this.liteFeatureError(profile, sections, subsectionId, title);
-      if (featureError) return `Invalid subsection: ${featureError}`;
+      if (featureError) throw new Error(`Invalid subsection: ${featureError}`);
     }
     const sectionContent = sections.get(section) || "";
     if (this.hasUnparsedContent(sectionContent)) {
-      return `Cannot safely update Section ${section}: it contains unrecognized content. Export or migrate it before saving a subsection.`;
+      throw new Error(
+        `Cannot safely update Section ${section}: it contains unrecognized content. Export or migrate it before saving a subsection.`
+      );
     }
     const existing = this.parseSubsections(sectionContent, section);
     existing.set(subsection.fullId, { title, content });
@@ -32080,10 +32144,10 @@ ${this.resumeGuidance(inspection.profile)}`;
    */
   saveGlossaryEntry(term, definition) {
     const document = this.readWorkingDocument();
-    if ("error" in document) return document.error;
     term = term.trim();
     definition = definition.trim();
-    if (!term || !definition) return "Glossary term and definition must both be non-empty.";
+    if (!term || !definition)
+      throw new Error("Glossary term and definition must both be non-empty.");
     const entries = parseGlossary(document.content);
     const existing = entries.find((entry) => glossaryKey(entry.term) === glossaryKey(term));
     if (existing?.definition === definition) return `Glossary unchanged: ${existing.term}`;
@@ -32102,14 +32166,13 @@ ${closing}`
   /** Return definitions for reuse without creating an appendix or changing completion state. */
   readGlossary() {
     const document = this.readWorkingDocument();
-    if ("error" in document) return document.error;
     const entries = parseGlossary(document.content);
     return entries.length ? glossaryMarkdown(entries) : "No glossary: no term definitions recorded.";
   }
   readSection(section, subsectionId) {
     const document = this.readWorkingDocument();
-    if ("error" in document) return document.error;
-    if (!(section in document.profile.sectionTitles)) return `Section ${section} not found.`;
+    if (!(section in document.profile.sectionTitles))
+      throw new Error(`Section ${section} not found.`);
     const sections = this.parseSections(document.content);
     const content = sections.get(section) || "";
     if (subsectionId != null) {
@@ -32118,7 +32181,7 @@ ${closing}`
       if (subsection) return `### ${subId}. ${subsection.title}
 
 ${subsection.content}`;
-      return `Subsection ${subId} not found.`;
+      throw new Error(`Subsection ${subId} not found.`);
     }
     const display = this.sectionIsUnwritten(content, section) ? "*Not yet written*" : this.contentToMarkdown(content, section);
     return `## Section ${section}. ${document.profile.sectionTitles[section]}
@@ -32132,7 +32195,6 @@ ${display}`;
    */
   getStatus() {
     const document = this.readWorkingDocument();
-    if ("error" in document) return document.error;
     const { content: docContent, profile } = document;
     const projectName = this.extractProjectName(docContent);
     const sections = this.parseSections(docContent);
@@ -32149,11 +32211,15 @@ ${display}`;
       if (subsections.size === 0 && (savedSubsections.size > 0 || this.isNotStarted(content))) {
         status = profile.optionalSections.includes(section) ? "\u2B1C Optional \u2014 not written" : "\u2B1C Not started";
       } else if (section === profile.dynamicSection?.section) {
-        const expectedItems = this.countFeatureIds(sections, profile);
-        if (expectedItems > 0 && subsections.size >= expectedItems) {
-          status = `\u2705 Written (${subsections.size}/${expectedItems} features)`;
-        } else if (expectedItems > 0) {
-          status = `\u{1F7E1} In progress (${subsections.size}/${expectedItems} features)`;
+        const source = this.parseSubsections(
+          sections.get(profile.dynamicSection.sourceSection) || "",
+          profile.dynamicSection.sourceSection
+        ).get(profile.dynamicSection.sourceSubsectionId)?.content ?? "";
+        const coverage = featureCoverage(source, subsections);
+        if (coverage.expected > 0 && coverage.missing.length === 0) {
+          status = `\u2705 Written (${coverage.written}/${coverage.expected} features)`;
+        } else if (coverage.expected > 0) {
+          status = `\u{1F7E1} In progress (${coverage.written}/${coverage.expected} features) \u2014 missing: ${coverage.missing.join(", ")}`;
         } else {
           status = `\u{1F7E1} In progress (${subsections.size} dynamic feature${subsections.size === 1 ? "" : "s"} saved)`;
         }
@@ -32171,17 +32237,6 @@ ${display}`;
     const glossary = parseGlossary(docContent);
     if (glossary.length > 0) lines.push(`Appendix (Glossary): ${glossary.length} defined terms`);
     return lines.join("\n");
-  }
-  countFeatureIds(sections, profile) {
-    const dynamic = profile.dynamicSection;
-    if (!dynamic) return 0;
-    const source = this.parseSubsections(
-      sections.get(dynamic.sourceSection) || "",
-      dynamic.sourceSection
-    ).get(dynamic.sourceSubsectionId);
-    if (!source) return 0;
-    const ids = source.content.match(/\bF(?:\d+|(?:-[A-Z0-9]+)+)\b/gi) ?? [];
-    return new Set(ids.map((id) => id.toUpperCase())).size;
   }
   contentToMarkdown(content, section) {
     const subsections = this.parseSubsections(content, section);
@@ -32202,7 +32257,6 @@ ${data.content}`).join("\n\n");
   /** Export numbered content followed by the glossary only when actual definitions exist. */
   exportMarkdown(outputPath) {
     const document = this.readWorkingDocument();
-    if ("error" in document) return document.error;
     const { content: docContent, profile } = document;
     const projectName = this.extractProjectName(docContent);
     const sections = this.parseSections(docContent);
@@ -32250,25 +32304,25 @@ var DocumentController = class {
   loadAlpsDocument(docPath) {
     return this.service.loadDocument(docPath);
   }
-  saveAlpsSection(section, subsectionId, title, content) {
-    return this.service.saveSection(section, subsectionId, title, content);
+  saveAlpsSection(docPath, section, subsectionId, title, content) {
+    return this.service.forDocument(docPath).saveSection(section, subsectionId, title, content);
   }
-  readAlpsSection(section, subsectionId) {
-    return this.service.readSection(section, subsectionId);
+  readAlpsSection(docPath, section, subsectionId) {
+    return this.service.forDocument(docPath).readSection(section, subsectionId);
   }
-  /** Expose approved term updates for the active Full or Lite document. */
-  saveAlpsGlossaryEntry(term, definition) {
-    return this.service.saveGlossaryEntry(term, definition);
+  /** Expose approved term updates only for the explicitly selected document. */
+  saveAlpsGlossaryEntry(docPath, term, definition) {
+    return this.service.forDocument(docPath).saveGlossaryEntry(term, definition);
   }
   /** Expose existing definitions without creating an optional appendix. */
-  readAlpsGlossary() {
-    return this.service.readGlossary();
+  readAlpsGlossary(docPath) {
+    return this.service.forDocument(docPath).readGlossary();
   }
-  getAlpsDocumentStatus() {
-    return this.service.getStatus();
+  getAlpsDocumentStatus(docPath) {
+    return this.service.forDocument(docPath).getStatus();
   }
-  exportAlpsMarkdown(outputPath) {
-    return this.service.exportMarkdown(outputPath);
+  exportAlpsMarkdown(docPath, outputPath) {
+    return this.service.forDocument(docPath).exportMarkdown(outputPath);
   }
 };
 
@@ -32297,6 +32351,7 @@ Keywords: PRD, ALPS, Lite ALPS, \uAE30\uD68D\uC11C, \uAE30\uD68D \uBB38\uC11C, \
 </TRIGGER>
 
 <WORKFLOW>
+Every document-specific tool requires doc_path. Use the source path returned by init/load on every read, save, glossary, status, and export call. There is no active-document fallback; missing or invalid paths fail without selecting another document.
 1. Full ALPS: init_alps_document() or load_alps_document()
    Lite ALPS: init_lite_alps_document() or load_alps_document()
 2. Full ALPS: get_alps_overview()
@@ -32311,18 +32366,18 @@ Keywords: PRD, ALPS, Lite ALPS, \uAE30\uD68D\uC11C, \uAE30\uD68D \uBB38\uC11C, \
    b. Call the matching get_alps_section(N) or get_lite_alps_section(N)
    c. Follow conversation guide from overview
    d. Present a concise plain-text approval digest and get explicit user confirmation
-   e. save_alps_section(section, subsection_id, title, content) \u2014 one call per X.n subsection; Full ALPS Section 7 uses one call per Feature \u2014 only AFTER confirmation
+   e. save_alps_section(doc_path, section, subsection_id, title, content) \u2014 one call per X.n subsection; Full ALPS Section 7 uses one call per Feature \u2014 only AFTER confirmation
    f. Move to the next section only after this one is confirmed
 4. In batch mode, keep every section and dynamic Feature as a separately labeled
    approval unit and persist each with its own save_alps_section call. Never merge,
    skip, or infer a Feature.
-5. export_alps_markdown() for final output
+5. export_alps_markdown(doc_path) for final output
 </WORKFLOW>
 
 <RULES>
 - Before grouping an existing project, distinguish repository organization (monorepo/multirepo) from execution/deployment shape (monolith/microservices/hybrid), using accessible evidence and marking unknown scope. Group product features by bounded context (business meaning and rule ownership) and vertical user story by default. Never divide Features by frontend/backend/database layers or assume service boundaries are business boundaries. Reuse confirmed grouping; propose grounded candidates and clarify material ambiguity. Preserve Full/Lite sections and their permitted C4 levels.
-- In both profiles, require clear meanings for user jargon, uncommon terms/acronyms, or expressions that cannot be written out plainly. Read existing definitions with read_alps_glossary(); reuse meanings already supplied by the user. Ask at first use when the meaning is unclear and wait before finalizing dependent content. Never invent the meaning.
-- Include new or changed definitions in the current section's approval digest, then save each with save_alps_glossary_entry(term, definition). Do not add a separate approval or interview stage. Check missing definitions before completion. The optional Glossary Appendix appears after all numbered sections only when needed; ordinary-language documents need no glossary. Do not require DDD or domain classification for glossary maintenance, or move requirement rules out of their owning sections.
+- In both profiles, require clear meanings for user jargon, uncommon terms/acronyms, or expressions that cannot be written out plainly. Read existing definitions with read_alps_glossary(doc_path); reuse meanings already supplied by the user. Ask at first use when the meaning is unclear and wait before finalizing dependent content. Never invent the meaning.
+- Include new or changed definitions in the current section's approval digest, then save each with save_alps_glossary_entry(doc_path, term, definition). Do not add a separate approval or interview stage. Check missing definitions before completion. The optional Glossary Appendix appears after all numbered sections only when needed; ordinary-language documents need no glossary. Do not require DDD or domain classification for glossary maintenance, or move requirement rules out of their owning sections.
 - MUST call the overview tool matching the selected document profile first
 - NEVER proceed without user confirmation
 - ALWAYS confirm progress at the SECTION level. Lite Section 3 is optional; when no explicit exclusions were provided and the approved boundary is not materially ambiguous, state that and skip it without a dedicated question.
@@ -32350,6 +32405,9 @@ var liteTc = new TemplateController(
   "get_lite_alps_section_guide"
 );
 var dc = new DocumentController(new DocumentService());
+var documentPath = external_exports.string().min(1).refine((value) => value.trim().length > 0, "Document path must not be blank").describe(
+  "Required source document path. Always pass the path returned by init/load; another call never selects it for this request."
+);
 server.tool(
   "get_alps_overview",
   "Get the ALPS template overview and authoring order. After init/load, read get_alps_document_status: new documents start at Section 1; resumed documents continue at the first incomplete section in authoring order. Read the selected section's guide before drafting.",
@@ -32437,19 +32495,20 @@ server.tool(
 );
 server.tool(
   "read_alps_glossary",
-  "Read existing term definitions in the active Full or Lite document. No glossary is created by reading.",
-  {},
-  () => ({ content: [{ type: "text", text: dc.readAlpsGlossary() }] })
+  "Read existing term definitions in the specified Full or Lite document. No glossary is created by reading.",
+  { doc_path: documentPath },
+  ({ doc_path }) => ({ content: [{ type: "text", text: dc.readAlpsGlossary(doc_path) }] })
 );
 server.tool(
   "save_alps_glossary_entry",
-  "Save one confirmed term and its meaning to the optional trailing Glossary Appendix in the active Full or Lite document. Reuse supplied definitions; ask the user about unclear meanings. Include new/changed meanings in the current section approval before calling. Never silently replace a conflicting definition. Do not populate a generic dictionary or classify domains.",
+  "Save one confirmed term and its meaning to the optional trailing Glossary Appendix in the specified Full or Lite document. Reuse supplied definitions; ask the user about unclear meanings. Include new/changed meanings in the current section approval before calling. Never silently replace a conflicting definition. Do not populate a generic dictionary or classify domains.",
   {
+    doc_path: documentPath,
     term: external_exports.string().trim().min(1).describe("The uncommon term or acronym used in this document"),
     definition: external_exports.string().trim().min(1).describe("User-confirmed meaning in this document")
   },
-  ({ term, definition }) => ({
-    content: [{ type: "text", text: dc.saveAlpsGlossaryEntry(term, definition) }]
+  ({ doc_path, term, definition }) => ({
+    content: [{ type: "text", text: dc.saveAlpsGlossaryEntry(doc_path, term, definition) }]
   })
 );
 server.tool(
@@ -32498,6 +32557,7 @@ server.tool(
 3. Ask the user to approve, revise, or defer it
 4. Call this tool only after the user has confirmed`,
   {
+    doc_path: documentPath,
     section: external_exports.number().min(FIRST_SECTION).max(LAST_SECTION).describe(`Section number (${SECTION_RANGE})`),
     subsection_id: external_exports.string().min(1).describe(
       'Subsection ID \u2014 the part AFTER the section number. Pass "1" to store N.1, "1.2" to store N.1.2. Fixed sections must match the active document template. For Full ALPS Section 7, pass the positive feature number.'
@@ -32507,37 +32567,41 @@ server.tool(
     ),
     content: external_exports.string().describe("Content for the subsection (markdown)")
   },
-  ({ section, subsection_id, title, content }) => ({
-    content: [{ type: "text", text: dc.saveAlpsSection(section, subsection_id, title, content) }]
+  ({ doc_path, section, subsection_id, title, content }) => ({
+    content: [
+      { type: "text", text: dc.saveAlpsSection(doc_path, section, subsection_id, title, content) }
+    ]
   })
 );
 server.tool(
   "read_alps_section",
-  "Read the current content of a section or subsection.",
+  "Read a section or subsection from the specified document.",
   {
+    doc_path: documentPath,
     section: external_exports.number().min(FIRST_SECTION).max(LAST_SECTION).describe(`Section number (${SECTION_RANGE})`),
     subsection_id: external_exports.string().optional().describe('Subsection ID (e.g., "1" for X.1). If omitted, returns entire section.')
   },
-  ({ section, subsection_id }) => ({
-    content: [{ type: "text", text: dc.readAlpsSection(section, subsection_id) }]
+  ({ doc_path, section, subsection_id }) => ({
+    content: [{ type: "text", text: dc.readAlpsSection(doc_path, section, subsection_id) }]
   })
 );
 server.tool(
   "get_alps_document_status",
-  "Get the status of all sections in the current document.",
-  {},
-  () => ({
-    content: [{ type: "text", text: dc.getAlpsDocumentStatus() }]
+  "Get the status of all sections in the specified document.",
+  { doc_path: documentPath },
+  ({ doc_path }) => ({
+    content: [{ type: "text", text: dc.getAlpsDocumentStatus(doc_path) }]
   })
 );
 server.tool(
   "export_alps_markdown",
   "Export the ALPS document as clean markdown.",
   {
+    doc_path: documentPath,
     output_path: external_exports.string().optional().describe("Optional output file path. If not provided, returns the content.")
   },
-  ({ output_path }) => ({
-    content: [{ type: "text", text: dc.exportAlpsMarkdown(output_path) }]
+  ({ doc_path, output_path }) => ({
+    content: [{ type: "text", text: dc.exportAlpsMarkdown(doc_path, output_path) }]
   })
 );
 async function main() {

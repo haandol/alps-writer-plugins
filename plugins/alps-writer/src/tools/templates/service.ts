@@ -99,7 +99,7 @@ export class TemplateService {
     const refs = this.profile.sectionReferences[section];
     if (refs) {
       const refNames = refs.map((r) => `Section ${r} (${this.profile.sectionTitles[r]})`);
-      const readCalls = refs.map((r) => `read_alps_section(${r})`).join(", ");
+      const readCalls = refs.map((r) => `read_alps_section(doc_path, ${r})`).join(", ");
       return `⚠️ REQUIRED: This section depends on ${refNames.join(", ")}.
 Before proceeding, you MUST:
 1. Call ${readCalls} to review every referenced section

@@ -260,14 +260,14 @@ ADR folders are organized along two axes — a DDD **bounded context** (top-leve
 
 **Document format** — Full documents use `.alps.xml`; Lite documents use `.lite.alps.xml` and a `profile="lite"` root attribute. Lite documents must contain the current four Sections and exact titles in order. Both use `<alps-document>`, `<section>`, and `<subsection>` tags and are parsed via regex (no XML parser library). Output directory is controlled by `ALPS_OUTPUT_DIR` (`PRD_OUTPUT_DIR` is also supported for backward compatibility).
 
-**DocumentService state** — `workingDoc` holds the current document path in memory. Read/write operations require `initDocument()` or `loadDocument()` to be called first.
+**Document selection** — Every document-specific MCP request requires `doc_path`. The controller creates a request-scoped DocumentService, sharing only template metadata; the service validates that path before the operation. Prior init/load calls never select a default for another request. Existing documents can be read or changed on a fresh connection without an earlier load. Missing/invalid targets and document validation errors return MCP `isError: true`.
 
 **Optional glossary** — Both profiles keep their numbered Sections unchanged and
 append a glossary only when qualifying jargon, uncommon terms/acronyms, or
 expressions that cannot be written out plainly need confirmed definitions. Ask
 for unclear meanings at first use; reuse supplied meanings and the current
 Section approval. `read_alps_glossary` and `save_alps_glossary_entry` operate on the
-active document. The optional XML glossary follows all Sections, survives later
+explicitly selected document. The optional XML glossary follows all Sections, survives later
 saves and reloads, and exports last. Never pre-seed a dictionary or add a separate DDD exercise for glossary maintenance.
 
 `/feature-to-adr` transfers needed definitions to `docs/adr/glossary.md`; ADR

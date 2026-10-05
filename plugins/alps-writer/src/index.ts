@@ -41,6 +41,7 @@ Keywords: PRD, ALPS, Lite ALPS, 기획서, 기획 문서, 제품 요구사항, �
 </TRIGGER>
 
 <WORKFLOW>
+Every document-specific tool requires doc_path. Use the source path returned by init/load on every read, save, glossary, status, and export call. There is no active-document fallback; missing or invalid paths fail without selecting another document.
 1. Full ALPS: init_alps_document() or load_alps_document()
    Lite ALPS: init_lite_alps_document() or load_alps_document()
 2. Full ALPS: get_alps_overview()
@@ -55,18 +56,18 @@ Keywords: PRD, ALPS, Lite ALPS, 기획서, 기획 문서, 제품 요구사항, �
    b. Call the matching get_alps_section(N) or get_lite_alps_section(N)
    c. Follow conversation guide from overview
    d. Present a concise plain-text approval digest and get explicit user confirmation
-   e. save_alps_section(section, subsection_id, title, content) — one call per X.n subsection; Full ALPS Section 7 uses one call per Feature — only AFTER confirmation
+   e. save_alps_section(doc_path, section, subsection_id, title, content) — one call per X.n subsection; Full ALPS Section 7 uses one call per Feature — only AFTER confirmation
    f. Move to the next section only after this one is confirmed
 4. In batch mode, keep every section and dynamic Feature as a separately labeled
    approval unit and persist each with its own save_alps_section call. Never merge,
    skip, or infer a Feature.
-5. export_alps_markdown() for final output
+5. export_alps_markdown(doc_path) for final output
 </WORKFLOW>
 
 <RULES>
 - Before grouping an existing project, distinguish repository organization (monorepo/multirepo) from execution/deployment shape (monolith/microservices/hybrid), using accessible evidence and marking unknown scope. Group product features by bounded context (business meaning and rule ownership) and vertical user story by default. Never divide Features by frontend/backend/database layers or assume service boundaries are business boundaries. Reuse confirmed grouping; propose grounded candidates and clarify material ambiguity. Preserve Full/Lite sections and their permitted C4 levels.
-- In both profiles, require clear meanings for user jargon, uncommon terms/acronyms, or expressions that cannot be written out plainly. Read existing definitions with read_alps_glossary(); reuse meanings already supplied by the user. Ask at first use when the meaning is unclear and wait before finalizing dependent content. Never invent the meaning.
-- Include new or changed definitions in the current section's approval digest, then save each with save_alps_glossary_entry(term, definition). Do not add a separate approval or interview stage. Check missing definitions before completion. The optional Glossary Appendix appears after all numbered sections only when needed; ordinary-language documents need no glossary. Do not require DDD or domain classification for glossary maintenance, or move requirement rules out of their owning sections.
+- In both profiles, require clear meanings for user jargon, uncommon terms/acronyms, or expressions that cannot be written out plainly. Read existing definitions with read_alps_glossary(doc_path); reuse meanings already supplied by the user. Ask at first use when the meaning is unclear and wait before finalizing dependent content. Never invent the meaning.
+- Include new or changed definitions in the current section's approval digest, then save each with save_alps_glossary_entry(doc_path, term, definition). Do not add a separate approval or interview stage. Check missing definitions before completion. The optional Glossary Appendix appears after all numbered sections only when needed; ordinary-language documents need no glossary. Do not require DDD or domain classification for glossary maintenance, or move requirement rules out of their owning sections.
 - MUST call the overview tool matching the selected document profile first
 - NEVER proceed without user confirmation
 - ALWAYS confirm progress at the SECTION level. Lite Section 3 is optional; when no explicit exclusions were provided and the approved boundary is not materially ambiguous, state that and skip it without a dedicated question.
@@ -95,6 +96,13 @@ const liteTc = new TemplateController(
   "get_lite_alps_section_guide",
 );
 const dc = new DocumentController(new DocumentService());
+const documentPath = z
+  .string()
+  .min(1)
+  .refine((value) => value.trim().length > 0, "Document path must not be blank")
+  .describe(
+    "Required source document path. Always pass the path returned by init/load; another call never selects it for this request.",
+  );
 
 // Template tools
 server.tool(
@@ -211,20 +219,21 @@ server.tool(
 // Document tools
 server.tool(
   "read_alps_glossary",
-  "Read existing term definitions in the active Full or Lite document. No glossary is created by reading.",
-  {},
-  () => ({ content: [{ type: "text", text: dc.readAlpsGlossary() }] }),
+  "Read existing term definitions in the specified Full or Lite document. No glossary is created by reading.",
+  { doc_path: documentPath },
+  ({ doc_path }) => ({ content: [{ type: "text", text: dc.readAlpsGlossary(doc_path) }] }),
 );
 
 server.tool(
   "save_alps_glossary_entry",
-  "Save one confirmed term and its meaning to the optional trailing Glossary Appendix in the active Full or Lite document. Reuse supplied definitions; ask the user about unclear meanings. Include new/changed meanings in the current section approval before calling. Never silently replace a conflicting definition. Do not populate a generic dictionary or classify domains.",
+  "Save one confirmed term and its meaning to the optional trailing Glossary Appendix in the specified Full or Lite document. Reuse supplied definitions; ask the user about unclear meanings. Include new/changed meanings in the current section approval before calling. Never silently replace a conflicting definition. Do not populate a generic dictionary or classify domains.",
   {
+    doc_path: documentPath,
     term: z.string().trim().min(1).describe("The uncommon term or acronym used in this document"),
     definition: z.string().trim().min(1).describe("User-confirmed meaning in this document"),
   },
-  ({ term, definition }) => ({
-    content: [{ type: "text", text: dc.saveAlpsGlossaryEntry(term, definition) }],
+  ({ doc_path, term, definition }) => ({
+    content: [{ type: "text", text: dc.saveAlpsGlossaryEntry(doc_path, term, definition) }],
   }),
 );
 
@@ -283,6 +292,7 @@ server.tool(
 3. Ask the user to approve, revise, or defer it
 4. Call this tool only after the user has confirmed`,
   {
+    doc_path: documentPath,
     section: z
       .number()
       .min(FIRST_SECTION)
@@ -302,15 +312,18 @@ server.tool(
       ),
     content: z.string().describe("Content for the subsection (markdown)"),
   },
-  ({ section, subsection_id, title, content }) => ({
-    content: [{ type: "text", text: dc.saveAlpsSection(section, subsection_id, title, content) }],
+  ({ doc_path, section, subsection_id, title, content }) => ({
+    content: [
+      { type: "text", text: dc.saveAlpsSection(doc_path, section, subsection_id, title, content) },
+    ],
   }),
 );
 
 server.tool(
   "read_alps_section",
-  "Read the current content of a section or subsection.",
+  "Read a section or subsection from the specified document.",
   {
+    doc_path: documentPath,
     section: z
       .number()
       .min(FIRST_SECTION)
@@ -321,17 +334,17 @@ server.tool(
       .optional()
       .describe('Subsection ID (e.g., "1" for X.1). If omitted, returns entire section.'),
   },
-  ({ section, subsection_id }) => ({
-    content: [{ type: "text", text: dc.readAlpsSection(section, subsection_id) }],
+  ({ doc_path, section, subsection_id }) => ({
+    content: [{ type: "text", text: dc.readAlpsSection(doc_path, section, subsection_id) }],
   }),
 );
 
 server.tool(
   "get_alps_document_status",
-  "Get the status of all sections in the current document.",
-  {},
-  () => ({
-    content: [{ type: "text", text: dc.getAlpsDocumentStatus() }],
+  "Get the status of all sections in the specified document.",
+  { doc_path: documentPath },
+  ({ doc_path }) => ({
+    content: [{ type: "text", text: dc.getAlpsDocumentStatus(doc_path) }],
   }),
 );
 
@@ -339,13 +352,14 @@ server.tool(
   "export_alps_markdown",
   "Export the ALPS document as clean markdown.",
   {
+    doc_path: documentPath,
     output_path: z
       .string()
       .optional()
       .describe("Optional output file path. If not provided, returns the content."),
   },
-  ({ output_path }) => ({
-    content: [{ type: "text", text: dc.exportAlpsMarkdown(output_path) }],
+  ({ doc_path, output_path }) => ({
+    content: [{ type: "text", text: dc.exportAlpsMarkdown(doc_path, output_path) }],
   }),
 );
 

@@ -26,8 +26,8 @@ test("init collision never selects or overwrites the existing file", () => {
   fs.writeFileSync(target, "ORIGINAL NOTES\n");
 
   const service = new DocumentService();
-  assert.match(service.initDocument("demo", target), /already exists/);
-  assert.match(service.saveSection(1, "1", "Purpose", "replacement"), /No document loaded/);
+  assert.throws(() => service.initDocument("demo", target), /already exists/);
+  assert.throws(() => service.saveSection(1, "1", "Purpose", "replacement"), /No document loaded/);
   assert.equal(fs.readFileSync(target, "utf8"), "ORIGINAL NOTES\n");
 });
 
@@ -41,9 +41,9 @@ test("load accepts only structurally valid .alps.xml documents", () => {
   const service = new DocumentService();
   const valid = path.join(dir, "valid.alps.xml");
   service.initDocument("valid", valid);
-  assert.match(service.loadDocument(textFile), /must use the \.alps\.xml extension/);
-  assert.match(service.loadDocument(fakeAlps), /Invalid ALPS document/);
-  assert.match(service.saveSection(1, "1", "Purpose", "replacement"), /No document loaded/);
+  assert.throws(() => service.loadDocument(textFile), /must use the \.alps\.xml extension/);
+  assert.throws(() => service.loadDocument(fakeAlps), /Invalid ALPS document/);
+  assert.throws(() => service.saveSection(1, "1", "Purpose", "replacement"), /No document loaded/);
   assert.doesNotMatch(fs.readFileSync(valid, "utf8"), /replacement/);
 });
 
@@ -74,8 +74,8 @@ test("save enforces template subsection IDs and titles", () => {
   const service = new DocumentService();
   service.initDocument("demo", target);
 
-  assert.match(service.saveSection(1, "99", "Purpose", "x"), /Unknown subsection 1\.99/);
-  assert.match(service.saveSection(1, "1", "Wrong title", "x"), /must be "Purpose"/);
+  assert.throws(() => service.saveSection(1, "99", "Purpose", "x"), /Unknown subsection 1\.99/);
+  assert.throws(() => service.saveSection(1, "1", "Wrong title", "x"), /must be "Purpose"/);
   assert.match(service.getStatus(), /Section 1 \(Overview\): ⬜ Not started/);
 });
 
@@ -118,8 +118,8 @@ test("Section 4.1 requires Context and Container as its only Mermaid diagram typ
 
   const contextOnly =
     '```mermaid\n%%{init: {"theme": "neutral"}}%%\n%% system boundary\nC4Context\nPerson(user, "User")\n```';
-  assert.match(
-    service.saveSection(4, "1", "System Diagram", contextOnly),
+  assert.throws(
+    () => service.saveSection(4, "1", "System Diagram", contextOnly),
     /requires a Mermaid C4Container diagram/,
   );
 
@@ -134,8 +134,8 @@ Container(app, "Application")
 C4Component
 Component(module, "Module")
 \`\`\``;
-  assert.match(
-    service.saveSection(4, "1", "System Diagram", componentAdded),
+  assert.throws(
+    () => service.saveSection(4, "1", "System Diagram", componentAdded),
     /allows only Mermaid C4Context and C4Container diagrams; found C4Component/,
   );
 
@@ -345,6 +345,9 @@ legacy free-form content that must survive
 
   const service = new DocumentService();
   assert.match(service.loadDocument(target), /ALPS Document: legacy/);
-  assert.match(service.saveSection(1, "1", "Purpose", "replacement"), /Cannot safely update/);
+  assert.throws(
+    () => service.saveSection(1, "1", "Purpose", "replacement"),
+    /Cannot safely update/,
+  );
   assert.equal(fs.readFileSync(target, "utf8"), original);
 });

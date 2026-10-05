@@ -192,6 +192,17 @@
         "document-authoring/domain-organization",
         "adr-authoring/decision-presentation"
       ]
+    },
+    "alps-authoring/document-selection": {
+      "feature": "Explicit document selection",
+      "adrs": [
+        {
+          "path": "docs/adr/alps-authoring/document-selection/0001-require-explicit-document-target.md",
+          "status": "Accepted (2026-10-05)",
+          "summary": "문서별 요청은 대상을 필수로 명시하고 다른 요청의 문서 선택에 의존하지 않는다"
+        }
+      ],
+      "dependsOn": ["alps-authoring/authoring-interaction"]
     }
   }
 }
