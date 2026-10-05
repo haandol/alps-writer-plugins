@@ -1,6 +1,6 @@
 {
   "name": "adr-writer",
-  "version": "0.9.7",
+  "version": "0.10.0",
   "description": "Discover existing project features and adopt ADRs with batched intent questions, then author, implement, review, synchronize and consolidate decisions by business context.",
   "author": {
     "name": "haandol",
