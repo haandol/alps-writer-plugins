@@ -6,7 +6,7 @@ export const deterministicScore = (input) => responseChecks(input, {});
 export const obligations = [
   {
     id: "full-purpose",
-    text: "For Full, distinguish initial acceptance of supported customer questions from later resolution-rate improvement. Propose a meaningful tension such as wrong answers or unjustified handoffs and explain the purpose-defeating shortcut. Do not invent a numeric threshold or call every monitoring change a mandatory failure.",
+    text: "For Full, distinguish completion checks of supported customer questions from later resolution-rate improvement. Propose a meaningful tension such as wrong answers or unjustified handoffs and explain the purpose-defeating shortcut. Do not invent a numeric threshold or call every monitoring change a mandatory failure.",
   },
   {
     id: "lite-scope",
@@ -38,7 +38,7 @@ export default {
       alpsLiteGuideText(4),
       `# This run
 Prepare two separate Korean proposals; do not invoke tools or save files.
-A. Full Feature: supported customer questions receive a grounded answer; a confirmed need for staff results in an actual handoff. The user wants to improve verified resolution rate later, but supplied no numeric acceptance thresholds. Write its Acceptance Criteria, keeping initial acceptance and improvement distinct.
+A. Full Feature: supported customer questions receive a grounded answer; a confirmed need for staff results in an actual handoff. The user wants to improve verified resolution rate later, but supplied no numeric acceptance thresholds. Write its Evaluation Rubric, keeping completion checks and improvement distinct.
 B. Lite: overseas workers rehearse a short English introduction. The approved essential experiences are starting topic-specific practice, receiving a relevant response to an answer, and ending the session when requested. The user explicitly has no numeric KPI for this PoC. Suggest the relevant experience text and demo observations while preserving that choice and the four-section structure.`,
       TAIL_SPEC,
     ].join("\n\n");

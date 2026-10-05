@@ -29,7 +29,7 @@ test("the sign-up example keeps password and lockout rules identical in acceptan
   const service = new TemplateService();
   const template = service.getSection(7, true);
   const technical = between(template, "7.x.3 Technical Description", "7.x.4 Edge Cases");
-  const acceptance = between(template, "7.x.6 Acceptance Criteria");
+  const acceptance = between(template, "7.x.6 Evaluation Rubric");
   const password = technical.match(/A password is at least (\d+) characters/);
   const lockout = technical.match(
     /(\d+) consecutive failed sign-in attempts lock the account for (\d+) minutes/,
@@ -50,6 +50,98 @@ test("the sign-up example keeps password and lockout rules identical in acceptan
     "the Section 6 example excludes email verification",
   );
   assert.doesNotMatch(service.getSection(7), /A 5th consecutive/, "examples remain opt-in");
+});
+
+test("the rendered authoring example carries declared caps, expiry and approval into evaluable rows", () => {
+  const guide = new TemplateService().getSectionGuide(7);
+  const declared = between(guide, "Values the result must honor:", "#### 7.1.6 Evaluation Rubric");
+  const acceptance = between(guide, "#### 7.1.6 Evaluation Rubric", "</example>");
+  const cap = declared.match(/capped at (\d+) sections/)?.[1];
+  const days = declared.match(/kept for (\d+) days/)?.[1];
+  assert.ok(cap && days);
+  const rows = tableRows(acceptance).filter(
+    (row) => row[0] !== "Case and use" && !row[0].startsWith("-"),
+  );
+  assert.ok(rows.every((row) => row.length === 4 && row.every((cell) => cell.length > 0)));
+  const count = rows.find((row) => row[0] === "Section-count limit");
+  const retention = rows.find((row) => row[0] === "Draft retention");
+  assert.ok(count && retention);
+  assert.ok(count[1].includes(`${cap}-section`));
+  assert.ok(
+    count[3].includes(`${cap} sections`) && count[3].includes(`${Number(cap) + 1}th section`),
+  );
+  assert.ok(retention[1].includes(`${days}-day`));
+  assert.ok(
+    retention[3].includes(`before ${days} days`) && retention[3].includes("discard at expiry"),
+  );
+  assert.ok(
+    rows.some(
+      (row) =>
+        row[0] === "Approval before persistence" &&
+        /no section save occurs before confirmation/.test(row[3]),
+    ),
+  );
+  assert.ok(
+    rows.some((row) => row[0] === "Incomplete draft" && row[2].includes("completion state")),
+  );
+});
+
+test("the Feature template exposes a criterion form separately from its opt-in examples", () => {
+  const service = new TemplateService();
+  const form = between(service.getSection(7), "7.x.6 Evaluation Rubric");
+  const withExamples = between(service.getSection(7, true), "7.x.6 Evaluation Rubric");
+  const expectedHeader = ["Case and use", "Given / input", "Observe", "Evaluator and rule"];
+  const formRows = tableRows(form);
+  const exampleRows = tableRows(withExamples);
+  assert.ok(formRows.some((row) => JSON.stringify(row) === JSON.stringify(expectedHeader)));
+  assert.ok(!formRows.some((row) => row[0] === "Account creation"));
+  const creation = exampleRows.find((row) => row[0] === "Account creation");
+  const arrival = exampleRows.find((row) => row[0] === "Authenticated arrival");
+  assert.ok(creation && arrival);
+  assert.equal(creation.length, 4);
+  assert.equal(arrival.length, 4);
+  assert.ok(
+    arrival[1].includes("sign-up screen") && arrival[2].includes("authenticated user state"),
+  );
+});
+
+test("rubric cases remain independently evaluable and paired metrics retain their populations and use", () => {
+  const text = between(new TemplateService().getSection(7, true), "7.x.6 Evaluation Rubric");
+  const example = text.slice(
+    text.indexOf("**Ideal Cases — all cases in this example are required.**"),
+  );
+  const ideal = between(example, "**Ideal Cases", "**Edge Cases");
+  const edges = between(example, "**Edge Cases", "**Automated Evaluation Metrics");
+  const metrics = between(example, "**Automated Evaluation Metrics");
+  const idealRows = tableRows(ideal);
+  const edgeRows = tableRows(edges);
+  const metricRows = tableRows(metrics);
+  assert.ok(idealRows.some((row) => row[0] === "Account creation"));
+  assert.ok(idealRows.some((row) => row[0] === "Authenticated arrival"));
+  for (const name of [
+    "Password minimum",
+    "Email format",
+    "Account lockout",
+    "Duplicate rejection",
+    "Retry after network timeout",
+    "Server-error guidance",
+  ]) {
+    assert.ok(
+      edgeRows.some((row) => row[0] === name),
+      name,
+    );
+  }
+  const pair = metricRows.find((row) => row[0].startsWith("Valid signup success rate"));
+  assert.ok(pair);
+  assert.equal(pair.length, 4);
+  assert.match(pair[0], /completed valid signups \/ evaluated valid signup attempts/);
+  assert.match(
+    pair[1],
+    /invalid signup attempts incorrectly accepted \/ evaluated invalid signup attempts/,
+  );
+  assert.match(pair[2], /ideal cases.*edge cases/);
+  assert.match(pair[3], /monitoring summaries, not new target thresholds/);
+  assert.match(metrics, /empty cohort.*unmeasured, not 0 or success/);
 });
 
 test("NFR examples preserve the daily-user unit and the latency condition in their checks", () => {

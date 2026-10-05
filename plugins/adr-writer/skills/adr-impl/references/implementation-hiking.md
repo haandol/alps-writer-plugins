@@ -16,14 +16,17 @@ entry.
    such as planning/coding/testing as Hill boundaries.
 3. For each Hill, state:
    - **Preconditions and surrounding context** — starting state, prerequisites,
-     neighboring systems, and durable boundaries;
+     neighboring systems, durable boundaries, and the executable validation path,
+     data/dependencies/access needed for each required observation;
    - **Core design and contracts** — the ADR decision, requirement rows,
      derived obligations, invariants, and failure guarantees owned by this Hill,
      plus the recorded intent that bounds any unspecified implementation choice;
    - **Implementation** — every UI, API, data, and external-system change needed
      to make the vertical result work;
    - **Verification** — the targeted ideal case, relevant counterexample,
-     command, and observable result required before moving to the next Hill.
+     command, and actual entry-point result required before moving to the next Hill.
+     Preserve the given input, evidence and decision rule for each obligation;
+     classify missing/failed execution separately from an observed product violation.
 4. Finish the Hill's implementation and targeted verification before making the
    next Hill the primary work unit. A failing or unexecuted core path keeps the
    Hill open.

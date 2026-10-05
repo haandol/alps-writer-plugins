@@ -53,11 +53,7 @@ const groups = [
   ["결정 관리", "동기화와 통합", "세션 분류", ["hook-"]],
   ["구현 보장", "의존성과 계획", "선행 상태와 계획", ["impl-blocks-", "impl-plans-"]],
   ["구현 보장", "의존성과 계획", "의도와 기본값 판단", ["impl-resolves-", "impl-uses-intent-"]],
-  [
-    "구현 보장",
-    "완료와 검증",
-    ["impl-completes-", "impl-requires-", "impl-distinguishes-monitoring-"],
-  ],
+  ["구현 보장", "완료와 검증", ["impl-completes-", "impl-requires-", "impl-distinguishes-"]],
   ["구현 보장", "규모와 전달", ["impl-high-", "impl-offers-"]],
   ["구현 보장", "실행 수단", ["refactor-", "bedrock-"]],
   [

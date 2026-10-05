@@ -37,11 +37,11 @@ Section 9 (Out of Scope) is not a footnote. By naming what the agent must _not_ 
 | 4   | High-Level Architecture     | C4 Context/Container boundaries and durable architecture constraints |
 | 5   | Design Specification        | UX/UI flows, component structure, error states                       |
 | 6   | Requirements Summary        | Consolidated functional/non-functional requirements                  |
-| 7   | Feature-Level Specification | Per-feature vertical slices plus an observable Demo checkpoint       |
+| 7   | Feature-Level Specification | Per-feature vertical slices plus an observable Demo outcome          |
 | 8   | MVP Metrics                 | Instrumentation tied back to Section 2 goals                         |
 | 9   | Out of Scope                | Explicit non-goals — what we are deliberately not building           |
 
-Sections have explicit dependencies so that referenced material is reviewed before the section that depends on it. Section 7 reads both Section 3's end-to-end demo and Section 6's Feature list: each vertical slice ends its Acceptance Criteria with one sentence connecting its role in the overall demo to an observable completion result.
+Sections have explicit dependencies so that referenced material is reviewed before the section that depends on it. Section 7 reads both Section 3's end-to-end demo and Section 6's Feature list: each vertical slice ends its Evaluation Rubric with one sentence connecting its role in the overall demo to an observable completion result.
 
 ## How ALPS Writer authors a document
 

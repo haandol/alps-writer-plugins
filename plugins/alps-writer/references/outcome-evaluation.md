@@ -1,23 +1,61 @@
 # Evaluate the intended outcome
 
-Use this guidance when writing acceptance criteria, transferring them, or judging
+Use this guidance when writing evaluation rubrics, transferring them, or judging
 implementation and improvement. The purpose is to preserve the user's outcome
 when an agent can improve a proxy score without improving the product.
 
-## Initial acceptance and later improvement
+## Cases and automated evaluation metrics
 
-Connect each intended outcome and mandatory constraint to observable acceptance
-evidence before implementation. Use deterministic tests for explicit rules, narrow
-failure-mode evaluations for meaning or quality, and a demo for the user journey.
-Reuse relevant normal, failure and boundary cases; do not require an LLM evaluator
-for a rule that code can check. Distinguish required evidence from exploration.
+Before implementation, connect each independent evaluation obligation to its use
+(required or monitoring), given situation and input, observable evidence, and
+evaluator with an explicit decision rule. A comparison row is the default for
+detailed criteria; equivalent concise wording is fine when all of that meaning
+remains clear. Keep the minimum setup needed to evaluate the criterion even when
+longer user flows are described elsewhere. Do not merge independent behaviors into
+one checkbox or lose values between the behavior description and its evaluation rubric.
 
-Initial acceptance can start from confirmed requirements and clearly identified
-synthetic examples. A passing demo establishes the observed product behavior,
-not production impact or improvement. Later improvement compares outcomes under
-the same relevant population, aggregation, exclusions and observation conditions.
-Keep the user's intent and exact required criteria in the owning document; keep
-datasets, evaluator code, prompts and run evidence at the implementation level.
+For a detailed rubric, organize Ideal Cases, Edge Cases and Automated Evaluation
+Metrics. Ideal cases demonstrate intended successful behavior; edge cases cover
+relevant boundaries, invalid inputs and recovery. They retain setup, evidence and
+explicit rules. Metrics identify the cases/population they summarize, calculation,
+unit, direction, observation/exclusion conditions, evaluator and required-versus-
+monitoring use. Show useful eval/tension pairs protecting the same purpose, not
+unrelated numbers or merely two names. Case checks still determine required
+behavior: a high aggregate score cannot erase a failed or unverified required case.
+An empty population, missing observation or judgment error is not zero or a pass;
+show missingness and coverage rather than silently dropping cases.
+
+Use code for comparisons of known values, state, permission, order, counts and
+boundaries. When an obligation includes a user interface, obtain evidence through
+that actual entry point, from input/action to its required result. API or unit
+tests, successful builds, markup or a screenshot alone do not establish a working
+UI flow. CLI and API products use their own entry points; not every task needs a
+browser. An unavailable environment leaves that obligation unverified, not a
+proven product failure. Use an isolated verification environment when needed.
+
+For semantic criteria, specify the evaluated input, authoritative reference,
+narrow failure rule, evidence supporting the judgment, and when the result cannot
+be established. Prefer code for any part it can determine. LLM meaning judgments
+are not guaranteed deterministic: JSON output or temperature 0 does not establish
+repeatability. Check missed failures and false alarms against confirmed examples.
+
+Record met, violated, and unverified obligations distinctly. Once observations
+and per-criterion judgments are fixed, use a fixed aggregation rule: a known
+required violation prevents acceptance; otherwise missing required evidence or
+execution/judgment errors leave acceptance unverified; accept only when every
+required obligation is established. Monitoring signals are not silently added to
+that required set. These are result meanings, not new document Status values or
+a mandatory wire format. The entire evidence pipeline is not deterministic merely
+because its final aggregation is.
+
+Completion criteria may start from confirmed requirements and identified synthetic
+examples. Later improvement compares the same relevant population, aggregation,
+exclusions and observation conditions. A demo establishes its observed behavior,
+not production impact. Preserve intent, exact criteria and evidence requirements
+in the owning document. Commands, fixtures, evaluator code/prompts and run results
+remain at implementation resolution; do not create another authoritative validation
+plan. Condensed authoring formats retain their existing result/demo text rather
+than importing a detailed table, metric quota or evaluator implementation.
 
 ## Propose useful tension metrics without making them mandatory
 
@@ -71,11 +109,19 @@ summarize and group issue notes. New judgments that require tacit domain knowled
 need the responsible person's confirmation; AI-drafted labels are not human
 ground truth. Use frequency together with severity and impact to prioritize.
 
-Reproduce failures of existing contracts and add relevant regression and opposite
-cases within the current authority. A newly discovered product rule goes through
-the owning contract's change process. For semantic evaluators, use narrow failure
-criteria and confirmed examples to examine both missed failures and false alarms;
-aggregate agreement alone can hide either. Report static checks, stub runs and
-live behavior evidence separately. Improvements stay within the authorized
-change scope, execution limits and applicable stop or recovery conditions; an
-evaluation result grants no deployment, paid-call or external-action permission.
+Before implementation, check each required validation route: its entry point,
+executable path, fixtures/data, dependencies and access. Reuse the repository's working verification
+path; keep setup commands in code or repository guidance, not product criteria.
+Missing access or tooling is missing evidence, not proof of a broken product.
+
+Respond to the cause: reproduce and repair a contract violation, repair the
+tool/environment/data path for an execution problem, or resolve an ambiguous/new
+product rule through the owning contract's existing approval. Keep independent
+work moving. Within current execution limits, check whether another attempt adds
+new evidence or follows a concrete repair. Reassess an unchanged repeated failure
+instead of retrying blindly; do not impose a universal retry count or agent order.
+
+Preserve the comparison rule during repair. Report static checks, stub runs and
+live behavior evidence separately. Improvements stay within authorized scope,
+execution limits and applicable stop/recovery conditions. Evaluation grants no
+new deployment, paid-call or external-action permission.

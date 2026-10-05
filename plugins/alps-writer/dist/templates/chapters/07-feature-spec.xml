@@ -3,7 +3,7 @@
 - For every feature listed in Section 6.1, provide a detailed design using the same Fx ID and feature name.
 - Each subsection must match the feature ID, name, and priority defined in Section 6.1.
 - No additional features beyond those in Section 6.1 may be specified here.
-- Connect every Feature to the Section 3 end-to-end demo with one observable Demo checkpoint under Acceptance Criteria.
+- Connect every Feature to the Section 3 end-to-end demo with one observable Demo outcome under Evaluation Rubric.
 - Write for a junior developer seeing the Feature for the first time. Use plain language, explain unfamiliar acronyms and domain or technical terms on first use, and make the actor, action, conceptual data, and user-visible result understandable without reading code.
 - When multiple participants or layers make a flow easier to understand visually, recommend a concise Mermaid diagram in 7.x.3. Prefer `sequenceDiagram` for request, data, and response flow across UI, API, data stores, and external systems.
 - Feature diagrams are optional. Their absence never blocks approval, saving, or completion. Keep them at product-requirement resolution and exclude modules, classes, functions, schemas, libraries, and algorithms.
@@ -95,7 +95,7 @@ Values the result must honor:
 - 5 consecutive failed sign-in attempts lock the account for 30 minutes (security policy)
 
 > This example uses the account scope from Section 6: email verification is outside the MVP, so it adds no verification or unverified-account deletion policy. The values above are illustrative supplied requirements, not defaults for another product.
-> How the password is hashed, the auth token format, and the user table's columns remain architectural/implementation choices. The stated password and lockout requirements stay exact in Acceptance Criteria.
+> How the password is hashed, the auth token format, and the user table's columns remain architectural/implementation choices. The stated password and lockout requirements stay exact in Evaluation Rubric.
       </example>
     </subsection>
     <subsection id="7.x.4" title="Edge Cases">
@@ -116,27 +116,73 @@ Values the result must honor:
 | Server error | 500 | "Something went wrong. Please try again." |
       </example>
     </subsection>
-    <subsection id="7.x.6" title="Acceptance Criteria">
+    <subsection id="7.x.6" title="Evaluation Rubric">
       <description>
-- Connect the intended user outcome and every mandatory constraint to clear initial pass/fail criteria, representative situations, and the evidence needed (test, quality eval, or demo). Include relevant failures and counterexamples; visible output alone may not establish the outcome.
-- When ongoing improvement is in scope, distinguish its signals from initial acceptance within this subsection. For a primary metric, actively consider and propose meaningful tension metrics: results that protect the same user purpose but may worsen when the primary metric is over-optimized.
-- Tension metrics are encouraged, not mandatory. Do not require one per Feature, invent thresholds, or block writing, approval, saving, implementation or improvement because none is suitable. A relevant observable failure or counterexample can be more useful than a forced number.
-- Distinguish monitoring signals from required acceptance/adoption conditions. Only confirmed required conditions are gates; their failures cannot be offset by a higher primary score. Define population, aggregation, observation and exclusions as precisely as the decision needs. Do not weaken criteria or remove difficult cases to improve a score.
-- Start from confirmed requirements and supplement evaluation with observed failures. Keep synthetic or AI-labeled cases distinct from real traces and human-confirmed judgments. Preserve product rules here; evaluator code, datasets and run results belong below this level.
-- Restate every value from 7.x.3 ("Values the result must honor") as a checkable criterion, so the same number appears in both places and a reviewer can verify it.
-- End with one **Demo checkpoint** sentence that states this Feature's role in the Section 3 end-to-end demo and the observable completion result.
-- Do not repeat preconditions, user actions, or failure scenarios already recorded in User Flow, Edge Cases, and Error Handling.
+- Organize this rubric as Ideal Cases, Edge Cases, and Automated Evaluation Metrics. Cases define what to exercise and the evidence/rule for the result. Metrics define how related case outcomes or observations are measured and interpreted. Keep these inside 7.x.6, not new numbered subsections.
+
+**Ideal Cases — intended successful behavior**
+
+| Case and use | Given / input | Observe | Evaluator and rule |
+|--------------|---------------|---------|--------------------|
+| [Independent case; required or monitoring] | [Valid setup, user action and input] | [Expected user result or authoritative state] | [Code / user-flow evidence / narrow semantic check; explicit result rule] |
+
+**Edge Cases — relevant boundaries, invalid inputs and recovery**
+
+| Case and use | Given / input | Observe | Evaluator and rule |
+|--------------|---------------|---------|--------------------|
+| [Independent boundary or failure case] | [Relevant input or failure condition] | [Required rejection, recovery or preserved state] | [Explicit pass/fail rule and needed evidence] |
+
+**Automated Evaluation Metrics — measurements linked to the cases**
+
+| Eval metric | Tension metric, when useful | Evaluation method and scope | Decision and use |
+|-------------|-----------------------------|-----------------------------|------------------|
+| [Behavior measure, calculation, unit and direction] | [Same-purpose countermeasure and calculation, or no suitable candidate] | [Related cases/population, Code or LLM, observation window and exclusions] | [Required rule with its approved basis, or monitoring only] |
+
+- Cases may contain several observations needed to prove one outcome, but do not bundle independent obligations into one vague checkbox. Restate every value from 7.x.3 with its exact unit and rule. Preserve all declared permissions and failure guarantees in relevant normal, boundary and failure cases. Reuse existing User Flow, Edge Cases and Error Handling behavior rather than inventing policy.
+- Use code for known values, state, permissions, ordering and counts. UI obligations need actual user-entry evidence from action to result; API/unit tests, a build or a visible button do not replace it. API and command-line products use their own entry points.
+- Use LLM evaluation only for meaning: name the evaluated input, authoritative reference, narrow failure rule, supporting evidence and when judgment remains unverified. JSON or temperature 0 does not make LLM judgment deterministic. Only aggregation of fixed observations and criterion results can be deterministic.
+- Link each metric to the cases or observations it summarizes. Define its calculation, population/denominator, unit, direction, observation conditions, evaluator and required-versus-monitoring use. Show eval/tension pairs when they expose opposite shortcuts against the same purpose; do not invent a metric quota, target or irrelevant countermeasure. Boolean case results may be sufficient when a rate adds no useful information.
+- Tension metrics are encouraged, not mandatory. Their absence never blocks writing, approval, saving, implementation or improvement. Monitoring values are not automatically gates. An empty population, missing evidence or execution/judgment error is not 0 or a pass; preserve coverage and missingness instead of silently dropping cases.
+- Every required ideal and edge case must be established. Known required violations prevent completion; otherwise missing required evidence leaves completion unverified. A high aggregate score cannot cancel a required violation. Confirm any new required threshold and its basis before using it. Do not weaken criteria or remove difficult cases to improve a score.
+- Start from confirmed requirements and supplement evaluation with observed failures. Keep synthetic cases and AI labels distinct from real traces and human-confirmed judgments. Product rules stay here; commands, fixtures, evaluator code/prompts and run results stay at implementation resolution.
+- End with one **Demo outcome** sentence describing this Feature's role in the Section 3 end-to-end demo and the observable completion result. It connects the Feature to the whole journey; it is not another test or approval gate.
+- Do not repeat preconditions, user actions, or failure scenarios in full; retain the minimum evaluation setup for each case. When reading an existing document, treat Acceptance Criteria and Demo checkpoint as the legacy names for the same content, without reapproving or rewriting a completed unchanged Feature solely to rename it.
       </description>
       <example>
-**Initial acceptance — deterministic tests and the account-creation demo:**
-- [ ] A new user can submit valid credentials and reaches the main screen authenticated.
-- [ ] Password must be at least 10 characters; a shorter password or invalid email is rejected with a clear validation message.
-- [ ] A 5th consecutive failed sign-in locks the account for 30 minutes.
-- [ ] An already registered email is rejected and its existing account remains unchanged.
-- [ ] Other error states display actionable messages, including a retry option for network timeout.
+**Ideal Cases — all cases in this example are required.**
 
-**Improvement signals, when signup optimization is in scope:** compare completed signups among eligible attempts; consider erroneous rejections of valid attempts as a monitoring tension metric. Keep the population and observation period comparable. This optional signal introduces no pass threshold; the required validation and lockout rules above remain binding.
-- **Demo checkpoint:** This Feature completes the account-creation step in the Section 3 journey; completion is visible when the new user reaches the main screen as an authenticated user.
+| Case and use | Given / input | Observe | Evaluator and rule |
+|--------------|---------------|---------|--------------------|
+| Account creation | An unregistered valid email and a valid password, including the 10-character boundary, are submitted | Account creation result for that email | Code: the account is created; a success message without the account is a violation |
+| Authenticated arrival | The user submits those valid inputs from the sign-up screen | Arrival at the main screen with authenticated user state | User-flow evidence + Code: both belong to the same completed signup; a unit test alone does not establish this case |
+
+**Edge Cases — all cases below are required.**
+
+Input and security boundaries:
+
+| Case and use | Given / input | Observe | Evaluator and rule |
+|--------------|---------------|---------|--------------------|
+| Password minimum | An otherwise valid signup uses a 9-character password; compare with the valid ideal case | Input rejection and validation feedback | Code: Password must be at least 10 characters; reject 9 characters while the otherwise-valid 10-character ideal case succeeds |
+| Email format | An otherwise valid signup uses an invalid email format | Input rejection with a validation message | Code: invalid email is rejected before account creation |
+| Account lockout | Consecutive failed sign-ins reach the policy boundary | Account lock state and duration | Code: A 5th consecutive failed sign-in locks the account for 30 minutes; compare the boundary and duration with recorded state |
+
+Rejection and recovery:
+
+| Case and use | Given / input | Observe | Evaluator and rule |
+|--------------|---------------|---------|--------------------|
+| Duplicate rejection | The submitted email already belongs to an account | Rejection and the original account | Code: duplicate signup is rejected and the existing account remains unchanged |
+| Retry after network timeout | The signup request times out | A visible retry option | User-flow evidence + Code: the user can choose to retry; generic error text alone is insufficient |
+| Server-error guidance | The signup service returns the declared server error | The error response and visible next action | User-flow evidence + Code: expose the declared server-error result and tell the user to try again, as specified by Error Handling |
+
+**Automated Evaluation Metrics**
+
+| Eval metric | Tension metric, when useful | Evaluation method and scope | Decision and use |
+|-------------|-----------------------------|-----------------------------|------------------|
+| Valid signup success rate increases: completed valid signups / evaluated valid signup attempts, as a percentage | Invalid-input acceptance rate decreases: invalid signup attempts incorrectly accepted / evaluated invalid signup attempts, as a percentage | Code + user-flow evidence. The account-creation/arrival ideal cases and password/email/duplicate edge cases define separate valid and invalid cohorts. Use the same stated observation window and classification rules across comparisons. | These rates are monitoring summaries, not new target thresholds. Every required case still has to satisfy its rule, including lockout and recovery cases outside these rate populations. Rejecting everything hurts the eval metric; accepting everything hurts the tension metric. |
+
+Report the requested/evaluated counts and missing observations with these rates. An empty cohort or unavailable judgment is unmeasured, not 0 or success. Do not exclude failed valid attempts or silently reclassify invalid attempts to improve the score. Confirmed validation and lockout rules remain binding.
+
+- **Demo outcome:** This Feature completes the account-creation step in the Section 3 journey; completion is visible when the new user reaches the main screen as an authenticated user.
       </example>
     </subsection>
   </template>

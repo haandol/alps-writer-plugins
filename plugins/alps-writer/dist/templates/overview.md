@@ -133,7 +133,8 @@ Section 7 (Feature-Level Specification) is the most common place to cut corners.
 - Write each Feature so a junior developer seeing it for the first time can identify the actor, action, conceptual data, and user-visible result. Explain unfamiliar acronyms and domain or technical terms on first use.
 - When multiple participants or layers make a flow easier to understand visually, recommend a concise Mermaid diagram in `7.x.3`; prefer `sequenceDiagram` for request, data, and response flow across UI, API, data stores, and external systems.
 - Feature diagrams are optional. Their absence never blocks approval, saving, or completion. Keep them at product-requirement resolution and exclude modules, classes, functions, schemas, libraries, and algorithms.
-- Every Feature's Acceptance Criteria ends with one Demo checkpoint that states its role in the Section 3 end-to-end demo and its observable completion result.
+- Evaluation Rubric uses Ideal Cases, Edge Cases and Automated Evaluation Metrics; connect case evidence to calculations and useful optional eval/tension pairs.
+- Every Feature's Evaluation Rubric ends with one Demo outcome that states its role in the Section 3 end-to-end demo and its observable completion result.
 </section-7-rule>
 </conversation-flow>
 
@@ -161,7 +162,7 @@ When user provides PDF, ALPS (PRD), or any reference:
 - ALWAYS confirm at the section level — never skip a section without the user approving it
 - Batch confirmation requires explicit opt-in or a complete structured source
 - For Section 7, ALWAYS preserve each Feature subsection (7.x) as a separate approval and save unit
-- For Section 7, ALWAYS review Sections 3 and 6 first and include one Demo checkpoint under every Feature's Acceptance Criteria; do not add a duplicate demo subsection
+- For Section 7, ALWAYS review Sections 3 and 6 first and include one Demo outcome under every Feature's Evaluation Rubric; do not add a duplicate demo subsection
 - For Section 7, ALWAYS use first-reader-friendly language and recommend an optional Mermaid diagram when it materially clarifies a multi-participant or multi-layer flow; prefer `sequenceDiagram` for data flow and never treat the diagram as a completion requirement
 - When information is missing, ask 1-2 questions at a time (1 for complex topics); do not re-ask information already provided
 - When saving, ALWAYS call `save_alps_section(section, subsection_id, title, content)` with all four arguments; `subsection_id` and `title` must match the section's XML template

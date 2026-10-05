@@ -57,6 +57,13 @@ transitions, failure and fallback, duplicates, reordering, concurrency, partial
 failure, and restart behavior. Do not require unrelated categories to fill a
 checklist.
 
+Before selecting or executing validation, read and apply
+`${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md`. It owns case inputs,
+observable evidence, execution readiness, actual user-entry verification,
+code/semantic judgments, result aggregation and cause-specific repair. Connect
+the tests selected here to those rules; retain the ideal/edge coverage and review
+classifications in this document.
+
 Tests read as executable documentation. Name each test as the behavior it proves
 and keep unrelated behaviors separate so a failure names the broken rule.
 

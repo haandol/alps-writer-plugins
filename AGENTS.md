@@ -222,9 +222,15 @@ signals remain distinct. Propose meaningful tension metrics that expose harm fro
 over-optimizing a primary metric, without a mandatory count or a blocker when
 none is suitable. Distinguish monitoring signals from confirmed required
 conditions; only the latter are gates, and primary gains never cancel their
-violations. Full uses existing Acceptance Criteria. Lite uses impact signals in
-1.2, experience outcomes and optional improvement signals in 2.2, and initial
-pass/fail observations in 4.1, preserving its four Sections and approval units.
+violations. Full uses 7.x.6 Evaluation Rubric: Ideal Cases and Edge Cases retain inputs,
+observations and decision rules; Automated Evaluation Metrics connects their
+results to calculations, scope and useful eval/tension pairs. Existing Acceptance
+Criteria headings remain readable without an automatic migration.
+Code comparisons, actual user-entry evidence and LLM meaning judgments serve
+different obligations; only aggregation of fixed inputs is deterministic. Missing
+required evidence remains unverified. Lite uses impact signals in 1.2, experience
+outcomes and optional improvement signals in 2.2, and initial pass/fail observations
+in 4.1, preserving its four Sections and approval units.
 
 ADR folders are organized along two axes — a DDD **bounded context** (top-level folder / first key segment) containing one or more **features** (vertical slices, the second segment). A single-feature context stays flat (`auth/`, workshop `f1/`), so existing flat repos need no migration. The ADR index lives in `docs/adr/.mapping.json` itself (path/status/summary per ADR), and admitted work reads it on demand; the README keeps no separate ADR list. The mapping carries an optional advisory `subdomainType` (core/supporting/generic) per context and stores no PRD reference. Context discovery is the default for product and ADR authoring. Inspect repository organization separately from execution/deployment shape, then group by business language and rule ownership, not service or technical-layer folders. Preserve confirmed grouping; propose grounded candidates when absent and confirm only material ambiguity. `/feature-to-adr` preserves that meaning in plugin-local guidance, while adr-writer stays independent of the PRD. Category keys remain at most two segments; a valid single-feature context can stay flat. Code refactoring or moving existing ADRs requires its own authorized scope.
 
