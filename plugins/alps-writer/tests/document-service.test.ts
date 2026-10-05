@@ -275,6 +275,24 @@ test("dynamic Section 7 status follows the feature count declared in Section 6.1
   assert.match(service.getStatus(), /Section 7 .*✅ Written \(2\/2 features\)/);
 });
 
+test("legacy and current rubric headings round-trip without rewriting existing Feature content", () => {
+  for (const heading of ["Acceptance Criteria", "Evaluation Rubric"]) {
+    const target = path.join(temporaryDirectory(), "rubric.alps.xml");
+    const service = new DocumentService();
+    service.initDocument("rubric", target);
+    service.saveSection(6, "1", "Core Features (Functional Requirements)", "- F1: Login");
+    const body = `#### 7.1.6 ${heading}\n\nThe approved login result is observable.`;
+    assert.match(service.saveSection(7, "1", "Login", body), /Saved 7\.1/);
+    const saved = fs.readFileSync(target, "utf8");
+    const resumed = new DocumentService();
+    resumed.loadDocument(target);
+    assert.equal(fs.readFileSync(target, "utf8"), saved);
+    assert.ok(resumed.readSection(7, "1").includes(body));
+    assert.ok(resumed.exportMarkdown().includes(body));
+    assert.match(resumed.getStatus(), /Section 7 .*Written \(1\/1 features\)/);
+  }
+});
+
 test("Section 7 accepts Features with or without a Mermaid diagram and preserves diagrams on export", () => {
   const dir = temporaryDirectory();
   const target = path.join(dir, "feature-diagrams.alps.xml");

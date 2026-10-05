@@ -61,7 +61,7 @@
         {
           "path": "docs/adr/alps-authoring/feature-demo/0001-require-feature-level-demo.md",
           "status": "Proposed",
-          "summary": "Feature는 초기 수용과 개선 신호를 구분하고 의미 있는 tension metric을 권장하되 필수 조건과 관찰용 지표를 구분한다"
+          "summary": "Feature 평가는 Ideal Cases·Edge Cases·Automated Evaluation Metrics로 동작과 계산·판정을 연결하고 선택적 tension 지표와 데모 결과를 보존한다"
         }
       ],
       "dependsOn": []
@@ -138,7 +138,7 @@
         {
           "path": "docs/adr/delivery/development-flow/0001-safe-proportional-development-gates.md",
           "status": "Proposed",
-          "summary": "ADR 구현은 사전 수용 증거로 완료를 판정하고 tension metric을 권장하되 필수 보호 조건과 평가 근거를 보존한다"
+          "summary": "ADR 구현은 의무별 검증 준비와 실제 진입점 증거로 수용을 판정하고 위반·증거 부족·계약 모호성에 맞춰 수리·보완·결정한다"
         }
       ],
       "dependsOn": ["adr-cycle/implementation-review", "alps-authoring/spec-handoff"]

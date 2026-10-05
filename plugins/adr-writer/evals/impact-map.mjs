@@ -10,7 +10,14 @@ export const IMPACT_RULES = [
       "plugins/adr-writer/references/outcome-evaluation.md",
       "plugins/alps-writer/references/outcome-evaluation.md",
     ],
-    scenarioPrefixes: ["alps-evaluates-outcomes-", "impl-distinguishes-monitoring-"],
+    scenarioPrefixes: ["alps-evaluates-outcomes-", "impl-distinguishes-"],
+  },
+  {
+    pathPrefixes: [
+      "plugins/adr-writer/references/implementation-evidence.md",
+      "plugins/adr-writer/skills/adr-impl/references/implementation-hiking.md",
+    ],
+    scenarioPrefixes: ["impl-distinguishes-validation-"],
   },
   {
     pathPrefixes: [

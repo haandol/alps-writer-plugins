@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-10-05 — current ADR: [실행 가능한 수용 기준](./0001-safe-proportional-development-gates.md)** — 수용 의무별 검증 준비와 실제 진입점 증거를 연결하고, 구현 위반·실행 또는 판정 오류·계약 모호성에 따른 다음 행동과 진전 없는 반복의 처리를 구체화한다.
+
 - **2026-10-05 — current ADR: [의도를 보존하는 평가](./0001-safe-proportional-development-gates.md)** — 초기 수용과 개선 신호를 구분하고 의미 있는 tension metric을 적극 권장하되 선택 사항으로 유지하며, 관찰용 신호와 필수로 확정한 보호 조건의 판단을 구분한다.
 
 - **2026-09-28 — current ADR: [safe proportional development gates](./0001-safe-proportional-development-gates.md)** — 구현 후 테스트 중심 완료 판정을 사전 수용 조건과 실제 증거의 대조로 보강하고, 필수 eval 미실행과 탐색적 평가를 구분하도록 제안했다.

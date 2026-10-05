@@ -187,7 +187,7 @@ test("the seeded checklist carries every axis /adr-new delegates to it", () => {
     /\*\*Code-readthrough test\*\*/,
     /\*\*Gray-zone check\*\*/,
     /\*\*Decision Drivers\*\*/,
-    /\*\*At least two alternatives\*\*/,
+    /\*\*Realistic alternatives\*\*/,
     /\*\*One ADR = one decision\*\*/,
     /\*\*No forbidden items\*\*/,
     /\*\*Prose style\*\*/,
