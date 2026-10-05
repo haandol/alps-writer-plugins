@@ -61,7 +61,7 @@
         {
           "path": "docs/adr/alps-authoring/feature-demo/0001-require-feature-level-demo.md",
           "status": "Proposed",
-          "summary": "각 Feature는 의도를 사전 수용 조건과 증거 종류에 연결하고 한 줄 Demo checkpoint로 전체 데모의 관찰 결과를 표시한다"
+          "summary": "Feature는 초기 수용과 개선 신호를 구분하고 의미 있는 tension metric을 권장하되 필수 조건과 관찰용 지표를 구분한다"
         }
       ],
       "dependsOn": []
@@ -105,7 +105,7 @@
         {
           "path": "docs/adr/alps-authoring/lite-format/0001-lite-alps-authoring-profile.md",
           "status": "Proposed",
-          "summary": "Lite ALPS는 비즈니스 임팩트에서 최소 솔루션·핵심 경험·제품 Context와 경험별 사전 수용 조건을 담은 데모를 역설계한다"
+          "summary": "Lite ALPS는 핵심 경험과 데모에 사전 판단 기준과 선택적 개선·tension 신호를 연결하며 네 Section과 승인 경계를 유지한다"
         }
       ],
       "dependsOn": ["alps-authoring/authoring-interaction"]
@@ -126,8 +126,8 @@
       "adrs": [
         {
           "path": "docs/adr/adr-cycle/behavior-evaluation/0001-evaluate-critical-prompt-decisions.md",
-          "status": "Accepted (2026-09-25)",
-          "summary": "Skill 평가는 분류·선택·실제 수행을 구분하고 동일 계약의 사용·미사용 비교와 원본 증거 기반 비차단 리포트를 제공한다"
+          "status": "Proposed",
+          "summary": "Skill 평가는 실제 수행과 반대 방향 실패를 함께 검증하고 선택적 tension 신호와 필수 채택 조건을 구분한다"
         }
       ],
       "dependsOn": []
@@ -138,7 +138,7 @@
         {
           "path": "docs/adr/delivery/development-flow/0001-safe-proportional-development-gates.md",
           "status": "Proposed",
-          "summary": "ADR 구현은 수직 Hill마다 사전 수용 조건을 검증에 연결하고 필수 test·eval의 실제 증거로 완료를 판정한다"
+          "summary": "ADR 구현은 사전 수용 증거로 완료를 판정하고 tension metric을 권장하되 필수 보호 조건과 평가 근거를 보존한다"
         }
       ],
       "dependsOn": ["adr-cycle/implementation-review", "alps-authoring/spec-handoff"]

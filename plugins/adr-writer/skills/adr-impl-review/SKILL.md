@@ -271,6 +271,9 @@ synthesis. Save their results as `necessity-review.md` and
 
 ## 4. Evidence verification and synthesis
 
+For outcome claims, apply `${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md`;
+monitoring is not a required gate.
+
 The main session does not merge the two reviews by vote. Verify findings with these rules.
 
 1. Merge the same problem into one, but keep every source in `perspective`.

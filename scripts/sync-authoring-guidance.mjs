@@ -10,7 +10,12 @@ if (args.some((arg) => arg !== "--check")) {
   process.exit(2);
 }
 const check = args.includes("--check");
-const names = ["requirement-delegation.md", "comprehension-load.md", "feature-boundaries.md"];
+const names = [
+  "requirement-delegation.md",
+  "comprehension-load.md",
+  "feature-boundaries.md",
+  "outcome-evaluation.md",
+];
 let drift = false;
 for (const name of names) {
   const source = path.join(root, "plugins/adr-writer/references", name);

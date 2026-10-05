@@ -30,8 +30,10 @@ and exact sources with their owning domain. In HTML, collapsible details and
 anchors can provide drill-down; in Markdown or text, use nested headings and
 clear references. Do not hide an unstructured report inside one giant detail.
 Place the standalone, localized "Background and goals" heading directly below
-the title. Keep the short request-context paragraph visible without expanding
-details. It explains the report's reason and intended goal. Follow it immediately
+the title. Keep the report's reason and intended use visible without expanding
+details: the concrete problem and what reading should enable, as described in
+[editorial review](editorial-review.md#make-the-reports-intended-use-concrete).
+Follow it immediately
 with a visually distinct answer and conclusion-changing limitations,
 before navigation, long tables, or audit material. Preserve this reading order
 in HTML, Markdown, text, and print. Use disclosure labels that name the question or

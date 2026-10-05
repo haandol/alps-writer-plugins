@@ -7,6 +7,13 @@
 export const IMPACT_RULES = [
   {
     pathPrefixes: [
+      "plugins/adr-writer/references/outcome-evaluation.md",
+      "plugins/alps-writer/references/outcome-evaluation.md",
+    ],
+    scenarioPrefixes: ["alps-evaluates-outcomes-", "impl-distinguishes-monitoring-"],
+  },
+  {
+    pathPrefixes: [
       "plugins/adr-writer/skills/adr-import/",
       "plugins/adr-writer/references/import-cycle-resolution.md",
     ],
@@ -77,7 +84,7 @@ export const IMPACT_RULES = [
   },
   {
     pathPrefixes: ["plugins/alps-writer/skills/lite-alps-init/"],
-    scenarioPrefixes: ["lite-alps-"],
+    scenarioPrefixes: ["lite-alps-", "alps-evaluates-outcomes-"],
   },
   {
     pathPrefixes: ["plugins/alps-writer/src/tools/documents/"],

@@ -72,7 +72,8 @@ logs, code paths, implementation plans, or code-recoverable technology facts int
 
 - `Target User and Core Problem`: identify the main user and the problem the PoC should address.
 - `Desired Business Impact`: state the final outcome the target user should gain and why it matters.
-- Preserve a measurement signal when the user already has one, but do not require a metric.
+- Preserve known measurement signals and propose useful product-wide tension candidates when they
+  protect the same purpose against over-optimization. Do not require a metric or a metrics interview.
 - Do not ask for a solution, screen, starting state, user-action sequence, or demo procedure.
 
 ### Section 2 — Solution and Essential User Experiences
@@ -88,6 +89,9 @@ logs, code paths, implementation plans, or code-recoverable technology facts int
 - `Essential User Experiences`: propose every user experience the PoC must not omit.
 - Give each experience a distinct name, user-observable result, and contribution to the Desired
   Business Impact.
+- Explain how to recognize each experience's adequate result. When improvement is relevant, propose
+  useful signals and actively consider tension metrics in the existing text. No metric count or
+  extra column is mandatory; monitoring signals and required conditions remain distinct.
 - Leave starting states, demo inputs, sequential actions, and screen flow to Section 4.
 - Preserve confirmed values and rules that decide whether the test passes.
 - Ask only when a protected product decision cannot be safely proposed.
@@ -109,7 +113,9 @@ logs, code paths, implementation plans, or code-recoverable technology facts int
 - Show the complete scenario before approval, with the essential experience demonstrated by every step or
   execution block.
 - Ask a focused question only when the demo exposes a protected product decision.
-- The overall pass result requires every Essential User Experience to be observable.
+- The overall pass result requires every Essential User Experience to meet its initial pass/fail
+  criterion. Include relevant counterexamples within the scenario. Missing tension metrics do not
+  block the demo; confirmed required product and safety conditions remain binding.
 - Show how the scenario supports the Desired Business Impact without treating a passing demo as
   proof of business impact or market validity.
 - Keep the scenario inside the approved Sections 1-2 and any explicit Section 3 boundary.

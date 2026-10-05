@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-10-05 — current ADR: [의도를 보존하는 평가](./0001-safe-proportional-development-gates.md)** — 초기 수용과 개선 신호를 구분하고 의미 있는 tension metric을 적극 권장하되 선택 사항으로 유지하며, 관찰용 신호와 필수로 확정한 보호 조건의 판단을 구분한다.
+
 - **2026-09-28 — current ADR: [safe proportional development gates](./0001-safe-proportional-development-gates.md)** — 구현 후 테스트 중심 완료 판정을 사전 수용 조건과 실제 증거의 대조로 보강하고, 필수 eval 미실행과 탐색적 평가를 구분하도록 제안했다.
 - **2026-09-07 — current ADR: [safe proportional development gates](./0001-safe-proportional-development-gates.md)** — Implementation Hiking의 모호한 완료 표현을 구현 완료, targeted test 명령과 관찰 결과 확인으로 구체화했다.
 - **2026-09-07 — current ADR: [safe proportional development gates](./0001-safe-proportional-development-gates.md)** — ADR 구현을 사용자 흐름·논리 기능·bounded context별 Implementation Hiking으로 진행하고, 각 수직 Hill에서 컨텍스트, 핵심 설계·계약, 필요한 계층의 구현과 targeted test 결과를 확인한 뒤 다음 Hill로 이동하도록 변경했다.

@@ -15,8 +15,10 @@ opening failures; a chat summary alone does not replace the default report.
 ## Orient the reader, then give the result
 
 Use the common opening: a localized "Background and goals" heading and short paragraph below the title
-explaining why this review was requested and what the user wants to learn or
-decide. Follow it immediately with visibly separate findings and required actions, before
+connecting the problem that prompted the review to the judgment the reader
+should be able to make from its evidence. A task recap alone does not explain
+the review's intended use; apply the opening checks in `editorial-review.md`.
+Follow it immediately with visibly separate findings and required actions, before
 extended background or evidence. State what was reviewed and any limitation
 that changes how the result should be read. A clean
 review reports no actionable findings within the checked scope, not universal

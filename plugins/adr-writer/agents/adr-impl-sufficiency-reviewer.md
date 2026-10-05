@@ -124,6 +124,16 @@ that result.
 
 ### 3. Review dimensions
 
+For acceptance and improvement evidence, apply
+`${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md`. Review initial acceptance
+and improvement claims separately. Prefer meaningful tension candidates when
+reviewing a primary metric, but do not create a must-fix solely because none
+exists. Monitoring-only absence or deterioration is not automatically a failure;
+a proven violation of a confirmed required condition still is. Check comparable
+populations, exclusions and original evidence, including relevant shortcuts that
+raise scores while defeating the intent. Do not accept a weaker evaluator or a
+removed difficult case as product improvement.
+
 Record what each dimension surfaces using the category tags in section 4. D1 and D2 are the lenses that fill the section-2.5 ledger.
 
 **D1. Business requirements met — are the gray-zone decisions actually implemented in code? (core)**

@@ -21,8 +21,12 @@ to open the HTML once in the default browser and return its absolute path.
 ## Document fields
 
 - `title`, `language` (`en` or `ko`), `background`, and `summary`.
-  Newly authored reports put the confirmed request context in `background`
-  (one to four paragraphs) and the answer, implication, and material limitations
+  Newly authored reports put the confirmed problem and intended reading outcome
+  in `background` (one to four paragraphs): why this document is useful and what
+  the reader should be able to distinguish, decide, explain or do with it.
+  A request recap or product aspiration alone is insufficient; apply the
+  [opening meaning checks](editorial-review.md#make-the-reports-intended-use-concrete).
+  Put the answer, implication, and material limitations
   in `summary` (one to four paragraphs). The renderer gives only `background`
   the localized "Background and goals" heading, then presents the answer in a
   separate area before navigation. An optional `summaryTitle` supplies an
@@ -133,7 +137,7 @@ questions before rendering.
   "title": "Repeated requests keep one payment result",
   "language": "en",
   "background": [
-    "The user requested a review of completed-payment retries to determine whether retrying with the same key could create a second charge. This report checks that behavior and identifies any verification still needed before relying on the retry guarantee."
+    "A repeated payment request may have a recorded completion or an unknown provider outcome. This review helps the developer distinguish which retry behavior the evidence supports and which recovery path still needs verification before relying on the no-duplicate-charge guarantee."
   ],
   "summary": [
     "Payment retries must not create a second charge. The completed-payment retry check passed: the same key returned the recorded result. Provider timeout recovery still needs verification, so this result does not establish safety for every retry path."
