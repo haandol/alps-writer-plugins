@@ -14,7 +14,7 @@ export const drilldownCases = [
     semanticObligations: [
       {
         id: "orientation",
-        text: "The opening distinguishes the operator's goal from the answer: B protects completed retries while unknown provider outcomes still require reconciliation. That limitation is visible without reading the detailed branch. No unsupported measurements are added.",
+        text: "The opening connects avoiding duplicate charges to the reader's concrete use of this comparison: deciding which retry outcomes can reuse completion and which require more evidence. A task recap or broad reliability goal alone is insufficient. The answer explains that B protects completed retries while unknown provider outcomes still require reconciliation; that limitation is visible without reading the detailed branch. No unsupported measurements are added.",
       },
       {
         id: "relationship",
@@ -36,7 +36,7 @@ Reconciliation means asking the provider for the original payment outcome before
     semanticObligations: [
       {
         id: "opening",
-        text: "The opening identifies the goal of understanding duplicate charging, states that a lost response followed by a fresh-charge retry caused the duplicate, and distinguishes the proposed correction from verified recovery.",
+        text: "The opening makes the intended reading outcome concrete: the junior developer can distinguish a caller timeout from a failed charge and locate the retry decision that caused the duplicate. The answer states that a lost response followed by a fresh-charge retry caused the duplicate, and distinguishes the proposed correction from verified recovery. It does not merely announce an incident review or promise improved reliability.",
       },
       {
         id: "causality",
@@ -45,6 +45,30 @@ Reconciliation means asking the provider for the original payment outcome before
       {
         id: "progression",
         text: "The hierarchy lets the reader move from outcome to mechanism and supporting sequence without jumping directly from a conclusion to uninterpreted logs. Any diagram preserves the supplied participants and order. It does not impose comparison-only sections or invent executed fixes, guarantees or metrics.",
+      },
+    ],
+  },
+  {
+    id: "report-drilldown-opening-purpose",
+    title: "Opening distinguishes a task recap from a concrete reading outcome",
+    source: retryFacts,
+    task: `Review only these two report openings for the supplied retry comparison. Explain whether each conveys why the document is useful and what the junior developer should be able to do with it. Use the same supplied facts for both. Do not rewrite either opening, use tools or write files. The user excludes quizzes.
+Opening A:
+The user requested a comparison of retry designs to avoid duplicate charges. This report reviews the options and aims to improve payment reliability.
+Opening B:
+A client can retry when the original payment has a recorded completion or when its outcome is still unknown. This comparison helps the developer decide what evidence is needed before acting on each kind of retry, so the design does not create a second charge.`,
+    semanticObligations: [
+      {
+        id: "request-versus-use",
+        text: "The review identifies that A supplies the task and product goal but leaves the reader's concrete judgment unspecified. B names the recorded-versus-unknown cases and the evidence decision the comparison should support. It explains that distinction rather than treating the presence of a purpose word or an action verb as sufficient.",
+      },
+      {
+        id: "grounded-promise",
+        text: "The review checks the openings against the supplied cases and treats B's reader outcome as an intended use, not measured learning or proven reliability. It does not invent an incident, deployment, approval need or reader deficit, and does not require a particular heading or the literal phrase after reading.",
+      },
+      {
+        id: "review-scope",
+        text: "The response explains the gap and reader impact without rewriting either opening, adding quizzes, creating files or implying that a good opening alone establishes the quality of the rest of the report.",
       },
     ],
   },

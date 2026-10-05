@@ -111,6 +111,16 @@ implementation readiness.
 8. The approval digest includes the applicable confirmed intent, scope, mandatory information,
    values and rules, expected result, and unresolved questions. Never save a requirement,
    exclusion, or Demo result absent from the digest. Show the full pending content when requested.
+   When defining these results, read `${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md`
+   and keep its application at Lite resolution. Section 1.2 may connect known impact
+   signals to useful product-wide tension candidates; no metric interview is required.
+   Section 2.2 explains how to recognize each experience's intended result and may
+   propose improvement signals and meaningful tension metrics in the existing text.
+   Section 4.1 demonstrates initial pass/fail outcomes and relevant counterexamples.
+   Tension metrics are encouraged, never required per experience or as a completion
+   gate. Distinguish monitoring from confirmed required conditions; preserve existing
+   safety and permission rules. Do not add sections, mandatory metric columns, sample
+   design, evaluator implementation or an optimization-readiness claim.
 9. Do not add architecture questions or content beyond the required product-level `C4Context`.
    Never add `C4Container`, technology stacks, interfaces, storage, deployment, libraries, code
    structure, NFR wizards, Feature IDs, implementation plans, or ADR handoff steps to Lite.

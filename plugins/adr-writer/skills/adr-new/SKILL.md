@@ -32,6 +32,10 @@ Before eliciting or drafting, read
 `${CLAUDE_PLUGIN_ROOT}/references/reader-first-writing.md` completely. Apply it
 to the ADR body and the Decision Digest without weakening any contract.
 
+For acceptance and improvement criteria, apply
+`${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md`: propose useful optional
+tension signals and preserve monitoring versus required meaning.
+
 Before interpreting delegated choices, read
 `${CLAUDE_PLUGIN_ROOT}/references/requirement-delegation.md` completely.
 

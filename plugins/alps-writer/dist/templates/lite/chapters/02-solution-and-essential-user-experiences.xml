@@ -29,7 +29,9 @@ Rel(worker, practiceService, "Practices a selected work conversation with")
   <subsection id="2.2" title="Essential User Experiences">
     <description>
 - Propose every user experience the first PoC must not omit.
-- Give each essential experience a distinct name, user-observable result, and contribution to the Desired Business Impact.
+- Give each essential experience a distinct name, user-observable result, and contribution to the Desired Business Impact. Explain how to recognize a result that meets that intent, rather than merely the presence of output.
+- When improvement is relevant, propose a useful signal and actively consider a tension metric that exposes harm from over-optimizing it. Keep these in the experience text, without mandatory metric columns or one metric per experience. If no meaningful metric fits, omit it or use an observable counterexample; do not block completion.
+- Distinguish optional monitoring signals from confirmed required conditions. A higher primary score cannot offset a required product, safety or permission violation. Do not invent thresholds or require a sample-size or evaluator-design exercise.
 - Make that contribution useful for judgment: show whose problem and outcome the experience serves, retaining supplied priorities and scope so later details do not pursue a different purpose. Do not invent policy, exclusions, or a separate intent field.
 - Do not require a starting condition, user-action sequence, screen flow, or demo procedure; Section 4 owns those execution choices.
 - Preserve confirmed values, permissions, limits, and failure guarantees when they affect whether an experience is complete.
@@ -42,7 +44,9 @@ Rel(worker, practiceService, "Practices a selected work conversation with")
 |---------------------------|------------------------|------------------------------|
 | Topic-specific practice begins | An AI instructor presents an opening question for the selected work situation | The learner can rehearse the conversation that currently causes difficulty |
 | The conversation adapts to the learner | After an English answer, a relevant English response and next question are visible | The learner can continue realistic practice instead of memorizing a fixed script |
-| The learner controls the session | The learner can end the conversation and see that the practice is complete | The practice fits the learner's limited preparation time |
+| The learner controls the session | Choosing to end stops the conversation; a completion message followed by more questions does not satisfy this result | The practice fits the learner's limited preparation time |
+
+If practice completion is later optimized, consider completion rate alongside off-topic or repetitive questions as monitoring signals. No numeric target is set by this example. The learner's confirmed ability to end the session remains required regardless of those signals.
     </example>
   </subsection>
 </section>

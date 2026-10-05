@@ -211,10 +211,20 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 The two plugins are split so adr-writer never references ALPS. The only coupling is one-way: alps-writer's `/feature-to-adr` transfers each implementable Feature's complete contract into one or several ADRs and delegates each new decision owner to adr-writer's `/adr-new`. Normal implementation then reads only ADRs; explicit PRD re-import remains an alps-writer-side semantic comparison.
 
 Shared authoring guidance is owned by `plugins/adr-writer/references/`:
-`requirement-delegation.md`, `comprehension-load.md`, and `feature-boundaries.md` are copied into
+`requirement-delegation.md`, `comprehension-load.md`, `feature-boundaries.md`, and
+`outcome-evaluation.md` are copied into
 alps-writer's own `references/` by `scripts/sync-authoring-guidance.mjs`.
 Both packages use plugin-local references rather than assuming sibling install
 directories. Build synchronizes them; `authoring-guidance:check` rejects drift.
+
+Acceptance evaluates the intended outcome before implementation; improvement
+signals remain distinct. Propose meaningful tension metrics that expose harm from
+over-optimizing a primary metric, without a mandatory count or a blocker when
+none is suitable. Distinguish monitoring signals from confirmed required
+conditions; only the latter are gates, and primary gains never cancel their
+violations. Full uses existing Acceptance Criteria. Lite uses impact signals in
+1.2, experience outcomes and optional improvement signals in 2.2, and initial
+pass/fail observations in 4.1, preserving its four Sections and approval units.
 
 ADR folders are organized along two axes — a DDD **bounded context** (top-level folder / first key segment) containing one or more **features** (vertical slices, the second segment). A single-feature context stays flat (`auth/`, workshop `f1/`), so existing flat repos need no migration. The ADR index lives in `docs/adr/.mapping.json` itself (path/status/summary per ADR), and admitted work reads it on demand; the README keeps no separate ADR list. The mapping carries an optional advisory `subdomainType` (core/supporting/generic) per context and stores no PRD reference. Context discovery is the default for product and ADR authoring. Inspect repository organization separately from execution/deployment shape, then group by business language and rule ownership, not service or technical-layer folders. Preserve confirmed grouping; propose grounded candidates when absent and confirm only material ambiguity. `/feature-to-adr` preserves that meaning in plugin-local guidance, while adr-writer stays independent of the PRD. Category keys remain at most two segments; a valid single-feature context can stay flat. Code refactoring or moving existing ADRs requires its own authorized scope.
 

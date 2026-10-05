@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the alps-authoring/lit
 Each ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-10-05 — 경험 평가와 선택적 tension 신호
+
+- **Current ADR**: [lite-alps-authoring-profile](./0001-lite-alps-authoring-profile.md)
+- **Change type**: requirement rule change
+- **What**: 네 Section을 유지하며 비즈니스 성과 신호, 경험별 판단 기준과 데모 관찰에 선택적 tension metric을 연결한다. 관찰용 신호와 필수로 확정한 수용 조건을 구분한다.
+- **Why**: 초기 PoC의 작성 부담을 늘리지 않으면서 점수만 높이는 개선이 원래 사용자 목적을 훼손하지 않게 하기 위해서다.
+
 ## 2026-09-28 — 경험별 데모 수용 조건을 사전에 제시
 
 - **Current ADR**: [lite-alps-authoring-profile](./0001-lite-alps-authoring-profile.md)

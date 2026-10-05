@@ -140,6 +140,7 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     "report-drilldown-comparison",
     "report-drilldown-distinguishes-shallow",
     "report-drilldown-incident",
+    "report-drilldown-opening-purpose",
     "report-preserves-evaluation-evidence",
     "report-rejects-unsupported-success",
     "report-scope-ambiguous",

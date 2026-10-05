@@ -118,21 +118,24 @@ Values the result must honor:
     </subsection>
     <subsection id="7.x.6" title="Acceptance Criteria">
       <description>
-- Define the conditions that must be met for this feature to be considered complete.
-- Use clear, testable statements.
-- Check whether the intended user outcome is achieved, including relevant purpose-defeating results; a visible feature or a passing existing test alone may not establish that outcome. Keep product rules exact and execution details below this level.
+- Connect the intended user outcome and every mandatory constraint to clear initial pass/fail criteria, representative situations, and the evidence needed (test, quality eval, or demo). Include relevant failures and counterexamples; visible output alone may not establish the outcome.
+- When ongoing improvement is in scope, distinguish its signals from initial acceptance within this subsection. For a primary metric, actively consider and propose meaningful tension metrics: results that protect the same user purpose but may worsen when the primary metric is over-optimized.
+- Tension metrics are encouraged, not mandatory. Do not require one per Feature, invent thresholds, or block writing, approval, saving, implementation or improvement because none is suitable. A relevant observable failure or counterexample can be more useful than a forced number.
+- Distinguish monitoring signals from required acceptance/adoption conditions. Only confirmed required conditions are gates; their failures cannot be offset by a higher primary score. Define population, aggregation, observation and exclusions as precisely as the decision needs. Do not weaken criteria or remove difficult cases to improve a score.
+- Start from confirmed requirements and supplement evaluation with observed failures. Keep synthetic or AI-labeled cases distinct from real traces and human-confirmed judgments. Preserve product rules here; evaluator code, datasets and run results belong below this level.
 - Restate every value from 7.x.3 ("Values the result must honor") as a checkable criterion, so the same number appears in both places and a reviewer can verify it.
 - End with one **Demo checkpoint** sentence that states this Feature's role in the Section 3 end-to-end demo and the observable completion result.
 - Do not repeat preconditions, user actions, or failure scenarios already recorded in User Flow, Edge Cases, and Error Handling.
       </description>
       <example>
-- [ ] User can enter email and password in the sign-up form
-- [ ] Form validates email format before submission
-- [ ] Password must be at least 10 characters
-- [ ] A 5th consecutive failed sign-in locks the account for 30 minutes
-- [ ] Successful sign-up redirects user to main screen
-- [ ] Duplicate email shows appropriate error message
-- [ ] All error states display user-friendly messages
+**Initial acceptance — deterministic tests and the account-creation demo:**
+- [ ] A new user can submit valid credentials and reaches the main screen authenticated.
+- [ ] Password must be at least 10 characters; a shorter password or invalid email is rejected with a clear validation message.
+- [ ] A 5th consecutive failed sign-in locks the account for 30 minutes.
+- [ ] An already registered email is rejected and its existing account remains unchanged.
+- [ ] Other error states display actionable messages, including a retry option for network timeout.
+
+**Improvement signals, when signup optimization is in scope:** compare completed signups among eligible attempts; consider erroneous rejections of valid attempts as a monitoring tension metric. Keep the population and observation period comparable. This optional signal introduces no pass threshold; the required validation and lockout rules above remain binding.
 - **Demo checkpoint:** This Feature completes the account-creation step in the Section 3 journey; completion is visible when the new user reaches the main screen as an authenticated user.
       </example>
     </subsection>

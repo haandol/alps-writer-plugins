@@ -28,18 +28,52 @@ implementations are not a reason to ask for approval. If intent is unclear only
 on a material choice, identify that gap and the smallest needed decision; do
 not label every unspecified detail a missing requirement.
 
-Open with the localized "Background and goals" heading and short request context
-below the title, then immediately state the answer and material limitation.
-Check that subsequent headings fit this report rather than fill a universal
-outline, while retaining mandatory content. Check that the opening explains why the report
-exists and what the user wants to understand, decide, or achieve, not merely
-which operation was requested. Retain only supplied background; an absent motive
-is not permission to invent one. Use the existing domain hierarchy to connect
-purpose, behavior, and evidence. Review meaning: could a
-reader use this intent to distinguish a plausible but purpose-defeating choice,
-and do the reported acceptance checks actually cover the intended outcome?
-Preserve unverified limits and do not mistake expected benefits for measured
-results.
+Use the existing domain hierarchy to connect purpose, behavior, and evidence.
+Review meaning: could a reader use this intent to distinguish a plausible but
+purpose-defeating choice, and do the reported acceptance checks actually cover
+the intended outcome? Preserve unverified limits and do not mistake expected
+benefits for measured results.
+
+### Make the report's intended use concrete
+
+Under the localized "Background and goals" heading, connect the problem that
+prompted the report to the result expected from reading it. A product goal
+explains the value to protect; the report's purpose explains how this document
+helps the reader protect it. For example, preventing duplicate charges is a
+product goal; being able to distinguish a retry supported by a recorded result
+from one needing more evidence is a useful reading outcome.
+
+Check the opening against the supplied context:
+
+- What concrete uncertainty, risk, choice or task makes the report useful?
+- What should the reader be able to distinguish, decide, explain or do with the
+  information? Name the relevant cases, conditions or next action; "understand
+  the system" or "make a better decision" alone leaves that use unspecified.
+- Does the body supply the explanation or evidence needed for that result?
+  If it cannot, narrow the promise and expose the limitation beside the answer.
+
+In a hypothetical request to compare payment retries and avoid duplicate charges,
+these openings serve different purposes:
+
+> Shallow: "The user requested a comparison of retry designs. This report
+> reviews the options to improve payment reliability."
+
+> Concrete: "A client may retry when the original payment's outcome is already
+> recorded or still unknown. This comparison helps the developer decide which
+> evidence permits a retry and when the provider's outcome must be checked,
+> so the retry design does not create a second charge."
+
+The first restates the task and product aspiration. The second identifies the
+cases the reader needs to distinguish and the decision that distinction supports.
+This is a meaning check, not a required sentence pattern: an explanation may aim
+to let the reader trace a cause or apply a rule without asking for any action.
+Do not append "after reading this report" to every opening, require a new
+approval, or invent a business goal when the user supplied only a learning task.
+
+Keep the opening brief, then immediately present the answer and material
+limitations in their own display area. Expected reader understanding is an aim,
+not a measured learning result. Review the opening and body together; a clear
+purpose statement cannot compensate for missing evidence or explanations.
 
 ### Check continuity at each reading depth
 
@@ -47,7 +81,7 @@ Source verification and reader comprehension are separate. A fact in the
 conversation may be true but still missing from the report the reader receives.
 
 - Read the title and opening alone: can a reader distinguish this task from
-  concurrent work, identify why it was requested and the intended outcome, then
+  concurrent work, identify the problem and what reading should enable, then
   find the answer, its significance, and any condition that changes the conclusion?
   Then scan headings and each domain's first paragraph: can the reader choose
   where to inspect the explanation or evidence without reconstructing the

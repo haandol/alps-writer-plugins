@@ -87,15 +87,17 @@ the early answer, domain hierarchy, native schema, and exact evidence.
   format, and the evidence available. Follow the user's current preferences.
 - Directly below the title, show the standalone heading "Background and goals",
   localized in the report's language (see `references/report-document.md`).
-  Start with a short paragraph explaining why this report is being written
-  and what the user wants to understand, decide, or achieve. Name the requested task and
-  its subject, and include the supplied trigger, relevant context, and intended
-  outcome. Include scope, comparison targets, or priorities when they distinguish
-  this task from concurrent work. Use only conversation or source-supported
-  context; do not invent motives or fill absent background with generic prose.
-  A reader reopening the report should recognize the task and its purpose
-  without returning to the conversation. Merely repeating "review X" is not
-  enough when the reason and goal are known.
+  Explain the concrete problem or unresolved question that makes the report
+  useful, then what the reader should be able to distinguish, decide, explain,
+  or do after reading it. Separate the product's desired outcome from the
+  report's contribution to the reader: "improve reliability" alone does not
+  explain which failure or choice this document will help them understand.
+  Ground both in the supplied task, trigger, scope and priorities; do not invent
+  motives, reader deficits or promised results. A task recap such as "the user
+  requested a review of X" is insufficient when the reason and intended use are
+  known. Keep this brief and natural, without fixed sentence stems or new fields.
+  Use the opening examples and meaning checks in
+  [editorial review](references/editorial-review.md#make-the-reports-intended-use-concrete).
 - Follow that paragraph immediately with the answer, its material implication,
   any conclusion-changing limitation, and the required next action in a distinct
   display area. An answer heading is optional and follows the report's subject.

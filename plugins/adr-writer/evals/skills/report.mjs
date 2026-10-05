@@ -14,6 +14,7 @@ const prose = (text) => String(text ?? "").replace(/\r?\n/g, " ");
 
 // Presentation-only hierarchy. It does not change prompts, expectations, or scores.
 const groups = [
+  ["제품 계약", "수용과 개선", ["alps-evaluates-outcomes-"]],
   ["제품 계약", "Full ALPS", "계약과 승인", ["alps-approval-", "alps-batch-", "alps-reference-"]],
   ["제품 계약", "Full ALPS", "기능 구성", ["alps-groups-", "alps-high-"]],
   ["제품 계약", "Lite ALPS", "문제 정의", ["lite-alps-asks-", "lite-alps-follows-"]],
@@ -52,7 +53,11 @@ const groups = [
   ["결정 관리", "동기화와 통합", "세션 분류", ["hook-"]],
   ["구현 보장", "의존성과 계획", "선행 상태와 계획", ["impl-blocks-", "impl-plans-"]],
   ["구현 보장", "의존성과 계획", "의도와 기본값 판단", ["impl-resolves-", "impl-uses-intent-"]],
-  ["구현 보장", "완료와 검증", ["impl-completes-", "impl-requires-"]],
+  [
+    "구현 보장",
+    "완료와 검증",
+    ["impl-completes-", "impl-requires-", "impl-distinguishes-monitoring-"],
+  ],
   ["구현 보장", "규모와 전달", ["impl-high-", "impl-offers-"]],
   ["구현 보장", "실행 수단", ["refactor-", "bedrock-"]],
   [
