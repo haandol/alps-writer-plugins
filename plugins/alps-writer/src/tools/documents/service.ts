@@ -15,6 +15,7 @@ import {
 } from "../../profiles.js";
 import { attribute, decodeXml, escapeXmlAttribute, escapeXmlText } from "../../xml.js";
 import { TemplateRegistry } from "../templates/registry.js";
+import { featureCoverage } from "./feature-coverage.js";
 import {
   buildGlossary,
   glossaryKey,
@@ -75,11 +76,7 @@ function liteProductContextDiagramError(content: string): string | null {
   return null;
 }
 
-type LoadedDocument =
-  | { content: string; profile: DocumentProfile }
-  | {
-      error: string;
-    };
+type LoadedDocument = { content: string; profile: DocumentProfile };
 
 export class DocumentService {
   private workingDoc: string | null = null;
@@ -96,6 +93,13 @@ export class DocumentService {
       alps: alpsTemplates,
       lite: liteTemplates,
     };
+  }
+
+  /** Bind one tool operation to its explicit document, sharing only immutable templates. */
+  forDocument(docPath: string): DocumentService {
+    const scoped = new DocumentService(this.templates.alps, this.templates.lite);
+    scoped.loadDocument(docPath);
+    return scoped;
   }
 
   private attribute(attributes: string, name: string): string | null {
@@ -368,23 +372,25 @@ export class DocumentService {
 
   private readWorkingDocument(): LoadedDocument {
     if (!this.workingDoc) {
-      return {
-        error:
-          "No document loaded. Call init_alps_document(), init_lite_alps_document(), or load_alps_document() first.",
-      };
+      throw new Error(
+        "No document loaded. Call init_alps_document(), init_lite_alps_document(), or load_alps_document() first.",
+      );
     }
 
     let content: string;
     try {
       content = fs.readFileSync(this.workingDoc, "utf-8");
     } catch (error) {
-      return { error: `Unable to read ${this.workingDoc}: ${(error as Error).message}` };
+      throw new Error(`Unable to read ${this.workingDoc}: ${(error as Error).message}`, {
+        cause: error,
+      });
     }
 
     const inspection = this.inspectDocument(content);
-    return "error" in inspection
-      ? { error: `Invalid ALPS document at ${this.workingDoc}: ${inspection.error}` }
-      : { content, profile: inspection.profile };
+    if ("error" in inspection) {
+      throw new Error(`Invalid ALPS document at ${this.workingDoc}: ${inspection.error}`);
+    }
+    return { content, profile: inspection.profile };
   }
 
   private writeAtomic(filepath: string, content: string): void {
@@ -440,9 +446,11 @@ export class DocumentService {
     if (!path.extname(filepath)) filepath += profile.filenameSuffix;
 
     const pathError = this.pathError(filepath, profile);
-    if (pathError) return pathError;
+    if (pathError) throw new Error(pathError);
     if (fs.existsSync(filepath)) {
-      return `Document already exists at ${filepath}. Use load_alps_document() to resume.`;
+      throw new Error(
+        `Document already exists at ${filepath}. Use load_alps_document() to resume.`,
+      );
     }
 
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
@@ -453,7 +461,10 @@ export class DocumentService {
       });
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "EEXIST") {
-        return `Document already exists at ${filepath}. Use load_alps_document() to resume.`;
+        throw new Error(
+          `Document already exists at ${filepath}. Use load_alps_document() to resume.`,
+          { cause: error },
+        );
       }
       throw error;
     }
@@ -471,15 +482,15 @@ export class DocumentService {
       ? `1. Call ${profile.sectionGuideTool}(N) before working on any section
 2. Follow the guide: ask only for missing user-owned or protected context, but propose Sections 2 and 4 before asking the user to design them
 3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
-4. Get explicit "yes" confirmation before calling save_alps_section()`
+4. Get explicit "yes" confirmation before calling save_alps_section(doc_path)`
       : `1. Call ${profile.sectionGuideTool}(N) before working on any section
 2. Reuse supplied context. Ask 1-2 focused questions at a time only for missing information. DO NOT auto-generate content that invents missing product decisions
 3. Wait when a question needs an answer; otherwise present the section's approval digest
-4. Get explicit "yes" confirmation before calling save_alps_section()`;
+4. Get explicit "yes" confirmation before calling save_alps_section(doc_path)`;
 
     return `⚠️ CONVERSATION MODE REQUIRED:
 ${steps}
-Read read_alps_glossary() when terminology is needed. Require the user's meaning for undefined jargon or acronyms before finalizing dependent content; reuse supplied definitions. Save confirmed definitions with save_alps_glossary_entry() under the current section approval. The optional appendix stays after the numbered sections and is absent when unnecessary.
+Read read_alps_glossary(doc_path) when terminology is needed. Require the user's meaning for undefined jargon or acronyms before finalizing dependent content; reuse supplied definitions. Save confirmed definitions with save_alps_glossary_entry(doc_path) under the current section approval. The optional appendix stays after the numbered sections and is absent when unnecessary.
 NEVER save generated content without user approval.`;
   }
 
@@ -491,21 +502,24 @@ NEVER save generated content without user approval.`;
     this.workingDoc = null;
     const filepath = this.expandPath(docPath);
     if (!filepath.toLowerCase().endsWith(ALPS_PROFILE.filenameSuffix)) {
-      return `Invalid document path: ${filepath}. ALPS documents must use the .alps.xml extension.`;
+      throw new Error(
+        `Invalid document path: ${filepath}. ALPS documents must use the .alps.xml extension.`,
+      );
     }
-    if (!fs.existsSync(filepath)) return `Document not found at ${filepath}`;
+    if (!fs.existsSync(filepath)) throw new Error(`Document not found at ${filepath}`);
 
     let content: string;
     try {
       content = fs.readFileSync(filepath, "utf-8");
     } catch (error) {
-      return `Unable to read ${filepath}: ${(error as Error).message}`;
+      throw new Error(`Unable to read ${filepath}: ${(error as Error).message}`, { cause: error });
     }
 
     const inspection = this.inspectDocument(content);
-    if ("error" in inspection) return `Invalid ALPS document at ${filepath}: ${inspection.error}`;
+    if ("error" in inspection)
+      throw new Error(`Invalid ALPS document at ${filepath}: ${inspection.error}`);
     const pathError = this.pathError(filepath, inspection.profile);
-    if (pathError) return pathError;
+    if (pathError) throw new Error(pathError);
 
     this.workingDoc = filepath;
     return `${this.getStatus()}
@@ -517,33 +531,36 @@ ${this.resumeGuidance(inspection.profile)}`;
   /** Save one approved subsection without dropping definitions collected elsewhere in the document. */
   saveSection(section: number, subsectionId: string, title: string, content: string): string {
     const document = this.readWorkingDocument();
-    if ("error" in document) return document.error;
 
     const { profile } = document;
     if (!(section in profile.sectionTitles)) {
-      return `Invalid section number: ${section}. Must be ${sectionRange(profile)} for ${profile.label}.`;
+      throw new Error(
+        `Invalid section number: ${section}. Must be ${sectionRange(profile)} for ${profile.label}.`,
+      );
     }
 
     const subsection = this.templates[profile.id].validateSubsection(section, subsectionId, title);
-    if (!subsection.ok) return `Invalid subsection: ${subsection.message}`;
+    if (!subsection.ok) throw new Error(`Invalid subsection: ${subsection.message}`);
     if (profile.id === "alps" && subsection.fullId === "4.1") {
       const diagramError = architectureDiagramError(content);
-      if (diagramError) return `Invalid subsection content: ${diagramError}`;
+      if (diagramError) throw new Error(`Invalid subsection content: ${diagramError}`);
     }
     if (profile.id === "lite" && subsection.fullId === "2.1") {
       const diagramError = liteProductContextDiagramError(content);
-      if (diagramError) return `Invalid subsection content: ${diagramError}`;
+      if (diagramError) throw new Error(`Invalid subsection content: ${diagramError}`);
     }
 
     const projectName = this.extractProjectName(document.content);
     const sections = this.parseSections(document.content);
     if (isLiteProfile(profile) && section === profile.dynamicSection?.section) {
       const featureError = this.liteFeatureError(profile, sections, subsectionId, title);
-      if (featureError) return `Invalid subsection: ${featureError}`;
+      if (featureError) throw new Error(`Invalid subsection: ${featureError}`);
     }
     const sectionContent = sections.get(section) || "";
     if (this.hasUnparsedContent(sectionContent)) {
-      return `Cannot safely update Section ${section}: it contains unrecognized content. Export or migrate it before saving a subsection.`;
+      throw new Error(
+        `Cannot safely update Section ${section}: it contains unrecognized content. Export or migrate it before saving a subsection.`,
+      );
     }
 
     const existing = this.parseSubsections(sectionContent, section);
@@ -566,10 +583,10 @@ ${this.resumeGuidance(inspection.profile)}`;
    */
   saveGlossaryEntry(term: string, definition: string): string {
     const document = this.readWorkingDocument();
-    if ("error" in document) return document.error;
     term = term.trim();
     definition = definition.trim();
-    if (!term || !definition) return "Glossary term and definition must both be non-empty.";
+    if (!term || !definition)
+      throw new Error("Glossary term and definition must both be non-empty.");
 
     const entries = parseGlossary(document.content);
     const existing = entries.find((entry) => glossaryKey(entry.term) === glossaryKey(term));
@@ -591,7 +608,6 @@ ${this.resumeGuidance(inspection.profile)}`;
   /** Return definitions for reuse without creating an appendix or changing completion state. */
   readGlossary(): string {
     const document = this.readWorkingDocument();
-    if ("error" in document) return document.error;
     const entries = parseGlossary(document.content);
     return entries.length
       ? glossaryMarkdown(entries)
@@ -600,8 +616,8 @@ ${this.resumeGuidance(inspection.profile)}`;
 
   readSection(section: number, subsectionId?: string): string {
     const document = this.readWorkingDocument();
-    if ("error" in document) return document.error;
-    if (!(section in document.profile.sectionTitles)) return `Section ${section} not found.`;
+    if (!(section in document.profile.sectionTitles))
+      throw new Error(`Section ${section} not found.`);
 
     const sections = this.parseSections(document.content);
     const content = sections.get(section) || "";
@@ -609,7 +625,7 @@ ${this.resumeGuidance(inspection.profile)}`;
       const subId = `${section}.${subsectionId}`;
       const subsection = this.parseSubsections(content, section).get(subId);
       if (subsection) return `### ${subId}. ${subsection.title}\n\n${subsection.content}`;
-      return `Subsection ${subId} not found.`;
+      throw new Error(`Subsection ${subId} not found.`);
     }
 
     const display = this.sectionIsUnwritten(content, section)
@@ -625,7 +641,6 @@ ${this.resumeGuidance(inspection.profile)}`;
    */
   getStatus(): string {
     const document = this.readWorkingDocument();
-    if ("error" in document) return document.error;
 
     const { content: docContent, profile } = document;
     const projectName = this.extractProjectName(docContent);
@@ -647,11 +662,16 @@ ${this.resumeGuidance(inspection.profile)}`;
           ? "⬜ Optional — not written"
           : "⬜ Not started";
       } else if (section === profile.dynamicSection?.section) {
-        const expectedItems = this.countFeatureIds(sections, profile);
-        if (expectedItems > 0 && subsections.size >= expectedItems) {
-          status = `✅ Written (${subsections.size}/${expectedItems} features)`;
-        } else if (expectedItems > 0) {
-          status = `🟡 In progress (${subsections.size}/${expectedItems} features)`;
+        const source =
+          this.parseSubsections(
+            sections.get(profile.dynamicSection.sourceSection) || "",
+            profile.dynamicSection.sourceSection,
+          ).get(profile.dynamicSection.sourceSubsectionId)?.content ?? "";
+        const coverage = featureCoverage(source, subsections);
+        if (coverage.expected > 0 && coverage.missing.length === 0) {
+          status = `✅ Written (${coverage.written}/${coverage.expected} features)`;
+        } else if (coverage.expected > 0) {
+          status = `🟡 In progress (${coverage.written}/${coverage.expected} features) — missing: ${coverage.missing.join(", ")}`;
         } else {
           status = `🟡 In progress (${subsections.size} dynamic feature${subsections.size === 1 ? "" : "s"} saved)`;
         }
@@ -674,18 +694,6 @@ ${this.resumeGuidance(inspection.profile)}`;
     const glossary = parseGlossary(docContent);
     if (glossary.length > 0) lines.push(`Appendix (Glossary): ${glossary.length} defined terms`);
     return lines.join("\n");
-  }
-
-  private countFeatureIds(sections: Map<number, string>, profile: DocumentProfile): number {
-    const dynamic = profile.dynamicSection;
-    if (!dynamic) return 0;
-    const source = this.parseSubsections(
-      sections.get(dynamic.sourceSection) || "",
-      dynamic.sourceSection,
-    ).get(dynamic.sourceSubsectionId);
-    if (!source) return 0;
-    const ids = source.content.match(/\bF(?:\d+|(?:-[A-Z0-9]+)+)\b/gi) ?? [];
-    return new Set(ids.map((id) => id.toUpperCase())).size;
   }
 
   private contentToMarkdown(content: string, section: number): string {
@@ -713,7 +721,6 @@ ${this.resumeGuidance(inspection.profile)}`;
   /** Export numbered content followed by the glossary only when actual definitions exist. */
   exportMarkdown(outputPath?: string): string {
     const document = this.readWorkingDocument();
-    if ("error" in document) return document.error;
 
     const { content: docContent, profile } = document;
     const projectName = this.extractProjectName(docContent);

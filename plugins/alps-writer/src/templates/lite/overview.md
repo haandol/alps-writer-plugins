@@ -1,5 +1,9 @@
 # Lite ALPS Template
 
+Every document-specific tool requires `doc_path`, using the document path returned
+by init/load. Include it on reads, saves, glossary operations, status and export;
+there is no active-document fallback.
+
 Lite ALPS is a four-section product document for a minimum PoC. It uses the same conversational
 authoring flow as Full ALPS while omitting implementation-preparation Sections.
 
@@ -19,7 +23,7 @@ authoring flow as Full ALPS while omitting implementation-preparation Sections.
 - Section 3 reviews Sections 1 and 2 when the user has explicit exclusions.
 - Section 4 reviews Sections 1 and 2, plus Section 3 when it was written.
 
-Call the referenced `read_alps_section(N)` tools before working on a dependent Section. If a
+Call the referenced `read_alps_section(doc_path, N)` tools before working on a dependent Section. If a
 required prerequisite is incomplete, complete it first.
 
 ## Conversation Guide
@@ -33,9 +37,9 @@ definition; otherwise ask at first use and wait before finalizing dependent
 content. This clarification also applies in proposal-led Sections 2 and 4.
 An acronym's expanded name alone may not explain its product meaning.
 
-Read `read_alps_glossary()` when needed. Include new or changed definitions in the
+Read `read_alps_glossary(doc_path)` when needed. Include new or changed definitions in the
 current Section's approval digest and save them with
-`save_alps_glossary_entry(term, definition)` after that approval. Resolve conflicting
+`save_alps_glossary_entry(doc_path, term, definition)` after that approval. Resolve conflicting
 meanings with the user before updating affected content. Never invent a confirmed
 definition or add a separate approval, upfront interview, or final writing stage.
 

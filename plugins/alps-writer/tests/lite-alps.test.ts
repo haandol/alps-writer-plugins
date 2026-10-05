@@ -159,8 +159,8 @@ test("Lite Solution Strategy requires exactly one Context and rejects lower C4 l
   const service = new DocumentService();
   service.initDocument("context", target, "lite");
 
-  assert.match(
-    service.saveSection(2, "1", "Solution Strategy", "Text only"),
+  assert.throws(
+    () => service.saveSection(2, "1", "Solution Strategy", "Text only"),
     /requires exactly one Mermaid C4Context diagram/,
   );
 
@@ -170,8 +170,8 @@ test("Lite Solution Strategy requires exactly one Context and rejects lower C4 l
 C4Context
 System(other, "Other System")
 \`\`\``;
-  assert.match(
-    service.saveSection(2, "1", "Solution Strategy", duplicate),
+  assert.throws(
+    () => service.saveSection(2, "1", "Solution Strategy", duplicate),
     /requires exactly one Mermaid C4Context diagram/,
   );
 
@@ -181,8 +181,8 @@ System(other, "Other System")
 C4Container
 Container(app, "Application")
 \`\`\``;
-  assert.match(
-    service.saveSection(2, "1", "Solution Strategy", containerAdded),
+  assert.throws(
+    () => service.saveSection(2, "1", "Solution Strategy", containerAdded),
     /allows only Mermaid C4Context diagrams; found C4Container/,
   );
 
@@ -212,9 +212,9 @@ test("Lite documents initialize, validate, resume, and export independently from
     /Saved 1\.1/,
   );
   const beforeInvalid = fs.readFileSync(liteTarget, "utf8");
-  assert.match(service.saveSection(5, "1", "Anything", "x"), /Must be 1-4 for Lite ALPS/);
-  assert.match(
-    service.saveSection(1, "1", "Product Name", "wrong current title"),
+  assert.throws(() => service.saveSection(5, "1", "Anything", "x"), /Must be 1-4 for Lite ALPS/);
+  assert.throws(
+    () => service.saveSection(1, "1", "Product Name", "wrong current title"),
     /must be "Target User and Core Problem"/,
   );
   assert.equal(fs.readFileSync(liteTarget, "utf8"), beforeInvalid);
@@ -263,12 +263,12 @@ test("former Lite formats are rejected without modifying the original document",
   fs.writeFileSync(formerCurrentPath, formerCurrent);
 
   const service = new DocumentService();
-  assert.match(service.loadDocument(formerFourPath), /Section 1 title must be "Overview"/);
+  assert.throws(() => service.loadDocument(formerFourPath), /Section 1 title must be "Overview"/);
   assert.equal(fs.readFileSync(formerFourPath, "utf8"), formerFour);
-  assert.match(service.loadDocument(formerEightPath), /must contain Sections 1-4/);
+  assert.throws(() => service.loadDocument(formerEightPath), /must contain Sections 1-4/);
   assert.equal(fs.readFileSync(formerEightPath, "utf8"), formerEight);
-  assert.match(
-    service.loadDocument(formerCurrentPath),
+  assert.throws(
+    () => service.loadDocument(formerCurrentPath),
     /Section 2 title must be "Solution and Essential User Experiences"/,
   );
   assert.equal(fs.readFileSync(formerCurrentPath, "utf8"), formerCurrent);
@@ -346,9 +346,9 @@ test("Lite load rejects invalid fixed subsection schemas without modifying the o
     fs.writeFileSync(target, testCase.content);
 
     const service = new DocumentService();
-    assert.match(service.loadDocument(target), testCase.error);
+    assert.throws(() => service.loadDocument(target), testCase.error);
     assert.equal(fs.readFileSync(target, "utf8"), testCase.content);
-    assert.match(service.getStatus(), /No document loaded/);
+    assert.throws(() => service.getStatus(), /No document loaded/);
   }
 });
 
@@ -361,12 +361,15 @@ test("profile mismatches preserve the original document", () => {
   const wrongOrderPath = path.join(dir, "wrong-order.lite.alps.xml");
   const service = new DocumentService();
 
-  assert.match(
-    service.initDocument("lite", wrongLitePath, "lite"),
+  assert.throws(
+    () => service.initDocument("lite", wrongLitePath, "lite"),
     /must use the \.lite\.alps\.xml extension/,
   );
   assert.equal(fs.existsSync(wrongLitePath), false);
-  assert.match(service.initDocument("full", wrongFullPath), /must use the \.alps\.xml extension/);
+  assert.throws(
+    () => service.initDocument("full", wrongFullPath),
+    /must use the \.alps\.xml extension/,
+  );
   assert.equal(fs.existsSync(wrongFullPath), false);
 
   fs.writeFileSync(
@@ -374,7 +377,7 @@ test("profile mismatches preserve the original document", () => {
     '<alps-document project="mismatch" profile="lite"><section id="1" title="Overview"><!-- Not started --></section></alps-document>',
   );
   const wrongShape = fs.readFileSync(wrongShapePath, "utf8");
-  assert.match(service.loadDocument(wrongShapePath), /must contain Sections 1-4/);
+  assert.throws(() => service.loadDocument(wrongShapePath), /must contain Sections 1-4/);
   assert.equal(fs.readFileSync(wrongShapePath, "utf8"), wrongShape);
 
   assert.match(service.initDocument("lite", wrongTitlePath, "lite"), /Created Lite ALPS/);
@@ -382,7 +385,7 @@ test("profile mismatches preserve the original document", () => {
     .readFileSync(wrongTitlePath, "utf8")
     .replace('title="Overview"', 'title="Product Overview"');
   fs.writeFileSync(wrongTitlePath, wrongTitle);
-  assert.match(service.loadDocument(wrongTitlePath), /Section 1 title must be "Overview"/);
+  assert.throws(() => service.loadDocument(wrongTitlePath), /Section 1 title must be "Overview"/);
   assert.equal(fs.readFileSync(wrongTitlePath, "utf8"), wrongTitle);
 
   assert.match(service.initDocument("lite", wrongOrderPath, "lite"), /Created Lite ALPS/);
@@ -390,7 +393,7 @@ test("profile mismatches preserve the original document", () => {
     .readFileSync(wrongOrderPath, "utf8")
     .replace('<section id="2"', '<section id="1"');
   fs.writeFileSync(wrongOrderPath, wrongOrder);
-  assert.match(service.loadDocument(wrongOrderPath), /must contain Sections 1-4/);
+  assert.throws(() => service.loadDocument(wrongOrderPath), /must contain Sections 1-4/);
   assert.equal(fs.readFileSync(wrongOrderPath, "utf8"), wrongOrder);
 });
 

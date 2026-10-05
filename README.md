@@ -481,3 +481,18 @@ existing local checks remain independent gates. This includes report-writing
 and report-review probes for numerical accuracy and unsupported claims.
 `pnpm eval:report <run-directory>` rebuilds a saved report without rerunning models.
 See [evaluation commands and interpretation](plugins/adr-writer/evals/skills/README.md).
+
+### Document tool targets
+
+All document-specific ALPS MCP tools require `doc_path`: subsection reads and
+saves, glossary reads and saves, document status, and Markdown export. Use the
+source path returned by initialization or loading. An earlier call never supplies
+a default target; a missing or invalid path returns an error without changing
+another document. Existing callers must add this input. Template and guide tools
+remain independent of a document.
+
+For example, `save_alps_section` takes `doc_path`, `section`, `subsection_id`,
+`title`, and `content`. `export_alps_markdown` takes the source `doc_path` and an
+optional destination `output_path`. Validation failures return `isError: true`.
+Full ALPS completion matches required feature identities to nonempty specifications;
+unrelated features cannot replace missing ones.

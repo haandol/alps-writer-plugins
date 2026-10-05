@@ -6,6 +6,10 @@ disable-model-invocation: true
 
 # alps-init
 
+Every document-specific call requires `doc_path`: use the document path returned by
+init/load for reads, saves, glossary operations, status and export. Pass it even
+after loading; no other call selects a default document.
+
 Before classifying features, read
 `${CLAUDE_PLUGIN_ROOT}/references/feature-boundaries.md`: inspect existing project
 topology, then use bounded contexts and vertical user stories by default.
@@ -22,8 +26,8 @@ within the existing approval boundary; do not invent policy or extra non-goals.
 When jargon, an uncommon term/acronym, or an expression that cannot be written out
 plainly appears, apply the overview's optional glossary rules throughout authoring.
 Require the user's meaning at first use when it is not already supplied; do not
-finalize dependent content while it is unclear. Read `read_alps_glossary()` as needed
-and save confirmed definitions with `save_alps_glossary_entry()` under the current
+finalize dependent content while it is unclear. Read `read_alps_glossary(doc_path)` as needed
+and save confirmed definitions with `save_alps_glossary_entry(doc_path)` under the current
 section approval. The appendix is last and exists only when needed. Do not add a
 glossary interview, separate approval, or extra domain-classification exercise.
 Check missing definitions before completion; keep all nine numbered sections.
@@ -48,7 +52,7 @@ Check missing definitions before completion; keep all nine numbered sections.
    - After loading an existing document, call `mcp__alps-writer__get_alps_document_status`, summarize the completed sections once, and resume at the first section in that order that is not `✅ Written`.
    - Do not reopen or re-confirm a completed unchanged section unless the user requests a full review or an edited prerequisite requires that section to be revisited.
 6. From the selected starting point:
-   - Read `get_alps_section_guide(N)` and `get_alps_section(N)`. Reuse supplied context; ask one focused question or at most two closely related questions only when required information is missing. Then show a concise plain-text approval digest, confirm, and call `save_alps_section(N, ...)` once per approved `X.n` subsection before advancing.
+   - Read `get_alps_section_guide(N)` and `get_alps_section(N)`. Reuse supplied context; ask one focused question or at most two closely related questions only when required information is missing. Then show a concise plain-text approval digest, confirm, and call `save_alps_section(doc_path, N, ...)` once per approved `X.n` subsection before advancing.
    - In batch mode, repeat the guide/read step for every included section before drafting, present the sections as separate approval units, and save them separately after approval.
    - Never skip an incomplete section at your own discretion. Even one that looks trivial must be seen and approved by the user before moving on.
    - The digest must remain readable as raw text. Label the approval unit, then show only its purpose/user value, scope and non-goals, mandatory requirements, contract-bearing values and rules with their basis, success or demo outcome, and unresolved questions. End with clear approve, revise, and defer choices.

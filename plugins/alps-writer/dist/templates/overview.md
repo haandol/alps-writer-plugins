@@ -1,5 +1,9 @@
 # ALPS (PRD) Template
 
+Every document-specific tool requires `doc_path`, using the document path returned
+by init/load. Include it on reads, saves, glossary operations, status and export;
+there is no active-document fallback.
+
 This document provides a comprehensive framework to capture and validate all essential information required for developing an MVP.
 
 Examples illustrate supplied inputs for a fictional product; they are not defaults
@@ -38,7 +42,7 @@ Some sections depend on other sections. Before working on a section with referen
 </reference-map>
 
 <mandatory-actions>
-1. Call `read_alps_section(N)` for each referenced section
+1. Call `read_alps_section(doc_path, N)` for each referenced section
 2. Summarize key points from referenced sections before asking questions
 3. If referenced sections are incomplete, warn user and suggest completing them first
 </mandatory-actions>
@@ -57,9 +61,9 @@ supplied by the user; otherwise ask at first use and wait before finalizing cont
 that depends on it. Expanding an acronym is insufficient when its product meaning
 remains ambiguous. Never substitute an inferred definition for the user's meaning.
 
-Use `read_alps_glossary()` to reuse existing definitions. Include new or changed
+Use `read_alps_glossary(doc_path)` to reuse existing definitions. Include new or changed
 definitions in the current section's approval digest, then call
-`save_alps_glossary_entry(term, definition)` for each confirmed entry. Do not add a
+`save_alps_glossary_entry(doc_path, term, definition)` for each confirmed entry. Do not add a
 separate approval, initial terminology interview, or final glossary-writing stage.
 If a definition conflicts with an existing meaning, resolve it with the user before
 updating the definition and affected content.
@@ -97,7 +101,7 @@ For EVERY section:
 3. Reuse supplied context and ask 1 (max 2) focused questions only for information still missing
 4. Integrate answers iteratively
 5. When complete, present a concise plain-text approval digest and ask for confirmation
-6. Call `save_alps_section(section, subsection_id, title, content)` — one call per X.n subsection — only AFTER explicit "yes". `subsection_id` and `title` MUST match the `<subsection id="N.x" title="...">` in that section's XML template.
+6. Call `save_alps_section(doc_path, section, subsection_id, title, content)` — one call per X.n subsection — only AFTER explicit "yes". `subsection_id` and `title` MUST match the `<subsection id="N.x" title="...">` in that section's XML template.
 7. Move to the next section only after confirmation. Follow the recommended authoring order above — author Section 6 (Requirements) before Section 5 (Design).
 
 <section-level-checkpoint>
@@ -165,7 +169,7 @@ When user provides PDF, ALPS (PRD), or any reference:
 - For Section 7, ALWAYS review Sections 3 and 6 first and include one Demo outcome under every Feature's Evaluation Rubric; do not add a duplicate demo subsection
 - For Section 7, ALWAYS use first-reader-friendly language and recommend an optional Mermaid diagram when it materially clarifies a multi-participant or multi-layer flow; prefer `sequenceDiagram` for data flow and never treat the diagram as a completion requirement
 - When information is missing, ask 1-2 questions at a time (1 for complex topics); do not re-ask information already provided
-- When saving, ALWAYS call `save_alps_section(section, subsection_id, title, content)` with all four arguments; `subsection_id` and `title` must match the section's XML template
+- When saving, ALWAYS call `save_alps_section(doc_path, section, subsection_id, title, content)` with all five arguments; `subsection_id` and `title` must match the section's XML template
 - Author Section 6 (Requirements) before Section 5 (Design) — see the recommended authoring order
 - In Section 4.1, ALWAYS include both Mermaid `C4Context` and `C4Container` diagrams. These are the only C4 levels allowed; never generate Component, Dynamic, Deployment, or Code-level C4 diagrams.
 - In Section 4.2, record only Architecture Constraints that regenerated implementations must preserve. Never persist a replaceable technology inventory.

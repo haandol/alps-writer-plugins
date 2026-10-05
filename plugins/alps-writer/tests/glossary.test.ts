@@ -106,12 +106,12 @@ test("blank term updates and reads without a selected document never write", (t)
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const target = path.join(dir, "test.alps.xml");
   const service = new DocumentService();
-  assert.match(service.readGlossary(), /No document loaded/);
-  assert.match(service.saveGlossaryEntry("PO", "meaning"), /No document loaded/);
+  assert.throws(() => service.readGlossary(), /No document loaded/);
+  assert.throws(() => service.saveGlossaryEntry("PO", "meaning"), /No document loaded/);
   service.initDocument("Terms", target);
   const before = fs.readFileSync(target, "utf8");
-  assert.match(service.saveGlossaryEntry(" ", "meaning"), /non-empty/);
-  assert.match(service.saveGlossaryEntry("PO", "\n"), /non-empty/);
+  assert.throws(() => service.saveGlossaryEntry(" ", "meaning"), /non-empty/);
+  assert.throws(() => service.saveGlossaryEntry("PO", "\n"), /non-empty/);
   assert.equal(fs.readFileSync(target, "utf8"), before);
 });
 
@@ -153,8 +153,8 @@ test("malformed, duplicate or misplaced glossary data is rejected without data l
   for (const glossary of invalid) {
     const broken = base.replace("</alps-document>", glossary + "</alps-document>");
     fs.writeFileSync(target, broken);
-    assert.match(service.loadDocument(target), /Invalid ALPS document/, glossary);
-    assert.match(service.saveGlossaryEntry("safe", "meaning"), /No document loaded/);
+    assert.throws(() => service.loadDocument(target), /Invalid ALPS document/, glossary);
+    assert.throws(() => service.saveGlossaryEntry("safe", "meaning"), /No document loaded/);
     assert.equal(fs.readFileSync(target, "utf8"), broken);
   }
 });
