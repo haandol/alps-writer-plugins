@@ -538,7 +538,7 @@ For the PR reviewer or the author before merge.
 - [ ] **No back-references from code** — the code this ADR governs (comments, constants, imports) carries no ADR ID or path. If the code exists, check via adr-reviewer R17 or `/adr-sync` step 5(a) grep; for a new `Proposed` with no code yet, `/adr-sync` checks after implementation
 - [ ] **No forbidden items** (code snippets, tuning values, call graphs, field-type tables, env var names, pseudocode, full JSON, migration commands) — requirement values and business limits are _not_ forbidden items
 - [ ] **Decision Drivers** are discriminating facts or constraints; 3-5 is a default, not a quota. All currently applicable drivers and the current adoption rationale remain understandable from the body without reading `decision-log.md`
-- [ ] **At least two alternatives**, each with pros and cons weighed against the Decision Drivers (no strawmen)
+- [ ] **Realistic alternatives**, with pros and cons weighed against the Decision Drivers. One credible rejected alternative is sufficient; if no other valid path exists, explain the policy, regulation, or external boundary that constrains the choice. Never invent alternatives to meet a count
 - [ ] **A grounded Mermaid diagram** is not missing where a flow, state, boundary, or alternative relationship is clearer visually, and no diagram copies a code call graph or invents a relationship
 - [ ] **If a DB key pattern changed**, `docs/tables/{name}.md` (or the equivalent) exists with bidirectional links
 - [ ] **No PRD back-references** — no ALPS path, section number, or feature ID in the body (Purpose and Related included)

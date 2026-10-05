@@ -41,7 +41,7 @@ Check missing definitions before completion; keep all nine numbered sections.
 3. Call `mcp__alps-writer__get_alps_overview` to fetch the authoring guide for all nine sections.
 4. Select the confirmation mode:
    - **Atomic is the default**: discuss, present, confirm, and save one section at a time.
-   - **Batch is opt-in**: use it only when the user explicitly requests batch authoring or has supplied a complete structured source that covers several sections. State the proposed batch scope once and get approval before drafting it.
+   - **Batch is opt-in**: use it only when the user explicitly requests batch authoring or has supplied a complete structured source that covers several sections. When the request and supplied context establish the batch scope, state it once as a progress update and begin drafting without reconfirming that scope. Ask only when the scope is unclear or would expand beyond the user's request.
    - In batch mode, keep every section or Feature as a separately labeled draft and save each one with its own `save_alps_section` call only after the user approves the batch. The user may approve, reject, or revise individual items.
 5. Use the dependency-respecting authoring order **1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9**.
    - For a new document, start at Section 1.
