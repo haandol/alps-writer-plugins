@@ -100,6 +100,12 @@ ADR Writer includes `$report-writer` in Codex and `/report-writer` in Claude Cod
 
 By default, the skill verifies the report, opens it once in the default browser, and returns its path. Review reports and evidence stay in separate, Git-excluded `.adr-review/` directories. Reports include self-check questions unless omitted at your request or because there is no substantive concept to check. The ordinary main-session completion response never prints Q1 or starts grading.
 
+The default page uses an article-style reading column with responsive spacing and
+wider figures and code evidence. Code reviews can show selected diffs through
+bundled diff2html, with line numbers and change highlighting. Key evidence marked
+for printing stays included, and long code lines wrap on paper. Reports work
+offline without downloading fonts, stylesheets or a diff library.
+
 To install only the report skill, without plugin hooks or review workflows:
 
 ```bash

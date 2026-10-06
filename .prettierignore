@@ -7,3 +7,7 @@ pnpm-lock.yaml
 .DS_Store
 /.adr-review/
 /.playwright-cli/
+
+# Preserve upstream bundles and license text byte-for-byte.
+/shared/report-writer/scripts/vendor/
+/plugins/adr-writer/skills/report-writer/scripts/vendor/

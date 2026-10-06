@@ -3,6 +3,7 @@ import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseMermaid, renderMermaid } from "./mermaid.mjs";
+import { parseCodeDiff, renderCodeDiff, diffCss } from "./code-diff.mjs";
 import {
   validateQuestions,
   renderQuestion,
@@ -10,6 +11,8 @@ import {
   quizCss,
   quizScript,
 } from "./comprehension.mjs";
+
+const reportCss = readFileSync(new URL("./report.css", import.meta.url), "utf8");
 
 const esc = (value) =>
   String(value ?? "").replace(
@@ -135,7 +138,10 @@ export function validateReport(doc) {
           evidenceIds.add(item.id);
           sourceUrl(item.source);
           if (item.source.startsWith("#")) fragments.push(item.source.slice(1));
-          keys(item, ["id", "label", "source", "excerpt", "expanded"], item.id);
+          keys(item, ["id", "label", "source", "excerpt", "expanded", "kind"], item.id);
+          if (item.kind !== undefined && !["excerpt", "diff"].includes(item.kind))
+            throw new Error(`${item.id}: evidence kind must be excerpt or diff`);
+          if (item.kind === "diff") parseCodeDiff(item.excerpt);
           if (item.expanded !== undefined && typeof item.expanded !== "boolean")
             throw new Error(`${item.id}: expanded must be boolean`);
           if (item.excerpt !== undefined && typeof item.excerpt !== "string")
@@ -250,6 +256,21 @@ export function renderHtml(doc) {
     ui = labels[doc.language],
     quizUi = quizLabels[doc.language],
     questions = doc.comprehensionCheck?.questions ?? [];
+  function evidenceGroup(items, nodeId) {
+    if (!items?.length) return "";
+    const evidence = items
+      .map((item, index) => {
+        const content =
+          item.kind === "diff"
+            ? `<div class="code-diff" tabindex="0" role="region" aria-label="${esc(item.label)}">${renderCodeDiff(item.excerpt, `${nodeId}-diff-${index}`)}</div>`
+            : item.excerpt !== undefined
+              ? `<pre><code>${esc(item.excerpt)}</code></pre>`
+              : "";
+        return `<details class="evidence"${item.expanded ? ' open data-print-expanded="true"' : ""}><summary>${esc(item.label)}</summary><p><a href="${esc(sourceUrl(item.source))}">${esc(item.source)}</a></p>${content}</details>`;
+      })
+      .join("");
+    return `<details class="evidence-group"${items.some((item) => item.expanded) ? ' open data-print-expanded="true"' : ""}><summary>${esc(ui.evidence)} · ${items.length}</summary>${evidence}</details>`;
+  }
   /** Keep each question after its explanation and before that domain's source evidence. */
   function nodes(items, depth = 0) {
     return items
@@ -268,17 +289,21 @@ ${
         .join("")}</div>`
     : ""
 }
-${node.evidence?.length ? `<details class="evidence-group"${node.evidence.some((e) => e.expanded) ? ' open data-print-expanded="true"' : ""}><summary>${esc(ui.evidence)} · ${node.evidence.length}</summary>${node.evidence.map((e) => `<details class="evidence"${e.expanded ? ' open data-print-expanded="true"' : ""}><summary>${esc(e.label)}</summary><p><a href="${esc(sourceUrl(e.source))}">${esc(e.source)}</a></p>${e.excerpt !== undefined ? `<pre><code>${esc(e.excerpt)}</code></pre>` : ""}</details>`).join("")}</details>` : ""}
+${evidenceGroup(node.evidence, node.id)}
 </${tag}>`;
       })
       .join("");
   }
   return `<!doctype html><html lang="${doc.language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="report-writer-policy" content="domain-hierarchy-v1"><link rel="icon" href="data:,"><title>${esc(doc.title)}</title><style>
-*{box-sizing:border-box}body{margin:0;background:#fff;color:#19384c;font:16px/1.85 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}main{max-width:1140px;margin:auto;padding:28px 28px 60px}header{border-bottom:2px solid #69899e;padding-bottom:22px}h1{font-size:32px;line-height:1.45;word-break:keep-all}h2{font-size:24px;line-height:1.55;word-break:keep-all}p{max-inline-size:48rem;margin:1em 0;word-break:keep-all;overflow-wrap:break-word}summary{cursor:pointer;color:#265987;word-break:keep-all;overflow-wrap:anywhere}a{color:#265987;overflow-wrap:anywhere}.scope,.review{font-size:13px;color:#5b7285}.report-node{margin-top:24px;padding-top:18px;border-top:1px solid #d6e1e9}.report-children>.report-node{border:1px solid #d6e1e9;border-radius:7px;padding:13px 17px;margin-top:14px}.report-children>.report-node>summary{font-size:18px;font-weight:600}.evidence{border-left:3px solid #bdd0dd;padding:8px 14px;margin:12px 0}.evidence-group{margin-top:18px}nav{display:flex;flex-wrap:wrap;gap:18px;margin:22px 0}.draft{padding:15px;background:#fff2d8}.diagram{margin:20px 0}.diagram__viewport{overflow:auto}.diagram svg{display:block;color:#355b70}.diagram svg text{font:14px sans-serif;fill:#19384c}.diagram-node rect,.diagram-node path,.sequence__participant rect{fill:#f3f7fa;stroke:#69899e}.diagram-boundary rect,.sequence__frame{fill:none;stroke:#98afbe}.sequence__note rect{fill:#fff7dd;stroke:#baa566}.sequence__lifeline{stroke:#a7bac6;stroke-dasharray:5 5}.diagram-source{margin-top:12px}pre{max-height:620px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#173145;color:#eff6fb;padding:17px;border-radius:7px;font:12px/1.8 ui-monospace,monospace}footer{margin-top:28px;border-top:1px solid #d6e1e9;padding-top:16px}@media(max-width:700px){main{padding:17px}h1{font-size:26px}.report-children>.report-node{padding:12px}.diagram svg{min-width:600px}}@media print{main{padding:0}.diagram__viewport{overflow:visible}.diagram svg{width:100%!important;min-width:0;max-width:100%!important}.diagram-source{display:none}pre{max-height:none}h2,summary{break-after:avoid}}
-.diagram-scroll{display:none}@media(max-width:700px){.diagram-scroll{display:block;font-size:13px;color:#5b7285}}@media print{.diagram-scroll{display:none}.evidence{break-inside:avoid}}
-${quizCss}
-.branch-preview{display:block;font-size:15px;font-weight:400;line-height:1.65;color:#425e70;margin-top:5px;max-inline-size:48rem}.report-answer{margin:24px 0}.evidence-group{padding:12px 0;border-top:1px solid #d6e1e9}
-@media print{@page{margin:16mm}.evidence-group:not([open]),.evidence:not([open]){display:none}body{color:#111;font-size:11pt;line-height:1.65}main{max-width:none}nav,.revisit-explanation{display:none}.report-children>.report-node{padding:12px 0 0;border:0;border-top:1px solid #ccc;border-radius:0}.report-node,.evidence{break-inside:auto}h1,h2,h3,summary{break-after:avoid-page}p{orphans:3;widows:3}.diagram{break-inside:avoid-page;break-after:avoid-page}.diagram__viewport{overflow:visible}pre{max-height:none;overflow:visible;background:#fff;color:#111;border:1px solid #ccc}summary{cursor:default;list-style:none}summary::marker{content:""}summary::-webkit-details-marker{display:none}}
+${questions.length ? quizCss : ""}
+${
+  doc.sections.some(function hasDiff(node) {
+    return node.evidence?.some((item) => item.kind === "diff") || node.children?.some(hasDiff);
+  })
+    ? diffCss
+    : ""
+}
+${reportCss}
 </style></head><body><main><header><h1>${esc(doc.title)}</h1>${doc.background ? `<section class="report-background"><h2>${ui.backgroundGoals}</h2>${paragraphs(doc.background)}</section>` : ""}</header>
 <section class="report-answer">${doc.summaryTitle ? `<h2>${esc(doc.summaryTitle)}</h2>` : ""}${paragraphs(doc.summary)}${doc.review.status === "draft" ? `<p class="draft">${ui.draft}</p>` : ""}</section>
 <nav aria-label="Domains">${doc.sections.map((n) => `<a href="#${esc(n.id)}">${esc(n.title)}</a>`).join("")}</nav>
@@ -363,7 +388,7 @@ export function renderMarkdown(doc) {
       for (const evidence of node.evidence ?? []) {
         lines.push(`[${md(evidence.label)}](<${encodeURI(sourceUrl(evidence.source))}>)`, "");
         if (evidence.excerpt !== undefined) {
-          lines.push(...fenced(evidence.excerpt, "text"));
+          lines.push(...fenced(evidence.excerpt, evidence.kind === "diff" ? "diff" : "text"));
         }
       }
     }

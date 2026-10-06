@@ -80,7 +80,7 @@ or hide a material limitation only in the preview. Substantive parents explain
 their children's relationship; structural validity alone cannot verify this,
 and simple source lists need no artificial summary.
 
-An evidence item has `id`, `label`, `source`, optional `excerpt`, and optional
+An evidence item has `id`, `label`, `source`, optional `excerpt`, optional `kind`, and optional
 boolean `expanded`. Evidence defaults to collapsed. Set `expanded: true` when the
 reader needs that item to understand the result, limitation, or next action, or
 explicitly requests it open. Its enclosing group also opens, while sibling items
@@ -94,6 +94,35 @@ required evidence identifiers; do not invent sources.
 Sources appear in an evidence group after the owning explanation and its quiz.
 There is no source-count quota; preserve every required source and group by the
 claim it supports rather than inventing explanation nodes to fit a count.
+
+## Code diffs
+
+Evidence `kind` is `excerpt` (the default) or `diff`. With `kind: "diff"`, `excerpt`
+must contain actual unified patch hunks, including file and hunk headers. The
+renderer uses bundled diff2html to produce static HTML with old/new line numbers,
+addition/deletion markers and highlighted changes. No browser JavaScript, CDN or
+package installation is needed to display the diff. Markdown retains the exact
+patch in a `diff` fence. Plain excerpts remain literal text.
+
+```json
+{
+  "id": "retry-diff",
+  "label": "Retry guard · src/retry.ts",
+  "source": "changes.patch",
+  "kind": "diff",
+  "excerpt": "diff --git a/src/retry.ts b/src/retry.ts\n--- a/src/retry.ts\n+++ b/src/retry.ts\n@@ -1 +1 @@\n-if (retry) send();\n+if (retry && !completed) send();\n",
+  "expanded": true
+}
+```
+
+This is a format example, not an observed code change. Obtain the real patch
+from the review's selected comparison, preserve complete selected hunks, and
+explain their baseline, behavior and related verification in the owning node.
+Keep the full patch at `source` when the inline view is selective. For a printable
+review, mark key hunks needed to understand the finding as `expanded: true` so
+they remain included even if the reader folds them before printing. Other source
+material keeps the existing optional-evidence behavior. See
+[code evidence](code-evidence.md) for selection and review boundaries.
 
 ## Diagrams
 

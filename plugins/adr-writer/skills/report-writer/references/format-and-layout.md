@@ -19,6 +19,29 @@ identifiers as reading units. Preserve literal quotes, code, values, and source
 meaning. Review heading, list, table, and figure spacing, including mobile and
 print layouts actually supported by the delivery.
 
+## Default HTML appearance
+
+Use a quiet, article-like page, similar to Medium or Notion: a white background,
+dark neutral text, restrained dividers, and clear heading and paragraph spacing.
+Center a comfortable reading column within a wider fluid page. Figures and tables
+may use the wider area when their content needs it; do not stretch ordinary prose
+across a large monitor or leave it pinned to one side of an otherwise wide page.
+
+Keep the same reading width in nested explanations instead of accumulating card
+borders and horizontal padding. Express hierarchy through headings, spacing, and
+disclosure controls. On small screens, reduce page gutters and heading sizes;
+allow long words and links to wrap. Keep wide diagrams and tables in their own
+keyboard-accessible horizontal scroll regions without hiding or clipping content
+or forcing the whole page to scroll sideways. Do not enlarge a small diagram to
+an arbitrary minimum width. Preserve usable focus indicators and print layout.
+
+The shared renderer embeds `scripts/report.css` into the standalone HTML; no font
+download or external stylesheet is needed. Use that stylesheet as the default
+instead of adding a separate theme when composing a report.
+Code-review diffs use the bundled diff2html view described in
+[code evidence](code-evidence.md), with print styles that preserve line numbers
+and change markers while wrapping long lines across the available page width.
+
 ## Navigation and evidence
 
 Use semantic headings or a tree of domain nodes. Each parent has at most four
