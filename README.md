@@ -98,7 +98,7 @@ Removing the plugins leaves PRDs, ADRs, code, and tests readable on their own. H
 
 ADR Writer includes `$report-writer` in Codex and `/report-writer` in Claude Code. It creates standalone HTML for explicit report requests or explanations that need structured detail. Short answers stay in chat; when a report's usefulness is unclear, it asks once. Your format and delivery preferences take precedence.
 
-By default, the skill verifies the report, opens it once in the default browser, and returns its path. Review reports and evidence stay in separate, Git-excluded `.adr-review/` directories. Reports include self-check questions unless omitted at your request or because there is no substantive concept to check. The ordinary main-session completion response never prints Q1 or starts grading.
+By default, the skill reviews the content and checks the generated file, opens it once in the default browser, and returns its path. Browser interaction and actual print checks run when requested; unperformed checks are reported. Review reports and evidence stay in separate, Git-excluded `.adr-review/` directories. Self-check questions are strongly recommended when useful, but optional unless you request them. The ordinary main-session completion response never prints Q1 or starts grading.
 
 The default page uses an article-style reading column with responsive spacing and
 wider figures and code evidence. Code reviews can show selected diffs through

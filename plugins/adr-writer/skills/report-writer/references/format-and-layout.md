@@ -44,50 +44,12 @@ and change markers while wrapping long lines across the available page width.
 
 ## Navigation and evidence
 
-Use semantic headings or a tree of domain nodes. Each parent has at most four
-immediate child explanation units. If more are needed, create meaningful
-responsibility groups or depth; never truncate or invent numbered batches.
-
-Keep the overview understandable on its own. Put detailed mechanisms
-and exact sources with their owning domain. In HTML, collapsible details and
-anchors can provide drill-down; in Markdown or text, use nested headings and
-clear references. Do not hide an unstructured report inside one giant detail.
-All explanatory subsections default to expanded at every depth, so the document
-is readable from start to finish without interaction. Detailed evidence and raw
-sources default to collapsed. Keep the facts needed to understand the conclusion,
-limitations, and next action in the body; expand a focused evidence item when
-needed rather than exposing every log or contract excerpt. Complete sources stay
-reachable regardless of their display state.
-Retain optional collapsing for the reader; start collapsed only when explicitly
-requested. Do not collapse successful findings or ordinary detail automatically.
-These controls expose an explanation hierarchy; they do not define its abstraction
-levels. When improving explanatory depth, preserve the existing report design
-unless the user also requests a design change. Use the shared renderer's default
-presentation when no other design is established, without adding a separate theme
-merely to demonstrate drill-down.
-
-Place the standalone, localized "Background and goals" heading directly below
-the title. Keep the report's reason and intended use visible without expanding
-details: the concrete problem and what reading should enable, as described in
-[editorial review](editorial-review.md#make-the-reports-intended-use-concrete).
-Follow it immediately
-with a visually distinct answer and conclusion-changing limitations,
-before navigation, long tables, or audit material. Preserve this reading order
-in HTML, Markdown, text, and print. Use disclosure labels that name the question or
-evidence inside, so readers can choose what to open. Keep material findings and
-required actions visible; expandable evidence must not conceal their existence.
-Choose subsequent headings and organization for the report's subject and reader
-questions; preserve mandatory content without imposing common section names.
-The answer may have an authored heading when useful, but no universal answer
-title is required. For existing inputs with no separate background, preserve
-their text without guessing which sentences are background.
-
-If the reader collapses a branch, it shows its title and what it will
-clarify. Keep substantive parent explanations understandable without opening
-source material. Supporting sources and quizzes occupy their own regions under
-the explanation; count the independent explanation branches toward the
-four-child limit, not each source or question. Keep original sources reachable
-inside the evidence group and retain each source's owning scope.
+Apply [explanation design](explanation-design.md) for the opening, domain
+hierarchy and expanded explanations versus collapsed evidence. Use semantic
+headings, anchors and accessible disclosure controls to express that structure.
+Labels identify what a collapsed branch adds; source groups retain complete
+access without hiding conclusion-changing facts. Preserve an established report
+design when changing its depth; use the shared stylesheet when none exists.
 
 In every format, place a node's child explanations before its comprehension
 questions and detailed source evidence. Label parent support material with its
@@ -146,8 +108,8 @@ Omit navigation controls and optional Mermaid source views from the default
 printout; retain source access in HTML. Follow the existing quiz contract: print
 questions and all four choices, excluding answers, feedback, prior selections,
 and controls. Expanded report sections do not change staged quiz disclosure on
-screen. Inspect the continuous document and the supported print output with the
-permitted tools, and distinguish static checks from actual print verification.
+screen. Apply the verification levels below to the continuous document and print output;
+distinguish static print-style checks from actual print verification.
 
 ## Final delivery
 
@@ -161,14 +123,26 @@ Explicit other-format, chat-only, no-file, no-open or browser requests override
 the default within their scope. Do not add an HTML copy when the user requests
 only another format.
 
-Verify the actual format produced. A Markdown source is not proof that its HTML,
-PDF, or slide export is readable. Inspect wrapping, clipping, broken links,
-orphan headings, page breaks, and diagram consistency where applicable.
+### Verification levels
 
-Use available format tools without changing the user's requested medium or
-introducing unapproved external publication. Keep mandatory review interactions
-and evidence when reorganizing a caller's report. If a format or diagram cannot
-be rendered, state that limitation and retain source; do not claim visual success.
+Default delivery requires semantic review of the latest content and static checks
+of the generated artifact: structure, complete evidence, local links and anchors,
+nonempty output, and applicable layout and interaction code. For included diagrams,
+confirm rendered output is present, retains the source's relationships and labels,
+and does not silently fall back. Use existing renderer tests when relevant; do not
+invent per-report tests or require browser approval solely for delivery.
+
+Browser visual inspection, clicking controls, mobile viewport checks and actual
+print/export inspection run when the user requests those checks. Keep automation
+separate from the user's work. A requested check that cannot run remains unverified;
+complete independent work and report the actual blocker. Explicit PDF or other
+static-export delivery still requires checking that produced artifact with the
+permitted format tools.
+
+State which checks ran and which did not. Static markup, styles or passing helper
+tests do not establish visual or browser-interaction success for this report.
+Unperformed optional browser/print checks do not block ordinary HTML delivery.
+Do not introduce external publication or paid calls to perform them.
 
 After the content and structural checks, confirm that the final HTML exists and
 is nonempty, then open its absolute path once using the operating system's

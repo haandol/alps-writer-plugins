@@ -27,15 +27,9 @@ const esc = (value) =>
       })[c],
   );
 const nonempty = (value) => typeof value === "string" && value.trim().length > 0;
-function strings(values, name, { min = 0, max = 4 } = {}) {
-  if (
-    !Array.isArray(values) ||
-    values.length < min ||
-    values.length > max ||
-    !values.every(nonempty) ||
-    values.flatMap((v) => v.split(/\n\s*\n/).filter((p) => p.trim())).length > max
-  )
-    throw new Error(`${name} requires ${min}..${max} nonempty strings`);
+function strings(values, name, { min = 0 } = {}) {
+  if (!Array.isArray(values) || values.length < min || !values.every(nonempty))
+    throw new Error(`${name} requires at least ${min} nonempty strings`);
 }
 function keys(object, allowed, name) {
   const unknown = Object.keys(object).filter((key) => !allowed.includes(key));

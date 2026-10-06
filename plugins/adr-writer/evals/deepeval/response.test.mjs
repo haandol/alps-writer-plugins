@@ -156,8 +156,11 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     "report-scope-explicit-short-report",
     "report-scope-known-choice",
     "report-scope-local-review",
+    "report-scope-quiz-recommendation",
+    "report-scope-requested-quiz",
     "report-scope-required-artifact",
     "report-scope-simple-definition",
+    "report-scope-static-verification",
   ]);
   const result = await main(
     ["--prepare", "--suite", "classification", "--runs", "1", "--out", temp()],

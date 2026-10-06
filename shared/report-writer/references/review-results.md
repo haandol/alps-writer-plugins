@@ -1,72 +1,35 @@
 # Presenting review results
 
-Apply this guidance after the [delivery decision](../SKILL.md#choose-the-delivery)
-selects a report for code, pull request, ADR, architecture, document or other
-review results. A review request alone does not require a report; short, simple
-findings can be delivered in chat. It governs the explanation, not the inspection method. Read the
-relevant sources through the owning review workflow before presenting findings.
+Use after the [delivery decision](../SKILL.md#choose-the-delivery) selects a
+report. The owning review workflow controls inspection, findings, severity,
+verdict, edit permissions and native artifacts. Read its sources before presenting
+findings; a review-only request does not authorize edits, deployment or publication.
 
-Unless the user specifies another format or delivery constraint, deliver the
-selected report as standalone HTML and open the verified final file once in the
-default browser. Keep a caller's required Markdown/JSON as supporting evidence.
-Follow [final delivery](format-and-layout.md#final-delivery) for overrides and
-opening failures; a chat summary alone does not replace the default report.
+Follow [explanation design](explanation-design.md) for the opening, domain hierarchy
+and diagrams, and [final delivery](format-and-layout.md#final-delivery) for checks
+and delivery. These references own the common presentation rules.
 
-## Orient the reader, then give the result
+## Make the review actionable
 
-Use the common opening: a localized "Background and goals" heading and short paragraph below the title
-connecting the problem that prompted the review to the judgment the reader
-should be able to make from its evidence. A task recap alone does not explain
-the review's intended use; apply the opening checks in `editorial-review.md`.
-Follow it immediately with visibly separate findings and required actions, before
-extended background or evidence. State what was reviewed and any limitation
-that changes how the result should be read. A clean
-review reports no actionable findings within the checked scope, not universal
-correctness. Keep confirmed defects, unresolved questions, and optional
-suggestions distinguishable; do not invent an issue quota or severity.
+Order domains and findings by material impact. For each material finding, state
+its source location, expected rule or behavior, observed mismatch, concrete impact
+and next action. Include a reproduction or test result when available and identify
+its actual scope. Separate confirmed defects, plausible but untested failures,
+unresolved questions and optional suggestions. Preserve native identifiers and
+schemas; never invent an issue quota or soften a verdict to improve prose.
 
-## Keep each finding with its domain
+A clean review means no actionable findings within the checked scope. Name any
+limitation that changes that judgment. When repairs were authorized, explain the
+verified resulting behavior and remaining findings.
 
-Group findings by the affected business responsibility or evidenced domain.
-Order domains and their findings by material impact so grouping does not bury
-an urgent problem. Keep at most four peer explanation units and use meaningful
-subscopes when more are needed. A short review can fit in one domain.
+## Explain the mechanism
 
-For each material finding, identify the source location, the expected rule or
-behavior, the observed mismatch, its concrete impact, and the next action.
-Include a reproduction or test result when available, with its actual scope.
-Distinguish a proven problem from a plausible but untested failure. Preserve
-caller-required finding identifiers, severity, evidence, and output schemas.
+For code reviews, explain the trigger and affected behavior before code locations;
+use [code evidence](code-evidence.md) for actual diffs or excerpts. ADR reviews
+identify the decision, exact contract, rationale or boundary in question. Document
+reviews identify the passage and its effect on the reader.
 
-## Explain the mechanism at the needed depth
-
-For code reviews, connect the trigger and affected behavior before discussing
-functions or lines. For ADR reviews, show which decision, exact requirement,
-rationale, boundary, or cross-document relationship is missing or inconsistent.
-Document reviews identify the passage and its reader impact.
-
-Use a Mermaid sequence diagram for a multi-participant failure or timing path
-when supported by the evidence. Keep a local wording issue or one-step fix in
-plain text. Do not turn a hypothetical failure into an observed event.
-
-For code changes, follow [code evidence](code-evidence.md) to show selected actual
-diffs with their locations, significance and verification. Preserve the caller's
-comparison range and complete source artifacts. Existing-code reviews without a
-change range use excerpts instead of an invented before/after patch.
-
-## Comprehension support
-
-Use [the common comprehension workflow](comprehension.md) to generate the quiz
-from the report's core explanation. Review-specific knowledge such as important
-before/after behavior, failure conditions, contracts, and trade-offs supplies
-the subject matter. Keep the review's native evidence and readiness rules intact;
-the common skill owns question generation and self-check presentation.
-
-## Preserve the review boundary
-
-Writing quality and system severity are separate: editing prose must not erase,
-downgrade, or soften a material finding. A request only to review does not
-authorize edits to the subject, a changed ADR contract, deployment, or publishing.
-If the caller already authorizes repairs, retain that scope and explain the
-verified result. Keep complete source evidence and state which checks actually
-ran. Review the final wording and layout using the shared editorial guidance.
+Diagram multi-participant or timing-dependent paths when the evidence supports
+them; a wording issue or one-step correction can stay in prose. Do not turn a
+hypothetical failure into an observed event. Quiz generation follows the common
+skill's strong recommendation, not an additional review requirement.

@@ -111,7 +111,7 @@ Code evidence는 `diff` 또는 `excerpt` 종류, 파일과 symbol 위치, 실제
 
 각 Hill은 관련 계약 행마다 상태, 구현 내용, 코드 또는 실행 증거와 테스트 결과를 기록한다. 실제 증거 의존성이나 공유 자원 충돌이 없는 Hill은 병렬 또는 배치로 검토할 수 있다. 의존하거나 충돌하는 작업만 필요한 순서를 지키고, 필요성·충분성 관점은 종합 전까지 서로의 결론을 읽지 않는다. 이는 사용자 승인이나 새로운 lifecycle gate가 아니다. Hill 순서, 중간 진행 상태와 Trail map은 Evidence Package를 만들기 위한 폐기 가능한 review artifact이며 ADR, mapping, 코드나 별도 registry에 저장하지 않는다. 전체 verdict는 모든 Hill의 계약 행과 finding을 종합한 뒤 한 번만 결정한다.
 
-두 모드의 기본 결과는 verdict, 구현 이해 설명, ADR contract coverage, findings, tests와 residual risks다. comprehension check는 사용자가 요청하거나 높은 인지부하·넓은 변경 때문에 실제 이해 확인이 필요할 때만 생성한다. 두 모드는 검증된 evidence에서 자체 포함 HTML을 생성하고, 파일이 비어 있지 않음을 확인한 뒤 내용 fingerprint가 포함된 URL로 기본 브라우저에서 열어 이전 보고서가 재사용되지 않게 한다. 로컬 열기 기능이 없거나 실행에 실패하면 검증된 리뷰 자체는 실패시키지 않고 정확한 경로와 실패 이유를 사용자에게 제공한다.
+두 모드의 기본 결과는 verdict, 구현 이해 설명, ADR contract coverage, findings, tests와 residual risks다. comprehension check는 공통 보고서 계약에 따라 생성을 강하게 권고하되 필수는 아니며, 사용자의 명시적 포함·제외 요청과 독자의 이해에 주는 가치를 기준으로 선택한다. 두 모드는 검증된 evidence에서 자체 포함 HTML을 생성하고, 파일이 비어 있지 않음을 확인한 뒤 내용 fingerprint가 포함된 URL로 기본 브라우저에서 열어 이전 보고서가 재사용되지 않게 한다. 로컬 열기 기능이 없거나 실행에 실패하면 검증된 리뷰 자체는 실패시키지 않고 정확한 경로와 실패 이유를 사용자에게 제공한다.
 
 구현 이해 설명은 최종 `implementation-review.md`와 HTML에 포함한다. 별도 `explanation.md`는 넓거나 복잡한 리뷰에서 중립적인 설명 pass가 도움이 될 때만 만드는 임시 입력이며 필수 artifact가 아니다. 생성한 경우에도 필요성·충분성 reviewer에게 전달하지 않고, validator는 경로가 제공된 경우에만 형식과 내용을 검사한다.
 
@@ -276,7 +276,7 @@ flowchart LR
 - 결론은 최종 verdict, 사용자·운영 영향, 다음 행동과 잔여 위험을 하나의 짧은 서술로 정리한다.
 - 구현 순서, 파일 순서와 기술 계층은 Component와 Code 근거를 설명할 때만 사용하고 Hill 경계로 사용하지 않는다.
 - 사람용 prose와 주제별 heading은 명시된 사용자 언어를 우선하고, 없으면 대상 ADR의 주 언어를 사용한다.
-- `Comprehension check`의 생성과 생략 조건은 공통 보고서 계약을 따른다. 구현 리뷰는 핵심 구현 설명을 문제의 근거로 제공하고 코드 판정과 PR 이해 준비도 구분을 유지한다.
+- `Comprehension check`의 생성과 생략 조건은 공통 보고서 계약을 따른다. 생성은 강한 권고이며 퀴즈가 없다는 이유만으로 리뷰를 차단하지 않는다. 구현 리뷰는 핵심 구현 설명을 문제의 근거로 제공하고 코드 판정과 PR 이해 준비도 구분을 유지한다.
 - 퀴즈는 중간 난이도의 4지선다 단일정답형만 사용하고 각 질문은 정확히 네 선택지와 하나의 정답을 가진다.
 - 퀴즈는 변경 전후 동작, 인과관계, ADR 계약, 실패·경계 조건과 중요한 trade-off 중 해당 구현에 중요한 항목을 적용하게 하며 사소한 symbol·줄 번호 암기, 말장난과 함정을 요구하지 않는다.
 - HTML은 이해도 확인 절에 질문과 회상 안내를 기본으로 표시하고, 사용자가 선택지 보기를 명시적으로 요청하기 전에는 네 선택지를 숨긴다.
@@ -392,7 +392,7 @@ flowchart LR
 - 사용자·운영 흐름이 있는 fixture는 그 흐름을 따라 설명하고, 흐름이 없는 국소 변경 fixture는 가장 중요한 동작과 결과부터 설명한다.
 - 기계적인 문장 패턴을 넣은 fixture는 반복 대조문, 장식용 영어 명칭, 강제 번호 구조, filler bridge와 중복 시각 요소를 제거한 결과를 만든다.
 - 사용자 언어가 주어진 fixture는 그 언어로 설명하고, 언어 지시가 없는 fixture는 ADR 본문의 주 언어를 따른다.
-- artifact validator는 comprehension question이 1개 미만이거나 5개를 초과하고, 질문이 정확히 네 선택지와 하나의 정답을 가지지 않거나, 판정 기준·근거가 없거나, 사용자 보고서가 self-check 전에 정답을 노출하면 실패한다.
+- 퀴즈가 포함된 경우 artifact validator는 comprehension question이 1개 미만이거나 5개를 초과하고, 질문이 정확히 네 선택지와 하나의 정답을 가지지 않거나, 판정 기준·근거가 없거나, 사용자 보고서가 self-check 전에 정답을 노출하면 실패한다.
 - comprehension fixture는 질문을 기본으로 표시하되 네 선택지는 숨기고, 선택지 보기 동작 뒤에만 네 선택지를 표시한다.
 - comprehension fixture는 선택지를 고른 뒤 self-check 전에 입력·채점 없는 한 문장 설명 안내를 표시한다.
 - artifact validator는 후속 재점검 대상이 1개 미만이거나 2개를 초과하면 실패하고, 질문이 한 개일 때 그 질문이 대상이 아니어도 실패한다.

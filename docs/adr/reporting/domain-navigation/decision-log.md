@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the reporting/domain-n
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-10-07 — 문단 수 제한 없이 작성하고 퀴즈는 강하게 권고
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 문단 수를 설명 가지 상한과 분리하고, 퀴즈 필수 생성은 강한 권고로 변경한다. 일반 전달은 의미·구조·근거·파일의 정적 확인으로 검증하며, 요청된 브라우저·상호작용·인쇄 검증은 별도로 수행하고 실제 확인 범위를 밝힌다.
+- **Why**: 의미에 따라 나눈 문단이 검증에서 거부되는 문제와 보고서 목적에 무관한 부가 절차를 줄이면서 근거 보존과 읽기 계층을 유지하기 위해서다.
+
 ## 2026-10-06 — 펼친 문서를 기본으로 제공해 인쇄와 배포를 지원
 
 - **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)

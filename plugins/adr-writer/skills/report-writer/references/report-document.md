@@ -22,12 +22,12 @@ to open the HTML once in the default browser and return its absolute path.
 
 - `title`, `language` (`en` or `ko`), `background`, and `summary`.
   Newly authored reports put the confirmed problem and intended reading outcome
-  in `background` (one to four paragraphs): why this document is useful and what
+  in `background` (one or more paragraphs): why this document is useful and what
   the reader should be able to distinguish, decide, explain or do with it.
   A request recap or product aspiration alone is insufficient; apply the
-  [opening meaning checks](editorial-review.md#make-the-reports-intended-use-concrete).
+  [opening meaning checks](editorial-review.md#check-the-openings-intended-use).
   Put the answer, implication, and material limitations
-  in `summary` (one to four paragraphs). The renderer gives only `background`
+  in `summary` (one or more paragraphs). The renderer gives only `background`
   the localized "Background and goals" heading, then presents the answer in a
   separate area before navigation. An optional `summaryTitle` supplies an
   authored answer heading; no default title is imposed. Do not repeat headings
@@ -44,7 +44,8 @@ to open the HTML once in the default browser and return its absolute path.
   `expanded` flag below; printing always includes the explanatory subsections.
   Each parent has at most four child explanation nodes. Supporting evidence
   and quizzes are counted separately, so adding a source or question does not
-  force another explanation level. Paragraph groups have at most four items.
+  force another explanation level. Paragraph groups have no numeric limit; use semantic breaks without
+  inventing child nodes to accommodate paragraphs.
   Authors choose node titles and organization for the subject and reader's
   questions; there is no prescribed set of body section names. Preserve the
   owning workflow's mandatory content without adding empty template sections.
@@ -145,14 +146,15 @@ and raw files remain intact. If its renderer cannot express the new hierarchy,
 use it as an audit source and create the final report through this skill.
 
 Place specialized interactions and source material in the owning domain.
-Generate questions using [comprehension support](comprehension.md). Preserve
+When including questions, use [comprehension support](comprehension.md). Preserve
 an implementation review's native question data and its distinction between
 code verdict and comprehension readiness. Its renderer can use the shared
 quiz controls while retaining the review's evidence schema.
 
 ## Quiz data and output
 
-Add `comprehensionCheck: { "questions": [...] }` to a substantive report. Each
+When including the strongly recommended quiz, add
+`comprehensionCheck: { "questions": [...] }`. Each
 question contains:
 
 - `id`: `Q1` through `Q5` in order; `sectionId`: the existing domain node after
@@ -175,8 +177,8 @@ source evidence. Parent support material in Markdown names its owning scope.
 HTML provides links back to child explanations when a parent has a quiz, and supplies staged
 choice/answer disclosure. Print excludes answers, feedback, controls and
 selection marks. Markdown places the questions and choices first, then a
-clearly separated answer and explanation block. Omit `comprehensionCheck` only
-for the reasons in the common workflow; older inputs without it remain readable.
+clearly separated answer and explanation block. Omit `comprehensionCheck` when no quiz is selected; its absence is valid
+for new reports as well as older inputs, without an omission record.
 No model call occurs in the renderer: the author generates and reviews the
 questions before rendering.
 

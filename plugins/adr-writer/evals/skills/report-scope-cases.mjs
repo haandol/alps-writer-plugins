@@ -60,6 +60,27 @@ export const reportScopeCases = [
     expectation:
       "Preserve the explicitly selected workflow's mandatory HTML package and findings.json despite the short finding. Plan their delivery without changing the review verdict or exact 3-versus-4 retry contract. Do not use the simple-chat rule to discard mandatory artifacts or ask again whether to produce them.",
   },
+  {
+    id: "report-scope-quiz-recommendation",
+    title: "퀴즈 권고를 전달 차단 조건으로 만들지 않음",
+    task: "팀의 재시도 운영 판단용 HTML 보고서는 근거와 한계를 포함해 작성됐고 퀴즈는 아직 없어. 현재 자료는 결제 결과가 확정된 경우와 불명확한 경우의 대응을 충분히 설명해. 추가 퀴즈가 도움이 될지는 네가 판단해서 최종 전달을 마쳐줘.",
+    expectation:
+      "Treat quiz generation as a strong recommendation rather than a prerequisite. Choose inclusion or omission by reader value without seeking approval or requiring an omission record. Preserve evidence and deliver the report; do not say a missing quiz prevents completion, and do not start interactive grading.",
+  },
+  {
+    id: "report-scope-requested-quiz",
+    title: "명시한 퀴즈 요청은 권고라는 이유로 생략하지 않음",
+    task: "완료된 결제 요청은 같은 키로 재시도하면 저장된 결과를 반환하고, 결제 결과가 불명확하면 다시 청구하기 전에 원래 결과를 조회한다는 내용의 짧은 HTML 교육 보고서를 만들어줘. 핵심 내용을 적용하는 중간 난이도 퀴즈 한 문제도 꼭 넣어줘.",
+    expectation:
+      "Plan the explicitly requested one-question quiz with four choices, one correct answer, evidence and staged self-check. Optional default generation does not override an explicit request. Do not start a conversational quiz or claim unperformed verification.",
+  },
+  {
+    id: "report-scope-static-verification",
+    title: "기본 전달과 요청된 브라우저 검증을 구분",
+    task: "로컬 보고서의 의미와 근거를 검토했고, 구조·링크·비어 있지 않은 HTML과 포함된 다이어그램 출력도 확인했어. 기본 브라우저로 열어 최종 전달해줘. 브라우저 자동화나 인쇄 확인은 요청한 적 없어.",
+    expectation:
+      "Finish ordinary delivery with one default-browser open and the path. Distinguish completed semantic/static checks from unperformed visual, interaction and print checks. Do not require an automation session, print preview, or new permission merely to deliver, and do not claim those checks passed.",
+  },
 ].map(({ task, expectation, ...item }) => ({
   ...item,
   name: item.id,
@@ -82,6 +103,7 @@ export const reportScopeCases = [
       skillText("report-writer", {
         references: [
           "skills/report-writer/references/format-and-layout.md",
+          "skills/report-writer/references/comprehension.md",
           "skills/report-writer/references/review-results.md",
         ],
       }),

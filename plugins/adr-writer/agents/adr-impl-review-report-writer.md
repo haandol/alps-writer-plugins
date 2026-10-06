@@ -223,10 +223,11 @@ preserved behavior directly when the change is a refactor.
 - Order sections by reader importance. Execution and dependency order are
   optional.
 - Introduce background just in time.
-- Generate `Comprehension check` through
+- Strongly recommend `Comprehension check` when useful, following
   `${CLAUDE_PLUGIN_ROOT}/skills/report-writer/references/comprehension.md`.
   That shared workflow owns core-content selection, medium difficulty,
-  question limits, omissions, and self-check behavior for every report.
+  question limits, optional generation, and self-check behavior. Honor explicit
+  inclusion or exclusion; otherwise choose by reader value.
   Use before/after behavior, causal paths, contracts, and important boundary
   conditions from the verified explanation as this review's subject matter.
 
@@ -367,6 +368,6 @@ derive the repair guidance from that contract.
 Apply `report-writer` to the final human-facing report after the canonical audit
 inputs are complete. The paper-section source schema remains available for
 validation; use domain-scoped drill-down for delivery instead of copying those
-sections into a flat page. Keep all required evidence, verdicts, comprehension
+sections into a flat page. Keep all required evidence, verdicts, included comprehension
 behavior and decision controls. Do not claim completion from the legacy renderer
 alone; validate hierarchy and inspect the final wrapped lines and diagrams.
