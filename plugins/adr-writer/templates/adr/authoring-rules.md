@@ -546,4 +546,4 @@ For the PR reviewer or the author before merge.
 - [ ] **One ADR = one decision** holds (no split signals)
 - [ ] **`.mapping.json`** has the matching category entry including the new ADR
 
-<!-- adr-writer:rules-version 0.10.2 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.10.3 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
