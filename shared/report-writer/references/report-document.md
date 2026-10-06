@@ -37,8 +37,11 @@ to open the HTML once in the default browser and return its absolute path.
   original audit schema or store approval state.
 - `sections`: one to four domain nodes. Each has `id`, `title`, `domain`, `scope`,
   optional `preview`, optional `paragraphs`, optional `children`, optional `diagram`, and optional
-  `evidence` and `expanded`. Set `expanded: true` for material non-PROVEN
-  evidence or actionable findings that the caller requires visible.
+  `evidence` and `expanded`. Omitting `expanded` defaults to an open subsection;
+  `true` also opens it. Use `false` only for an explicitly requested collapsed
+  screen view, never automatically for successful findings or routine detail.
+  Required visible findings stay open. Evidence uses its separate item-level
+  `expanded` flag below; printing always includes the explanatory subsections.
   Each parent has at most four child explanation nodes. Supporting evidence
   and quizzes are counted separately, so adding a source or question does not
   force another explanation level. Paragraph groups have at most four items.
@@ -70,14 +73,21 @@ Make its title and opening paragraph useful together: name the responsibility
 and state the outcome or finding before mechanism and evidence. Use `scope` to
 bound that claim, not to repeat a generic domain label.
 
-Use `preview` for a short statement of what opening a branch will clarify. HTML
-shows it with the collapsed title; older nodes fall back to their existing
+Use `preview` for a short statement of what a branch adds. HTML
+shows it with the title even if the reader collapses the branch; older nodes fall back to their existing
 `scope`. Markdown includes it below the title. Do not duplicate a whole paragraph
 or hide a material limitation only in the preview. Substantive parents explain
 their children's relationship; structural validity alone cannot verify this,
 and simple source lists need no artificial summary.
 
-An evidence item has `id`, `label`, `source`, and optional `excerpt`.
+An evidence item has `id`, `label`, `source`, optional `excerpt`, and optional
+boolean `expanded`. Evidence defaults to collapsed. Set `expanded: true` when the
+reader needs that item to understand the result, limitation, or next action, or
+explicitly requests it open. Its enclosing group also opens, while sibling items
+remain collapsed unless independently marked. Printing includes marked evidence
+even if the reader later collapses it; other evidence is included only when both
+the item and its group are open. Do not use requiredEvidenceIds as an expansion
+list, and keep conclusion-changing facts in the body as well.
 Use a local path, fragment, or HTTP(S) source. Full originals may remain in
 companion files. Empty evidence is permitted only when the caller has no
 required evidence identifiers; do not invent sources.

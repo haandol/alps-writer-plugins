@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { runInNewContext } from "node:vm";
 import {
   renderHtml,
   renderMarkdown,
@@ -96,7 +97,7 @@ test("background and answer remain distinct with optional authored titles and le
   assert.doesNotMatch(renderHtml(report()), /<section class="report-answer"><h2>/);
 });
 
-test("collapsed branches expose an authored preview or existing scope without duplicating body text", () => {
+test("collapsible branches expose an authored preview or existing scope without duplicating body text", () => {
   const doc = report();
   doc.sections[0].children[0].preview = "<script>Explain stored completion</script>";
   const html = renderHtml(doc),
@@ -110,6 +111,114 @@ test("collapsed branches expose an authored preview or existing scope without du
   assert.ok(!summaries[0].includes(doc.sections[0].children[0].paragraphs[0]));
   assert.ok(markdown.includes("Explain stored completion"));
   assert.doesNotMatch(html, /<script>Explain/);
+});
+
+test("explanations start open while optional evidence stays folded and explicit choices remain supported", () => {
+  const doc = report();
+  const child = doc.sections[0].children[0];
+  child.diagram = {
+    source: "flowchart LR\nA[Repeated request] --> B[Stored result]",
+    explanation: "The request reuses its recorded result.",
+  };
+  child.children = [{ ...child, id: "completion-detail", expanded: true }];
+  const before = structuredClone(doc);
+  const html = renderHtml(doc);
+  const details = [...html.matchAll(/<details\b([^>]*)>/g)].map((match) => match[1]);
+  assert.equal(details.filter((attrs) => attrs.includes('class="report-node"')).length, 3);
+  assert.ok(
+    details
+      .filter((attrs) => attrs.includes('class="report-node"'))
+      .every((attrs) => /\bopen(?:\s|$)/.test(attrs)),
+  );
+  assert.ok(
+    details
+      .filter((attrs) => !attrs.includes('class="report-node"'))
+      .every((attrs) => !/\bopen(?:\s|$)/.test(attrs)),
+  );
+  assert.deepEqual(doc, before, "rendering must not rewrite saved presentation choices");
+
+  child.expanded = false;
+  const collapsed = renderHtml(doc);
+  const heading = collapsed.match(/<details\b[^>]*id="completed"[^>]*>/)[0];
+  assert.doesNotMatch(heading, /\bopen\b/);
+  assert.match(collapsed, /id="completion-detail" open/);
+  assert.match(collapsed, /id="unknown" open/);
+  assert.ok(collapsed.includes(child.paragraphs[0]), "collapsed content is retained in the HTML");
+});
+
+test("necessary evidence opens its enclosing group without expanding unrelated sources", () => {
+  const doc = report();
+  const required = doc.sections[0].evidence[0];
+  required.expanded = true;
+  doc.requiredEvidenceIds.push("E2");
+  doc.sections[0].evidence.push({
+    id: "E2",
+    label: "Raw log",
+    source: "raw.txt",
+    excerpt: "Complete optional log",
+  });
+  const html = renderHtml(doc);
+  assert.match(html, /<details class="evidence-group" open data-print-expanded="true">/);
+  assert.match(
+    html,
+    /<details class="evidence" open data-print-expanded="true"><summary>Original retry rule/,
+  );
+  assert.match(html, /<details class="evidence"><summary>Raw log/);
+  assert.ok(html.includes("Complete optional log"));
+  assert.ok(renderMarkdown(doc).includes("Complete optional log"));
+  required.expanded = "yes";
+  assert.throws(() => renderHtml(doc), /E1: expanded must be boolean/);
+});
+
+test("printing expands explanations and necessary evidence without unfolding optional sources", () => {
+  const elements = [
+    { kind: "report-node", open: false },
+    { kind: "report-node", open: true },
+    { kind: "evidence-group", open: false },
+    { kind: "evidence", open: false },
+    { kind: "diagram-source", open: false },
+    { kind: "evidence-group", open: false, printExpanded: true },
+    { kind: "evidence", open: false, printExpanded: true },
+    { kind: "evidence", open: true },
+  ];
+  const events = new Map();
+  const document = {
+    querySelectorAll(selector) {
+      if (
+        selector ===
+        'details.report-node:not([open]),details[data-print-expanded="true"]:not([open])'
+      )
+        return elements.filter(
+          (node) => !node.open && (node.kind === "report-node" || node.printExpanded),
+        );
+      if (['a[href^="#"]', ".diagram__viewport", ".quiz"].includes(selector)) return [];
+      throw new Error(`Unexpected document query: ${selector}`);
+    },
+  };
+  const script = renderHtml(report()).match(/<script>([\s\S]*?)<\/script>/)[1];
+  runInNewContext(script, {
+    document,
+    window: { addEventListener: (name, handler) => events.set(name, handler) },
+  });
+  const initial = elements.map((node) => node.open);
+  events.get("afterprint")();
+  assert.deepEqual(
+    elements.map((node) => node.open),
+    initial,
+  );
+  for (let pass = 0; pass < 2; pass++) {
+    events.get("beforeprint")();
+    events.get("beforeprint")();
+    assert.deepEqual(
+      elements.map((node) => node.open),
+      [true, true, false, false, false, true, true, true],
+    );
+    events.get("afterprint")();
+    assert.deepEqual(
+      elements.map((node) => node.open),
+      initial,
+    );
+  }
 });
 
 test("both formats teach child cases before the parent's quiz and explicitly owned source evidence", () => {

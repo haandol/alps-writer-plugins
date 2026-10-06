@@ -127,6 +127,17 @@ levels make the explanation precise. Evidence supports these levels rather than
 forming a lower abstraction level of its own. Do not force C4 diagram types,
 technical-layer headings, or a fixed number of levels onto every report.
 
+Default to a fully expanded document for reading, printing, and handouts: all
+explanatory subsections are initially visible at every depth. Detailed evidence,
+logs, and code excerpts default to collapsed. Explain conclusion-changing facts
+in the body, and expand an evidence item when understanding the result, limitation,
+or required action needs it. Preserve all source access and required evidence;
+requiredEvidenceIds is a coverage obligation, not a demand to expand every source.
+Readers may collapse sections, and explicit requests for a collapsed view take
+precedence. Abstraction controls what each level explains, not whether its
+children must be hidden. Apply the print layout and disclosure rules in
+[format and layout](references/format-and-layout.md#print-and-handout-layout).
+
 When explaining unfamiliar or complex material, read
 [abstraction and analogy](references/abstraction-and-analogy.md) for using known
 reader context, mapping a familiar analogy to the actual subject, and checking
@@ -159,8 +170,8 @@ cases, or opening a source is not by itself a change in abstraction.
   Each child adds a reason, mechanism, condition, or worked example the parent
   did not explain. When the conclusion depends on cross-domain relationships,
   introduce those relationships before splitting into domain branches.
-  A collapsed branch's title and brief preview should explain what opening it
-  will clarify. Simple source lists need no artificial summary or extra depth.
+  If a reader collapses a branch, its title and brief preview should still explain
+  what it adds. Simple source lists need no artificial summary or extra depth.
 - Keep complete source evidence reachable at the appropriate depth. Use a
   focused excerpt for explanation and a full original artifact when needed.
   The grouping limit must never erase an independent obligation or failure.

@@ -179,6 +179,11 @@ The `report-drilldown-visual-` pair checks a useful sequence within the detailed
 timing explanation and rejects overview-only coverage, copied diagrams, and
 forced figure quotas. Simple leaf facts may remain prose. It evaluates the
 visual explanation and its location, not a required total number of figures.
+The `report-drilldown-print-handout` probe checks expanded default delivery,
+continuous print reading, and preservation of screen choices when print requires
+temporary expansion. It does not claim that response evaluation verifies a real
+browser's page layout. The HTML report opens every case by default regardless of
+its outcome; a successful result is not a reason to hide its explanation.
 The eight `report-scope-` probes load the shipped report hook, skill and delivery
 references. They cover simple explanations, local reviews, complex flows,
 unclear usefulness, explicit reports, chat-only overrides, an existing delivery
