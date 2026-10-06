@@ -29,6 +29,12 @@ Keep the overview readable without expanded evidence. Put detailed mechanisms
 and exact sources with their owning domain. In HTML, collapsible details and
 anchors can provide drill-down; in Markdown or text, use nested headings and
 clear references. Do not hide an unstructured report inside one giant detail.
+These controls expose an explanation hierarchy; they do not define its abstraction
+levels. When improving explanatory depth, preserve the existing report design
+unless the user also requests a design change. Use the shared renderer's default
+presentation when no other design is established, without adding a separate theme
+merely to demonstrate drill-down.
+
 Place the standalone, localized "Background and goals" heading directly below
 the title. Keep the report's reason and intended use visible without expanding
 details: the concrete problem and what reading should enable, as described in
@@ -68,6 +74,17 @@ Use sequence diagrams for important interactions and timing, and other Mermaid
 types when they explain the relationship better. Align terms and abstraction
 level with the prose. Include source and an explanation of what the reader
 should notice. Check rendered labels, arrows, and reading order.
+When one figure expands another, name the parent element it opens up and retain
+the correspondence as internal relationships appear. An analogy view must map
+its elements to the actual concepts before detailed figures rely on them.
+
+Keep a useful detail figure inside the section that explains it, including a
+collapsed or leaf section; do not collect all figures at the top or in a remote
+appendix. When opened, that section should show the relevant figure and its
+explanation together, with labels and relationships readable at the delivered
+size. Preserve the overview's lower detail and the existing design while allowing
+the deeper view to show more. Check wrapping and overflow in opened details as
+well as at the top level, within the permitted verification tools.
 
 A table should expose a comparison or mapping, not duplicate neighboring prose.
 Keep independent peer items within the hierarchy limit by domain grouping.

@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the reporting/domain-n
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-10-06 — 알려진 사용자 배경에서 같은 대상의 내부 동작으로 확대
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 도메인별 상세 설명 → 상위에서 관련 사용자 배경에 맞는 익숙한 비유로 세부사항을 감추고, 하위에서 같은 대상의 책임·규칙·예외를 정확히 설명한다. 비유의 대응과 한계를 밝히며, 펼침 조작·같은 수준의 분기·근거 열기를 추상화 수준의 변화와 구분한다. 가장 깊은 세부 절까지 시각화 필요성을 판단하고, 개수 할당 없이 필요한 관계를 충분히 그림으로 설명한다.
+- **Why**: 친숙한 출발점에서 실제 동작을 이해하도록 하고, 화면의 중첩이나 디자인 변경만으로 설명이 깊어졌다고 판단하는 문제를 막기 위해서다.
+
 ## 2026-10-03 — 이해에 필요한 복잡도로 보고서 생성 범위를 제한
 
 - **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)

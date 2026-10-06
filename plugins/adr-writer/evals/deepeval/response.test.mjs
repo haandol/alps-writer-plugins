@@ -139,8 +139,14 @@ test("every shipped classification probe has a fixed GEval contract and prepares
   assert.deepEqual(selected.map((c) => c.id).sort(), [
     "report-drilldown-comparison",
     "report-drilldown-distinguishes-shallow",
+    "report-drilldown-experienced-reader",
+    "report-drilldown-familiar-reader",
     "report-drilldown-incident",
+    "report-drilldown-no-reader-profile",
     "report-drilldown-opening-purpose",
+    "report-drilldown-rejects-cosmetic-depth",
+    "report-drilldown-visual-detail",
+    "report-drilldown-visual-restraint",
     "report-preserves-evaluation-evidence",
     "report-rejects-unsupported-success",
     "report-scope-ambiguous",
@@ -175,7 +181,10 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     } else assert.match(input.prompt, /# Editorial review/);
     if (run.caseId.startsWith("report-drilldown-")) {
       assert.doesNotMatch(input.prompt, /Total provider-reported cost: USD 0.48/);
-      assert.match(input.prompt, /Supplied hypothetical (comparison|incident)/);
+      assert.match(
+        input.prompt,
+        /Supplied hypothetical (comparison|incident|request-processing system)/,
+      );
       if (run.caseId === "report-drilldown-distinguishes-shallow") {
         assert.match(input.prompt, /Excerpt A:/);
         assert.match(input.prompt, /Excerpt B:/);
