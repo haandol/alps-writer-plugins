@@ -2,95 +2,20 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-A Codex and Claude Code **marketplace** that ships two independent plugins for spec-driven development: **alps-writer** (PRD authoring) and **adr-writer** (ADR-driven cycle). Both install from the marketplace alone — **no npm, no npx, no build step** for end users. The alps-writer MCP server is bundled (dependencies inlined) and committed at `plugins/alps-writer/dist/`.
+Two plugins for Codex and Claude Code: write product requirements, record architecture decisions, and implement them with review.
 
-| Plugin                  | Scope                                                                                                                                   | Depends on                       |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| **`alps-writer`** (PRD) | Write Full ALPS or lightweight mockup/PoC product documents conversationally. Bridges Full ALPS Section 7 features to ADRs.             | adr-writer (only for the bridge) |
-| **`adr-writer`** (ADR)  | Adopt ADRs in existing projects, author new decisions, implement, review, and sync; an ADR-first hook runs when session context starts. | nothing — fully standalone       |
+| Plugin        | Purpose                                                                                                                                               |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `alps-writer` | Write product requirements documents (PRDs) in Full or Lite ALPS format through conversation. Transfer Full ALPS features to ADRs.                    |
+| `adr-writer`  | Create architecture decision records (ADRs), adopt them in existing projects, implement decisions, review results, and reconcile documents with code. |
 
-The two are split so that **adr-writer never references ALPS**. The only coupling is one-way (`alps-writer → adr-writer`): `/feature-to-adr` transfers each implementable Feature's complete contract into one or several ADRs. After handoff the PRD remains a legacy planning document; explicit re-import compares it with authoritative ADRs and applies only approved semantic changes.
-
-## A removable, non-invasive harness
-
-The plugins are management harnesses, not an additional authority layer. Product
-intent remains in PRDs, admitted architecture decisions and requirement
-contracts remain in ADRs, implementation truth remains in code and tests, and
-repository conventions remain in README/AGENTS/CONTRIBUTING. Removing either
-plugin leaves those artifacts readable and useful to a future model without
-hidden plugin state.
-
-Skills and hooks constrain observable artifacts, external actions, evidence,
-approval boundaries, and Status transitions. They do not require private
-chain-of-thought or prescribe how a model must internally reason. The active
-model chooses action-level orchestration—whether to use no subagent, one, or
-several; named or generic agents; parallel or sequential execution; and the
-available model for each role—while preserving the same user-visible workflow.
-Comprehension-load behavior, dependency gates, risk-selected reviews, Evidence
-Packages, and completion rules remain stable regardless of that orchestration.
-
-## The core rule: preserve reproducible conditions, not recoverable facts
-
-The system persists only information whose loss would make a future
-implementation violate human intent, an admitted decision, or a requirement.
-It does not persist a second copy of facts that an agent can recover by reading
-code, tests, dependency metadata, or deterministic tool output.
-
-Apply the tests in this order:
-
-1. **Requirement gate** — if the fact disappeared, could regenerated code violate
-   a required value, state, permission, ordering rule, failure guarantee,
-   boundary, or success condition? If yes, preserve it at the level that owns
-   the contract.
-2. **Code-readthrough test** — if the fact is not a requirement and an agent can
-   recover it from the implementation, leave it in code and tests.
-3. **ADR admission gate and litmus test** — if code cannot explain why one
-   durable alternative was adopted and changing the fact would change the
-   architectural decision, preserve the decision, rationale, trade-off, and
-   decision-changing assumptions in an ADR.
-
-“Reproducible” does not mean recreating the same files, functions, libraries, or
-module layout. It means a different implementation can be generated while still
-honoring the same observable product behavior and architectural constraints.
-
-| Level             | Persist                                                                                                                                    | Do not persist                                                               |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| ALPS PRD          | user problem, observable outcomes, product contracts, success conditions, explicit non-goals, durable system constraints                   | code paths, stack inventories, implementation plans, copied tickets/logs     |
-| ADR               | admitted decision, exact requirement contract, rationale, alternatives, durable boundaries, implementation-independent observable evidence | libraries, SDKs, signatures, field tables, tuning values, internal call flow |
-| Code and tests    | implementation structure, identifiers, dependencies, tuning, enforcement, executable verification                                          | PRD or ADR back-references                                                   |
-| Issue, PR, commit | change-specific intent and verbatim history                                                                                                | a competing source of product or architecture truth                          |
-
-Plans, search results, mapping snapshots, approval views, reviewer transcripts,
-eval results, and derived evidence packages stay disposable because the
-authoritative artifacts can reproduce them.
-
-## What is ALPS?
-
-**ALPS** (Agentic Lean Product Spec) is a PRD format built for agentic development. A traditional PRD assumes a human reader who fills in gaps from intuition; ALPS assumes an AI agent that needs an unambiguous specification to write reliable code.
-
-It fixes the format (9 sections, explicit dependencies, vertical-slice features) and inverts the authoring loop: the **agent asks focused questions, the human answers**, with no section saved without confirmation. Out of Scope is a first-class section so the agent knows what _not_ to build.
-
-**Lite ALPS** is a 4-section working-backwards simplification of Full ALPS for planners and PMs defining a minimum PoC. The user first confirms the target problem and Desired Business Impact; AI then proposes the minimum solution, a product-level C4 Context diagram, Essential User Experiences, and a concrete executable Demo Scenario for approval. Unwritten optional scope is omitted from Markdown. Lite and Full keep independent files, state, and completion.
-
-Both profiles collect a **Glossary Appendix only when needed**, after the numbered
-sections. Uncommon terms, jargon, acronyms, and expressions that cannot be written
-out plainly require a clear user meaning at first use; already supplied meanings
-are reused. Definitions use the current section approval, with no separate
-interview or domain classification. Ordinary-language documents have no glossary.
-
-`/feature-to-adr` transfers relevant definitions into `docs/adr/glossary.md`.
-Direct ADR authoring creates or updates that file when needed. Equivalent meanings
-are reused, unrelated entries are preserved, and conflicts require clarification.
-Requirements remain in their owning ADRs; the glossary has no Status or mapping
-entry and is read only when terminology needs explanation.
-
-See [`about-alps.md`](./plugins/alps-writer/templates/alps/about-alps.md) for the full design rationale and how ALPS feeds into the ADR-driven cycle.
+Install either plugin independently. The Full ALPS → ADR workflow requires both.
 
 ## Quick Start
 
-Register this repository as a marketplace, then install whichever plugins you want. They are independent — install one or both.
+Requires Node.js 24 or later. Marketplace installs include the bundled server and dependencies; no npm install or build step is needed.
 
-**Codex**
+### Codex
 
 ```bash
 codex plugin marketplace add haandol/alps-writer-plugins
@@ -98,401 +23,131 @@ codex plugin add alps-writer@alps-writer
 codex plugin add adr-writer@alps-writer
 ```
 
-Invoke skills with `$alps-init`, `$lite-alps-init`, `$feature-to-adr`, `$adr-import`, `$adr-new`, `$adr-impl`, `$adr-impl-refactor`, `$adr-impl-review`, `$adr-review`, `$adr-sync`, and `$adr-rollup`, or ask for the workflow in natural language. On first use, review and trust ADR Writer's single `SessionStart` hook when Codex prompts you. It restores context on startup, resume, clear, and compaction; it does not run for every user prompt.
+Invoke a skill with `$skill-name`, such as `$alps-init` or `$adr-new`, or ask for a workflow in natural language.
 
-**Claude Code**
+When prompted, review and trust ADR Writer's `SessionStart` hook. It restores the ADR directive on startup, resume, clear, and compaction; it does not run for every user prompt.
 
-```
+### Claude Code
+
+```text
 /plugin marketplace add haandol/alps-writer-plugins
-/plugin install alps-writer@alps-writer   # PRD authoring (/alps-init, /lite-alps-init, /feature-to-adr)
-/plugin install adr-writer@alps-writer    # ADR cycle (/adr-import, /adr-new, /adr-impl, /adr-impl-refactor, /adr-impl-review, /adr-review, /adr-sync, hooks)
+/plugin install alps-writer@alps-writer
+/plugin install adr-writer@alps-writer
 ```
 
-> `/feature-to-adr` (in alps-writer) delegates ADR authoring to `/adr-new` (in adr-writer), so install **both** if you want the ALPS → ADR bridge. adr-writer on its own works without any ALPS PRD.
+Use `/skill-name` instead of `$skill-name`. The examples below use Claude Code notation.
 
-Four independent entry flows, driven by `$skill-name` in Codex or `/skill-name` in Claude Code:
+For Codex on Amazon Bedrock, see [ADR Writer troubleshooting](./plugins/adr-writer/README.md#amazon-bedrock-rejects-a-subagent-request) before running review skills.
 
-- **Existing project** — `/adr-import` → one intent/conflict report → confirmed `Proposed` ADRs; `/adr-impl` handles later completion
-- **PoC authoring** — `/lite-alps-init` → minimum PoC scope and demo
-- **PRD-first** — `/alps-init` → `/feature-to-adr` → `/adr-impl` → `/adr-impl-refactor` (automatic) → `/adr-impl-review` (completion gate) → `Accepted`
-- **ADR-only** — `/adr-new` → `/adr-impl` → `/adr-impl-refactor` (automatic) → `/adr-impl-review` (completion gate) → `Accepted`
+## Choose a workflow
 
-Lite ALPS reuses Full ALPS's conversation-led authoring behavior but keeps an independent document lifecycle. Neither reads, updates, converts into, or shares completion state with the other.
+| Starting point                               | Commands                                       |
+| -------------------------------------------- | ---------------------------------------------- |
+| Define a proof of concept (PoC)              | `/lite-alps-init`                              |
+| Plan a product, then implement it            | `/alps-init` → `/feature-to-adr` → `/adr-impl` |
+| Make an architecture or requirement decision | `/adr-new` → `/adr-impl`                       |
+| Document decisions in an existing codebase   | `/adr-import [project-path-or-feature-scope]`  |
 
-Completion counts only subsections or Features with non-empty bodies. An empty
-save can still clear content, but the section becomes incomplete; an empty
-optional section is omitted from export. Resume follows the first incomplete
-required section in the profile's authoring order.
+### Write a product spec
 
-Examples illustrate supplied inputs, not product defaults. Their values, units,
-populations, and measurement conditions must remain consistent when carried into
-acceptance criteria or metrics. Delegating a value does not make a protected
-product decision an implementation tuning value.
+ALPS (Agentic Lean Product Spec) has two formats:
 
-Full/Lite planning, direct ADR authoring, and existing-project import group features
-by business responsibility and user outcomes. Service folders and
-frontend/backend/database layers are not feature categories. The
-[existing-project workflow](#adopt-an-existing-project) below explains how import
-reconstructs those boundaries from source evidence.
-Sync and rollup prefer later semantic changes in the same scope, gather unresolved
-intent/conflicts and exact change approvals in one report, and resume the confirmed
-work automatically. Report question IDs are visible in titles; answer them together
-in conversation. Newer code alone does not approve a contract change.
+- **Full ALPS:** nine sections covering the product problem, scope, constraints, features, and demos. The agent asks focused questions and saves content after confirmation.
+- **Lite ALPS:** four sections for a minimum PoC. You provide the problem and Desired Business Impact; the agent proposes a solution, essential user experiences, and an executable demo for approval.
 
-Run `/adr-sync` when review finds implementation-fact drift, after broad refactors or manual ADR edits, or as a periodic audit; it is not a mandatory deep scan after every small implementation.
+Both export to Markdown, keep separate files and completion state, and add a glossary only when terms need confirmed definitions. See the [ALPS format guide](./plugins/alps-writer/templates/alps/about-alps.md) and [Lite walkthrough](./docs/usage.md#a-lite-alps--independent-poc-authoring).
 
-`/adr-rollup` keeps discovery local to candidate decision chains and their related
-contracts. It verifies the necessary source and tests, expanding only when an
-ownership, conflict or reference question requires it. Clear chains use contract
-tables and change summaries; difficult cases may add a small local before/after
-diagram. A whole-system map is not required. Complete contract preservation,
-global index/link/cycle checks and exact approval still apply.
-The agent chooses suitable tools and reading batches; evidence and verified
-results determine correctness. Detailed renumbering guidance is loaded only
-when number cleanup is explicitly requested.
+For Full ALPS, `/feature-to-adr` transfers each feature's complete implementation requirements into one or more ADRs. After handoff, ADRs govern implementation; the PRD remains a planning record. Re-import a changed PRD explicitly to propose ADR updates. Equivalent input leaves the ADRs unchanged.
 
-See the [Usage guide](./docs/usage.md) for the full cycle, walkthroughs, slash commands, hook behavior, and the mapping file, or the [ADR process overview](./docs/adr-process.md) for the same cycle drawn as diagrams.
+### Implement and maintain decisions
 
-Codex users on Amazon Bedrock should disable multi-agent before running ADR review skills; see [ADR Writer troubleshooting](./plugins/adr-writer/README.md#amazon-bedrock-rejects-a-subagent-request).
+New ADRs start as `Proposed`. `/adr-impl` checks prerequisites, implements the approved requirements, runs tests, and reviews the result. It uses `/adr-impl-refactor` when a separate refactoring pass is warranted and `/adr-impl-review` as the completion gate. A passing review promotes the ADR to `Accepted`.
 
-## Adopt an existing project
+Use `/adr-review` to review ADR documents without editing them or reading code. Use `/adr-sync` to reconcile proven drift, check broad refactors or manual ADR edits, or run a periodic audit. `/adr-rollup` consolidates the recorded evolution of one decision while preserving its requirements and rationale.
 
-Use `$adr-import [project-path-or-feature-scope]` in Codex or
-`/adr-import [project-path-or-feature-scope]` in Claude Code to bring an existing
-codebase into the ADR workflow. Without an argument, the current repository is
-the scope. ADR Writer works on its own; no PRD is required. Import prepares and
-records document contracts without refactoring application code or accessing
-live systems.
+Changes to requirements or architecture need confirmation before implementation. Fixes that restore intended behavior and refactors that preserve it can proceed without a new ADR.
 
-### From source evidence to decision candidates
+### Adopt an existing project
 
-Import distinguishes repository organization from execution and deployment shape,
-then reconstructs business events and rules from local source, tests and documents.
-This EventStorming approach maps what happens in the business; it does not require
-a message broker or an event-driven implementation. A bounded context is the scope
-where business terms and rules have a consistent meaning and owner.
+`/adr-import` reads local code, tests, and documents to propose decisions grouped by business responsibility. With no argument, it uses the current repository. It prepares drafts and collects unresolved intent, conflicts, and approval questions in one report.
 
-| Stage                          | What the reader can review                                                                                                         |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **1. Reconstruct workflows**   | Actors, triggers, rules and observable results, including relevant rejection and failure paths, queries and batch jobs             |
-| **2. Review boundaries**       | Context candidates grounded in terminology, rule ownership and data-change authority                                               |
-| **3. Extract decisions**       | Existing or new ADR owners for durable choices and exact contract candidates, with observation distinguished from confirmed intent |
-| **4. Establish prerequisites** | Decision-level relationships that name the guarantee each dependent decision needs from its owner                                  |
+Confirm, revise, or defer items by question ID. The agent saves and validates confirmed contracts as `Proposed` ADRs without changing application code or accessing live systems. Repeating an equivalent import leaves existing documents unchanged. See the [adoption guide](./plugins/adr-writer/README.md#adopt-an-existing-project).
 
-Start with important business outcomes and deepen the evidence incrementally.
-A complete detailed system map is not required before preparing independent
-candidates. Existing ADR owners and confirmed boundaries are reused. Missing
-evidence and historical reasons remain explicit rather than being invented.
+## What belongs in each artifact
 
-### Compare three ways to resolve an ADR cycle
+The plugins preserve conditions needed to rebuild the system, while leaving recoverable facts in code and tests.
 
-The report distinguishes a real decision cycle from one created by grouping
-decisions into categories. The index registers individual ADRs, while `dependsOn`
-connects categories and must remain acyclic. Request/response timing and code
-imports alone do not establish those prerequisites.
+| Artifact          | What it owns                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| PRD               | User problems, expected outcomes, product requirements, and exclusions                                      |
+| ADR               | Architecture decisions, exact requirement values and rules, rationale, alternatives, and durable boundaries |
+| Code and tests    | Implementation details and executable verification                                                          |
+| Issue, PR, commit | Change-specific intent and history                                                                          |
 
-| Option                                    | Contract ownership after the change                                                                                                                    |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Extract an independent shared concept** | A common decision C owns the shared rules; A and B depend on C and retain their independent responsibilities. C must not depend back on its consumers. |
-| **Merge one inseparable decision**        | One surviving ADR owns the complete contract and rationale that were split across A and B.                                                             |
-| **Orient around an existing owner**       | A owns the base contract; B keeps its independent additional rules and depends on A. Both ADRs remain when both still own distinct decisions.          |
+Apply three checks in order:
 
-For example, project membership and roles can be a shared contract used by
-document-reading and document-editing decisions. It must define eligibility
-independently of whether reading or editing succeeds. Adding an interface, a new
-label or a different link type does not resolve a circular decision.
+1. **Requirement gate:** preserve any fact whose loss could change required behavior, values, permissions, ordering, or failure guarantees.
+2. **Code-readthrough test:** leave non-requirement facts in code when they can be recovered from the implementation.
+3. **ADR admission gate and litmus test:** record durable architectural choices, their reasons, and trade-offs when code alone cannot explain them.
 
-Each cycle group shows all three options, reasons for any inapplicable options,
-and a supported recommendation. Reviewable drafts show before/after graphs,
-where every required guarantee remains, and the exact document, index and link
-changes. Unresolved cycles stay visible in drafts; import does not erase a
-required edge or change the dependency schema to pass validation.
+Rebuilding does not mean recreating the same files, functions, or libraries. It means preserving behavior and constraints. See the [dependency model](./docs/dependency-model.md) for the reference rules.
 
-### Answer once across domains and contexts
+Removing the plugins leaves PRDs, ADRs, code, and tests readable on their own. Hooks and skills govern artifacts, actions, evidence, and approvals. They leave private reasoning and subagent orchestration to the model.
 
-All independent investigation and drafts are prepared before the remaining
-questions are presented in one HTML report, grouped by domain and bounded
-context. Import does not pause for approval after each ADR, cycle or context.
-A cross-context cycle appears once with all affected owners. Reply by visible
-question ID, select options, revise or defer items, or approve recommendations
-for an explicit set of IDs. Contract changes and any proposed deletions are part
-of that same confirmation.
+## Report writing
 
-```mermaid
-sequenceDiagram
-    participant U as Developer
-    participant I as ADR import
-    participant R as Local repository
-    participant A as ADR documents and index
-    U->>I: Select project or feature scope
-    I->>R: Inspect workflows, rules and existing decision owners
-    I-->>U: One domain-grouped report with drafts, options and questions
-    U->>I: Confirm, revise or defer by question ID
-    I->>A: Save and validate independently confirmed contracts
-    I-->>U: Report applied, unchanged and deferred scope
-```
+ADR Writer includes `$report-writer` in Codex and `/report-writer` in Claude Code. It creates standalone HTML for explicit report requests or explanations that need structured detail. Short answers stay in chat; when a report's usefulness is unclear, it asks once. Your format and delivery preferences take precedence.
 
-New ADRs start as `Proposed` even when code already exists. Implementation and
-completion review own the later `Accepted` transition. Equivalent repeat imports
-leave documents, dates and the index unchanged. Discovery maps and code evidence
-stay disposable under `.adr-review/`; confirmed intent, exact contracts and
-prerequisite guarantees remain in their owning ADRs.
+By default, the skill verifies the report, opens it once in the default browser, and returns its path. Review reports and evidence stay in separate, Git-excluded `.adr-review/` directories. Reports include self-check questions unless omitted at your request or because there is no substantive concept to check. The ordinary main-session completion response never prints Q1 or starts grading.
 
-See [ADR Writer's adoption guide](./plugins/adr-writer/README.md#adopt-an-existing-project)
-for the plugin's entry points and lifecycle rules.
-
-## Features
-
-**alps-writer (PRD)**
-
-- 9-section ALPS (PRD) template with structured XML templates, conversation guides, durable architecture constraints, and per-Feature demos connected to the end-to-end demo scenario
-- 4-section Lite ALPS template that starts from Desired Business Impact and has AI propose the minimum solution, one product-level C4 Context, Essential User Experiences, and executable demo
-- Interactive Q&A workflow — atomic confirmation by default, with explicit batch approval for complete structured input
-- Contract-complete plain-text approval digests — concise raw-text views preserve every requirement value and rule before subsection-level persistence
-- Document management — create, save, load, and export as clean Markdown
-- Section dependency tracking — ensures referenced sections are reviewed first
-- **Disposable comprehension signal** — Section 7 Features use a calibrated `1–10` scale with `4–6` as the recommended range; Features at `8/10` or higher receive up to three non-blocking user-behavior split candidates
-- **First-reader-friendly Feature specs** — Section 7 explains unfamiliar terms for junior developers and recommends optional Mermaid diagrams, preferring `sequenceDiagram` when multi-participant data flow is clearer visually
-- **ALPS → ADR ownership handoff** — `/feature-to-adr` transfers every implementation-relevant Feature contract into `1..N` real ADRs, leaves replaceable means to code, and makes equivalent explicit re-imports no-ops
-- Works with Claude Desktop, Claude Code, Cursor, Kiro, and any MCP-compatible client (MCP server only)
-
-**adr-writer (ADR)**
-
-- **ADR-driven development cycle** — adopt existing projects with `/adr-import`, author decisions with `/adr-new`, implement them with `/adr-impl`, and keep them in sync with `/adr-sync`
-- **Domain-aware gap resolution** — `/adr-impl` derives obligations already implied by the contract, reuses established project/domain defaults for reversible implementation choices, and packages only real product-policy gaps as one recommendation-led Decision request
-- **Searchable implementation documentation and executable cases** — `/adr-impl` requires language-standard why/how comments for changed functions, reuses contract terminology without citing ADR files, and tests both the ideal path and relevant edge cases
-- **Junior-readable review reports** — document, sync, implementation, and refactor reviews lead with verdict, impact, action, and risk, explain unfamiliar terms once, preserve exact evidence below, and use grounded Mermaid for multi-participant, state, dependency, data, and failure flows. Implementation-review HTML adds a table of contents, renders the narrative and Mermaid relationships, shows findings before detailed evidence, and collapses proven coverage, scope, metrics, choices, and comprehension by default
-- **Disposable comprehension signal** — ADR digests, implementation plans, and document reviews show only an ephemeral `1–10` score from an internal five-axis assessment; the score never becomes an ADR field or workflow gate
-- **Requested Stacked PR fallback** — when one Feature and ADR must stay intact, `/adr-impl` can offer dependency-ordered PR layers with one review question each; it never creates a Stack from the score alone
-- **ADR admission gate** — record durable requirement/architecture decisions while leaving replaceable libraries, SDKs, frameworks, and credential/auth wiring at the code level
-- **Verified implementation refactoring** — before Status promotion, independently review efficiency, complexity, coupling, duplication, and proportionate reuse; immediately apply only local behavior-preserving changes with before/after tests and propose the rest
-- **Implementation and Review Hiking** — ADR implementation and review use the same low vertical Hills. Each Hill is a user flow, logical capability, or evidence-grounded bounded context—not a technical layer, file group, or lifecycle phase. The implementation records its contract, cross-layer behavior, targeted test command, and observed result before moving on. The review uses reading zooms: Context for intent/contracts/scope, Container/Hill for a vertical capability, Component for detailed implementation, and collapsed Code for a focused diff or current excerpt. Every ADR contract appears in exactly one Hill. Localized implementations use a sufficiency perspective, while protected-surface or broad implementations add separately grounded necessity/sufficiency perspectives. The ordinary main-session completion response never prints Q1 or starts grading.
-- **Provider-aware review fallback** — Codex sessions on Amazon Bedrock avoid unsupported subagent dispatch and retries; reviews continue through available model-selected paths while preserving the same evidence and refactor safety gates
-- **Model-selected review orchestration** — review perspectives and evidence are contractual, while subagent count, named/generic/main-session execution, parallelism, and model selection remain disposable choices made from current capability and risk
-- **ADR-first hook** — one `SessionStart` hook runs only on startup, resume, clear, and compaction recovery, injecting the admission-aware directive without mapping contents; admitted work reads `docs/adr/.mapping.json` before coding
-- Fully standalone — no ALPS PRD required
-
-## Documentation
-
-- [Usage guide](./docs/usage.md) — development cycle, walkthroughs, slash commands, hook, mapping file
-- [ADR process overview](./docs/adr-process.md) — the lifecycle, critical command paths, routing, and efficiency review as diagrams (Korean)
-- [Dependency model](./docs/dependency-model.md) — how PRD → ADR → code stay decoupled (the design core)
-- [MCP server](./docs/mcp-server.md) — run the alps-writer MCP server in other clients, env vars, tool reference
-- [`about-alps.md`](./plugins/alps-writer/templates/alps/about-alps.md) — ALPS format design rationale
-- [ADR templates](./plugins/adr-writer/templates/adr/) — authoring rules, directory structure, mapping schema
-
-## Repository layout
-
-```
-alps-writer-plugins/                 # marketplace root (this repo)
-├── .agents/plugins/marketplace.json # Codex marketplace
-├── .claude-plugin/marketplace.json  # Claude Code marketplace
-├── docs/                            # usage, dependency model, MCP server guides
-└── plugins/
-    ├── alps-writer/                 # PRD plugin (bundles its own MCP server)
-    │   ├── .codex-plugin/plugin.json    # Codex metadata + MCP registration
-    │   ├── .claude-plugin/plugin.json   # Claude Code metadata + MCP registration
-    │   ├── .mcp.json                    # Codex MCP server command
-    │   ├── src/                     # MCP server source (TypeScript)
-    │   ├── dist/                    # committed bundle (index.js + assets) — runs as-is
-    │   ├── skills/                  # /alps-init, /lite-alps-init, /feature-to-adr
-    │   └── templates/alps/
-    └── adr-writer/                  # ADR plugin (standalone, ALPS-agnostic)
-        ├── .codex-plugin/plugin.json
-        ├── .claude-plugin/plugin.json
-        ├── skills/                  # /adr-import, /adr-new, /adr-impl, /adr-impl-refactor, /adr-impl-review, /adr-review, /adr-sync, /adr-rollup
-        ├── agents/                  # ADR authoring + isolated refactor/implementation review roles
-        ├── hooks/                   # ADR-first directive hook (SessionStart)
-        └── templates/adr/           # README + concepts + authoring-rules + structure + mapping.schema.json
-```
-
-## Development
-
-This is a pnpm workspace. The MCP server lives in `plugins/alps-writer/`; root scripts proxy to it.
-
-```bash
-pnpm install        # Install dependencies (whole workspace)
-pnpm build          # Bundle the alps-writer MCP server into plugins/alps-writer/dist/
-pnpm lint           # ESLint the MCP server
-pnpm format         # Prettier across the repo
-
-# Or work inside the package directly:
-pnpm --filter alps-writer dev     # Run with tsx (watch mode)
-pnpm --filter alps-writer start   # Run the built bundle
-```
-
-> **The bundle is committed.** `plugins/alps-writer/dist/` is checked into git (esbuild output with dependencies inlined) so the plugin runs from a marketplace install with no build step. **Whenever you change `src/`, run `pnpm build` and commit the regenerated `dist/`.**
-
-See [AGENTS.md](./AGENTS.md) for the full architecture, code style, and conventions.
-
-For rollup/sync prompt regression, `pnpm eval:regression --prepare` creates
-reference-based fixtures and an unexecuted HTML report without calling a model.
-`pnpm eval:regression --live` runs the selected skills through the logged-in
-Claude Code CLI and uses DeepEval GEval to produce HTML/JSON results. The judge
-defaults to Bedrock `us.openai.gpt-5.6-sol`, AWS profile `default`, in `us-east-1`. See the
-[regression suite guide](./plugins/adr-writer/evals/deepeval/README.md) for
-baseline comparisons, case selection, execution boundaries, and costs.
-`pnpm eval:golden` renders the current inputs, obligations, pinned provenance, and
-Mermaid coverage. `pnpm eval:calibration --live` checks the judge against authored
-positive/negative examples; its draft labels still require human review.
-
-## Shared authoring guidance
-
-Authoring skills share requirement-delegation and comprehension-load guidance,
-packaged inside each plugin so separate installation paths work. Clear analysis
-requests proceed after a scope update; contract changes and destructive actions
-retain their approval boundaries. Document-only ADR review excludes code scans
-while preserving document structure and ADR→PRD reference checks.
-
-## Report writing across projects
-
-Only adr-writer includes `report-writer`. Explicit report requests use it even
-for a short topic. Otherwise, it automatically creates a report when complex
-explanations or review findings need structured depth, diagrams or evidence
-navigation to be understood. Short, simple explanations and local review results
-stay in chat without report files, browser opening or quizzes. If report usefulness
-is unclear, it asks once before generating a file and reuses a delivery choice
-already established for the same scope. Technical subjects, review labels and
-length alone do not trigger reports.
-
-The owning workflow still determines inspection scope, findings, verdicts and
-edit permissions; explicitly required report/audit artifacts are preserved.
-For selected reports, instructions stay in English and the report uses the user's
-requested language. With no explicit format or delivery constraint, it generates
-standalone HTML, verifies the final file, opens it once in the default browser
-and returns the path. Other-format, chat-only, no-file, no-open and browser
-requests take precedence. Required Markdown/JSON remain supporting artifacts.
-Reports open with a standalone localized `Background and goals` heading,
-connect the concrete problem to the answer and its
-material limitations in a distinct answer area, then drill into evidenced domains
-with at most four child explanation branches. Subsequent headings and organization fit the subject and reader's
-questions rather than a fixed outline, while retaining mandatory content.
-Each domain states its outcome before explaining behavior and evidence, so the
-reader can choose the depth they need. Collapsed branches show what opening
-them will clarify. Sources and quizzes support their explanation separately
-from the child-branch limit. Urgent findings remain visible at the top.
-The shared review checks this reading order as well as reader context, worked
-calculations, paragraph breaks, diagrams, and factual/causal support.
-
-ADR and report writing preserve intent so agents can make unspecified decisions
-within the user's original purpose. `Purpose` records the problem, intended
-outcome, and supplied priorities or scope. The exact contract sets the limits;
-intent helps choose suitable reversible details inside them. Conventions or
-convenience do not justify pursuing a different outcome, inventing policy, or
-expanding scope. Reports connect material autonomous choices and test/eval
-evidence to that intent. Existing ADRs with `Context` remain compatible. No
-named writing framework or new schema is required.
-
-Reports also include one to five medium-difficulty, four-choice questions about
-their core content. The aim is to support understanding and reduce cognitive
-load. Readers recall an answer, reveal the choices, and select one before
-requesting feedback and evidence. Quizzes are omitted on user request or when
-there is no substantive concept to check. They do not block task completion or
-start a conversational quiz automatically. HTML supports the staged self-check
-and prints questions without answers; Markdown separates questions from the
-answer explanations. Implementation reviews reuse the same quiz controls.
-
-Use `$report-writer` in Codex or `/report-writer` in Claude Code. Existing
-structured review data remains complete; the final human presentation follows
-the common skill instead of treating a flat audit export as the final report.
-
-Review, audit, sync, rollup, and refactor reports accumulate locally in separate
-`.adr-review/<timestamp>-<review-kind>-<scope>-<unique>/` directories. Each run
-keeps its report and supporting evidence together. The skill verifies Git
-exclusion before writing; when needed, a local `.adr-review/.gitignore` excludes
-the outputs without modifying tracked project configuration. Repeated reviews
-preserve earlier runs and do not add review files to normal `git status` output.
-
-The canonical source is `shared/report-writer/`. The adr-writer copy is synchronized
-and checked during development. ALPS Writer has no report skill or report-writing
-SessionStart hook, so installing both plugins provides one copy of the skill and
-one report directive per session event. For this computer's other projects:
-
-```bash
-node scripts/sync-report-skill.mjs --global
-node scripts/sync-report-skill.mjs --check --global
-```
-
-This installs the same standalone skill in `~/.agents/skills/report-writer`.
-To install from GitHub with the `skills` CLI:
+To install only the report skill, without plugin hooks or review workflows:
 
 ```bash
 npx skills add https://github.com/haandol/alps-writer-plugins/tree/main/plugins/adr-writer/skills/report-writer --global --agent codex
 ```
 
-Omit `--global` for a project-local installation. The explicit directory selects
-the packaged skill, including its references and Mermaid helper, rather than
-the development source or another same-named copy. No separate npm publication
-of this repository is required. Installing the skill alone does not install the
-plugins' SessionStart hooks or their review engines.
+Omit `--global` for a project-local installation. See the [report skill](./plugins/adr-writer/skills/report-writer/SKILL.md) for delivery and presentation rules.
 
-Its Node-only helper renders a validated report document as HTML or Markdown
-and preserves Mermaid source and evidence.
-The session hook also announces the common report skill in repositories without
-an ADR mapping; it does not initialize ADRs or call a model.
+## Documentation
+
+| Guide                                                | Contents                                                                                                    |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| [Usage](./docs/usage.md)                             | Walkthroughs, all commands, hooks, and the ADR index                                                        |
+| [ADR process](./docs/adr-process.md)                 | Lifecycle, critical command paths, routing, and efficiency review as diagrams (Korean)                      |
+| [ADR templates](./plugins/adr-writer/templates/adr/) | Authoring rules, directory structure, and index schema                                                      |
+| [MCP server](./docs/mcp-server.md)                   | Use the ALPS server in other Model Context Protocol (MCP) clients; environment variables and tool reference |
+
+When calling ALPS document tools directly, pass `doc_path` on every request. Initialization or loading does not select a default for later calls; missing or invalid targets return an error without changing another document.
+
+## Development
+
+The repository is a pnpm workspace. `plugins/alps-writer/` contains the TypeScript MCP server; `plugins/adr-writer/` contains skills, hooks, templates, and validation scripts.
+
+```bash
+pnpm install
+pnpm test
+pnpm build
+pnpm lint
+pnpm format:check
+pnpm bump:check
+```
+
+For server development, use `pnpm --filter alps-writer dev` to watch source changes or `pnpm --filter alps-writer start` to run the bundle.
+
+The marketplace runs the committed `plugins/alps-writer/dist/` bundle. After changing server source or bundled dependencies, run `pnpm build` and include the regenerated bundle. Use `pnpm bump <version>` for releases so all version sites stay in sync.
+
+To prepare a skill evaluation report without model calls:
+
+```bash
+pnpm eval:skills --prepare --runs 1 --open
+```
+
+Live evaluations require `--live` and incur model costs. See the [skill evaluation guide](./plugins/adr-writer/evals/skills/README.md) and [rollup/sync regression guide](./plugins/adr-writer/evals/deepeval/README.md) for execution, comparison, and saved-report commands.
 
 ## Contributing
 
-Contributions are welcome. Before opening a PR, read [`CONTRIBUTING.md`](./CONTRIBUTING.md) for commit convention (Conventional Commits), branch naming, and code style. Open an issue first for substantial changes, make sure `pnpm lint` and `pnpm format:check` pass, and keep commits atomic.
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) for branch, commit, and pull request conventions, and [AGENTS.md](./AGENTS.md) for architecture and repository rules. Open an issue before substantial changes.
 
-### Dependency security updates
+For dependency updates, inspect `pnpm audit` and Dependabot alerts, keep overrides narrowly scoped, and rebuild the committed bundle before testing and publishing.
 
-Use `pnpm audit` to inspect the locked dependency graph and `pnpm why -r <package>`
-to find which runtime or development dependency brings in an affected release.
-Dependabot alerts and the registry audit can update at different times; check
-both without treating an empty result as proof that the code has no security defects.
-
-When a parent package still selects a vulnerable version, keep a narrowly scoped
-override in `pnpm-workspace.yaml` and regenerate `pnpm-lock.yaml`. Preserve the
-parent's module format and API compatibility, then run the integration tests.
-Dependency install scripts are controlled separately through `allowBuilds`;
-patching a package does not require enabling all install scripts.
-
-```bash
-pnpm install --frozen-lockfile
-pnpm audit
-pnpm build
-pnpm test
-```
-
-The marketplace executes the committed MCP bundle, so a lockfile update alone
-does not replace bundled code. Rebuild and commit `plugins/alps-writer/dist/`,
-run the remaining lint, format, version and runtime checks, and publish a patch
-version when shipped dependencies change. Confirm CI succeeds and Dependabot
-has processed the updated default branch. Test output and alert snapshots stay
-in temporary review artifacts rather than this README.
-
-Bug reports and feature requests: [GitHub Issues](https://github.com/haandol/alps-writer-plugins/issues).
-
-## License
-
-[MIT](./LICENSE)
-
-## Skill evaluation reports
-
-Contributors can prepare a local report without model calls with
-`pnpm eval:skills --prepare --runs 1 --open` after workspace installation.
-The report separates classification responses, controlled Skill selection, and
-actual document edits. Explicit live runs support repeated Skill-on/off and
-version comparisons through the existing DeepEval adapter.
-`pnpm eval:llm --prepare --runs 1` selects the LLM response probes. Every probe
-uses DeepEval GEval for semantic judgment during an explicit `--live` run;
-existing local checks remain independent gates. This includes report-writing
-and report-review probes for numerical accuracy and unsupported claims.
-`pnpm eval:report <run-directory>` rebuilds a saved report without rerunning models.
-See [evaluation commands and interpretation](plugins/adr-writer/evals/skills/README.md).
-
-### Document tool targets
-
-All document-specific ALPS MCP tools require `doc_path`: subsection reads and
-saves, glossary reads and saves, document status, and Markdown export. Use the
-source path returned by initialization or loading. An earlier call never supplies
-a default target; a missing or invalid path returns an error without changing
-another document. Existing callers must add this input. Template and guide tools
-remain independent of a document.
-
-For example, `save_alps_section` takes `doc_path`, `section`, `subsection_id`,
-`title`, and `content`. `export_alps_markdown` takes the source `doc_path` and an
-optional destination `output_path`. Validation failures return `isError: true`.
-Full ALPS completion matches required feature identities to nonempty specifications;
-unrelated features cannot replace missing ones.
+[Bug reports and feature requests](https://github.com/haandol/alps-writer-plugins/issues) · [MIT License](./LICENSE)
