@@ -77,8 +77,10 @@ purpose statement cannot compensate for missing evidence or explanations.
 
 ### Check continuity at each reading depth
 
-Source verification and reader comprehension are separate. A fact in the
-conversation may be true but still missing from the report the reader receives.
+Source verification and reader comprehension are separate. Use known reader
+context to choose the explanation, but establish every premise the report needs
+in the report itself. For abstraction changes and familiar analogies, apply
+[abstraction and analogy](abstraction-and-analogy.md).
 
 - Read the title and opening alone: can a reader distinguish this task from
   concurrent work, identify the problem and what reading should enable, then
@@ -105,9 +107,17 @@ conversation may be true but still missing from the report the reader receives.
 
 Inspect the output with details closed, then open one branch at a time. At the
 closed level, the reader should recover the answer, material limitations, and
-why a branch is worth opening. After opening it, identify the new reason,
-mechanism, condition, or example it teaches. Reject a child that only repeats
-its parent, assumes a prerequisite introduced elsewhere without orientation,
+why a branch is worth opening without needing the deferred internal vocabulary.
+After opening it, identify what parent object or relationship is expanded and
+what mechanism or precise condition becomes understandable. A peer case or
+source may support the explanation without lowering its abstraction level.
+Check analogy-to-concept mappings and their limits before relying on them.
+Inspect figures within the opened branch: do they expose its new relationships,
+or would the reader still have to reconstruct them from prose? Add a useful
+detail view when needed; an overview figure elsewhere does not cover a hidden
+mechanism. Do not replace this judgment with a requirement for every leaf to
+have a diagram.
+Reject a child that only repeats its parent, assumes a prerequisite introduced elsewhere without orientation,
 or makes the reader reconstruct the explanation from raw evidence. Substantive
 parents explain the relationship among their children; a simple source list
 does not need a filler paragraph. Keep these as meaning checks, not a fixed

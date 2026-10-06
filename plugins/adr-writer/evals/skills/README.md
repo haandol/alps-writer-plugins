@@ -169,6 +169,16 @@ facts. They check prerequisites, new explanatory content at each depth, and
 visible limitations without requiring one heading list. Preparation only checks
 the registered scenarios and artifacts; live model behavior and reader learning
 gains are separate claims.
+The abstraction probes keep one system's facts fixed while varying known novice
+context, known API expertise, and absent reader context. They check an approachable
+upper view, expansion of the same subject, analogy-to-concept mappings and limits,
+and preservation of exact behavior. A paired review rejects cosmetic nesting,
+raw-source substitution, invented familiarity, and unsupported analogy guarantees.
+Select them with `--only report-drilldown-`; preparation makes no model calls.
+The `report-drilldown-visual-` pair checks a useful sequence within the detailed
+timing explanation and rejects overview-only coverage, copied diagrams, and
+forced figure quotas. Simple leaf facts may remain prose. It evaluates the
+visual explanation and its location, not a required total number of figures.
 The eight `report-scope-` probes load the shipped report hook, skill and delivery
 references. They cover simple explanations, local reviews, complex flows,
 unclear usefulness, explicit reports, chat-only overrides, an existing delivery

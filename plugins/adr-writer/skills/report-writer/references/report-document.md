@@ -55,7 +55,12 @@ to open the HTML once in the default browser and return its absolute path.
   state or a claim of independent human review.
 
 A domain node names a known responsibility or explicitly identified editorial
-scope. Paragraphs contain plain text with blank lines for semantic breaks.
+scope. Nesting alone does not establish a lower abstraction level: paragraphs
+should connect a child to the parent object or relationship it expands and
+explain the newly visible internals. Peer cases and evidence remain distinguishable
+from that descent. Use existing paragraphs for a familiar analogy, its mapping
+to actual terms, and relevant limits; no reader-profile or depth fields are needed.
+Paragraphs contain plain text with blank lines for semantic breaks.
 Use these existing paragraphs to connect the user's intent and scope to material
 autonomous choices and their evidenced result. This explains how unspecified
 details stayed within the original purpose; no intent registry or new fields
@@ -83,6 +88,12 @@ claim it supports rather than inventing explanation nodes to fit a count.
 ## Diagrams
 
 `diagram` has `source` (Mermaid), `explanation`, and optional `required`.
+Every node, including a nested leaf, can carry a diagram. Its optional shape is
+not a reason to omit a figure that materially helps explain that node. The
+one-diagram field is not a figure budget for its domain or the whole report;
+when several focused views need different explanations, use meaningfully scoped
+child nodes with their own figures, not empty image-holder sections. Preserve the
+four-child explanation limit and do not force a figure into a simple node.
 The dependency-free renderer supports the common sequence, flowchart, state,
 and entity relationship subset used by the plugins. Unsupported statements
 are never silently discarded. A required unsupported diagram fails delivery;

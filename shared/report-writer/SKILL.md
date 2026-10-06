@@ -85,6 +85,9 @@ the early answer, domain hierarchy, native schema, and exact evidence.
 
 - Identify the reader, the question or decision, the requested language and
   format, and the evidence available. Follow the user's current preferences.
+  Actively use relevant user context already available to choose a familiar
+  starting point, analogy, vocabulary, and depth; the specified audience takes
+  precedence. Do not repeat a background interview or invent familiarity.
 - Directly below the title, show the standalone heading "Background and goals",
   localized in the report's language (see `references/report-document.md`).
   Explain the concrete problem or unresolved question that makes the report
@@ -116,9 +119,18 @@ the early answer, domain hierarchy, native schema, and exact evidence.
 
 ## Build a domain-scoped hierarchy
 
-Use C4's idea of changing resolution: overview first, then domain responsibilities
-and interactions, followed by detailed behavior and evidence when needed. Do not
-force C4 diagram types or technical-layer headings onto every report.
+Use C4's idea of changing resolution: start with a familiar picture of the whole,
+then reveal the same subject's responsibilities, internal relationships, rules,
+and concrete behavior as needed. Upper levels defer unnecessary detail; lower
+levels make the explanation precise. Evidence supports these levels rather than
+forming a lower abstraction level of its own. Do not force C4 diagram types,
+technical-layer headings, or a fixed number of levels onto every report.
+
+When explaining unfamiliar or complex material, read
+[abstraction and analogy](references/abstraction-and-analogy.md) for using known
+reader context, mapping a familiar analogy to the actual subject, and checking
+that each descent reveals its internals. Collapsing text, switching between peer
+cases, or opening a source is not by itself a change in abstraction.
 
 - Only the opening heading is fixed. Choose subsequent headings and organization
   for the report's subject and the reader's questions; do not impose a universal
@@ -154,12 +166,23 @@ force C4 diagram types or technical-layer headings onto every report.
 
 ## Explain relationships visually
 
+Assess the need for visualization at every explanatory depth, including collapsed
+branches and leaf sections. When a newly exposed relationship, condition, state,
+sequence, or analogy mapping is easier to understand visually, provide a focused
+figure there. An overview diagram does not satisfy a deeper section's different
+explanatory need. Use enough views to explain the material without a diagram quota;
+simple facts and one-step explanations may remain prose. Apply the detailed
+examples in [abstraction and analogy](references/abstraction-and-analogy.md#visualize-the-detail-being-revealed).
+
 - Use Mermaid `sequenceDiagram` when participants, requests, responses, or timing
   are central. Prefer a flowchart for branching flow, a state diagram for state
   transitions, and an entity-relationship diagram for data relationships.
 - Keep each figure within its domain and abstraction level. Break a complicated
   picture into an overview and detailed flows rather than making the reader
-  reconstruct many independent responsibilities at once.
+  reconstruct many independent responsibilities at once. Identify which parent
+  element or relationship a detailed figure expands; keep the subject recognizable
+  as its internals appear. Map analogy labels to actual terms before relying on
+  them. Navigation and visual styling support this explanation, not its depth.
 - Place the figure beside its explanation. Briefly state how to read it and what
   it establishes. Draw only supported actors, relationships, order, and failure
   paths; distinguish uncertainty. Do not add a decorative diagram to a trivial fact.
@@ -182,6 +205,8 @@ editorial checks; do not repeat their checklists in another report artifact.
 
 Verify hierarchy, complete evidence, links, and actual rendering separately from
 semantic review. Fix supported material issues and recheck affected transitions.
+Review opened detail sections as well as the overview: check for missing useful
+figures, repeated parent diagrams, and pictures that add no explanatory value.
 Never weaken findings or invent evidence to pass. Report the changes and checks
 actually performed, with unresolved evidence or rendering limits. A self-review
 is not an independent review. Do not introduce paid calls or publication solely

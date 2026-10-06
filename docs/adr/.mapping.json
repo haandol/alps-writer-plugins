@@ -160,7 +160,7 @@
         {
           "path": "docs/adr/reporting/domain-navigation/0001-domain-first-report-navigation.md",
           "status": "Accepted (2026-09-30)",
-          "summary": "리포트는 명시적 요청과 이해 복잡도로 생성 여부를 정하고, 복잡하면 자동 생성·단순하면 대화·애매하면 확인한 뒤 공통 전달·읽기 계약을 적용한다"
+          "summary": "리포트는 요청·이해 복잡도로 생성을 선택하고, 알려진 사용자 배경의 익숙한 설명에서 같은 대상의 구체적 동작까지 추상화 수준을 낮추며 계약과 근거를 보존한다"
         }
       ],
       "dependsOn": []

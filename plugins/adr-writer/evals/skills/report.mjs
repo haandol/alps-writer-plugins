@@ -72,7 +72,22 @@ const groups = [
     ["impl-review-comprehension-", "impl-review-completion-", "impl-review-selects-useful-"],
   ],
   ["리뷰와 설명", "보고서 품질", "인지부하", ["comprehension-"]],
-  ["리뷰와 설명", "보고서 품질", "단계별 이해", ["report-drilldown-"]],
+  [
+    "리뷰와 설명",
+    "보고서 품질",
+    "단계별 이해",
+    "독자 맥락",
+    ["report-drilldown-familiar-", "report-drilldown-experienced-", "report-drilldown-no-reader-"],
+  ],
+  [
+    "리뷰와 설명",
+    "보고서 품질",
+    "단계별 이해",
+    "깊이와 비유 검토",
+    ["report-drilldown-distinguishes-", "report-drilldown-rejects-"],
+  ],
+  ["리뷰와 설명", "보고서 품질", "단계별 이해", "시각 설명", ["report-drilldown-visual-"]],
+  ["리뷰와 설명", "보고서 품질", "단계별 이해", "목적과 인과", ["report-drilldown-"]],
   [
     "리뷰와 설명",
     "보고서 품질",
