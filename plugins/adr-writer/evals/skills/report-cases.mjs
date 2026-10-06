@@ -63,6 +63,7 @@ Report under review: "모든 10회 요청이 성공해 성공률은 100%다. 운
     return [
       skillText("report-writer", {
         references: [
+          "skills/report-writer/references/explanation-design.md",
           "skills/report-writer/references/editorial-review.md",
           "skills/report-writer/references/abstraction-and-analogy.md",
           "skills/report-writer/references/format-and-layout.md",

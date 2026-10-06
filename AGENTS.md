@@ -306,6 +306,14 @@ The hook script (in adr-writer) is Node ESM (`.mjs`) and reads NDJSON events fro
 rules, and Node-only report helper. `scripts/sync-report-skill.mjs` copies it into
 adr-writer only; its Mermaid helper is copied from the existing ADR diagram module.
 Edit the canonical source, then synchronize. `report-skill:check` rejects drift.
+The responsive article layout lives in `scripts/report.css` within the skill;
+code evidence rendering uses vendored diff2html and stays static in the delivered
+HTML. `pnpm report-assets:sync` refreshes the upstream bundle, stylesheet and
+licenses from the pinned development dependency; `report-assets:check` checks
+their bytes. Build refreshes those assets before synchronizing the skill. Keep
+upstream assets unformatted and committed so marketplace installs and bare-Node
+tests need no package installation. Code diffs use the existing evidence controls
+for screen disclosure and print inclusion; long lines wrap in print.
 Use `--global` only when updating the user-level `~/.agents/skills/report-writer`;
 normal builds never write to the user's home directory.
 

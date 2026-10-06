@@ -6,9 +6,9 @@
   "description": "Codex and Claude Code marketplace: ALPS authoring and ADR-driven development as two independent plugins.",
   "type": "module",
   "scripts": {
-    "build": "node scripts/sync-authoring-guidance.mjs && node scripts/sync-report-skill.mjs && pnpm --filter alps-writer build",
+    "build": "node scripts/vendor-report-diff.mjs && node scripts/sync-authoring-guidance.mjs && node scripts/sync-report-skill.mjs && pnpm --filter alps-writer build",
     "lint": "pnpm --filter alps-writer lint",
-    "test": "pnpm authoring-guidance:check && pnpm report-skill:check && pnpm --filter alps-writer test && node --test \"plugins/adr-writer/tests/**/*.test.mjs\" && pnpm test:deepeval",
+    "test": "pnpm report-assets:check && pnpm authoring-guidance:check && pnpm report-skill:check && pnpm --filter alps-writer test && node --test \"plugins/adr-writer/tests/**/*.test.mjs\" && pnpm test:deepeval",
     "test:deepeval": "node --test \"plugins/adr-writer/evals/deepeval/*.test.mjs\"",
     "eval:regression": "node plugins/adr-writer/evals/deepeval/run.mjs",
     "eval:skills": "node plugins/adr-writer/evals/skills/run.mjs",
@@ -26,7 +26,9 @@
     "report-skill:sync": "node scripts/sync-report-skill.mjs",
     "report-skill:check": "node scripts/sync-report-skill.mjs --check",
     "authoring-guidance:sync": "node scripts/sync-authoring-guidance.mjs",
-    "authoring-guidance:check": "node scripts/sync-authoring-guidance.mjs --check"
+    "authoring-guidance:check": "node scripts/sync-authoring-guidance.mjs --check",
+    "report-assets:sync": "node scripts/vendor-report-diff.mjs",
+    "report-assets:check": "node scripts/vendor-report-diff.mjs --check"
   },
   "keywords": [
     "claude-code",
@@ -57,6 +59,7 @@
     "@aws-sdk/credential-providers": "3.1135.0",
     "@mermaid-js/mermaid-cli": "11.17.0",
     "deepeval": "0.9.16",
+    "diff2html": "3.4.56",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.5",
     "prettier": "^3.8.3",

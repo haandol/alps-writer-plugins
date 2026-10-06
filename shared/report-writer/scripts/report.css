@@ -1,0 +1,630 @@
+:root {
+  color-scheme: light;
+  --reading-width: 52rem;
+  --content-width: 84rem;
+  --ink: #292927;
+  --muted: #686863;
+  --line: #e7e7e2;
+  --surface: #f7f7f4;
+  --link: #326b62;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--ink);
+  font:
+    400 clamp(1.0625rem, 1rem + 0.2vw, 1.1875rem) / 1.85 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Apple SD Gothic Neo",
+    "Noto Sans KR",
+    sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+main {
+  width: 100%;
+  max-width: var(--content-width);
+  margin-inline: auto;
+  padding: clamp(2rem, 6vw, 5.5rem) clamp(1.125rem, 4vw, 3.5rem) 5rem;
+}
+
+/* Keep prose aligned at every depth; figures may use the full page measure. */
+header,
+.report-answer,
+nav,
+footer,
+.report-node > :is(h2, p, summary, .comprehension, .evidence-group) {
+  width: 100%;
+  max-width: var(--reading-width);
+  margin-inline: auto;
+}
+
+.report-node,
+.report-children,
+.diagram,
+.diagram__viewport,
+.evidence-group,
+.evidence,
+.quiz {
+  min-width: 0;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+summary,
+p {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  text-wrap: pretty;
+}
+
+h1 {
+  margin: 0 0 2.25rem;
+  font-size: clamp(2rem, 1.4rem + 2vw, 3.25rem);
+  line-height: 1.22;
+}
+
+h2 {
+  margin-block: 0 1rem;
+  font-size: clamp(1.5rem, 1.25rem + 0.7vw, 1.875rem);
+  line-height: 1.4;
+}
+
+h3 {
+  font-size: 1.125rem;
+  line-height: 1.5;
+}
+
+p {
+  margin-block: 0 1.25em;
+}
+
+header {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.report-background h2 {
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.report-background p {
+  color: var(--muted);
+  font-size: 0.9375em;
+}
+
+.report-background p:last-child,
+.report-answer p:last-child {
+  margin-bottom: 0;
+}
+
+.report-answer {
+  margin-block: 2rem;
+  padding: 0.25rem 0 0.25rem clamp(1rem, 2vw, 1.5rem);
+  border-left: 3px solid var(--ink);
+}
+
+.report-answer h2 {
+  font-size: 1.25rem;
+}
+
+a {
+  color: var(--link);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  overflow-wrap: anywhere;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:is(a, summary, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  padding-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+nav a {
+  min-width: 0;
+  padding-block: 0.25rem;
+}
+
+.report-node {
+  margin-top: 3rem;
+  scroll-margin-top: 1.5rem;
+}
+
+.report-node > h2 {
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+
+.report-children > .report-node {
+  margin-top: 2rem;
+  padding: 0;
+  border: 0;
+}
+
+summary {
+  cursor: pointer;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+summary::marker {
+  color: var(--muted);
+  font-size: 0.75em;
+}
+
+.report-children > .report-node > summary {
+  padding-block: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 1.25rem;
+  font-weight: 650;
+}
+
+.report-children .report-children > .report-node > summary {
+  font-size: 1.125rem;
+}
+
+.branch-preview {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.75;
+}
+
+.scope,
+.review {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.75;
+}
+
+.evidence-group {
+  margin-block: 1.75rem;
+  padding-block: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+
+.evidence {
+  margin-block: 1rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--line);
+}
+
+.evidence p {
+  margin-block: 0.75rem;
+}
+
+.draft {
+  padding: 1rem;
+  background: #fff3d9;
+  color: #674a20;
+  font-size: 0.875rem;
+}
+
+.diagram {
+  margin: 1.5rem 0;
+}
+
+.diagram__viewport {
+  overflow: auto;
+  overscroll-behavior-x: contain;
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+/* Preserve the renderer's natural SVG size; scroll only its own viewport. */
+.diagram svg {
+  display: block;
+  margin-inline: auto;
+  color: #555650;
+}
+
+.diagram svg text {
+  font: 14px sans-serif;
+  fill: var(--ink);
+}
+
+.diagram-node rect,
+.diagram-node path,
+.sequence__participant rect {
+  fill: #fff;
+  stroke: #8b9087;
+}
+
+.diagram-boundary rect,
+.sequence__frame {
+  fill: none;
+  stroke: #a2a69d;
+}
+
+.sequence__note rect {
+  fill: #fff6dc;
+  stroke: #b2a276;
+}
+
+.sequence__lifeline {
+  stroke: #a2a69d;
+  stroke-dasharray: 5 5;
+}
+
+.diagram-source {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.diagram-scroll {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+pre {
+  max-width: 100%;
+  max-height: 38rem;
+  margin-block: 1rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: clamp(0.875rem, 2vw, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--ink);
+  font:
+    0.8125rem/1.8 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  tab-size: 2;
+}
+
+pre code {
+  font: inherit;
+}
+
+.comprehension {
+  margin-block: 2rem;
+  font-size: 1rem;
+}
+
+.comprehension .quiz {
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  border-color: var(--line);
+  border-radius: 6px;
+}
+
+.comprehension
+  :is(.quiz__head, .quiz__recall, .quiz__teach-back, .quiz__revisit-guidance, .quiz__limit) {
+  color: var(--muted);
+}
+
+.comprehension .quiz__head {
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.comprehension .quiz__option {
+  border-color: var(--line);
+}
+
+.comprehension .quiz__option:has(input:checked) {
+  background: #edf3ef;
+}
+
+.comprehension .quiz button {
+  background: var(--surface);
+  border-color: #8b9087;
+  color: var(--ink);
+}
+
+.comprehension .quiz__feedback {
+  border-color: var(--link);
+}
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.evidence-group:has(.code-diff) {
+  max-width: none;
+}
+
+.evidence-group:has(.code-diff) > summary,
+.evidence:has(.code-diff) > :is(summary, p),
+.evidence-group:has(.code-diff) > .evidence:not(:has(.code-diff)) {
+  max-width: var(--reading-width);
+  margin-inline: auto;
+}
+
+.evidence:has(.code-diff) {
+  padding-left: 0;
+  border: 0;
+}
+
+.code-diff {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  margin-block: 1rem;
+}
+
+.code-diff .d2h-wrapper {
+  --d2h-dim-color: #686863;
+  --d2h-ins-bg-color: #edf6ee;
+  --d2h-del-bg-color: #fceeee;
+  --d2h-ins-highlight-bg-color: #cee8d0;
+  --d2h-del-highlight-bg-color: #f4cece;
+  --d2h-change-ins-color: #edf6ee;
+  --d2h-change-del-color: #fceeee;
+}
+
+.code-diff .d2h-file-header {
+  height: auto;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+}
+
+.code-diff .d2h-file-name-wrapper {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.code-diff .d2h-file-name {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+
+.code-diff :is(.d2h-file-collapse, .d2h-tag) {
+  display: none;
+}
+
+.code-diff :is(.d2h-file-diff, .d2h-code-wrapper) {
+  overflow: visible;
+}
+
+.code-diff .d2h-diff-table {
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+/* Use normal table cells, not the library's absolutely positioned gutter. */
+.code-diff .d2h-code-linenumber {
+  position: static;
+  display: table-cell;
+  width: 6em;
+  min-width: 6em;
+  vertical-align: top;
+  user-select: none;
+  white-space: nowrap;
+  color: var(--muted);
+  direction: ltr;
+}
+
+.code-diff :is(.line-num1, .line-num2) {
+  display: inline-block;
+  float: none;
+  width: 2.5em;
+  padding-inline: 0.2em;
+}
+
+.code-diff .d2h-code-line {
+  display: block;
+  width: auto;
+  margin: 0;
+  padding: 0.1rem 0.75rem;
+  white-space: nowrap;
+}
+
+.code-diff .d2h-code-line-ctn {
+  display: inline;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+@media (max-width: 40rem) {
+  main {
+    padding-bottom: 3rem;
+  }
+
+  h1 {
+    margin-bottom: 1.75rem;
+  }
+
+  .report-node {
+    margin-top: 2rem;
+  }
+
+  .report-node > h2 {
+    padding-top: 1.5rem;
+  }
+
+  .report-answer {
+    margin-block: 1.5rem;
+  }
+
+  .evidence {
+    padding-left: 0.75rem;
+  }
+}
+
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  body {
+    color: #111;
+    font-size: 11pt;
+    line-height: 1.65;
+  }
+
+  main {
+    max-width: none;
+    padding: 0;
+  }
+
+  footer {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    break-inside: avoid;
+  }
+
+  footer .review {
+    margin-block: 0 0.5em;
+    font-size: 8.5pt;
+    line-height: 1.5;
+  }
+
+  header,
+  .report-answer,
+  footer,
+  .report-node > :is(h2, p, summary, .comprehension, .evidence-group) {
+    max-width: none;
+  }
+
+  nav,
+  .revisit-explanation,
+  .diagram-scroll,
+  .diagram-source,
+  .evidence-group:not([open]),
+  .evidence:not([open]) {
+    display: none;
+  }
+
+  h1 {
+    font-size: 26pt;
+  }
+
+  h2 {
+    font-size: 18pt;
+  }
+
+  .report-node,
+  .evidence {
+    break-inside: auto;
+  }
+
+  h1,
+  h2,
+  h3,
+  summary {
+    break-after: avoid-page;
+  }
+
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .diagram {
+    break-inside: avoid-page;
+    break-after: avoid-page;
+  }
+
+  .diagram__viewport {
+    overflow: visible;
+    padding: 0;
+    border: 0;
+    background: #fff;
+  }
+
+  .diagram svg {
+    width: 100% !important;
+    min-width: 0;
+    max-width: 100% !important;
+  }
+
+  pre {
+    max-height: none;
+    overflow: visible;
+    background: #fff;
+    color: #111;
+    border: 1px solid #ccc;
+  }
+
+  summary {
+    cursor: default;
+    list-style: none;
+  }
+
+  summary::marker {
+    content: "";
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .code-diff,
+  .code-diff :is(.d2h-file-diff, .d2h-code-wrapper) {
+    overflow: visible;
+    max-height: none;
+  }
+
+  .code-diff .d2h-file-wrapper {
+    break-inside: auto;
+  }
+
+  .code-diff .d2h-file-header {
+    break-after: avoid-page;
+  }
+
+  .code-diff .d2h-diff-table {
+    width: 100%;
+    table-layout: fixed;
+    font-size: 8pt;
+  }
+
+  .code-diff .d2h-code-linenumber {
+    width: 6em;
+    min-width: 0;
+  }
+
+  .code-diff .d2h-code-line-ctn {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+  }
+
+  .code-diff .d2h-code-line {
+    padding-inline: 0.4rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

@@ -232,6 +232,12 @@ reading order, prose, worked calculations, paragraph breaks, and source support.
 Its helper renders HTML or Markdown without installing packages. Existing
 structured review artifacts remain complete audit inputs.
 
+The default responsive layout centers prose and gives figures and code evidence
+more width. Code-review evidence supports diff2html-rendered unified diffs with
+old/new line numbers and change highlighting. The library and styles are bundled;
+the delivered HTML already contains the diff and works offline. Key evidence
+marked for printing remains included, with long lines wrapped to the paper width.
+
 ADR authoring keeps the required sections: Purpose opens with the problem,
 intended outcome, and a brief direction preview; the adjacent Decision Drivers
 state all currently applicable selection criteria; Decision connects the choice

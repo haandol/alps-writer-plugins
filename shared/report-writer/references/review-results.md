@@ -49,6 +49,11 @@ Use a Mermaid sequence diagram for a multi-participant failure or timing path
 when supported by the evidence. Keep a local wording issue or one-step fix in
 plain text. Do not turn a hypothetical failure into an observed event.
 
+For code changes, follow [code evidence](code-evidence.md) to show selected actual
+diffs with their locations, significance and verification. Preserve the caller's
+comparison range and complete source artifacts. Existing-code reviews without a
+change range use excerpts instead of an invented before/after patch.
+
 ## Comprehension support
 
 Use [the common comprehension workflow](comprehension.md) to generate the quiz
