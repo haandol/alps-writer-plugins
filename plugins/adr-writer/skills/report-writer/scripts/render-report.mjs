@@ -135,7 +135,9 @@ export function validateReport(doc) {
           evidenceIds.add(item.id);
           sourceUrl(item.source);
           if (item.source.startsWith("#")) fragments.push(item.source.slice(1));
-          keys(item, ["id", "label", "source", "excerpt"], item.id);
+          keys(item, ["id", "label", "source", "excerpt", "expanded"], item.id);
+          if (item.expanded !== undefined && typeof item.expanded !== "boolean")
+            throw new Error(`${item.id}: expanded must be boolean`);
           if (item.excerpt !== undefined && typeof item.excerpt !== "string")
             throw new Error(`${node.id}: excerpts must be literal strings`);
         }
@@ -254,7 +256,7 @@ export function renderHtml(doc) {
       .map((node) => {
         const tag = depth === 0 ? "section" : "details";
         const nodeQuestions = questions.filter((q) => q.sectionId === node.id);
-        return `<${tag} class="report-node" data-domain="${esc(node.domain)}" data-depth="${depth}" id="${esc(node.id)}"${depth > 0 && node.expanded ? " open" : ""}>
+        return `<${tag} class="report-node" data-domain="${esc(node.domain)}" data-depth="${depth}" id="${esc(node.id)}"${depth > 0 && node.expanded !== false ? " open" : ""}>
 ${depth === 0 ? `<h2>${esc(node.title)}</h2>${node.preview ? `<p class="branch-preview">${esc(node.preview)}</p>` : ""}` : `<summary>${esc(node.title)}<span class="branch-preview">${esc(node.preview ?? node.scope)}</span></summary>`}
 ${depth === 0 || node.preview ? `<p class="scope">${esc(node.scope)}</p>` : ""}${paragraphs(node.paragraphs)}
 ${node.diagram ? `<p class="diagram-scroll">${esc(ui.diagramScroll)}</p>${renderMermaid(node.diagram.source, { diagramSource: ui.source, diagramFallback: ui.fallback, idPrefix: node.id })}<p>${esc(node.diagram.explanation)}</p>` : ""}
@@ -266,7 +268,7 @@ ${
         .join("")}</div>`
     : ""
 }
-${node.evidence?.length ? `<details class="evidence-group"><summary>${esc(ui.evidence)} · ${node.evidence.length}</summary>${node.evidence.map((e) => `<details class="evidence"><summary>${esc(e.label)}</summary><p><a href="${esc(sourceUrl(e.source))}">${esc(e.source)}</a></p>${e.excerpt !== undefined ? `<pre><code>${esc(e.excerpt)}</code></pre>` : ""}</details>`).join("")}</details>` : ""}
+${node.evidence?.length ? `<details class="evidence-group"${node.evidence.some((e) => e.expanded) ? ' open data-print-expanded="true"' : ""}><summary>${esc(ui.evidence)} · ${node.evidence.length}</summary>${node.evidence.map((e) => `<details class="evidence"${e.expanded ? ' open data-print-expanded="true"' : ""}><summary>${esc(e.label)}</summary><p><a href="${esc(sourceUrl(e.source))}">${esc(e.source)}</a></p>${e.excerpt !== undefined ? `<pre><code>${esc(e.excerpt)}</code></pre>` : ""}</details>`).join("")}</details>` : ""}
 </${tag}>`;
       })
       .join("");
@@ -276,12 +278,13 @@ ${node.evidence?.length ? `<details class="evidence-group"><summary>${esc(ui.evi
 .diagram-scroll{display:none}@media(max-width:700px){.diagram-scroll{display:block;font-size:13px;color:#5b7285}}@media print{.diagram-scroll{display:none}.evidence{break-inside:avoid}}
 ${quizCss}
 .branch-preview{display:block;font-size:15px;font-weight:400;line-height:1.65;color:#425e70;margin-top:5px;max-inline-size:48rem}.report-answer{margin:24px 0}.evidence-group{padding:12px 0;border-top:1px solid #d6e1e9}
+@media print{@page{margin:16mm}.evidence-group:not([open]),.evidence:not([open]){display:none}body{color:#111;font-size:11pt;line-height:1.65}main{max-width:none}nav,.revisit-explanation{display:none}.report-children>.report-node{padding:12px 0 0;border:0;border-top:1px solid #ccc;border-radius:0}.report-node,.evidence{break-inside:auto}h1,h2,h3,summary{break-after:avoid-page}p{orphans:3;widows:3}.diagram{break-inside:avoid-page;break-after:avoid-page}.diagram__viewport{overflow:visible}pre{max-height:none;overflow:visible;background:#fff;color:#111;border:1px solid #ccc}summary{cursor:default;list-style:none}summary::marker{content:""}summary::-webkit-details-marker{display:none}}
 </style></head><body><main><header><h1>${esc(doc.title)}</h1>${doc.background ? `<section class="report-background"><h2>${ui.backgroundGoals}</h2>${paragraphs(doc.background)}</section>` : ""}</header>
 <section class="report-answer">${doc.summaryTitle ? `<h2>${esc(doc.summaryTitle)}</h2>` : ""}${paragraphs(doc.summary)}${doc.review.status === "draft" ? `<p class="draft">${ui.draft}</p>` : ""}</section>
 <nav aria-label="Domains">${doc.sections.map((n) => `<a href="#${esc(n.id)}">${esc(n.title)}</a>`).join("")}</nav>
 ${nodes(doc.sections)}<footer><p class="review">${ui.review}: ${esc(doc.review.basis)}</p>${doc.review.limitations ? `<p class="review">${ui.limitations}: ${esc(doc.review.limitations)}</p>` : ""}${result.warnings.map((w) => `<p class="draft">${esc(w)}</p>`).join("")}</footer>
 </main><script>document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',()=>{let n=document.getElementById(a.hash.slice(1));while(n){if(n.tagName==='DETAILS')n.open=true;n=n.parentElement;}}));
-let printClosed=[];window.addEventListener('beforeprint',()=>{printClosed=[...document.querySelectorAll('details:not([open]):not(.diagram-source)')];printClosed.forEach(n=>n.open=true);});window.addEventListener('afterprint',()=>{printClosed.forEach(n=>n.open=false);printClosed=[];});
+let printClosed=null;window.addEventListener('beforeprint',()=>{if(printClosed===null)printClosed=[...document.querySelectorAll('details.report-node:not([open]),details[data-print-expanded="true"]:not([open])')];printClosed.forEach(n=>n.open=true);});window.addEventListener('afterprint',()=>{(printClosed??[]).forEach(n=>n.open=false);printClosed=null;});
 document.querySelectorAll('.diagram__viewport').forEach(n=>{n.tabIndex=0;n.setAttribute('role','region');n.setAttribute('aria-label',${JSON.stringify(ui.diagramScroll)});});
 ${quizScript(quizUi)}
 </script></body></html>`;

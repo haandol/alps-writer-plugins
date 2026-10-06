@@ -7,6 +7,26 @@ No global request ordering, automatic cancellation on timeout, or always-current
 
 export const abstractionCases = [
   {
+    id: "report-drilldown-print-handout",
+    title: "An expanded report remains readable as a printed handout",
+    source: systemFacts,
+    task: "Return a standalone Korean HTML report explaining this system with nested explanatory sections and a useful detailed diagram. It must be readable continuously on screen and as a printed handout. Preserve access to source evidence. Do not invoke tools or write files. The user excludes quizzes for this report.",
+    semanticObligations: [
+      {
+        id: "expanded-default",
+        text: "Every explanatory subsection starts visible at every nesting depth. Detailed evidence may be collapsed by default, while facts needed to understand the conclusion, limitation, or next action remain in the body or an expanded focused evidence item. Ordinary sections or details with the open attribute are valid; relying only on JavaScript or a before-print handler to reveal initially collapsed explanations is insufficient. The report does not automatically collapse successful or routine detail, and makes no unsupported claim that its rendered print output was checked.",
+      },
+      {
+        id: "print-completeness",
+        text: "The output preserves the explanation, figures, and necessary evidence in reading order in print. If it allows screen collapsing, print handling includes the explanations and explicitly necessary evidence and restores the reader's prior screen state afterwards. Optional folded logs and code are not automatically expanded into the handout; original source access and required coverage remain intact. Print layout avoids scroll-box clipping and excessive nested indentation, keeps headings and related content together where feasible, and excludes navigation controls and optional Mermaid source views while retaining their source in HTML.",
+      },
+      {
+        id: "meaning-and-scope",
+        text: "Expanded presentation still teaches the same subject from overview to internal behavior and retains the unknown-provider-outcome limit. The detailed timing view is grounded in the supplied events. The response neither adds the excluded quiz nor invents provider guarantees, user background, measured learning, live testing, or published artifacts.",
+      },
+    ],
+  },
+  {
     id: "report-drilldown-visual-detail",
     title: "Detailed relationships receive their own useful visual explanations",
     source: `${systemFacts}

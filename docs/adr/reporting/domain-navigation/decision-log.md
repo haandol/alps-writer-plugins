@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the reporting/domain-n
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-10-06 — 펼친 문서를 기본으로 제공해 인쇄와 배포를 지원
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 하위 설명을 접어 제공하는 기본값 → 본문은 모든 깊이에서 펼치고 상세 근거는 필요한 것만 펼친다. 인쇄에는 본문·그림·필요한 근거와 독자가 펼친 선택적 근거를 포함하고, 인쇄 후 화면 상태를 복원한다. 원본 근거 접근과 정답·보조 Mermaid 원문의 기존 인쇄 제외 규칙은 유지한다.
+- **Why**: 보고서를 처음부터 읽거나 출력물로 배포할 때 펼침 조작 없이도 내용이 이어지고, 접힌 상태 때문에 설명이 빠지는 일을 막기 위해서다.
+
 ## 2026-10-06 — 알려진 사용자 배경에서 같은 대상의 내부 동작으로 확대
 
 - **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)

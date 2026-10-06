@@ -86,7 +86,13 @@ const groups = [
     "깊이와 비유 검토",
     ["report-drilldown-distinguishes-", "report-drilldown-rejects-"],
   ],
-  ["리뷰와 설명", "보고서 품질", "단계별 이해", "시각 설명", ["report-drilldown-visual-"]],
+  [
+    "리뷰와 설명",
+    "보고서 품질",
+    "단계별 이해",
+    "시각 표현과 인쇄",
+    ["report-drilldown-visual-", "report-drilldown-print-"],
+  ],
   ["리뷰와 설명", "보고서 품질", "단계별 이해", "목적과 인과", ["report-drilldown-"]],
   [
     "리뷰와 설명",
@@ -274,7 +280,7 @@ export function saveSkillsReport(directory, report) {
         title: item.title,
         domain: labels[type],
         scope: item.id,
-        expanded: runs.some((r) => ["ERROR", "NOT_PROVEN"].includes(r.verdict)),
+        expanded: runs.some((r) => ["ERROR", "NOT_PROVEN"].includes(r.verdict)) || undefined,
         paragraphs: [
           summaryText(runs),
           ...["NOT_PROVEN", "ERROR", "NOT_RUN"].flatMap((verdict) => {

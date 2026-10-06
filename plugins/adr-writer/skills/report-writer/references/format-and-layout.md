@@ -25,10 +25,18 @@ Use semantic headings or a tree of domain nodes. Each parent has at most four
 immediate child explanation units. If more are needed, create meaningful
 responsibility groups or depth; never truncate or invent numbered batches.
 
-Keep the overview readable without expanded evidence. Put detailed mechanisms
+Keep the overview understandable on its own. Put detailed mechanisms
 and exact sources with their owning domain. In HTML, collapsible details and
 anchors can provide drill-down; in Markdown or text, use nested headings and
 clear references. Do not hide an unstructured report inside one giant detail.
+All explanatory subsections default to expanded at every depth, so the document
+is readable from start to finish without interaction. Detailed evidence and raw
+sources default to collapsed. Keep the facts needed to understand the conclusion,
+limitations, and next action in the body; expand a focused evidence item when
+needed rather than exposing every log or contract excerpt. Complete sources stay
+reachable regardless of their display state.
+Retain optional collapsing for the reader; start collapsed only when explicitly
+requested. Do not collapse successful findings or ordinary detail automatically.
 These controls expose an explanation hierarchy; they do not define its abstraction
 levels. When improving explanatory depth, preserve the existing report design
 unless the user also requests a design change. Use the shared renderer's default
@@ -51,7 +59,7 @@ The answer may have an authored heading when useful, but no universal answer
 title is required. For existing inputs with no separate background, preserve
 their text without guessing which sentences are background.
 
-A collapsed branch shows its title and a brief description of what it will
+If the reader collapses a branch, it shows its title and what it will
 clarify. Keep substantive parent explanations understandable without opening
 source material. Supporting sources and quizzes occupy their own regions under
 the explanation; count the independent explanation branches toward the
@@ -91,6 +99,32 @@ Keep independent peer items within the hierarchy limit by domain grouping.
 Worked calculations show inputs, units, substitution, results, and interpretation;
 hypothetical values must be distinguishable from measurements through their
 framing or an inline qualifier, without a redundant explanatory sentence.
+
+### Print and handout layout
+
+Print all explanatory subsections, figures, and evidence marked as necessary
+regardless of their current collapsed state. Leave optional evidence folded unless
+the reader has opened it and its enclosing evidence group; do not automatically
+add raw logs and code appendices to the handout. Restore the screen state after printing;
+repeated print events must not lose it. The initial HTML itself must contain
+expanded subsections rather than relying on a script to reveal the document.
+Keep the background, answer, child explanations, questions, and included source
+evidence in their established reading order. No material limitation or required
+action may exist only in an optional folded source.
+
+Use the page width for content instead of accumulating nested card indentation.
+Avoid orphan headings and unnecessary page breaks; let long prose and source
+excerpts continue across pages instead of clipping them in scroll boxes. Keep
+figures and their explanation together when feasible. Split an oversized diagram
+into meaningful views if fitting it to the page would make labels unreadable.
+Use print-friendly backgrounds and text while preserving the established design.
+
+Omit navigation controls and optional Mermaid source views from the default
+printout; retain source access in HTML. Follow the existing quiz contract: print
+questions and all four choices, excluding answers, feedback, prior selections,
+and controls. Expanded report sections do not change staged quiz disclosure on
+screen. Inspect the continuous document and the supported print output with the
+permitted tools, and distinguish static checks from actual print verification.
 
 ## Final delivery
 

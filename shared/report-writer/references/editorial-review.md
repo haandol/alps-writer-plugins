@@ -105,8 +105,10 @@ in the report itself. For abstraction changes and familiar analogies, apply
   changes its answer. Details must substantiate or qualify the parent claim;
   a new unrelated claim needs its own meaningful scope.
 
-Inspect the output with details closed, then open one branch at a time. At the
-closed level, the reader should recover the answer, material limitations, and
+Inspect the default output with all subsections expanded for continuous reading
+and print layout. Then isolate the upper explanation and inspect one deeper
+branch at a time; temporary collapsing is a review aid, not the delivery default.
+At the upper level, the reader should recover the answer, material limitations, and
 why a branch is worth opening without needing the deferred internal vocabulary.
 After opening it, identify what parent object or relationship is expanded and
 what mechanism or precise condition becomes understandable. A peer case or

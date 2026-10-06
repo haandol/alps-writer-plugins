@@ -30,6 +30,13 @@ test("the complete catalog retains every scenario inside bounded report groups",
       })),
     };
     saveSkillsReport(dir, report);
+    const html = readFileSync(path.join(dir, "index.html"), "utf8");
+    const subsections = [...html.matchAll(/<details class="report-node"[^>]*>/g)];
+    assert.ok(subsections.length >= cases.length);
+    assert.ok(
+      subsections.every(([tag]) => /\bopen(?:\s|>)/.test(tag)),
+      "ordinary evaluation results also start expanded",
+    );
     const doc = JSON.parse(readFileSync(path.join(dir, "report.json"), "utf8"));
     const leaves = [];
     const visit = (nodes) => {

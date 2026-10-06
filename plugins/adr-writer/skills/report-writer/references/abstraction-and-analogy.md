@@ -120,8 +120,10 @@ invent a relationship or hide a missing-evidence limitation to supply a figure.
 
 ## Review each reading depth
 
-Read the upper level with detail closed: can this reader grasp the role and
-answer without the deferred vocabulary, while retaining important limits?
+Read the default fully expanded document for continuity and print readiness.
+Then consider the upper explanation on its own: can this reader grasp the role
+and answer without the deferred vocabulary, while retaining important limits?
+Temporarily collapsing details can help this check; it is not the delivery default.
 Then inspect a descent: locate the parent object, the actual concepts mapped
 from the analogy, and the internals that become visible. Finally, apply a relevant
 edge case using the literal rules rather than relying on the analogy.
