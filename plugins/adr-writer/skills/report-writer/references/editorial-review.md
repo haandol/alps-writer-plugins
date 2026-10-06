@@ -1,7 +1,9 @@
 # Editorial review
 
 These are meaning checks, not an AI-authorship detector. Use them for reports in
-any language or format. Report-only requests remain report-only.
+any language or format. Report-only requests remain report-only. Apply
+format-specific inspection under [verification levels](format-and-layout.md#verification-levels);
+reading-order review does not itself require a browser or print session.
 
 ## Establish the reader's context
 
@@ -34,46 +36,12 @@ purpose-defeating choice, and do the reported acceptance checks actually cover
 the intended outcome? Preserve unverified limits and do not mistake expected
 benefits for measured results.
 
-### Make the report's intended use concrete
+### Check the opening's intended use
 
-Under the localized "Background and goals" heading, connect the problem that
-prompted the report to the result expected from reading it. A product goal
-explains the value to protect; the report's purpose explains how this document
-helps the reader protect it. For example, preventing duplicate charges is a
-product goal; being able to distinguish a retry supported by a recorded result
-from one needing more evidence is a useful reading outcome.
-
-Check the opening against the supplied context:
-
-- What concrete uncertainty, risk, choice or task makes the report useful?
-- What should the reader be able to distinguish, decide, explain or do with the
-  information? Name the relevant cases, conditions or next action; "understand
-  the system" or "make a better decision" alone leaves that use unspecified.
-- Does the body supply the explanation or evidence needed for that result?
-  If it cannot, narrow the promise and expose the limitation beside the answer.
-
-In a hypothetical request to compare payment retries and avoid duplicate charges,
-these openings serve different purposes:
-
-> Shallow: "The user requested a comparison of retry designs. This report
-> reviews the options to improve payment reliability."
-
-> Concrete: "A client may retry when the original payment's outcome is already
-> recorded or still unknown. This comparison helps the developer decide which
-> evidence permits a retry and when the provider's outcome must be checked,
-> so the retry design does not create a second charge."
-
-The first restates the task and product aspiration. The second identifies the
-cases the reader needs to distinguish and the decision that distinction supports.
-This is a meaning check, not a required sentence pattern: an explanation may aim
-to let the reader trace a cause or apply a rule without asking for any action.
-Do not append "after reading this report" to every opening, require a new
-approval, or invent a business goal when the user supplied only a learning task.
-
-Keep the opening brief, then immediately present the answer and material
-limitations in their own display area. Expected reader understanding is an aim,
-not a measured learning result. Review the opening and body together; a clear
-purpose statement cannot compensate for missing evidence or explanations.
+Use the opening contract in [explanation design](explanation-design.md).
+Check whether the confirmed problem and intended reading use explain why this
+report matters, and whether the body supports that promise. Narrow unsupported
+promises; reader understanding is an aim, not a measured learning result.
 
 ### Check continuity at each reading depth
 

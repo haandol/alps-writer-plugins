@@ -1,9 +1,13 @@
 # Comprehension support
 
-Generate a short quiz as part of writing a substantive report. Its purpose is to
-help the reader understand the core content and reduce the amount they must hold
-in mind at once. Generating a quiz or selecting a correct answer does not measure
-learning gains or cognitive-load reduction.
+Strongly recommend a short quiz when it helps the reader apply a substantive
+report's core content. Generation is not mandatory. Honor explicit inclusion or
+exclusion; otherwise the report's purpose and learning value determine whether
+to include it. Omission needs no approval or mandatory justification record and
+must not block delivery. Generating questions or selecting correct answers does
+not measure learning gains or cognitive-load reduction.
+
+The rules below apply when a quiz is included.
 
 ## Select the core content
 
@@ -25,10 +29,8 @@ option length or tone. Read all four choices against the report to rule out
 ambiguous or multiple correct answers. Review topical importance and difficulty
 semantically; schema validation cannot establish them.
 
-Omit questions when the user excludes them or the output has no substantive
-concept to check, such as a simple completion notice. A review PASS alone is
-not a reason to omit them. State the actual omission reason briefly in the
-report's review basis when using the structured renderer.
+A PASS verdict neither requires nor rules out a quiz. Choose it for what the
+reader needs to understand, not the verdict label.
 
 ## Place questions with their explanation
 
@@ -59,7 +61,9 @@ through an adapter when needed.
 - Marked questions invite the reader to reopen the report and retry later.
   Do not add timers, notifications, completion histories, or persisted progress.
 
-HTML must provide and verify these controls. Its printable view shows questions
+HTML must provide these controls. Use the verification levels in
+[final delivery](format-and-layout.md#final-delivery); static checks do not prove
+browser interaction or print behavior. Its printable view shows questions
 and all choices, with answers, feedback, previous selections, and controls
 excluded. Markdown and text keep questions and choices separate from answers
 and explanations; do not claim they automatically grade or conceal answers.

@@ -170,8 +170,9 @@ Never replace the four-column implementation-choice table with prose.
 
 The [common comprehension workflow](../../report-writer/references/comprehension.md)
 owns quiz generation, omission criteria, difficulty, count, placement and staged
-self-check. Apply it to the review's core explanation, then retain the generated
-`Comprehension check` audit section. A PASS alone is not an omission reason.
+self-check. Generation is strongly recommended, not mandatory. If included,
+retain the generated `Comprehension check` audit section; otherwise omit the
+optional data and section without an approval or required omission record.
 The fields below adapt that common quiz to this review's native audit schema.
 
 For each question, keep:

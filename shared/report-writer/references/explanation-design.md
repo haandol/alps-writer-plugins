@@ -27,8 +27,8 @@ the early answer, domain hierarchy, native schema, and exact evidence.
   motives, reader deficits or promised results. A task recap such as "the user
   requested a review of X" is insufficient when the reason and intended use are
   known. Keep this brief and natural, without fixed sentence stems or new fields.
-  Use the opening examples and meaning checks in
-  [editorial review](editorial-review.md#make-the-reports-intended-use-concrete).
+  Review the opening and body together using
+  [editorial review](editorial-review.md#check-the-openings-intended-use).
 - Follow that paragraph immediately with the answer, its material implication,
   any conclusion-changing limitation, and the required next action in a distinct
   display area. An answer heading is optional and follows the report's subject.
@@ -79,7 +79,9 @@ cases, or opening a source is not by itself a change in abstraction.
   and bounded contexts; within them, divide by business responsibility or concept.
   Do not substitute file order, technical layers, or work phases for domain scope.
   Do not assume team, system, domain, and bounded-context boundaries coincide.
-- Keep at most four immediate child explanation units. When there are five or
+- Keep at most four immediate child explanation units. Paragraph count is
+  unrestricted; split prose by meaning rather than creating new scopes to fit a
+  numeric limit. When there are five or
   more peer sections, list items, cards, or comparison items, add meaningful
   domain grouping or depth. Do not truncate, hide a giant unstructured dump, or
   use arbitrary numbered batches to satisfy the limit. Supporting sources and

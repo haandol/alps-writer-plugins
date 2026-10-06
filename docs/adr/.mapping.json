@@ -159,8 +159,8 @@
       "adrs": [
         {
           "path": "docs/adr/reporting/domain-navigation/0001-domain-first-report-navigation.md",
-          "status": "Accepted (2026-09-30)",
-          "summary": "리포트는 요청·이해 복잡도로 생성을 선택하고, 익숙한 설명에서 구체적 동작으로 확대하며 본문은 펼치고 상세 근거는 필요에 따라 공개해 인쇄와 배포를 지원한다"
+          "status": "Accepted (2026-10-07)",
+          "summary": "리포트는 필요성에 따라 생성하고 도메인별로 확대하며 문단 수를 제한하지 않고 퀴즈를 강하게 권고하고 실제 검증 범위를 구분한다"
         }
       ],
       "dependsOn": []

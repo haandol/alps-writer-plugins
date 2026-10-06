@@ -120,6 +120,13 @@ const groups = [
       "report-scope-required-",
     ],
   ],
+  [
+    "리뷰와 설명",
+    "보고서 품질",
+    "생성 범위",
+    "학습 지원과 전달 검증",
+    ["report-scope-quiz-", "report-scope-requested-", "report-scope-static-"],
+  ],
   ["리뷰와 설명", "보고서 품질", "근거 보존", ["report-"]],
 ];
 

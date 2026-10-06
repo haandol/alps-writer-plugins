@@ -383,13 +383,16 @@ Reports show how material autonomous choices and evidence serve that intent.
 ADR readers and structure checks accept legacy `Context` as the Purpose section;
 agent context, bounded contexts, and C4 Context views retain their names.
 
-The shared report skill also owns core-content comprehension quizzes: one to five
-medium-difficulty questions per report, four choices and one answer each. Authors
-generate questions from the report; the dependency-free renderer validates and
-displays them with staged self-check and print-safe answer hiding. Implementation
-review reuses these controls and retains its native audit schema and PR-readiness
-rules. Omit quizzes only on user request or when there is no substantive concept
-to check; a PASS verdict alone is not an omission reason.
+The shared report skill strongly recommends core-content comprehension quizzes
+when useful; generation is not mandatory. Honor explicit inclusion or exclusion;
+otherwise decide by reader value without an approval or required omission record.
+When included, generate one to five medium-difficulty questions with four choices
+and one answer each. The renderer validates and displays staged self-check and
+print-safe answer hiding. Implementation review retains its native audit schema
+and PR-readiness rules. Paragraph count is unrestricted; the four-child limit
+applies to independent explanation branches. Default delivery uses semantic and
+static artifact checks; browser interaction and actual print inspection run on
+request and their actual coverage is reported.
 
 ### Cycle hooks layout (adr-writer)
 

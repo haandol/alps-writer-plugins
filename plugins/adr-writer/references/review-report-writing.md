@@ -155,7 +155,7 @@ reason to hide evidence or merge independent obligations.
   semantically rather than truncating them or enforcing a flat paper outline.
   Preserve Component, Code, contract coverage, scope, metrics, implementation
   choices, and raw evidence as appropriate drill-down material.
-  Keep required comprehension questions and ruling controls intact. Place the
+  Keep included comprehension questions and required ruling controls intact. Place the
   `Comprehension check` after the relevant domain's conclusion and before detailed
   evidence; preserve the existing question count, four options, answer hiding,
   neutral feedback, and separation from the code verdict. Do not start a quiz

@@ -14,10 +14,9 @@ When this workflow permits ADR writing and a definition needs creation or change
 apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
 boundary. Review-only work reports unclear or conflicting meanings without editing.
 
-When composing the report, apply report-writer's
-[comprehension workflow](../report-writer/references/comprehension.md) to the
-implementation explanation. A PASS alone does not omit questions. Preserve
-review verdicts, native audit fields, and PR-specific comprehension readiness.
+Quiz generation is strongly recommended, not mandatory. When included, follow
+report-writer's [comprehension workflow](../report-writer/references/comprehension.md);
+preserve verdicts, native audit fields and PR-specific readiness.
 
 The review establishes the following evidence dependencies; orchestration remains model-selected.
 

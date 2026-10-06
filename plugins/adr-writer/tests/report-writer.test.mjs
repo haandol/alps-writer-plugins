@@ -126,9 +126,45 @@ test("five peer units, missing evidence and hidden headings fail instead of trun
   const ignored = sample();
   ignored.unlistedFinding = "must not disappear";
   assert.throws(() => validateReport(ignored), /would be lost/);
-  const paragraphDump = sample();
-  paragraphDump.sections[0].paragraphs = ["one\n\ntwo\n\nthree\n\nfour\n\nfive"];
-  assert.throws(() => validateReport(paragraphDump), /0..4/);
+});
+
+test("semantic paragraphs remain separate without a numeric cap at any reading level", () => {
+  const prose = [
+    "The caller supplies a request key.",
+    "An empty key is rejected before storage access.",
+    "A stored result is returned for a completed request.",
+    "An unknown outcome requires a provider lookup.",
+    "A confirmed failure follows the recovery rule.",
+    "The caller receives the final recorded outcome.",
+  ];
+  for (const paragraphs of [prose, [prose.join("\n\n")]]) {
+    const doc = sample();
+    doc.background = paragraphs;
+    doc.summary = paragraphs;
+    doc.sections[0].paragraphs = paragraphs;
+    doc.sections[0].children[0].paragraphs = paragraphs;
+    assert.equal(validateReport(doc).nodes, 2);
+    const html = renderHtml(doc);
+    const markdown = renderMarkdown(doc);
+    for (const paragraph of prose) {
+      assert.equal(html.split(`<p>${paragraph}</p>`).length - 1, 4);
+      assert.equal(markdown.split(paragraph).length - 1, 4);
+    }
+    const tooMany = structuredClone(doc);
+    tooMany.sections[0].children = Array.from({ length: 5 }, (_, i) => ({
+      id: `child-${i}`,
+      title: "Independent scope",
+      domain: "Payments",
+      scope: "A separate explanation",
+      paragraphs: [prose[i]],
+    }));
+    assert.throws(() => validateReport(tooMany), /one to four/);
+  }
+  for (const paragraphs of [[""], ["   "], [null], "not an array"]) {
+    const doc = sample();
+    doc.sections[0].paragraphs = paragraphs;
+    assert.throws(() => validateReport(doc), /nonempty strings/);
+  }
 });
 
 test("supporting evidence does not consume the four explanation branches", () => {
@@ -229,7 +265,6 @@ test("installing both plugins exposes one report skill and one report directive 
             assert.equal(out.status, 0, out.stderr);
             const text = JSON.parse(out.stdout).hookSpecificOutput.additionalContext;
             assert.match(text, /Report-writing directive/);
-            assert.match(text, /at most four/);
             assert.match(text, /report-writer[/\\]SKILL\.md/);
             assert.doesNotMatch(text, /ADR-first directive/);
             directives[source]++;

@@ -1,137 +1,69 @@
 ---
 name: report-writer
-description: Create or revise requested reports, and automatically explain complex topics or review findings through a report when structured depth materially helps understanding. Answer short, simple requests in chat; ask when report usefulness is unclear. For selected reports, default to standalone HTML and open it in the default browser, honoring delivery preferences.
+description: Create or revise requested reports, and use reports when connected explanations or evidence materially help the reader. Answer simple requests in chat; ask when report usefulness is unclear. Selected reports default to standalone HTML opened in the default browser, subject to user preferences.
 ---
 
 # Report writing
 
-Decide whether a report is useful before starting the report workflow. These
-rules apply to technical explanations, reviews, audits, evaluations, sync and
-rollup results; the task's name alone does not require a report.
-
 ## Choose the delivery
 
-- **Explicit request:** Create or revise a report when the user asks for one or
-  directly invokes this skill, even for a short topic. Honor explicit chat-only,
-  no-file, no-open, other-format and browser requests within their scope.
-- **Complex content:** Automatically create a report when the reader needs to
-  connect conditions, relationships, comparisons or evidence that structured
-  depth, diagrams or evidence navigation would materially clarify. A failure
-  path across several components or a comparison with interacting constraints
-  may qualify. Do not ask for routine permission in this case.
-- **Short, simple content:** Answer in chat when a short explanation or small
-  list can convey the complete answer and necessary evidence. A term definition,
-  one-step instruction or local review finding often fits. Do not create a
-  report file, open a browser or add a quiz. Technical vocabulary, a review
-  request, word count or item count alone is not a complexity threshold.
-- **Unclear usefulness:** Ask one brief question about whether the user wants a
-  report before generating it. Keep the clarification to that question and only
-  the context needed to choose; do not repeat it after an explanation or turn it
-  into a report outline. Reuse a delivery choice already established for
-  the same scope. Continue independent investigation or task work while waiting;
-  silence is not permission to create a file.
+- **Explicit request:** Create or revise the requested report, including a direct
+  skill invocation, even for a short topic. Honor chat-only, no-file, no-open, other-format and browser requests.
+- **Complex content:** Create a report when connecting conditions, relationships,
+  comparisons or evidence needs structured depth. Do not ask for routine permission.
+- **Short, simple content:** Answer in chat when a short explanation or small list
+  conveys the complete answer and evidence. Do not create a file, open a browser
+  or add a quiz. Technical vocabulary, review labels and length alone do not
+  determine complexity.
+- **Unclear usefulness:** Ask one brief delivery question before generating a
+  report. Reuse the user's choice for the same scope, continue independent work
+  while waiting, and do not treat silence as permission.
 
-Apply the delivery criteria without narrating the skill or its routing rules to
-the user. On chat and clarification paths, answer or ask directly.
-
-Preserve report and audit artifacts explicitly required by a specialized
-workflow the user has selected. Do not infer such a requirement merely because
-the task is a review or evaluation. This skill does not change the caller's
-inspection scope, evidence, verdict, permissions or mandatory artifact schema.
-
-Stop here for chat delivery; the report structure and quiz rules below do not
-apply. Once a report is selected, read [review results](references/review-results.md)
-for review presentation and follow the workflow below. Unless the user specifies
-another format or delivery constraint, create standalone HTML, validate it, open
-the final file once in the operating system's default browser and return its
-absolute path. A chat summary accompanies a selected HTML report rather than
-replacing it. Keep caller-required Markdown or JSON as supporting artifacts.
+Apply these criteria without narrating routing. Stop here for chat delivery.
+Preserve artifacts explicitly required by a specialized workflow the user chose;
+its scope, findings, verdict, permissions and native schema remain authoritative.
+A review-only request does not authorize changes to the subject.
 
 ## Compose a selected report
 
-Before creating review, audit, sync, or rollup report files or supporting
-artifacts, follow [review artifact storage](references/review-artifacts.md).
-Keep each run in its own Git-ignored `.adr-review/` subdirectory in the reviewed
-project; final reports and intermediate evidence use the same run directory.
+Write model-facing instructions in English and the report in the user's language.
+Reuse guidance already loaded in this context. Load references for their actual
+purpose rather than collecting every file:
 
-Generate one to five medium-difficulty quiz questions about the report's core
-content to support understanding and reduce cognitive load. Apply
-[comprehension support](references/comprehension.md) when composing the report;
-this skill owns quiz generation, including for reviews. Omit the quiz only when
-the user excludes it or the output has no substantive concept to check. Keep
-questions in the report and start a conversational quiz only on explicit request.
+- Read [explanation design](references/explanation-design.md) for the opening,
+  domain hierarchy, disclosure and diagrams, and
+  [editorial review](references/editorial-review.md) for prose and meaning checks.
+- Read [format and layout](references/format-and-layout.md) for the chosen format's
+  appearance, verification and delivery. For unfamiliar or complex explanations,
+  also use [abstraction and analogy](references/abstraction-and-analogy.md).
+- For review results, read [review presentation](references/review-results.md).
+  Before creating review or audit outputs, follow
+  [artifact storage](references/review-artifacts.md).
+- When actual code evidence matters, read [code evidence](references/code-evidence.md).
+  For structured HTML or Markdown, use [the document contract](references/report-document.md)
+  and `scripts/render-report.mjs` when hierarchy and evidence validation help.
+  The Node-only renderer needs no package installation.
 
-Write skill instructions and model-facing prompts in English. Write the report
-in the user's requested language. This skill governs final human-facing
-presentation; a caller's review strength, findings, approval boundaries, required
-data fields, and source artifacts remain authoritative.
-
-Read [editorial review](references/editorial-review.md) before drafting or
-reviewing prose, and [format and layout](references/format-and-layout.md) for the
-chosen delivery format. Reuse instructions already loaded in the current
-context. The same instructions apply inside another skill.
-
-Omit commentary that explains what the reader already understands, including
-obvious example labels, repeated conclusions, and repeated caveats. Keep context
-and qualifications that change the meaning; follow the editorial guidance below.
-
-## Design the explanation
-
-Read [explanation design](references/explanation-design.md) for the opening,
-domain hierarchy and visual explanations. For unfamiliar or complex material,
-also read [abstraction and analogy](references/abstraction-and-analogy.md).
-Keep the following
-constraints in view while composing:
-
-- Put the localized, standalone "Background and goals" heading below the title.
-  Ground the report's purpose in the confirmed problem and intended reading use,
-  then place the answer and material limitations in a distinct display area.
-- Descend through evidenced domains and responsibilities, with at most four
-  immediate child explanations. Keep source evidence and quizzes with their
-  owning explanation without counting them toward that allowance.
-- Default explanatory subsections to expanded and detailed sources to collapsed;
-  expose evidence needed to understand the result. Preserve explicit disclosure
-  preferences, complete source access, print behavior and original schemas.
-- Explain meaningful relationships at the depth where they appear. Use Mermaid
-  sequence diagrams for important requests, responses and timing; retain source
-  alongside the rendered figure. Do not invent relationships or verification.
-
-For a code-review report, follow
-[code evidence](references/code-evidence.md) to select actual diffs or excerpts,
-connect them to the finding and verification, and preserve source locations.
-Load this reference only when code evidence is relevant. The default responsive
-appearance is owned by [format and layout](references/format-and-layout.md).
+Strongly recommend a short quiz when it helps the reader apply the core content.
+Quiz generation is not mandatory: honor explicit inclusion or exclusion, otherwise
+use the report's purpose and learning value to decide without approval or a required
+omission record. If included, follow [comprehension support](references/comprehension.md).
+Never start a conversational quiz without an explicit request.
 
 ## Review and deliver
 
-Apply the loaded [editorial review](references/editorial-review.md) and
-[format and layout](references/format-and-layout.md) guidance to the latest whole
-output, including folded details. Those references own prose, continuity,
-quantitative examples, paragraph spacing, wrapping, and the High/Medium/Low
-editorial checks; do not repeat their checklists in another report artifact.
+Review the latest whole output with the loaded editorial and format guidance,
+including deeper explanations and evidence. Preserve findings and exact sources;
+do not invent verification, weaken a verdict or add paid calls or publication
+solely to complete a report.
 
-Verify hierarchy, complete evidence, links, and actual rendering separately from
-semantic review. Fix supported material issues and recheck affected transitions.
-Review opened detail sections as well as the overview: check for missing useful
-figures, repeated parent diagrams, and pictures that add no explanatory value.
-Never weaken findings or invent evidence to pass. Report the changes and checks
-actually performed, with unresolved evidence or rendering limits. A self-review
-is not an independent review. Do not introduce paid calls or publication solely
-to satisfy this workflow without existing authorization.
+Follow [verification and final delivery](references/format-and-layout.md#final-delivery).
+The default is semantic review plus static artifact checks; requested browser,
+interaction or print checks are additional work with their own reported results.
+Default HTML delivery creates a nonempty standalone file, opens its absolute path
+once in the operating system's default browser, and returns that path with a short
+summary. Honor delivery overrides and report actual opening failures.
 
-For HTML or Markdown, use [the report document contract](references/report-document.md)
-and `scripts/render-report.mjs` when a structured output helps validate hierarchy
-and evidence coverage. It runs with Node.js and no package installation. Other
-formats follow the same reading hierarchy using their available authoring tools.
-
-For HTML delivery, follow [format and layout](references/format-and-layout.md#final-delivery)
-to verify the final file and open it once, subject to the user's delivery constraints.
-Include its absolute path in the final
-response. If opening is unavailable or fails, keep the generated HTML and
-report the actual reason and path; do not claim that it opened.
-
-If a caller's existing renderer forces a flat legacy layout, keep that output as
-an audit source and compose the final human-facing report through this skill.
-Do not present the legacy layout as satisfying this contract. Preserve the
-caller's complete evidence, test results, and required interactions; group
-them under their owning domain instead of discarding them.
+If a specialized renderer forces a flat legacy layout, retain its output as an
+audit source and compose the final human view through this skill. Preserve native
+schemas, complete evidence, required interactions and the caller's verdict.

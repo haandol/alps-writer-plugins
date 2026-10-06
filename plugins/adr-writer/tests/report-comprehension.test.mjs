@@ -154,11 +154,31 @@ test("question caps, distinct choices, one answer, evidence and revisit boundari
   delete noQuiz.comprehensionCheck;
   assert.doesNotThrow(
     () => renderHtml(noQuiz),
-    "legacy and explicitly omitted quizzes remain readable",
+    "new and legacy reports may omit a quiz without an omission record",
   );
   const sameScope = report();
   sameScope.comprehensionCheck.questions = Array.from({ length: 5 }, (_, i) => question(i + 1));
   assert.equal((renderHtml(sameScope).match(/<article class="quiz">/g) || []).length, 5);
+});
+
+test("a substantive report without a quiz preserves explanation and evidence in both formats", () => {
+  const doc = report();
+  delete doc.comprehensionCheck;
+  doc.requiredEvidenceIds = ["retry-rule"];
+  doc.sections[0].evidence = [
+    {
+      id: "retry-rule",
+      label: "Retry contract",
+      source: "contract.md",
+      excerpt: "A completed key must not charge again.",
+    },
+  ];
+  for (const output of [renderHtml(doc), renderMarkdown(doc)]) {
+    assert.ok(output.includes(doc.sections[0].paragraphs[0]));
+    assert.ok(output.includes(doc.sections[0].evidence[0].excerpt));
+    assert.ok(!output.includes('class="quiz"'));
+    assert.ok(!output.includes("**Q1."));
+  }
 });
 
 test("HTML keeps answer data out of visible markup and escapes authored question text", () => {
