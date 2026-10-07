@@ -114,17 +114,20 @@ sentence; briefly explain how to read the diagram before the fence.
 Every Hill has `diagramIds`. Each ID refers to a diagram in that Hill or in
 Context. Context diagrams are linked to their assigned Hills in HTML. Every
 diagram is assigned to at least one Hill. If `diagramIds` is empty, that Hill
-must have a non-empty `diagramOmissionReason` explaining why its complete
-relationship and behavior are clear in one or two sentences. Omit this reason
+must have a non-empty `diagramOmissionReason` explaining the prose choice,
+user exclusion, or evidence/format limit. Omission is allowed for complex Hills
+too and needs no separate approval. Omit this reason
 when diagrams are assigned. No global boolean or global omission can substitute
 for the Hill's assessment. A shared diagram may serve several Hills only when
 it answers their actual visual questions.
 
-The validator and renderer use the same supported grammar. Missing, duplicate,
-unassigned, misplaced, or unsupported diagrams prevent artifact completion.
-Source fallback remains available for inspection but does not count as a
-rendered required diagram. Semantic review checks whether every important
-relationship is explained; HTML inspection checks the actual visual result.
+The validator and renderer use the same supported grammar. Selected diagram
+metadata must match the actual supplied figures: dangling, duplicate, unassigned,
+misplaced or unsupported selections require repair. If a figure is infeasible,
+remove its selection and explain the limitation through the prose and local
+omission metadata. Figure presence never gates completion. Source fallback must
+not be called a rendered figure. Semantic review checks whether important
+relationships are explained; HTML inspection checks supplied output.
 
 Render findings immediately after the narrative, before detailed evidence.
 Group them as `fix`, `decide`, `verify`, and `note` tasks; preserve the

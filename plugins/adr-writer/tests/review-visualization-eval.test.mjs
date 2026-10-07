@@ -18,6 +18,16 @@ const rows = [
     summary:
       "views=none; reason=One variable name changes.; omission=No caller, result, or control flow changes.",
   },
+  {
+    tag: "E",
+    summary:
+      "views=none; reason=Respect prose-only delivery.; omission=The user excludes figures for this complex review.",
+  },
+  {
+    tag: "F",
+    summary:
+      "views=none; reason=Deliver the known responsibilities in prose.; omission=Call evidence is absent and the channel is plain text only.",
+  },
 ];
 
 test("the view-selection eval uses the shipped guide and accepts useful views", () => {
@@ -37,4 +47,14 @@ test("the view-selection scorer catches state overuse, missing structure, and un
   assert.equal(results[1].pass, false);
   assert.equal(results[2].pass, true);
   assert.equal(results[3].pass, false);
+});
+
+test("complex figure exclusions and unavailable evidence cannot be replaced by forced diagrams", () => {
+  const bad = structuredClone(rows);
+  bad[4].summary = "views=sequenceDiagram; reason=Complex reviews require a diagram.";
+  bad[5].summary = "views=flowchart; reason=Guess missing calls to finish a top-down view.";
+  const results = scenario.score({ tail: { findings: bad } });
+  assert.equal(results[4].pass, false);
+  assert.equal(results[5].pass, false);
+  assert.equal(scenario.score({ tail: { findings: rows.slice(0, 4) } })[4].pass, false);
 });

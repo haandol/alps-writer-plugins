@@ -28,6 +28,13 @@ A review-only request does not authorize changes to the subject.
 ## Compose a selected report
 
 Write model-facing instructions in English and the report in the user's language.
+Include useful figures whenever the evidence and delivery format support them,
+from the overview through detailed explanations. For a whole-system or multi-step
+process, prefer a Mermaid overview after the short background and answer, before
+component detail. Figures are never a delivery gate, including for top-down,
+C4-like or drill-down walkthroughs. Honor diagram exclusions; when a figure is
+not feasible, explain the supported relationships in prose and retain material
+limitations. Follow explanation design for meaningful descent.
 Reuse guidance already loaded in this context. Load references for their actual
 purpose rather than collecting every file:
 

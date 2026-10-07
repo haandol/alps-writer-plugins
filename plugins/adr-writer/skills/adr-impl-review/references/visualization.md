@@ -10,11 +10,13 @@ For each Hill, identify what the reader needs to reconstruct: the important
 behavior, participants and responsibilities, request/response order, data
 movement, failure/recovery path, or changed responsibility.
 
-Record each useful visual question in `diagramRequirements`. Give each Hill a
-`diagramIds` array referencing the diagrams that explain it. A local change
-whose complete relationship and behavior are clear in one or two sentences may
-use an empty array with its own concrete `diagramOmissionReason`. A global
-omission reason never excuses a different, complex Hill.
+Include useful figures whenever the evidence and delivery format support them.
+Record the figures selected for delivery in `diagramRequirements`, and give each
+Hill a `diagramIds` array linking to them. Figures are never a delivery gate.
+When the user excludes figures, evidence or format prevents a useful view, or
+prose explains the relationship clearly, use an empty array with a concrete
+`diagramOmissionReason` for that Hill. This metadata explains the presentation
+choice; it never requires omission approval or a simpler subject.
 
 One diagram may answer several related questions when the relationships remain
 clear. Add or split diagrams when an important question remains unanswered.
@@ -96,9 +98,10 @@ report fences carry the corresponding `%% requirement: Vn` marker.
 4. Render the HTML and inspect it. Sequence lifelines/messages and component
    nodes/boundaries/connections must actually be visible, with readable labels.
    Open both a wide and narrow view when layout is affected.
-5. A source fallback is not a completed required visualization. Rewrite it using
-   supported syntax and check again. If it cannot be resolved, report the
-   specific rendering limit and do not claim visualization complete.
+5. A source fallback is not a rendered figure. Try equivalent supported syntax;
+   if a useful figure remains infeasible, deliver the supported explanation in
+   prose, preserve the material limit, and remove its selection from the diagram
+   metadata. Do not claim rendering succeeded or block the report for its absence.
 
 The self-contained renderer supports sequence participants/aliases, messages,
 notes and nested `alt/else`, `opt`, `loop`, and `par/and`; flowchart nodes,

@@ -107,6 +107,25 @@ cases, or opening a source is not by itself a change in abstraction.
 
 ## Explain relationships visually
 
+Include useful figures whenever the source evidence and delivery format support
+them. For whole-system or multi-step process explanations, prefer an overview
+Mermaid figure before component detail, after the brief background and answer.
+Show purpose, boundaries and essential relationships; defer internal mechanics.
+The first top-level explanation node is a useful place for that overview in the
+shared document renderer.
+
+Figures are never a delivery gate, including for explicit top-down, C4-like or
+drill-down requests. Honor diagram exclusions and format constraints. When a
+figure is not feasible, explain the supported relationships in prose and state
+limitations that affect interpretation. Do not request permission to omit it or
+reject a report solely because it has no figure.
+
+Expand each material overview responsibility in a recognizable branch: identify
+the parent element, use consistent terms, and explain newly visible internal
+relationships, rules or behavior. A heading tree, peer cases, or raw sources
+alone do not establish meaningful descent. Keep meaningful domain scope;
+do not turn the document into a file listing or force a fixed level count.
+
 Assess the need for visualization at every explanatory depth, including collapsed
 branches and leaf sections. When a newly exposed relationship, condition, state,
 sequence, or analogy mapping is easier to understand visually, provide a focused
@@ -131,6 +150,10 @@ examples in [abstraction and analogy](abstraction-and-analogy.md#visualize-the-d
   information or draw a clearly labeled conceptual view of supported relationships;
   do not invent service calls to fill a requested diagram type.
 - Preserve Mermaid source and use the requested format's supported rendering.
+  C4-like resolution does not require literal C4 diagram declarations. When syntax
+  is unsupported, use an equivalent supported view preserving the evidenced
+  relationships. If evidence or format prevents that, explain the relationship
+  in prose and retain the material limitation without blocking delivery.
   In HTML, provide both the rendered view and accessible source. In Markdown,
   use a Mermaid fence; in static exports, retain source with the supporting
   material. If rendering fails, identify the limitation rather than calling the

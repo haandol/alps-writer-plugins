@@ -304,3 +304,123 @@ test("report entrypoints route to the shared English skill without changing nati
   for (const name of ["alps-init", "lite-alps-init", "feature-to-adr"])
     assert.doesNotMatch(read(`plugins/alps-writer/skills/${name}/SKILL.md`), /report-writer/);
 });
+
+test("reports with no diagrams retain their explanation and evidence in both formats", () => {
+  for (const diagram of [undefined, null]) {
+    const doc = sample();
+    doc.sections[0].diagram = diagram;
+    doc.sections[0].children[0].diagram = diagram;
+    assert.deepEqual(validateReport(doc), {
+      nodes: 2,
+      evidence: 2,
+      warnings: [],
+      semanticReview: "reviewed",
+    });
+    const html = renderHtml(doc),
+      markdown = renderMarkdown(doc);
+    assert.match(html, /A repeated key returns the stored result/);
+    assert.match(html, /observed charge count: 1/);
+    assert.doesNotMatch(html, /<figure/);
+    assert.match(markdown, /Settlement boundary/);
+    assert.match(markdown, /observed charge count: 1/);
+    assert.doesNotMatch(markdown, /```mermaid/);
+    doc.requiredEvidenceIds.push("missing");
+    for (const render of [validateReport, renderHtml, renderMarkdown])
+      assert.throws(() => render(doc), /Evidence coverage mismatch/);
+  }
+});
+
+test("the CLI delivers diagram-free reports and preserves files on invalid evidence", () => {
+  const temp = mkdtempSync(path.join(os.tmpdir(), "report-optional-figures-"));
+  try {
+    const input = path.join(temp, "report.json"),
+      output = path.join(temp, "report.out"),
+      cli = path.join(ROOT, "plugins/adr-writer/skills/report-writer/scripts/render-report.mjs");
+    const doc = sample();
+    delete doc.sections[0].children[0].diagram;
+    const run = (format) =>
+      spawnSync(process.execPath, [cli, input, "--out", output, "--format", format], {
+        encoding: "utf8",
+      });
+    for (const [format, render] of [
+      ["html", renderHtml],
+      ["markdown", renderMarkdown],
+    ]) {
+      writeFileSync(input, JSON.stringify(doc));
+      const result = run(format);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(readFileSync(output, "utf8"), render(doc));
+      doc.requiredEvidenceIds.push("missing");
+      writeFileSync(input, JSON.stringify(doc));
+      const rejected = run(format);
+      assert.equal(rejected.status, 2);
+      assert.match(rejected.stderr, /Evidence coverage mismatch/);
+      assert.equal(
+        readFileSync(output, "utf8"),
+        render({ ...doc, requiredEvidenceIds: ["R1", "T1"] }),
+      );
+      rmSync(output);
+      assert.equal(run(format).status, 2);
+      assert.equal(existsSync(output), false);
+      doc.requiredEvidenceIds.pop();
+    }
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});
+
+test("CLI and API preserve output and diagnostics for optional figures at any depth", () => {
+  const temp = mkdtempSync(path.join(os.tmpdir(), "report-figure-parity-"));
+  try {
+    const input = path.join(temp, "report.json"),
+      output = path.join(temp, "report.out"),
+      cli = path.join(ROOT, "plugins/adr-writer/skills/report-writer/scripts/render-report.mjs");
+    const diagrams = [
+      undefined,
+      null,
+      { source: "flowchart TD\nU[Caller] --> P[Payments]" },
+      { source: "sequenceDiagram\nCaller->>Payments: Request" },
+      { source: 'C4Context\nPerson(reader, "Reader")', required: false },
+      { source: 'C4Context\nPerson(reader, "Reader")', required: true },
+      { source: 'C4Context\nPerson(reader, "Reader")' },
+    ];
+    for (const diagram of diagrams) {
+      for (const depth of [0, 1]) {
+        const doc = sample();
+        delete doc.sections[0].children[0].diagram;
+        const node = depth === 0 ? doc.sections[0] : doc.sections[0].children[0];
+        node.diagram = diagram && { ...diagram, explanation: "The caller reaches payments." };
+        writeFileSync(input, JSON.stringify(doc));
+        const invalid = diagram?.source.startsWith("C4Context") && diagram.required !== false;
+        const warnings = diagram?.required === false ? 1 : 0;
+        for (const [format, render] of [
+          ["html", renderHtml],
+          ["markdown", renderMarkdown],
+        ]) {
+          writeFileSync(output, "Previous report");
+          const result = spawnSync(
+            process.execPath,
+            [cli, input, "--out", output, "--format", format],
+            { encoding: "utf8" },
+          );
+          if (invalid) {
+            for (const check of [validateReport, render])
+              assert.throws(() => check(doc), /required diagram: Unsupported/);
+            assert.equal(result.status, 2);
+            assert.match(result.stderr, /required diagram: Unsupported/);
+            assert.equal(readFileSync(output, "utf8"), "Previous report");
+          } else {
+            const validation = validateReport(doc);
+            assert.equal(validation.warnings.length, warnings);
+            assert.equal(result.status, 0, result.stderr);
+            assert.equal(readFileSync(output, "utf8"), render(doc));
+            assert.deepEqual(JSON.parse(result.stdout), { output, ...validation });
+            if (warnings) assert.match(render(doc), /Diagram not rendered/);
+          }
+        }
+      }
+    }
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});

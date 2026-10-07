@@ -246,8 +246,11 @@ const paragraphs = (items) =>
 
 /** Render one standalone HTML page; data and evidence text cannot execute markup. */
 export function renderHtml(doc) {
-  const result = validateReport(doc),
-    ui = labels[doc.language],
+  return renderValidatedHtml(doc, validateReport(doc));
+}
+
+function renderValidatedHtml(doc, result) {
+  const ui = labels[doc.language],
     quizUi = quizLabels[doc.language],
     questions = doc.comprehensionCheck?.questions ?? [];
   function evidenceGroup(items, nodeId) {
@@ -319,6 +322,10 @@ function fenced(text, language) {
 /** Markdown keeps the same domain tree and complete sources as the HTML view. */
 export function renderMarkdown(doc) {
   validateReport(doc);
+  return renderValidatedMarkdown(doc);
+}
+
+function renderValidatedMarkdown(doc) {
   const ui = labels[doc.language];
   const quizUi = quizLabels[doc.language];
   const lines = [`# ${md(doc.title)}`, ""];
@@ -409,7 +416,9 @@ function main(args) {
     );
   const doc = JSON.parse(readFileSync(input, "utf8"));
   const result = validateReport(doc);
-  writeFileSync(out, format === "html" ? renderHtml(doc) : renderMarkdown(doc));
+  const output =
+    format === "html" ? renderValidatedHtml(doc, result) : renderValidatedMarkdown(doc);
+  writeFileSync(out, output);
   console.log(JSON.stringify({ output: path.resolve(out), ...result }));
 }
 if (

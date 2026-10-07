@@ -15,6 +15,13 @@ node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --o
 ```
 
 The CLI defaults to HTML and writes the output without opening a browser.
+Include useful diagrams whenever evidence and format support them. For an
+overview-first walkthrough, prefer an overview in the first top-level node,
+after the brief background and answer. Diagram presence is never a validation
+or delivery requirement; reports without figures remain valid. Editorial review
+checks whether feasible figures would help, the meaning of any supplied figure,
+and the relationships and limitations preserved in prose when figures are absent.
+
 After final verification, follow [final delivery](format-and-layout.md#final-delivery)
 to open the HTML once in the default browser and return its absolute path.
 
@@ -136,8 +143,11 @@ child nodes with their own figures, not empty image-holder sections. Preserve th
 four-child explanation limit and do not force a figure into a simple node.
 The dependency-free renderer supports the common sequence, flowchart, state,
 and entity relationship subset used by the plugins. Unsupported statements
-are never silently discarded. A required unsupported diagram fails delivery;
-an explicitly optional unsupported diagram retains a visible source warning.
+are never silently discarded. `required` controls how an included diagram's
+unsupported syntax is handled, not whether a diagram must exist: the default
+rejects it before writing output; `required: false` retains a visible source
+warning. Repair unsupported syntax, use that explicit fallback, or explain the
+relationship in prose. Never label an unrendered figure as rendered.
 
 ## Compatibility with specialized reports
 

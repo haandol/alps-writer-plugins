@@ -27,6 +27,13 @@ usefulness is unclear, it asks once and reuses an existing delivery choice for
 the same scope. Artifacts explicitly required by a selected specialized workflow
 remain required; a generic review request alone does not require a report.
 
+Reports include useful figures whenever evidence and format support them.
+Whole-system and multi-step explanations prefer a Mermaid overview before detail,
+then expand the same responsibilities. Figures are never a delivery gate, including
+for top-down or C4-like requests. User exclusions take precedence; when a figure
+is not feasible, preserve the relationships and limitations in prose. Supplied
+figures retain syntax checks and separate editorial review of meaning and evidence.
+
 Selected review reports and their evidence stay together in a unique per-run directory
 under `.adr-review/` in the reviewed project. The shared report skill verifies
 Git exclusion, using a local `.adr-review/.gitignore` when needed so review-only
