@@ -27,6 +27,13 @@ A review-only request does not authorize changes to the subject.
 ## Compose a selected report
 
 Write model-facing instructions in English and the report in the user's language.
+Make the report self-contained for its stated audience and question. Do not
+assume the reader has read cited documents, companion reports, or the authoring
+conversation. Bring the source-backed context needed to understand the reasoning,
+conclusions, and next actions into this report. Citations preserve attribution
+and access to further detail; following them must not be a prerequisite for
+understanding the report. Apply this in every delivery format.
+
 Include useful figures whenever the evidence and delivery format support them,
 from the overview through detailed explanations. For a whole-system or multi-step
 process, prefer a Mermaid overview after the short background and answer, before

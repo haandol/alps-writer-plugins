@@ -108,6 +108,13 @@ pnpm --filter alps-writer start   # Run built bundle (node dist/index.js)
 
 ### Versioning
 
+When the maintainer asks to raise the version, complete the release through
+validation, commit, branch push, required PR/CI and merge, then publish the version
+tag and GitHub release on the verified merged commit. Routine confirmation is
+not needed. Default to a patch increment; increase minor or major only when
+explicitly requested, including an exact version. Honor narrower instructions
+such as bump-only or no-push. The personal `deploy-release` skill covers this workflow.
+
 The release version lives in **13 sites** that must agree, in four groups: the four plugin manifests (`.claude-plugin/` + `.codex-plugin/` for both plugins), the three `marketplace.json` versions (metadata + one per plugin entry), the `serverInfo` literal in `plugins/alps-writer/src/index.ts`, and the five `adr-writer:rules-version` stamps in `plugins/adr-writer/templates/adr/`. The `serverInfo` literal is what an MCP client reports, and `tsconfig`'s `rootDir: "src"` prevents importing the version from `package.json`. The stamps are what `adr-structure-lint` compares a consumer's seeded docs against, so a stamp left behind makes the plugin report its own templates as stale to everyone at once. Always bump with `pnpm bump <version>`, then `pnpm build` so the committed `dist/` carries the new `serverInfo`; bumping by hand has drifted twice (0.3.0 and 0.4.20 both shipped with a stale server version).
 
 `version-consistency.test.ts` covers the first eight sites; the five stamps are covered only by `pnpm bump:check`, which is why pre-push and CI both run it.

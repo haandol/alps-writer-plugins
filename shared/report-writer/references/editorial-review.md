@@ -50,6 +50,21 @@ context to choose the explanation, but establish every premise the report needs
 in the report itself. For abstraction changes and familiar analogies, apply
 [abstraction and analogy](abstraction-and-analogy.md).
 
+Read the latest report without opening citations, companion files, or prior
+conversation. Use only what its audience can reasonably know and what the report
+has explained so far. At each source-dependent claim, check whether the report
+supplies the needed definition, rule, condition, and evidence and explains their
+connection to the conclusion or action. Include tables, captions, diagrams, and
+deeper sections in this check. A valid link or complete source list does not
+establish self-contained understanding.
+
+When a passage depends on information found only in another document, identify
+that missing premise and integrate the relevant source-backed content where it
+is needed, following [explanation design](explanation-design.md#make-the-report-self-contained).
+Retain the citation and re-read the transition. If the source cannot be verified,
+state the gap and limit the affected claim; do not invent a bridge or call the
+gap resolved. Review-only work reports the gap and proposed repair without editing.
+
 - Read the title and opening alone: can a reader distinguish this task from
   concurrent work, identify the problem and what reading should enable, then
   find the answer, its significance, and any condition that changes the conclusion?

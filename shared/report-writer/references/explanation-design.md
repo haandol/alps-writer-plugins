@@ -45,6 +45,37 @@ the early answer, domain hierarchy, native schema, and exact evidence.
   skill to the human-facing explanation rather than deleting required fields or
   silently changing machine-readable data.
 
+## Make the report self-contained
+
+Treat the report as the reader's only document. Use the stated audience's general
+knowledge to choose depth, without assuming familiarity with project-specific
+material merely because it was available to the author.
+
+- Read the relevant source passages and their qualifications before using them.
+  If a needed source is unavailable or ambiguous, state the specific evidence gap
+  and its effect on the conclusion. Do not invent missing context or send the
+  reader to the source as a substitute for explaining the limitation.
+- Introduce the necessary background, actors, terms, relationships, and rules
+  where the explanation first needs them. Bring in the source facts and reasoning
+  that support the report's findings or actions, preserving exact values, units,
+  conditions, exceptions, and uncertainty. Distinguish quotations from paraphrases.
+- Integrate focused summaries, excerpts, or adapted figures into the relevant
+  explanation. Explain how they support its judgment; a pasted passage or a
+  bibliography alone does not supply that connection. Keep the early answer
+  concise and put supporting depth in this report's own sections or appendix,
+  without copying entire documents or repeating background at every level.
+- Retain precise citations for attribution and optional verification. A source
+  title, file path, link, or "see the design document" cannot replace content
+  needed to understand this report. Optional further reading may remain external;
+  material premises, definitions, and conclusion-changing evidence must be
+  explained within the report, including those used in tables and figures.
+
+For example, "Retries follow ADR-7" leaves the behavior unexplained. If the source
+says that a timeout can follow a successful charge, explain that possibility and
+the resulting rule to check the provider's original outcome before charging
+again, then cite ADR-7. The reader can understand the rule and its reason without
+opening the ADR.
+
 ## Build a domain-scoped hierarchy
 
 Use C4's idea of changing resolution: start with a familiar picture of the whole,
