@@ -87,6 +87,12 @@ or would the reader still have to reconstruct them from prose? Add a useful
 detail view when needed; an overview figure elsewhere does not cover a hidden
 mechanism. Do not replace this judgment with a requirement for every leaf to
 have a diagram.
+For an overview-first walkthrough, inspect the actual overview figure and its
+placement before component detail. Trace each material overview responsibility
+to the explanation that expands it, checking consistent terms and new internal
+relationships. An absent requested overview defeats that report's purpose;
+repair it before delivery, or state the unresolved evidence/format limitation.
+A renderer pass or an authored `reviewed` status does not establish these checks.
 Reject a child that only repeats its parent, assumes a prerequisite introduced elsewhere without orientation,
 or makes the reader reconstruct the explanation from raw evidence. Substantive
 parents explain the relationship among their children; a simple source list

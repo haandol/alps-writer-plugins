@@ -343,6 +343,13 @@ breaks, evidence-grounded diagrams, worked calculations, and whole-output review
 The renderer validates structure and source coverage; semantic review remains a
 separate, explicitly reported step.
 
+Whole-system and multi-step process reports default to a Mermaid overview after
+the brief background and answer, then expand the same responsibilities into
+internal relationships and rules. Explicit top-down, C4-like or drill-down
+requests require that view unless user diagram exclusions or format constraints
+override it. Use the shared renderer's selected overview guard; its presence,
+position and syntax checks do not replace semantic review of the descent.
+
 Once a report is selected, default to standalone HTML. After
 final verification, open the nonempty file once in the operating system's default
 browser and return its absolute path. Explicit format or delivery constraints

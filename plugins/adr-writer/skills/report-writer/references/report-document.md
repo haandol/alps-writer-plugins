@@ -15,6 +15,23 @@ node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --o
 ```
 
 The CLI defaults to HTML and writes the output without opening a browser.
+When an overview-first walkthrough is required, place its overview in the first
+top-level explanation node and pass `--require-overview <node-id>`:
+
+```sh
+node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --out <run-directory>/report.html --require-overview overview
+```
+
+The guard requires that node to be first and contain a supported Mermaid figure;
+it rejects missing figures and optional unsupported-source fallbacks before
+writing output. The exported validation and rendering functions accept the same
+condition as `{ overviewNodeId: "overview" }`. Without the condition, existing
+and simple reports remain valid without diagrams. The caller must select the
+condition from the task; the renderer cannot infer user intent. This verifies
+presence, order and renderability, not abstraction, factual support or meaningful
+parent-child correspondence. Complete the separate editorial review. Honor
+explicit diagram exclusions and format constraints instead of setting the guard.
+
 After final verification, follow [final delivery](format-and-layout.md#final-delivery)
 to open the HTML once in the default browser and return its absolute path.
 

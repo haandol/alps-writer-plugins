@@ -49,7 +49,7 @@ function sourceUrl(source) {
 }
 
 /** Validate observable hierarchy and coverage, never claim to grade prose quality. */
-export function validateReport(doc) {
+export function validateReport(doc, { overviewNodeId } = {}) {
   if (!doc || !nonempty(doc.title) || !["en", "ko"].includes(doc.language))
     throw new Error("A report needs title and language en|ko");
   keys(
@@ -165,6 +165,20 @@ export function validateReport(doc) {
     }
   }
   visit(doc.sections, "report");
+  if (overviewNodeId !== undefined) {
+    if (!nonempty(overviewNodeId))
+      throw new Error("overviewNodeId must name the first top-level explanation node");
+    const overview = doc.sections[0];
+    if (overview.id !== overviewNodeId)
+      throw new Error(
+        `Required overview ${overviewNodeId} must be the first top-level explanation node`,
+      );
+    if (!overview.diagram)
+      throw new Error(`${overviewNodeId}: required overview diagram is missing`);
+    const parsed = parseMermaid(overview.diagram.source);
+    if (parsed.error)
+      throw new Error(`${overviewNodeId}: required overview diagram: ${parsed.error}`);
+  }
   if (doc.comprehensionCheck !== undefined) {
     const check = doc.comprehensionCheck;
     if (!check || typeof check !== "object" || Array.isArray(check))
@@ -245,8 +259,8 @@ const paragraphs = (items) =>
     .join("");
 
 /** Render one standalone HTML page; data and evidence text cannot execute markup. */
-export function renderHtml(doc) {
-  const result = validateReport(doc),
+export function renderHtml(doc, options = {}) {
+  const result = validateReport(doc, options),
     ui = labels[doc.language],
     quizUi = quizLabels[doc.language],
     questions = doc.comprehensionCheck?.questions ?? [];
@@ -317,8 +331,8 @@ function fenced(text, language) {
   return [fence + language, text, fence, ""];
 }
 /** Markdown keeps the same domain tree and complete sources as the HTML view. */
-export function renderMarkdown(doc) {
-  validateReport(doc);
+export function renderMarkdown(doc, options = {}) {
+  validateReport(doc, options);
   const ui = labels[doc.language];
   const quizUi = quizLabels[doc.language];
   const lines = [`# ${md(doc.title)}`, ""];
@@ -396,20 +410,26 @@ export function renderMarkdown(doc) {
 function main(args) {
   const input = args.shift();
   let out,
-    format = "html";
+    format = "html",
+    overviewNodeId;
   while (args.length) {
     const flag = args.shift();
     if (flag === "--out") out = args.shift();
     else if (flag === "--format") format = args.shift();
-    else throw new Error(`Unknown argument: ${flag}`);
+    else if (flag === "--require-overview") {
+      if (overviewNodeId !== undefined || !args[0] || args[0].startsWith("--"))
+        throw new Error("--require-overview requires one node identifier");
+      overviewNodeId = args.shift();
+    } else throw new Error(`Unknown argument: ${flag}`);
   }
   if (!input || !out || !["html", "markdown"].includes(format))
     throw new Error(
-      "Usage: render-report.mjs report.json --out report.html [--format html|markdown]",
+      "Usage: render-report.mjs report.json --out report.html [--format html|markdown] [--require-overview node-id]",
     );
   const doc = JSON.parse(readFileSync(input, "utf8"));
-  const result = validateReport(doc);
-  writeFileSync(out, format === "html" ? renderHtml(doc) : renderMarkdown(doc));
+  const options = { overviewNodeId };
+  const result = validateReport(doc, options);
+  writeFileSync(out, format === "html" ? renderHtml(doc, options) : renderMarkdown(doc, options));
   console.log(JSON.stringify({ output: path.resolve(out), ...result }));
 }
 if (

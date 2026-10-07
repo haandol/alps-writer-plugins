@@ -27,6 +27,13 @@ usefulness is unclear, it asks once and reuses an existing delivery choice for
 the same scope. Artifacts explicitly required by a selected specialized workflow
 remain required; a generic review request alone does not require a report.
 
+Whole-system and multi-step process reports default to a Mermaid overview before
+component detail. Top-down and C4-like walkthrough requests require the overview
+and recognizable expansions of its responsibilities. User diagram exclusions
+take precedence; simple facts need no figure. The shared renderer's selected
+overview guard checks presence, position and supported syntax, while separate
+editorial review checks abstraction, correspondence and factual support.
+
 Selected review reports and their evidence stay together in a unique per-run directory
 under `.adr-review/` in the reviewed project. The shared report skill verifies
 Git exclusion, using a local `.adr-review/.gitignore` when needed so review-only

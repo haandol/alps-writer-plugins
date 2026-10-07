@@ -28,6 +28,12 @@ A review-only request does not authorize changes to the subject.
 ## Compose a selected report
 
 Write model-facing instructions in English and the report in the user's language.
+For a whole-system or multi-step process explanation, default to an overview
+Mermaid figure before component detail, after the short background and answer.
+An explicit top-down, C4-like or drill-down walkthrough makes that figure a
+delivery requirement. Honor diagram exclusions and format constraints; headings
+or nesting alone do not replace a requested figure. Follow explanation design
+for meaningful descent and the document contract for the overview guard.
 Reuse guidance already loaded in this context. Load references for their actual
 purpose rather than collecting every file:
 

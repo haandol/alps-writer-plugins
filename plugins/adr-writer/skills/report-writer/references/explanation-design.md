@@ -107,6 +107,20 @@ cases, or opening a source is not by itself a change in abstraction.
 
 ## Explain relationships visually
 
+For whole-system or multi-step process explanations, put an overview Mermaid
+figure before component-level explanations, following the brief background and
+answer. An explicit top-down, C4-like or drill-down walkthrough requires this
+view unless the user excludes diagrams or the format cannot support them. Show
+purpose, boundaries and essential relationships; defer internal mechanics.
+Use the first top-level explanation node for the overview when using the shared
+document renderer, and apply its overview guard under `report-document.md`.
+
+Expand each material overview responsibility in a recognizable branch: identify
+the parent element, use consistent terms, and explain newly visible internal
+relationships, rules or behavior. A heading tree, peer cases, or raw sources
+alone do not satisfy the requested visual descent. Keep meaningful domain scope;
+do not turn the document into a file listing or force a fixed level count.
+
 Assess the need for visualization at every explanatory depth, including collapsed
 branches and leaf sections. When a newly exposed relationship, condition, state,
 sequence, or analogy mapping is easier to understand visually, provide a focused
@@ -131,6 +145,10 @@ examples in [abstraction and analogy](abstraction-and-analogy.md#visualize-the-d
   information or draw a clearly labeled conceptual view of supported relationships;
   do not invent service calls to fill a requested diagram type.
 - Preserve Mermaid source and use the requested format's supported rendering.
+  C4-like resolution does not require literal C4 diagram declarations. When syntax
+  is unsupported, use an equivalent supported view preserving the evidenced
+  relationships. If evidence or format prevents that, state the limitation;
+  never silently omit a required view or downgrade it to an optional fallback.
   In HTML, provide both the rendered view and accessible source. In Markdown,
   use a Mermaid fence; in static exports, retain source with the supporting
   material. If rendering fails, identify the limitation rather than calling the

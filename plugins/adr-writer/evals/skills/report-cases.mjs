@@ -1,6 +1,7 @@
 import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
 import { drilldownCases } from "./report-drilldown-cases.mjs";
 import { abstractionCases } from "./report-abstraction-cases.mjs";
+import { overviewCases } from "./report-overview-cases.mjs";
 
 const source = `Recorded evaluation evidence:
 10 requested runs: 6 successful tasks, 2 failed tasks, 2 provider errors.
@@ -51,6 +52,7 @@ Report under review: "모든 10회 요청이 성공해 성공률은 100%다. 운
   },
   ...drilldownCases,
   ...abstractionCases,
+  ...overviewCases,
 ].map(({ task, source: caseSource = source, ...item }) => ({
   ...item,
   name: item.id,

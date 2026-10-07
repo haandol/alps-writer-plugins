@@ -293,6 +293,11 @@ Test report hierarchy, evidence coverage, safe rendering and the adr-writer repo
 Verify that alps-writer has no report skill, hook, or report-writer dependency.
 Inspect the actual report for paragraph flow, line wrapping, diagram semantics
 and source support; a structural pass is not an editorial pass.
+For overview-first walkthroughs, pass `--require-overview <node-id>` to the shared
+renderer and test missing, misplaced and unsupported overview rejection. Keep
+diagram-free legacy reports valid without the selected condition. Prepare the
+`report-drilldown-overview-` probes to verify scenario integration; actual model
+behavior requires an explicitly selected live evaluation.
 
 ### Shared authoring guidance
 

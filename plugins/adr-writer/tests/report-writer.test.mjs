@@ -304,3 +304,75 @@ test("report entrypoints route to the shared English skill without changing nati
   for (const name of ["alps-init", "lite-alps-init", "feature-to-adr"])
     assert.doesNotMatch(read(`plugins/alps-writer/skills/${name}/SKILL.md`), /report-writer/);
 });
+
+test("an overview requirement rejects missing, misplaced and fallback-only figures", () => {
+  const doc = sample();
+  const options = { overviewNodeId: "payments" };
+  assert.equal(validateReport(doc).nodes, 2, "legacy reports need no overview");
+  for (const render of [validateReport, renderHtml, renderMarkdown])
+    assert.throws(() => render(doc, options), /required overview diagram is missing/);
+  doc.sections[0].diagram = {
+    source: "flowchart TD\nU[Caller] --> P[Payments]",
+    explanation: "The caller reaches the payment responsibility.",
+  };
+  for (const render of [renderHtml, renderMarkdown]) {
+    const output = render(doc, options);
+    assert.ok(output.indexOf("Caller") < output.indexOf("Settlement boundary"));
+  }
+  for (const overviewNodeId of ["settlement", "unknown"])
+    assert.throws(() => validateReport(doc, { overviewNodeId }), /first top-level/);
+  assert.throws(() => validateReport(doc, { overviewNodeId: "" }), /overviewNodeId/);
+  doc.sections[0].diagram = {
+    source: 'C4Context\nPerson(reader, "Reader")',
+    explanation: "Unsupported overview.",
+    required: false,
+  };
+  assert.equal(validateReport(doc).warnings.length, 1);
+  for (const render of [validateReport, renderHtml, renderMarkdown])
+    assert.throws(() => render(doc, options), /required overview diagram: Unsupported/);
+});
+
+test("the CLI enforces the overview before writing or overwriting a report", () => {
+  const temp = mkdtempSync(path.join(os.tmpdir(), "report-overview-"));
+  try {
+    const input = path.join(temp, "report.json"),
+      output = path.join(temp, "report.html"),
+      cli = path.join(ROOT, "plugins/adr-writer/skills/report-writer/scripts/render-report.mjs");
+    const doc = sample();
+    writeFileSync(input, JSON.stringify(doc));
+    const run = (...args) =>
+      spawnSync(process.execPath, [cli, input, "--out", output, ...args], {
+        encoding: "utf8",
+      });
+    let result = run("--require-overview", "payments");
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /required overview diagram is missing/);
+    assert.equal(existsSync(output), false);
+    writeFileSync(output, "Previous report");
+    result = run("--require-overview", "payments");
+    assert.equal(result.status, 2);
+    assert.equal(readFileSync(output, "utf8"), "Previous report");
+    doc.sections[0].diagram = {
+      source: "flowchart TD\nU[Caller] --> P[Payments]",
+      explanation: "The caller reaches payments before settlement detail.",
+    };
+    writeFileSync(input, JSON.stringify(doc));
+    result = run("--require-overview", "payments");
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(readFileSync(output, "utf8"), /data-rendered="true"/);
+    result = run("--format", "markdown", "--require-overview", "payments");
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(readFileSync(output, "utf8"), /```mermaid/);
+    for (const args of [
+      ["--require-overview"],
+      ["--require-overview", "--format", "html"],
+      ["--require-overview", "payments", "--require-overview", "payments"],
+    ]) {
+      result = run(...args);
+      assert.equal(result.status, 2);
+      assert.match(result.stderr, /requires one node identifier/);
+    }
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});

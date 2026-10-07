@@ -175,6 +175,11 @@ upper view, expansion of the same subject, analogy-to-concept mappings and limit
 and preservation of exact behavior. A paired review rejects cosmetic nesting,
 raw-source substitution, invented familiarity, and unsupported analogy guarantees.
 Select them with `--only report-drilldown-`; preparation makes no model calls.
+The `report-drilldown-overview-` probes cover explicit C4-like requests, the
+whole-process overview default, a prose-only override, and a review with a
+missing overview despite valid nesting and a detail figure. They judge the
+actual overview's placement and meaningful descent; renderer checks alone do
+not establish those semantics.
 The `report-drilldown-visual-` pair checks a useful sequence within the detailed
 timing explanation and rejects overview-only coverage, copied diagrams, and
 forced figure quotas. Simple leaf facts may remain prose. It evaluates the
