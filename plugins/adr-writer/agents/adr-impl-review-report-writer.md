@@ -172,8 +172,9 @@ collapsed appendix.
 Read `${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/visualization.md` for diagram selection
 and verification. Record question-level `diagramRequirements`, assign their IDs
 to each Hill's `diagramIds`, and put each diagram beside the prose it clarifies.
-Use `diagramOmissionReason` only for a local Hill whose complete relationship is
-clear in one or two sentences. Keep one `%% requirement: Vn` inside each Mermaid
+Use `diagramOmissionReason` for prose delivery, user exclusions or evidence/format
+limits, including for complex Hills. Figures are never a delivery gate and
+omission needs no separate approval. Keep one `%% requirement: Vn` inside each Mermaid
 fence and one following `Notice:` sentence. Briefly explain how to read it first.
 
 `Context` is fixed and appears before the narrative. Its generated context
@@ -305,9 +306,11 @@ flowchart. Use `erDiagram` when data ownership, relationships, or cardinality
 is the question. See the visualization reference for selection examples, before/after
 consistency, supported syntax, and actual HTML verification.
 
-Every required diagram must render as a real relationship view. A source-only
-fallback is a repair signal, not completed visualization. Keep the prose
-independently reviewable and retain the Mermaid source for inspection.
+Every supplied diagram must honestly represent its rendering status. Try to
+repair a source-only fallback with supported syntax; when a figure remains
+infeasible, use prose and update its selection/omission metadata. Never block
+delivery for figure absence. Keep the prose independently reviewable and retain
+any supplied Mermaid source for inspection.
 
 ## Conditional repair guide
 

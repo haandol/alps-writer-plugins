@@ -160,7 +160,7 @@
         {
           "path": "docs/adr/reporting/domain-navigation/0001-domain-first-report-navigation.md",
           "status": "Accepted (2026-10-07)",
-          "summary": "리포트는 필요성에 따라 생성하고 도메인별로 확대하며 문단 수를 제한하지 않고 퀴즈를 강하게 권고하고 실제 검증 범위를 구분한다"
+          "summary": "리포트는 도메인별로 확대하며 가능한 경우 그림을 기본 제공하되 그림 부재로 완료를 차단하지 않고 실제 검증 범위를 구분한다"
         }
       ],
       "dependsOn": []

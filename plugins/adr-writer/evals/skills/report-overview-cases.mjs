@@ -9,13 +9,13 @@ No live deployment, benchmark or reader study was performed.`;
 export const overviewCases = [
   {
     id: "report-drilldown-overview-explicit",
-    title: "A requested C4-like walkthrough supplies the overview before its detail",
+    title: "A feasible C4-like walkthrough supplies an overview without a delivery gate",
     source: facts,
     task: "Write a Korean report walking through the whole system in a top-down, C4-like manner. First draw the most abstract process using Mermaid, then open up each important responsibility and explain its internal behavior. Use supported flowchart or sequence syntax. Keep the brief background and answer first. Do not invoke tools or write files. The user excludes quizzes.",
     semanticObligations: [
       {
         id: "overview-presence-and-order",
-        text: "An actual Mermaid overview appears after the brief opening and before component-level explanation. It shows the caller, request-processing responsibility and external outcome relationship at a higher resolution than the detailed mechanics. Headings, a navigation tree, a promised figure or a detail-only sequence do not substitute for it.",
+        text: "The supplied evidence and supported output make a useful Mermaid overview feasible, so the report includes it after the brief opening and before component detail. It shows the caller, service and external outcome relationship at a higher resolution than the mechanics. It does not declare figures mandatory or make their presence a delivery gate.",
       },
       {
         id: "correspondence-and-descent",
@@ -61,18 +61,35 @@ export const overviewCases = [
   },
   {
     id: "report-drilldown-overview-review-missing",
-    title: "Review detects a missing overview despite valid nesting and a detail figure",
+    title: "Review recommends a feasible missing overview without failing delivery for absence",
     source: facts,
     task: `Review only this outline against an explicit request for a Mermaid overview followed by C4-like drill-down. Do not rewrite it, invoke tools or write files. No quiz.
 Outline: A brief background and accurate answer precede nested prose sections on retry identity, completion reuse and unknown outcome lookup. A Mermaid sequence appears only inside the unknown-outcome detail. All source links are present. The author says hierarchy validation passed and review.status is reviewed, so the report is complete.`,
     semanticObligations: [
       {
         id: "missing-requested-view",
-        text: "The review identifies the absent overview before component detail as an unmet central request. The detail-only sequence and valid prose hierarchy cannot supply initial whole-system visual orientation. It proposes an evidenced overview and recognizable expansions without identical diagrams in every leaf.",
+        text: "The review recommends an evidenced overview before component detail because it is feasible and improves orientation. It distinguishes that improvement from a delivery gate: it does not declare the report failed or blocked solely because the overview is absent, require omission approval, or impose a diagram quota. It preserves useful detail and suggests recognizable expansions.",
       },
       {
         id: "validation-boundary",
         text: "The review rejects a validator pass or self-authored reviewed status as proof of this meaning requirement, preserves useful detail and exact system facts, and stays review-only without claiming file changes or executed fixes.",
+      },
+    ],
+  },
+  {
+    id: "report-drilldown-overview-unavailable",
+    title: "Unavailable visual evidence still allows an accurate prose report",
+    source:
+      "Supplied hypothetical request-processing system with limited evidence: The system accepts requests and eventually returns a result. Its participants, internal steps, ordering, state changes and failure handling were not supplied. The delivery channel supports plain text only. No tools or live inspection are available.",
+    task: "Write a Korean C4-like, top-down report using only these supplied facts. Prefer useful figures whenever possible, but figures are never mandatory. Deliver the explanation now without inventing internals, invoking tools or asking permission. The user excludes quizzes.",
+    semanticObligations: [
+      {
+        id: "nonblocking-delivery",
+        text: "The response delivers a concise prose explanation without a figure, without treating the top-down request as a mandatory diagram condition, without blocking completion or asking permission to omit one. It explains the supplied whole-system role and the lack of evidence for deeper detail.",
+      },
+      {
+        id: "evidence-preserved",
+        text: "The report retains the missing internal evidence and plain-text limitation without inventing participants, call order, states, failure guarantees or successful rendering. It does not promise a later diagram in place of the requested current explanation.",
       },
     ],
   },

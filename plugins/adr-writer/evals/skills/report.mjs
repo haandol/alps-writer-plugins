@@ -92,6 +92,16 @@ const groups = [
     "단계별 이해",
     "시각 표현과 인쇄",
     "전체 그림",
+    "작성 기본값",
+    ["report-drilldown-overview-explicit", "report-drilldown-overview-default"],
+  ],
+  [
+    "리뷰와 설명",
+    "보고서 품질",
+    "단계별 이해",
+    "시각 표현과 인쇄",
+    "전체 그림",
+    "제약과 검토",
     ["report-drilldown-overview-"],
   ],
   [

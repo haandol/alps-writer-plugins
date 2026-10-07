@@ -48,22 +48,8 @@ function sourceUrl(source) {
   return source;
 }
 
-/** Reuse the diagram check while preserving the overview's presence and position rules. */
-function validateOverview(overview, overviewNodeId, diagramError) {
-  if (overviewNodeId === undefined) return;
-  if (!nonempty(overviewNodeId))
-    throw new Error("overviewNodeId must name the first top-level explanation node");
-  if (overview.id !== overviewNodeId)
-    throw new Error(
-      `Required overview ${overviewNodeId} must be the first top-level explanation node`,
-    );
-  if (!overview.diagram) throw new Error(`${overviewNodeId}: required overview diagram is missing`);
-  if (diagramError)
-    throw new Error(`${overviewNodeId}: required overview diagram: ${diagramError}`);
-}
-
 /** Validate observable hierarchy and coverage, never claim to grade prose quality. */
-export function validateReport(doc, { overviewNodeId } = {}) {
+export function validateReport(doc) {
   if (!doc || !nonempty(doc.title) || !["en", "ko"].includes(doc.language))
     throw new Error("A report needs title and language en|ko");
   keys(
@@ -103,7 +89,6 @@ export function validateReport(doc, { overviewNodeId } = {}) {
     evidenceIds = new Set(),
     fragments = [],
     warnings = [];
-  let overviewDiagramError;
   /** Limit explanation branches; sources and quizzes support their owning branch. */
   function visit(nodes, at, minimum = 1) {
     if (!Array.isArray(nodes) || nodes.length < minimum || nodes.length > 4)
@@ -166,7 +151,6 @@ export function validateReport(doc, { overviewNodeId } = {}) {
         if (![node.diagram.source, node.diagram.explanation].every(nonempty))
           throw new Error(`${node.id}: a diagram needs source and an explanation`);
         const parsed = parseMermaid(node.diagram.source);
-        if (node === doc.sections[0]) overviewDiagramError = parsed.error;
         if (parsed.error) {
           if (node.diagram.required !== false)
             throw new Error(`${node.id}: required diagram: ${parsed.error}`);
@@ -181,7 +165,6 @@ export function validateReport(doc, { overviewNodeId } = {}) {
     }
   }
   visit(doc.sections, "report");
-  validateOverview(doc.sections[0], overviewNodeId, overviewDiagramError);
   if (doc.comprehensionCheck !== undefined) {
     const check = doc.comprehensionCheck;
     if (!check || typeof check !== "object" || Array.isArray(check))
@@ -262,8 +245,8 @@ const paragraphs = (items) =>
     .join("");
 
 /** Render one standalone HTML page; data and evidence text cannot execute markup. */
-export function renderHtml(doc, options = {}) {
-  return renderValidatedHtml(doc, validateReport(doc, options));
+export function renderHtml(doc) {
+  return renderValidatedHtml(doc, validateReport(doc));
 }
 
 function renderValidatedHtml(doc, result) {
@@ -337,8 +320,8 @@ function fenced(text, language) {
   return [fence + language, text, fence, ""];
 }
 /** Markdown keeps the same domain tree and complete sources as the HTML view. */
-export function renderMarkdown(doc, options = {}) {
-  validateReport(doc, options);
+export function renderMarkdown(doc) {
+  validateReport(doc);
   return renderValidatedMarkdown(doc);
 }
 
@@ -420,25 +403,19 @@ function renderValidatedMarkdown(doc) {
 function main(args) {
   const input = args.shift();
   let out,
-    format = "html",
-    overviewNodeId;
+    format = "html";
   while (args.length) {
     const flag = args.shift();
     if (flag === "--out") out = args.shift();
     else if (flag === "--format") format = args.shift();
-    else if (flag === "--require-overview") {
-      if (overviewNodeId !== undefined || !args[0] || args[0].startsWith("--"))
-        throw new Error("--require-overview requires one node identifier");
-      overviewNodeId = args.shift();
-    } else throw new Error(`Unknown argument: ${flag}`);
+    else throw new Error(`Unknown argument: ${flag}`);
   }
   if (!input || !out || !["html", "markdown"].includes(format))
     throw new Error(
-      "Usage: render-report.mjs report.json --out report.html [--format html|markdown] [--require-overview node-id]",
+      "Usage: render-report.mjs report.json --out report.html [--format html|markdown]",
     );
   const doc = JSON.parse(readFileSync(input, "utf8"));
-  const options = { overviewNodeId };
-  const result = validateReport(doc, options);
+  const result = validateReport(doc);
   const output =
     format === "html" ? renderValidatedHtml(doc, result) : renderValidatedMarkdown(doc);
   writeFileSync(out, output);

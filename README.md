@@ -98,11 +98,12 @@ Removing the plugins leaves PRDs, ADRs, code, and tests readable on their own. H
 
 ADR Writer includes `$report-writer` in Codex and `/report-writer` in Claude Code. It creates standalone HTML for explicit report requests or explanations that need structured detail. Short answers stay in chat; when a report's usefulness is unclear, it asks once. Your format and delivery preferences take precedence.
 
-Whole-system and multi-step process reports start with a Mermaid overview after
-the brief background and answer, then expand the same responsibilities into
-their internal relationships and rules. An explicit top-down or C4-like request
-requires that overview; diagram exclusions take precedence. Simple facts need
-no figure, and deeper diagrams appear where they explain new relationships.
+Reports include useful figures whenever evidence and format support them.
+Whole-system and multi-step explanations prefer a Mermaid overview after the
+brief background and answer, then expand the same responsibilities in detail.
+Figures are never a delivery requirement, including for top-down or C4-like
+requests. Diagram exclusions take precedence; when a figure is not feasible,
+the report explains the supported relationships and limitations in prose.
 
 By default, the skill reviews the content and checks the generated file, opens it once in the default browser, and returns its path. Browser interaction and actual print checks run when requested; unperformed checks are reported. Review reports and evidence stay in separate, Git-excluded `.adr-review/` directories. Self-check questions are strongly recommended when useful, but optional unless you request them. The ordinary main-session completion response never prints Q1 or starts grading.
 

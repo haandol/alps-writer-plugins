@@ -81,7 +81,7 @@ for detailed implementation, and Code for focused diff or excerpt evidence.
   excerpts in collapsed Code evidence.
 
 Use the tree-structured table of contents to navigate Context, Container/Hill,
-Component, and Code. Place each required Mermaid in Context or the owning Hill, beside the
+Component, and Code. Place each supplied Mermaid in Context or the owning Hill, beside the
 request, state, failure, or data relationship it explains. The implementation
 review artifact contract defines the trigger and placement checks.
 

@@ -305,80 +305,72 @@ test("report entrypoints route to the shared English skill without changing nati
     assert.doesNotMatch(read(`plugins/alps-writer/skills/${name}/SKILL.md`), /report-writer/);
 });
 
-test("an overview requirement rejects missing, misplaced and fallback-only figures", () => {
-  const doc = sample();
-  const options = { overviewNodeId: "payments" };
-  assert.equal(validateReport(doc).nodes, 2, "legacy reports need no overview");
-  for (const render of [validateReport, renderHtml, renderMarkdown])
-    assert.throws(() => render(doc, options), /required overview diagram is missing/);
-  doc.sections[0].diagram = {
-    source: "flowchart TD\nU[Caller] --> P[Payments]",
-    explanation: "The caller reaches the payment responsibility.",
-  };
-  for (const render of [renderHtml, renderMarkdown]) {
-    const output = render(doc, options);
-    assert.ok(output.indexOf("Caller") < output.indexOf("Settlement boundary"));
+test("reports with no diagrams retain their explanation and evidence in both formats", () => {
+  for (const diagram of [undefined, null]) {
+    const doc = sample();
+    doc.sections[0].diagram = diagram;
+    doc.sections[0].children[0].diagram = diagram;
+    assert.deepEqual(validateReport(doc), {
+      nodes: 2,
+      evidence: 2,
+      warnings: [],
+      semanticReview: "reviewed",
+    });
+    const html = renderHtml(doc),
+      markdown = renderMarkdown(doc);
+    assert.match(html, /A repeated key returns the stored result/);
+    assert.match(html, /observed charge count: 1/);
+    assert.doesNotMatch(html, /<figure/);
+    assert.match(markdown, /Settlement boundary/);
+    assert.match(markdown, /observed charge count: 1/);
+    assert.doesNotMatch(markdown, /```mermaid/);
+    doc.requiredEvidenceIds.push("missing");
+    for (const render of [validateReport, renderHtml, renderMarkdown])
+      assert.throws(() => render(doc), /Evidence coverage mismatch/);
   }
-  for (const overviewNodeId of ["settlement", "unknown"])
-    assert.throws(() => validateReport(doc, { overviewNodeId }), /first top-level/);
-  assert.throws(() => validateReport(doc, { overviewNodeId: "" }), /overviewNodeId/);
-  doc.sections[0].diagram = {
-    source: 'C4Context\nPerson(reader, "Reader")',
-    explanation: "Unsupported overview.",
-    required: false,
-  };
-  assert.equal(validateReport(doc).warnings.length, 1);
-  for (const render of [validateReport, renderHtml, renderMarkdown])
-    assert.throws(() => render(doc, options), /required overview diagram: Unsupported/);
 });
 
-test("the CLI enforces the overview before writing or overwriting a report", () => {
-  const temp = mkdtempSync(path.join(os.tmpdir(), "report-overview-"));
+test("the CLI delivers diagram-free reports and preserves files on invalid evidence", () => {
+  const temp = mkdtempSync(path.join(os.tmpdir(), "report-optional-figures-"));
   try {
     const input = path.join(temp, "report.json"),
-      output = path.join(temp, "report.html"),
+      output = path.join(temp, "report.out"),
       cli = path.join(ROOT, "plugins/adr-writer/skills/report-writer/scripts/render-report.mjs");
     const doc = sample();
-    writeFileSync(input, JSON.stringify(doc));
-    const run = (...args) =>
-      spawnSync(process.execPath, [cli, input, "--out", output, ...args], {
+    delete doc.sections[0].children[0].diagram;
+    const run = (format) =>
+      spawnSync(process.execPath, [cli, input, "--out", output, "--format", format], {
         encoding: "utf8",
       });
-    let result = run("--require-overview", "payments");
-    assert.equal(result.status, 2);
-    assert.match(result.stderr, /required overview diagram is missing/);
-    assert.equal(existsSync(output), false);
-    writeFileSync(output, "Previous report");
-    result = run("--require-overview", "payments");
-    assert.equal(result.status, 2);
-    assert.equal(readFileSync(output, "utf8"), "Previous report");
-    doc.sections[0].diagram = {
-      source: "flowchart TD\nU[Caller] --> P[Payments]",
-      explanation: "The caller reaches payments before settlement detail.",
-    };
-    writeFileSync(input, JSON.stringify(doc));
-    result = run("--require-overview", "payments");
-    assert.equal(result.status, 0, result.stderr);
-    assert.match(readFileSync(output, "utf8"), /data-rendered="true"/);
-    result = run("--format", "markdown", "--require-overview", "payments");
-    assert.equal(result.status, 0, result.stderr);
-    assert.match(readFileSync(output, "utf8"), /```mermaid/);
-    for (const args of [
-      ["--require-overview"],
-      ["--require-overview", "--format", "html"],
-      ["--require-overview", "payments", "--require-overview", "payments"],
+    for (const [format, render] of [
+      ["html", renderHtml],
+      ["markdown", renderMarkdown],
     ]) {
-      result = run(...args);
-      assert.equal(result.status, 2);
-      assert.match(result.stderr, /requires one node identifier/);
+      writeFileSync(input, JSON.stringify(doc));
+      const result = run(format);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(readFileSync(output, "utf8"), render(doc));
+      doc.requiredEvidenceIds.push("missing");
+      writeFileSync(input, JSON.stringify(doc));
+      const rejected = run(format);
+      assert.equal(rejected.status, 2);
+      assert.match(rejected.stderr, /Evidence coverage mismatch/);
+      assert.equal(
+        readFileSync(output, "utf8"),
+        render({ ...doc, requiredEvidenceIds: ["R1", "T1"] }),
+      );
+      rmSync(output);
+      assert.equal(run(format).status, 2);
+      assert.equal(existsSync(output), false);
+      doc.requiredEvidenceIds.pop();
     }
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
 });
 
-test("CLI and API preserve the same output and diagnostics across overview modes", () => {
-  const temp = mkdtempSync(path.join(os.tmpdir(), "report-overview-parity-"));
+test("CLI and API preserve output and diagnostics for optional figures at any depth", () => {
+  const temp = mkdtempSync(path.join(os.tmpdir(), "report-figure-parity-"));
   try {
     const input = path.join(temp, "report.json"),
       output = path.join(temp, "report.out"),
@@ -390,39 +382,40 @@ test("CLI and API preserve the same output and diagnostics across overview modes
       { source: "sequenceDiagram\nCaller->>Payments: Request" },
       { source: 'C4Context\nPerson(reader, "Reader")', required: false },
       { source: 'C4Context\nPerson(reader, "Reader")', required: true },
+      { source: 'C4Context\nPerson(reader, "Reader")' },
     ];
     for (const diagram of diagrams) {
-      const doc = sample();
-      doc.sections[0].diagram = diagram && {
-        ...diagram,
-        explanation: "The caller reaches the payment responsibility.",
-      };
-      writeFileSync(input, JSON.stringify(doc));
-      for (const overviewNodeId of [undefined, "payments", "settlement"]) {
-        const options = { overviewNodeId };
-        let validation, error;
-        try {
-          validation = validateReport(doc, options);
-        } catch (caught) {
-          error = caught;
-        }
+      for (const depth of [0, 1]) {
+        const doc = sample();
+        delete doc.sections[0].children[0].diagram;
+        const node = depth === 0 ? doc.sections[0] : doc.sections[0].children[0];
+        node.diagram = diagram && { ...diagram, explanation: "The caller reaches payments." };
+        writeFileSync(input, JSON.stringify(doc));
+        const invalid = diagram?.source.startsWith("C4Context") && diagram.required !== false;
+        const warnings = diagram?.required === false ? 1 : 0;
         for (const [format, render] of [
           ["html", renderHtml],
           ["markdown", renderMarkdown],
         ]) {
-          const args = [cli, input, "--out", output, "--format", format];
-          if (overviewNodeId !== undefined) args.push("--require-overview", overviewNodeId);
           writeFileSync(output, "Previous report");
-          const result = spawnSync(process.execPath, args, { encoding: "utf8" });
-          if (error) {
-            assert.throws(() => render(doc, options), { message: error.message });
+          const result = spawnSync(
+            process.execPath,
+            [cli, input, "--out", output, "--format", format],
+            { encoding: "utf8" },
+          );
+          if (invalid) {
+            for (const check of [validateReport, render])
+              assert.throws(() => check(doc), /required diagram: Unsupported/);
             assert.equal(result.status, 2);
-            assert.equal(result.stderr.trim(), error.message);
+            assert.match(result.stderr, /required diagram: Unsupported/);
             assert.equal(readFileSync(output, "utf8"), "Previous report");
           } else {
+            const validation = validateReport(doc);
+            assert.equal(validation.warnings.length, warnings);
             assert.equal(result.status, 0, result.stderr);
-            assert.equal(readFileSync(output, "utf8"), render(doc, options));
+            assert.equal(readFileSync(output, "utf8"), render(doc));
             assert.deepEqual(JSON.parse(result.stdout), { output, ...validation });
+            if (warnings) assert.match(render(doc), /Diagram not rendered/);
           }
         }
       }

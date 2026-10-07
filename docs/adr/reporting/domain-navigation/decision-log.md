@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the reporting/domain-n
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-10-07 — 가능한 그림을 기본 제공하고 부재는 완료 조건에서 제외
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 각 수준의 시각화 필요성 판단을, 근거와 전달 형식으로 표현할 수 있는 관계는 그림으로 제공하는 기본값으로 구체화한다. 전체 시스템과 과정은 가능한 경우 개요 그림에서 세부 관계로 확대한다. top-down·C4·drill-down 요청에서도 그림 부재 자체로 완료를 차단하지 않으며, 사용자 제외 요청과 표현 제약을 존중한다.
+- **Why**: 사용자가 가능한 경우 그림을 항상 작성하되 필수 조건으로 만들지는 말라고 정했다. 그림 제공의 기본값과 보고서 완료 조건을 구분해 이해를 돕는 시도를 유지하면서 표현 제약 때문에 전달을 막지 않기 위해서다.
+
 ## 2026-10-07 — 문단 수 제한 없이 작성하고 퀴즈는 강하게 권고
 
 - **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)

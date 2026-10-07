@@ -52,8 +52,9 @@ reviewable vertical capability.
 
 Read `references/visualization.md` after fixing the Hills. Identify the reader's
 structural and interaction questions before selecting a diagram. Give each Hill
-`diagramIds`, or a concrete local `diagramOmissionReason` when prose alone is
-sufficient. Carry this same plan through evidence selection and the final HTML.
+`diagramIds`, or a concrete local `diagramOmissionReason` for prose delivery,
+user exclusions, or evidence/format limits. Figure presence never gates delivery.
+Carry this same plan through evidence selection and the final HTML.
 
 ## Preserve review boundaries
 

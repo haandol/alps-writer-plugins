@@ -99,7 +99,7 @@ For the request-tracking example, the upper view can show one service role;
 inside it, a relationship or flow diagram can connect recognizing the request,
 looking up its outcome, and deciding what to do. The completed-request detail
 can use a concrete identifier and result to show reuse when that would clarify
-the rule. The unknown-outcome detail needs the relevant events in a sequence
+the rule. The unknown-outcome detail can show the relevant events in a sequence
 diagram: external completion, missing reply, caller timeout, and outcome lookup.
 These views expand different parts of the same subject instead of repeating one
 overview in several folded sections.
@@ -117,6 +117,8 @@ A one-step instruction or simple fact may be clearer in prose; do not diagram
 it merely because another leaf has a picture. Conversely, a complex leaf must
 not remain a wall of text just because its parent already has a diagram. Never
 invent a relationship or hide a missing-evidence limitation to supply a figure.
+When evidence or format prevents a useful view, explain the supported mechanism
+in prose. A missing figure alone never blocks delivery.
 
 ## Review each reading depth
 
@@ -129,10 +131,11 @@ from the analogy, and the internals that become visible. Finally, apply a releva
 edge case using the literal rules rather than relying on the analogy.
 
 With a detail section open, check whether its newly exposed relationships are
-visible at a useful resolution. A missing sequence for a timing-dependent rule,
-a reused overview that still hides the mechanism, and a decorative rendering of
-one obvious sentence are different failures. Fix the actual explanatory gap;
-do not judge coverage by figure count or how colorful the page looks.
+visible at a useful resolution. When feasible, a sequence can clarify a timing
+rule that prose leaves hard to follow. A reused overview may still hide that
+mechanism, while a decorative rendering may add nothing to an obvious sentence.
+Fix the explanatory gap; do not fail delivery solely for a missing figure or
+judge coverage by figure count or how colorful the page looks.
 
 Reject detail dumped into the overview, a new heading that merely repeats its
 parent, peer branches presented as deeper resolution, and sources that leave the

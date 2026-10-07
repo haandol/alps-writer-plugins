@@ -76,8 +76,8 @@ views only when they help explain difficult ownership, partial replacement,
 cycles or reference changes. The counts and routine operations below do not
 override that rule or require a whole-system map.
 
-For other reviews, classify the visual map from the confirmed implementation
-scope. Mark it required when any trigger applies:
+For other reviews, include useful figures whenever the confirmed evidence and
+delivery format support them. These relationships are strong reasons to draw:
 
 - three or more participants, processing steps, states, components, or ADRs;
 - a system boundary, dependency, or contradiction;
@@ -85,6 +85,11 @@ scope. Mark it required when any trigger applies:
 - a state transition, failure, retry, rollback, or fallback;
 - a changed data relationship; or
 - a refactor spanning multiple call sites or changing how work moves between them.
+
+Figures are never a delivery gate. Respect user exclusions; when evidence or
+format prevents a useful figure, explain the relationship in prose and retain
+material limitations. Do not block completion or request omission approval solely
+because a figure is absent, including for top-down or C4-like walkthroughs.
 
 Choose the diagram by the review question. Prefer a component view using
 `flowchart` for responsibility and dependency questions; state diagrams serve
@@ -107,7 +112,7 @@ For implementation-review artifacts, apply
 concrete `diagramOmissionReason`. Prefer sequence views for request/response
 order and component views for roles and boundaries. State values alone do not
 justify a state diagram. Check every important relationship and inspect the
-rendered HTML; source fallback is not a completed required visualization.
+rendered HTML. Source fallback must not be described as a rendered figure.
 
 The prose must remain independently reviewable when Mermaid does not render.
 Other review skills keep their own artifact format; do not create an
