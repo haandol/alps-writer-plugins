@@ -376,3 +376,58 @@ test("the CLI enforces the overview before writing or overwriting a report", () 
     rmSync(temp, { recursive: true, force: true });
   }
 });
+
+test("CLI and API preserve the same output and diagnostics across overview modes", () => {
+  const temp = mkdtempSync(path.join(os.tmpdir(), "report-overview-parity-"));
+  try {
+    const input = path.join(temp, "report.json"),
+      output = path.join(temp, "report.out"),
+      cli = path.join(ROOT, "plugins/adr-writer/skills/report-writer/scripts/render-report.mjs");
+    const diagrams = [
+      undefined,
+      null,
+      { source: "flowchart TD\nU[Caller] --> P[Payments]" },
+      { source: "sequenceDiagram\nCaller->>Payments: Request" },
+      { source: 'C4Context\nPerson(reader, "Reader")', required: false },
+      { source: 'C4Context\nPerson(reader, "Reader")', required: true },
+    ];
+    for (const diagram of diagrams) {
+      const doc = sample();
+      doc.sections[0].diagram = diagram && {
+        ...diagram,
+        explanation: "The caller reaches the payment responsibility.",
+      };
+      writeFileSync(input, JSON.stringify(doc));
+      for (const overviewNodeId of [undefined, "payments", "settlement"]) {
+        const options = { overviewNodeId };
+        let validation, error;
+        try {
+          validation = validateReport(doc, options);
+        } catch (caught) {
+          error = caught;
+        }
+        for (const [format, render] of [
+          ["html", renderHtml],
+          ["markdown", renderMarkdown],
+        ]) {
+          const args = [cli, input, "--out", output, "--format", format];
+          if (overviewNodeId !== undefined) args.push("--require-overview", overviewNodeId);
+          writeFileSync(output, "Previous report");
+          const result = spawnSync(process.execPath, args, { encoding: "utf8" });
+          if (error) {
+            assert.throws(() => render(doc, options), { message: error.message });
+            assert.equal(result.status, 2);
+            assert.equal(result.stderr.trim(), error.message);
+            assert.equal(readFileSync(output, "utf8"), "Previous report");
+          } else {
+            assert.equal(result.status, 0, result.stderr);
+            assert.equal(readFileSync(output, "utf8"), render(doc, options));
+            assert.deepEqual(JSON.parse(result.stdout), { output, ...validation });
+          }
+        }
+      }
+    }
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});

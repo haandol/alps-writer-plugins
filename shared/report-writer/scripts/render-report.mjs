@@ -48,6 +48,20 @@ function sourceUrl(source) {
   return source;
 }
 
+/** Reuse the diagram check while preserving the overview's presence and position rules. */
+function validateOverview(overview, overviewNodeId, diagramError) {
+  if (overviewNodeId === undefined) return;
+  if (!nonempty(overviewNodeId))
+    throw new Error("overviewNodeId must name the first top-level explanation node");
+  if (overview.id !== overviewNodeId)
+    throw new Error(
+      `Required overview ${overviewNodeId} must be the first top-level explanation node`,
+    );
+  if (!overview.diagram) throw new Error(`${overviewNodeId}: required overview diagram is missing`);
+  if (diagramError)
+    throw new Error(`${overviewNodeId}: required overview diagram: ${diagramError}`);
+}
+
 /** Validate observable hierarchy and coverage, never claim to grade prose quality. */
 export function validateReport(doc, { overviewNodeId } = {}) {
   if (!doc || !nonempty(doc.title) || !["en", "ko"].includes(doc.language))
@@ -89,6 +103,7 @@ export function validateReport(doc, { overviewNodeId } = {}) {
     evidenceIds = new Set(),
     fragments = [],
     warnings = [];
+  let overviewDiagramError;
   /** Limit explanation branches; sources and quizzes support their owning branch. */
   function visit(nodes, at, minimum = 1) {
     if (!Array.isArray(nodes) || nodes.length < minimum || nodes.length > 4)
@@ -151,6 +166,7 @@ export function validateReport(doc, { overviewNodeId } = {}) {
         if (![node.diagram.source, node.diagram.explanation].every(nonempty))
           throw new Error(`${node.id}: a diagram needs source and an explanation`);
         const parsed = parseMermaid(node.diagram.source);
+        if (node === doc.sections[0]) overviewDiagramError = parsed.error;
         if (parsed.error) {
           if (node.diagram.required !== false)
             throw new Error(`${node.id}: required diagram: ${parsed.error}`);
@@ -165,20 +181,7 @@ export function validateReport(doc, { overviewNodeId } = {}) {
     }
   }
   visit(doc.sections, "report");
-  if (overviewNodeId !== undefined) {
-    if (!nonempty(overviewNodeId))
-      throw new Error("overviewNodeId must name the first top-level explanation node");
-    const overview = doc.sections[0];
-    if (overview.id !== overviewNodeId)
-      throw new Error(
-        `Required overview ${overviewNodeId} must be the first top-level explanation node`,
-      );
-    if (!overview.diagram)
-      throw new Error(`${overviewNodeId}: required overview diagram is missing`);
-    const parsed = parseMermaid(overview.diagram.source);
-    if (parsed.error)
-      throw new Error(`${overviewNodeId}: required overview diagram: ${parsed.error}`);
-  }
+  validateOverview(doc.sections[0], overviewNodeId, overviewDiagramError);
   if (doc.comprehensionCheck !== undefined) {
     const check = doc.comprehensionCheck;
     if (!check || typeof check !== "object" || Array.isArray(check))
@@ -260,8 +263,11 @@ const paragraphs = (items) =>
 
 /** Render one standalone HTML page; data and evidence text cannot execute markup. */
 export function renderHtml(doc, options = {}) {
-  const result = validateReport(doc, options),
-    ui = labels[doc.language],
+  return renderValidatedHtml(doc, validateReport(doc, options));
+}
+
+function renderValidatedHtml(doc, result) {
+  const ui = labels[doc.language],
     quizUi = quizLabels[doc.language],
     questions = doc.comprehensionCheck?.questions ?? [];
   function evidenceGroup(items, nodeId) {
@@ -333,6 +339,10 @@ function fenced(text, language) {
 /** Markdown keeps the same domain tree and complete sources as the HTML view. */
 export function renderMarkdown(doc, options = {}) {
   validateReport(doc, options);
+  return renderValidatedMarkdown(doc);
+}
+
+function renderValidatedMarkdown(doc) {
   const ui = labels[doc.language];
   const quizUi = quizLabels[doc.language];
   const lines = [`# ${md(doc.title)}`, ""];
@@ -429,7 +439,9 @@ function main(args) {
   const doc = JSON.parse(readFileSync(input, "utf8"));
   const options = { overviewNodeId };
   const result = validateReport(doc, options);
-  writeFileSync(out, format === "html" ? renderHtml(doc, options) : renderMarkdown(doc, options));
+  const output =
+    format === "html" ? renderValidatedHtml(doc, result) : renderValidatedMarkdown(doc);
+  writeFileSync(out, output);
   console.log(JSON.stringify({ output: path.resolve(out), ...result }));
 }
 if (
