@@ -307,9 +307,14 @@ the parsed tail block, the raw reply, fixture path and selected agent command �
 what the agent wrote to disk, not just what it said.
 
 Helpers are in `lib/harness.mjs`: `skillText` / `agentText` (real instruction
-text; scenarios explicitly select any directly referenced Markdown modules),
+text; scenarios explicitly select the Markdown modules their task needs),
 `seedRuleDocs` / `seedMapping` / `write`, the `expect*` scorers, and
 `expectLintClean` which runs the shipped `adr-structure-lint.mjs` over the result.
+Default loading includes only the entrypoint. A response-only probe that cannot
+read files must list its phase modules in `references`. For a nested reference,
+list its parent first; each explicitly loaded module makes its direct references
+available, without loading sibling modules. Tool-enabled execution cases read
+the copied plugin themselves, so their traces can verify actual selective reading.
 `lib/semantic-score.mjs` reuses the obligation/citation validator for natural-language
 contracts. Its tests inject authored judge responses to verify transport and
 rejection behavior without model calls; this does not prove a live judge’s
@@ -365,7 +370,7 @@ hides true ones.
 Be honest about the gap when reading a result.
 
 - **The prompt is real; the surrounding context is not.** Scenarios pass the
-  actual `SKILL.md`, the directly referenced Markdown modules selected by that scenario, and
+  actual `SKILL.md`, the explicitly selected Markdown modules reachable through its references, and
   `agents/*.md` text — reconstructing a prompt would test this directory's
   summary of the rules instead of the rules that ship — via the same "read the
   agent file, hand it to a generic subagent" path the skills document as their

@@ -4,13 +4,16 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { sectionRange } from "../scripts/adr-lint-lib.mjs";
+import { readSkillContract } from "./helpers/skill-contract.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, "..");
 
 function read(relativePath) {
-  return readFileSync(path.join(ROOT, relativePath), "utf8");
+  return readSkillContract(path.join(ROOT, relativePath));
 }
+
+const readCore = (relativePath) => readFileSync(path.join(ROOT, relativePath), "utf8");
 
 /** Resolve the documented load edges without requiring copied wording in each caller. */
 function markdownLinks(relativePath) {
@@ -279,19 +282,22 @@ test("large skill details are loaded through explicit progressive-disclosure ref
   const remediationRouting = read("skills/adr-impl-review/references/remediation-routing.md");
   const reviewHiking = read("skills/adr-impl-review/references/review-hiking.md");
 
-  assert.match(sync, /read `references\/repository-hygiene\.md` completely/);
+  assert.match(sync, /read `[^`\n]*references\/repository-hygiene\.md` completely/);
   assert.match(sync, /Do not read that reference.*when no candidate exists/);
   assert.match(
     sync,
-    /Before starting Pass 2, read `references\/repository-hygiene\.md` completely/,
+    /Before starting Pass 2, read `[^`\n]*references\/repository-hygiene\.md` completely/,
   );
-  assert.match(sync, /read `references\/reconciliation-boundary\.md` completely/);
+  assert.match(sync, /read `[^`\n]*references\/reconciliation-boundary\.md` completely/);
   assert.match(sync, /read `references\/local-evidence-boundary\.md` completely/);
-  assert.match(sync, /read `references\/current-state-reconstruction\.md` completely/);
+  assert.match(sync, /read `[^`\n]*references\/current-state-reconstruction\.md` completely/);
   assert.doesNotMatch(sync, /^### 3\.5\./m);
-  assert.ok(sync.trim().split(/\s+/).length < 5000, "adr-sync SKILL.md should stay below 5k words");
   assert.ok(
-    sync.trim().split(/\s+/).length < 4000,
+    readCore("skills/adr-sync/SKILL.md").trim().split(/\s+/).length < 5000,
+    "adr-sync SKILL.md should stay below 5k words",
+  );
+  assert.ok(
+    readCore("skills/adr-sync/SKILL.md").trim().split(/\s+/).length < 4000,
     "adr-sync core should stay below 4k words after extracting conditional detail",
   );
 
@@ -324,10 +330,10 @@ test("large skill details are loaded through explicit progressive-disclosure ref
   );
   assert.match(artifactContract, /Implementation review artifact contract/);
   assert.match(remediationRouting, /Implementation review remediation routing/);
-  assert.match(implReview, /read `references\/review-hiking\.md` completely/i);
+  assert.match(implReview, /read `[^`\n]*references\/review-hiking\.md` completely/i);
   assert.match(reviewHiking, /Review Hiking/);
   assert.ok(
-    implReview.trim().split(/\s+/).length < 4500,
+    readCore("skills/adr-impl-review/SKILL.md").trim().split(/\s+/).length < 4500,
     "adr-impl-review SKILL.md should stay below 4.5k words",
   );
 });
@@ -339,7 +345,7 @@ test("implementation and review Hiking use vertical Hills with review zooms", ()
   const reviewHiking = read("skills/adr-impl-review/references/review-hiking.md");
   const artifactContract = read("skills/adr-impl-review/references/artifact-contract.md");
 
-  assert.match(impl, /read `references\/implementation-hiking\.md` completely/i);
+  assert.match(impl, /read `[^`\n]*references\/implementation-hiking\.md` completely/i);
   assert.match(implementationHiking, /user-flow/);
   assert.match(implementationHiking, /logical-capability/);
   assert.match(implementationHiking, /bounded-context/);
@@ -382,16 +388,16 @@ test("reader-facing prompts name concrete writing patterns without a generic qua
 
 test("core skill prompts stay within the progressive-disclosure budget", () => {
   const budgets = [
-    ["skills/adr-new/SKILL.md", 6500],
-    ["skills/adr-impl/SKILL.md", 6000],
-    ["skills/adr-impl-review/SKILL.md", 4500],
-    ["skills/adr-sync/SKILL.md", 5000],
-    ["skills/adr-rollup/SKILL.md", 5000],
+    ["skills/adr-new/SKILL.md", 2600],
+    ["skills/adr-impl/SKILL.md", 2300],
+    ["skills/adr-impl-review/SKILL.md", 3300],
+    ["skills/adr-sync/SKILL.md", 2000],
+    ["skills/adr-rollup/SKILL.md", 2100],
     ["../alps-writer/skills/feature-to-adr/SKILL.md", 2500],
   ];
 
   for (const [file, maximum] of budgets) {
-    const words = read(file).trim().split(/\s+/).length;
+    const words = readCore(file).trim().split(/\s+/).length;
     assert.ok(words < maximum, `${file} should stay below ${maximum} words; got ${words}`);
   }
 });

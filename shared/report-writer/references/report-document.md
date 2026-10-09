@@ -58,9 +58,14 @@ to open the HTML once in the default browser and return its absolute path.
   owning workflow's mandatory content without adding empty template sections.
   Node identifiers are unique across the document and retained as anchors in
   HTML and Markdown. Report-local fragment links must name an existing node.
-- `requiredEvidenceIds`: the caller's complete list of evidence or contract
-  identifiers that must remain reachable. Each must occur in exactly one node's
-  evidence. Do not derive this list by dropping items from the source.
+- `requiredEvidenceIds`: the report's complete evidence-ID inventory, preserving
+  every identifier required by the caller. Include IDs for any additional source
+  items the report cites. Every listed ID must occur in exactly one node's
+  `evidence`, and every evidence item's ID must be listed. If the caller supplies
+  no IDs, assign IDs to the actual sources you use and list them here; do not
+  leave `[]` while adding evidence items below. Use `[]` only when the report has
+  no evidence items and the caller has no required IDs. Do not drop required
+  evidence or invent source content to make the sets match.
 - `review`: `status` is `reviewed` or `draft`; describe the actual `basis` and
   unresolved `limitations`. These are temporary report metadata, never approval
   state or a claim of independent human review.
@@ -99,6 +104,9 @@ list, and keep conclusion-changing facts in the body as well.
 Use a local path, fragment, or HTTP(S) source. Full originals may remain in
 companion files. Empty evidence is permitted only when the caller has no
 required evidence identifiers; do not invent sources.
+Keep section descriptions and line information in `label` or the excerpt;
+`source` is an actual resolvable target relative to the delivered report, or an
+absolute path/URL. A label such as `source.md (Section 1)` is not a file path.
 Sources appear in an evidence group after the owning explanation and its quiz.
 There is no source-count quota; preserve every required source and group by the
 claim it supports rather than inventing explanation nodes to fit a count.
@@ -148,6 +156,12 @@ unsupported syntax is handled, not whether a diagram must exist: the default
 rejects it before writing output; `required: false` retains a visible source
 warning. Repair unsupported syntax, use that explicit fallback, or explain the
 relationship in prose. Never label an unrendered figure as rendered.
+
+Use ASCII identifiers for diagram nodes and participants, and put localized
+text in their labels. For a state diagram, use `state "후보 리비전" as Candidate`
+followed by `[*] --> Candidate`, rather than a localized identifier in the arrow.
+The bundled parser implements a subset; valid syntax in another Mermaid renderer
+does not prove that this renderer supports it.
 
 ## Compatibility with specialized reports
 

@@ -139,6 +139,33 @@ around a figure or across adjacent paragraphs. Keep useful transitions, required
 report fields, missing reader context, and conditions that change the conclusion.
 Judge their function in context rather than enforcing a phrase ban.
 
+## Check diagram paths against the source
+
+Read the completed figure on its own before reconciling it with the prose.
+For each material action or promised result, compare the paths that can reach it
+with the source's conditions, ordering, permissions and failure guarantees.
+Sharing an error node also shares its stated outcomes; do not extend diagnostics
+or recovery guarantees from one failure condition to another without evidence.
+Check both branches of a decision:
+the failure of "P and Q" includes different cases. If the source permits an
+action only for one of them, a shared failure arrow must not grant it to all.
+
+For example, when a source permits one citation-format repair, a diagram must
+not send both invalid JSON and an unsupported citation through one error node
+into that repair. Separating the errors in prose does not remove the diagram's
+extra path. Split the conditions or narrow the path to the evidenced action,
+then check the revised figure and surrounding explanation together.
+
+Also check logical strength: "when P, Q is available" does not establish
+"Q is available only when P" without further evidence. Keep report-subject
+claims separate from observations about the author's tools or test environment.
+Use the actual relevant context to resolve disagreements rather than accepting
+or rejecting a passage solely because an automated judge labels it PASS or FAIL.
+
+Repair confirmed in-scope mismatches and repeat the applicable checks on the
+latest output. Preserve genuine source gaps; do not complete an unknown path
+with an invented action or remove a finding to get a passing result.
+
 ## Explain quantitative claims
 
 When a formula or ratio supports a judgment, show a worked example close to it.
@@ -150,6 +177,10 @@ Check arithmetic and units. Show a nontrivial value when a variable disappears
 at a convenient value such as 1. Make invented values and conceptual curves
 distinguishable from measurements where they are introduced; clear example
 framing or an inline qualifier is sufficient. Do not repeat the same disclaimer.
+
+An omitted value is not automatically zero. A derived value is valid when the
+stated categories, units and totals determine it; explain that calculation and
+its assumptions instead of presenting absence from the source as its proof.
 
 For example, in a **hypothetical** evaluation with 10 requests, 8 valid judgments
 and 2 errors, 6 matching judgments give `6 / 8 = 75%` agreement among valid

@@ -4,8 +4,16 @@
 import { createInterface } from "node:readline";
 import { makeTools } from "./workspace.mjs";
 
-const [root, pluginRoot, logPath, rawTurn, rawGuidance, checkerRoot, rawArtifactPaths] =
-  process.argv.slice(2);
+const [
+  root,
+  pluginRoot,
+  logPath,
+  rawTurn,
+  rawGuidance,
+  checkerRoot,
+  rawArtifactPaths,
+  rawDraftRoot,
+] = process.argv.slice(2);
 if (!root || !pluginRoot || !logPath || !/^\d+$/.test(rawTurn ?? "")) {
   throw new Error("tool-server requires fixture root, plugin root, event log, turn");
 }
@@ -17,6 +25,7 @@ const tools = makeTools({
   guidance: rawGuidance !== "off",
   checkerRoot,
   artifactPaths: rawArtifactPaths === undefined ? [] : JSON.parse(rawArtifactPaths),
+  ...(rawDraftRoot ? { draftRoot: rawDraftRoot } : {}),
 });
 const send = (message) => process.stdout.write(JSON.stringify(message) + "\n");
 

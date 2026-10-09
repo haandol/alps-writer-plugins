@@ -117,7 +117,7 @@ test("behaviour scenarios cover destructive rollup and optional review roles", (
     .map((file) => readFileSync(path.join(EVALS, "scenarios", file), "utf8"))
     .join("\n");
 
-  assert.match(sources, /skillText\("adr-rollup"\)/);
+  assert.match(sources, /skillText\("adr-rollup"(?:,|\))/);
   assert.match(sources, /agentText\("adr-impl-explainer"\)/);
   assert.match(sources, /agentText\("adr-impl-necessity-reviewer"\)/);
   assert.match(sources, /review-document-only-boundary/);
@@ -216,6 +216,7 @@ test("prompt loaders include only explicitly selected direct references", async 
 
   const sync = skillText("adr-sync", {
     references: [
+      "skills/adr-sync/references/deep-verification.md",
       "skills/adr-sync/references/repository-hygiene.md",
       "skills/adr-sync/references/local-evidence-boundary.md",
       "skills/adr-sync/references/current-state-reconstruction.md",

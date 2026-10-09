@@ -23,8 +23,8 @@ preflight checks under a fresh `.codex/evals/skills-*` directory. The report say
 **미실행**, not PASS. It is safe to inspect the report before choosing a paid run.
 `--out` selects a new/empty directory. `--open` opens only the generated local file.
 
-The catalog includes 52 existing classification scenarios and five report-writing
-probes and controlled routing cases. Execution includes the eleven original rollup/sync cases and existing-project import cases. The real-repository classification
+The catalog includes ADR/ALPS classification scenarios, report-writing probes
+and controlled routing cases. Execution includes the eleven original rollup/sync cases and existing-project import cases. The real-repository classification
 probe remains in the report as unrun unless selected explicitly with `--only
 review-real-repo-adr` and its existing environment inputs. Ordinary runs never
 silently read the user's separate real repository.
@@ -129,7 +129,54 @@ The same declarations reach the actual MCP transport and both comparison variant
 Discovery evidence requires a successful result paired to its read request and
 the exact confined path; a request or matching filename suffix is insufficient.
 
+## Authoring artifact checks
+
+The `author-keeps-values-and-lints` classification entry produces real ADR
+artifacts. Its original value-preservation and final-lint checks remain, with
+explicit candidate-before-apply coverage in the unified runner. Pre-granted
+approval removes the interaction, not candidate validation. The legacy scorer
+still checks artifacts only; it does not claim to verify the full write sequence.
+
+This case declares `draftRoot` under `.adr-review/`. Only that opted-in fixture
+exposes `prepare_draft`, which copies `docs/` independently without overwriting
+an existing draft. Candidate documents are writable there; copied rule documents,
+source, tests, other runs and symlink targets remain protected. The fixture owns
+its Git ignore setup. Other cases retain their existing document/report access.
+
+`run_check` with `kind=structure, draft=true` runs the document-only checker from
+that candidate root and records hashes of the checked documents. Action checks
+bind every official write or valid candidate move to that prior validation,
+require rechecking after candidate edits, and require the target's final
+structure check. Final files or evaluator-generated lint cannot hide an early
+write. Snapshots omit only immutable copies of the same seeded rule documents
+already omitted at the original root; mutable candidates, mappings, check hashes
+and intermediate tool events remain evidence.
+
 ## Rollup evidence checks
+
+The `rollup-encbird-current-` execution cases adapt pinned EncBird ADR contracts:
+the 2026-10-06 new/existing TEXT and VOICE limits, an adopted revision whose
+completion review is still pending, and four independent pool responsibilities.
+They use actual fixture file tools and the same DeepEval GEval execution path.
+The first two cases separate unapproved planning from exact-path approved apply;
+local gates preserve source/code files, completion state, independent owners,
+Related-only edits, and history-before-source-overwrite ordering. Contract meaning
+and the truth of the harvested transition remain semantic obligations.
+
+`encbird-fixtures/provenance.json` pins source commits, hashes and key passages.
+The current-state and historical snapshots are reconstructed into small fixtures;
+the Proposed variant is a controlled missing-review condition, not EncBird's
+production state. The real `chatTurnProgress.ts` is copied verbatim as fixture
+input. Other local policy code is an authored projection. Tests need no sibling
+checkout, source repository mutation, cloud access or actual EncBird runtime.
+Existing historical 8→5 cases remain unchanged; these cases add coverage for
+new TEXT 4 / VOICE 5 versus existing TEXT 5 / VOICE 6, rather than replacing the
+historical regression contract with today's defaults.
+
+```bash
+pnpm eval:skills --prepare --suite execution --only rollup-encbird-current- --runs 1
+pnpm eval:skills --live --suite execution --only rollup-encbird-current- --model us.anthropic.claude-opus-5-5 --runs 1 --jobs 2 --timeout 600
+```
 
 Rollup has separate planning and local execution-evidence checks.
 `rollup-targeted-discovery` evaluates a proposed scope without executing reads.
@@ -181,6 +228,39 @@ a review that recommends a feasible missing overview without failing delivery
 solely for its absence. They judge useful figures and meaningful descent where
 feasible, and accurate prose with limitations where figures cannot be supplied.
 Renderer checks alone do not establish those semantics.
+The `report-regression-` probes check shared recovery paths with both a valid
+merge and an unauthorized branch, transfer notification-only retries to another
+domain, and review trial accounting and evidence/renderer claims. Criteria stay
+outside the target prompt. The source policies, including unspecified behavior,
+remain the authority rather than a blanket rule to split every error node.
+The timeout-artifact control retains a timed-out trial's saved document and
+offline assessment without erasing its timeout, inventing an extra trial, or
+confusing semantic PASS with the intersection of all task requirements.
+
+The `report-artifact-` cases use the classification runner's existing confined
+file tools to produce an actual first-save report JSON for catalog publication,
+evaluation processing and limited evidence. They require successful source,
+Skill and format-reference reads, the declared report write, original preservation,
+native validation/rendering and relative evidence links to the supplied original.
+Local checks inspect captured tool results and files; GEval separately judges
+the saved document's explanation and every recovery path. An explicitly labeled
+diagram fallback is recorded as a warning, not silently rejected as invalid syntax.
+These probes do not provide validator feedback or a repair turn and do not test
+native Skill discovery, browser opening, reader learning or end-to-end delivery.
+If a classification target call fails, its final files and raw tool trace still
+enter `evidence.json`. The invocation remains ERROR; a saved document does not
+manufacture a returned reply or trigger automatic semantic success.
+The process fixtures intentionally retain known failure scenarios, including
+facts also used in instruction examples. Report their regression results
+separately from the archive/membership transfer probes; passing a familiar
+example does not establish generalization to unseen domains.
+
+```bash
+pnpm eval:skills --prepare --suite classification --only report-artifact- --runs 1
+pnpm eval:skills --live --suite classification --only report-artifact- --model us.anthropic.claude-opus-5-5 --runs 2 --timeout 600
+pnpm eval:skills --live --suite classification --only report-regression- --model us.anthropic.claude-opus-5-5 --runs 2 --timeout 600
+```
+
 The `report-drilldown-visual-` pair checks a useful sequence within the detailed
 timing explanation and rejects overview-only coverage, copied diagrams, and
 forced figure quotas. Simple leaf facts may remain prose. It evaluates the

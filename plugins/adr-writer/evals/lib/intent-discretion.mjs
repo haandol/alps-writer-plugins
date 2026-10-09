@@ -72,7 +72,12 @@ export function intentDiscretionScenario({ name, purpose, groupingChoices, group
     },
     build() {
       return [
-        skillText("adr-impl", { references: ["references/requirement-delegation.md"] }),
+        skillText("adr-impl", {
+          references: [
+            "skills/adr-impl/references/planning.md",
+            "references/requirement-delegation.md",
+          ],
+        }),
         `# This run
 This is a response-only planning probe. Do not call tools or edit files. The
 approved, unchanged decision and all relevant context are supplied below.

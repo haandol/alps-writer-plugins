@@ -83,8 +83,8 @@ const groups = [
     "리뷰와 설명",
     "보고서 품질",
     "단계별 이해",
-    "깊이와 비유 검토",
-    ["report-drilldown-distinguishes-", "report-drilldown-rejects-"],
+    "깊이와 의미 검토",
+    ["report-drilldown-distinguishes-", "report-drilldown-rejects-", "report-drilldown-path-"],
   ],
   [
     "리뷰와 설명",
@@ -154,7 +154,21 @@ const groups = [
     "학습 지원과 전달 검증",
     ["report-scope-quiz-", "report-scope-requested-", "report-scope-static-"],
   ],
-  ["리뷰와 설명", "보고서 품질", "근거 보존", ["report-"]],
+  [
+    "리뷰와 설명",
+    "보고서 품질",
+    "근거 보존",
+    "조건과 허용 행동",
+    ["report-regression-shared-", "report-regression-notification-"],
+  ],
+  [
+    "리뷰와 설명",
+    "보고서 품질",
+    "근거 보존",
+    "문서와 출처",
+    ["report-artifact-", "report-regression-artifact-"],
+  ],
+  ["리뷰와 설명", "보고서 품질", "근거 보존", "수치와 검증 범위", ["report-"]],
 ];
 
 /** Preserve the complete case records while grouping the human view by the responsibility being evaluated. */
@@ -166,6 +180,7 @@ function casePath(item) {
         "기존 프로젝트 도입",
         item.id.startsWith("import-prerequisites-") ? "선행 보장과 분류" : "의도 확인과 채택",
       ];
+    if (item.id.startsWith("rollup-encbird-current-")) return ["통합", "현재 EncBird 계약"];
     return ["통합", /discover|reject/.test(item.id) ? "계획 발견" : "승인과 계약 보존"];
   }
   if (item.type === "routing") {

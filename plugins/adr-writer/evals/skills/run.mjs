@@ -187,7 +187,7 @@ function recordCall(record, stage, response) {
 }
 
 /** Provide a confined MCP filesystem for old probes without granting a host shell or external tools. */
-function toolConfig(directory, root, pluginRoot, logPath, artifactPaths = []) {
+function toolConfig(directory, root, pluginRoot, logPath, artifactPaths = [], draftRoot) {
   const file = path.join(directory, "mcp.json");
   writeFileSync(
     file,
@@ -204,6 +204,7 @@ function toolConfig(directory, root, pluginRoot, logPath, artifactPaths = []) {
             "on",
             pluginRoot,
             JSON.stringify(artifactPaths),
+            ...(draftRoot ? [draftRoot] : []),
           ],
         },
       },
@@ -296,25 +297,48 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
   const prompt = await item.build(root);
   checkReferences(prompt, pluginRoot);
   const log = path.join(folder, "events.jsonl");
-  const config = toolConfig(folder, root, pluginRoot, log, item.artifactPaths);
-  const wrapped = `This is an isolated classification probe, not a native client routing test.\nUse only the local fixture MCP tools. Fixture root ${root}; use relative paths for fixture reads/writes. CLAUDE_PLUGIN_ROOT is plugin/. Resolve referenced skills and guidance through plugin/skills and plugin/references.\n${prompt}`;
-  json(folder, "input.json", { prompt: wrapped, files: snapshot(root) });
-  record.promptHash = sha(prompt.split(root).join("<FIXTURE>"));
-  record.inputHash = sha({ prompt: record.promptHash, files: snapshot(root) });
-  if (!options.live) return;
-  const response = await dependencies.target({
-    prompt: wrapped,
-    cwd: root,
-    config,
-    model: options.model,
-    timeoutMs: options.timeout * 1000,
+  // Validate case capabilities before any paid target invocation.
+  makeTools({
+    root,
+    pluginRoot,
+    logPath: log,
+    turn: 0,
+    artifactPaths: item.artifactPaths,
+    draftRoot: item.draftRoot,
   });
+  const config = toolConfig(folder, root, pluginRoot, log, item.artifactPaths, item.draftRoot);
+  const wrapped = `This is an isolated classification probe, not a native client routing test.\nUse only the local fixture MCP tools. Fixture root ${root}; use relative paths for fixture reads/writes. CLAUDE_PLUGIN_ROOT is plugin/. Resolve referenced skills and guidance through plugin/skills and plugin/references.\n${prompt}`;
+  json(folder, "input.json", { prompt: wrapped, files: snapshot(root, item) });
+  record.promptHash = sha(prompt.split(root).join("<FIXTURE>"));
+  record.inputHash = sha({ prompt: record.promptHash, files: snapshot(root, item) });
+  if (!options.live) return;
+  let response;
+  try {
+    response = await dependencies.target({
+      prompt: wrapped,
+      cwd: root,
+      config,
+      model: options.model,
+      timeoutMs: options.timeout * 1000,
+    });
+  } catch (error) {
+    // A timed-out invocation can leave a useful document. Keep its files and
+    // raw trace without fabricating a reply, grading it, or erasing the error.
+    json(folder, "evidence.json", {
+      reply: null,
+      tail: null,
+      files: snapshot(root, item),
+      events: existsSync(log) ? readFileSync(log, "utf8") : "",
+      executionError: error?.message ?? String(error),
+    });
+    throw error;
+  }
   recordCall(record, "target", response);
   json(folder, "response.json", response);
   const tail = parseTail(response.text);
   // Capture target evidence before local scorers can materialize review files.
   // Keep it even when tail validation or the judge subsequently fails.
-  const files = snapshot(root);
+  const files = snapshot(root, item);
   const rawEvents = existsSync(log) ? readFileSync(log, "utf8") : "";
   const events = rawEvents
     .split(/\r?\n/)

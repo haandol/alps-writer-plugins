@@ -26,102 +26,34 @@ Implements the specified ADR in code. Once implementation, tests, the verified r
 
 1. **Identify the target ADR**
 
-   Branching by argument:
-   - **The argument is a file path** → target that single ADR file. **If the path does not exist on disk**, do not stop immediately — it may have been moved by a rollup renumber, so look for it once:
-     - First check on disk for a kebab-title match in the same category directory (`docs/adr/<cat>/*-<title>.md`, the ADR whose post-number string matches) — this works without git and is the simplest.
-     - If the match is ambiguous or absent, confirm it via git rename history: `git log --all --diff-filter=R --name-status -- '*<title>.md'` (or grep the old path out of the `git log --all --diff-filter=R --name-status` output) prints the old→new mapping on a single line in the form `R100  docs/adr/<cat>/<old>.md  docs/adr/<cat>/<new>.md` — the clearest signal. (`git log --follow -- <old-path>` on the old path also tracks the rename and shows the commits, but it does not give you the new path at a glance, so use `--diff-filter=R --name-status`.)
-     - Once found, confirm with "`<old-path>` was moved to `<new-path>` by a rollup. Shall I implement this file?" and then take the new path as the target. If you still cannot find it, fall back to "Printing the Proposed list" below.
-   - **The argument is a category key** (e.g. `auth`, `identity/login`) → match it against the **category keys** in `docs/adr/.mapping.json`. Category keys are derived canonically from the feature name (`identity/login`). A key like `f1` — used when there was no feature name and a purely numeric workshop id was used as the fallback key — is also interpreted as-is; this is literal category-key matching, not a Feature ID lookup (the mapping has no field that holds a Feature ID). If the user gave only the feature segment without the context prefix (`login`) and the same feature name exists in multiple contexts, so it is ambiguous, ask once which context they mean (this happens only rarely, in multi-context repos that use grouping).
-   - **When the argument is empty, the match is ambiguous, or there is no mapping / mapping file** — show the list of ADRs in `Proposed` state (not implemented) all at once and ask the user which ADR to implement (the "Printing the Proposed list" procedure below).
+   Use the exact path or category in `.mapping.json`. For a missing/ambiguous
+   target, no selection, or a requested change to an `Accepted` decision, read
+   [target and change](references/target-and-change.md). It owns renamed-path
+   recovery, Proposed selection, decision identity and ADR-first changes.
+   Behavior-preserving work keeps an unchanged dated `Accepted` Status.
+   Admitted contract changes require the owning ADR first; every Status change
+   uses `adr-status-transition.mjs` with the exact ADR path and matching index.
+   Always complete step 2 before planning, even for one target.
 
-   **Procedure for printing the Proposed list**:
-   1. If `docs/adr/.mapping.json` exists, iterate over every category. If not, walk `docs/adr/**/*.md` **recursively** (e.g. `find docs/adr -name '[0-9][0-9][0-9][0-9]-*.md'`) to build the ADR file list — it must include **both** flat keys (`docs/adr/auth/0001.md`) and 2-segment feature sub-folders (`docs/adr/identity/login/0001.md`). Do not use a non-recursive glob (`docs/adr/*/*.md`), because it misses 2-segment sub-folder ADRs entirely.
-   2. Read each ADR file's `## Status` section and keep only `Proposed` ones (exclude `Accepted`, `Deprecated`, `Superseded`).
-   3. Show the user the following format once and take their selection:
+2. **Dependency check before planning**
 
-      ```
-      There are N ADRs that have not been implemented yet. Which ADR should I implement?
-
-      1. identity/login — Email signup (docs/adr/identity/login/0001-email-signup.md)
-      2. identity/password-reset — Password reset (docs/adr/identity/password-reset/0001-password-reset.md)
-      3. cart — Cart totals (docs/adr/cart/0003-cart-totals.md)
-
-      Answer with a number or a category key (e.g. `identity/login`). To implement several at once, answer like "1,2" or "identity/login, cart".
-      ```
-
-   4. Once the user answers, take that selection as the category argument and go back to the beginning of step 1.
-   5. **If there are 0 Proposed ADRs**, tell the user _"Every ADR is already implemented. To record a new decision, write the ADR first with `/adr-new <category>`. You can also use `/feature-to-adr` to batch-convert ALPS Section 7 features."_ and finish.
-   6. **If there is not a single ADR on disk at all**, tell the user _"There are no ADRs yet. Write one directly with `/adr-new <category>`, or if you have ALPS Section 7 features, convert them with `/feature-to-adr` and call this again."_ and finish.
-
-   Once the target ADR is identified, check its current Status — this command handles the `Proposed → Accepted` transition automatically. If an ADR that is already `Accepted` is given as the implementation target, apply the ADR admission gate to the requested change before treating it as an ADR change. A replaceable library, SDK, framework, middleware, module layout, credential provider chain, signer, authentication adapter, or other behavior-preserving reinforcement leaves the ADR and its `Accepted` Status untouched throughout implementation and review; scope it in the implementation plan instead. Do not demote an unchanged `Accepted` ADR to `Proposed` merely because code is being edited or reviewed. If an admitted decision or requirement changed, classify from the request whether the intent is a partial change or reinforcement; if that distinction is ambiguous, carry the one unresolved question into the single step 3 baseline approval instead of asking separately here. At this point, apply the **decision identity check**: the target remains the owner when it still answers the same architectural question and owns the same requirement or system/data/security/external boundary, even if the provider, adopted alternative, Decision Drivers, or direction changed. If **the decision itself changed because of a requirement or architectural change** (not a mere implementation correction — for the judgment call see `authoring-rules.md` "Changing an ADR — edit-in-place vs supersede"), reflect the new decision in that ADR body as the current state (edit-in-place), revert Status to `Proposed`, and proceed with this implementation. A GPT-5.6 provider change from Amazon Bedrock to the OpenAI API, and a later return to Bedrock, both update the same provider-boundary ADR when one current-state record still describes the choice. During that rewrite, apply `authoring-rules.md` "Final-state wording": state the requested result directly in the body and mapping summary, and remove replaced identifiers, previous values, and migration narration that add no current contract. Keep rejected choices in Alternatives and major old → new history in `decision-log.md`; never delete a current prohibition that passed the requirement gate. **A request that changes only a requirement value or rule ("max 7 turns → 10 turns", "retention 30 days → 90 days") also falls here** — even though it looks like editing a single constant in the code, a system behavior requirement has changed, so do not touch the code first; update the ADR's requirement contract to the new value first (`authoring-rules.md` "Requirements live in the code and in the ADR") (after the tests and step 6 completion review pass, step 7 will auto-promote it back to `Accepted` — `concepts.md` "Automatic transition rules"). If that decision change is **major** (swapping the adopted alternative, reversing a Driver, changing the core algorithm/architecture, changing an external provider, reverting to a former provider, or a bug fix that changes behavior — `authoring-rules.md` "What to log — minor vs major"), leave a one-line entry in the category's `decision-log.md`. Judge it a supersede **only when the decision topic has branched and the old decision must coexist as a separate record**; in that case create a new ADR with `/adr-new`, leave the old one as `Superseded`, and take that new ADR as the implementation target (a supersede is also major, so log it).
-
-   **Every Status transition in this workflow must use the deterministic status script.** Do not edit a Status value with `apply_patch`, regex replacement, or a search for the first matching string — `.mapping.json` commonly contains many identical `Proposed` or dated `Accepted` values. After updating the ADR decision text, use:
-
-   ```bash
-   node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs <target-adr-path> Proposed --summary "<current one-line decision summary>"
-   ```
-
-   The script addresses the mapping record by its exact ADR `path`, requires exactly one match, refuses a pre-existing body/index mismatch, and updates the body and index together.
-
-   **Once the target is identified, never go straight to step 3 (planning) under any circumstances. You must perform the step 2 dependency check first.** Whether it is a single ADR or the user picked several at once like `1,2` / `f1, f2`, step 2 is taken without exception.
-
-2. **Dependency check (prerequisite ADR gate) — a mandatory step that cannot be skipped**
-
-   Features depend on each other — for example, implementing "checkout (`checkout`)" is only meaningful once "cart (`cart`)" already works. If you ignore this dependency and start with the requested ADR, you stack code on top of a missing prerequisite and diverge from the real order of operation. So **look at dependencies before implementing or planning — this step cannot be omitted or deferred.** (The category keys in the examples below are name-based canonical keys, and the target is specified with such a key.)
-   - Read `dependsOn` from the target category's entry in `docs/adr/.mapping.json` (this value was carried over from ALPS Section 6.3 Feature Dependency Diagram by `/feature-to-adr`, or recorded directly as a prerequisite by `/adr-new` at authoring time).
-     - If the entry exists but **the `dependsOn` key itself is absent** — no dependency has been declared. Say in one line, "This ADR does not declare `dependsOn`, so I'm proceeding without a prerequisite check — if there are prerequisite ADRs, fill them in via `dependsOn` in `.mapping.json` or via `/feature-to-adr`", then proceed to step 3 (do not silently treat "no dependencies" and "dependencies undeclared" as the same thing).
-     - If `dependsOn` is an **empty array (`[]`)**, that is an explicit, completed check that there are no dependencies, so proceed to step 3 without any notice.
-   - If `dependsOn` has keys, walk the graph **one node at a time to visit the transitive prerequisite categories** (e.g. `checkout` → `cart` → `identity/login`). If any node you visit is a **dangling reference** (no `.mapping.json` entry, or not a single ADR file on disk), stop right there — transitive expansion requires reading that node's entry and `dependsOn` to move to the next hop, so if an intermediate node is dangling you cannot reach the deeper prerequisites (which is why you check at every hop rather than "after collecting everything"). If it is not dangling, read that node's `dependsOn` to expand into deeper prerequisites, and check the visited node's ADR Status.
-   - **When you hit a dangling reference** — stop the implementation and repair the mapping before proceeding. Do not create a placeholder ADR merely to close the graph. A completed `/feature-to-adr` handoff gives every transferred Feature a real requirement-contract owner and records only prerequisites needed to satisfy those contracts; shared helpers, SDK reuse, and convenient work order do not become `dependsOn`.
-   - **If every prerequisite ADR is `Accepted` (implementation complete)**, the dependencies are satisfied, so proceed to step 3 as-is.
-   - **If even one prerequisite ADR is `Proposed` (not implemented), stop the downstream implementation.** Rebuild the target list in dependency topological order (deepest prerequisite first) and implement those prerequisites before returning to the requested target. User confirmation cannot turn an unimplemented prerequisite into a completed one.
-   - **When there are multiple target ADRs (whether the user picked several directly or you added prerequisites above), always topologically sort them by the `dependsOn` graph and implement from the deepest prerequisite in order.** Do not simply follow the order the user typed (`checkout, identity/login, cart`) — dependency order takes precedence over input order. Show the sorted implementation order to the user in one line ("Implementation order: identity/login → cart → checkout") and proceed.
-   - If the dependency graph has a cycle (e.g. `cart` ↔ `checkout`), topological sorting is impossible, so stop the implementation, report which categories are entangled, and require the dependency model to be corrected before implementation.
-
-     ```
-     `checkout` depends on `cart`, but `cart` is not implemented yet (Proposed).
-     By dependency order, `cart` has to be implemented first for `checkout` to work properly.
-
-     Implementation order: `cart` → `checkout`.
-     The downstream ADR remains blocked until `cart` is `Accepted`.
-     ```
-
-   - If this is a legacy ADR set where `.mapping.json` itself is missing or the target category has no entry at all, the dependencies are unknowable, so skip the gate — but say in one line, "There is no dependency information, so I'm skipping the ordering check (you can fill it in via `/feature-to-adr` or `dependsOn` in `.mapping.json`)". (The case where the entry exists but only the `dependsOn` key is missing is handled by the "dependencies undeclared" branch above, not by this legacy case.)
+   Read [dependencies](references/dependencies.md) for every selected target.
+   Traverse `dependsOn` transitively. A dangling reference or cycle blocks
+   implementation; a `Proposed` prerequisite blocks downstream work until it is
+   implemented and `Accepted`. Implement multiple targets in topological order,
+   never input order. Distinguish explicit `[]`, undeclared dependencies and
+   missing legacy mapping, with the notices that module requires.
 
 3. **Build the plan**
-   - Read and apply `${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md` before selecting validation evidence or improving a metric. It owns case/metric rules, execution readiness, required-versus-monitoring judgments, actual user-entry evidence and cause-specific repair. Apply it throughout implementation, tests and completion review.
-   - Read `${CLAUDE_PLUGIN_ROOT}/references/requirement-delegation.md` when resolving unspecified or delegated details. Use the ADR's Purpose, scope, priorities, and explicit contract to bound autonomous judgment. This context is needed because a locally reasonable default can still pursue a different outcome from the user's intent.
-   - Extract the vertical slice from the ADR's Decision / Mermaid diagram (UI → API → data). One ADR covers the whole slice of one feature (a leaf — a feature sub-folder or a single-feature context), so scope the implementation plan as a unit that changes the UI/API/Data layers **together** within that same feature.
-   - Read `references/implementation-hiking.md` completely. Partition the plan into one or more vertical Implementation Hills by user flow, logical capability, or evidence-grounded bounded context. Each Hill states preconditions and surrounding context, core design and contracts, implementation across every necessary layer, and targeted verification. Never use technical layers, files, modules, or planning/coding/testing phases as Hill boundaries.
-   - If the category is set up as an anti-pattern category (`frontend/`, `backend/`, `api/`, `identity/api`, etc. — in any segment, context or feature; see `structure.md` "Anti-pattern categories") so that vertical slice extraction is impossible, stop the implementation and recommend re-aligning the categories with `/adr-sync`.
-   - `Glob`/`Grep` on keywords from the ADR's Decision to find and read the relevant existing code and identify the gaps (code locations are not in the mapping, so read the ADR and search directly — `structure.md` "Finding the related code"). Check whether the UI/API/Data code of the same feature is gathered in one place.
-   - **Resolve gaps before asking questions.** For every behavior, value, failure path, or premise the ADR does not state clearly, use this order:
-     1. derive obligations logically required by the explicit ADR contract and safety boundary
-     2. reuse established project conventions and sibling behavior when they serve the recorded intent and scope
-     3. use authoritative protocol, platform, regulatory, or domain rules available to the project
-     4. choose a purpose-aligned, reversible, low-risk default only when it remains below ADR resolution
-   - Treat a logical consequence of an explicit contract as a **derived obligation**, not a new product decision. For example, tenant isolation implies that caller-controlled input cannot establish authenticated tenant identity by itself. Implement and test the derived obligation, name its parent contract and basis in the progress update, and do not ask the user to restate it.
-   - Auto-resolve a domain default when the recorded intent and contract support a reversible, low-risk choice within authorized scope. Neighboring code is evidence, not authority to contradict that purpose. Several suitable implementation options do not require approval. Do not use intent to set new user-visible product policy, money, permission, legal/compliance behavior, retention, irreversible data semantics, a public contract, or a durable external fallback. Record a material choice's intent, basis, and observable consequence as implementation evidence.
-   - When materially different product outcomes remain after applying intent and the contract, or a protected choice is unresolved, do not invent a requirement. Collect those items into one concise **Decision request** instead of interrupting for every detail. For each item include: the missing decision, the recommended option and domain basis, two or three realistic alternatives, user/data/security/operational impact, and the exact ADR contract wording that would be added or changed. Ask once, then update the ADR revision before implementation. Continue independent work; missing implementation detail alone is not a blocker.
-   - Before presenting the plan, read `${CLAUDE_PLUGIN_ROOT}/references/comprehension-load.md` completely and apply its score. The score does not block approval or completion; at `8/10` or higher it only pauses implementation start until the split choice below is resolved.
-   - When the score is `8/10` or higher, before implementation ask one concise choice: review a split, or proceed with the original ADR. Do not include concrete split candidates in this first question, and wait for the user's answer. This choice is not ADR approval and does not change Status. When the score is below `8/10`, do not ask about splitting unless the user requests it.
-   - Only after the user chooses split review, or explicitly asks to split at any score, offer up to three candidates. First preserve the abstraction ladder: split an ALPS Feature only at an independently observable user-behavior boundary, and split an ADR only when it contains independent decisions. Never split by technical layer.
-   - If a Feature or ADR split is inappropriate but the user still wants lower review load, offer a **Stacked PR delivery fallback** for the implementation steps. Keep one inherently difficult decision in one ADR. Order the PR layers by dependency, give each layer one review question and the tests that verify that layer, and make the full Stack implement the same approved ADR contract.
-   - Do not automatically propose or create a Stack because the comprehension score is high. Do not write or persist the Stack plan, branch relationships, or review state in the ADR, `.mapping.json`, Status, or a registry. They are ephemeral delivery information.
-   - Create or publish the PR Stack only when the user explicitly asks for publishing and the current environment exposes the required GitHub Stack capability. Detect capability at execution time rather than embedding provider commands in this skill. If it is unavailable, keep the dependency-ordered implementation steps without forcing a GitHub workflow.
-   - When the user chooses Stacked PR delivery, implement each cumulative branch in dependency order and verify its review question before moving upward. Individual layers do not complete or promote the ADR; keep it `Proposed` until the complete Stack passes the final tests and step 6 implementation review.
-   - Present the change plan as a **non-blocking progress update**. When the exact ADR revision was already approved and has not changed, report the scope, intended implementation units, tests, `Comprehension load: <N>/10`, derived obligations, auto-resolved domain defaults with their basis, and any material assumptions or risks. If the score is below `8/10`, proceed without asking for approval or waiting. If it is `8/10` or higher, ask only the split-review-versus-original-ADR choice above; after the user chooses the original ADR or confirms a split boundary, proceed without another plan approval. If the target currently has an `Accepted (YYYY-MM-DD)` Status, state that exact `Accepted` Status is retained; do not describe the result conditionally or say it remains `Proposed` until review.
-   - Before implementation, ask for user judgment only when the score is `8/10` or higher and the split choice is unresolved, or when planning discovers a new or changed ADR decision or requirement contract, contradictory premises, an externally checkable assumption whose falsehood could violate the ADR contract or safety and whose basis cannot be verified, or a destructive/broad change outside the approved scope.
-   - When this cycle changes an existing ADR, lead the required baseline approval with a **semantic diff** grouped by `Decision`, `Requirement contract`, `Decision Drivers`, and `Consequences`. Preserve exact requirement values and rules. Mark inspected but unaffected groups `Unchanged`, and mark anything not established by the available evidence `Unverified` — never present `Unverified` as `Unchanged`. Show the full revised ADR only when the user asks or when the diff cannot expose a material ambiguity. The semantic diff is ephemeral and never becomes a second authoritative artifact.
-   - When this cycle created an ADR or changed an existing ADR's decision or requirement contract, include an **implementation intent baseline** in that same approval:
-     - the current Decision and Decision Drivers
-     - every numeric and non-numeric requirement-contract row with its basis
-     - the implementation-independent observable evidence for each contract row
-     - the written regeneration checklist from `/adr-new` or the edit-in-place rewrite
-     - explicit out-of-scope items and any risk tolerance the ADR records
-   - Treat baseline approval as **once per ADR revision**, not once per command. If `/adr-new` or `/feature-to-adr` already obtained approval for this exact ADR content and the ADR has not changed, reuse that approved baseline, publish the implementation plan as a progress update, and proceed without another approval. Otherwise ask once whether the current-state baseline matches the user's intent and is complete enough to rebuild requirement-honoring code. Resolve omissions now, before code, and record the approved baseline for the completion review. Do not repeat this routine confirmation after implementation unless the ADR changes or review discovers a real contract ambiguity.
 
-   If you decided to implement multiple ADRs in order (when prerequisites were added in step 2), repeat steps 4–6 below **one ADR at a time, starting from the deepest prerequisite in dependency topological order** — only after a prerequisite becomes `Accepted` do you move on to step 4 for the next ADR.
+   After the dependency gate, read [planning](references/planning.md). It owns
+   vertical Implementation Hills, derived obligations and reversible defaults,
+   comprehension-load choices, optional Stacked PR delivery, semantic diff and
+   the implementation intent baseline. Publish the plan as a non-blocking update
+   when the exact ADR revision is already approved; never request routine plan
+   approval again. Resolve protected contract choices before implementation.
+   For comprehension load `8/10` or higher, ask the split-review-versus-original
+   choice before offering concrete split candidates. Keep plans ephemeral.
 
 4. **Implement**
    - Edit/Write in small units.
@@ -148,36 +80,22 @@ Implements the specified ADR in code. Once implementation, tests, the verified r
    - Keep `/adr-impl-refactor`'s proposal-only items in the wrap-up. They are advice, not incomplete implementation, unless one exposes an ADR violation or a concrete functional defect that belongs back in step 4.
 
 6. **Final implementation review (completion gate)**
-   - After the final tests, verify the ADR / mapping structure with the deterministic harness:
 
-     ```bash
-     node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs <implemented category key>
-     ```
-
-     This check mechanically catches malformed ADR/index state, broken dependencies, and new ADR back-references before the adversarial review spends model work on an invalid baseline. If an `error` comes out, fix it before continuing.
-
-   - Select the completion-review mode from the final diff. Use `full` when requirement values or rules, public API/wire form, schema/persistence, state/transitions, permissions/visibility, security, external fallback, concurrency, transactions, resource lifetime, error semantics, bounded contexts, or broad modules changed; use `standard` only for localized implementation that changes none of those surfaces. If classification is unclear, use `full`.
-   - Run `/adr-impl-review <category> --mode <standard|full>` on the refactored final code while preserving the target's lifecycle state: a new or contract-changed target remains `Proposed`, while an unchanged behavior-preserving reinforcement of an existing `Accepted` target remains `Accepted` (report only — the review does not modify code or ADRs). This invocation is the selected completion review, not a partial-review request. Pass the approved implementation intent baseline. Do not pass it the refactor review or result artifacts. The review derives the complete implementation scope from every ADR decision and contract row; the final diff remains separate change context and never limits sufficiency coverage. Standard mode checks the decision ledger with a sufficiency perspective and targeted tests; full mode adds separately grounded necessity and sufficiency perspectives plus detailed evidence artifacts. Both modes must return a validated, non-empty `adr-impl-review-report.html`. The review skill chooses the available agent or main-session orchestration. Neither mode repeats the routine intent/spec-fitness confirmation after implementation.
-   - Give the completion review the Implementation Hill boundaries as disposable context and reuse them for Review Hiking when they still match the shipping user flows, logical capabilities, or bounded contexts. The reviewer may adjust a boundary when final evidence shows a different vertical capability, but it must never fall back to technical layers or lifecycle phases.
-   - `PASS` proceeds to step 7.
-   - On `FIX_REQUIRED`, preserve the current lifecycle state (`Proposed` for a new or contract-changed ADR, `Accepted` for an unchanged reinforcement) and automatically apply evidence-backed changes that do not alter the approved ADR contract: code fixes for `Spec violation`, tests for `Test gap`, `Best practice` items weighted `now`, high-confidence local `Unnecessary change` / `Simpler alternative` / `Refactor` items, and `/adr-sync <category>` for a confirmed `Impl-fact mismatch`. Record every applied item, rerun the affected tests, then rerun the same review mode. Do not ask the user to approve each repair.
-   - Ask the user only when a finding requires a new or changed ADR decision, presents contradictory premises, leaves a material risk or a contract/safety-affecting implementation premise unverified, or requires a destructive/broad change outside the approved scope. `BLOCK` and unresolved `INCONCLUSIVE` preserve the current lifecycle state; they do not demote an unchanged `Accepted` ADR.
-   - An already-`Accepted` ADR reviewed for a behavior-preserving reinforcement keeps its existing Status throughout the cycle. If the decision or requirement contract changed, step 1 already returned it to `Proposed`.
+   After final tests and any selected refactor pass, read
+   [completion](references/completion.md). Validate ADR/index structure, choose
+   standard/full from risk, and run `/adr-impl-review` against the complete
+   implementation scope. Automatically repair evidence-backed defects within
+   the approved contract and rerun the necessary tests and review. A new decision,
+   contradictory premise, unverified material risk or out-of-scope destructive
+   repair needs user judgment. Preserve the target's lifecycle state throughout.
 
 7. **Automatic Status transition when needed and wrap up**
 
-   For the detailed policy see `concepts.md` "Automatic transition rules". Only after the step 6 review returns `PASS`:
-   - If the target is `Proposed`, without asking the user run the deterministic transition command:
-
-     ```bash
-     node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs <target-adr-path> "Accepted (YYYY-MM-DD)" --summary "<current one-line decision summary>"
-     ```
-
-   - The script updates the Status line in the target ADR body and the `status` of the exact matching `adrs[]` record in `.mapping.json` together. It fails instead of guessing when the path is absent, duplicated, or already inconsistent.
-   - If the target entered the cycle as `Accepted` and its decision and requirement contract remained unchanged, do not run the transition script. Keep the existing dated `Accepted` Status and verify body/index lockstep with `adr-structure-lint`.
-   - If several ADRs in one category were implemented together, transition only the `Proposed` targets and only after each one's completion review passes; retain unchanged `Accepted` targets as-is.
-   - Run `adr-structure-lint` once more after any transition, or after an unchanged-`Accepted` completion, to verify the dated Status format and body/index lockstep.
-   - Tell the user the work is complete. Surface the final verdict, key impact/action/risk, tests run, findings automatically fixed, deferred advisory items, the HTML Evidence Package path and open result, and either the ADR's `Accepted` transition or its unchanged `Accepted` Status. Do not copy comprehension questions, grading criteria, or an answer request into the ordinary completion response; the questions remain in the HTML report and become interactive only when the user explicitly requests the comprehension check. Do not ask for another approval when no unresolved decision or material risk remains.
+   Follow the same completion module only after review `PASS`. Transition only
+   `Proposed` targets using the deterministic status script; retain unchanged
+   dated `Accepted` targets. Verify body/index lockstep and report tests,
+   fixes, deferred advice and the validated HTML evidence path without a routine
+   reconfirmation or an unsolicited interactive quiz.
 
 **Forbidden**:
 

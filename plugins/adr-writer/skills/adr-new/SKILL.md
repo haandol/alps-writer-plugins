@@ -87,18 +87,11 @@ After the request passes admission, apply `authoring-rules.md` **"Decision ident
    - A provider replacement, an adopted-alternative replacement, an inverted Decision Driver, and a return to a formerly used provider are all edit-in-place when the same ADR still owns the topic. For example, GPT-5.6 via Amazon Bedrock → GPT-5.6 via the OpenAI API → Amazon Bedrock again keeps one provider-boundary ADR and one path.
 4. Continue creating a new ADR only when no existing ADR owns the topic, or when the topic forks and multiple decisions must remain independently current and separately referenceable. When uncertain, the default is edit-in-place plus a decision-log entry.
 
-After the decision passes the gate, check the mapping state:
-
-- Create `docs/adr/` if it does not exist.
-- If `docs/adr/README.md` (and `concepts.md`, `authoring-rules.md`, `structure.md`, `decision-log.template.md`) are absent, copy all five of the same files from `${CLAUDE_PLUGIN_ROOT}/templates/adr/`. `decision-log.template.md` is a **read-only seed** — copy it to `docs/adr/<category>/decision-log.md` when that category gets its first major decision change; do not pre-create it in the category folder now (the log exists only after there is a transition to record).
-- **Reconcile the doc layout — `README.md` is the index, `concepts.md` is the working model.** 0.5.0 split them: the abstraction ladder, the gray zone, the dependency model, and Status transitions moved out of `README.md` into `concepts.md`, leaving `README.md` with what an ADR is, the ADR template, and where the index lives. To check existing docs without writes, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs" --adr-dir docs/adr --documents-only` from the repository root if that check is not already current. This checks the existing baseline, not the future draft. Act on whichever layout warning it reports:
-  - **`rules-doc-layout-legacy`** (a `README.md` with no `concepts.md`) — the repo predates the split. Offer to seed `concepts.md` from `${CLAUDE_PLUGIN_ROOT}/templates/adr/` and cut the moved sections out of `README.md`. **Diff before overwriting**: those sections may carry hand-edits (a translation, a tightened rule, a house convention), so carry them into the new `concepts.md` rather than dropping them. If the user declines, continue — every skill and agent falls back to reading those sections out of `README.md`, so the old layout still works.
-  - **`rules-doc-layout-duplicated`** (both files exist, but `README.md` still holds sections `concepts.md` now owns) — worse than the un-migrated case, because two copies of one rule can drift apart and no reader can tell which went stale. Confirm `concepts.md` carries any edits made in the `README.md` copy, then offer to delete those sections from `README.md`.
-  - Both are warnings, not errors: a lagging layout does not make an ADR wrong. Ask once, and never rewrite the docs without approval.
-- **If they are present but stale, offer to refresh them.** Each seeded doc carries an `<!-- adr-writer:rules-version X.Y.Z -->` stamp; the harness reports a lag as `rules-doc-stale` (or `rules-doc-unstamped` for a copy predating the stamp). Seeding once and never again is how a repo keeps the rule set it got on day one while every rule added upstream stops existing for it — and since these docs are the source of truth every reviewer reads, that axis is not failed loudly, it goes unjudged. So when the stamp trails the installed plugin, **say which docs lag and ask once** before overwriting. Two things make this a question rather than an automatic copy: a project may have **hand-edited** its rules on purpose (translated them, tightened a rule, added a house convention), and an overwrite loses that silently. Diff first, name what a refresh would drop, and carry those edits into the new copy. If the user declines, continue with the existing docs — the ADR you are about to write is judged by the rules the repo actually holds.
-- If `docs/adr/.mapping.json` is absent, start the draft mapping in step 4 with an empty skeleton (`{ "categories": {} }`); create the repository copy only after approval.
-
-Check for category bloat — once the category is settled, follow the inspect-and-propose procedure in `structure.md` "When a context grows — splitting into feature sub-folders". If the target folder (a feature sub-folder or directly under the context) holds 15 or more ADRs, propose a feature sub-folder split once; if the user accepts, target this ADR at the sub-folder (`docs/adr/<context>/<feature>/`) — the normal path by which a flat key like `pricing` grows into `pricing/<feature>`. Draft it there in the candidate tree and apply after step 7 approval. If they decline, or there are fewer than 15, continue with the flat structure and do not ask again.
+After admission and decision identity checks select the new-ADR path, read
+[repository setup](references/repository-setup.md) for rule-document seeding,
+layout or version refresh, missing mapping and category growth. Initial seeding
+never authorizes ADR body or mapping writes; preserve hand edits and obtain the
+existing refresh/move approvals.
 
 ### 2. Elicit the decision's motivation
 
@@ -120,196 +113,29 @@ Establish the following from the request, supplied sources, and existing context
 
 If the user answers everything at once, take it as given; if they answer briefly, break it into one or two rounds. If they say they do not know, do not guess — agree on "shall we leave this blank, save as Proposed, and fill it in during /adr-impl?"
 
-### 3. Draft the ADR
+### 3–5. Draft the ADR and index
 
-Use [review artifact storage](../report-writer/references/review-artifacts.md) to
-allocate a unique ignored run directory. Under it, create a draft root containing
-a copy of the existing `docs/adr/` tree, including its mapping, rule documents,
-and prerequisite ADRs. Copy other documents needed to resolve Related links at
-their repository-relative paths. Use independent copies, not symlinks or hard
-links to live files. Keep new or changed ADR bodies and supporting document
-candidates in this tree, with their intended final paths. It is disposable
-validation input, not a second authority or approval registry.
+Read [draft and index](references/draft-and-index.md) before drafting. Use an
+independent disposable candidate tree, keep the full requirement contract and
+observable evidence, and run the regeneration test. The draft describes the
+current decision, intent, valid Drivers and realistic alternatives; remove
+mechanical writing patterns without losing contracts. Start new ADRs as
+`Proposed`, and prepare the mapping without modifying official files.
 
-Make Purpose useful to an agent resolving unspecified details: preserve the
-user's problem, intended outcome, and supplied priorities or boundaries that
-would change a reasonable choice. Do not stop at an aspirational benefit or
-invent exclusions. Apply the shared requirement-delegation guidance to preserve
-autonomy within the contract and identify only material unresolved decisions.
-Author `Purpose`; accept legacy `Context` without losing its background or
-assumptions. Keep the normal ADR structure.
+### 6. Verify before saving
 
-Follow `concepts.md`, `authoring-rules.md`, and `structure.md` under `docs/adr/` strictly (falling back to the same files under `${CLAUDE_PLUGIN_ROOT}/templates/adr/`).
+Read [candidate verification](references/candidate-verification.md). Run the
+structure checks against the draft tree, perform the R1–R20 semantic review, and
+repair candidate defects before requesting approval. Preserve the written
+regeneration checklist for step 7.
 
-- Candidate category directory: `<draft-root>/docs/adr/<category>/` (create it in the draft tree if absent; for flat-structure projects use `<draft-root>/docs/adr/` alone)
-- Assign the next number within the category. Filename: `NNNN-kebab-title.md` — always canonical form. **Never put an ALPS Feature ID in the filename** (no `0001-f1-...`) — Feature IDs are stored nowhere, and `/adr-impl` matches targets by category key.
-- **Fill the `Date:` at the top of the body with the authoring date (`YYYY-MM-DD`)** — it records when the ADR was written and is separate from the Status transition date (`Accepted (YYYY-MM-DD)`). A `Proposed` Status line carries no date.
-- **Status always starts as `Proposed`** (`/adr-impl` switches it to `Accepted` automatically after implementation, tests, and the final implementation review pass). Never ask the user about promotion — see `concepts.md` "Automatic transition rules".
-- Body structure: Status / Purpose / Decision Drivers / Decision / alternatives / Consequences / (optional) Implementation Notes / Related. **The four required sections are Status, Purpose, Decision, and Consequences**, and `adr-structure-lint` hard-checks their presence. Decision Drivers and the alternatives section are strongly recommended (a warning when absent), and Implementation Notes is an optional section kept only when there are architecture-level implementation considerations (matching README's `## ADR template`).
-- **Record only the gray zone** — leave out anything discoverable by reading the code that is also not a requirement (function responsibilities, module dependencies, field types, error message wording, logs, env var names, pseudocode, implementation tuning values). Each of those belongs to the level below, and copying it up is what makes an ADR unreadable alone. The body's center of gravity should be "the motivation behind the decision that the code cannot show": adoption rationale, business rules translated into system behavior, domain rules and state transitions, external-dependency fallback — see `concepts.md` "What an ADR covers — the gray zone between business and code".
-- **Keep the core subject above code resolution** — a cleanly written ADR about a replaceable library, SDK, framework, middleware, credential/auth adapter, or module structure still fails the admission gate. Do not hide a code-level subject behind architecture vocabulary. If the provider/model boundary is the decision, name that boundary and leave its client and credential plumbing out.
-- **Route each fact to its level before writing it** (`authoring-rules.md` "The requirement gate and two filters", in this order). (0) **Requirement gate** — "if this were missing, could code rebuilt from the ADR alone violate a requirement?" YES keeps it unconditionally, and no filter below applies. (1) **Code-readthrough test** — for a fact that failed the gate, "would an agent reading this code discover it?" YES sends it down to the code level. (2) **Litmus test** — "if this value changed, would the decision itself change?" NO sends it down too. Asking (1) before (0) is how a requirement gets deleted for being "visible in the code", which is this skill's most expensive mistake.
-- **Record requirement values verbatim** — put the limits, cycles, caps, and targets collected in step 2 into the `Decision`'s requirement contract (the README template's `### Requirement contract`) with the number and its basis. Do not blur them into "is limited" or "within a reasonable time," and equally do not write them as constant or environment-variable names (`MAX_TURNS = 20` ✗ / "a chat session is capped at 20 turns — pricing policy" ✓). **Record non-numeric requirements in the same place** — allowed value sets, mandatory fields, permissions, visibility, ordering, uniqueness, and units go in as domain sentences, never as enum identifiers (`Status = ["PAID","SHIPPED"]` ✗ / "an order is paid, shipping, delivered, or cancelled, and a cancelled order never moves to shipping" ✓). For the detailed criteria see `authoring-rules.md` "Concrete numbers" and "Non-numeric requirements".
-- **Group the requirement contract for scanning** — place each populated row under `Required guarantees`, `Prohibitions`, or `Failure guarantees`. Omit empty groups. This is presentation, not a filter: preserve every exact value, allowed state, permission, ordering rule, uniqueness rule, unit, and basis that passed the requirement gate.
-- **Make the contract reviewable** — keep one independently reviewable obligation per row and add `Observable evidence` that names the implementation-independent result used to distinguish compliance from violation. Do not prescribe test files, commands, functions, classes, libraries, fixtures, or internal data representation.
-- **Keep decision-changing assumptions inside the existing structure** — include only assumptions that could change the adopted alternative, as one line in Purpose or the relevant Decision Driver with what must be reconsidered if false. Never move requirement values into an assumption, and never persist replaceable implementation defaults there. Do not create a separate assumptions section or confidence scale.
-- **Put yourself through the regeneration test once** — after finishing the draft, ask "if all this code were deleted and only this ADR survived, could requirement-honoring code be rebuilt from it alone, and could a reviewer tell requirement by requirement whether the rebuilt code complies?" A different implementation is normal, but if a contract or implementation-independent observable result is missing (requirement values, permission rules, required validation, state transitions, guaranteed behavior on failure), ask the user right there and fill it in — the reviewer's R19 in step 6 checks the same thing.
-- **Describe the Decision as a vertical slice** — connect user action → API → data change without a break, in one paragraph or a sequenceDiagram. Covering the UI/API/Data decisions of one feature (the leaf — a feature sub-folder or a single-feature context) together is normal; never split into per-layer ADRs. When async flow or state transitions are central, use stateDiagram-v2 or flowchart.
-- **Write the final state, not the transition** (`authoring-rules.md` "Final-state wording"). State the currently valid result directly in the body and `.mapping.json` summary: "`LEGACY_EVENT`와 `CURRENT_EVENT`를 혼용하지 않고 `CURRENT_EVENT`만 사용한다" ✗ / "이벤트 이름은 `CURRENT_EVENT`다" ✓. Remove replaced identifiers, previous values, migration steps, and contrast phrases when they add no current contract. Alternatives may name rejected choices, and major changes belong in `decision-log.md`. A real current prohibition or forbidden transition that passed the requirement gate remains.
-- **Write it tight, and in the active voice** (`authoring-rules.md` "Prose style"). An ADR is read under time pressure by someone deciding whether to trust it, so every padding word costs the reader attention the decision needed. Use the active voice by default — "the gateway rejects a duplicate payment", not "duplicate payments are rejected" — because the passive drops the actor, and who validates or owns the state is often the decision itself. Cut hedges ("basically", "it is worth noting that") and throat-clearing ("in order to" → "to"; "has the ability to" → "can"), keep connected conditions and results together while splitting changes in actor or point, prefer the concrete noun to the vague one, and state the decision rather than narrating how you reached it. **But never shorten by deleting content** — a dropped requirement value, permission rule, or fallback policy is a defect, not concision.
-- **Lead with intent and remove mechanical writing patterns** (`reader-first-writing.md` and `authoring-rules.md` "Reading order — intent before detail"). Purpose opens with the affected actor or system, verified problem, intended outcome, and a brief direction preview. The adjacent Decision Drivers state all currently applicable selection criteria. Decision states the choice and its discriminating reason before the full contract. Keep the current rationale understandable from the body alone, even when the same reason also explains a transition in `decision-log.md`. Check both the opening alone and the complete ADR; preserve required sections and every obligation. Prefer a verified causal flow to a forced list. Rewrite repeated contrast templates, one-off ornamental English labels, forced numbered symmetry, filler bridges, and tables or diagrams that repeat adjacent prose. Never invent an anecdote, project result, measurement, or causal relationship.
-- **Use diagrams to explain, not decorate** — when a decision flow, state, system boundary, or alternatives relationship is clearer visually, add a Mermaid diagram containing only architecture-level relationships established by the decision. Do not copy the implementation call graph, name file-level symbols, or add a diagram that merely repeats the paragraph.
-- For the full forbidden/keep lists see `authoring-rules.md` (the same rules apply inside diagrams).
+### 7. Confirm and save
 
-### 4. Prepare the mapping candidate
-
-Edit only `<draft-root>/docs/adr/.mapping.json`, starting from the existing mapping or the empty skeleton when absent. The final destination is `docs/adr/.mapping.json` (schema: `${CLAUDE_PLUGIN_ROOT}/templates/adr/mapping.schema.json`). The mapping is **the single ADR index** — each ADR is registered once with its path, Status, and a one-line summary. **It stores no ADR↔code paths** (the code is located by reading the ADR each time) **and no PRD reference** (adr-writer is standalone). Preserve unrelated records; do not apply this candidate to the repository yet.
-
-```json
-{
-  "categories": {
-    "<category>": {
-      "feature": "<the ADR title, or one line representing the category>",
-      "subdomainType": "<core|supporting|generic — only when step 2 item 6 was asked and answered>",
-      "adrs": [
-        {
-          "path": "docs/adr/<category>/NNNN-...md",
-          "status": "Proposed",
-          "summary": "<one-line Key Decision summary>"
-        }
-      ],
-      "dependsOn": ["<prerequisite category key>"],
-      "tableDocs": ["<if there was a DB change and you updated docs/tables/, schema.prisma, etc.>"]
-    }
-  }
-}
-```
-
-- An `adrs` item is an **object** `{ "path", "status", "summary" }`, not a string. `path` is the final repo-relative path, never the draft root's absolute path. `status` mirrors the `## Status` of the candidate ADR body (so a new ADR always starts as `"Proposed"`), and `summary` is a one-line compression of the Decision (the Key Decision). This record is the candidate index entry (see step 5).
-- If the category already has an entry, append the new record only to the candidate's `adrs` array.
-- **`dependsOn`** — record, as an array, the category keys the user named as prerequisites in step 2 item 5. This is exactly the field `/adr-impl`'s prerequisite gate reads, in the same category-key id-space. Reference only existing category keys and keep the graph acyclic (never including itself) — see `dependsOn` in `mapping.schema.json`. An edge pointing at a category in another context is normal. If the user answered "none" to item 5, record `dependsOn` as `[]` — the empty array means "explicitly checked, no dependencies," and `/adr-impl` proceeds without a notice. Omitting `dependsOn` entirely makes `/adr-impl` treat it as "dependencies undeclared" and emit a one-line warning, so never omit it on the `/adr-new` path where item 5 was asked.
-- **`subdomainType`** (optional) — record it on the context-level entry only when step 2 item 6 was answered (feature sub-folder entries inherit the parent context's classification, so they usually omit it). Omit it for flat or unknown cases — it is advisory metadata and the mapping stays valid without it.
-- `feature` is a human-readable label, never a PRD back-reference, including after an import. Reuse dependencies supplied by `/feature-to-adr`; standalone authoring follows the same explicit `dependsOn` rules above.
-
-### 5. Check the candidate index
-
-The ADR index is `docs/adr/.mapping.json` — the README holds no ADR list. The candidate `adrs[]` record from step 4 is the entire proposed index change; no separate index edit is needed. Confirm that its one-line `summary` accurately compresses the Decision and its `status` matches the candidate body's `## Status` (`Proposed`). The repository index remains unchanged until step 7. Leave the README untouched here.
-
-### 6. Verify before saving — the deterministic harness, then your own R1-R20 pass
-
-Verify in two stages just before saving: **the deterministic harness settles the mechanical rules, and the authoring path performs the judgment pass.** Self-check is the default; for a long ADR, new domain, high uncertainty, or an axis the author cannot judge independently, the current model may use an independent reviewer or separately grounded pass.
-
-Reuse the current authoring context for this pass. `/adr-review` remains the
-later path for inherited or hand-edited ADRs.
-
-**(a) The deterministic harness — `adr-structure-lint`**:
-
-Set `adr_draft_root` to the absolute draft-root path, `adr_category` to the target
-category key, and `CLAUDE_PLUGIN_ROOT` to the absolute plugin path. Run from the
-draft root so mapping paths such as `docs/adr/<category>/NNNN-title.md` resolve
-against the copied tree:
-
-```bash
-(
-  cd "$adr_draft_root" || exit 1
-  node "${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs" --adr-dir docs/adr --documents-only "$adr_category"
-)
-```
-
-`--adr-dir` selects the document root; it does not change the working directory
-used for mapping paths. Passing only an absolute draft ADR directory from the
-live repository root would make the mapping and disk paths disagree.
-
-This candidate run mechanically verifies the following (grounded in `authoring-rules.md`, `concepts.md`, and `structure.md`):
-
-- The Status enum and date format (the first half of R1), presence of the required sections (Status/Purpose/Decision/Consequences), canonical filename (`NNNN-kebab.md`, no stale `fN-` prefix), title number = filename number, path depth ≤ 2 segments
-- Anti-pattern category segments (the first half of R5), advisory Driver/alternative count warnings (R13/R14), Related links resolving (R10), whether a value is written in code-constant form (R18's format half — the `value-as-constant` warning)
-- The `.mapping.json` schema and `dependsOn` integrity (dangling / self-edge / cycles — R16), mapping↔disk consistency (R8), plus the mapping `adrs` record shape (path/status/summary) and status↔body agreement
-- `--documents-only` retains ADR→PRD back-reference checks (R17) and skips the code scan
-- Seeded-doc health, reported once for the directory rather than per ADR: version lag (`rules-doc-stale` / `rules-doc-unstamped`) and layout lag (`rules-doc-layout-legacy` / `rules-doc-layout-duplicated`) — all four route back to step 1, which owns the seeding and the refresh question
-
-For the code→ADR check (R15), run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/adr-invariants.sh" --adr-dir docs/adr --code-only` from the live repository root. This is read-only; reuse a current baseline result when the relevant source and scan configuration have not changed. A candidate-only document pass does not prove a repository code scan passed.
-
-Fix candidate errors before step 7 by editing only the draft body, mapping, or related candidates. Distinguish unchanged baseline findings from draft-introduced failures and report unresolved checks; do not silently modify unrelated source or rule documents. Carry warnings (counts, suspected code references, and the like) into (b) and judge their substance. A warning is not an instruction to invent Drivers or Alternatives to fill a quota.
-
-**(b) Your own pass over the judgment rules**: once the harness passes (or leaves only warnings), walk the **ADR review checklist** in `docs/adr/authoring-rules.md` (falling back to `${CLAUDE_PLUGIN_ROOT}/templates/adr/`) over the draft you just wrote. That checklist is the same rule set the reviewer agent applies as R1-R20, so it is the authority here — do not work from memory of it.
-
-Reuse the mechanical checks actually proved for the current candidate and baseline (Status format, required sections, filename, counts, Related links, mapping consistency, and the separately scoped back-reference checks). Resolve advisory warnings semantically and spend the pass on **what the harness structurally cannot see** — it never flags a bare number, judges substance, or reads a sentence:
-
-- **Missing requirement values and non-numeric requirements (R18a)** — is any limit, quota, cycle, retention period, cap, or target implied by Purpose/Drivers/Decision blurred into "appropriately", "is limited", or "a certain period"? Is any allowed value set, mandatory field, permission or visibility rule, ordering or uniqueness constraint, unit, or forbidden transition missing?
-- **The regeneration test (R19)** — delete all code, keep only this ADR: could requirement-honoring code be rebuilt, and could each obligation be reviewed through an implementation-independent observable result? Name every contract and review oracle a rebuild would have to honor, and say which are absent.
-- **Tuning-value intrusion (R18b)** and **implementation-detail creep (R3)** — a value a developer may change without violating a requirement, a code snippet, a field-type table, an env var name, pseudocode.
-- **The level filters (R4)** in gate-then-filters order — the requirement gate first, and only then the code-readthrough and litmus tests. Applying a filter before the gate is how a requirement gets deleted for being "visible in the code", and it is this skill's most expensive mistake.
-- **Gray-zone substance (R12)**, **discriminating Drivers (R13's quality half)**, **strawman alternatives (R14's quality half)**, **vertical-slice cohesion (R5's latter half)**, **one ADR = one decision (R11)**.
-- **ADR admission gate (R12)** — does the core subject itself change a durable contract, boundary, provider/model/fallback, key design, or cross-implementation trade-off? If it is only a replaceable implementation means, do not save the ADR.
-- **Final-state wording (R3)** — do the body and mapping summary state the current result directly, without carrying replaced identifiers, previous values, or transition narration outside Alternatives and `decision-log.md`? Confirm that removing comparison residue did not remove a current prohibition.
-- **Decision identity check (R11/R12)** — did the mapping and plausible ADR bodies reveal an existing owner for this architectural question or boundary? If yes, stop and route to edit-in-place; a new provider name, reversed direction, or changed Driver is not by itself a new decision.
-- **Prose style (R20)** — advisory. Apply `reader-first-writing.md`, including
-  its mechanical writing patterns, and never accept a cut that drops content.
-
-**Two of these you cannot check as well as a fresh reader, so make them explicit rather than assumed.** The values were in this conversation and the alternatives are yours, so a draft missing a requirement still reads as complete to you, and your own alternatives never look like strawmen. So for **R18a and R19, write the check out** — list the contracts a rebuild must honor and mark each present or absent, instead of concluding "the contract is complete". Anything absent goes back to the user as a question in step 7; **never invent a number to resolve the missing requirement.**
-
-Fix what the pass finds before step 7. If the draft needs splitting, or a DB schema change needs `docs/tables/` updated in the same change, return to step 3. **Report the pass in one line at step 7** ("harness passed; R18a/R19 checked; independent read: used|not needed — run `/adr-review <category>` for a later second opinion").
-
-### 7. User confirmation
-
-Show a verified **Decision Digest** and ask for approval. The digest is an ephemeral reading view over the ADR, not a second artifact or source of truth; the complete ADR body and `.mapping.json` remain authoritative. Show the full ADR body or detailed Alternatives only when the user asks or when the digest cannot expose a material ambiguity:
-
-Before showing the digest, read
-`${CLAUDE_PLUGIN_ROOT}/references/comprehension-load.md` completely and apply
-its advisory score.
-
-Only when the user asks to split, offer up to three candidates. Split into
-separate ADRs only for independent decisions. Keep one inherently difficult
-decision in one ADR and offer implementation steps instead; never split by
-technical layer.
-
-```
-## Decision Digest — ADR <NNNN>: <title>
-
-**Decision intent**: <the verified problem, pressure, and result this decision exists to protect>
-**Decision question**: <the architectural question this ADR answers>
-**Current decision**: <2-3 sentences stating the final state>
-**Category**: <category key — e.g. identity/login (context: identity, subdomain: core)>
-**Comprehension load**: <N>/10
-**Decision Drivers**: <real discriminators; usually 3-5>
-**Decision-changing assumptions**: <assumption → what decision is reconsidered if false; omit when none>
-**Requirement contract**:
-- Required guarantees: <verbatim values and rules with their basis, or omit this row>
-- Prohibitions: <forbidden states, transitions, actions, or visibility, or omit this row>
-- Failure guarantees: <what remains guaranteed on rejection or failure, or omit this row>
-- Observable evidence: <one implementation-independent result per obligation; no test or code details>
-<write "none" only when the complete contract is empty>
-**Why this decision**: <the discriminating rationale against the realistic alternatives>
-**Main risks**: <the negative consequences or material uncertainties>
-**Regeneration checklist**: <each contract rebuilt code must honor and the observable result used to review it, marked present; unresolved items are explicit questions>
-**Alternatives considered**: <N realistic options; expand only on request or when one affects approval>
-**Prerequisites**: <dependency ADRs, or none>
-**Verification**: <harness: pass | n warnings> · R1-R20 checked · independent read: <used|not needed>
-
-Does this current-state decision, any decision-changing assumptions, complete contract, rationale, risks, and complete regeneration checklist match your intent? If approved, save the full ADR as `Proposed` and move on to implementation (`/adr-impl`). This is the routine intent/spec-fitness confirmation; implementation review does not ask the same questions again unless the ADR changes or a genuine contract ambiguity is discovered.
-```
-
-> Show the context/subdomain information on the category line only when step 2 item 6 was asked and answered — otherwise print the category key alone.
-
-Do not start changing code, repository ADR bodies, or the repository mapping
-before approval. If the user requests changes, revise and verify the disposable
-candidates and confirm the changed decision or contract. Reuse an explicit
-approval already covering the same candidate decision, contract, and scope;
-validation alone does not require another confirmation.
-
-Before applying, recheck the target path, existing decision owners, and affected
-mapping records against the drafting baseline. Preserve intervening edits and
-revalidate affected candidates; if a path is occupied or ownership changed,
-resolve it before writing. Ask again only for a changed decision, contract, or
-approval scope. Apply the approved ADR as `Proposed` and its mapping change to
-the final paths, together with any approved supporting-document changes. Do not
-replace the entire live tree or overwrite unrelated mapping records from the
-draft snapshot. Verify the final document structure, links, and mapping agreement
-from the repository root. Preserve the approved ADR as the implementation
-baseline; after code and review pass, `/adr-impl` promotes it without another
-routine confirmation. If approval is withheld, leave live ADR bodies and mapping
-unchanged and report the pending decision.
+Read [approval and save](references/approval-and-save.md) when the candidate is
+ready. Present the Decision Digest, exact contracts, prerequisites and written
+regeneration checklist. Reuse unchanged approval; otherwise confirm the baseline
+once. Apply only the approved files after checking source/destination freshness,
+then verify official structure. Silence or a draft check is not approval.
 
 ### 8. Point to the next step
 

@@ -81,7 +81,7 @@ export default {
     write(dir, "src/review.ts", "export const implementation = 'different';\n");
 
     return [
-      skillText("adr-review"),
+      skillText("adr-review", { references: ["skills/adr-review/references/report.md"] }),
       agentText("adr-reviewer"),
       `\n---\n# This run`,
       `Repository: ${dir}`,

@@ -47,7 +47,9 @@ export default {
   score: deterministicScore,
   build() {
     return [
-      skillText("adr-impl", { references: ["references/outcome-evaluation.md"] }),
+      skillText("adr-impl", {
+        references: ["skills/adr-impl/references/planning.md", "references/outcome-evaluation.md"],
+      }),
       `# This run
 Give the next local improvement decision for each independent case. The unchanged contract and implementation scope are already approved. No deployment or paid evaluation is requested. Do not invoke tools.
 A. Every required test passes and the primary outcome improves on the fixed evaluation. No useful tension metric was adopted, and the contract does not require one.

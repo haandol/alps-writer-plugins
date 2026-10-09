@@ -56,7 +56,12 @@ export default {
     seedMapping(dir);
     return [
       alpsGuideText(7),
-      skillText("adr-new", { references: ["references/comprehension-load.md"] }),
+      skillText("adr-new", {
+        references: [
+          "skills/adr-new/references/approval-and-save.md",
+          "references/comprehension-load.md",
+        ],
+      }),
       `\n---\n\n# This run`,
       `Estimate the comprehension load for A as an ALPS Feature and B as an ADR.`,
       `Return the normal user-facing result first. Follow the shipped score-only format:`,

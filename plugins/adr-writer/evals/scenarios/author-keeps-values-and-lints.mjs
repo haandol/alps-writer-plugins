@@ -15,16 +15,20 @@
 // tuning values, or blurs the requirement values, is the failure.
 import {
   skillText,
-  seedRuleDocs,
-  seedMapping,
+  PLUGIN_ROOT,
   read,
   TAIL_SPEC,
   expectLintClean,
   expectText,
   expectNoText,
 } from "../lib/harness.mjs";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { appendFileSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { createWorkspace } from "../regression/workspace.mjs";
+import { authoringEvidenceChecks } from "../lib/authoring-evidence.mjs";
+import { responseObligations } from "../skills/response-contract.mjs";
+
+const draftRoot = ".adr-review/author-candidate";
 
 const BRIEF = `우리는 업로드 기능에 서명된 URL 방식을 도입하려고 한다.
 
@@ -54,18 +58,28 @@ const BRIEF = `우리는 업로드 기능에 서명된 URL 방식을 도입하�
 - 검증 워커는 4개로 돌린다
 `;
 
-export default {
+const scenario = {
   name: "author-keeps-values-and-lints",
   description:
     "/adr-new must produce an ADR that passes the shipped structure lint, keeps requirement values verbatim, and leaves tuning values out.",
   bugReport: "“ADR을 써줬는데 커넥션 풀 크기까지 본문에 들어갔다 / 100MB가 '대용량'으로 뭉개졌다”",
+  draftRoot,
 
   build(dir) {
-    seedRuleDocs(dir);
-    seedMapping(dir);
+    createWorkspace(
+      dir,
+      { "docs/adr/.mapping.json": JSON.stringify({ categories: {} }) + "\n" },
+      PLUGIN_ROOT,
+    );
+    appendFileSync(path.join(dir, ".git/info/exclude"), "\n.adr-review/\n");
 
     return [
-      skillText("adr-new"),
+      skillText("adr-new", {
+        references: [
+          "skills/adr-new/references/draft-and-index.md",
+          "skills/adr-new/references/candidate-verification.md",
+        ],
+      }),
       `\n---\n\n# This run\n`,
       `You are executing /adr-new in the repository at ${dir}, with the argument: media/upload`,
       ``,
@@ -74,7 +88,10 @@ export default {
       ``,
       `This is a NON-INTERACTIVE run: you cannot ask the user anything. The user has`,
       `already supplied everything below, so treat step 2 as answered, and treat the`,
-      `step 7 confirmation as granted — write the files instead of asking.`,
+      `step 7 confirmation as granted — apply the verified candidate instead of asking.`,
+      `This waives only the interactive confirmation, not the draft-first verification.`,
+      `An independent, Git-ignored draft workspace is available at ${draftRoot}. The fixture tools`,
+      `can prepare its copied docs and check its structure with draft=true.`,
       `Do not invent any value that is not stated below.`,
       ``,
       `## The user's brief`,
@@ -85,7 +102,10 @@ export default {
       ``,
       `- the ADR file under docs/adr/media/upload/`,
       `- the docs/adr/.mapping.json entry for the media/upload category`,
-      `Then run the step 6(a) deterministic harness yourself and fix anything it reports.`,
+      `First prepare and verify the independent candidate under step 6(a), fixing`,
+      `candidate errors there. Then apply the verified contents to the approved final`,
+      `paths and check the resulting official structure. Do not write a final file`,
+      `and use a later successful check as a substitute for candidate validation.`,
       TAIL_SPEC,
     ].join("\n");
   },
@@ -130,6 +150,25 @@ export default {
     ];
   },
 };
+
+export default scenario;
+
+// Retain the original artifact obligation and add explicit process coverage.
+// The legacy scorer remains artifact-only; unified DeepEval also checks actions.
+export const obligations = [
+  ...responseObligations(scenario),
+  {
+    id: "candidate-before-apply",
+    text: "Prepare an independent copy of the original documents, write and validate the candidate there before any official ADR or mapping write, and apply only the validated content under the given approval. Revalidate after candidate changes and check official structure after apply. A final lint pass, the evaluator's own check or pre-granted approval does not prove candidate validation occurred. Preserve required values, states and other contracts; do not invent missing policies or claim an unperformed check.",
+  },
+];
+
+export function deterministicScore(input) {
+  return [
+    ...scenario.score(input),
+    ...authoringEvidenceChecks(input.events, { draftRoot, category: "media/upload" }),
+  ];
+}
 
 function fileWritten(body) {
   return {

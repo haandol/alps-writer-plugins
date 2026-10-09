@@ -1,0 +1,34 @@
+export type LearnerTurnProgress = {
+  completedTurns: number
+  maxTurns: number
+}
+
+const seedOffset = (includesSeed: boolean): number => (includesSeed ? 1 : 0)
+
+/**
+ * Converts a stored human-role message count into learner-visible turns.
+ * Seeded text sessions subtract one hidden start message; voice and call sessions pass false.
+ */
+export const learnerTurnProgress = (
+  storedMessageCount: number,
+  maxStoredMessageCount: number,
+  includesSeed: boolean
+): LearnerTurnProgress => {
+  const offset = seedOffset(includesSeed)
+  return {
+    completedTurns: Math.max(0, storedMessageCount - offset),
+    maxTurns: Math.max(0, maxStoredMessageCount - offset),
+  }
+}
+
+export const isLearnerTurnComplete = (
+  storedMessageCount: number,
+  maxStoredMessageCount: number,
+  includesSeed: boolean
+): boolean => {
+  const progress = learnerTurnProgress(storedMessageCount, maxStoredMessageCount, includesSeed)
+  return progress.completedTurns >= progress.maxTurns
+}
+
+// Sessions created before the cap snapshot keep their original six stored messages.
+export const sessionMaxMessageCount = (session?: { maxMessageCount?: number }): number => session?.maxMessageCount ?? 6

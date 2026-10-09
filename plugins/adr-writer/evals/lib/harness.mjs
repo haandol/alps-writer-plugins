@@ -278,7 +278,13 @@ function promptText(entryPath, pluginRoot, { references = [] } = {}) {
       );
     }
     parts.push(`\n# Loaded reference: ${key}\n`);
-    parts.push(readFileSync(reference, "utf8"));
+    const content = readFileSync(reference, "utf8");
+    parts.push(content);
+    // A scenario may explicitly request a child only after loading its parent.
+    // Do not read or append every reachable module to ordinary skill prompts.
+    for (const child of directMarkdownReferences(content, path.dirname(reference), pluginRoot)) {
+      available.set(path.relative(pluginRoot, child).split(path.sep).join("/"), child);
+    }
   }
 
   return parts.join("\n");

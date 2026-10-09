@@ -12,13 +12,14 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readSkillContract } from "./helpers/skill-contract.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ADR_ROOT = path.join(HERE, "..");
 const PLUGINS_ROOT = path.join(ADR_ROOT, "..");
 
 function read(absolutePath) {
-  return readFileSync(absolutePath, "utf8");
+  return readSkillContract(absolutePath);
 }
 
 function frontmatter(source) {

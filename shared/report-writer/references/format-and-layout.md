@@ -132,6 +132,13 @@ confirm rendered output is present, retains the source's relationships and label
 and does not silently fall back. Use existing renderer tests when relevant; do not
 invent per-report tests or require browser approval solely for delivery.
 
+When an available renderer or validator reports an in-scope error, use its
+diagnostics to correct the report source and run that check again. Verify the
+latest saved output, not an earlier successful version. Do not bypass the check,
+drop required evidence, or equate a validator's source-URL syntax check with
+proof that a local file or fragment exists. Resolve links from the delivered
+file's location. If a required check cannot run, state that unverified scope.
+
 Browser visual inspection, clicking controls, mobile viewport checks and actual
 print/export inspection run when the user requests those checks. Keep automation
 separate from the user's work. A requested check that cannot run remains unverified;

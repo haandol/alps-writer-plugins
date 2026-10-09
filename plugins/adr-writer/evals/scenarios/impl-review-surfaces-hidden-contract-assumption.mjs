@@ -79,7 +79,12 @@ export default {
     });
 
     return [
-      skillText("adr-impl-review"),
+      skillText("adr-impl-review", {
+        references: [
+          "skills/adr-impl-review/references/full-review.md",
+          "skills/adr-impl-review/references/evidence-synthesis.md",
+        ],
+      }),
       agentText("adr-impl-sufficiency-reviewer"),
       `\n---\n\n# This run`,
       `Perform the sufficiency classification from only the supplied facts. Do not invent`,

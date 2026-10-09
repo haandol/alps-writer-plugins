@@ -279,49 +279,12 @@ scope is legacy planning context and ADRs alone drive implementation.
 
 ## 5. Explicitly re-import a changed PRD
 
-Do not continuously reconcile PRD and ADR content. Enter this path only when
-the user explicitly asks to re-import a changed PRD.
-
-The current ADR set is the target-state authority during comparison. Read all
-plausible owning ADRs and compare semantic obligations, not wording:
-
-- requirement values and their basis
-- allowed value sets and transitions
-- mandatory fields
-- permissions and visibility
-- ordering, uniqueness, units, and failure guarantees
-- NFRs and architecture constraints that discriminate between alternatives
-- system/data/security/external boundaries and fallback policy
-
-Classify each difference:
-
-- **Semantic no-op** — wording, order, examples, or explanation changed while
-  the obligations and decision remain the same. Do not edit ADR files,
-  `.mapping.json`, Status, or decision logs.
-- **Existing decision changed / contract changed** — propose an edit-in-place to the ADR that
-  already owns the decision identity. The current ADR remains authoritative
-  until the user approves the changed contract; then route implementation
-  through `/adr-impl <owning-category>`.
-- **New durable contract or decision** — run the decision identity check. Update
-  an existing owner when one exists; invoke `/adr-new` only for a genuinely new
-  decision identity.
-- **Source contract removed** — never delete or weaken the ADR automatically.
-  Ask whether the removal is an intended contract change.
-- **Implementation-only change** — leave it to code and do not mutate an ADR.
-- **Unresolved conflict** — block the re-import without changing the current ADR
-  authority.
-
-Re-import is idempotent:
-
-> Importing the same PRD against the same ADR state repeatedly must produce no
-> ADR, mapping, Status, or decision-log changes.
-
-Do not rewrite an ADR merely to mirror new PRD phrasing. Do not store PRD paths,
-section numbers, Feature IDs, semantic fingerprints, approval state, or import
-reports in ADR bodies or `.mapping.json`.
-
-This comparison belongs to alps-writer. adr-writer remains standalone and never
-reads the PRD itself.
+Only when the user explicitly requests re-import, read
+[semantic re-import](references/reimport.md). Compare the changed source with
+the current owning ADR contract. Semantic no-ops leave ADR, mapping, Status and
+history unchanged; changed or removed contracts require confirmation through
+the existing owner. The PRD never silently regains implementation authority.
+Normal new-Feature handoff skips this module.
 
 ## 6. Record implementation prerequisites
 

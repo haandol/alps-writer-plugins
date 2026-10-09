@@ -156,7 +156,12 @@ export default {
       },
     });
     return [
-      skillText("adr-impl-review"),
+      skillText("adr-impl-review", {
+        references: [
+          "skills/adr-impl-review/references/full-review.md",
+          "skills/adr-impl-review/references/evidence-synthesis.md",
+        ],
+      }),
       agentText("adr-impl-review-report-writer", {
         references: [
           "references/review-report-writing.md",
