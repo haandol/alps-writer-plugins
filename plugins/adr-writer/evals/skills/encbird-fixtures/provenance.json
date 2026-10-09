@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "scope": "Immutable source snapshots; fixture bodies will be scoped adaptations, not a full-repository rollup or audit.",
+  "sources": [
+    {
+      "repository": "encbird",
+      "commit": "c744f4f06f5569e4656039c5bf10b66b709737e3",
+      "path": "docs/adr/.mapping.json",
+      "sha256": "f4039658871421415fe8de278155ac398867549e820997c51eff6eadb0fca000"
+    },
+    {
+      "repository": "encbird",
+      "commit": "c744f4f06f5569e4656039c5bf10b66b709737e3",
+      "path": "docs/adr/chatbot/0001-freechat-disposable-conversation.md",
+      "sha256": "789e9728a258d192bdfb076daa7980854e65c3ee3f62721e16fb3b329eb7f398",
+      "excerpt": "### 3. 메시지 한도 — 텍스트 4턴 · 음성 5턴\n\n새로 생성하는 대화의 사용자 메시지를 **텍스트 모드 4회, 음성 모드 5회**로 제한한다. 텍스트는 픽토챗·다이어리챗과 같은 분량이고 음성은 실제 사용자 한 턴을 더 제공한다. 신규 TEXT·VOICE 모두 저장 상한 **5**를 서버가 생성 시 고정하며 재시도·재연결·조회로 변경하지 않는다. 저장된 상한이 없으면 **6**으로 해석한다. 상한이 기록되지 않은 기존 세션은 텍스트 5턴·음성 6턴이며 기존 결제의 이용 기회를 줄이지 않는다.\n\n텍스트 턴을 짧게 잡는 기준은 **완료율**이다 — 일회성 상황 연습에서 턴이 길면 끝이 멀게 느껴져 중도 이탈이 커지고, 짧으면 \"끝까지 해냈다\"는 완결 경험이 남는다. 픽토챗·다이어리챗과 턴 수를 통일해 세 텍스트 대화 기능의 분량을 예측할 수 있게 한다. 완료율을 높이는 것이 목적이며 최소 답변 길이를 늘려 줄어든 턴을 보충하도록 요구하지 않는다. 짧은 만큼 단위 대화의 LLM 원가 상한도 낮다. 음성은 시드가 없어 실제 사용자 발화 5회를 제공하며, native audio 원가 때문에 더 높은 단가를 적용한다([voicechat/0001](../voicechat/0001-realtime-voice-session.md)).\n\n한도를 소진하면 추가 요청을 거절하고 세션이 종료된다. **텍스트 프리챗은 조기 종료 경로를 두지 않는다** — 정해진 턴을 모두 채운 텍스트 세션에만 세션 피드백을 생성한다([0004](./0004-feedback-system-architecture.md)).\n\n텍스트 모드는 세션 시작 시 시드 프롬프트를 사용자 메시지로 저장하므로, 신규 세션의 4턴은 [턴 카운팅 규약](../pictochat/0001-pictochat-implementation.md#4-턴-카운팅-규약)이 말하는 **실제 사용자 턴**이다. 그 규약에 따라 화면이 쓰는 세션 상한은 보정 한 칸을 포함해 실제 턴보다 1 크고, 음성 모드는 시드가 없어 상한값이 곧 실제 턴 수다. 두 계열의 숫자를 나란히 비교할 때는 이 차이를 함께 봐야 한다."
+    },
+    {
+      "repository": "encbird",
+      "commit": "c744f4f06f5569e4656039c5bf10b66b709737e3",
+      "path": "docs/adr/chatbot/0005-real-streaming-sse.md",
+      "sha256": "8d29693f00ea9891e2f06e11480f9d36df93b3b28c1d96eefed7e381fc6d75a4"
+    },
+    {
+      "repository": "encbird",
+      "commit": "c744f4f06f5569e4656039c5bf10b66b709737e3",
+      "path": "docs/adr/chatbot/decision-log.md",
+      "sha256": "d2205b21283a23a22f5dc3345ea333dee7a0b6d02ff58c783ba9aa994a312b33",
+      "excerpt": "## 2026-10-06 — 신규 TEXT 4턴·VOICE 5턴과 기존 세션 이용 한도 보존\n\n[프리챗](0001-freechat-disposable-conversation.md)은 완료 부담을 줄이기 위해 신규 TEXT를 실제 5턴에서 4턴으로, VOICE를 6턴에서 5턴으로 조정한다. 신규 다이어리챗은 TEXT와, 신규 콜 미션은 VOICE와 같은 분량이며 픽토챗은 4턴을 유지한다. 생성 시 저장 상한 5를 고정하고 상한 없는 기존 세션은 6으로 해석한다. [텍스트 세션 피드백](0004-feedback-system-architecture.md)은 해당 세션의 실제 턴 상한을 모두 채운 뒤 생성하며, 가격·결제 복구·암묵적 화제 전환과 음성 피드백 제외는 보존한다."
+    },
+    {
+      "repository": "encbird",
+      "commit": "c744f4f06f5569e4656039c5bf10b66b709737e3",
+      "path": "docs/adr/pool/0001-review-quiz-immersive-workspace.md",
+      "sha256": "f5072d45894b682d3baf05976c159df8f57ba9f1bae49af89b140dc63f6baf25"
+    },
+    {
+      "repository": "encbird",
+      "commit": "c744f4f06f5569e4656039c5bf10b66b709737e3",
+      "path": "docs/adr/pool/0002-review-quiz-sentence-flow-game-layer.md",
+      "sha256": "0c909722fc21d916c066b488d67390903bcde1720788e5d333e41ea034f4ecf3"
+    },
+    {
+      "repository": "encbird",
+      "commit": "c744f4f06f5569e4656039c5bf10b66b709737e3",
+      "path": "docs/adr/pool/0003-keyboard-typable-quiz-text.md",
+      "sha256": "6f71629bb2f80d72677af60b4bcb5af09855c8ee0a17686042aaa87fc71a37d2"
+    },
+    {
+      "repository": "encbird",
+      "commit": "c744f4f06f5569e4656039c5bf10b66b709737e3",
+      "path": "docs/adr/pool/0004-review-quiz-due-exploration-mix.md",
+      "sha256": "9502ff8bb41aeca50aa2e3e69ca3a39383466665f97bed56b45efbcabff494d1"
+    },
+    {
+      "repository": "encbird",
+      "commit": "c744f4f06f5569e4656039c5bf10b66b709737e3",
+      "path": "packages/web/app/utils/chatTurnProgress.ts",
+      "sha256": "d5fd35779d6f78a76bb190cf0ff1fc4032c13ba1a3ce5176e07545ec0022abc2"
+    },
+    {
+      "repository": "encbird",
+      "commit": "6dbf7a8329a0f03bd963059aed8cfcfa1eb36b9f",
+      "path": "docs/adr/chatbot/0001-freechat-disposable-conversation.md",
+      "sha256": "6797db0342af1d9a7322aad413cabe62f3a617d2193ac3325565f5069c170f0f",
+      "excerpt": "### 3. 메시지 한도 — 텍스트 5턴 · 음성 6턴\n\n한 대화당 사용자 메시지를 **텍스트 모드 5회, 음성 모드 6회**로 제한한다. 텍스트는 다이어리챗과 같은 분량이다.\n\n텍스트 턴을 짧게 잡는 기준은 **완료율**이다 — 일회성 상황 연습에서 턴이 길면 끝이 멀게 느껴져 중도 이탈이 커지고, 짧으면 \"끝까지 해냈다\"는 완결 경험이 남는다. 다이어리챗과 턴 수를 통일해 두 짧은 대화 기능의 분량 예측가능성도 맞춘다. 짧은 만큼 단위 대화의 LLM 원가 상한도 낮다. 음성도 같은 6칸의 화면 경계를 쓰되 시드가 없어 실제 사용자 발화 6회가 되며, native audio 원가 때문에 더 높은 단가를 적용한다([voicechat/0001](../voicechat/0001-realtime-voice-session.md)).\n\n한도를 소진하면 추가 요청을 거절하고 세션이 종료된다. **텍스트 프리챗은 조기 종료 경로를 두지 않는다** — 정해진 턴을 모두 채운 텍스트 세션에만 세션 피드백을 생성한다([0004](./0004-feedback-system-architecture.md)).\n\n텍스트 모드는 세션 시작 시 시드 프롬프트를 사용자 메시지로 저장하므로, 위 5턴은 [픽토챗 ADR](../pictochat/0001-pictochat-implementation.md) §4의 턴 카운팅 규약이 말하는 **실제 사용자 턴**이다. 그 규약에 따라 화면이 쓰는 상한 상수는 보정 한 칸을 포함해 실제 턴보다 1 크고, 음성 모드는 시드가 없어 상한값이 곧 실제 턴 수다. 두 계열의 숫자를 나란히 비교할 때는 이 차이를 함께 봐야 한다."
+    },
+    {
+      "repository": "encbird",
+      "commit": "c744f4f06f5569e4656039c5bf10b66b709737e3",
+      "path": "docs/adr/pictochat/0001-pictochat-implementation.md",
+      "sha256": "fc9ce7254d1e61f3506c97fc855234f89dd8b95f37f608f7759b12355e9b6c8b"
+    }
+  ],
+  "adaptation": "The 2026-10-06 FreeChat limit change is split into a two-ADR fixture. Separate streaming and PictoChat contracts test boundaries/repointing. Pool responsibilities are scoped excerpts in canonical test ADRs. A Proposed variant is a controlled missing-completion-review condition, not EncBird production state. Only chatTurnProgress.ts is copied verbatim; other executable fixture policies are authored projections."
+}

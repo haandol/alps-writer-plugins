@@ -137,6 +137,9 @@ test("every shipped classification probe has a fixed GEval contract and prepares
   assert.throws(() => responseObligations({ name: "empty" }), /Missing authored/);
   const selected = items.filter((c) => c.skill === "report-writer");
   assert.deepEqual(selected.map((c) => c.id).sort(), [
+    "report-artifact-catalog-publication",
+    "report-artifact-evaluation-pipeline",
+    "report-artifact-limited-evidence",
     "report-drilldown-comparison",
     "report-drilldown-distinguishes-shallow",
     "report-drilldown-experienced-reader",
@@ -149,11 +152,18 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     "report-drilldown-overview-explicit",
     "report-drilldown-overview-review-missing",
     "report-drilldown-overview-unavailable",
+    "report-drilldown-path-review",
     "report-drilldown-print-handout",
+    "report-drilldown-process-stages",
     "report-drilldown-rejects-cosmetic-depth",
     "report-drilldown-visual-detail",
     "report-drilldown-visual-restraint",
     "report-preserves-evaluation-evidence",
+    "report-regression-accounting-review",
+    "report-regression-artifact-evidence-review",
+    "report-regression-notification-authoring",
+    "report-regression-shared-recovery-control",
+    "report-regression-timeout-artifact-review",
     "report-rejects-unsupported-success",
     "report-scope-ambiguous",
     "report-scope-chat-override",
@@ -181,6 +191,16 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     const input = JSON.parse(
       readFileSync(path.join(result.output, run.artifactDirectory, "input.json")),
     );
+    if (run.caseId.startsWith("report-artifact-")) {
+      assert.match(input.prompt, /plugin\/skills\/report-writer\/SKILL.md/);
+      assert.match(input.prompt, /references\/report-document.md/);
+      assert.ok(input.files["source.md"]);
+      const item = selected.find((c) => c.id === run.caseId);
+      assert.ok(item.supplementalChecks);
+      for (const obligation of item.semanticObligations)
+        assert.ok(!input.prompt.includes(obligation.text), obligation.id);
+      continue;
+    }
     assert.match(input.prompt, /# Report writing/);
     if (run.caseId.startsWith("report-scope-")) {
       assert.match(input.prompt, /\[Report-writing directive\]/);
@@ -192,12 +212,17 @@ test("every shipped classification probe has a fixed GEval contract and prepares
       assert.doesNotMatch(input.prompt, /Total provider-reported cost: USD 0.48/);
       assert.match(
         input.prompt,
-        /Supplied hypothetical (comparison|incident|request-processing system)/,
+        /Supplied hypothetical (comparison|incident|request-processing system|delivery policy|catalog process)/,
       );
       if (run.caseId === "report-drilldown-distinguishes-shallow") {
         assert.match(input.prompt, /Excerpt A:/);
         assert.match(input.prompt, /Excerpt B:/);
       }
+    } else if (run.caseId.startsWith("report-regression-")) {
+      assert.match(input.prompt, /Supplied (hypothetical|recorded|local)/);
+      const item = selected.find((c) => c.id === run.caseId);
+      for (const obligation of item.semanticObligations)
+        assert.ok(!input.prompt.includes(obligation.text), obligation.id);
     } else if (!run.caseId.startsWith("report-scope-")) assert.match(input.prompt, /USD 0.48/);
     assert.doesNotMatch(input.prompt, /"semanticObligations"|"supplementalChecks"/);
   }
@@ -356,7 +381,9 @@ test("semantic input retains transient writes and excludes files materialized by
 });
 
 test("report-writing and review rubrics use one real GEval judgment each without a legacy score", async () => {
-  const items = (await catalog()).filter((c) => c.skill === "report-writer");
+  const items = (await catalog()).filter(
+    (c) => c.skill === "report-writer" && !c.supplementalChecks,
+  );
   for (const item of items) {
     const reply =
       "10회 요청 중 8회 완료, 6회 성공, 2회 실패와 2회 오류입니다. 완료 기준 75%이며 비용은 USD 0.48입니다. 운영 검증과 스킬 효과 비교는 하지 않았습니다." +
@@ -376,4 +403,117 @@ test("report-writing and review rubrics use one real GEval judgment each without
     assert.equal(calls, 1);
     assert.equal(result.report.runs[0].verdict, "PASS");
   }
+});
+
+test("report artifacts use actual capture plus GEval and cannot hide format failure with semantic PASS", async () => {
+  const item = (await catalog()).find((c) => c.id === "report-artifact-limited-evidence");
+  for (const valid of [true, false]) {
+    let calls = 0;
+    const result = await main(
+      ["--live", "--suite", "classification", "--runs", "1", "--out", temp()],
+      {
+        cases: [item],
+        target: async ({ cwd }) => {
+          const tools = makeTools({
+            root: cwd,
+            pluginRoot: PLUGIN,
+            logPath: path.join(cwd, "..", "events.jsonl"),
+            turn: 1,
+            artifactPaths: item.artifactPaths,
+          });
+          for (const file of [
+            "source.md",
+            "plugin/skills/report-writer/SKILL.md",
+            "plugin/skills/report-writer/references/report-document.md",
+          ])
+            tools.call("read_file", { path: file });
+          tools.call("write_file", {
+            path: item.artifactPaths[0],
+            content: JSON.stringify({
+              title: "Document results",
+              language: "en",
+              summary: ["Internal stages are unspecified."],
+              requiredEvidenceIds: valid ? ["S1"] : [],
+              review: { status: "draft", basis: "Fixture stub", limitations: "No semantic claim" },
+              sections: [
+                {
+                  id: "result",
+                  title: "Results",
+                  domain: "Documents",
+                  scope: "Query and download",
+                  paragraphs: ["An available result can be downloaded."],
+                  evidence: [{ id: "S1", label: "Original", source: "../source.md" }],
+                },
+              ],
+            }),
+          });
+          return { text: "보고서를 저장했습니다." + tail, models: ["target-stub"], costUSD: 0 };
+        },
+        judge: async ({ prompt }) => {
+          calls++;
+          assert.match(prompt, /Internal stages are unspecified/);
+          assert.match(prompt, /report.json/);
+          return judge(item, 1, "보고서를 저장했습니다.");
+        },
+      },
+    );
+    assert.equal(calls, 1);
+    assert.equal(result.report.runs[0].verdict, valid ? "PASS" : "NOT_PROVEN");
+    assert.equal(
+      result.report.runs[0].checks.every((c) => c.pass),
+      valid,
+    );
+  }
+});
+
+test("a failed target retains its saved report and tool trace without fabricating a reply or judgment", async () => {
+  const item = (await catalog()).find((c) => c.id === "report-artifact-limited-evidence");
+  let scores = 0;
+  let judgments = 0;
+  const result = await main(
+    ["--live", "--suite", "classification", "--runs", "1", "--out", temp()],
+    {
+      cases: [
+        {
+          ...item,
+          score: () => {
+            scores++;
+            return [];
+          },
+        },
+      ],
+      target: async ({ cwd }) => {
+        const tools = makeTools({
+          root: cwd,
+          pluginRoot: PLUGIN,
+          logPath: path.join(cwd, "..", "events.jsonl"),
+          turn: 1,
+          artifactPaths: item.artifactPaths,
+        });
+        tools.call("write_file", {
+          path: item.artifactPaths[0],
+          content: '{"title":"Saved before timeout"}',
+        });
+        throw new Error("fixture target deadline exceeded");
+      },
+      judge: () => {
+        judgments++;
+        throw new Error("unexpected judgment");
+      },
+    },
+  );
+  const run = result.report.runs[0];
+  assert.equal(run.verdict, "ERROR");
+  assert.match(run.error, /fixture target deadline exceeded/);
+  assert.equal(scores, 0);
+  assert.equal(judgments, 0);
+  assert.deepEqual(run.calls, []);
+  const captured = JSON.parse(
+    readFileSync(path.join(result.output, run.artifactDirectory, "evidence.json")),
+  );
+  assert.equal(captured.reply, null);
+  assert.equal(captured.tail, null);
+  assert.equal(captured.files[item.artifactPaths[0]], '{"title":"Saved before timeout"}');
+  assert.match(captured.events, /write_file/);
+  assert.match(captured.executionError, /fixture target deadline exceeded/);
 });

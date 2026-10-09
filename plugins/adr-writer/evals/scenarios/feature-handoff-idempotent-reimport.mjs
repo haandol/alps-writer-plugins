@@ -105,7 +105,9 @@ export default {
       },
     });
     return [
-      alpsSkillText("feature-to-adr"),
+      alpsSkillText("feature-to-adr", {
+        references: ["skills/feature-to-adr/references/reimport.md"],
+      }),
       `\n---\n\n# This run`,
       CHANGED_PRD,
       `In the machine-readable tail use SEMANTIC_NOOP, REMOVAL_REVIEW, and`,

@@ -7,6 +7,8 @@ import reconciliation from "../evals/scenarios/rollup-reconciles-conflicts.mjs";
 import discovery from "../evals/scenarios/rollup-targeted-discovery.mjs";
 
 const reference = "skills/adr-rollup/references/renumbering.md";
+const parentReference = "skills/adr-rollup/references/references-and-history.md";
+const parentText = readFileSync(new URL(`../${parentReference}`, import.meta.url), "utf8");
 const referenceText = readFileSync(new URL(`../${reference}`, import.meta.url), "utf8");
 
 test("normal rollup loading includes the core only, without optional renumbering contents", () => {
@@ -21,10 +23,20 @@ test("normal rollup loading includes the core only, without optional renumbering
 
 test("explicit renumbering reference loading appends the complete real reference without changing default loading", () => {
   const normal = skillText("adr-rollup");
-  const expanded = skillText("adr-rollup", { references: [reference] });
+  assert.throws(
+    () => skillText("adr-rollup", { references: [reference] }),
+    /not directly referenced/,
+  );
+  const expanded = skillText("adr-rollup", { references: [parentReference, reference] });
   assert.equal(
     expanded,
-    [normal, `\n# Loaded reference: ${reference}\n`, referenceText].join("\n"),
+    [
+      normal,
+      `\n# Loaded reference: ${parentReference}\n`,
+      parentText,
+      `\n# Loaded reference: ${reference}\n`,
+      referenceText,
+    ].join("\n"),
   );
   assert.equal(skillText("adr-rollup"), normal);
 });

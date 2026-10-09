@@ -58,7 +58,9 @@ export default {
     return [
       skillText("adr-impl"),
       `\n---\n`,
-      skillText("adr-impl-review"),
+      skillText("adr-impl-review", {
+        references: ["skills/adr-impl-review/references/full-review.md"],
+      }),
       `\n---\n\n# This run`,
       `Classify the following three Go implementations without executing tools.`,
       `The approved contract uses these exact domain terms: pending payment, provider success,`,

@@ -45,7 +45,12 @@ export default {
   deterministicScore,
   build() {
     return [
-      skillText("adr-sync", { references: ["references/decision-reconciliation.md"] }),
+      skillText("adr-sync", {
+        references: [
+          "skills/adr-sync/references/deep-verification.md",
+          "references/decision-reconciliation.md",
+        ],
+      }),
       `# This run
 Response-only probe: do not use tools, write files, or claim execution.
 The user asks to sync the following independent cases. Use the supplied facts.

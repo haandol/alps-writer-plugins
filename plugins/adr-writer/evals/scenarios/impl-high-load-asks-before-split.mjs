@@ -61,7 +61,7 @@ export default {
     seedRuleDocs(dir);
     seedMapping(dir);
     return [
-      skillText("adr-impl"),
+      skillText("adr-impl", { references: ["skills/adr-impl/references/planning.md"] }),
       `\n---\n\n# This run`,
       SOURCE,
       `Do not call tools or change files. Show the normal next user-facing message before implementation.`,

@@ -45,7 +45,7 @@ export default {
     seedMapping(dir);
 
     return [
-      skillText("adr-impl"),
+      skillText("adr-impl", { references: ["skills/adr-impl/references/completion.md"] }),
       `\n---\n`,
       skillText("adr-impl-review"),
       `\n---\n\n# This run`,

@@ -74,7 +74,12 @@ export default {
     seedMapping(dir);
 
     return [
-      skillText("adr-new"),
+      skillText("adr-new", {
+        references: [
+          "skills/adr-new/references/draft-and-index.md",
+          "skills/adr-new/references/candidate-verification.md",
+        ],
+      }),
       `\n---\n\n# This run\n`,
       `You are executing /adr-new in the repository at ${dir}, with the argument: pricing`,
       ``,

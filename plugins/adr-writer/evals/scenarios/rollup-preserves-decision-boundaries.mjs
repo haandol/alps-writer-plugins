@@ -81,7 +81,9 @@ export default {
     });
 
     return [
-      skillText("adr-rollup"),
+      skillText("adr-rollup", {
+        references: ["skills/adr-rollup/references/candidate-contract.md"],
+      }),
       `\n---\n# This run`,
       `Repository: ${dir}`,
       `The two billing ADRs are distinct decisions, not an evolution chain.`,

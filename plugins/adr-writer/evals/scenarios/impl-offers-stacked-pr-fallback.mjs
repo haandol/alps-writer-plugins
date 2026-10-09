@@ -38,7 +38,7 @@ export default {
     seedRuleDocs(dir);
     seedMapping(dir);
     return [
-      skillText("adr-impl"),
+      skillText("adr-impl", { references: ["skills/adr-impl/references/planning.md"] }),
       `\n---\n\n# This run`,
       `The approved ADR contains one architectural decision: payment idempotency across the`,
       `checkout state flow, provider call, ledger transaction, and duplicate webhook handling.`,

@@ -59,7 +59,11 @@ export default {
   build() {
     return [
       skillText("adr-impl", {
-        references: ["references/outcome-evaluation.md", "references/implementation-evidence.md"],
+        references: [
+          "skills/adr-impl/references/planning.md",
+          "references/outcome-evaluation.md",
+          "references/implementation-evidence.md",
+        ],
       }),
       `# This run
 Choose the next local action for six independent cases. Relevant contracts and implementation scope are approved except for E's expressly unresolved policy. No deployment is requested. All descriptions below are supplied evidence, not actions for you to execute.

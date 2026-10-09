@@ -246,7 +246,14 @@ export default {
   deterministicScore,
   build() {
     return [
-      skillText("adr-rollup", { references: ["skills/report-writer/SKILL.md"] }),
+      skillText("adr-rollup", {
+        references: [
+          "skills/adr-rollup/references/candidate-contract.md",
+          "skills/adr-rollup/references/references-and-history.md",
+          "skills/adr-rollup/references/approval-and-apply.md",
+          "skills/report-writer/SKILL.md",
+        ],
+      }),
       // Exercise the shared presentation guidance alongside the caller's override.
       // It is not a direct reference of adr-rollup, so load its actual text here.
       readFileSync(new URL("../../references/review-report-writing.md", import.meta.url), "utf8"),

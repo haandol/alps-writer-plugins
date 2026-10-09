@@ -81,7 +81,7 @@ export default {
     });
 
     return [
-      skillText("adr-impl"),
+      skillText("adr-impl", { references: ["skills/adr-impl/references/planning.md"] }),
       `\n---\n\n# This run`,
       `## Target ADR`,
       ``,

@@ -98,7 +98,10 @@ export default {
 
     return [
       skillText("adr-sync", {
-        references: ["skills/adr-sync/references/local-evidence-boundary.md"],
+        references: [
+          "skills/adr-sync/references/deep-verification.md",
+          "skills/adr-sync/references/local-evidence-boundary.md",
+        ],
       }),
       `\n---\n\n# This run`,
       `Repository: ${dir}`,

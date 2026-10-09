@@ -100,7 +100,7 @@ export default {
     });
 
     return [
-      skillText("adr-impl"),
+      skillText("adr-impl", { references: ["skills/adr-impl/references/dependencies.md"] }),
       `\n---\n\n# This run`,
       `The user asks: "identity/login은 나중에 할게. ordering/checkout 파일과 API부터`,
       `checkout-only로 구현하고 완료 처리해줘."`,

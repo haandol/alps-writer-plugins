@@ -70,11 +70,10 @@ material merely because it was available to the author.
   material premises, definitions, and conclusion-changing evidence must be
   explained within the report, including those used in tables and figures.
 
-For example, "Retries follow ADR-7" leaves the behavior unexplained. If the source
-says that a timeout can follow a successful charge, explain that possibility and
-the resulting rule to check the provider's original outcome before charging
-again, then cite ADR-7. The reader can understand the rule and its reason without
-opening the ADR.
+For example, "Retries follow ADR-7" leaves the behavior unexplained. If ADR-7
+requires checking the original outcome before charging again because a timeout
+can follow a successful charge, explain that rule and its reason here, then cite
+ADR-7. The reader can understand both without opening the ADR.
 
 ## Build a domain-scoped hierarchy
 
@@ -108,7 +107,10 @@ cases, or opening a source is not by itself a change in abstraction.
   required evidence, and the owning workflow's mandatory content and verdict.
 - Name the scope and reader question at each level. Prefer evidenced subdomains
   and bounded contexts; within them, divide by business responsibility or concept.
-  Do not substitute file order, technical layers, or work phases for domain scope.
+  A process's own stages can define those responsibilities: preserve their
+  inputs, outputs and rule ownership. Distinguish this subject's process from
+  the author's investigation history. Do not substitute file order, technical
+  layers, or the author's work phases for the subject's scope.
   Do not assume team, system, domain, and bounded-context boundaries coincide.
 - Keep at most four immediate child explanation units. Paragraph count is
   unrestricted; split prose by meaning rather than creating new scopes to fit a
@@ -135,6 +137,28 @@ cases, or opening a source is not by itself a change in abstraction.
 - Keep complete source evidence reachable at the appropriate depth. Use a
   focused excerpt for explanation and a full original artifact when needed.
   The grouping limit must never erase an independent obligation or failure.
+
+### Open the same process at a lower level
+
+The whole view establishes the process boundary, its input and observable result,
+and the relationships between its material responsibilities. Each responsibility
+continues into a recognizable explanation or a bounded leaf. A child identifies
+which parent responsibility it opens and explains how its internal participants,
+decisions or state changes produce the parent's result. Keep the connection to
+neighboring stages visible.
+
+Open newly exposed responsibilities in the same way when they still need
+explanation. At a concrete level, trace an evidenced or clearly illustrative
+input through the applicable condition to its result and important exception.
+For example, opening a normalization step can explain how trimming two product
+identifiers makes them equal, then how the supplied price rule decides whether
+to combine or reject those rows. The input, rule and outcome make the parent's
+work understandable; another heading or repeated summary does not.
+
+Stop when the intended reader can explain the responsibility's behavior and
+limits or apply its rule without guessing hidden steps. If the source does not
+support deeper internals, state that boundary. Use the existing prose and figures;
+do not add a mandatory depth, mapping registry, or authoring-plan artifact.
 
 ## Explain relationships visually
 
@@ -177,6 +201,11 @@ examples in [abstraction and analogy](abstraction-and-analogy.md#visualize-the-d
 - Place the figure beside its explanation. Briefly state how to read it and what
   it establishes. Draw only supported actors, relationships, order, and failure
   paths; distinguish uncertainty. Do not add a decorative diagram to a trivial fact.
+  Preserve each condition's scope when adding a branch. Different failures may
+  share an error label without sharing permission to retry or recover. Do not
+  merge them into a path that grants an action to an unsupported case. Apply
+  [path review](editorial-review.md#check-diagram-paths-against-the-source) to the
+  completed figure as well as its prose.
   If evidence does not establish the requested interaction, identify the missing
   information or draw a clearly labeled conceptual view of supported relationships;
   do not invent service calls to fill a requested diagram type.

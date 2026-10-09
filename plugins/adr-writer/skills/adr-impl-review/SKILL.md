@@ -203,98 +203,20 @@ For `standard`, execute this section and then continue at **Report and artifact 
 
 Sections 2 and 3 apply only to `full`. Section 4's evidence rules serve both modes.
 
-## 2. Build the review baseline without a post-implementation gate
-
-Create `review-baseline.md` from:
-
-- the current ADR and mapping summary
-- the Decision, Decision Drivers, every numeric and non-numeric requirement row, explicit out-of-scope items, and recorded risk tolerance
-- any decision-changing assumption recorded in Purpose (legacy Context) or a Decision Driver, including what must be reconsidered if it is false
-- the intent bounding autonomous choices, using the sufficiency guidance; convention or test success alone does not establish intent fit
-- the pre-implementation approval summary supplied by `/adr-impl`, when available
-- a regeneration checklist marking where each contract is stated in the ADR
-- the implementation-independent observable evidence recorded for each contract row
-
-Self-check the baseline against `authoring-rules.md` R18a/R19. A missing contract that can be recovered from the already approved ADR wording is corrected in the baseline. Concrete evidence that the ADR itself is incomplete, contradictory, or requires a new product choice is a blocking contract issue routed to ADR authoring before any code repair; it is not a reason to ask the routine three confirmation questions again. When `/adr-impl-review` is invoked standalone and no approval summary exists, record that limit and use the current ADR as the review baseline.
-
-Before declaring an ADR-completeness gap, apply the same resolution ladder as `/adr-impl`: derive obligations already required by an explicit contract, reuse established project conventions, apply authoritative domain rules, and accept reversible low-risk defaults below ADR resolution. Attach a derived obligation to its parent `D0` or `Rn` coverage row rather than inventing a new contract ID. Keep a domain default as a Notable implementation choice. Only a gap with multiple domain-valid outcomes or protected product-policy impact becomes a blocking contract issue.
-
-For every blocking contract issue, return one consolidated **Decision request** to the caller. Each item states the missing decision, a recommended option with its domain basis, two or three realistic alternatives, user/data/security/operational impact, and exact ADR contract wording. Do not merely say "ask the user" and do not interrupt once per gap.
-
-## 3. Derive the two review perspectives independently
-
-Give both perspectives, in common, **only the original ADR, complete
-implementation scope, separate change scope, tests, project rules, and
-`review-baseline.md`.** Do not give either perspective `explanation.md` or the
-other perspective's result. That is what keeps them from anchoring on an earlier
-interpretation. The model may run them in parallel or sequentially and may use
-zero, one, or several subagents.
-
-### 3.1 The necessity review
-
-Apply the `adr-impl-necessity-reviewer` role contract.
-
-- The question: "is each review unit strictly necessary to achieve the ADR's goal?"
-- Success condition: finding changes that can be removed or shrunk, with evidence.
-- Forbidden: style preferences, a taste for future extensibility, unjustified "make it simpler". Also forbidden is filing **code that enforces a requirement the ADR records** (cap checks, counters, expiry handling, and likewise transition guards, permission checks, duplicate prevention, required-field validation) as unnecessary — whether it is a number, a value set, or a permission, that is contract.
-- The core attempt: when a change scope exists, test each changed unit. For a
-  standalone existing-implementation review with no meaningful change scope,
-  test each ADR-related implementation unit. In both cases ask, "does the ADR
-  and the approved review baseline still hold if this is deleted?"
-
-### 3.2 The sufficiency review and tests
-
-Apply the `adr-impl-sufficiency-reviewer` role contract.
-
-- The question: "is there a counterexample that makes this implementation fail?"
-- Success condition: accounting for every row of the ADR decision ledger, and reproducing omissions, boundaries, errors, races, and partial failures.
-- **Compare requirement values value by value** — put each limit, quota, cycle, retention period, cap, and target the ADR records as its own ledger row and compare it directly against the number in the code. "There is limit logic" is not an accounting. A value mismatch or an unenforced value is a `Spec violation`. For a self-imposed value absent from the ADR, apply the admission gate: admitted requirement or boundary choices become `Undecided behavior`; replaceable choices go into Notable implementation choices; an unknown becomes `Unverified risk` only when it could affect safety or the ADR contract.
-- **Compare non-numeric requirements item by item too** — allowed value sets, transition rules, mandatory fields, permissions, visibility, ordering, uniqueness, and units are each ledger rows as well. An added or removed set member, a forbidden transition becoming allowed, and mandatory → optional are all `Spec violation`. **Split enums** — a differing identifier name is `Impl-fact mismatch` (correct the ADR), while a differing allowed set or transition rule is `Spec violation` (correct the code).
-- **Inspect hidden implementation premises** — for every material choice and every contract-critical call path, ask which externally checkable fact must hold for the implementation to preserve the ADR contract and safety. Verify provider guarantees, caller authentication, input provenance, ordering, uniqueness, trust boundaries, and platform behavior from code, tests, configuration, or an authoritative external contract. If a premise is not verified and its falsehood could break a contract row or safety property, emit `Unverified risk`, mark the affected coverage row `UNVERIFIED`, and do not return `PASS`. Do not reconstruct the implementer's private reasoning.
-- **Complete every Hill's evidence before synthesis** — apply
-  `references/review-hiking.md`. Independent Hills may run in parallel or batches;
-  missing status, evidence, or test results prevent `PASS` regardless of order.
-- **Resolve apparent requirement gaps before escalating** — connect a logical consequence to its explicit parent contract, recognize an established project/domain default as implementation discretion, and escalate only when several valid product behaviors remain or the missing rule affects money, permissions, legal/compliance behavior, retention, irreversible data, a public contract, or durable fallback. For an escalation, produce the complete Decision request instead of a bare ambiguity note.
-- Before checking documentation and tests, read
-  `${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md` completely and
-  apply its completion and review classifications. Run the related targeted
-  tests and any already-configured verification tooling it permits.
-- Create temporary reproduction files only in the artifact directory, and never change repository files.
-
-Choose the orchestration from current capability, risk, context size, latency,
-and cost. Do not require a provider family, reasoning tier, fixed agent count,
-or fixed parallelism. The observable requirement is that the two perspectives
-are separately grounded and do not read each other's conclusions before
-synthesis. Save their results as `necessity-review.md` and
-`sufficiency-review.md`.
+For full mode, read [full review](references/full-review.md) before building the
+baseline or deriving either perspective. It owns sections 2–3: the approved
+contract baseline, independent necessity and sufficiency, exact numeric and
+non-numeric comparison, premise verification and targeted tests. Keep the
+perspectives separately grounded; neither sees the explanation or the other's
+conclusions before synthesis. Return here for section 4.
 
 ## 4. Evidence verification and synthesis
 
-For outcome claims, apply `${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md`;
-monitoring is not a required gate.
-
-The main session does not merge the two reviews by vote. Verify findings with these rules.
-
-1. Merge the same problem into one, but keep every source in `perspective`.
-2. Do not hide mutually contradictory conclusions — record them as a `Contradiction` finding.
-3. Confirm a high-impact finding only with a test, a reproduction, or an exact code/ADR comparison.
-4. Downgrade to `Unverified risk` any claim you could not execute or whose call path you could not fully confirm.
-5. Distinguish the fact that a test exists from the fact that a test detects the defect.
-6. A necessity PASS means "no unnecessary change was found"; a sufficiency PASS means "no counterexample was found at present and the decision ledger is accounted for."
-7. Normalize coverage independently from findings. `D0` is the Decision; `R1..Rn` follow top-level bullets and table data rows under `### Requirement contract` in source order. Each ID has exactly one `contractId`, `requirement`, `status`, `adrBasis`, `implementation`, `evidence`, and `tests` row. `D0.adrBasis` is `Decision`; preserve each source bullet verbatim, or join a table row's trimmed cells with `|`, excluding its header/separator. Use `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`. `PROVEN` means inspected/executed evidence supports the obligation without a found counterexample, not mathematical proof. Reject omissions, duplicates, and invented IDs.
-8. Before normalizing implementation choices, inspect their externally checkable premises. A premise confirmed by code, tests, configuration, or an authoritative external contract may remain part of the choice's evidence. If the premise is unverified and could violate safety or an ADR contract row when false, create an `Unverified risk`, mark the affected coverage `UNVERIFIED`, and block `PASS`. Do not infer private reasoning.
-9. Normalize Notable implementation choices independently from findings. Every row has only a concrete selected value or behavior, code evidence, why it fits the ADR intent, and why it matters. Explain fit by naming the preserved contract or boundary, not by guessing why the implementer chose it. A row that changes a requirement contract or durable boundary is removed from the list and raised as `Undecided behavior`.
-10. Normalize the wide view into `reviewHike.context` and the Container,
-    Component, and Code route into `reviewHike.hills` exactly as
-    `references/review-hiking.md` and the artifact contract require.
-11. Normalize every finding into a user-action card as well as technical evidence. Keep non-empty `whyItMatters`, `expectedBehavior`, `observedBehavior`, `requestedChange`, `editTargets`, and `completionCriteria` fields. These fields explain the task in plain language; the exact ADR quote, code fragment, evidence, command, and result remain separate audit fields.
-
-The synthesized verdict:
-
-- `PASS`: there is no evidence-backed must-fix, every contract-coverage row is `PROVEN`, and the required targeted tests passed.
-- `FIX_REQUIRED`: there is a finding requiring concrete follow-up in the code, the ADR, or the tests.
-- `INCONCLUSIVE`: an important path could not be executed or the scope could not be fixed, so PASS/FIX cannot be judged honestly.
-- `BLOCK`: a fork in the decision itself, or a structural collapse, requires a human architectural decision before any individual code fix.
+Both modes read [evidence synthesis](references/evidence-synthesis.md) after
+collecting their evidence. It owns deduplication, contradictions, exact coverage
+and implementation-choice fields, action cards, and verdict selection. Missing
+core evidence is `INCONCLUSIVE`, never `PASS`; unverified contract/safety premises
+remain risks. Normalize every contract row and preserve original evidence.
 
 ## Report and artifact stage
 

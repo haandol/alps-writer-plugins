@@ -6,8 +6,10 @@ import { sha, confined, listFiles } from "../regression/workspace.mjs";
 import { responseObligations } from "./response-contract.mjs";
 import { reportCases } from "./report-cases.mjs";
 import { reportScopeCases } from "./report-scope-cases.mjs";
+import { reportArtifactCases } from "./report-artifact-cases.mjs";
 import { importExecutionCases } from "./import-execution.mjs";
 import { importPrerequisiteCases } from "./import-prerequisites.mjs";
+import { encbirdRollupCases } from "./encbird-rollup-cases.mjs";
 
 export const PLUGIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 export const ROOT = path.resolve(PLUGIN, "../..");
@@ -146,8 +148,14 @@ export async function catalog() {
     ...classification,
     ...reportCases,
     ...reportScopeCases,
+    ...reportArtifactCases,
     ...routingCases,
-    ...[...executionCases, ...importExecutionCases, ...importPrerequisiteCases].map((c) => ({
+    ...[
+      ...executionCases,
+      ...importExecutionCases,
+      ...importPrerequisiteCases,
+      ...encbirdRollupCases,
+    ].map((c) => ({
       ...c,
       type: "execution",
       group: c.skill,

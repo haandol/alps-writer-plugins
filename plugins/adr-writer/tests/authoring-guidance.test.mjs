@@ -4,6 +4,7 @@ import { cpSync, mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { withTmp, write, PLUGIN_ROOT } from "./helpers.mjs";
+import { readSkillContract } from "./helpers/skill-contract.mjs";
 
 const root = path.resolve(PLUGIN_ROOT, "../..");
 const names = [
@@ -20,12 +21,12 @@ test("both authoring plugins carry the same locally resolvable guidance in separ
       ["adr-writer", "adr-new"],
     ]) {
       const installed = path.join(dir, "cache", plugin, "1.2.3");
-      for (const relative of [`skills/${skill}/SKILL.md`, ...names.map((n) => `references/${n}`)]) {
+      for (const relative of [`skills/${skill}`, ...names.map((n) => `references/${n}`)]) {
         const target = path.join(installed, relative);
         mkdirSync(path.dirname(target), { recursive: true });
-        cpSync(path.join(root, "plugins", plugin, relative), target);
+        cpSync(path.join(root, "plugins", plugin, relative), target, { recursive: true });
       }
-      const prompt = readFileSync(path.join(installed, `skills/${skill}/SKILL.md`), "utf8");
+      const prompt = readSkillContract(path.join(installed, `skills/${skill}/SKILL.md`));
       for (const name of names) {
         const refs = [...prompt.matchAll(/`\$\{CLAUDE_PLUGIN_ROOT\}\/([^`]+)`/g)]
           .map((match) => match[1])

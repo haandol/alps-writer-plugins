@@ -1,5 +1,6 @@
 import {
   appendFileSync,
+  copyFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -26,7 +27,9 @@ export function confined(root, relative, { empty = false } = {}) {
     (!relative && !empty) ||
     path.isAbsolute(relative) ||
     relative.includes("\\") ||
-    relative.split("/").some((part) => part === ".." || part === ".git" || part === "")
+    relative
+      .split("/")
+      .some((part) => part === "." || part === ".." || part.toLowerCase() === ".git" || part === "")
   ) {
     if (!(empty && relative === "")) throw new Error("expected a confined relative path");
   }
@@ -61,10 +64,17 @@ export function listFiles(root, relative = "") {
     });
 }
 
-export function snapshot(root) {
+export function snapshot(root, { draftRoot } = {}) {
   return Object.fromEntries(
     listFiles(root)
-      .filter((file) => !SEEDED_RULE_DOCS.some((name) => file === `docs/adr/${name}`))
+      .filter(
+        (file) =>
+          !SEEDED_RULE_DOCS.some(
+            (name) =>
+              file === `docs/adr/${name}` ||
+              (draftRoot && file === `${draftRoot}/docs/adr/${name}`),
+          ),
+      )
       .map((file) => [file, readFileSync(confined(root, file), "utf8")]),
   );
 }
@@ -114,7 +124,16 @@ export function makeTools({
   guidance = true,
   checkerRoot = pluginRoot,
   artifactPaths = [],
+  draftRoot,
 }) {
+  if (draftRoot !== undefined) {
+    if (
+      typeof draftRoot !== "string" ||
+      !/^\.adr-review\/[a-z0-9-]+(?:\/[a-z0-9-]+)*$/.test(draftRoot)
+    )
+      throw new Error("draftRoot must name a confined directory under .adr-review/");
+    confined(root, draftRoot);
+  }
   // Case-owned report files are write-only additions to the existing document
   // boundary. They cannot grant source access, rule edits, moves or deletions.
   if (!Array.isArray(artifactPaths) || new Set(artifactPaths).size !== artifactPaths.length)
@@ -127,6 +146,8 @@ export function makeTools({
     )
       throw new Error("artifactPaths must name report files under .adr-review/");
     confined(root, file);
+    if (draftRoot && file.toLowerCase().startsWith(`${draftRoot}/`))
+      throw new Error("report paths cannot overlap the draft workspace");
   }
   const artifacts = new Set(artifactPaths);
   const events = () =>
@@ -151,15 +172,42 @@ export function makeTools({
   }
   function writable(file, { report = false } = {}) {
     if (report && artifacts.has(file)) return confined(root, file);
-    if (!file.startsWith("docs/") || !/\.(md|json)$/.test(file)) {
+    const document =
+      draftRoot && file.startsWith(`${draftRoot}/`) ? file.slice(draftRoot.length + 1) : file;
+    if (!document.startsWith("docs/") || !/\.(md|json)$/.test(document)) {
       throw new Error("only fixture docs/*.md and docs/*.json are writable");
     }
-    if (STAMPED_RULE_DOCS.some((name) => file === `docs/adr/${name}`)) {
+    if (
+      STAMPED_RULE_DOCS.some((name) => document.toLowerCase() === `docs/adr/${name}`.toLowerCase())
+    ) {
       throw new Error("seeded rules are read-only");
     }
     return confined(root, file);
   }
   const properties = {
+    ...(draftRoot
+      ? {
+          prepare_draft: {
+            description: `Create independent copies of fixture docs/ at ${draftRoot}. Existing draft work is never overwritten. Edit candidate documents there, then run_check(kind=structure, draft=true) before applying verified content to official docs/.`,
+            fields: {},
+            run() {
+              const destination = confined(root, draftRoot);
+              if (existsSync(destination))
+                throw new Error("draft already exists; preserve and reuse it");
+              const files = listFiles(root, "docs");
+              const hashes = {};
+              for (const file of files) {
+                const source = confined(root, file);
+                const target = confined(root, `${draftRoot}/${file}`);
+                mkdirSync(path.dirname(target), { recursive: true });
+                copyFileSync(source, target);
+                hashes[file] = sha(readFileSync(source, "utf8"));
+              }
+              return { root: draftRoot, copied: hashes };
+            },
+          },
+        }
+      : {}),
     list_files: {
       description: "List all local fixture files. For shipped skill references use prefix plugin/.",
       fields: { prefix: { type: "string" } },
@@ -200,7 +248,10 @@ export function makeTools({
     },
     write_file: {
       description:
-        "Write a complete UTF-8 document inside fixture docs/ or an explicitly configured report file. Each change is recorded. Source, tests and plugin rules cannot be edited.",
+        "Write a complete UTF-8 document inside fixture docs/ or an explicitly configured report file. Each change is recorded. Source, tests and plugin rules cannot be edited." +
+        (draftRoot
+          ? ` Candidate docs/ are also writable under ${draftRoot}; copied rule documents stay read-only.`
+          : ""),
       fields: { path: { type: "string" }, content: { type: "string" } },
       run({ path: file, content }) {
         const full = writable(file, { report: true });
@@ -252,9 +303,23 @@ export function makeTools({
         category: { type: "string" },
         removed: { type: "string" },
         renumbered: { type: "string" },
+        ...(draftRoot
+          ? {
+              draft: {
+                type: "boolean",
+                description:
+                  "Check the declared draft tree instead of official docs; structure checks only.",
+              },
+            }
+          : {}),
       },
       required: ["kind"],
-      run({ kind, category, removed = "", renumbered = "" }) {
+      run({ kind, category, removed = "", renumbered = "", draft = false }) {
+        if (typeof draft !== "boolean" || (draft && (!draftRoot || kind !== "structure")))
+          throw new Error("draft checks require the declared draft and kind=structure");
+        const checkRoot = draft ? confined(root, draftRoot) : root;
+        if (draft && !existsSync(path.join(checkRoot, "docs/adr/.mapping.json")))
+          throw new Error("draft has no ADR mapping; prepare it before checking");
         if (category && !/^[a-z0-9-]+(?:\/[a-z0-9-]+)?$/.test(category))
           throw new Error("invalid category");
         let executable = process.execPath;
@@ -262,6 +327,7 @@ export function makeTools({
         if (kind === "structure") {
           args = [
             path.join(checkerRoot, "scripts/adr-structure-lint.mjs"),
+            ...(draft ? ["--adr-dir", "docs/adr", "--documents-only"] : []),
             ...(category ? [category] : []),
             "--json",
           ];
@@ -291,7 +357,7 @@ export function makeTools({
         const checkEnv = { ...process.env };
         delete checkEnv.NODE_TEST_CONTEXT;
         const result = spawnSync(executable, args, {
-          cwd: root,
+          cwd: checkRoot,
           env: checkEnv,
           encoding: "utf8",
           timeout: 30_000,
@@ -301,6 +367,17 @@ export function makeTools({
           exitCode: result.status,
           stdout: result.stdout ?? "",
           stderr: result.stderr ?? "",
+          ...(draft
+            ? {
+                checkedRoot: draftRoot,
+                documentHashes: Object.fromEntries(
+                  listFiles(checkRoot, "docs").map((file) => [
+                    file,
+                    sha(readFileSync(confined(checkRoot, file), "utf8")),
+                  ]),
+                ),
+              }
+            : {}),
         };
       },
     },

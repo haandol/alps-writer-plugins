@@ -37,7 +37,11 @@ export function batchDecisionScenario(resume = false) {
     build() {
       return [
         skillText("adr-sync", {
-          references: ["references/decision-questions.md", "references/decision-reconciliation.md"],
+          references: [
+            "skills/adr-sync/references/deep-verification.md",
+            "references/decision-questions.md",
+            "references/decision-reconciliation.md",
+          ],
         }),
         `# This run
 Response-only workflow probe. Do not use tools, create artifacts, or claim execution.

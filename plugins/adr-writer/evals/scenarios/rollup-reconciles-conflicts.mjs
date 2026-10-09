@@ -109,7 +109,13 @@ export default {
     "Rollup preserves adopted contract authority, unfinished targets, residual owners and independent scopes; holds only affected conflicts; preserves requested gaps and refreshes stale or occupied apply targets without overwriting concurrent work. One credible alternative is sufficient. This probe checks plans, not filesystem application.",
   build() {
     return [
-      skillText("adr-rollup"),
+      skillText("adr-rollup", {
+        references: [
+          "skills/adr-rollup/references/candidate-contract.md",
+          "skills/adr-rollup/references/references-and-history.md",
+          "skills/adr-rollup/references/approval-and-apply.md",
+        ],
+      }),
       "For each independent snapshot below, decide the next rollup action. Do not edit files or call tools.",
       "Return one JSON code block containing an array with exactly one row per id. Fields: id; action (prepare, apply, keep, hold, refresh); currentValue and status (the proposed survivor value and Accepted/Proposed status, or null unless preparing); removals (IDs to include in the destructive plan now); renames (old:new pairs); reason (source-grounded explanation). Add askRenumber and continueIndependent only where relevant. Preparing does not authorize writes. Classify each snapshot independently; a hold in one must not stop the others.",
       JSON.stringify(

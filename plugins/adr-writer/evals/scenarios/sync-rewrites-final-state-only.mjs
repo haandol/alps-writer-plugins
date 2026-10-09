@@ -97,6 +97,7 @@ export default {
     return [
       skillText("adr-sync", {
         references: [
+          "skills/adr-sync/references/deep-verification.md",
           "skills/adr-sync/references/repository-hygiene.md",
           "skills/adr-sync/references/current-state-reconstruction.md",
         ],

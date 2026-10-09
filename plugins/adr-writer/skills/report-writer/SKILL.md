@@ -35,6 +35,13 @@ conclusions, and next actions into this report. Citations preserve attribution
 and access to further detail; following them must not be a prerequisite for
 understanding the report. Apply this in every delivery format.
 
+For a whole-process or top-down report, connect the whole view to explanations
+of the same responsibilities, then their internal decisions and concrete cases.
+Each descent preserves the parent's input, output and boundary while revealing
+its internal behavior. Stop where the reader can apply the rule or the evidence ends.
+Use [process decomposition](references/explanation-design.md#open-the-same-process-at-a-lower-level)
+and check the completed diagrams' paths against the source before delivery.
+
 Include useful figures whenever the evidence and delivery format support them,
 from the overview through detailed explanations. For a whole-system or multi-step
 process, prefer a Mermaid overview after the short background and answer, before
@@ -71,6 +78,14 @@ Review the latest whole output with the loaded editorial and format guidance,
 including deeper explanations and evidence. Preserve findings and exact sources;
 do not invent verification, weaken a verdict or add paid calls or publication
 solely to complete a report.
+
+Check diagrams as claims about behavior: every path to an action or promised
+result must preserve its source conditions, permissions and failure guarantees.
+A prose caveat cannot repair an unsupported arrow. Correct confirmed in-scope
+problems and check the updated output again;
+a renderer pass or a general LLM PASS does not overrule a demonstrated mismatch.
+For review-only work, describe the correction without changing the reviewed
+subject. Honor explicit limits on redrawing or rephrasing it.
 
 Follow [verification and final delivery](references/format-and-layout.md#final-delivery).
 The default is semantic review plus static artifact checks; requested browser,
