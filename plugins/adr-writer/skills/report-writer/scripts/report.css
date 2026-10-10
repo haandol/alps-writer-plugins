@@ -250,6 +250,8 @@ summary::marker {
 .diagram svg {
   display: block;
   margin-inline: auto;
+  /* Pre-rendered SVGs can carry an inline white canvas. */
+  background: transparent !important;
   color: #555650;
 }
 

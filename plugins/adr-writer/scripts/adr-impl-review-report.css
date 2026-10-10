@@ -504,6 +504,8 @@ details[open] > summary {
 .diagram svg {
   display: block;
   margin: 0 auto;
+  /* Pre-rendered SVGs can carry an inline white canvas. */
+  background: transparent !important;
   color: var(--ink);
   font: 14px/1.4 var(--sans);
 }
