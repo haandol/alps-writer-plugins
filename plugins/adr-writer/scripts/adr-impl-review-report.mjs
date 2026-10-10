@@ -189,6 +189,7 @@ import { CATEGORIES, AUTHORITY } from "./adr-impl-review-categories.mjs";
 import { relatedAdrComparisonProse, hillNarrativeParagraphs } from "./adr-impl-review-prose.mjs";
 import {
   renderMermaid,
+  mermaidRuntime,
   mermaidBlocks,
   parseMermaid,
   proseLines,
@@ -1429,7 +1430,14 @@ function groupedFindingCards(findings, ui) {
 /** Build the standalone reading page, keeping shared diagrams visible and audit detail folded. */
 function buildHtml(data) {
   const language = detectLanguage(data);
-  const ui = { ...quizLabels[language], ...UI[language] };
+  const ui = {
+    ...quizLabels[language],
+    ...UI[language],
+    diagramPending:
+      language === "ko"
+        ? "다이어그램 생성 대기 중입니다. 아래 원문을 확인할 수 있습니다."
+        : undefined,
+  };
   const adr = esc(data.adr || "(no path)");
   const title = esc(data.title || ui.title);
   const styles = readFileSync(new URL("./adr-impl-review-report.css", import.meta.url), "utf8");
@@ -1780,6 +1788,7 @@ ${
     btn.classList.add("done");
   });
 </script>
+${data.narrativeSections.some((section) => mermaidBlocks(section.body).length) ? mermaidRuntime(ui) : ""}
 </body>
 </html>`;
 }
@@ -1824,7 +1833,7 @@ function main() {
       const matches = blocks.filter((block) => block.requirementId === requirement.id);
       if (matches.length !== 1 || !matches[0].closed || parseMermaid(matches[0].source).error) {
         die(
-          `required diagram ${requirement.id} cannot render; repair its source before writing HTML`,
+          `required diagram ${requirement.id} has invalid Mermaid syntax; repair its source before writing HTML`,
         );
       }
     }

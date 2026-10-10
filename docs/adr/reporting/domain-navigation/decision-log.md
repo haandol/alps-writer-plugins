@@ -73,3 +73,5 @@ accumulates here, newest first. Git preserves the individual diffs.
 - **Change type**: requirement rule change
 - **What**: 구현 리뷰가 선택적으로 생성하던 이해도 퀴즈 → 공통 보고서 작성이 문서의 핵심 내용에 맞는 중간 난이도 1~5문항을 생성한다.
 - **Why**: 보고서 종류와 관계없이 이해도를 높이고 인지부하를 줄이도록 퀴즈 생성 책임을 공통 작성 기능에 둔다.
+
+- **2026-10-10 — current ADR: [도메인별 확대 구조](./0001-domain-first-report-navigation.md)** — 그림 선택을 좁은 종류 목록과 자체 단순 표기에 제한하지 않고, 질문에 맞는 Mermaid 종류와 관계 표기를 보존하며 구문 검증과 실제 그림 생성 상태를 구분한다.

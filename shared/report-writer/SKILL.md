@@ -47,7 +47,9 @@ process, prefer a Mermaid overview after the short background and answer, before
 component detail. Figures are never a delivery gate, including for top-down,
 C4-like or drill-down walkthroughs. Honor diagram exclusions; when a figure is
 not feasible, explain the supported relationships in prose and retain material
-limitations. Follow explanation design for meaningful descent.
+limitations. Follow explanation design for meaningful descent. Choose Mermaid types by the
+reader's question and requested notation, without a fixed type preference or
+allowlist; preserve relationship semantics rather than reducing every view to boxes.
 Reuse guidance already loaded in this context. Load references for their actual
 purpose rather than collecting every file:
 

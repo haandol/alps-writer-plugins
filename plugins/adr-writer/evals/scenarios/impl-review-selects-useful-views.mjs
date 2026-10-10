@@ -3,7 +3,7 @@ import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
 export default {
   name: "impl-review-selects-useful-views",
   description:
-    "Select useful sequence/component views when feasible; honor figure exclusions and unavailable evidence with prose delivery, without a mandatory-figure gate or omission approval.",
+    "Choose views by the relationships they explain without an exact-type recipe; honor figure exclusions and unavailable evidence with prose delivery, without a mandatory-figure gate or omission approval.",
   build() {
     return [
       skillText("adr-impl-review", {
@@ -33,31 +33,44 @@ Keep every important question covered without a diagram quota.`,
       TAIL_SPEC,
     ].join("\n\n");
   },
-  score({ tail }) {
-    const expected = {
-      A: ["sequenceDiagram"],
-      B: ["flowchart", "sequenceDiagram"],
-      C: ["stateDiagram-v2"],
-      D: ["none"],
-      E: ["none"],
-      F: ["none"],
-    };
-    return Object.entries(expected).map(([tag, views]) => {
-      const row = tail.findings.find((finding) => finding.tag === tag)?.summary || "";
-      const actual =
-        row
-          .match(/(?:^|;)\s*views=([^;]+)/)?.[1]
-          .split(",")
-          .map((item) => item.trim())
-          .sort() || [];
-      return {
-        label: `${tag} selects views for the actual question`,
-        pass:
-          actual.join(",") === [...views].sort().join(",") &&
-          /;\s*reason=\S[^;]*/.test(row) &&
-          (!views.includes("none") || /;\s*omission=\S[^;]*/.test(row)),
-        detail: row || "missing selection",
-      };
-    });
-  },
+  obligations: [
+    {
+      id: "relationship-coverage",
+      text: "For A, explain provider request order and the failure path avoiding the completion write. For B, cover both ownership/dependency structure and execution order. For C, preserve allowed and forbidden lease transitions. Judge the explanation and selected notation together; do not require exact Mermaid type arrays, a fixed number of diagrams, or an additional justification only for state diagrams. Unsupported relations, omission of a material question, or irrelevant duplicate views do not satisfy coverage.",
+    },
+    {
+      id: "delivery-and-grounds",
+      text: "D is a one-sentence local rename with unchanged behavior; avoid a needless figure. E must honor the user's diagram exclusion. F must honor plain-text delivery and missing call evidence. Each omission has its concrete local reason, and no case invents interactions or demands omission approval.",
+    },
+  ],
+  deterministicScore: scoreSelectionRecords,
+  score: scoreSelectionRecords,
 };
+
+/** Check records and explicit delivery constraints; the configured semantic judge checks usefulness. */
+function scoreSelectionRecords({ tail }) {
+  return ["A", "B", "C", "D", "E", "F"].map((tag) => {
+    const rows = (tail?.findings ?? []).filter((finding) => finding.tag === tag);
+    const row = rows[0]?.summary || "";
+    const views =
+      row
+        .match(/(?:^|;)\s*views=([^;]+)/)?.[1]
+        .split(",")
+        .map((item) => item.trim()) || [];
+    const none = views.includes("none");
+    const excluded = ["E", "F"].includes(tag);
+    return {
+      label: `${tag} records its selection and delivery constraint (structure only)`,
+      pass:
+        rows.length === 1 &&
+        views.length > 0 &&
+        views.every((view) => /^[A-Za-z][\w-]*$/.test(view)) &&
+        new Set(views).size === views.length &&
+        (!none || views.length === 1) &&
+        /;\s*reason=\S[^;]*/.test(row) &&
+        (!none || /;\s*omission=\S[^;]*/.test(row)) &&
+        (!excluded || none),
+      detail: row || "missing selection; semantic usefulness is checked separately",
+    };
+  });
+}

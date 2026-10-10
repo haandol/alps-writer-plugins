@@ -297,17 +297,15 @@ materializer owns the Markdown table.
 
 Draw only relationships confirmed in the actual code. Never use ASCII or box-drawing diagrams.
 
-Prefer `sequenceDiagram` for request/response order and a component view using
-`flowchart` for responsibilities, dependencies, and boundaries. Use both if both
-questions matter. Choose `stateDiagram-v2` only when the lifecycle or allowed
-transitions themselves are central and explain why another view is insufficient.
-A failure branch already explained in a sequence does not require a duplicate
-flowchart. Use `erDiagram` when data ownership, relationships, or cardinality
-is the question. See the visualization reference for selection examples, before/after
-consistency, supported syntax, and actual HTML verification.
+Choose the diagram that answers the review question and honors requested notation.
+Any type supported by the bundled Mermaid engine is available; examples in the
+visualization reference are not an allowlist or preference hierarchy. Preserve
+class relationships, lifecycle endpoints, data cardinality and other notation
+semantics. Do not default to boxes or require extra justification for a particular
+type. Use multiple views when they explain different material relationships.
 
 Every supplied diagram must honestly represent its rendering status. Try to
-repair a source-only fallback with supported syntax; when a figure remains
+repair invalid syntax without forcing a different diagram type; when a figure remains
 infeasible, use prose and update its selection/omission metadata. Never block
 delivery for figure absence. Keep the prose independently reviewable and retain
 any supplied Mermaid source for inspection.

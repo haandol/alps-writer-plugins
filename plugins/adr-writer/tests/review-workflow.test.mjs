@@ -803,16 +803,12 @@ test("repair guidance is conditional and Mermaid may appear across narrative sec
   assert.match(writer, /FIX_REQUIRED|BLOCK/);
   assert.match(writer, /user asks/i);
   assert.match(writer, /only when/i);
-  assert.match(writer, /flowchart/);
-  assert.match(writer, /sequenceDiagram/);
-  assert.match(writer, /stateDiagram-v2/);
-  assert.match(writer, /erDiagram/);
+  assert.match(writer, /Any type supported by the bundled Mermaid engine/);
+  assert.match(writer, /not an allowlist or preference hierarchy/);
+  assert.match(writer, /Preserve\s+class relationships/);
   assert.match(writer, /Never use ASCII or box-drawing diagrams/);
   assert.match(writer, /Draw only relationships confirmed in the actual code/);
-  assert.match(
-    writer,
-    /A failure branch already explained in a sequence does not require a duplicate/,
-  );
+  assert.match(writer, /Use multiple views when they explain different material relationships/);
   assert.match(writer, /%% requirement: Vn/);
   assert.match(writer, /Hill/);
   assert.doesNotMatch(writer, /Include at least:/);
@@ -848,9 +844,8 @@ test("human-facing review reports use one junior-readable visual writing guide",
     assert.match(guide, trigger);
   }
 
-  for (const diagram of [/sequenceDiagram/, /stateDiagram-v2/, /flowchart/, /erDiagram/]) {
-    assert.match(guide, diagram);
-  }
+  assert.match(guide, /All types\s+supported by the bundled Mermaid engine are available/);
+  assert.match(guide, /not an allowlist or a fixed preference order/);
 
   assert.match(guide, /junior developer seeing the subject for the first time/i);
   assert.match(

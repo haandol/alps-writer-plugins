@@ -140,6 +140,7 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     "report-artifact-catalog-publication",
     "report-artifact-evaluation-pipeline",
     "report-artifact-limited-evidence",
+    "report-diagram-notation-freedom",
     "report-drilldown-comparison",
     "report-drilldown-distinguishes-shallow",
     "report-drilldown-experienced-reader",
@@ -220,6 +221,13 @@ test("every shipped classification probe has a fixed GEval contract and prepares
       }
     } else if (run.caseId.startsWith("report-regression-")) {
       assert.match(input.prompt, /Supplied (hypothetical|recorded|local)/);
+      const item = selected.find((c) => c.id === run.caseId);
+      for (const obligation of item.semanticObligations)
+        assert.ok(!input.prompt.includes(obligation.text), obligation.id);
+    } else if (run.caseId.startsWith("report-diagram-")) {
+      assert.match(input.prompt, /Synthetic domain model/);
+      assert.match(input.prompt, /Duck inherits Animal/);
+      assert.match(input.prompt, /No separate type allowlist exists/);
       const item = selected.find((c) => c.id === run.caseId);
       for (const obligation of item.semanticObligations)
         assert.ok(!input.prompt.includes(obligation.text), obligation.id);

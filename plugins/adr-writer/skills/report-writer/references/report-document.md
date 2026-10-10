@@ -149,19 +149,20 @@ one-diagram field is not a figure budget for its domain or the whole report;
 when several focused views need different explanations, use meaningfully scoped
 child nodes with their own figures, not empty image-holder sections. Preserve the
 four-child explanation limit and do not force a figure into a simple node.
-The dependency-free renderer supports the common sequence, flowchart, state,
-and entity relationship subset used by the plugins. Unsupported statements
-are never silently discarded. `required` controls how an included diagram's
-unsupported syntax is handled, not whether a diagram must exist: the default
-rejects it before writing output; `required: false` retains a visible source
-warning. Repair unsupported syntax, use that explicit fallback, or explain the
-relationship in prose. Never label an unrendered figure as rendered.
+The renderer validates syntax with the bundled official Mermaid parser, without
+an additional type allowlist. It accepts class, sequence, state, ER, C4 and other
+syntax supported by that version. No package installation or network is needed.
+`required` controls invalid syntax, not whether a diagram must exist: the default
+rejects invalid syntax before writing output; `required: false` retains the full
+source and a visible warning. Markdown preserves valid source unchanged.
 
-Use ASCII identifiers for diagram nodes and participants, and put localized
-text in their labels. For a state diagram, use `state "후보 리비전" as Candidate`
-followed by `[*] --> Candidate`, rather than a localized identifier in the arrow.
-The bundled parser implements a subset; valid syntax in another Mermaid renderer
-does not prove that this renderer supports it.
+HTML embeds the official Mermaid engine and renders each diagram in the reader's
+browser. Until SVG creation succeeds, the figure is visibly pending with its
+source available; failures retain that source and an error. `data-rendered` only
+becomes `true` after actual SVG creation. A syntax check or HTML write is not proof
+of rendered appearance. Keep actual rendering and semantic review distinct.
+Source remains inspectable after success, and authored scripts/callbacks are
+inert. Choose syntax for the explanation, not to work around a local subset.
 
 ## Compatibility with specialized reports
 

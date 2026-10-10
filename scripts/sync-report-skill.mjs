@@ -22,11 +22,6 @@ const entries = files(source).map((relative) => [
   relative,
   readFileSync(path.join(source, relative)),
 ]);
-// The existing dependency-free Mermaid parser remains the implementation owner.
-entries.push([
-  "scripts/mermaid.mjs",
-  readFileSync(path.join(ROOT, "plugins/adr-writer/scripts/adr-impl-review-diagrams.mjs")),
-]);
 let mismatch = false;
 for (const target of targets)
   for (const [relative, baseContent] of entries) {

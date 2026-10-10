@@ -189,9 +189,14 @@ explanatory need. Use enough views to explain the material without a diagram quo
 simple facts and one-step explanations may remain prose. Apply the detailed
 examples in [abstraction and analogy](abstraction-and-analogy.md#visualize-the-detail-being-revealed).
 
-- Use Mermaid `sequenceDiagram` when participants, requests, responses, or timing
-  are central. Prefer a flowchart for branching flow, a state diagram for state
-  transitions, and an entity-relationship diagram for data relationships.
+- Choose the Mermaid diagram that best answers the reader's question and honors
+  any requested notation. The bundled Mermaid engine's supported types are
+  available; examples are not an allowlist or a preference hierarchy. For example,
+  a sequence view can explain interaction order, a class view inheritance and
+  composition, a state view lifecycle transitions, and an ER view cardinality.
+  Other views are equally appropriate when they explain the subject better.
+  Do not default to flowchart boxes or require special justification for a state,
+  class, C4, or other view. Preserve the chosen notation's relationship semantics.
 - Keep each figure within its domain and abstraction level. Break a complicated
   picture into an overview and detailed flows rather than making the reader
   reconstruct many independent responsibilities at once. Identify which parent
@@ -210,9 +215,10 @@ examples in [abstraction and analogy](abstraction-and-analogy.md#visualize-the-d
   information or draw a clearly labeled conceptual view of supported relationships;
   do not invent service calls to fill a requested diagram type.
 - Preserve Mermaid source and use the requested format's supported rendering.
-  C4-like resolution does not require literal C4 diagram declarations. When syntax
-  is unsupported, use an equivalent supported view preserving the evidenced
-  relationships. If evidence or format prevents that, explain the relationship
+  C4-like resolution does not require literal C4 diagram declarations. Check syntax with the bundled official Mermaid parser. Do not rewrite a valid
+  diagram into a simpler type to satisfy a separate parser subset. If the selected
+  Mermaid version cannot express a requested notation, use a supported equivalent
+  only when it preserves the meaning and disclose the limitation. If evidence or format prevents that, explain the relationship
   in prose and retain the material limitation without blocking delivery.
   In HTML, provide both the rendered view and accessible source. In Markdown,
   use a Mermaid fence; in static exports, retain source with the supporting

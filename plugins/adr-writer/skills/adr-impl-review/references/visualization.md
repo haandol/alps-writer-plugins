@@ -25,21 +25,15 @@ failure appears in the code.
 
 ## Choose the view that answers the question
 
-| Reader's question                                                  | Preferred view                   | Information to show                                                                                                         |
-| ------------------------------------------------------------------ | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Who requests what, in what order, and what comes back?             | `sequenceDiagram`                | Participants, meaningful input/response data, order, and relevant failure/retry branches. Applies to synchronous calls too. |
-| Which parts own the behavior, and how are they connected?          | Component view using `flowchart` | Component roles, responsibility, dependencies/data flow, and system boundaries.                                             |
-| Which condition selects the next algorithm or recovery path?       | `flowchart`                      | Conditions, outcomes, and important branches.                                                                               |
-| Which transitions are allowed or forbidden throughout a lifecycle? | `stateDiagram-v2`                | States, transition conditions, and the invariant under review.                                                              |
-| What data is related, owned, or repeated?                          | `erDiagram`                      | Entities, relationship meaning, and cardinality.                                                                            |
-
-Prefer sequence and component views for ordinary implementation explanations.
-Use both when structure and execution order are independently important.
-State diagrams are for a lifecycle or allowed/forbidden transition question;
-their selection reason must explain why a sequence or component view is
-insufficient. A state value or failure branch alone does not justify a state
-diagram. A failure already clear in a sequence's `alt` branches does not need a
-second flowchart.
+Choose by the reader's question and any requested notation. Any type supported
+by the bundled official Mermaid engine is available. Examples are not an
+allowlist or preference hierarchy: a sequence view may explain interaction
+order, a class view inheritance and composition, a state view transitions, or
+an ER view cardinality. Select other views when they explain the subject better.
+Do not default to flowchart boxes, or require extra justification only for a
+state, class, C4, or other type. Preserve the chosen notation's relationship
+semantics. Multiple views are useful when they answer different questions;
+no fixed combination or diagram count is required.
 
 When multiple Hills share responsibilities or boundaries that must be
 understood together, put the overall component view in `Context` and assign
@@ -94,17 +88,17 @@ report fences carry the corresponding `%% requirement: Vn` marker.
    and before/after consistency against the reviewed evidence. The validator
    checks structure, not the truth or usefulness of a selection reason.
 3. Materialize and validate the report. The validator checks IDs, ownership,
-   references, diagram type, `Notice:`, and the renderer's supported grammar.
+   references, diagram type, `Notice:`, and the bundled official Mermaid grammar. This proves syntax, not rendered appearance.
 4. Render the HTML and inspect it. Sequence lifelines/messages and component
    nodes/boundaries/connections must actually be visible, with readable labels.
    Open both a wide and narrow view when layout is affected.
-5. A source fallback is not a rendered figure. Try equivalent supported syntax;
-   if a useful figure remains infeasible, deliver the supported explanation in
-   prose, preserve the material limit, and remove its selection from the diagram
-   metadata. Do not claim rendering succeeded or block the report for its absence.
+5. A source fallback or a pending figure is not a rendered figure. HTML embeds
+   the official engine and reports success only after SVG creation; failures keep
+   source and a visible error. Do not rewrite valid syntax to fit a local subset.
+   If the selected engine or format cannot render the requested notation, explain
+   that limitation and preserve the source. Do not claim rendering succeeded or
+   block the report merely because a figure is absent.
 
-The self-contained renderer supports sequence participants/aliases, messages,
-notes and nested `alt/else`, `opt`, `loop`, and `par/and`; flowchart nodes,
-chains, labeled arrows, and single-level subgraphs; simple named states and
-transitions; and entity relationships. Advanced syntax is rejected rather than
-silently losing its meaning. Preserve full Mermaid source for inspection.
+The parser and browser engine are bundled, so marketplace installs require no
+package installation or external network for diagrams. Mermaid source is kept
+for inspection, and authored scripts and callbacks are inert.

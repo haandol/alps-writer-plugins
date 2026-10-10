@@ -72,7 +72,8 @@ test("report hierarchy preserves complete evidence and renders HTML/Markdown wit
   const html = renderHtml(doc),
     markdown = renderMarkdown(doc);
   assert.match(html, /data-report|report-writer-policy/);
-  assert.match(html, /data-rendered="true"/);
+  assert.match(html, /data-render-state="pending"/);
+  assert.match(html, /window.reportDiagramsReady/);
   assert.match(html, /observed charge count: 1/);
   assert.match(markdown, /## Payments/);
   assert.match(markdown, /### Settlement boundary/);
@@ -380,9 +381,9 @@ test("CLI and API preserve output and diagnostics for optional figures at any de
       null,
       { source: "flowchart TD\nU[Caller] --> P[Payments]" },
       { source: "sequenceDiagram\nCaller->>Payments: Request" },
-      { source: 'C4Context\nPerson(reader, "Reader")', required: false },
-      { source: 'C4Context\nPerson(reader, "Reader")', required: true },
-      { source: 'C4Context\nPerson(reader, "Reader")' },
+      { source: "unknownDiagram\nx", required: false },
+      { source: "unknownDiagram\nx", required: true },
+      { source: "unknownDiagram\nx" },
     ];
     for (const diagram of diagrams) {
       for (const depth of [0, 1]) {
@@ -391,7 +392,7 @@ test("CLI and API preserve output and diagnostics for optional figures at any de
         const node = depth === 0 ? doc.sections[0] : doc.sections[0].children[0];
         node.diagram = diagram && { ...diagram, explanation: "The caller reaches payments." };
         writeFileSync(input, JSON.stringify(doc));
-        const invalid = diagram?.source.startsWith("C4Context") && diagram.required !== false;
+        const invalid = diagram?.source.startsWith("unknownDiagram") && diagram.required !== false;
         const warnings = diagram?.required === false ? 1 : 0;
         for (const [format, render] of [
           ["html", renderHtml],
@@ -405,9 +406,9 @@ test("CLI and API preserve output and diagnostics for optional figures at any de
           );
           if (invalid) {
             for (const check of [validateReport, render])
-              assert.throws(() => check(doc), /required diagram: Unsupported/);
+              assert.throws(() => check(doc), /required diagram: No diagram type detected/);
             assert.equal(result.status, 2);
-            assert.match(result.stderr, /required diagram: Unsupported/);
+            assert.match(result.stderr, /required diagram: No diagram type detected/);
             assert.equal(readFileSync(output, "utf8"), "Previous report");
           } else {
             const validation = validateReport(doc);

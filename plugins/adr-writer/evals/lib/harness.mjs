@@ -126,6 +126,7 @@ The scenario evidence identifies the relevant failure result without inventing a
   const rendered = spawnSync(process.execPath, [IMPL_REVIEW_REPORT, findingsPath, "--stdout"], {
     cwd: dir,
     encoding: "utf8",
+    maxBuffer: 12 * 1024 * 1024,
   });
   return {
     pass: rendered.status === 0,

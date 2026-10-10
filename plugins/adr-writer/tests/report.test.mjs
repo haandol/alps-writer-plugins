@@ -14,6 +14,7 @@ function render(data) {
   return spawnSync(process.execPath, [REPORT, "-", "--stdout"], {
     input: JSON.stringify(data),
     encoding: "utf8",
+    maxBuffer: 12 * 1024 * 1024,
   });
 }
 
@@ -575,7 +576,7 @@ const id = 42;
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /<strong>one completion<\/strong>/);
   assert.match(result.stdout, /<ul><li>Reject duplicates<\/li>/);
-  assert.match(result.stdout, /class="diagram diagram--sequence"/);
+  assert.match(result.stdout, /data-diagram-type="sequenceDiagram"/);
   assert.match(result.stdout, /request with example id 42/);
   assert.match(result.stdout, /<pre><code class="language-ts">const id = 42;/);
   assert.doesNotMatch(result.stdout, /```mermaid/);
@@ -608,12 +609,12 @@ Notice: Success and failure stay separate.`,
   });
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /class="sequence__block"/);
+  assert.match(result.stdout, /data-render-state="pending"/);
   assert.match(result.stdout, /image success/);
   assert.match(result.stdout, /blocked or failed/);
-  assert.match(result.stdout, /data-participant="OpenAI"/);
+  assert.match(result.stdout, /participant OpenAI/);
   assert.doesNotMatch(result.stdout, /data-participant="OpenAI-"/);
-  assert.equal((result.stdout.match(/data-from="OpenAI" data-to="Worker"/g) ?? []).length, 2);
+  assert.equal((result.stdout.match(/OpenAI--&gt;&gt;Worker/g) ?? []).length, 2);
 });
 
 test("a grounded flowchart renders as a visual relationship diagram", () => {
@@ -638,7 +639,7 @@ Notice: 구현 범위에서 검증된 증거가 HTML 설명으로 이어집니�
   });
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /class="diagram diagram--flow"/);
+  assert.match(result.stdout, /data-diagram-type="flowchart"/);
   assert.match(result.stdout, /구현 범위 탐색/);
   assert.match(result.stdout, /HTML 렌더링/);
   assert.doesNotMatch(result.stdout, /<figure class="diagram diagram--fallback"/);
@@ -667,7 +668,7 @@ Notice: 완료와 재시도 경계가 서로 다른 전이로 유지되어야 �
   });
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /class="diagram diagram--state"/);
+  assert.match(result.stdout, /data-diagram-type="stateDiagram-v2"/);
   assert.match(result.stdout, /PENDING/);
   assert.match(result.stdout, /PROCESSING/);
   assert.match(result.stdout, /COMPLETED/);
@@ -687,25 +688,16 @@ function renderDiagram(source) {
   });
 }
 
-test("unsupported or incomplete Mermaid never renders a misleading partial diagram", () => {
+test("invalid Mermaid keeps source and is never labeled rendered", () => {
   for (const source of [
-    "sequenceDiagram\nA->>B: start\ncritical commit\nB-->>A: done\nend",
-    "sequenceDiagram\nA->>+B: start\nB-->>-A: done",
-    "sequenceDiagram\nalt allowed\nA->>B: start",
-    "sequenceDiagram\nloop retry\nA->>B: start\nelse wrong branch\nB-->>A: done\nend",
-    "flowchart LR\nA --> B\nclick B callback",
-    "flowchart LR\nsubgraph outer\nsubgraph inner\nA --> B\nend\nend",
-    "stateDiagram-v2\nA --> B\nstate B {\nInner --> Done\n}",
-    "erDiagram\nUSER ||--o{ ORDER : owns\nUSER {\nstring name\n}",
+    "unknownDiagram\nx",
+    "sequenceDiagram\nA->>B: start\nnot valid syntax",
+    "flowchart LR\nA -->",
   ]) {
     const result = renderDiagram(source);
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /<figure class="diagram diagram--fallback"/, source);
-    assert.doesNotMatch(
-      result.stdout,
-      /<figure class="diagram diagram--(?:sequence|flow|state|er)"/,
-      source,
-    );
+    assert.match(result.stdout, /data-render-state="failed"/);
+    assert.match(result.stdout, /data-rendered="false"/);
   }
 });
 
@@ -714,11 +706,11 @@ test("state diagrams retain initial, terminal, and named states", () => {
     'stateDiagram-v2\nstate "Waiting for approval" as Pending\n[*] --> Pending\nPending --> Done: approve\nDone --> [*]',
   );
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /class="diagram diagram--state"/);
+  assert.match(result.stdout, /data-diagram-type="stateDiagram-v2"/);
   assert.match(result.stdout, /Waiting for approval/);
-  assert.match(result.stdout, /Start/);
-  assert.match(result.stdout, /End/);
-  assert.equal((result.stdout.match(/class="diagram-relationship"/g) ?? []).length, 3);
+  assert.match(result.stdout, /\[\*\] --&gt; Pending/);
+  assert.match(result.stdout, /Done --&gt; \[\*\]/);
+  assert.match(result.stdout, /data-render-state="pending"/);
 });
 
 test("nested sequence branches keep their own condition, note participants, and arrow style", () => {
@@ -739,12 +731,16 @@ else failure
 end`);
   assert.equal(result.status, 0, result.stderr);
   assert.doesNotMatch(result.stdout, /<figure class="diagram diagram--fallback"/);
-  assert.match(result.stdout, /class="sequence__condition"[^]*?>success<\/tspan>/);
-  assert.match(result.stdout, /class="sequence__condition"[^]*?>store<\/tspan>/);
-  assert.match(result.stdout, /class="sequence__condition"[^]*?>audit<\/tspan>/);
-  assert.match(result.stdout, /class="sequence__condition"[^]*?>failure<\/tspan>/);
-  assert.match(result.stdout, /sequence__note[^]*Caller[^]*Service[^]*request context/);
-  assert.match(result.stdout, /sequence__arrow--dashed/);
+  for (const text of [
+    "alt success",
+    "par store",
+    "and audit",
+    "else failure",
+    "Note over A,B: request context",
+    "B--&gt;&gt;A: recorded",
+  ])
+    assert.ok(result.stdout.includes(text), text);
+  assert.match(result.stdout, /data-render-state="pending"/);
 });
 
 test("the abstract includes the verdict before evidence or the conclusion", () => {
@@ -851,8 +847,8 @@ test("Context diagrams render visibly and link to the Hills they explain", () =>
   const context = result.stdout.match(
     /<section class="paper-section" id="review-context">([^]*?)<\/section>/,
   )?.[1];
-  assert.match(context, /<svg/);
-  assert.match(context, /data-node="Owner"/);
+  assert.match(context, /data-render-state="pending"/);
+  assert.match(context, /Caller --&gt; Owner --&gt; Reader/);
   assert.match(context, /href="#hill-h1"/);
   assert.match(context, /href="#hill-h2"/);
   assert.equal((context.match(/Shared ownership\./g) || []).length, 1);
@@ -866,12 +862,12 @@ test("a required diagram cannot become a source-only completed report", () => {
     narrativeSections: [
       {
         title: "Context",
-        body: "```mermaid\n%% requirement: V1\nsequenceDiagram\nA->>B: call\ncritical commit\nB-->>A: done\nend\n```",
+        body: "```mermaid\n%% requirement: V1\nsequenceDiagram\nA->>B: call\ninvalid syntax\n```",
       },
     ],
   });
   assert.equal(result.status, 2);
-  assert.match(result.stderr, /required diagram V1 cannot render/);
+  assert.match(result.stderr, /required diagram V1 has invalid Mermaid syntax/);
   assert.equal(result.stdout, "");
 });
 

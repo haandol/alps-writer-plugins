@@ -132,8 +132,17 @@ test("explanations start open while optional evidence stays folded and explicit 
   );
   assert.ok(
     details
-      .filter((attrs) => !attrs.includes('class="report-node"'))
+      .filter(
+        (attrs) =>
+          !attrs.includes('class="report-node"') && !attrs.includes('class="diagram-source"'),
+      )
       .every((attrs) => !/\bopen(?:\s|$)/.test(attrs)),
+  );
+  assert.ok(
+    details
+      .filter((attrs) => attrs.includes('class="diagram-source"'))
+      .every((attrs) => /\bopen(?:\s|$)/.test(attrs)),
+    "source stays available while rendering is pending",
   );
   assert.deepEqual(doc, before, "rendering must not rewrite saved presentation choices");
 

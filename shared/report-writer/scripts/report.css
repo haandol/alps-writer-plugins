@@ -253,34 +253,6 @@ summary::marker {
   color: #555650;
 }
 
-.diagram svg text {
-  font: 14px sans-serif;
-  fill: var(--ink);
-}
-
-.diagram-node rect,
-.diagram-node path,
-.sequence__participant rect {
-  fill: #fff;
-  stroke: #8b9087;
-}
-
-.diagram-boundary rect,
-.sequence__frame {
-  fill: none;
-  stroke: #a2a69d;
-}
-
-.sequence__note rect {
-  fill: #fff6dc;
-  stroke: #b2a276;
-}
-
-.sequence__lifeline {
-  stroke: #a2a69d;
-  stroke-dasharray: 5 5;
-}
-
 .diagram-source {
   margin-top: 0.75rem;
   font-size: 0.8125rem;
