@@ -91,16 +91,11 @@ format prevents a useful figure, explain the relationship in prose and retain
 material limitations. Do not block completion or request omission approval solely
 because a figure is absent, including for top-down or C4-like walkthroughs.
 
-Choose the diagram by the review question. Prefer a component view using
-`flowchart` for responsibility and dependency questions; state diagrams serve
-lifecycle questions that sequence or component views do not explain:
-
-| Question                                                            | Mermaid           |
-| ------------------------------------------------------------------- | ----------------- |
-| Who calls whom, and in what order?                                  | `sequenceDiagram` |
-| Which lifecycle transitions are allowed or forbidden?               | `stateDiagram-v2` |
-| Where does the flow branch, fail, retry, or depend on another item? | `flowchart`       |
-| Which changed data relationships matter?                            | `erDiagram`       |
+Choose the diagram by the review question and requested notation. All types
+supported by the bundled Mermaid engine are available. Examples such as sequence,
+class, state, ER and C4 views are not an allowlist or a fixed preference order.
+Preserve the selected notation's relationship meaning rather than reducing it
+to generic boxes and arrows. Use different views only for different useful questions.
 
 Draw only relationships established by the ADR, code, diff, or executed evidence.
 Use short behavior labels instead of implementation trivia. After the diagram,
@@ -109,10 +104,8 @@ write one sentence beginning with `Notice:` that states the review point.
 For implementation-review artifacts, apply
 `${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/visualization.md`. Assign question-level
 `diagramRequirements` to each Hill through `diagramIds`, or record that Hill's
-concrete `diagramOmissionReason`. Prefer sequence views for request/response
-order and component views for roles and boundaries. State values alone do not
-justify a state diagram. Check every important relationship and inspect the
-rendered HTML. Source fallback must not be described as a rendered figure.
+concrete `diagramOmissionReason`. Choose views by the relationships to explain.
+Check every important relationship and inspect the rendered HTML. Source fallback must not be described as a rendered figure.
 
 The prose must remain independently reviewable when Mermaid does not render.
 Other review skills keep their own artifact format; do not create an

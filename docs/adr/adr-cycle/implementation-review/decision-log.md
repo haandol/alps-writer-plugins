@@ -43,3 +43,5 @@ Newest first. Record only major decision changes.
 - **2026-08-16 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 다중 agent orchestration을 지원하지 않는 Bedrock 세션은 하위 agent dispatch를 피하고 메인 세션 fallback을 사용하며, 독립 reviewer가 없는 리팩토링은 제안으로만 남기도록 변경했다.
 - **2026-08-15 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — full 리뷰의 사람 의도 확인을 구현 전 ADR 승인으로 이동하고, 구현 후에는 증거 기반 결함을 자동 수정·재검증한 뒤 추가 승인 없이 완료하도록 변경했다.
 - **2026-08-15 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 모든 구현에 동일한 전체 검토를 적용하던 정책을 보호 표면 기준의 standard/full 검토로 변경했다.
+
+- **2026-10-10 — current ADR: [위험에 비례하는 구현 검토](./0001-validated-low-risk-refactoring.md)** — 다이어그램 예시의 고정 우선순위와 상태도의 추가 정당화 조건을 제거하고, 질문에 맞는 종류와 표기의 의미를 공통 리포트 계약에 따라 보존한다.

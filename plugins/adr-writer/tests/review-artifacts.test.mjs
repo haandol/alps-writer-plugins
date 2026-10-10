@@ -1088,6 +1088,54 @@ Notice: Only a successful response reaches the completion write.`;
   });
 });
 
+test("diagram assignment accepts official types beyond the former allowlist and still checks type identity", () => {
+  for (const [type, source] of [
+    ["classDiagram", "classDiagram\nAnimal <|-- Duck"],
+    ["C4Context", 'C4Context\nPerson(user, "User")'],
+    ["xychart-beta", "xychart-beta\nx-axis [A,B]\nbar [1,2]"],
+  ])
+    withArtifacts((dir) => {
+      const findings = validFindings(dir);
+      const hill = findings.reviewHike.hills[1];
+      hill.diagramIds = ["V1"];
+      delete hill.diagramOmissionReason;
+      findings.diagramRequirements = [
+        {
+          id: "V1",
+          question: "Which relationship is relevant?",
+          diagramType: type,
+          section: hill.title,
+          reason: "The selected notation preserves this relationship.",
+          evidence: "Synthetic fixture.",
+        },
+      ];
+      writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings));
+      writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+      writeFileSync(
+        path.join(dir, "implementation-review.md"),
+        validReport().replace(
+          "## Findings",
+          "```mermaid\n%% requirement: V1\n" +
+            source +
+            "\n```\nNotice: Inspect the selected relationship.\n\n## Findings",
+        ),
+      );
+      const result = validate(dir);
+      assert.equal(result.status, 0, result.stderr);
+      findings.diagramRequirements[0].diagramType = "sequenceDiagram";
+      writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings));
+      const mismatched = validate(dir);
+      assert.equal(mismatched.status, 1);
+      assert.match(mismatched.stderr, /must use sequenceDiagram/);
+      delete findings.diagramRequirements[0].diagramType;
+      writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings));
+      const missingType = validate(dir);
+      assert.equal(missingType.status, 1);
+      assert.match(missingType.stderr, /diagramType must name the selected Mermaid type/);
+      assert.doesNotMatch(missingType.stderr, /TypeError/);
+    });
+});
+
 test("a shared Context component diagram can be assigned to multiple Hills", () => {
   withArtifacts((dir) => {
     const findings = validFindings(dir);
@@ -1146,7 +1194,7 @@ test("diagram assignment rejects missing, duplicate, unowned, and unrenderable e
       ];
       const code =
         variant === "unsupported"
-          ? "sequenceDiagram\nA->>B: start\ncritical commit\nB-->>A: result\nend"
+          ? "sequenceDiagram\nA->>B: start\ninvalid syntax"
           : "sequenceDiagram\nA->>B: request";
       writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings));
       writeFileSync(path.join(dir, "explanation.md"), validExplanation());
@@ -1165,7 +1213,7 @@ test("diagram assignment rejects missing, duplicate, unowned, and unrenderable e
           missing: /unknown diagram V99/,
           duplicate: /diagramIds duplicates V1/,
           "wrong-owner": /owned by another Hill/,
-          unsupported: /V1 must render/,
+          unsupported: /V1 must have valid Mermaid syntax/,
         }[variant],
       );
     });

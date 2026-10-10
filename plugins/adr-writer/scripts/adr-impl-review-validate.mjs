@@ -3,7 +3,12 @@
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 import { CATEGORY_NAMES, VERDICT_NAMES } from "./adr-impl-review-categories.mjs";
-import { mermaidBlocks, parseMermaid, proseLines } from "./adr-impl-review-diagrams.mjs";
+import {
+  mermaidBlocks,
+  parseMermaid,
+  proseLines,
+  normalizeDiagramType,
+} from "./adr-impl-review-diagrams.mjs";
 
 const ALLOWED_VERDICTS = VERDICT_NAMES;
 const ALLOWED_CATEGORIES = CATEGORY_NAMES;
@@ -11,12 +16,6 @@ const ALLOWED_MODES = new Set(["standard", "full"]);
 const ALLOWED_PERSPECTIVES = new Set(["necessity", "sufficiency", "both"]);
 const ALLOWED_CONFIDENCE = new Set(["high", "medium", "low"]);
 const ALLOWED_COVERAGE_STATUSES = new Set(["PROVEN", "VIOLATED", "UNVERIFIED", "CONTRADICTED"]);
-const ALLOWED_DIAGRAM_TYPES = new Set([
-  "flowchart",
-  "sequenceDiagram",
-  "stateDiagram-v2",
-  "erDiagram",
-]);
 const ALLOWED_HILL_SLICE_TYPES = new Set(["user-flow", "logical-capability", "bounded-context"]);
 const ALLOWED_CODE_EVIDENCE_KINDS = new Set(["diff", "excerpt"]);
 const REVIEW_CONTEXT_FIELDS = ["intent", "preconditions", "contracts", "scopeAndRisk"];
@@ -389,10 +388,8 @@ function validateDiagramContract(data, errors) {
     }
     if (!sections.has(requirement.section))
       errors.push(`${label}.section must name Context or a reviewHike Hill`);
-    if (!ALLOWED_DIAGRAM_TYPES.has(requirement.diagramType))
-      errors.push(
-        `${label}.diagramType must be flowchart, sequenceDiagram, stateDiagram-v2, or erDiagram`,
-      );
+    if (typeof requirement.diagramType !== "string" || !requirement.diagramType.trim())
+      errors.push(`${label}.diagramType must name the selected Mermaid type`);
   }
   const referenced = new Set();
   for (const [index, hill] of hills.entries()) {
@@ -1162,8 +1159,10 @@ function validateReport(report, data, errors) {
     const block = matches[0];
     const diagram = parseMermaid(block.source);
     if (diagram.error)
-      errors.push(`implementation-review.md ${requirement.id} must render: ${diagram.error}`);
-    if (diagram.type !== requirement.diagramType) {
+      errors.push(
+        `implementation-review.md ${requirement.id} must have valid Mermaid syntax: ${diagram.error}`,
+      );
+    if (diagram.type !== normalizeDiagramType(requirement.diagramType)) {
       errors.push(`implementation-review.md ${requirement.id} must use ${requirement.diagramType}`);
     }
     if (block.section !== requirement.section) {

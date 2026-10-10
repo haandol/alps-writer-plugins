@@ -2,7 +2,7 @@
 import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { parseMermaid, renderMermaid } from "./mermaid.mjs";
+import { parseMermaid, renderMermaid, mermaidRuntime } from "./mermaid.mjs";
 import { parseCodeDiff, renderCodeDiff, diffCss } from "./code-diff.mjs";
 import {
   validateQuestions,
@@ -277,7 +277,7 @@ function renderValidatedHtml(doc, result) {
         return `<${tag} class="report-node" data-domain="${esc(node.domain)}" data-depth="${depth}" id="${esc(node.id)}"${depth > 0 && node.expanded !== false ? " open" : ""}>
 ${depth === 0 ? `<h2>${esc(node.title)}</h2>${node.preview ? `<p class="branch-preview">${esc(node.preview)}</p>` : ""}` : `<summary>${esc(node.title)}<span class="branch-preview">${esc(node.preview ?? node.scope)}</span></summary>`}
 ${depth === 0 || node.preview ? `<p class="scope">${esc(node.scope)}</p>` : ""}${paragraphs(node.paragraphs)}
-${node.diagram ? `<p class="diagram-scroll">${esc(ui.diagramScroll)}</p>${renderMermaid(node.diagram.source, { diagramSource: ui.source, diagramFallback: ui.fallback, idPrefix: node.id })}<p>${esc(node.diagram.explanation)}</p>` : ""}
+${node.diagram ? `<p class="diagram-scroll">${esc(ui.diagramScroll)}</p>${renderMermaid(node.diagram.source, { diagramSource: ui.source, diagramFallback: ui.fallback, diagramPending: doc.language === "ko" ? "다이어그램 생성 대기 중입니다. 아래 원문을 확인할 수 있습니다." : undefined, idPrefix: node.id })}<p>${esc(node.diagram.explanation)}</p>` : ""}
 ${node.children ? `<div class="report-children">${nodes(node.children, depth + 1)}</div>` : ""}
 ${
   nodeQuestions.length
@@ -309,7 +309,13 @@ ${nodes(doc.sections)}<footer><p class="review">${ui.review}: ${esc(doc.review.b
 let printClosed=null;window.addEventListener('beforeprint',()=>{if(printClosed===null)printClosed=[...document.querySelectorAll('details.report-node:not([open]),details[data-print-expanded="true"]:not([open])')];printClosed.forEach(n=>n.open=true);});window.addEventListener('afterprint',()=>{(printClosed??[]).forEach(n=>n.open=false);printClosed=null;});
 document.querySelectorAll('.diagram__viewport').forEach(n=>{n.tabIndex=0;n.setAttribute('role','region');n.setAttribute('aria-label',${JSON.stringify(ui.diagramScroll)});});
 ${quizScript(quizUi)}
-</script></body></html>`;
+</script>${
+    doc.sections.some(function hasDiagram(n) {
+      return n.diagram || n.children?.some(hasDiagram);
+    })
+      ? mermaidRuntime({ diagramFallback: ui.fallback })
+      : ""
+  }</body></html>`;
 }
 
 function md(text) {

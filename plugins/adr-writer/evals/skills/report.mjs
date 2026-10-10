@@ -110,7 +110,7 @@ const groups = [
     "단계별 이해",
     "시각 표현과 인쇄",
     "세부 그림",
-    ["report-drilldown-visual-"],
+    ["report-drilldown-visual-", "report-diagram-"],
   ],
   [
     "리뷰와 설명",

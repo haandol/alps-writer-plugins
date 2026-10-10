@@ -1,6 +1,24 @@
 /** Cross-domain controls keep path review from becoming a rule to split every error. */
 export const reportRegressionCases = [
   {
+    id: "report-diagram-notation-freedom",
+    title: "Choose diagram notation by the relationship, without a flowchart default",
+    source: `Synthetic domain model: Duck inherits Animal. Owner owns Pet by composition.
+A submitted task can move from Pending to Running, then either Done or Failed; Done and Failed are terminal.
+The report renderer uses the bundled official Mermaid parser and browser engine. No separate type allowlist exists.`,
+    task: "In Korean chat only, provide the Mermaid views you judge appropriate to explain the two subjects and briefly explain the choice. Preserve the stated relationship semantics. Do not invoke tools, write files, add a quiz, or claim rendering was executed.",
+    semanticObligations: [
+      {
+        id: "notation-semantics",
+        text: "Express inheritance and composition distinctly with appropriate UML class notation (such as classDiagram with inheritance and composition arrows), not generic flowchart boxes/arrows. Express the task lifecycle clearly, preserving both terminal outcomes. A state diagram is appropriate without having to justify why sequence or component views are insufficient; an equally faithful lifecycle view is acceptable. Do not force a fixed combination or diagram count.",
+      },
+      {
+        id: "freedom-and-evidence",
+        text: "Do not invent a four-type allowlist, claim class diagrams unsupported, prefer flowchart merely for renderer convenience, or claim actual rendering/verification without execution. Keep invented relations out, while honoring the chat-only delivery.",
+      },
+    ],
+  },
+  {
     id: "report-regression-timeout-artifact-review",
     title: "A saved artifact does not erase a timeout or prove no document was produced",
     source: `Supplied recorded evaluation ledger (fixture data):
@@ -122,7 +140,7 @@ Both documents' prose accurately quotes the supplied original. A completed nativ
       },
       {
         id: "parser-scope",
-        text: "Separate compatibility with the native Mermaid subset from validity in another renderer. Report B's actual native failure without claiming universal Mermaid invalidity. Suggest a supported representation or explicitly labeled fallback consistent with the document contract, not silently dropping relationships or calling an unrendered diagram rendered. Remain review-only.",
+        text: "Separate compatibility with the recorded native Mermaid version from validity in another renderer. Report B's actual native failure without claiming universal Mermaid invalidity. Suggest a supported representation or explicitly labeled fallback consistent with the document contract, not silently dropping relationships or calling an unrendered diagram rendered. Remain review-only.",
       },
     ],
   },

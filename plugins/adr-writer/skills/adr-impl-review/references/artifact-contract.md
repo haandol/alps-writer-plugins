@@ -99,15 +99,15 @@ means an empty list and a concrete omission reason, not another search pass or
 a user question.
 
 Use `references/visualization.md` for question selection, diagram choice,
-placement, and semantic/visual verification. Prefer sequence diagrams for
-request/response order and component views for responsibilities and boundaries.
-Use a state diagram only when the lifecycle itself is the important question.
+placement, and semantic/visual verification. Choose any supported Mermaid type
+that answers the question and preserves the requested notation. No type has a
+fixed preference or an extra justification requirement.
 
 Always serialize `diagramRequirements` as an array. Each entry has sequential
 `id` (`V1..Vn`), `question`, `diagramType`, `section`, `reason`, and `evidence`.
-`reason` explains why the chosen view answers the question. Supported types are
-`sequenceDiagram`, `flowchart` (component or branching view), `stateDiagram-v2`,
-and `erDiagram`. `section` is the exact owning Hill heading or `Context`.
+`reason` explains why the chosen view answers the question. `diagramType` names
+the selected Mermaid type; the official parser checks its source without a
+separate closed type list. `section` is the exact owning Hill heading or `Context`.
 Each report fence has one `%% requirement: Vn` marker and a following `Notice:`
 sentence; briefly explain how to read the diagram before the fence.
 
@@ -121,12 +121,13 @@ when diagrams are assigned. No global boolean or global omission can substitute
 for the Hill's assessment. A shared diagram may serve several Hills only when
 it answers their actual visual questions.
 
-The validator and renderer use the same supported grammar. Selected diagram
+Syntax validation uses the bundled official parser; HTML uses the bundled official
+browser renderer. Syntax success does not prove SVG creation. Selected diagram
 metadata must match the actual supplied figures: dangling, duplicate, unassigned,
 misplaced or unsupported selections require repair. If a figure is infeasible,
 remove its selection and explain the limitation through the prose and local
-omission metadata. Figure presence never gates completion. Source fallback must
-not be called a rendered figure. Semantic review checks whether important
+omission metadata. Figure presence never gates completion. Source fallback and pending figures must
+not be called rendered figures. Semantic review checks whether important
 relationships are explained; HTML inspection checks supplied output.
 
 Render findings immediately after the narrative, before detailed evidence.

@@ -310,14 +310,21 @@ The hook script (in adr-writer) is Node ESM (`.mjs`) and reads NDJSON events fro
 ### Shared report-writing skill
 
 `shared/report-writer/` owns the common English skill, editorial guidance, formatting
-rules, and Node-only report helper. `scripts/sync-report-skill.mjs` copies it into
-adr-writer only; its Mermaid helper is copied from the existing ADR diagram module.
+rules, and Node-only report helper. Mermaid syntax is checked with a vendored official parser;
+HTML embeds the official browser engine and reports pending, rendered or failed
+status honestly. The parser needs no runtime package installation, and the embedded engine loads
+without network access. `scripts/sync-report-skill.mjs` copies the skill into
+adr-writer only; the ADR diagram module uses that same implementation.
 Edit the canonical source, then synchronize. `report-skill:check` rejects drift.
 The responsive article layout lives in `scripts/report.css` within the skill;
 code evidence rendering uses vendored diff2html and stays static in the delivered
 HTML. `pnpm report-assets:sync` refreshes the upstream bundle, stylesheet and
-licenses from the pinned development dependency; `report-assets:check` checks
-their bytes. Build refreshes those assets before synchronizing the skill. Keep
+licenses from pinned development dependencies; `report-assets:check` checks
+their bytes. The Mermaid assets include the browser engine and a Node parser bundle
+with its DOM implementation and license notices. `pnpm test:report-rendering`
+checks actual SVG notation in an isolated headless browser and runs in `pnpm test`.
+It uses an installed Chrome/Chromium or `MERMAID_BROWSER_PATH`; marketplace runtime
+and the bare-Node test suite do not require a browser executable. Build refreshes those assets before synchronizing the skill. Keep
 upstream assets unformatted and committed so marketplace installs and bare-Node
 tests need no package installation. Code diffs use the existing evidence controls
 for screen disclosure and print inclusion; long lines wrap in print.
@@ -432,7 +439,7 @@ the separate escape hatch for callers that explicitly supply those checks.
 - Conventional Commits (details: CONTRIBUTING.md)
 - Scopes: `server`, `templates`, `documents`, `guides`, `adr`, `plugin`, `deps`
 - Branch naming: `<type>/<short-description>` (e.g., `feat/section-validation`)
-- **Diagrams**: always Mermaid (`flowchart`, `sequenceDiagram`, `stateDiagram-v2`, `erDiagram`). Do not author ASCII/box-drawing diagrams unless the user explicitly asks for one. Applies to README, AGENTS, ADR templates, command/skill prose, and anything this plugin generates inside user projects. Directory trees (`tree`-style with `├── └──`) are exempt — they are listings, not diagrams.
+- **Diagrams**: use Mermaid and choose any type supported by the bundled engine to match the reader's question and requested notation; examples are not an allowlist. Preserve relationship semantics, including UML inheritance/composition and state/ER notation. Do not author ASCII/box-drawing diagrams unless the user explicitly asks for one. Applies to README, AGENTS, ADR templates, command/skill prose, and anything this plugin generates inside user projects. Directory trees (`tree`-style with `├── └──`) are exempt — they are listings, not diagrams.
 
 ## Definition of Done
 

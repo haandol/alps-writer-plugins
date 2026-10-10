@@ -157,9 +157,11 @@ bash <plugin>/scripts/adr-invariants.sh                   # reverse-reference or
 
 The abstract shows the verdict and next action before detailed evidence. Expand
 the table of contents to navigate, or a comparison's evidence to inspect its
-source. Sequence SVGs show participants, messages, and branches; component SVGs show
-shared nodes, connections, and boundaries. Required diagrams must render.
-Unsupported syntax retains the complete source for repair. In the optional
+source. Diagrams use the bundled official Mermaid parser and browser renderer,
+including UML class relations, state transitions, ER cardinality and other
+supported views. There is no separate type allowlist. HTML renders offline and
+keeps source visible while pending or failed; syntax validation alone is not
+reported as SVG completion. Invalid syntax retains the complete source for repair. In the optional
 self-check, changing an answer hides the previous result until the next check.
 
 The report uses a readable headline, sans-serif text, generous spacing, and thin
