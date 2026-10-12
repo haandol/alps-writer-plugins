@@ -2,7 +2,8 @@ import path from "node:path";
 import { snapshot } from "../regression/workspace.mjs";
 import { validateReport, renderHtml } from "../../skills/report-writer/scripts/render-report.mjs";
 
-export const REPORT_OUTPUT = ".adr-review/report.json";
+import { REPORT_OUTPUT } from "./report-evaluation.mjs";
+export { REPORT_OUTPUT } from "./report-evaluation.mjs";
 
 /** Check captured files and paired tool results; prose and branch meaning belong to GEval. */
 export function checkReportArtifact({ files, events, source }) {

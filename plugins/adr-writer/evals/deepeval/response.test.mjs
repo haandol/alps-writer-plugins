@@ -177,6 +177,9 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     "report-scope-required-artifact",
     "report-scope-simple-definition",
     "report-scope-static-verification",
+    "report-terminology-introduction",
+    "report-terminology-review-control",
+    "report-terminology-source-hierarchy",
   ]);
   const result = await main(
     ["--prepare", "--suite", "classification", "--runs", "1", "--out", temp()],
@@ -192,7 +195,7 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     const input = JSON.parse(
       readFileSync(path.join(result.output, run.artifactDirectory, "input.json")),
     );
-    if (run.caseId.startsWith("report-artifact-")) {
+    if (run.caseId.startsWith("report-artifact-") || run.caseId.startsWith("report-terminology-")) {
       assert.match(input.prompt, /plugin\/skills\/report-writer\/SKILL.md/);
       assert.match(input.prompt, /references\/report-document.md/);
       assert.ok(input.files["source.md"]);
@@ -461,7 +464,10 @@ test("report artifacts use actual capture plus GEval and cannot hide format fail
           calls++;
           assert.match(prompt, /Internal stages are unspecified/);
           assert.match(prompt, /report.json/);
-          return judge(item, 1, "보고서를 저장했습니다.");
+          const result = judge(item, 1, "An available result can be downloaded.");
+          for (const obligation of result.structured.obligations)
+            obligation.evidence[0].source = "after:.adr-review/report.json";
+          return result;
         },
       },
     );

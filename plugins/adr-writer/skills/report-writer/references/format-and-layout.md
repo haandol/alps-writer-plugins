@@ -1,7 +1,9 @@
 # Format and layout
 
-The reader's question and domain scope determine organization. The requested
-format determines navigation and wrapping, not which facts may be omitted.
+The reader's question and domain scope determine organization; format determines
+navigation and wrapping, not which facts may be omitted. Use
+[HTML layout](html-layout.md) for HTML composition and static appearance checks.
+Other formats retain the common reading order and evidence rules below.
 
 ## Paragraphs and line breaks
 
@@ -18,29 +20,6 @@ Check numbers with units, negations with their conditions, and referenced
 identifiers as reading units. Preserve literal quotes, code, values, and source
 meaning. Review heading, list, table, and figure spacing, including mobile and
 print layouts actually supported by the delivery.
-
-## Default HTML appearance
-
-Use a quiet, article-like page, similar to Medium or Notion: a white background,
-dark neutral text, restrained dividers, and clear heading and paragraph spacing.
-Center a comfortable reading column within a wider fluid page. Figures and tables
-may use the wider area when their content needs it; do not stretch ordinary prose
-across a large monitor or leave it pinned to one side of an otherwise wide page.
-
-Keep the same reading width in nested explanations instead of accumulating card
-borders and horizontal padding. Express hierarchy through headings, spacing, and
-disclosure controls. On small screens, reduce page gutters and heading sizes;
-allow long words and links to wrap. Keep wide diagrams and tables in their own
-keyboard-accessible horizontal scroll regions without hiding or clipping content
-or forcing the whole page to scroll sideways. Do not enlarge a small diagram to
-an arbitrary minimum width. Preserve usable focus indicators and print layout.
-
-The shared renderer embeds `scripts/report.css` into the standalone HTML; no font
-download or external stylesheet is needed. Use that stylesheet as the default
-instead of adding a separate theme when composing a report.
-Code-review diffs use the bundled diff2html view described in
-[code evidence](code-evidence.md), with print styles that preserve line numbers
-and change markers while wrapping long lines across the available page width.
 
 ## Navigation and evidence
 
@@ -61,55 +40,10 @@ Native evidence files and required schemas remain intact. Link to complete
 source material while keeping enough explanation in the report to understand
 the claim without opening every attachment.
 
-## Figures, tables, and calculations
-
-Use sequence diagrams for important interactions and timing, and other Mermaid
-types when they explain the relationship better. Align terms and abstraction
-level with the prose. Include source and an explanation of what the reader
-should notice. Check rendered labels, arrows, and reading order.
-When one figure expands another, name the parent element it opens up and retain
-the correspondence as internal relationships appear. An analogy view must map
-its elements to the actual concepts before detailed figures rely on them.
-
-Keep a useful detail figure inside the section that explains it, including a
-collapsed or leaf section; do not collect all figures at the top or in a remote
-appendix. When opened, that section should show the relevant figure and its
-explanation together, with labels and relationships readable at the delivered
-size. Preserve the overview's lower detail and the existing design while allowing
-the deeper view to show more. Check wrapping and overflow in opened details as
-well as at the top level, within the permitted verification tools.
-
-A table should expose a comparison or mapping, not duplicate neighboring prose.
-Keep independent peer items within the hierarchy limit by domain grouping.
-Worked calculations show inputs, units, substitution, results, and interpretation;
-hypothetical values must be distinguishable from measurements through their
-framing or an inline qualifier, without a redundant explanatory sentence.
-
-### Print and handout layout
-
-Print all explanatory subsections, figures, and evidence marked as necessary
-regardless of their current collapsed state. Leave optional evidence folded unless
-the reader has opened it and its enclosing evidence group; do not automatically
-add raw logs and code appendices to the handout. Restore the screen state after printing;
-repeated print events must not lose it. The initial HTML itself must contain
-expanded subsections rather than relying on a script to reveal the document.
-Keep the background, answer, child explanations, questions, and included source
-evidence in their established reading order. No material limitation or required
-action may exist only in an optional folded source.
-
-Use the page width for content instead of accumulating nested card indentation.
-Avoid orphan headings and unnecessary page breaks; let long prose and source
-excerpts continue across pages instead of clipping them in scroll boxes. Keep
-figures and their explanation together when feasible. Split an oversized diagram
-into meaningful views if fitting it to the page would make labels unreadable.
-Use print-friendly backgrounds and text while preserving the established design.
-
-Omit navigation controls and optional Mermaid source views from the default
-printout; retain source access in HTML. Follow the existing quiz contract: print
-questions and all four choices, excluding answers, feedback, prior selections,
-and controls. Expanded report sections do not change staged quiz disclosure on
-screen. Apply the verification levels below to the continuous document and print output;
-distinguish static print-style checks from actual print verification.
+A table should expose a comparison or mapping without duplicating nearby prose.
+Use [diagrams](diagrams.md) for figure selection and checks, and
+[quantitative claims](quantitative-claims.md) when calculations support a judgment.
+Read these only when the report needs that content.
 
 ## Final delivery
 

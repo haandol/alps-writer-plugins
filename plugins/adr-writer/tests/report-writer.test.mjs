@@ -290,7 +290,8 @@ test("report entrypoints route to the shared English skill without changing nati
   assert.match(editorial, /latest whole/);
   assert.match(editorial, /High and Medium/);
   assert.match(editorial, /hypothetical/);
-  assert.match(editorial, /6 \/ 8 = 75%/);
+  const quantitative = read("shared/report-writer/references/quantitative-claims.md");
+  assert.match(quantitative, /6 \/ 8 = 75%/);
   assert.match(editorial, /system being reported/);
   for (const name of [
     "adr-new",
@@ -304,6 +305,40 @@ test("report entrypoints route to the shared English skill without changing nati
     assert.match(read(`plugins/adr-writer/skills/${name}/SKILL.md`), /\[report-writer\]/);
   for (const name of ["alps-init", "lite-alps-init", "feature-to-adr"])
     assert.doesNotMatch(read(`plugins/alps-writer/skills/${name}/SKILL.md`), /report-writer/);
+});
+
+test("standalone report guidance links and examples resolve within the shipped skill", () => {
+  const skillRoot = path.join(ROOT, "plugins/adr-writer/skills/report-writer");
+  const visited = new Set();
+  const visit = (file) => {
+    if (visited.has(file)) return;
+    visited.add(file);
+    const prose = readFileSync(file, "utf8").replace(/```[^]*?```/g, "");
+    for (const [, target] of prose.matchAll(/\[[^\]]+\]\(([^\s)]+)\)/g)) {
+      if (/^[a-z]+:/i.test(target)) continue;
+      const [relative, fragment] = target.split("#");
+      const destination = relative ? path.resolve(path.dirname(file), relative) : file;
+      assert.ok(destination.startsWith(skillRoot + path.sep), target);
+      assert.ok(existsSync(destination), `${file}: ${target}`);
+      if (destination.endsWith(".md")) {
+        if (fragment) {
+          const headings = [...readFileSync(destination, "utf8").matchAll(/^#+ (.+)$/gm)].map(
+            ([, heading]) =>
+              heading
+                .toLowerCase()
+                .replace(/[^\w\s-]/g, "")
+                .replace(/\s/g, "-"),
+          );
+          assert.ok(headings.includes(fragment), `${file}: missing anchor ${target}`);
+        }
+        visit(destination);
+      } else if (destination.endsWith(".json")) {
+        const doc = JSON.parse(readFileSync(destination, "utf8"));
+        assert.equal(validateReport(doc).semanticReview, doc.review.status);
+      }
+    }
+  };
+  visit(path.join(skillRoot, "SKILL.md"));
 });
 
 test("reports with no diagrams retain their explanation and evidence in both formats", () => {

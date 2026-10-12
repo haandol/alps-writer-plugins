@@ -44,9 +44,8 @@ Assign questions by actual subject, not arbitrary numbered batches.
 Keep question identifiers, four choices, the single correct choice, neutral
 feedback for every option, an explanation, and the grading evidence in the
 source data. Mark one or two core questions for a later re-check; if there is
-only one question, mark that one. Use the schema and rendering instructions in
-[report document](report-document.md). Preserve a caller's native audit schema
-through an adapter when needed.
+only one question, mark that one. Use the schema below when using the shared
+renderer. Preserve a caller's native audit schema through an adapter when needed.
 
 ## Offer staged self-check
 
@@ -83,3 +82,24 @@ asks to run the quiz, present one prepared question at a time. Accept one of its
 four choices. For an incorrect answer, explain the missing concept with the
 stored evidence and retry the same question. Keep progress in the conversation,
 not in an ADR, mapping, repository, or other authoritative registry.
+
+## Structured quiz data
+
+Add `comprehensionCheck: { "questions": [...] }` to the shared report document.
+Each question contains:
+
+- `id`: `Q1` through `Q5` in order; `sectionId`: the existing node after whose
+  explanation the question belongs; `question`: its visible prompt.
+- `options`: exactly four objects with `id` (`A` through `D` in order), `text`,
+  and neutral `feedback`; `correctOptionId`: exactly one of those option IDs.
+- `explanation`: why that choice follows; `evidence`: the passage or original
+  source supporting the answer.
+- `revisit`: boolean; one or two questions are true, or the sole question is true.
+
+Omit `comprehensionCheck` when no quiz is selected; this is valid for new and legacy
+inputs without an omission record. The renderer rejects unknown section references,
+ambiguous choices, excess questions and missing answer evidence. It makes no model
+call and does not judge topical importance or difficulty; the author reviews those.
+
+For a complete illustrative input, consult [the report with a quiz](examples/report-with-quiz.json).
+Its facts and source paths are examples to replace, not evidence of a real review.

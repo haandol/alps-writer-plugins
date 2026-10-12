@@ -1,0 +1,75 @@
+{
+  "title": "Repeated requests keep one payment result",
+  "language": "en",
+  "background": [
+    "A repeated payment request may have a recorded completion or an unknown provider outcome. This review helps the developer distinguish which retry behavior the evidence supports and which recovery path still needs verification before relying on the no-duplicate-charge guarantee."
+  ],
+  "summary": [
+    "Payment retries must not create a second charge. The completed-payment retry check passed: the same key returned the recorded result. Provider timeout recovery still needs verification, so this result does not establish safety for every retry path."
+  ],
+  "requiredEvidenceIds": ["R1"],
+  "review": {
+    "status": "reviewed",
+    "basis": "The author checked the source contract, the recorded test and the final report.",
+    "limitations": "Provider timeout recovery was not executed."
+  },
+  "comprehensionCheck": {
+    "questions": [
+      {
+        "id": "Q1",
+        "sectionId": "settlement",
+        "question": "A completed payment is retried with the same key. What should happen?",
+        "options": [
+          {
+            "id": "A",
+            "text": "Create a second charge.",
+            "feedback": "The key already identifies a completed payment."
+          },
+          {
+            "id": "B",
+            "text": "Return the recorded result.",
+            "feedback": "The completion is reused without another charge."
+          },
+          {
+            "id": "C",
+            "text": "Delete the previous result.",
+            "feedback": "Deleting completion would lose the retry boundary."
+          },
+          {
+            "id": "D",
+            "text": "Always report failure.",
+            "feedback": "The successful result is still available."
+          }
+        ],
+        "correctOptionId": "B",
+        "explanation": "A completed key returns its recorded result without charging again.",
+        "evidence": "The settlement paragraph and duplicate-request test.",
+        "revisit": true
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "settlement",
+      "title": "Payment settlement",
+      "domain": "Payments",
+      "scope": "One result for repeated requests with the same key",
+      "preview": "Why completed retries reuse one result and what remains unverified.",
+      "paragraphs": [
+        "For an already completed payment, a retry with the same key returns the recorded result and creates no second charge. This check covers completed payments; it leaves the provider-timeout path unresolved."
+      ],
+      "diagram": {
+        "source": "sequenceDiagram\nparticipant U as Caller\nparticipant P as Payment service\nparticipant S as Stored result\nU->>P: Retry with the same key\nP->>S: Read existing result\nS-->>P: Recorded completion\nP-->>U: Return the same result",
+        "explanation": "The retry returns through the stored-result path."
+      },
+      "evidence": [
+        {
+          "id": "R1",
+          "label": "Duplicate-request test",
+          "source": "test-result.txt",
+          "excerpt": "One charge and one stored result were observed."
+        }
+      ]
+    }
+  ]
+}

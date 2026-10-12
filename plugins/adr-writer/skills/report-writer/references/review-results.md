@@ -6,7 +6,7 @@ verdict, edit permissions and native artifacts. Read its sources before presenti
 findings; a review-only request does not authorize edits, deployment or publication.
 
 Follow [explanation design](explanation-design.md) for the opening, domain hierarchy
-and diagrams, and [final delivery](format-and-layout.md#final-delivery) for checks
+and [final delivery](format-and-layout.md#final-delivery) for checks
 and delivery. These references own the common presentation rules.
 
 ## Make the review actionable
@@ -30,6 +30,6 @@ identify the decision, exact contract, rationale or boundary in question. Docume
 reviews identify the passage and its effect on the reader.
 
 Diagram multi-participant or timing-dependent paths when the evidence supports
-them; a wording issue or one-step correction can stay in prose. Do not turn a
+them, using [diagrams](diagrams.md); a wording issue or one-step correction can stay in prose. Do not turn a
 hypothetical failure into an observed event. Quiz generation follows the common
 skill's strong recommendation, not an additional review requirement.

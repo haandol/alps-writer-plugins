@@ -7,6 +7,7 @@ import { responseObligations } from "./response-contract.mjs";
 import { reportCases } from "./report-cases.mjs";
 import { reportScopeCases } from "./report-scope-cases.mjs";
 import { reportArtifactCases } from "./report-artifact-cases.mjs";
+import { reportTerminologyCases } from "./report-terminology-cases.mjs";
 import { importExecutionCases } from "./import-execution.mjs";
 import { importPrerequisiteCases } from "./import-prerequisites.mjs";
 import { encbirdRollupCases } from "./encbird-rollup-cases.mjs";
@@ -149,6 +150,7 @@ export async function catalog() {
     ...reportCases,
     ...reportScopeCases,
     ...reportArtifactCases,
+    ...reportTerminologyCases,
     ...routingCases,
     ...[
       ...executionCases,

@@ -28,74 +28,50 @@ A review-only request does not authorize changes to the subject.
 ## Compose a selected report
 
 Write model-facing instructions in English and the report in the user's language.
-Make the report self-contained for its stated audience and question. Do not
-assume the reader has read cited documents, companion reports, or the authoring
-conversation. Bring the source-backed context needed to understand the reasoning,
-conclusions, and next actions into this report. Citations preserve attribution
-and access to further detail; following them must not be a prerequisite for
-understanding the report. Apply this in every delivery format.
+Keep the report self-contained, preserve exact evidence and the caller's scope,
+and use stable terms whose definitions connect to their examples and later uses.
+Reuse loaded guidance. Read the common references once, then load additional
+modules only for the content or format being handled:
 
-For a whole-process or top-down report, connect the whole view to explanations
-of the same responsibilities, then their internal decisions and concrete cases.
-Each descent preserves the parent's input, output and boundary while revealing
-its internal behavior. Stop where the reader can apply the rule or the evidence ends.
-Use [process decomposition](references/explanation-design.md#open-the-same-process-at-a-lower-level)
-and check the completed diagrams' paths against the source before delivery.
-
-Include useful figures whenever the evidence and delivery format support them,
-from the overview through detailed explanations. For a whole-system or multi-step
-process, prefer a Mermaid overview after the short background and answer, before
-component detail. Figures are never a delivery gate, including for top-down,
-C4-like or drill-down walkthroughs. Honor diagram exclusions; when a figure is
-not feasible, explain the supported relationships in prose and retain material
-limitations. Follow explanation design for meaningful descent. Choose Mermaid types by the
-reader's question and requested notation, without a fixed type preference or
-allowlist; preserve relationship semantics rather than reducing every view to boxes.
-Reuse guidance already loaded in this context. Load references for their actual
-purpose rather than collecting every file:
-
-- Read [explanation design](references/explanation-design.md) for the opening,
-  domain hierarchy, disclosure and diagrams, and
-  [editorial review](references/editorial-review.md) for prose and meaning checks.
-- Read [format and layout](references/format-and-layout.md) for the chosen format's
-  appearance, verification and delivery. For unfamiliar or complex explanations,
-  also use [abstraction and analogy](references/abstraction-and-analogy.md).
-- For review results, read [review presentation](references/review-results.md).
-  Before creating review or audit outputs, follow
-  [artifact storage](references/review-artifacts.md).
-- When actual code evidence matters, read [code evidence](references/code-evidence.md).
-  For structured HTML or Markdown, use [the document contract](references/report-document.md)
-  and `scripts/render-report.mjs` when hierarchy and evidence validation help.
-  The Node-only renderer needs no package installation.
+- **Common writing and review:** [explanation design](references/explanation-design.md)
+  owns the opening, intent and domain hierarchy; [editorial review](references/editorial-review.md)
+  owns meaning, terminology and continuity checks; [format and layout](references/format-and-layout.md)
+  owns paragraph layout, verification and delivery.
+- **Explanation-specific guidance:** for unfamiliar or complex concepts, use
+  [abstraction and analogy](references/abstraction-and-analogy.md). When choosing,
+  drawing or reviewing figures, use [diagrams](references/diagrams.md); when a
+  quantitative claim supports a judgment, use [quantitative claims](references/quantitative-claims.md).
+  Include useful figures when evidence and format support them; prefer an overview
+  for whole-system or multi-step explanations. Figures never gate delivery.
+- **Review content:** use [review presentation](references/review-results.md),
+  prepare files through [artifact storage](references/review-artifacts.md), and
+  read [code evidence](references/code-evidence.md) when actual code matters.
+- **Structured output:** use [the document contract](references/report-document.md)
+  with `scripts/render-report.mjs` when hierarchy and evidence validation help.
+  This Node-only renderer needs no package installation. For HTML composition
+  and static layout checks, use [HTML layout](references/html-layout.md).
 
 Strongly recommend a short quiz when it helps the reader apply the core content.
-Quiz generation is not mandatory: honor explicit inclusion or exclusion, otherwise
-use the report's purpose and learning value to decide without approval or a required
-omission record. If included, follow [comprehension support](references/comprehension.md).
-Never start a conversational quiz without an explicit request.
+Honor explicit inclusion or exclusion; otherwise choose by reader value without
+approval or an omission record. If included, read [comprehension support](references/comprehension.md)
+for its content, schema and disclosure. Never start a conversational quiz without
+an explicit request. Worked examples linked from modules are optional references,
+not additional required reading for every report.
 
 ## Review and deliver
 
-Review the latest whole output with the loaded editorial and format guidance,
-including deeper explanations and evidence. Preserve findings and exact sources;
-do not invent verification, weaken a verdict or add paid calls or publication
-solely to complete a report.
-
-Check diagrams as claims about behavior: every path to an action or promised
-result must preserve its source conditions, permissions and failure guarantees.
-A prose caveat cannot repair an unsupported arrow. Correct confirmed in-scope
-problems and check the updated output again;
-a renderer pass or a general LLM PASS does not overrule a demonstrated mismatch.
-For review-only work, describe the correction without changing the reviewed
-subject. Honor explicit limits on redrawing or rephrasing it.
+Review the latest whole output with the applicable editorial and format guidance.
+Correct confirmed in-scope problems and recheck; for review-only work, describe
+corrections without editing the subject. Honor limits on redrawing or rephrasing.
+Never invent verification, weaken findings, or add paid calls or publication to
+complete a report. A renderer pass or general LLM PASS cannot overrule an evidenced
+mismatch or establish reader understanding.
 
 Follow [verification and final delivery](references/format-and-layout.md#final-delivery).
-The default is semantic review plus static artifact checks; requested browser,
-interaction or print checks are additional work with their own reported results.
-Default HTML delivery creates a nonempty standalone file, opens its absolute path
-once in the operating system's default browser, and returns that path with a short
-summary. Honor delivery overrides and report actual opening failures.
-
-If a specialized renderer forces a flat legacy layout, retain its output as an
-audit source and compose the final human view through this skill. Preserve native
-schemas, complete evidence, required interactions and the caller's verdict.
+Default delivery uses semantic and static checks, creates a nonempty standalone
+HTML file, opens its absolute path once in the operating system's default browser,
+and returns that path. Honor delivery overrides and report actual opening failures.
+Requested browser, interaction and print checks have separately reported results.
+If a specialized renderer forces a flat legacy layout, preserve it as audit input
+and compose the human view through this skill without losing native schemas,
+complete evidence, required interactions or the caller's verdict.

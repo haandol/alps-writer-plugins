@@ -3,6 +3,12 @@ export { deepEvalInput } from "./input.mjs";
 import { invokeClaude } from "../regression/claude.mjs";
 import { BEDROCK_DEFAULTS, invokeBedrock } from "./bedrock.mjs";
 import { evidenceSources, judgeSchema, validateJudgment } from "../regression/judge.mjs";
+import {
+  reportJudgingEvidence,
+  validateReportJudgment,
+  REPORT_JUDGING_STEPS,
+  finalReportSources,
+} from "../skills/report-evaluation.mjs";
 
 // GEval owns the scoring prompt and score calculation. These steps describe
 // the same observable contract the fixtures already carry; no output exemplar
@@ -56,12 +62,14 @@ export async function makeJudge({
   onCall = () => {},
   obligations,
   sources,
+  reportEvaluation,
 }) {
   if (!["bedrock", "claude"].includes(provider)) throw new Error("Unknown judge provider");
   const selectedModel = model ?? (provider === "bedrock" ? BEDROCK_DEFAULTS.model : undefined);
   const transport = invoke ?? (provider === "bedrock" ? invokeBedrock : invokeClaude);
   const { DeepEvalBaseLLM, z } = await loadDeepEval();
   return new (class extends DeepEvalBaseLLM {
+    judgment = null;
     constructor() {
       super(selectedModel ?? "Claude Code configured provider");
     }
@@ -75,6 +83,7 @@ export async function makeJudge({
       return false;
     }
     async generate(prompt, schema, repairUsed = false) {
+      this.judgment = null;
       // Both adapters receive draft-7. Bedrock receives it as a JSON instruction;
       // Zod validates the answer locally, without claiming native constrained decoding.
       const transportSchema = schema ? z.toJSONSchema(schema, { target: "draft-7" }) : undefined;
@@ -109,6 +118,7 @@ export async function makeJudge({
         let judgment;
         try {
           judgment = validateJudgment(raw, obligations, sources);
+          validateReportJudgment({ obligations, reportEvaluation }, judgment);
         } catch (error) {
           if (error.code !== "UNSUPPORTED_EVIDENCE" || repairUsed) throw error;
           // Repair citation format once against identical evidence/criteria.
@@ -135,6 +145,7 @@ export async function makeJudge({
         }
         if (output.score !== (judgment.verdict === "PASS" ? 1 : 0))
           throw new Error("GEval score contradicts its obligation judgments");
+        this.judgment = judgment;
       }
       return { output, cost: response.costUSD ?? null };
     }
@@ -180,11 +191,15 @@ export async function evaluateEvidence({
     invoke,
     onCall,
     obligations: item.obligations,
-    sources: evidenceSources(evidence),
+    sources: {
+      ...evidenceSources(reportJudgingEvidence(item, evidence)),
+      ...finalReportSources(item, evidence),
+    },
+    reportEvaluation: item.reportEvaluation,
   });
   const metric = new GEval({
     name: item.type === "classification" ? "Skill response contract" : "ADR operation contract",
-    evaluationSteps: [...EVALUATION_STEPS],
+    evaluationSteps: [...EVALUATION_STEPS, ...(item.reportEvaluation ? REPORT_JUDGING_STEPS : [])],
     evaluationParams: [
       SingleTurnParams.INPUT,
       SingleTurnParams.ACTUAL_OUTPUT,
@@ -205,6 +220,9 @@ export async function evaluateEvidence({
   const verdict = classifyDeepEval(result.testResults[0]);
   return {
     verdict,
+    ...(verdict !== "ERROR" && judge.judgment
+      ? { obligationJudgments: judge.judgment.obligations }
+      : {}),
     ...(verdict === "ERROR"
       ? {
           error:
