@@ -228,6 +228,13 @@ a review that recommends a feasible missing overview without failing delivery
 solely for its absence. They judge useful figures and meaningful descent where
 feasible, and accurate prose with limitations where figures cannot be supplied.
 Renderer checks alone do not establish those semantics.
+The `report-terminology-` saved-report probes cover definition/example continuity,
+source-specific property hierarchies and aliases, and review of a flawed excerpt
+beside a coherent control. They use confined artifact tools and the same independent
+format/evidence checks as `report-artifact-`; DeepEval judges meaning rather than
+word matching. Successful reads in the captured trace show which conditional
+references the target actually loaded. They do not by themselves establish quality
+or a latency improvement.
 The `report-regression-` probes check shared recovery paths with both a valid
 merge and an unauthorized branch, transfer notification-only retries to another
 domain, and review trial accounting and evidence/renderer claims. Criteria stay

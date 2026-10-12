@@ -289,6 +289,15 @@ implementation remains in the ADR scripts; the sync step distributes it with the
 standalone skill. Global installation is an explicit
 `node scripts/sync-report-skill.mjs --global`, never a build side effect.
 
+Keep common explanation rules in `explanation-design.md`, meaning and terminology
+checks in `editorial-review.md`, and delivery checks in `format-and-layout.md`.
+Load `diagrams.md`, `quantitative-claims.md` and `html-layout.md` only for the
+relevant content or format. Quiz and diff schemas live with `comprehension.md`
+and `code-evidence.md`; `report-document.md` owns the common renderer fields.
+Long worked examples live under `references/examples/` and are optional reading.
+When moving guidance, update callers and tool-free evaluation prompt references
+so the same checks remain available; keep the task evidence and graders fixed.
+
 Test report hierarchy, evidence coverage, safe rendering and the adr-writer report hook.
 Verify that alps-writer has no report skill, hook, or report-writer dependency.
 Inspect the actual report for paragraph flow, line wrapping, diagram semantics

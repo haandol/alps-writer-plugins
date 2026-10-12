@@ -44,8 +44,8 @@ diffs are supporting evidence, not additional explanation branches.
 For the shared structured renderer, use an evidence item with `kind: "diff"`,
 the exact selected unified patch in `excerpt`, and its artifact path in `source`.
 Use `label` to identify the file or behavior; explain the baseline, significance
-and related checks in the owning node's paragraphs. See the precise fields and
-example in [the report document contract](report-document.md#code-diffs).
+and related checks in the owning node's paragraphs. Evidence `kind` is `excerpt`
+(the default) or `diff`; diff excerpts include the file and hunk headers.
 
 The shared renderer uses bundled diff2html to generate the HTML before delivery.
 Use its single-column view with old/new line numbers for reading and printing;
@@ -59,3 +59,20 @@ Mark key hunks needed for the printed explanation as `expanded: true`; optional
 raw source does not need to become a printed appendix. Check page breaks, line
 number alignment, long paths and code wrapping in the supported output, and
 distinguish static print styles from an actual rendered print check.
+
+## Diff data example
+
+This is an illustrative format example, not an observed change. Replace it with
+actual hunks and an accessible source from the review's selected comparison.
+The renderer needs no browser JavaScript or package installation to display it.
+
+```json
+{
+  "id": "retry-diff",
+  "label": "Retry guard · src/retry.ts",
+  "source": "changes.patch",
+  "kind": "diff",
+  "excerpt": "diff --git a/src/retry.ts b/src/retry.ts\n--- a/src/retry.ts\n+++ b/src/retry.ts\n@@ -1 +1 @@\n-if (retry) send();\n+if (retry && !completed) send();\n",
+  "expanded": true
+}
+```

@@ -168,6 +168,7 @@ const groups = [
     "문서와 출처",
     ["report-artifact-", "report-regression-artifact-"],
   ],
+  ["리뷰와 설명", "보고서 품질", "근거 보존", "용어와 개념", ["report-terminology-"]],
   ["리뷰와 설명", "보고서 품질", "근거 보존", "수치와 검증 범위", ["report-"]],
 ];
 

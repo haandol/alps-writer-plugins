@@ -177,6 +177,9 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     "report-scope-required-artifact",
     "report-scope-simple-definition",
     "report-scope-static-verification",
+    "report-terminology-introduction",
+    "report-terminology-review-control",
+    "report-terminology-source-hierarchy",
   ]);
   const result = await main(
     ["--prepare", "--suite", "classification", "--runs", "1", "--out", temp()],
@@ -192,7 +195,7 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     const input = JSON.parse(
       readFileSync(path.join(result.output, run.artifactDirectory, "input.json")),
     );
-    if (run.caseId.startsWith("report-artifact-")) {
+    if (run.caseId.startsWith("report-artifact-") || run.caseId.startsWith("report-terminology-")) {
       assert.match(input.prompt, /plugin\/skills\/report-writer\/SKILL.md/);
       assert.match(input.prompt, /references\/report-document.md/);
       assert.ok(input.files["source.md"]);

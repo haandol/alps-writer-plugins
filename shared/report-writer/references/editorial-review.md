@@ -1,129 +1,92 @@
 # Editorial review
 
-These are meaning checks, not an AI-authorship detector. Use them for reports in
-any language or format. Report-only requests remain report-only. Apply
-format-specific inspection under [verification levels](format-and-layout.md#verification-levels);
-reading-order review does not itself require a browser or print session.
+These are meaning checks for any report language or format, not an AI-authorship
+detector. Review-only stays review-only. Apply [verification levels](format-and-layout.md#verification-levels)
+without turning reading-order review into an unrequested browser or print session.
 
 ## Establish the reader's context
 
-### Explain intent as the boundary for judgment
-
-A report should make it possible to judge whether an agent's discretionary
-choices served the user's original purpose. Explicit requirements leave details
-open; clear intent reduces the risk of filling those gaps with choices aimed at
-a different outcome. Preserve the affected user, problem, desired result, and
-any supplied priority or scope that materially distinguishes a suitable choice.
-Do not invent intent, incidents, business impact, or exclusions to justify the
-implementation after the fact.
-
-For each material autonomous choice, explain the relevant intent, the choice
-and its basis, and the observed consequence. Use a concrete example when it
-helps: a hypothetical review assistant may group findings to help a person
-inspect risk, but automatically approving changes to save time exceeds that
-purpose and authority. A passing test or a common convention does not by itself
-show that a choice serves the user's intended outcome.
-
-Distinguish a safe detail chosen within the contract and scope from a protected
-product policy or scope expansion requiring a decision. Several suitable local
-implementations are not a reason to ask for approval. If intent is unclear only
-on a material choice, identify that gap and the smallest needed decision; do
-not label every unspecified detail a missing requirement.
-
-Use the existing domain hierarchy to connect purpose, behavior, and evidence.
-Review meaning: could a reader use this intent to distinguish a plausible but
-purpose-defeating choice, and do the reported acceptance checks actually cover
-the intended outcome? Preserve unverified limits and do not mistake expected
-benefits for measured results.
-
 ### Check the opening's intended use
 
-Use the opening contract in [explanation design](explanation-design.md).
-Check whether the confirmed problem and intended reading use explain why this
-report matters, and whether the body supports that promise. Narrow unsupported
-promises; reader understanding is an aim, not a measured learning result.
+Does the opening identify the concrete problem and what reading should enable,
+then give the answer, significance and conclusion-changing conditions? Does the
+body support that promise? Use [explanation design](explanation-design.md) for
+authoring rules; narrow unsupported promises rather than inventing intent.
+
+For material autonomous choices, can the reader connect intent, choice, basis
+and observed consequence, and distinguish a plausible but purpose-defeating choice?
+Check whether acceptance evidence covers the intended outcome. Do not equate a
+passing test or expected benefit with proof of purpose or measured learning.
 
 ### Check continuity at each reading depth
 
-Source verification and reader comprehension are separate. Use known reader
-context to choose the explanation, but establish every premise the report needs
-in the report itself. For abstraction changes and familiar analogies, apply
-[abstraction and analogy](abstraction-and-analogy.md).
+Read the report without citations, companion files or the authoring conversation.
+Using only the audience's general knowledge and what the report has explained,
+can the reader follow its premises, conditions, evidence and conclusions? Include
+tables, captions, figures and deeper sections. Identify missing source-backed
+premises at their point of use; retain real evidence gaps and limit affected claims.
 
-Read the latest report without opening citations, companion files, or prior
-conversation. Use only what its audience can reasonably know and what the report
-has explained so far. At each source-dependent claim, check whether the report
-supplies the needed definition, rule, condition, and evidence and explains their
-connection to the conclusion or action. Include tables, captions, diagrams, and
-deeper sections in this check. A valid link or complete source list does not
-establish self-contained understanding.
+- **Transitions:** locate the earlier passage establishing what the next paragraph
+  assumes. A repeated noun alone is insufficient. Identify what the new passage
+  adds: evidence, example, condition, result, distinction, judgment or orientation.
+  Remove an empty setup if the next sentence introduces the situation better.
+  Re-read entry and exit transitions after moving or rewriting a passage.
+- **Depth:** read the fully expanded explanation, then consider the upper view
+  alone and one deeper branch at a time. Can the reader recover the answer and
+  limits above, then recognize the same object or responsibility and understand
+  its newly exposed behavior below? Keep peer cases and sources distinct from
+  deeper resolution. Reject repeated parent summaries, hidden prerequisites and
+  evidence that makes the reader reconstruct the mechanism.
+- **Qualification:** does each detail substantiate or qualify its parent rather
+  than introduce an unrelated claim? Do simplifications retain the caveats,
+  failures and exceptions that change the answer? Substantive parents explain
+  their children's relationship; simple source lists need no filler paragraph.
+- **Reader fit:** did known context actually shape an unfamiliar explanation?
+  If it uses an analogy, do the mapped concepts and limits support an edge case
+  under the literal rules? Do not invent reader familiarity or a guarantee.
+  Use [abstraction and analogy](abstraction-and-analogy.md) when repairing this
+  kind of explanation, not as mandatory reading for familiar material.
 
-When a passage depends on information found only in another document, identify
-that missing premise and integrate the relevant source-backed content where it
-is needed, following [explanation design](explanation-design.md#make-the-report-self-contained).
-Retain the citation and re-read the transition. If the source cannot be verified,
-state the gap and limit the affected claim; do not invent a bridge or call the
-gap resolved. Review-only work reports the gap and proposed repair without editing.
+For a material flow finding, give its location, assumed context, missing or
+misplaced premise and reader impact. For a substantial report, ground a clean
+connection assessment in one actual transition too; no paragraph-by-paragraph
+audit table is required. In evaluations, compare grounded examples and
+counterexamples using the same facts across subjects. Valid nesting, source
+coverage or a model PASS alone does not establish reader learning gains.
 
-- Read the title and opening alone: can a reader distinguish this task from
-  concurrent work, identify the problem and what reading should enable, then
-  find the answer, its significance, and any condition that changes the conclusion?
-  Then scan headings and each domain's first paragraph: can the reader choose
-  where to inspect the explanation or evidence without reconstructing the
-  author's investigation? A title such as "Analysis" or a list of component
-  names does not supply that orientation by itself.
-- At a meaningful transition, identify what the reader has learned so far and
-  what the next paragraph assumes. Locate the earlier passage that establishes
-  the task, event, constraint, or referent; a repeated noun alone is insufficient.
-- State what the new passage adds: evidence, an example, a condition, a result,
-  a distinction, a judgment, or useful orientation.
-- Try removing an empty opening sentence. If the next sentence establishes the
-  situation better without losing meaning, remove the setup rather than adding
-  a smoother connector.
-- Re-read entry and exit transitions after moving or rewriting a passage.
-  Preserve useful answer-first domain openings after the initial request context;
-  do not repeat background everywhere.
-- Check every reading depth for a misleading simplification. A shorter overview
-  may defer exact evidence, but must retain a caveat, failure, or exception that
-  changes its answer. Details must substantiate or qualify the parent claim;
-  a new unrelated claim needs its own meaningful scope.
+### Keep terms and concepts aligned
 
-Inspect the default output with all subsections expanded for continuous reading
-and print layout. Then isolate the upper explanation and inspect one deeper
-branch at a time; temporary collapsing is a review aid, not the delivery default.
-At the upper level, the reader should recover the answer, material limitations, and
-why a branch is worth opening without needing the deferred internal vocabulary.
-After opening it, identify what parent object or relationship is expanded and
-what mechanism or precise condition becomes understandable. A peer case or
-source may support the explanation without lowering its abstraction level.
-Check analogy-to-concept mappings and their limits before relying on them.
-Inspect figures within the opened branch: do they expose its new relationships,
-or would the reader still have to reconstruct them from prose? Add a useful
-detail view when needed; an overview figure elsewhere does not cover a hidden
-mechanism. Do not replace this judgment with a requirement for every leaf to
-have a diagram.
-For an overview-first walkthrough, check whether the evidence and format support
-a useful overview. When present, inspect its placement before component detail
-and trace its responsibilities to the explanations that expand them. Recommend
-adding a feasible missing figure, but do not fail a report solely for its absence.
-When a figure is not feasible or the user excludes it, review the prose for the
-same relationships, facts and material limitations. A renderer pass or an authored
-`reviewed` status does not establish these meaning checks.
-Reject a child that only repeats its parent, assumes a prerequisite introduced elsewhere without orientation,
-or makes the reader reconstruct the explanation from raw evidence. Substantive
-parents explain the relationship among their children; a simple source list
-does not need a filler paragraph. Keep these as meaning checks, not a fixed
-outline, mandatory number of levels, or paragraph quota.
+Terminology consistency includes the reader's understanding of what each term
+refers to, not just repeated spelling. Apply these checks while drafting and
+when rereading sentences, paragraphs, sections, tables, figures, and translations:
 
-When evaluating this behavior, compare grounded examples and counterexamples
-using the same facts across different report subjects. Check the initial view
-and the next branch separately; valid nesting, source coverage, or a passing
-model judgment alone does not establish reader learning gains.
+- **Keep names and meanings stable.** Use the same preferred term for the same
+  concept within its stated scope. Introduce an alias, translation, abbreviation,
+  or plain-language label with its correspondence before alternating labels.
+  Do not vary technical names for stylistic variety or merge distinct concepts
+  because their descriptions share a word such as "connection." Preserve exact
+  source quotations and identifiers; explain their correspondence in nearby prose.
+- **Align definitions and examples.** If an explanation introduces several
+  elements, make clear which later explanation or example illustrates each one.
+  Do not silently omit a promised element or present a new category as though it
+  had already been introduced. Repair the definition or add the missing connection
+  where useful. An overview can defer detail: name the earlier concept being
+  expanded when introducing its parts, rather than listing every term up front.
+- **Explain what a new term adds.** At first needed use, make clear whether it
+  renames an established concept, describes a part or kind of it, or introduces
+  a separate concept. For relationships and mappings, identify what is connected
+  to what and for what purpose. Follow the source's distinctions and hierarchy;
+  do not invent equivalence or force one domain's classification onto another.
+  When the source does not establish the distinction, preserve that uncertainty.
+- **Trace meaning in reading order.** Check that a reader can follow each material
+  term from its introduction through examples and later uses without guessing a
+  rename, missing category, or changed scope. Fix misleading substitutions and
+  missing links where they occur. Repeated words, a glossary, or a term search
+  cannot by themselves establish continuity; no separate terminology inventory
+  is required. Report a finding with the affected passage and reader impact.
 
-When reporting a material flow finding, give its location, assumed context,
-missing or misplaced premise, and reader impact. For a substantial report,
-briefly ground the connection assessment in one actual transition even when
-no actionable issue remains; do not create a paragraph-by-paragraph audit table.
+For an illustration of missing categories and misleading renaming, consult the
+[ontology terminology example](examples/terminology.md) when needed.
 
 ### Omit obvious commentary and excessive elaboration
 
@@ -139,53 +102,12 @@ around a figure or across adjacent paragraphs. Keep useful transitions, required
 report fields, missing reader context, and conditions that change the conclusion.
 Judge their function in context rather than enforcing a phrase ban.
 
-## Check diagram paths against the source
+## Content-specific checks
 
-Read the completed figure on its own before reconciling it with the prose.
-For each material action or promised result, compare the paths that can reach it
-with the source's conditions, ordering, permissions and failure guarantees.
-Sharing an error node also shares its stated outcomes; do not extend diagnostics
-or recovery guarantees from one failure condition to another without evidence.
-Check both branches of a decision:
-the failure of "P and Q" includes different cases. If the source permits an
-action only for one of them, a shared failure arrow must not grant it to all.
-
-For example, when a source permits one citation-format repair, a diagram must
-not send both invalid JSON and an unsupported citation through one error node
-into that repair. Separating the errors in prose does not remove the diagram's
-extra path. Split the conditions or narrow the path to the evidenced action,
-then check the revised figure and surrounding explanation together.
-
-Also check logical strength: "when P, Q is available" does not establish
-"Q is available only when P" without further evidence. Keep report-subject
-claims separate from observations about the author's tools or test environment.
-Use the actual relevant context to resolve disagreements rather than accepting
-or rejecting a passage solely because an automated judge labels it PASS or FAIL.
-
-Repair confirmed in-scope mismatches and repeat the applicable checks on the
-latest output. Preserve genuine source gaps; do not complete an unknown path
-with an invented action or remove a finding to get a passing result.
-
-## Explain quantitative claims
-
-When a formula or ratio supports a judgment, show a worked example close to it.
-Include the situation, input values, units and assumptions, substitution and
-calculation, and the practical meaning of the result. Explain operators such as
-`min` in ordinary language. Reuse a scenario across related formulas when useful.
-
-Check arithmetic and units. Show a nontrivial value when a variable disappears
-at a convenient value such as 1. Make invented values and conceptual curves
-distinguishable from measurements where they are introduced; clear example
-framing or an inline qualifier is sufficient. Do not repeat the same disclaimer.
-
-An omitted value is not automatically zero. A derived value is valid when the
-stated categories, units and totals determine it; explain that calculation and
-its assumptions instead of presenting absence from the source as its proof.
-
-For example, in a **hypothetical** evaluation with 10 requests, 8 valid judgments
-and 2 errors, 6 matching judgments give `6 / 8 = 75%` agreement among valid
-judgments. Report the two errors alongside that rate. This is neither agreement
-across all requests nor proof of accuracy against human-reviewed labels.
+When choosing or reviewing figures, use [diagrams](diagrams.md), including its
+source-path checks. When a quantitative claim supports a judgment, use
+[quantitative claims](quantitative-claims.md) for calculations and evidence limits.
+These modules own the detailed checks; reuse them if already loaded.
 
 ## Review in three groups
 
@@ -202,10 +124,11 @@ than prescribe sentence forms, scores, or a minimum number of findings.
 
 Explain technical shorthand through behavior, not merely by expanding an
 acronym. Familiar metaphors such as boundary, contract, debt, and loop still
-need context. Use consistent terminology across prose, figures, tables, and
-translations. Do not invent an author's voice profile or force personal-opinion
-phrasing into an evidence report. Read provided examples when relevant; do not
-require an arbitrary number of old blog posts for every report.
+need context. Apply the [terminology checks](#keep-terms-and-concepts-aligned)
+across prose, figures, tables, and translations. Do not invent an author's voice
+profile or force personal-opinion phrasing into an evidence report. Read provided
+examples when relevant; do not require an arbitrary number of old blog posts for
+every report.
 
 ## Classify, repair, and recheck
 
