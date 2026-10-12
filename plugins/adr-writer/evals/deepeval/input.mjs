@@ -1,4 +1,5 @@
 import { evidenceSources } from "../regression/judge.mjs";
+import { reportJudgingEvidence, finalReportSources } from "../skills/report-evaluation.mjs";
 
 /** Encode captured evidence without loading provider SDKs or invoking a judge. */
 export function deepEvalInput(item, evidence) {
@@ -21,10 +22,11 @@ export function deepEvalInput(item, evidence) {
   ) {
     throw new Error("incomplete target execution evidence");
   }
+  evidence = reportJudgingEvidence(item, evidence);
   const sources = evidenceSources(evidence);
-  // The final files cannot reconstruct a transient contract rewrite. Preserve
-  // requests and results, including failed writes and write-then-restore bodies.
-  // The context-budget check rejects oversized evidence instead of losing it.
+  // Lifecycle evaluations retain full transient writes. Final-report evaluations
+  // omit only report revision bodies from the judging view; action metadata and
+  // source mutations remain visible, and the runner archives the complete trace.
   const events = evidence.events;
   const checkOutput = Object.fromEntries(
     Object.entries(sources).filter(([key]) => /^event:\d+:(stdout|stderr)$/.test(key)),
@@ -42,7 +44,11 @@ export function deepEvalInput(item, evidence) {
       events,
       checkOutput,
       execution: sources.execution,
+      ...(item.reportEvaluation ? { finalReportFields: finalReportSources(item, evidence) } : {}),
     }),
-    expectedOutput: JSON.stringify({ obligations: item.obligations }),
+    expectedOutput: JSON.stringify({
+      obligations: item.obligations,
+      ...(item.reportEvaluation ? { evaluationScope: item.reportEvaluation } : {}),
+    }),
   };
 }

@@ -3,6 +3,7 @@ import path from "node:path";
 import { renderHtml, validateReport } from "../../skills/report-writer/scripts/render-report.mjs";
 import { summarize, summarizeRouting, comparePairs } from "./metrics.mjs";
 import { sha, confined } from "../regression/workspace.mjs";
+import { summarizeReportAxes } from "./report-evaluation.mjs";
 
 const labels = { classification: "분류 응답", routing: "Skill 선택", execution: "실제 수행" };
 const statuses = { PASS: "충족", NOT_PROVEN: "미충족·미검증", ERROR: "오류", NOT_RUN: "미실행" };
@@ -333,6 +334,10 @@ export function saveSkillsReport(directory, report) {
         expanded: runs.some((r) => ["ERROR", "NOT_PROVEN"].includes(r.verdict)) || undefined,
         paragraphs: [
           summaryText(runs),
+          ...summarizeReportAxes(item, runs).map(
+            ({ label, counts }) =>
+              `${label}: 통과 ${counts.PASS}회, 위반 ${counts.FAIL}회, 미검증 ${counts.UNVERIFIED}회, 평가 오류 ${counts.ERROR}회, 미실행 ${counts.NOT_RUN}회, 세부 판정 기록 없음 ${counts.MISSING}회.`,
+          ),
           ...["NOT_PROVEN", "ERROR", "NOT_RUN"].flatMap((verdict) => {
             const selected = runs.filter((run) => run.verdict === verdict);
             if (!selected.length) return [];
@@ -392,6 +397,11 @@ export function saveSkillsReport(directory, report) {
     summary: [
       summaryText(report.runs),
       "분류 응답, Skill 선택, 실제 수행을 구분해 읽으세요. 사례를 펼치면 반복별 판정과 원본 증거에 접근할 수 있습니다.",
+      ...(report.cases.some((item) => item.reportEvaluation)
+        ? [
+            "보고서 사례는 실행 종료 시 최종 저장본을 기준으로 용어·출처·도표·구성과 전달을 나누어 표시합니다. 항목별 결과는 진단용이며, 종합 통과에는 모든 필수 의미 판정과 로컬 검사가 필요합니다. 과거 결과에 세부 판정이 없으면 추정하지 않습니다.",
+          ]
+        : []),
     ],
     sections,
     requiredEvidenceIds: evidence,

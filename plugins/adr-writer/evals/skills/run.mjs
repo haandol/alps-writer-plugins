@@ -19,6 +19,7 @@ import {
 import { parseTail } from "../lib/harness.mjs";
 import { scenarioNamesForChangedPaths } from "../impact-map.mjs";
 import { BEDROCK_DEFAULTS } from "../deepeval/bedrock.mjs";
+import { validateReportEvaluation } from "./report-evaluation.mjs";
 
 const HELP = `Skill evaluation — classification, routing, execution
 
@@ -287,6 +288,7 @@ async function runRouting(item, record, folder, entries, options, dependencies) 
 
 /** Retain existing scorers while collecting isolated replies, actual files and semantic-judge calls. */
 async function runClassification(item, record, folder, pluginRoot, options, dependencies) {
+  validateReportEvaluation(item);
   if (item.id === "review-real-repo-adr" && options.only !== item.id) {
     record.notRunReason =
       "외부 저장소 사례는 --only review-real-repo-adr로 명시하고 입력을 설정해야 합니다.";

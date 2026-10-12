@@ -245,7 +245,7 @@ offline assessment without erasing its timeout, inventing an extra trial, or
 confusing semantic PASS with the intersection of all task requirements.
 
 The `report-artifact-` cases use the classification runner's existing confined
-file tools to produce an actual first-save report JSON for catalog publication,
+file tools to produce an actual final report JSON for catalog publication,
 evaluation processing and limited evidence. They require successful source,
 Skill and format-reference reads, the declared report write, original preservation,
 native validation/rendering and relative evidence links to the supplied original.
@@ -254,6 +254,35 @@ the saved document's explanation and every recovery path. An explicitly labeled
 diagram fallback is recorded as a warning, not silently rejected as invalid syntax.
 These probes do not provide validator feedback or a repair turn and do not test
 native Skill discovery, browser opening, reader learning or end-to-end delivery.
+The target may revise its declared report within the original invocation. Both
+local artifact checks and semantic content judgments use its final saved document
+after that invocation completes. Replies about an earlier mistake do not substitute
+for the final document; content PASS/FAIL citations must include the final artifact.
+Final JSON string fields are also exposed verbatim under `after:<path>#/JSON/pointer`
+source IDs, so diagram quotes and newlines need no lossy unescaping or paraphrase.
+Exact source/quotation validation still applies. Harness EVAL markers belong in
+the reply and are checked there, never required inside the report document.
+The `final-report-v1` judging view omits report revision bodies while retaining all
+action metadata and source-file writes, including restored or failed mutations.
+The complete original trace remains in `evidence.json`; ADR lifecycle evaluations
+still inspect their full intermediate bodies. Unauthorized writes are never erased
+by a correct final report.
+
+These saved-report cases separate terminology, source fidelity, diagrams, and
+presentation/delivery obligations. Accurate ordinary definitions and clearly
+illustrative examples may explain source facts; new timing, ordering, exclusivity,
+permissions and runtime guarantees still require evidence. Judge semantic claims in
+context, not stronger verbs or different wording alone; an unresolved material
+interpretation is UNVERIFIED rather than a fabricated contradiction. Diagram paths must
+preserve every required check even when the checks' execution order is unspecified.
+The HTML shows per-axis trial results from validated obligation judgments. Missing
+legacy detail stays unmeasured, and any mandatory local or semantic failure still
+prevents overall PASS; axis successes are not averaged into a passing score.
+
+This criteria revision changes the evaluation contract and dataset hash. Preserve
+earlier runs and judge responses unchanged; do not present different-criteria pass
+rates as instruction improvement. Reassessment or live validation belongs in a new
+run with its current criteria and actual model-call scope recorded.
 If a classification target call fails, its final files and raw tool trace still
 enter `evidence.json`. The invocation remains ERROR; a saved document does not
 manufacture a returned reply or trigger automatic semantic success.

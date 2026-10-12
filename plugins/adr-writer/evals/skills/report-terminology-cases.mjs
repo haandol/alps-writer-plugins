@@ -3,6 +3,12 @@ import path from "node:path";
 import { TAIL_SPEC } from "../lib/harness.mjs";
 import { REPORT_OUTPUT, scoreReportArtifact } from "./report-artifact-checks.mjs";
 
+import {
+  REPORT_EVALUATION,
+  REPORT_SOURCE_RULE,
+  FINAL_REPORT_INSTRUCTION,
+} from "./report-evaluation.mjs";
+
 const coa = `Supplied terminology for an illustrative CoA system, not a verified product release:
 The build process prepares descriptions, relationships and formulas that the query process reuses to answer questions.
 A namespace is the unit in which sources, an ontology and access permissions are managed together.
@@ -25,7 +31,7 @@ const cases = [
       },
       {
         id: "relationship-versus-mapping",
-        text: "The relationship connects business concepts; mapping connects ontology definitions to source data. Explain those endpoints and purposes without using mapping as an unexplained synonym for the business relationship or inventing equivalence. Keep namespace and build/query meanings consistent with the source.",
+        text: "The relationship connects business concepts; mapping connects ontology definitions to source data. Explain those endpoints and purposes without using mapping as an unexplained synonym for the business relationship or inventing equivalence.",
       },
     ],
   },
@@ -87,21 +93,25 @@ export const reportTerminologyCases = cases.map((item) => ({
   skill: "report-writer",
   group: "report",
   artifactPaths: [REPORT_OUTPUT],
+  reportEvaluation: REPORT_EVALUATION,
   supplementalChecks: true,
   semanticObligations: [
-    ...item.obligations,
+    ...item.obligations.map((o) => ({ ...o, axis: "terminology" })),
+    { id: "source-fidelity", axis: "source", text: REPORT_SOURCE_RULE },
     {
-      id: "source-and-review-scope",
-      text: "Judge the saved report against the supplied facts. Keep original source and excerpts unchanged, preserve prose-only and no-quiz delivery, and do not claim renderer, browser, deployment or reader-study verification. The target has no such tools; report only the checks it actually performed.",
+      id: "delivery-and-verification-scope",
+      axis: "delivery",
+      text: "Judge successful delivery and observable actions, not terminology or factual correctness. Keep original source and excerpts unchanged, preserve prose-only and no-quiz delivery, and do not claim renderer, browser, deployment or reader-study verification. The target has no such tools; report only the checks it actually performed.",
     },
   ],
   build(dir) {
     writeFileSync(path.join(dir, "source.md"), item.source);
     return [
       item.request,
-      "Read source.md and plugin/skills/report-writer/SKILL.md with the fixture tools. Read the necessary references including references/report-document.md. Use source.md as the only factual source.",
+      "Read source.md and plugin/skills/report-writer/SKILL.md with the fixture tools. Read the necessary references including references/report-document.md. Use source.md as the authority for system facts; ordinary definitions and clearly illustrative examples may explain them without adding new system guarantees.",
       `Save the actual report as JSON at ${REPORT_OUTPUT}. Only that output is writable. Include the supplied source as evidence, with links resolving beside this report file. Do not create other files or rewrite source.md.`,
-      "No quiz or figures. There is no shell or browser. The host validates and renders the first saved final report without providing feedback or a repair turn. Do not claim to have run those tools. Your final reply may be short; the evaluated content is the saved report.",
+      "No quiz or figures. There is no shell or browser. Your final reply may be short; the evaluated content is the saved report.",
+      FINAL_REPORT_INSTRUCTION,
       TAIL_SPEC,
     ].join("\n\n");
   },

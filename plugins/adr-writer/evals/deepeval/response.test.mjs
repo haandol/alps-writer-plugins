@@ -464,7 +464,10 @@ test("report artifacts use actual capture plus GEval and cannot hide format fail
           calls++;
           assert.match(prompt, /Internal stages are unspecified/);
           assert.match(prompt, /report.json/);
-          return judge(item, 1, "보고서를 저장했습니다.");
+          const result = judge(item, 1, "An available result can be downloaded.");
+          for (const obligation of result.structured.obligations)
+            obligation.evidence[0].source = "after:.adr-review/report.json";
+          return result;
         },
       },
     );
