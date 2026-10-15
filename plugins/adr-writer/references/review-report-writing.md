@@ -1,178 +1,60 @@
 # Human-facing review reports
 
-Use this guide only when writing the report or chat summary a person will read.
-Before composing the final presentation, read and apply
-`${CLAUDE_PLUGIN_ROOT}/skills/report-writer/SKILL.md` and its relevant references.
-That skill owns domain hierarchy, maximum four peer units, paragraph layout,
-worked examples, and editorial completion checks. Internal reviewer artifacts
-keep their evidence-complete formats; a flat audit export is not the final
-human-facing report.
+Use this bridge only when composing a selected report or its chat summary.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/report-writer/SKILL.md` and the common or
+conditional references it selects. Reuse guidance already loaded; do not also
+load the ADR-body writing guide merely to repeat its general writing rules.
+The common skill owns the opening, domain hierarchy, maximum four peer units,
+plain language, mechanical writing patterns, diagrams, layout and delivery.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/reader-first-writing.md` completely and
-apply it with this report-specific guide.
+The owning review controls scope, verdicts, evidence, edit permission and native
+schemas. A flat audit export is supporting input, not the final human report.
+Keep source artifacts complete while explaining the result as a concise tutorial
+or senior review comment for a junior developer seeing the subject for the
+first time. Use continuous essay paragraphs before detailed evidence.
 
-The reader is a junior developer seeing the subject for the first time. Explain it
-like a new teammate, not like a child: preserve exact contracts and evidence, but
-remove the reconstruction work.
+## Review-specific context and language
 
-## Choose the report language
+Use the language the user explicitly requests or currently uses. Otherwise use
+the target ADR's dominant language, or the dominant language across a multi-ADR
+report. Preserve stable anchors and technical terms when translation loses
+precision. English harness instructions do not determine the report language.
 
-Use the language the user explicitly requests or currently uses. If the
-conversation does not establish a language, use the target ADR's dominant
-language. For a multi-ADR report, use the dominant language across the reviewed
-scope.
+Lead with the verdict, observable impact, next action and residual risk in the
+common report opening. These are required facts, not four mandatory headings.
+Keep the most important finding visible. Never lose exact values, allowed
+states, permissions, ordering, units, test results, or an unverified axis when
+summarizing. Review-only work stays review-only.
 
-Apply the selected language to human-facing prose and subject-specific headings.
-Keep stable artifact anchors and established technical terms in their original
-form when translation would reduce precision. Do not switch languages merely
-because the harness prompt is written in English.
+## Select the owning explanation contract
 
-## Establish the request, then give the answer
+- **Document review and sync:** explain the decision, contract, rationale and
+  missing or conflicting evidence. Keep document-only limits explicit; sync
+  retains its semantic diff and repository/local-execution boundary. Use the
+  common diagram guidance when relationships need explanation.
+- **Rollup:** clear chains may use contract tables and summaries. Expand into
+  candidate-local views only when ownership, partial replacement, cycles or
+  reference changes need them. Do not add whole-system discovery for a report.
+- **Implementation review:** use
+  `${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/review-hiking.md` for
+  Context and the vertical causal flow, and
+  `${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/visualization.md` for
+  its native diagram metadata. The implementation artifact contract owns
+  serialization and validation; it does not change common report presentation.
+  Keep contract proof, findings, limits and any included Comprehension check
+  with their owning domain. Never start interactive checks or impose a
+  publishing gate without the explicit request/selection that workflow requires.
+- **Implementation refactor:** explain the verified before/after behavior and
+  the scope of safe changes. Several interacting call sites may benefit from
+  a flow diagram; a local rename need not have one.
 
-Follow report-writer's opening: directly below the title, briefly explain the
-requested task, why the report is being written, and what the user wants to
-understand, decide, or achieve. Preserve confirmed context that distinguishes
-this task from concurrent work. Follow it immediately with a short answer before
-detailed domain explanations or evidence. The
-following are summary facts, not mandatory separate top-level sections:
+Related-ADR comparisons belong to workflows that require them. Select at most
+two by shared architectural question, contract, state/failure rule or durable
+boundary. Explain similarity, difference and review impact; preserve the
+structured omission reason when none helps. Similar filenames or technologies
+are not a basis for comparison.
 
-- **Verdict** — what the review concluded.
-- **Impact** — what a user, operator, or maintainer can observe.
-- **Action** — what must happen next, or `None`.
-- **Risk** — what remains uncertain or costly, or `None`.
-
-Keep each item to one or two sentences. A reader should understand the outcome
-without knowing the rule IDs, file layout, or internal symbol names.
-
-After this summary, organize the complete evidence by its owning domain and
-responsibility using report-writer. Preserve the complete evidence required by
-the owning skill.
-Easy wording never permits dropping a requirement value, allowed set, state rule,
-permission, mandatory field, ordering rule, unit, finding, unverified axis, test
-result, or residual risk.
-
-When a related ADR supplies a genuine analogy, compare at most two. Select by a
-shared architectural question, contract, state/failure rule, or durable
-boundary—not keywords, technologies, files, or functions. Write one short prose
-paragraph per comparison: what is similar, what differs, and how that difference
-changes the implementation or tests to inspect. If no analogy helps, omit the
-paragraph and preserve the structured omission reason.
-
-## Use plain, exact language
-
-- Name the actor and observable behavior: `The checkout API rejects a second
-settlement`, not `idempotency is handled`.
-- Explain an unavoidable domain or technical term on first use in one short clause.
-- Put the user or operational symptom before an internal category or symbol name.
-- Use paths, symbols, rule IDs, commands, and quotations in the evidence section,
-  not as the first explanation of the result.
-- Keep one idea per sentence and one finding per paragraph or list item.
-
-## Visualize relationships the reader would reconstruct
-
-For rollup reports, apply the caller's target-centred diagram rule: clear chains
-may use contract tables and change summaries alone; use small candidate-local
-views only when they help explain difficult ownership, partial replacement,
-cycles or reference changes. The counts and routine operations below do not
-override that rule or require a whole-system map.
-
-For other reviews, include useful figures whenever the confirmed evidence and
-delivery format support them. These relationships are strong reasons to draw:
-
-- three or more participants, processing steps, states, components, or ADRs;
-- a system boundary, dependency, or contradiction;
-- an asynchronous or cross-system request or event flow;
-- a state transition, failure, retry, rollback, or fallback;
-- a changed data relationship; or
-- a refactor spanning multiple call sites or changing how work moves between them.
-
-Figures are never a delivery gate. Respect user exclusions; when evidence or
-format prevents a useful figure, explain the relationship in prose and retain
-material limitations. Do not block completion or request omission approval solely
-because a figure is absent, including for top-down or C4-like walkthroughs.
-
-Choose the diagram by the review question and requested notation. All types
-supported by the bundled Mermaid engine are available. Examples such as sequence,
-class, state, ER and C4 views are not an allowlist or a fixed preference order.
-Preserve the selected notation's relationship meaning rather than reducing it
-to generic boxes and arrows. Use different views only for different useful questions.
-
-Draw only relationships established by the ADR, code, diff, or executed evidence.
-Use short behavior labels instead of implementation trivia. After the diagram,
-write one sentence beginning with `Notice:` that states the review point.
-
-For implementation-review artifacts, apply
-`${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/visualization.md`. Assign question-level
-`diagramRequirements` to each Hill through `diagramIds`, or record that Hill's
-concrete `diagramOmissionReason`. Choose views by the relationships to explain.
-Check every important relationship and inspect the rendered HTML. Source fallback must not be described as a rendered figure.
-
-The prose must remain independently reviewable when Mermaid does not render.
-Other review skills keep their own artifact format; do not create an
-implementation-review JSON package just to use this writing guide.
-
-## Remove mechanical writing patterns
-
-Every sentence must contribute useful reader context, a verdict, contract,
-evidence, impact, action, or risk. Delete:
-
-- praise, reassurance, and conversational applause;
-- empty scene-setting, throat-clearing, and repeated request recaps after the
-  opening; preserve the initial request context that explains the reason and goal;
-- repeated conclusions, findings, evidence, or diagram narration;
-- generic best-practice advice without a project rule, code location, and concrete
-  failure or maintenance cost;
-- speculative future extensibility and hypothetical work outside the review scope;
-- vague instructions such as `improve this`, `handle appropriately`, or `add
-necessary tests`;
-- empty headings and sections whose only content is `none`, unless the owning
-  artifact schema requires the section.
-
-Also rewrite repeated contrast templates, one-off ornamental English labels,
-forced numbered symmetry, filler bridges, and visual elements that repeat
-adjacent prose. Never invent a user story, project result, measurement, or
-causal relationship to make a report feel more narrative.
-
-Prefer the shortest wording that preserves the full contract. Concision is not a
-reason to hide evidence or merge independent obligations.
-
-## Review-specific visual emphasis
-
-- **ADR document review** — visualize cross-ADR contradictions, duplication,
-  dependencies, or repeated leaks. A single ADR style finding rarely needs a
-  diagram.
-- **ADR sync** — visualize a changed decision flow, dependency/category movement,
-  or unresolved ADR-versus-code branch. Keep semantic diffs in text.
-- **ADR rollup** — use tables and summaries for clear chains, expanding into a
-  small local view when needed to judge the affected contracts. Preserve complete
-  evidence and global mechanical checks without requiring global visual discovery.
-- **Implementation review** — organize the final report by evidenced domain,
-  bounded context, or vertical capability. Present purpose and the important
-  behavior before implementation details. Keep claims, examples, verification,
-  findings, and limitations with their owning domain. Group more than four peers
-  semantically rather than truncating them or enforcing a flat paper outline.
-  Preserve Component, Code, contract coverage, scope, metrics, implementation
-  choices, and raw evidence as appropriate drill-down material.
-  Keep included comprehension questions and required ruling controls intact. Place the
-  `Comprehension check` after the relevant domain's conclusion and before detailed
-  evidence; preserve the existing question count, four options, answer hiding,
-  neutral feedback, and separation from the code verdict. Do not start a quiz
-  without a request or invent a comprehension-ready status.
-
-For the default reading path, use connected prose before structured evidence.
-Each domain should read as a concise tutorial or senior review comment, using
-continuous essay paragraphs before the supporting structured fields.
-Context gives intent, contracts, and scope; each Container/Hill owns a vertical
-capability, Component explains its implementation, and Code supplies focused
-evidence. Keep these reading levels distinct inside the owning domain.
-Use the caller's canonical Markdown/JSON as audit input when a fixed schema is
-required. Compose the final human view with report-writer; native schemas are
-not permission to deliver a flat or unreviewed human report.
-
-- **Implementation refactor** — visualize before/after work flow only when several
-  call sites or processing stages are involved. A local rename or extraction does
-  not need one.
-
-For printed handouts, use a white background and readable page margins. Print
-questions with their choices, without answer keys, feedback, selected-option
-marks, or screen controls. Preserve detailed evidence in the HTML report.
+General diagram selection, source fidelity, print styling, quiz disclosure and
+requested-versus-default verification live in the common report modules. Only
+the implementation-review native format requires `Notice:` and its associated
+diagram IDs; do not impose that adapter syntax on every kind of report.

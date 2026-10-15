@@ -101,6 +101,37 @@ For each obligation, record implementation-independent **observable evidence**: 
 
 Observable evidence is a review oracle, not a test prescription. Do not name test files, commands, libraries, functions, classes, fixtures, internal tables, or data representations. Different implementations may use different tests and structures while producing the same observable result.
 
+### Intent completeness and provability
+
+The regeneration test also asks whether completion can be judged from the
+contract. Connect the user's problem and intended outcome in Purpose to the
+decision's independent obligations. Each obligation needs enough starting
+conditions/input, observable result and pass/fail meaning to distinguish a
+conforming result from a violation. Preserve exact values, units, permissions,
+state/ordering rules, failure guarantees and decision-changing premises where
+they determine that judgment. Use domain behavior, not a prescribed test suite.
+
+Look for a result that satisfies the written rows yet defeats the recorded
+intent, and for relevant normal, boundary or failure conditions whose expected
+outcome cannot be determined. A missing rule or oracle is an R19 completeness
+gap; a missing required value/set also belongs to R18a. Do not fill product-policy
+gaps from guessed implementation behavior. Derivable obligations need no new
+policy, while unresolved material choices follow the existing decision route.
+
+When user intent or requirement source material is supplied, compare it with
+the ADR and identify omitted or conflicting obligations with source evidence.
+Do not discover a PRD or require an external intent document for every review.
+Without supplied sources, judge the ADR's internal completeness and explicitly
+limit any claim about intent coverage to what is recorded. Unknown intent is
+not proof of a missing requirement and is not a reason to invent one.
+
+Document-review PASS means the decision is self-contained and its completion
+criteria are reviewable within that evidence boundary. It does not establish
+implemented behavior, executed tests or an `Accepted` lifecycle state. Keep
+document review code-free and report-only. Evidence-based implementation
+completion belongs to implementation review; finite tests do not establish
+mathematical completeness.
+
 ## The requirement gate and two filters
 
 Apply three questions to each line of the body, **in this order**:
@@ -546,4 +577,4 @@ For the PR reviewer or the author before merge.
 - [ ] **One ADR = one decision** holds (no split signals)
 - [ ] **`.mapping.json`** has the matching category entry including the new ADR
 
-<!-- adr-writer:rules-version 0.10.10 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.10.11 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

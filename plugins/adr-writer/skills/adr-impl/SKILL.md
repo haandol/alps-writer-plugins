@@ -70,6 +70,11 @@ Implements the specified ADR in code. Once implementation, tests, the verified r
    - If, mid-implementation, you judge that a gray-zone decision in the ADR (adoption rationale, domain rules, state transitions, fallback) needs to change, re-run the ADR admission gate first. If only a replaceable implementation means changes, continue in code without touching the ADR. If an admitted decision changes, do not fix the code first — stop and branch with the user on "is this an intended decision change, or is honoring the ADR the right call?" — if it is a decision change, update the ADR to the current decision first (edit-in-place; if the decision topic branches, supersede with a new ADR) and put it in the same commit; otherwise implement per the ADR. If that change is **major** (`authoring-rules.md` "What to log — minor vs major"), also leave a one-line entry in the category's `decision-log.md` — the log entry is added **at the moment you change the decision** (which is separate from the automatic Status transition in step 6 — the log records the decision, Status records the fact of implementation). If code silently drags a gray-zone decision along, the one-way PRD → ADR → code flow breaks (the same framing as `adr-sync` "Scope of the source of truth").
 
 5. **Test**
+   - Reconcile every independent obligation with its actual enforcing path,
+     test inputs/assertions and execution result using `implementation-evidence.md`.
+     Compound rows require all clauses and relevant counterexamples; a test name,
+     green suite or line coverage does not establish completion. Preserve missing
+     evidence and test gaps for repair before the completion gate.
    - Before moving to the next Implementation Hill, run its targeted ideal case and relevant counterexample and record the command and observed result. After every Hill has verified results, run the project's full test command.
    - Find the project's test command in `AGENTS.md` or `package.json`; the full run above satisfies this check.
    - Apply the ideal-case, relevant-edge, test-naming, and missing-test-path rules from `${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md`.

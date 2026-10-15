@@ -1,6 +1,6 @@
 ---
 name: adr-review
-description: Review existing ADRs as documents — sweep every ADR (or one category) against the authoring rules R1-R20 and return a punch list. Report-only; never edits ADRs, the mapping, or code. Use when the user asks to review ADR quality, check abstraction level, verify requirement values survived, or audit ADRs without touching code. Keywords - "/adr-review", "ADR 리뷰", "ADR 품질 검토", "ADR 추상화 레벨 점검", "review my ADRs", "audit ADR quality".
+description: Review ADR document quality, intent and requirement completeness, and whether observable criteria can establish completion. Applies R1-R20 without reading code; report-only, never edits ADRs or implementation. Use for ADR quality, abstraction, requirement preservation or provability reviews.
 argument-hint: "[category-or-adr-path?]"
 ---
 
@@ -14,7 +14,7 @@ When this workflow permits ADR writing and a definition needs creation or change
 apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
 boundary. Review-only work reports unclear or conflicting meanings without editing.
 
-Review ADRs that already exist **as documents** and return a punch list. With no argument it sweeps every ADR; with an argument it narrows to one category or a single ADR.
+Review ADRs that already exist **as documents** and return a punch list. With no argument it sweeps every ADR; with an argument it narrows to one category or a single ADR. Each ADR receives an R19 intent-completeness and provability check: whether its obligations and observable criteria suffice to judge completion. This is not proof of implementation or an Accepted Status.
 
 > **This is the document-quality axis.** It asks "should this decision be an ADR at all, is it written at the right abstraction level, and is every requirement it must carry still in it?" — never "does the code match?" The ADR admission gate rejects replaceable libraries, SDKs, frameworks, credential/auth adapters, and module structure even when their prose is polished. Pick the right command:
 >
@@ -29,7 +29,7 @@ Review ADRs that already exist **as documents** and return a punch list. With no
 >
 > Reach for this one when you want ADR quality judged **without reading code** — a periodic audit, an inherited ADR set, or a check after hand-editing several ADRs. Since it never opens the codebase, it is far cheaper than `/adr-sync` and does not care whether the code exists yet.
 >
-> **This is the review path for an inherited or hand-edited ADR.** `/adr-new` defaults to self-check and may use an independent reviewer when risk warrants it. This command applies the document-review contract to existing ADRs without relying on their authoring context. Run it when the user asks, not on a schedule.
+> **This reviews saved ADRs, including the recommended follow-up to `/adr-new`.** The authoring path keeps its pre-save self-check and approval; its post-save recommendation targets the exact saved ADR and honors skip/defer or an unchanged completed review. This command derives the document verdict from the ADR and supplied intent sources, without inheriting the author's self-check conclusion. It can also review inherited or hand-edited ADRs when requested.
 
 > **Report-only**: never edit an ADR, `.mapping.json`, or code. Return findings and let the user decide. That is what makes a full sweep safe — a sweep that also edited would fan one misjudgment across every ADR at once.
 
@@ -80,9 +80,15 @@ For each ADR in scope, apply the `adr-reviewer` role contract. The role owns rul
 
 Before choosing the execution strategy, read `${CLAUDE_PLUGIN_ROOT}/references/subagent-dispatch.md` completely. The model may use named reviewers, generic read-only subagents, main-session passes, or a mixture. It chooses the smallest strategy that keeps each ADR's contract and findings independently reviewable.
 
-Whichever strategy is chosen, ground each ADR's judgment only in that ADR, its mapping entry, its harness slice, and the rule docs. Do not use another ADR's findings as evidence for this ADR. Cross-ADR patterns and contradictions are synthesized only in step 4. Record a context-isolation limitation only when it materially weakens confidence.
+Whichever strategy is chosen, ground each ADR's judgment only in that ADR, its mapping entry, its harness slice, the rule docs, and any supplied user intent/requirement sources for this decision. Do not use another ADR's findings as evidence for this ADR. Cross-ADR patterns and contradictions are synthesized only in step 4. Record a context-isolation limitation only when it materially weakens confidence.
 
 Pass each reviewer: the ADR path, that category's `.mapping.json` entry, and **that ADR's slice of the harness result**.
+
+Also pass any user-supplied intent/requirement excerpts relevant to this decision,
+preserving their source and qualifications. When none are supplied, say so;
+do not search product code or require a separate intent document. The reviewer
+applies `authoring-rules.md`'s "Intent completeness and provability" under R19
+and records the limits of any intent-coverage claim.
 
 - Agent count and parallelism are not part of the report contract. The model may group mechanical loading work or reuse a context when it can still produce a complete per-ADR R19 regeneration check without anchoring on prior conclusions.
 - Never collapse several ADRs into one combined verdict. Every ADR receives its own verdict, regeneration check, evidence, and comprehension-load line even when the execution strategy batches work.
@@ -131,7 +137,7 @@ under step 7.
 This command stays report-only. Route what the user approves:
 
 - **R3/R4 (implementation detail, code-readable content)** → edit the ADR body directly.
-- **R18a (a missing requirement value or rule)** → this needs the user, not a guess. The code cannot tell you whether a value is a contract, so ask what the requirement is and record it with its basis (`authoring-rules.md` "Concrete numbers" / "Non-numeric requirements"). **Never invent a number.**
+- **R18a/R19 (a missing requirement or completion criterion)** → recommend restoration from the ADR or supplied user sources when they settle it, quoting the basis. Ask only for an unresolved material choice; the code cannot authorize a new product rule. Keep the recommendation report-only (`authoring-rules.md` "Concrete numbers" / "Non-numeric requirements" / "Intent completeness and provability"). **Never invent a number.**
 - **R12/R13/R14 (admission failure, weak gray zone, Drivers, alternatives)** → if the core subject is a replaceable implementation means, recommend retiring the ADR and moving useful detail down; otherwise strengthen the admitted decision.
 - **A contradiction between ADRs** → the user rules on which value holds; then whichever ADR changes gets a `decision-log.md` line if the change is major (`authoring-rules.md` "What to log — minor vs major").
 - **A wrong category boundary or a decision split across categories** → `/adr-sync`; its `references/repository-hygiene.md` "Category slice integrity" rules own category realignment.

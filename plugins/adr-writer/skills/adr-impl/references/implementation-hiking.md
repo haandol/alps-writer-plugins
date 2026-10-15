@@ -27,6 +27,10 @@ entry.
      command, and actual entry-point result required before moving to the next Hill.
      Preserve the given input, evidence and decision rule for each obligation;
      classify missing/failed execution separately from an observed product violation.
+     Read the assertions that distinguish compliance from a violation. Connect
+     relevant boundary/interaction cases and justified edge exclusions to the
+     same obligation. Keep code-inspected and test-verified coverage separate;
+     a green test that omits a required assertion leaves this Hill incomplete.
 4. Finish the Hill's implementation and targeted verification before making the
    next Hill the primary work unit. A failing or unexecuted core path keeps the
    Hill open.

@@ -127,11 +127,25 @@ codex plugin add adr-writer@alps-writer
 | `/adr-impl [category]`           | Implement an ADR as vertical user-flow/capability/context Hills. Before the next Hill starts, record the current Hill's context, design/contracts, cross-layer implementation, targeted ideal/edge command, and observed result. Run full project tests and Review Hiking after every Hill has verified results. Comments reuse contract vocabulary but never cite an ADR. An unchanged approved ADR proceeds after a non-blocking plan update; project/domain defaults are resolved automatically and product-policy gaps become one Decision request. With no argument, lists Proposed ADRs and asks which to build |
 | `/adr-impl-refactor [category]`  | Review efficiency, complexity, coupling, duplication, and proportionate reuse; apply only high-confidence local behavior-preserving refactors with before/after tests, using the smallest model-selected review strategy that preserves the safety gates                                                                                                                                                                                                                                                                                                                                                              |
 | `/adr-impl-review [category]`    | Derive the complete implementation scope, write Context, classify question-level diagram requirements, and review each vertical Container/Hill through Component detail and focused Code diff/excerpt evidence. Select `standard` or `full` by risk and open the validated report through a content-fingerprinted local URL. Comprehension questions are strongly recommended when useful and honor explicit inclusion or exclusion (report-only)                                                                                                                                                                     |
-| `/adr-review [category]`         | Review **hand-edited or inherited** ADRs as documents against the authoring rules — no code read, report-only. The summary leads with the outcome and visualizes cross-ADR conflict, dependency, or duplication when useful. No arg → every ADR. Not run after `/adr-new`, which judges its own draft against the same rules                                                                                                                                                                                                                                                                                          |
+| `/adr-review [category]`         | Review saved ADRs as documents, including the recommended exact-target follow-up after `/adr-new`; honor explicit skip/defer and reuse an unchanged completed review. Code-free and report-only; no arg reviews every ADR. Document PASS leaves a new ADR Proposed.                                                                                                                                                                                                                                                                                                                                                   |
 | `/adr-sync [category] [--quick]` | Detect/repair drift between code and ADR, lead with semantic changes, and visualize complex decision, dependency, or unresolved contradiction flows                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `/adr-rollup [category]`         | Consolidate ADR groups whose evolution history of one logical decision is split (no arg → all categories)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 The shared authoring rules and procedures (category-split, Status transitions, finding the code an ADR governs) live in `docs/adr/` (`concepts.md` — the principle, dependency model, and Status transitions; `authoring-rules.md`; `structure.md`; plus `README.md` as the index) — seeded from this plugin's `templates/adr/` on first run. Every command reads them as the single source of truth.
+
+Document review checks intent completeness and **provability**: whether each
+requirement states conditions, observable outcomes and criteria that distinguish
+compliance from a violation. It compares supplied intent sources when available;
+without them, it limits its claim to the ADR's recorded intent. It never reads
+code or certifies implementation completion.
+
+Implementation and its final review connect every obligation to enforcing paths,
+actual test assertions and execution results. Coverage distinguishes code
+inspection from verified behavior, accounts for all clauses in a compound row,
+and includes relevant edges and interactions. A green suite or line-coverage
+number cannot replace this evidence. Temporary reproductions do not repair
+missing repository regression assertions, and unavailable execution stays
+unverified. Evidence remains disposable; no new coverage registry is required.
 
 ## Deterministic self-test harness
 
@@ -155,6 +169,11 @@ bash <plugin>/scripts/adr-invariants.sh                   # reverse-reference or
 
 `adr-structure-lint` handles the deterministic half of the reviewer's R-rules. `/adr-impl-review` derives complete implementation scope from the ADR, keeps the diff as separate change context, builds Context, selects visual questions and records each Hill’s diagram assignment or local omission, assigns every contract row exactly once across vertical Container/Hills, and records Component implementation plus focused Code evidence before synthesizing the verdict. Standard mode uses a decision ledger and sufficiency perspective; full mode adds separately grounded necessity and sufficiency perspectives. Both modes render the same validated Evidence Package and open it once in the host's default browser.
 
+Artifact delivery has a small core contract and a separate native schema.
+Worked JSON, quizzes, interactive checks, detailed repair guidance and requested
+browser QA load only for the selected operation. The direct report-writer role
+uses those same owners, keeping required evidence separate from derived display
+wording. Changed-code diffs and unchanged-code excerpts can share one review.
 The abstract shows the verdict and next action before detailed evidence. Expand
 the table of contents to navigate, or a comparison's evidence to inspect its
 source. Diagrams use the bundled official Mermaid parser and browser renderer,

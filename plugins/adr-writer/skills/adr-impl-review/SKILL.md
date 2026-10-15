@@ -113,9 +113,11 @@ Independently build the **complete implementation scope** for the selected ADR:
 3. Search the repository from those terms, open the actual code, and trace
    direct and indirect callers and callees. Check differently named symbols,
    configuration, generated code, and surviving older paths where relevant.
-4. Find every related ideal and edge-case test. Cross-check each contract row
-   from decision to implementation and from implementation back to its entry
-   points.
+4. Find every related ideal and edge-case test. Read its setup, actual assertions,
+   mocks and execution result against the obligation, not just its name. Cross-check
+   each contract row from decision to implementation and back to every relevant
+   entry point. Include independent clauses and derived obligations in compound
+   rows; search the rest of the ADR for guarantees the mechanical row list misses.
 5. Record the confirmed production files, tests, and call paths as the
    implementation scope. A caller-provided file list is a starting floor, never
    a search limit.
@@ -190,6 +192,9 @@ selection and staged self-check belong to the common report skill.
 For `standard`, execute this section and then continue at **Report and artifact stage**. The full-mode baseline and perspective sections below do not apply.
 
 1. Build a decision ledger containing every ADR decision and each independently reviewable requirement-contract row, including its implementation-independent observable evidence. The sufficiency pass also extracts Notable implementation choices once from the complete implementation scope.
+   Apply the obligation accounting in `${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md`
+   in both modes. Code coverage and test success alone never establish contract
+   completeness; all clauses, relevant counterexamples and actual assertions matter.
 2. Apply the `adr-impl-sufficiency-reviewer` role to the original material, Hills, and ledger with the smallest suitable execution strategy.
 3. Review Hills in reader-priority order; record contract status, implementation evidence, and targeted test results. An unexecuted core path yields `INCONCLUSIVE`.
 4. Verify and synthesize findings using section 4's evidence rules. Standard mode has no necessity pass, mandatory separate reporting role, fixed Mermaid quota, or post-implementation spec-fitness gate. The validated HTML report remains required.
@@ -222,9 +227,10 @@ remain risks. Normalize every contract row and preserve original evidence.
 
 Only after evidence synthesis and verdict selection, read
 `references/artifact-contract.md` completely and follow it exactly. It owns the
-common standard/full `implementation-review.md`, `findings.json`,
-materialization, validation, HTML rendering/opening, completion response, and
-optional interactive comprehension behavior. Do not load it during scope
+common standard/full delivery of `implementation-review.md`, `findings.json`,
+materialization, validation, HTML rendering/opening and completion response.
+Load its schema, example, quiz, repair and interactive children only for the
+operations it selects. Do not load it during scope
 discovery or the independent review perspectives.
 
 At this stage, build the optional related-ADR comparison under that contract;
@@ -257,22 +263,14 @@ finding-free standalone review.
   as a mandatory report template.
 - Never invent a user reaction, measurement, project outcome, or causal
   relationship that the ADR, code, tests, configuration, or user did not establish.
-- Never generate more than five primary comprehension questions or add filler to
-  reach five.
-- Never generate a free-response comprehension question.
-- Never reveal a question's correct option, option feedback, explanation, or
-  evidence before the reader selects one option.
-- Never add scores, grades, celebration, praise, ability judgments, or
-  gamification to self-check feedback.
 - Never include a comprehension question, grading criterion, evidence, or answer
   request in the ordinary main-session completion response.
 - Never start the interactive comprehension check unless the user explicitly
   requests it.
-- Never call the PR comprehension-ready while a prepared question is failed,
-  skipped, or unanswered.
 - Never state that sufficiency is proven merely because the tests passed.
 - Never report an unreproduced conjecture as though it were a confirmed finding.
 - Never treat the current diff or a caller-provided file list as the ceiling of the ADR implementation scope.
 - Never report either review mode complete without a validated, non-empty `adr-impl-review-report.html`.
-- Never finish either review mode without running `adr-impl-review-open.mjs` once and reporting its `OPENED` or `NOT_OPENED` result.
+- Follow the delivery spine for the default one-time `adr-impl-review-open.mjs`
+  and honest `OPENED` or `NOT_OPENED` result; honor explicit delivery overrides.
 - Never modify product code, ADRs, the mapping, or existing tests during the review.

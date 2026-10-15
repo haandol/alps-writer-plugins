@@ -30,7 +30,8 @@ review independently before the final verdict is synthesized.
    - `explanation` — why this code supports the Component;
    - `tests` — the relevant command and observed result.
      When change scope is non-empty, include at least one `diff` in the complete
-     review. Keep full files and unrelated diff lines out.
+     review. An unchanged contract-critical callee may use `excerpt` alongside a
+     changed handler's `diff` in the same review. Keep full files and unrelated diff lines out.
 6. Treat Context, Container, Component, and Code as reading zoom levels.
    Use plain language a junior developer can follow; explain unavoidable terms
    on first use.
@@ -50,7 +51,7 @@ reviewable vertical capability.
 
 ## Plan the visual explanation
 
-Read `references/visualization.md` after fixing the Hills. Identify the reader's
+Read [visualization](visualization.md) after fixing the Hills. Identify the reader's
 structural and interaction questions before selecting a diagram. Give each Hill
 `diagramIds`, or a concrete local `diagramOmissionReason` for prose delivery,
 user exclusions, or evidence/format limits. Figure presence never gates delivery.

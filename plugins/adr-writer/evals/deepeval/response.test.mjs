@@ -1,6 +1,6 @@
-import { test } from "node:test";
+import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { catalog, PLUGIN } from "../skills/catalog.mjs";
@@ -79,7 +79,16 @@ test("score-only parsing accepts labeled parentheses without hiding a visible/ta
   assert.ok(item.score({ output: wrong, tail: parseTail(wrong) }).some((c) => !c.pass));
 });
 
-const temp = () => mkdtempSync(path.join(tmpdir(), "deepeval-response-"));
+// These SDK tests use disposable copies, not user-requested evaluation runs.
+const temporaryRoots = [];
+const temp = () => {
+  const directory = mkdtempSync(path.join(tmpdir(), "deepeval-response-"));
+  temporaryRoots.push(directory);
+  return directory;
+};
+after(() => {
+  for (const directory of temporaryRoots) rmSync(directory, { recursive: true, force: true });
+});
 const tail = "\n=== EVAL-VERDICT: PASS ===\n=== EVAL-FINDINGS ===\nNONE\n=== EVAL-END ===";
 const noCall = () => {
   throw new Error("Unexpected model call");

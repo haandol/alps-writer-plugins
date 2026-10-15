@@ -29,3 +29,38 @@ export function responseChecks({ tail, events }, fields, { noTools = true } = {}
     }),
   ];
 }
+
+/** Compare complete eval decision records without accepting missing or contradictory fields. */
+export function exactDecisionRecords({ tail } = {}, fields, expected, inventoryLabel) {
+  const rows = Array.isArray(tail?.findings) ? tail.findings : [];
+  const tags = Object.keys(expected);
+  return [
+    {
+      label: inventoryLabel,
+      pass:
+        rows.length === tags.length &&
+        tags.every((tag) => rows.filter((row) => row?.tag === tag).length === 1),
+    },
+    ...Object.entries(expected).map(([tag, values]) => {
+      const matches = rows.filter((row) => row?.tag === tag);
+      const entries =
+        typeof matches[0]?.summary === "string"
+          ? matches[0].summary
+              .split(";")
+              .filter((part) => part.trim())
+              .map((part) => part.trim().split(/\s*=\s*/))
+          : [];
+      const record = new Map(entries);
+      return {
+        label: `case ${tag}`,
+        pass:
+          matches.length === 1 &&
+          entries.length === fields.length &&
+          record.size === fields.length &&
+          entries.every((entry) => entry.length === 2) &&
+          fields.every((key, index) => record.get(key) === values[index]),
+        detail: matches[0]?.summary ?? "missing record",
+      };
+    }),
+  ];
+}

@@ -4,6 +4,13 @@ Step numbers refer to the [parent workflow](../SKILL.md). Read this module only
 when that workflow selects it.
 
 3. **Build the plan**
+   - Before changing code, apply `${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md`'s
+     obligation accounting. Reconcile the whole ADR's recorded intent, independent
+     requirements and derived obligations with condition/input, observable outcome
+     and pass/fail criteria. Select existing or needed assertions and relevant
+     counterexamples for every obligation, including clauses in compound rows.
+     Keep this mapping ephemeral; unresolved product criteria follow the existing
+     ADR decision route, while an unchanged approved criterion needs no new approval.
    - Read and apply `${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md` before selecting validation evidence or improving a metric. It owns case/metric rules, execution readiness, required-versus-monitoring judgments, actual user-entry evidence and cause-specific repair. Apply it throughout implementation, tests and completion review.
    - Read `${CLAUDE_PLUGIN_ROOT}/references/requirement-delegation.md` when resolving unspecified or delegated details. Use the ADR's Purpose, scope, priorities, and explicit contract to bound autonomous judgment. This context is needed because a locally reasonable default can still pursue a different outcome from the user's intent.
    - Extract the vertical slice from the ADR's Decision / Mermaid diagram (UI → API → data). One ADR covers the whole slice of one feature (a leaf — a feature sub-folder or a single-feature context), so scope the implementation plan as a unit that changes the UI/API/Data layers **together** within that same feature.

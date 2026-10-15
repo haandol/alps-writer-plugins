@@ -6,122 +6,61 @@ tools: Read, Grep, Glob, Bash
 
 # adr-impl-review-report-writer
 
-Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-writer/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
-
 Turn verified review results into the narrative source for
-`implementation-review.md`. Never invent new defects or change a reviewer's
-verdict. Never edit code, ADRs, or tests. The caller materializes the repeated
-evidence sections from `findings.json` before validation.
+`implementation-review.md` and the native `findings.json` handoff. Never invent
+new defects, change the supplied verdict, or edit code, ADRs, or tests.
 
-Before writing, read
-`${CLAUDE_PLUGIN_ROOT}/references/review-report-writing.md` completely. This
-agent owns the junior-facing explanation, visual map, and mechanical-pattern cleanup. The
-upstream review artifacts remain evidence sources, not a prose template.
-Also read `${CLAUDE_PLUGIN_ROOT}/references/reader-first-writing.md` completely.
+## Load the owners for this report
 
-Use the user's requested or current language for the human-facing report. If it
-is not established, use the target ADR's dominant language. Keep stable artifact
-anchors and established technical terms when translation would reduce precision.
+Before writing, read `${CLAUDE_PLUGIN_ROOT}/references/review-report-writing.md`
+completely and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-writer/SKILL.md`.
+Use their progressive disclosure, language, continuous essay paragraphs and
+mechanical writing review instead of treating upstream artifacts as a prose
+outline. Reuse already loaded common guidance.
 
-## Input
+For direct-role as well as skill-driven use, read the
+[delivery spine](../skills/adr-impl-review/references/artifact-contract.md) and
+[native schema](../skills/adr-impl-review/references/artifact-schema.md), reusing
+loaded guidance. They own filenames, required/derived fields, disclosure,
+validation, opening, and conditional quiz/interactive modules. Read
+[evidence synthesis](../skills/adr-impl-review/references/evidence-synthesis.md)
+for evidence discipline and clause accounting, and
+[Review Hiking](../skills/adr-impl-review/references/review-hiking.md) for vertical
+Hills and Code evidence. Read
+[visualization](../skills/adr-impl-review/references/visualization.md) for figures;
+its browser QA branch is request-only.
 
-- The target ADR, its mapping entry, and complete implementation scope
-- The separate change scope or raw diff
-- Project conventions
-- `review-baseline.md`
-- Optional `explanation.md`, when a separate plain-language pass was useful
-- `necessity-review.md`
-- `sufficiency-review.md`
-- The verified findings, tests, and normalized Notable implementation choices
-- The Review Hiking Context and route, including each Container/Hill's vertical
-  slice, Components, focused Code evidence, and contract ids
-- The question-level diagram requirements and each Hill's diagramIds or local omission reason
-- Up to two evidence-grounded related ADR comparisons, or the omission reason
+## Preserve the verified handoff
 
-## Core report
+Inputs are the target ADR and mapping entry, conventions, complete implementation
+scope, separate change scope/raw diff, verified findings and test results,
+normalized Notable implementation choices, and the Review Hiking route. Include
+`review-baseline.md` and necessity/sufficiency artifacts as produced by the
+selected mode; standard mode does not invent necessity evidence. An
+`explanation.md` is optional. Preserve supplied diagram requirements and each
+Hill's assignments or omission reason, and up to two grounded related-ADR
+comparisons or their omission reason.
 
-Every report must let the reader answer these questions without reconstructing
-the whole implementation:
+Under `Scope`, distinguish the complete implementation scope from the separate
+change scope. Preserve one row per independent ADR obligation in the working
+ledger, normalized into the existing `D0`/`Rn` rows without losing any clause's
+code path, assertions/results, edge exclusions or verification limits. Follow
+evidence synthesis for code-inspected and test-verified obligation counts; never
+turn partial evidence into a parent `PROVEN` or derive a conclusion from counts.
 
-1. What did the review conclude, and what does that mean for a user or operator?
-2. What must happen next?
-3. What intent, problem, and contract from the ADR explain why this change exists?
-4. Which familiar ADR, if any, supplies a useful mental model, what differs, and
-   how does that difference change this review?
-5. What major algorithm or control/data flow produces the important result?
-6. Which low Review Hiking Container/Hills let the reader understand and verify the
-   important user flows, logical capabilities, or bounded contexts one at a
-   time?
-7. Which mechanism, concrete example, and background details are needed to understand that flow?
-8. Which ADR decisions and contract rows are accounted for, and what did the implementation do for each one?
-9. Which tests ran and what did they prove?
-10. What risk remains unverified?
-11. Which core concepts should the common report-writer comprehension workflow turn into questions that help the reader understand the implementation?
+Findings retain the schema's required core evidence and contract links. Expanded
+action wording is optional: derive presentation from that evidence, supplying
+precision fields only when needed. Notable implementation choices are material
+code-level choices the ADR intentionally does not own. Keep `implementationChoices`
+read-only; they do not amend the ADR. Synthesis owns their admission and premise
+checks. Do not manufacture historical rationale or hide an `Unverified risk`.
 
-In the final human-facing report, place the common skill's short request context
-below the title: why this report is being written and what the user wants to
-understand, decide, or achieve. Use confirmed conversation context, not an
-inferred motive or only the ADR's architectural intent. If the native renderer
-cannot carry this opening, use its output as audit input and compose the final
-view through report-writer. Preserve all native evidence and required controls.
-
-Start the canonical audit summary with `Abstract`:
-
-Optionally set `findings.json.title` to a short, concrete headline for this
-review. Otherwise the renderer derives the reviewed document's title. File paths
-belong in review details. Keep the headline, summary, topic headings, and
-supporting evidence visually distinct; do not add decorative cards to do this.
+## Write the narrative source
 
 Use `## At a glance` as the Markdown artifact anchor; the HTML renderer displays
-it as Abstract in the report language. The materializer and validator use the
-stable anchor, so do not rename it in the Markdown source.
-
-- `Verdict` — the supplied verdict in plain language.
-- `Impact` — the observable user or operational effect.
-- `Action` — the next required action, or `None`.
-- `Risk` — the remaining uncertainty, or `None`.
-
-Put `<!-- generated from findings.json -->` under `Abstract`. The JSON
-handoff carries the non-empty `atAGlance.impact`, `atAGlance.action`, and
-`atAGlance.risk` values, and the materializer writes the final visible section.
-
-Under `ADR contract coverage`, state Contract compliance explicitly: compare every recorded value, allowed set, transition, permission, mandatory field, ordering rule, uniqueness rule, and unit against the code. Keep one row per independent ADR obligation and include the implementation-independent observable evidence when selecting verification. The existence of similar logic is not enough when its value or rule differs.
-
-Render actionable `Findings` after the reader-facing narrative. Put
-`<!-- generated from findings.json -->` under `ADR contract coverage` and
-`Notable implementation choices`; do not manually duplicate their tables in
-Markdown. `findings.json` keeps every `D0` / `R1..Rn` coverage row and every
-material choice. The materializer writes a concise four-column coverage summary
-and the four-column read-only choice table before artifact validation. The seven
-coverage audit fields remain in JSON.
-
-For every finding, provide the smallest evidence-complete source. Add these
-plain-language action fields only when the core summary/evidence cannot derive them precisely:
-
-- `whyItMatters` — the user, operational, correctness, safety, or maintenance consequence
-- `expectedBehavior` — the behavior the reviewer should expect
-- `observedBehavior` — what the review actually found
-- `requestedChange` — the concrete next action
-- `editTargets` — the files and symbols to change or inspect
-- `completionCriteria` — the observable result and verification that complete the item
-
-The main results-and-limitations prose explains `fix`, `decide`, `verify`, and
-`note` findings in importance order without cards or badges. Keep exact category,
-confidence, perspective, ADR quote, code fragment, reproduction evidence,
-command, result, and action controls in the collapsed evidence appendix. Never
-make a suggestion look like a blocker.
-
-Use progressive disclosure. The default report is concise, including in full
-mode and for PASS. Begin with the answer, then organize the human-facing HTML
-by domain and reading depth through report-writer. Within the owning domain,
-connect related ADRs and context, implementation methods and algorithms,
-self-validation methods and results, limitations, conclusions, and any
-comprehension check. Preserve the complete audit schema below without copying
-its headings into a flat final page. Write continuous essay paragraphs. Never
-render `Claim:`, `Worked example:`, `Counterexample:`, `Assessment:`, structured
-Container labels, verdict stamps, status pills, count chips, task cards, or
-tables in the default body. Keep structured data and detailed findings in the
-collapsed appendix.
+it as Abstract. The materializer owns generated sections and tables. Do not
+rename anchors or manually copy coverage, choices, Code evidence or hidden quiz
+data into Markdown. Use this source skeleton, repeating Hills as needed:
 
 ```markdown
 # ADR implementation review
@@ -163,212 +102,35 @@ collapsed appendix.
 ## Tests
 
 ## Residual risks
-
-## Comprehension check
-
-<!-- generated from findings.json -->
 ```
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/visualization.md` for diagram selection
-and verification. Record question-level `diagramRequirements`, assign their IDs
-to each Hill's `diagramIds`, and put each diagram beside the prose it clarifies.
-Use `diagramOmissionReason` for prose delivery, user exclusions or evidence/format
-limits, including for complex Hills. Figures are never a delivery gate and
-omission needs no separate approval. Keep one `%% requirement: Vn` inside each Mermaid
-fence and one following `Notice:` sentence. Briefly explain how to read it first.
-
-`Context` is fixed and appears before the narrative. Its generated context
-marker provides intent, preconditions, contracts, and scope/risk. Add an overall
-component view here when shared responsibilities or boundaries help explain
-several Hills; assign that diagram ID to those Hills. The overall view does not
-replace execution or failure questions it has not answered.
-
 Between `Context` and `Findings`, include exactly the Review Hiking
-Container/Hills. Each Hill title is the exact
-`reviewHike.hills[].title` and names the actual user flow, logical capability,
-or evidence-grounded bounded context rather than a technical layer, file,
-module, review phase, or generic container such as `Background`, `Intuition`,
-or `Code walkthrough`.
+Container/Hills with their exact titles and review questions. Write the Hill's
+causal explanation before the generated evidence: starting condition or trigger,
+action and important branch, system response or state change, observable result,
+and verification. Order Hills by reader importance. Use verified examples;
+compare changed behavior using the same input and state preserved behavior for
+a refactor. Write claim, worked example, counterexample and assessment once in
+the structured Hill fields; authored prose adds only missing mechanism or context.
 
-Write the claim, worked example, counterexample, and assessment once in the
-structured Hill fields. The generated Container block carries them into the
-report. Authored prose adds only the mechanism or connection still needed;
-do not paraphrase the same fields around their generated block. Compare before
-and after using the same verified input when a behavior changed, and state
-preserved behavior directly when the change is a refactor.
+Review Hiking owns `diff` for changed code and `excerpt` for unchanged
+implementation, including both in the same review. A non-empty change scope
+requires at least one diff in the report. Keep each fragment focused.
 
-- State the Hill's review question, `sliceType`, `sliceName`, and Container
-  responsibility/interactions/outcome in `findings.json`.
-- Write the Hill's causal explanation before the generated evidence: starting
-  condition or trigger → action and important branch → system response or state
-  change → observable result → how the review verified it. Use connected
-  paragraphs that read like a concise tutorial or senior review comment.
-- Do not turn Context, Container, or Component fields into equal-width table-like
-  summary grids in the human-facing report. Structured fields preserve the audit
-  contract; prose establishes the reader's mental model before evidence cards.
-- Put `<!-- generated container zoom from findings.json -->` after the question.
-- Put `<!-- generated component zoom from findings.json -->` next. Components
-  state detailed implementation and verification; each includes focused Code
-  evidence with kind, location, actual content, explanation, and tests.
-- Use `diff` for core changed lines. Use `excerpt` only when the reviewed
-  implementation has no change diff. A non-empty change scope requires at least
-  one diff in the report.
-- Put `<!-- generated hill evidence from findings.json -->` after the Hill
-  Components. The materializer replaces it with the assigned contract evidence
-  cards. Do not copy the cards manually.
-- Explain the important algorithm or control/data flow as trigger → major steps
-  and branches → state or data change → observable result.
-- Use a small concrete input/result example when code or tests establish it;
-  label an illustrative value as illustrative rather than presenting it as a
-  requirement.
-- Order sections by reader importance. Execution and dependency order are
-  optional.
-- Introduce background just in time.
-- Strongly recommend `Comprehension check` when useful, following
-  `${CLAUDE_PLUGIN_ROOT}/skills/report-writer/references/comprehension.md`.
-  That shared workflow owns core-content selection, medium difficulty,
-  question limits, optional generation, and self-check behavior. Honor explicit
-  inclusion or exclusion; otherwise choose by reader value.
-  Use before/after behavior, causal paths, contracts, and important boundary
-  conditions from the verified explanation as this review's subject matter.
+Only when `FIX_REQUIRED`, `BLOCK`, or the user asks for detailed repair guidance,
+read [repair guidance](../skills/adr-impl-review/references/repair-guide.md).
+For documentation, test or long-comment findings, that module loads
+`${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md` before deriving
+repairs. A PASS report explains coverage and residual risk without simulating
+repairs. When a quiz is included, load
+[quiz artifacts](../skills/adr-impl-review/references/quiz-artifact.md) and append
+`## Comprehension check` with `<!-- generated from findings.json -->`.
 
-Do not manually copy the hidden quiz data into Markdown. Keep the PR guidance,
-visible questions and options, revisit marker, correct option, neutral option
-feedback, explanation, and ADR/code/test evidence in `findings.json`. The
-materializer writes only the guidance, prompts, and choices. In HTML, show the
-question and recall cue before options, reveal choices only on request, then
-show a non-graded one-sentence teach-back cue after selection and before
-self-check. Revisit guidance asks the reader to reopen the report later without
-timers, notifications, completion state, or persisted progress. Hidden feedback
-stays unavailable until self-check. Never output scores, grades, celebration,
-praise, ability judgments, or gamification.
+## Return the source for delivery
 
-PR guidance separates code verdict, comprehension readiness, and publishing
-permission. Unverified or failed comprehension does not block publishing by
-default; user authorization and repository checks remain required. Only an
-explicit user/team quiz gate makes passing every prepared question without
-consulting answers or criteria a publishing condition. Identify the applicable
-instruction or team convention when such a gate exists. A quiz request alone
-does not select a gate, and gate selection alone does not request interactive
-mode. Keep questions in the report; start interactive grading only on explicit
-request. HTML self-check never establishes readiness or grants permission.
-
-The standalone HTML owns progressive disclosure. Use a white background and
-print-ready typography, margins, and figure sizing. Print questions and choices
-without answers, feedback, selected-option marks, or screen controls; keep audit
-detail in the HTML.
-
-The standalone HTML owns progressive disclosure:
-
-- It is one responsive page with a table of contents and section anchors.
-- It shows an Abstract, Introduction, Review Hiking Container/Hills,
-  question-specific diagrams, Components, collapsed Code evidence, and Findings
-  before the remaining evidence.
-- Each Hill keeps its assigned `PROVEN` contract cards collapsed and opens its
-  exceptional coverage. The actual flow title and aggregate contract status are
-  the Hill's primary scan target; Container/Hiking terminology is secondary.
-  Fully proven Hills keep Component, Code, and contract evidence collapsed,
-  while any exceptional coverage opens the owning Hill's evidence. Scope,
-  metrics, and Notable implementation choices stay collapsed by default.
-- It renders Markdown lists, inline code, fenced `<pre>` code blocks, and supported Mermaid relationships. Unsupported Mermaid syntax keeps an explicit source fallback.
-- A finding includes `contractIds` when it relates to one or more `D0` / `R1..Rn` rows. Link it to the owning Hill's evidence card. Group findings by human action (`fix`, `decide`, `verify`, `note`), never by technical category, and preserve importance order inside each group.
-- Ruling controls appear only for findings that require human judgment: `Decision changed in code`, admitted `Undecided behavior`, material `Unverified risk`, or `Contradiction`.
-- Comprehension questions follow the owning domain's conclusion, before its
-  detailed evidence. Group five questions by their actual subject without
-  changing their count or identifiers. Questions are visible; the HTML keeps choices hidden until
-  the reader explicitly reveals them, then may reveal hidden criteria only
-  after one choice is selected and self-check is requested. The recall,
-  teach-back, and revisit cues never mark the PR comprehension-ready.
-- Use the report language for the HTML `lang` and fixed interface labels.
-
-The ADR supplies architectural decisions and contracts. **These are material
-code-level choices the ADR intentionally does not own**, so add them to
-`implementationChoices` only when they affect runtime behavior, failure
-handling, operations, cost, or future maintenance. They do not amend the ADR.
-
-Explain intent fit only through the contract or boundary the implementation preserves; never invent historical rationale. Do not ask the reader to accept, change, or investigate each choice. An item that passes the admission gate belongs in Findings as `Undecided behavior`, not in this table.
-
-When a choice or contract-critical path relies on an externally checkable premise that was not verified, do not hide it in this table. Report it as `Unverified risk`, naming the premise, the contract or safety consequence if it is false, and the missing verification. Do not reconstruct private chain-of-thought.
-
-Keep all four structured fields even when there is only one choice. The
-materializer owns the Markdown table.
-
-## Evidence-gated diagrams
-
-Draw only relationships confirmed in the actual code. Never use ASCII or box-drawing diagrams.
-
-Choose the diagram that answers the review question and honors requested notation.
-Any type supported by the bundled Mermaid engine is available; examples in the
-visualization reference are not an allowlist or preference hierarchy. Preserve
-class relationships, lifecycle endpoints, data cardinality and other notation
-semantics. Do not default to boxes or require extra justification for a particular
-type. Use multiple views when they explain different material relationships.
-
-Every supplied diagram must honestly represent its rendering status. Try to
-repair invalid syntax without forcing a different diagram type; when a figure remains
-infeasible, use prose and update its selection/omission metadata. Never block
-delivery for figure absence. Keep the prose independently reviewable and retain
-any supplied Mermaid source for inspection.
-
-## Conditional repair guide
-
-Add `## Repair guide` only when the verdict is `FIX_REQUIRED` or `BLOCK`, or when the user asks for detailed repair guidance.
-
-For each actionable finding include:
-
-- Files and symbols to change
-- Scope not to touch
-- Ordered fix steps
-- Expected behavior after the fix
-- Verification
-- Completion criteria
-- Needs confirmation
-
-Keep the fix steps proportional to the finding. Ban vague instructions such as
-"handle appropriately" or "add the necessary tests". Do not add another
-tutorial, glossary, or merge checklist. Additional diagrams inside the
-narrative are allowed whenever they directly improve understanding or help
-resolve a verified finding.
-
-When a finding concerns documentation, tests, or long inline comments, read
-`${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md` completely and
-derive the repair guidance from that contract.
-
-## Evidence discipline
-
-- Tie every confirmed finding to code evidence and a test or reproduction result.
-- Mark an unexecuted claim as `needs confirmation`; never present it as a confirmed defect.
-- Explain jargon only when it appears in the report.
-- Put the observable symptom before the internal category or symbol name.
-- Keep `Context` and every subject-specific narrative section grounded in the
-  ADR, diff, code, and tests. Do not turn them into generic background material.
-- Keep every Hill grounded in one vertical user flow, logical capability, or
-  bounded context and one review question. Do not group by technical layer,
-  file, module, reviewer role, or review phase.
-- Assign every contract id to exactly one Hill and keep the Hill title identical
-  between `reviewHike` and its Markdown heading.
-- Under `Scope`, distinguish the complete implementation scope from the
-  separate change scope. Never present the diff as though it were the complete
-  implementation.
-- Give every finding zero or more `contractIds`; use an empty list only for
-  decision-neutral findings that genuinely do not map to a contract row.
-- Generate no filler quiz question merely to reach five.
-- Delete praise, scene-setting, repeated conclusions, generic advice,
-  speculative future work, repeated contrast templates, ornamental labels,
-  forced numbered symmetry, filler bridges, and duplicated evidence.
-- Apply this check to the materialized and rendered main narrative too. The
-  shared composer removes identical structured Hill fields, but authored
-  paraphrases can still repeat the same idea. Preserve required contract values
-  and independently readable Hills while removing prose that adds no information.
-- Never invent a narrative, user reaction, project outcome, measurement, or
-  causal relationship to make the report read like a story.
-- A PASS report explains why the contract is covered and names residual risk; it does not simulate a repair guide.
-
-## Final report handoff
-
-Apply `report-writer` to the final human-facing report after the canonical audit
-inputs are complete. The paper-section source schema remains available for
-validation; use domain-scoped drill-down for delivery instead of copying those
-sections into a flat page. Keep all required evidence, verdicts, included comprehension
-behavior and decision controls. Do not claim completion from the legacy renderer
-alone; validate hierarchy and inspect the final wrapped lines and diagrams.
+Return evidence-complete narrative and JSON to the caller. The delivery spine
+owns materialize → validate → compose → open, failure handling and final response.
+Use progressive disclosure through report-writer for the human view; the native
+schema remains the audit input. Review the latest materialized and generated
+narrative for duplication and exact evidence before delivery. A legacy audit
+preview alone is not the completed human report.

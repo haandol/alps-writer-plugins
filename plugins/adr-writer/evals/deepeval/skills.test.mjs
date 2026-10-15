@@ -1,6 +1,6 @@
-import { test } from "node:test";
+import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, existsSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync, existsSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { main, parseSkillsArgs, selectImpacted } from "../skills/run.mjs";
@@ -11,7 +11,16 @@ import { makeTools } from "../regression/workspace.mjs";
 import { cases } from "../regression/cases.mjs";
 import { renderSavedReport } from "./render-report.mjs";
 
-const temp = () => mkdtempSync(path.join(tmpdir(), "skill-eval-system-"));
+// These SDK tests use disposable copies, not user-requested evaluation runs.
+const temporaryRoots = [];
+const temp = () => {
+  const directory = mkdtempSync(path.join(tmpdir(), "skill-eval-system-"));
+  temporaryRoots.push(directory);
+  return directory;
+};
+after(() => {
+  for (const directory of temporaryRoots) rmSync(directory, { recursive: true, force: true });
+});
 const noCall = () => {
   throw new Error("A free operation called a model");
 };

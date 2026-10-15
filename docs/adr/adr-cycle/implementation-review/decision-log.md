@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-10-15 — current ADR: [요구사항별 완료 증거](./0001-validated-low-risk-refactoring.md)** — 계약별 코드 경로와 테스트 단언·실행 결과를 대조하고 복합 의무·관련 반례의 공백과 외부 전제의 미검증을 완료 판정에 반영한다.
+
 - **2026-09-30 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 문서화 의무를 공개 인터페이스, 중요한 계약·상태·권한·실패 경계와 비자명한 이유에 집중하고 일반 내부 함수는 프로젝트 관례 아래 이름·타입·테스트로 설명할 수 있게 했다. 퀴즈는 코드 판정과 분리한 이해 보조로 유지하며 PR 게시 게이트는 사용자·팀의 명시적 선택에만 적용한다. 독립 Review Hill은 병렬·배치로 검토하되 계약별 증거, 관점 독립성과 전체 결과 종합을 유지한다.
 
 - **2026-09-20 — current ADR: [risk-proportional implementation review](./0001-validated-low-risk-refactoring.md)** — 구현 리뷰 전용 퀴즈 생성 조건을 공통 보고서 작성 계약으로 옮겼다. 핵심 설명을 이해하도록 문제를 생성하고, 코드 판정·PR 이해 준비도와 원본 감사 자료는 구현 리뷰가 유지한다.

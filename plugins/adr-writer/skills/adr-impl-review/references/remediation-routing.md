@@ -45,7 +45,13 @@ Detailed routes:
 - `Impl-fact mismatch` → use `/adr-sync <category>` to remove the stale
   implementation detail, or correct it only when it is an admitted
   public/architectural contract.
-- `Test gap` → add a test that detects the failure first, then fix the code.
+- `Test gap` → add or strengthen the assertion/case that can detect the contract
+  failure, then fix code only if evidence establishes a code defect.
+- Unavailable environment/access or unresolved scope → keep the affected
+  obligation `UNVERIFIED`, recover the evidence path within authorization and
+  rerun the required check. An existing adequate test is not a `Test gap` merely
+  because it could not run. Escalate only a remaining material risk or missing
+  authorization; continue independent work and retain confirmed findings.
 - `Unverified risk` → reproduce or verify the concrete failure hypothesis or
   externally checkable premise first, or explicitly accept the risk. State
   which contract or safety property could fail if the premise is false. Do not
@@ -57,5 +63,9 @@ Once automatic fixes are done, run `/adr-impl-review` again to complete the sele
 review path. Full mode completes both necessity and sufficiency passes; standard
 mode completes its sufficiency pass. On `PASS`, the caller completes the Status
 transition and reports the fixes; no routine post-implementation approval
-remains. The comprehension check is not an approval, but it still governs
-whether the human should open or send the PR.
+remains. Apply the [delivery spine's comprehension boundary](artifact-contract.md#3-completion-response):
+unverified or failed comprehension does not block PR publishing by default.
+Only an explicitly selected user/team quiz gate adds that publishing condition;
+user authorization and repository checks remain required. Quiz inclusion never
+authorizes interactive grading or delays evidence-backed remediation and a valid
+Status transition.

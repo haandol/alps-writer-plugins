@@ -2,7 +2,8 @@
 
 Read this after finding the implementation scope, before writing the report.
 Plan diagrams while choosing the Hills and test cases, then check their meaning
-and rendered appearance before delivering the HTML.
+with semantic and static checks before delivering the HTML. Inspect rendered
+appearance only when browser or viewport QA is explicitly requested.
 
 ## Account for each Hill
 
@@ -33,7 +34,8 @@ an ER view cardinality. Select other views when they explain the subject better.
 Do not default to flowchart boxes, or require extra justification only for a
 state, class, C4, or other type. Preserve the chosen notation's relationship
 semantics. Multiple views are useful when they answer different questions;
-no fixed combination or diagram count is required.
+no fixed combination or diagram count is required. Preserve class relationships,
+lifecycle endpoints, data cardinality and other notation semantics.
 
 When multiple Hills share responsibilities or boundaries that must be
 understood together, put the overall component view in `Context` and assign
@@ -53,6 +55,7 @@ For before/after comparisons, keep those names and input stable and label
 changed paths or responsibilities explicitly. Never rely on color alone.
 Ground every node and edge in inspected code, contracts, or executed evidence.
 Do not invent a caller, data store, dependency, or successful execution.
+Draw only relationships confirmed in the actual code. Never use ASCII or box-drawing diagrams.
 
 For example, when a shared formatter supplies two outputs, a component view
 explains ownership:
@@ -89,9 +92,11 @@ report fences carry the corresponding `%% requirement: Vn` marker.
    checks structure, not the truth or usefulness of a selection reason.
 3. Materialize and validate the report. The validator checks IDs, ownership,
    references, diagram type, `Notice:`, and the bundled official Mermaid grammar. This proves syntax, not rendered appearance.
-4. Render the HTML and inspect it. Sequence lifelines/messages and component
-   nodes/boundaries/connections must actually be visible, with readable labels.
-   Open both a wide and narrow view when layout is affected.
+4. Generate the HTML and check its markup, styles and evidence references under
+   [the common delivery owner](../../report-writer/references/format-and-layout.md).
+   Only when browser, interaction, viewport or print QA is explicitly requested,
+   load [requested browser QA](requested-browser-qa.md). Default opening is not
+   visual verification; unperformed optional browser checks do not block delivery.
 5. A source fallback or a pending figure is not a rendered figure. HTML embeds
    the official engine and reports success only after SVG creation; failures keep
    source and a visible error. Do not rewrite valid syntax to fit a local subset.

@@ -8,7 +8,15 @@ const VALIDATOR = path.join(PLUGIN_ROOT, "scripts/adr-impl-review-validate.mjs")
 const MATERIALIZE = path.join(PLUGIN_ROOT, "scripts/adr-impl-review-materialize.mjs");
 
 // Build otherwise valid review artifacts so failures isolate contract accounting.
-function validateContract(requirements, bases, { afterContract = "" } = {}) {
+function validateContract(
+  requirements,
+  bases,
+  {
+    afterContract = "",
+    coverageEvidence = "src/completion.mjs:1 — duplicate request reuses the stored result",
+    testResults = "node --test test/completion.test.mjs — PASS",
+  } = {},
+) {
   return withTmp((dir) => {
     const adr = write(
       dir,
@@ -38,8 +46,8 @@ Retries preserve the stored result.
       status: "PROVEN",
       adrBasis,
       implementation: "The completion boundary reuses the stored result.",
-      evidence: "src/completion.mjs:1 — duplicate request reuses the stored result",
-      tests: "node --test test/completion.test.mjs — PASS",
+      evidence: coverageEvidence,
+      tests: testResults,
     }));
     const hill = {
       id: "H1",
@@ -269,4 +277,31 @@ test("bullet-only coverage keeps existing numbering and continuation text", () =
     ["Complete once even after retries.", "Preserve failures.", "Return the stored result."],
   );
   assert.equal(result.status, 0, result.stderr);
+});
+
+test("assertion and mutant evidence cannot be confused with required execution results", () => {
+  const options = {
+    coverageEvidence:
+      "src/completion.mjs:1 — provider failure leaves status FAILED; the assertion " +
+      'checks status === "FAILED" and unchanged records. The intentional ' +
+      "write-before-rejection mutant produced FAIL as expected. Restart is excluded " +
+      "because this fixture has no persistence. Original-code checks passed.",
+  };
+  const result = validateContract("- Preserve failures.", ["Preserve failures."], options);
+  assert.equal(result.status, 0, result.stderr);
+
+  for (const testResults of [
+    "node --test test/completion.test.mjs — FAIL",
+    "node --test test/completion.test.mjs — NOT RUN: environment unavailable",
+  ]) {
+    const rejected = validateContract("- Preserve failures.", ["Preserve failures."], {
+      ...options,
+      testResults,
+    });
+    assert.equal(rejected.status, 1, rejected.stdout);
+    assert.match(
+      rejected.stderr,
+      /PASS contractCoverage tests must not contain failed or unexecuted/,
+    );
+  }
 });

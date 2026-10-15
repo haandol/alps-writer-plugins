@@ -91,8 +91,8 @@ grep finds "code where a keyword lives." So the cases where **a decision was mad
    - `implemented` — appears as decided (evidence: file:line). For a requirement-value row, quote the number in the evidence to show **the code's value equals the ADR's value.**
    - `missing` — no corresponding code found. **Before concluding "not there" from a failed search,** check call paths, indirect invocations, differently named symbols, and generated code once more (connected to the D2 false-positive caution below). If it is still absent, `[Spec violation]` (the default presumption right after implementation) — but if the decision is missing wholesale, follow the "unimplemented decision" handling in section 4.
    - `implemented differently` — the code does it another way → `[Spec violation]` or `[Decision changed in code]` (see the categories in section 4).
-3. **You cannot issue `PASS` while any row is unaccounted for** — "0 spec violations = PASS" makes it easy to mistake "found no violation" for "there is no violation." PASS requires every ledger row to have an implementation status, exact evidence, and executed tests. If a row could not be accounted for because the scope could not be narrowed, record that fact itself in Findings as `[Spec violation]` (insufficient evidence, scope needs widening).
-4. **Normalize each decision-ledger row into contract coverage** — assign `D0` to the ADR Decision and `R1..Rn` to every top-level bullet and table data row under `### Requirement contract` in source order. Keep exactly one row for every derived ID, with no omissions, duplicates, or invented IDs. For `D0`, use `Decision` as `adrBasis`; for each `Rn`, copy the complete source bullet verbatim into `adrBasis`, or join the table row’s trimmed source cells with `|` (headers and separators excluded). Record the requirement in recognizable ADR language, one of `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`, how the implementation meets or fails it, exact code or execution evidence, and the tests run. Include the ADR's implementation-independent observable evidence when selecting verification. Never bundle several requirements into one row. `PROVEN` means current evidence supports the obligation and no counterexample was found; it is not a mathematical proof.
+3. **You cannot issue `PASS` while any row is unaccounted for** — "0 spec violations = PASS" makes it easy to mistake "found no violation" for "there is no violation." PASS requires every ledger row to have an implementation status, exact evidence, and executed tests. If scope cannot be narrowed, mark the row `UNVERIFIED` and the review `INCONCLUSIVE`; missing evidence alone is not a `[Spec violation]`.
+4. **Normalize each decision-ledger row into contract coverage** — assign `D0` to the ADR Decision and `R1..Rn` to every top-level bullet and table data row under `### Requirement contract` in source order. Keep exactly one row for every derived ID, with no omissions, duplicates, or invented IDs. For `D0`, use `Decision` as `adrBasis`; for each `Rn`, copy the complete source bullet verbatim into `adrBasis`, or join the table row’s trimmed source cells with the literal separator `" | "` (one space on each side of the pipe) (headers and separators excluded). Record the requirement in recognizable ADR language, one of `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`, how the implementation meets or fails it, exact code or execution evidence, and the tests run. Include the ADR's implementation-independent observable evidence when selecting verification. Never merge distinct source rows. If one source row contains multiple ledger obligations, retain each clause's separate evidence within that parent and require all of them for `PROVEN`. `PROVEN` means current evidence supports the obligation and no counterexample was found; it is not a mathematical proof.
 5. **Build Notable implementation choices once from code outward** — enumerate only material behavior and values the code selected but the ADR does not specify. Include dependencies, tuning defaults, internal fallback behavior, and inherited conventions only when they affect runtime behavior, failure handling, operations, cost, or future maintenance. For each item record only the selected value or behavior, `file:line` evidence, why it fits the ADR intent, and why it matters. Explain fit by naming the requirement or durable boundary the choice preserves; never invent historical rationale. Apply the admission gate to every candidate: an admitted contract or durable-boundary choice becomes `[Undecided behavior]`; replaceable implementation discretion stays in this read-only list.
 6. **Inspect externally checkable premises before accepting a choice or contract row** — ask which provider guarantee, input provenance, ordering, uniqueness, trust-boundary fact, platform behavior, or similar fact must hold for the code to preserve the ADR contract and safety. Verify it from code, tests, configuration, or an authoritative external contract. Do not reconstruct or request private chain-of-thought. Missing historical rationale or alternatives is not a risk by itself, but if a premise is unverified and its falsehood could violate safety or an ADR contract row, emit `[Unverified risk]`, mark the affected coverage row `UNVERIFIED`, and do not issue `PASS`.
 7. **Resolve requirement gaps with domain knowledge before escalation** — prefer explicit contract implications, then project conventions and sibling behavior, then authoritative protocol/platform/domain rules, then broadly accepted reversible defaults below ADR resolution. Escalate only when several valid product outcomes remain or protected product policy is involved, and produce the complete Decision request.
@@ -175,6 +175,16 @@ its documentation, inline-comment, test, and finding classifications.
 
 **D5. Test coverage — is the decided behavior verified?**
 
+- Apply `implementation-evidence.md`'s obligation accounting. Independently
+  reconcile the entire ADR's intent and guarantees with the ledger, read actual
+  enforcement paths and test assertions, and seek a contract-breaking result
+  those assertions would miss. Include relevant interactions and bypass paths,
+  not just isolated ideal cases or the implementer's selected files.
+- In each parent coverage row, account for every clause's input/precondition,
+  observable result, pass/fail criterion, code evidence and test result. Retain
+  edge applicability/exclusion reasons and mock/environment limits. Partial
+  evidence cannot make the parent `PROVEN`. Report inspected-code and
+  verified-test coverage against the full obligation inventory separately.
 - Run the targeted tests and any already-configured property, mutation, static, or
   security checks selected by `implementation-evidence.md`. Keep them restricted
   to this ADR's code scope. Never modify product code or existing tests; create
@@ -203,7 +213,11 @@ Separate the character of each code/ADR disagreement. This is **symmetric** with
 - **[Impl-fact mismatch]** — the ADR contains code-level facts (internal API paths, enum **identifiers and representation**, field names, libraries, SDKs, credential/auth wiring) that differ from the code. Route to `/adr-sync <category>` to remove the stale detail, or correct it only when it is an admitted public/architectural contract. **A mismatched enum allowed set or transition rule does not belong here — it is a `[Spec violation]`** (the ADR is authoritative). This agent never edits the ADR.
 - **[Best practice]** — a violation of project conventions (primary) or general patterns (secondary), plus code→ADR back-references (R17, D6). A code-improvement target. Cite the convention basis (which convention item or sibling-code practice) and **attach a weight (`now`|`next-cycle`)** — not every convention violation is fix-it-now. `now` covers violations that harm the decision's safety or consistency (e.g. swallowed errors, R17 back-references); `next-cycle` covers minor taste or consistency items. Leave a secondary (general-pattern) finding only when you can name a _concrete failure scenario_ (file:behavior → wrong result/crash/leak); drop taste preferences that cannot.
 - **[Refactor]** — a decision-neutral cleanup opportunity. Record weight (timing) and impact (effort×payoff) together.
-- **[Test gap]** — a missing test for a decided behavior.
+- **[Test gap]** — a missing test, ineffective assertion or missing relevant
+  counterexample for a decided behavior. An adequate test unavailable solely
+  because of environment/access is `UNVERIFIED`, not a test defect: recover the
+  verification path within authorization and rerun. Never claim the implementation
+  was observed violating a requirement solely because evidence is unavailable.
 - **[Unverified risk]** — the failure hypothesis or externally checkable premise is concrete but execution or authoritative evidence could not be obtained. State the premise, what contract or safety property fails if it is false, and what verification is missing. Keep it separate from confirmed defects.
 
 `[Spec violation]` and `[Decision changed in code]` both look like "code ≠ ADR decision" but differ in character — when the code alone cannot settle whether it was an omission (violation) or a deliberate change (drift), present both readings and let the user decide. Given the right-after-implementation context, **the default presumption is violation** (the code should have followed the decision), but do not force it.
@@ -224,7 +238,7 @@ PASS | FIX_REQUIRED | INCONCLUSIVE | BLOCK
 - ADR: <path> (Status: <Proposed|Accepted ...>)
 - Code scope reviewed: <folder/file list>
 - Project conventions: <documents referenced, or "none">
-- Decision ledger: <N decisions accounted for — M implemented / K unresolved> — every unresolved row (missing, implemented differently, or unconfirmed because the scope could not be narrowed) goes into Findings as `[Spec violation]`. PASS requires 0 unresolved
+- Decision ledger: <N obligations — M implementation-supported / K unresolved; code-inspected and test-verified counts separately> — confirmed missing/different behavior is `[Spec violation]`; unconfirmed scope or execution is `UNVERIFIED`, never an observed violation. PASS requires 0 unresolved
 
 ### Findings
 - [Spec violation] <short diagnosis> (confidence: high|medium|low) — ADR decision: "<one-line quote>" ↔ code: <file:line + the real code fragment (or "no such code")>
@@ -266,6 +280,11 @@ Include only choices that remain below ADR resolution after applying the admissi
 | ----------- | ------ | --------- | ------------------------------- | -------- | ----- |
 
 Use exactly `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`. Include every independent decision-ledger row. PASS requires every row to be `PROVEN`.
+
+Preserve parent IDs when a source row contains several clauses. Show each
+clause's proof obligation, enforcing path, actual test assertions/results and
+related edge coverage within the parent's evidence. Reconcile obligations from
+the rest of the ADR with the ledger; source-row counts alone are insufficient.
 
 ### Review Hiking
 

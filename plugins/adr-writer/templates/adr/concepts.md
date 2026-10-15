@@ -155,6 +155,11 @@ An ADR's goal is **not to reproduce the same code, but to make regenerated code 
 
 The same contract must also support the review that follows regeneration. Write each obligation independently and record implementation-independent **observable evidence**: the result a reviewer should see when the obligation is met or violated. This is not a test plan. Tests, commands, files, libraries, and internal data representation remain below ADR resolution. The implementation review derives a disposable Evidence Package from these rows, shows requirement-by-requirement coverage to the human reviewer, and keeps code-level choices separate.
 
+For the intent-to-obligation check and the distinction between reviewable
+completion criteria and implemented completion, apply `authoring-rules.md`
+"Intent completeness and provability". Document review establishes the former;
+code paths, actual assertions and execution evidence establish the latter.
+
 This test takes precedence over the code-readthrough test below. For the full definition and the requirement gate, see [`authoring-rules.md`](./authoring-rules.md#what-an-adr-must-satisfy--the-regeneration-test).
 
 ### Requirements live in both the ADR and the code — and the ADR comes first
@@ -284,4 +289,4 @@ An ADR body is **a requirements and architecture document describing the current
 
 **Three layers preserve different things**: the ADR body = current state / `decision-log.md` = the timeline of major changes / Git = the verbatim diff. The log is a **convention file** rather than an ADR, so it is not registered in `.mapping.json` and the deterministic harness does not check it — for the recording criteria and format see [`authoring-rules.md` "Decision log (decision-log.md)"](./authoring-rules.md#decision-log-decision-logmd), and for the directory and non-indexing policy see [`structure.md`](./structure.md#decision-log-decision-logmd--a-convention-file-not-registered-in-the-mapping).
 
-<!-- adr-writer:rules-version 0.10.10 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.10.11 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
