@@ -1,9 +1,6 @@
-// Scenario: the axis that lost its independent reader.
-//
-// /adr-new used to hand its draft to adr-reviewer, and that reviewer was the only
-// stage carrying R18a (a requirement value blurred away) and R19 (the regeneration
-// test). The reviewer is now out of the authoring path — /adr-new self-checks at
-// its step 6(b) — so this scenario measures whether the axis survived the move.
+// The pre-save authoring check must catch missing contract values. The
+// recommended review after saving cannot replace R18a/R19 verification before
+// approval. This scenario checks the authoring path's own judgment.
 //
 // It is the author-side twin of review-catches-blurred-value: same defect, other
 // end of the pipeline. There the blurring is already in an ADR and a fresh reader

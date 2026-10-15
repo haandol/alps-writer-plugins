@@ -125,7 +125,7 @@ test("adr-review sweeps ADR documents, report-only, and stays out of the code", 
 // the conversation, so an incomplete draft reads as complete to its author. If
 // /adr-new drops the delegation without picking the axes up explicitly, nothing
 // fails; the requirement just disappears from the pipeline. Hence both halves.
-test("/adr-new defaults to self-check and permits a risk-selected independent read", () => {
+test("/adr-new keeps pre-save self-checks and recommends the scoped saved-document review", () => {
   const adrNew = read(path.join(ADR_ROOT, "skills", "adr-new", "SKILL.md"));
 
   // fresh authoring context defaults to self-check, but the model may select an
@@ -140,7 +140,7 @@ test("/adr-new defaults to self-check and permits a risk-selected independent re
   assert.match(adrNew, /regeneration test \(R19\)/i);
   // self-review is structurally weak on these two, so they are written out
   // rather than concluded — a checklist item silently marked done is the failure
-  assert.match(adrNew, /for \*\*R18a and R19, write the check out\*\*/);
+  assert.match(adrNew, /for \*\*R18a and R19, write the check out\*\*/i);
   assert.match(adrNew, /never invent a number/i);
   // the requirement gate still precedes the filters that would delete a value
   assert.match(adrNew, /Applying a filter before the gate/);
@@ -156,11 +156,15 @@ test("/adr-new defaults to self-check and permits a risk-selected independent re
   assert.match(reviewer, /`\/adr-new` defaults to its own checklist pass/);
   assert.match(reviewer, /may select this role/);
   assert.doesNotMatch(reviewer, /\*\*Not from `\/adr-new`\.\*\*/);
-  // the sweep agrees with the authoring path's optional independent read
+  // The post-save recommendation is separate from pre-save checks and approval.
   const sweep = read(path.join(ADR_ROOT, "skills", "adr-review", "SKILL.md"));
-  assert.match(sweep, /`\/adr-new` defaults to self-check/);
-  assert.match(sweep, /may use an independent reviewer when risk warrants it/);
+  assert.match(sweep, /recommended follow-up to `\/adr-new`/);
+  assert.match(sweep, /pre-save self-check and approval/);
+  assert.match(sweep, /honors skip\/defer or an unchanged completed review/);
   assert.match(sweep, /inherited or hand-edited ADR/);
+  assert.match(adrNew, /Target the saved\s+ADR, not every ADR in its category/);
+  assert.match(adrNew, /Do not review an unsaved\/unapproved candidate/);
+  assert.match(adrNew, /recommendation is not another save\/approval gate/);
 });
 
 // Removing the reviewer call made /adr-new's step 6(b) DEPEND on the seeded

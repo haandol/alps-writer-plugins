@@ -39,7 +39,7 @@ technical layer.
 **Prerequisites**: <dependency ADRs, or none>
 **Verification**: <harness: pass | n warnings> · R1-R20 checked · independent read: <used|not needed>
 
-Does this current-state decision, any decision-changing assumptions, complete contract, rationale, risks, and complete regeneration checklist match your intent? If approved, save the full ADR as `Proposed` and move on to implementation (`/adr-impl`). This is the routine intent/spec-fitness confirmation; implementation review does not ask the same questions again unless the ADR changes or a genuine contract ambiguity is discovered.
+Does this current-state decision, any decision-changing assumptions, complete contract, rationale, risks, and complete regeneration checklist match your intent? If approved, save the full ADR as `Proposed`, follow the recommended document review, then continue to implementation (`/adr-impl`) when requested. This is the routine intent/spec-fitness confirmation; later reviews do not ask the same questions again unless the ADR changes or a genuine contract ambiguity is discovered.
 ```
 
 > Show the context/subdomain information on the category line only when step 2 item 6 was asked and answered — otherwise print the category key alone.

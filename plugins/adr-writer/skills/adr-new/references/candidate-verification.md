@@ -7,8 +7,9 @@ when that workflow selects it.
 
 Verify in two stages just before saving: **the deterministic harness settles the mechanical rules, and the authoring path performs the judgment pass.** Self-check is the default; for a long ADR, new domain, high uncertainty, or an axis the author cannot judge independently, the current model may use an independent reviewer or separately grounded pass.
 
-Reuse the current authoring context for this pass. `/adr-review` remains the
-later path for inherited or hand-edited ADRs.
+Reuse the current authoring context for this pass. The recommended `/adr-review`
+follow-up reads the saved, approved ADR under `after-save-review.md`; it does
+not replace this pre-save verification or approval.
 
 **(a) The deterministic harness — `adr-structure-lint`**:
 
@@ -33,10 +34,10 @@ This candidate run mechanically verifies the following (grounded in `authoring-r
 - The Status enum and date format (the first half of R1), presence of the required sections (Status/Purpose/Decision/Consequences), canonical filename (`NNNN-kebab.md`, no stale `fN-` prefix), title number = filename number, path depth ≤ 2 segments
 - Anti-pattern category segments (the first half of R5), advisory Driver/alternative count warnings (R13/R14), Related links resolving (R10), whether a value is written in code-constant form (R18's format half — the `value-as-constant` warning)
 - The `.mapping.json` schema and `dependsOn` integrity (dangling / self-edge / cycles — R16), mapping↔disk consistency (R8), plus the mapping `adrs` record shape (path/status/summary) and status↔body agreement
-- `--documents-only` retains ADR→PRD back-reference checks (R17) and skips the code scan
+- `--documents-only` retains ADR→PRD back-reference checks (R15) and skips the code scan
 - Seeded-doc health, reported once for the directory rather than per ADR: version lag (`rules-doc-stale` / `rules-doc-unstamped`) and layout lag (`rules-doc-layout-legacy` / `rules-doc-layout-duplicated`) — all four route back to step 1, which owns the seeding and the refresh question
 
-For the code→ADR check (R15), run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/adr-invariants.sh" --adr-dir docs/adr --code-only` from the live repository root. This is read-only; reuse a current baseline result when the relevant source and scan configuration have not changed. A candidate-only document pass does not prove a repository code scan passed.
+For the code→ADR check (R17), run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/adr-invariants.sh" --adr-dir docs/adr --code-only` from the live repository root. This is read-only; reuse a current baseline result when the relevant source and scan configuration have not changed. A candidate-only document pass does not prove a repository code scan passed. Keep this authoring check separate from the later code-free `/adr-review` invocation.
 
 Fix candidate errors before step 7 by editing only the draft body, mapping, or related candidates. Distinguish unchanged baseline findings from draft-introduced failures and report unresolved checks; do not silently modify unrelated source or rule documents. Carry warnings (counts, suspected code references, and the like) into (b) and judge their substance. A warning is not an instruction to invent Drivers or Alternatives to fill a quota.
 
@@ -55,6 +56,13 @@ Reuse the mechanical checks actually proved for the current candidate and baseli
 - **Prose style (R20)** — advisory. Apply `reader-first-writing.md`, including
   its mechanical writing patterns, and never accept a cut that drops content.
 
-**Two of these you cannot check as well as a fresh reader, so make them explicit rather than assumed.** The values were in this conversation and the alternatives are yours, so a draft missing a requirement still reads as complete to you, and your own alternatives never look like strawmen. So for **R18a and R19, write the check out** — list the contracts a rebuild must honor and mark each present or absent, instead of concluding "the contract is complete". Anything absent goes back to the user as a question in step 7; **never invent a number to resolve the missing requirement.**
+For **R18a and R19, write the check out**: list the obligations and observable
+criteria a rebuild must honor, marking each present or absent. Restore omissions
+from supplied, confirmed sources; ask only about a material requirement or
+criterion those sources do not settle. **Never invent a number.** This makes the
+self-check reviewable before the later recommended document review.
 
-Fix what the pass finds before step 7. If the draft needs splitting, or a DB schema change needs `docs/tables/` updated in the same change, return to step 3. **Report the pass in one line at step 7** ("harness passed; R18a/R19 checked; independent read: used|not needed — run `/adr-review <category>` for a later second opinion").
+Fix what the pass finds before step 7. If the draft needs splitting, or a DB
+schema change needs `docs/tables/` updated in the same change, return to step 3.
+Report the actual harness and R18a/R19 checks in the approval digest. After
+saving, use the recommended review path in `after-save-review.md`.

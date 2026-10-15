@@ -29,7 +29,7 @@ Review ADRs that already exist **as documents** and return a punch list. With no
 >
 > Reach for this one when you want ADR quality judged **without reading code** — a periodic audit, an inherited ADR set, or a check after hand-editing several ADRs. Since it never opens the codebase, it is far cheaper than `/adr-sync` and does not care whether the code exists yet.
 >
-> **This is the review path for an inherited or hand-edited ADR.** `/adr-new` defaults to self-check and may use an independent reviewer when risk warrants it. This command applies the document-review contract to existing ADRs without relying on their authoring context. Run it when the user asks, not on a schedule.
+> **This reviews saved ADRs, including the recommended follow-up to `/adr-new`.** The authoring path keeps its pre-save self-check and approval; its post-save recommendation targets the exact saved ADR and honors skip/defer or an unchanged completed review. This command derives the document verdict from the ADR and supplied intent sources, without inheriting the author's self-check conclusion. It can also review inherited or hand-edited ADRs when requested.
 
 > **Report-only**: never edit an ADR, `.mapping.json`, or code. Return findings and let the user decide. That is what makes a full sweep safe — a sweep that also edited would fan one misjudgment across every ADR at once.
 

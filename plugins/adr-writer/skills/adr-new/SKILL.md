@@ -137,12 +137,13 @@ regeneration checklist. Reuse unchanged approval; otherwise confirm the baseline
 once. Apply only the approved files after checking source/destination freshness,
 then verify official structure. Silence or a draft check is not approval.
 
-### 8. Point to the next step
+### 8. Recommended review and next step
 
-After saving, offer the next step in one line:
-
-- "Continue straight into implementation with `/adr-impl <category>`?" — the common flow.
-- "If there are more ADRs to write alongside this decision, call `/adr-new <category>` again for the same category."
-- Offer `/adr-review <category>` only when the user asks for a second opinion, or when step 6(b) left an axis you could not settle — it is the path for an ADR nobody has an authoring context for, which is what a hand-edited ADR becomes. Do not run it automatically here; the draft was just judged against the same rules.
+Read [after-save review](references/after-save-review.md). Normally run
+`/adr-review <saved-adr-path>` after the approved save, respecting an explicit
+skip/defer and reusing an unchanged completed review. This code-free document
+review remains a recommendation, not a new save or approval gate, and leaves
+the ADR `Proposed`. Report its result or actual limit, then continue already
+authorized work or name the implementation command as the next available action.
 
 > **Note**: if an ALPS Section 7 feature already exists and you want to bulk-convert it into ADRs, use `/feature-to-adr`. `/adr-new` is the path for authoring a single decision directly, as it comes up.

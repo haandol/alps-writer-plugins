@@ -39,7 +39,12 @@ const groups = [
     ["feature-handoff-preserves-", "feature-handoff-delegation-"],
   ],
   ["결정 관리", "작성", "요구사항", ["author-keeps-", "author-rejects-", "author-self-"]],
-  ["결정 관리", "작성", "소유권과 승인", ["author-delegation-", "author-routes-"]],
+  [
+    "결정 관리",
+    "작성",
+    "소유권과 승인",
+    ["author-delegation-", "author-routes-", "author-review-"],
+  ],
   ["결정 관리", "작성", "업무 경계", ["author-groups-", "author-discovers-"]],
   ["결정 관리", "작성", "기존 프로젝트", ["import-"]],
   ["결정 관리", "문서 검토", "요구사항 보존", ["review-catches-", "review-requirement-"]],

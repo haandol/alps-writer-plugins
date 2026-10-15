@@ -63,6 +63,12 @@ For Full ALPS, `/feature-to-adr` transfers each feature's complete implementatio
 
 New ADRs start as `Proposed`. `/adr-impl` checks prerequisites, implements the approved requirements, runs tests, and reviews the result. It uses `/adr-impl-refactor` when a separate refactoring pass is warranted and `/adr-impl-review` as the completion gate. A passing review promotes the ADR to `Accepted`.
 
+After an approved save, `/adr-new` normally runs `/adr-review` on that saved ADR
+as a recommended document check. It honors an explicit skip/defer and reuses an
+unchanged completed review. `/adr-impl` runs its implementation review after code
+and tests, before completion; it reuses that result instead of reviewing again
+after the status transition. Document review never proves implementation complete.
+
 Use `/adr-review` to review ADR documents without editing them or reading code. Use `/adr-sync` to reconcile proven drift, check broad refactors or manual ADR edits, or run a periodic audit. `/adr-rollup` consolidates the recorded evolution of one decision while preserving its requirements and rationale.
 
 `/adr-review` also checks whether the recorded intent is fully expressed as
