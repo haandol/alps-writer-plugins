@@ -32372,6 +32372,7 @@ Every document-specific tool requires doc_path. Use the source path returned by 
    approval unit and persist each with its own save_alps_section call. Never merge,
    skip, or infer a Feature.
 5. export_alps_markdown(doc_path) for final output
+6. After the selected document's required Sections are approved and saved (Full: all nine; Lite: 1, 2, and 4), verify written completion with get_alps_document_status(doc_path) and ask once whether the user wants an optional deep-research review of the ALPS items' evidence and errors. Lite's unwritten optional Section 3 does not block this invitation. Reuse an explicit review request or an answered choice in the current conversation. An unanswered invitation, decline, deferral, or research failure never changes document completion. Do not start research without a request. If requested, use the bundled alps-research skill: prefer actual available built-in deep research; otherwise investigate with the agent's web search and source-reading tools. If web search is unavailable or fails, use connected DuckDuckGo MCP and disclose that fallback and its reason. If neither works, report the external evidence gaps and continue accessible source and internal checks. Tie findings to the original items, distinguish factual errors from unsupported hypotheses and chosen goals/policies, verify source passages, and present corrections for existing Section/Feature approval before saving. Research alone never authorizes document changes.
 </WORKFLOW>
 
 <RULES>

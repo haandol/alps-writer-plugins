@@ -130,6 +130,15 @@ implementation readiness.
    structure, NFR wizards, Feature IDs, implementation plans, or ADR handoff steps to Lite.
 10. When the requested document work is complete, call
     `mcp__alps-writer__export_alps_markdown`.
+11. After required Sections 1, 2, and 4 are approved and written, confirm the selected
+    document's completion with `get_alps_document_status(doc_path)` and ask once
+    whether the user wants an optional deep-research review of its evidence and errors.
+    Unwritten optional Section 3 does not block this invitation. Reuse a review request
+    or an answered choice already in the current conversation; an unanswered invitation,
+    decline, or deferral does not start research or change completion. If requested,
+    follow [alps-research](../alps-research/SKILL.md): built-in deep research first,
+    otherwise available web search, with DuckDuckGo MCP when web search is unavailable
+    or fails. Findings become edits only through the existing Section approval boundary.
 
 **Rule**: Lite uses Full ALPS's conversation-led authoring behavior with fewer Sections. Do not
 auto-complete a Section before asking for missing context or add persona-selection and
