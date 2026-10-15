@@ -1,21 +1,25 @@
 # From a familiar picture to precise understanding
 
-Use when a report explains unfamiliar or complex concepts. Follow
+Use when choosing a familiar starting point or explaining an unfamiliar part of
+any report, including a review or comparison. Follow
 [explanation design](explanation-design.md) for scope, descent and disclosure;
 this module adds the connection from reader context to the actual subject.
 
 ## Start from what the reader already knows
 
-Use relevant known work, examples, tools, vocabulary and learning preferences to
-choose a familiar starting point. Let them change the explanation, not merely
-add a greeting. Current instructions and the stated audience take precedence:
-colleagues cannot be assumed to share the author's background. Do not invent a
-profession, experience or preference, or require a profile interview, personal-data
-lookup or saved learner profile. Use only context needed to teach the subject.
+Apply [reader context](explanation-design.md#establish-the-readers-question)
+to select a useful connection. An existing technical model, workflow or concrete
+experience can be the starting point; an everyday metaphor is only one option.
+Explain enough of that connection in the report itself for a later rereading.
+Colleagues cannot be assumed to share the author's background; personal context
+guides the explanation without becoming a biography or an unstated prerequisite.
 
-An experienced reader may already understand part of the system; spend depth
-on the unfamiliar boundary. When context is absent, choose a broadly familiar
-analogy or a plain explanation. Do not force an elementary metaphor onto everyone.
+An experienced reader may already understand part of the system; show how the
+new responsibility fits that model and spend depth on the unfamiliar boundary.
+The starting view should explain the whole at that reader's level, without
+re-teaching known basics or exposing all internals at once. When context is
+absent, choose a broadly familiar analogy or a plain explanation. Do not force
+an elementary metaphor onto everyone.
 
 ## Translate the analogy into the actual subject
 

@@ -269,6 +269,20 @@ ADR folders are organized along two axes — a DDD **bounded context** (top-leve
 
 **Document selection** — Every document-specific MCP request requires `doc_path`. The controller creates a request-scoped DocumentService, sharing only template metadata; the service validates that path before the operation. Prior init/load calls never select a default for another request. Existing documents can be read or changed on a fresh connection without an earlier load. Missing/invalid targets and document validation errors return MCP `isError: true`.
 
+**Evidence research** — After Full's nine Sections or Lite's required Sections
+1, 2, and 4 are approved and written, offer one optional deep-research review of
+the selected document's evidence and errors. Reuse an explicit research request
+or answered choice in the current conversation. Unwritten optional Lite Section 3,
+a decline, deferral, unanswered invitation, or research failure does not change
+completion. `alps-research` prefers an available built-in deep-research capability,
+then uses the agent's web search and source reading, falling back to connected
+DuckDuckGo MCP when search is unavailable or fails. Discover actual capabilities;
+do not configure providers or install a server. Review real document items,
+distinguish factual errors and evidence gaps from goals/policies, and connect
+findings to verified sources and proposed corrections. Research is read-only;
+selected edits use existing approval units and explicit document targets. Keep
+research artifacts disposable and retain the existing post-handoff boundary.
+
 **Optional glossary** — Both profiles keep their numbered Sections unchanged and
 append a glossary only when qualifying jargon, uncommon terms/acronyms, or
 expressions that cannot be written out plainly need confirmed definitions. Ask

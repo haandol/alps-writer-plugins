@@ -30,6 +30,13 @@ A review-only request does not authorize changes to the subject.
 Write model-facing instructions in English and the report in the user's language.
 Keep the report self-contained, preserve exact evidence and the caller's scope,
 and use stable terms whose definitions connect to their examples and later uses.
+Build from the reader's relevant known context to an understandable whole, then
+open the same subject's responsibilities, relationships and concrete behavior.
+The opening should give new details a place in that whole; a domain outline alone
+does not establish this connection. Preserve evidenced domain boundaries while
+letting the reader's question guide the route through them. Use this principle
+for reviews and comparisons as well as concept explanations.
+
 Reuse loaded guidance. Read the common references once, then load additional
 modules only for the content or format being handled:
 
@@ -37,7 +44,8 @@ modules only for the content or format being handled:
   owns the opening, intent and domain hierarchy; [editorial review](references/editorial-review.md)
   owns meaning, terminology and continuity checks; [format and layout](references/format-and-layout.md)
   owns paragraph layout, verification and delivery.
-- **Explanation-specific guidance:** for unfamiliar or complex concepts, use
+- **Explanation-specific guidance:** when choosing a familiar starting point or
+  connecting it to an unfamiliar part, use
   [abstraction and analogy](references/abstraction-and-analogy.md). When choosing,
   drawing or reviewing figures, use [diagrams](references/diagrams.md); when a
   quantitative claim supports a judgment, use [quantitative claims](references/quantitative-claims.md).

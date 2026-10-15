@@ -23,6 +23,13 @@
 
 set -u
 
+# Hooks export repository selectors, including an absolute GIT_DIR in linked
+# worktrees. Test fixtures must discover their own repositories from their cwd
+# instead of writing commits, config or index entries into the pushed checkout.
+for hook_git_var in $(git rev-parse --local-env-vars); do
+  unset "$hook_git_var"
+done
+
 PUSH_UPDATES="$(cat)"
 
 fail() {

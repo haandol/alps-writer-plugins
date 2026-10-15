@@ -34,14 +34,21 @@ premises at their point of use; retain real evidence gaps and limit affected cla
 - **Depth:** read the fully expanded explanation, then consider the upper view
   alone and one deeper branch at a time. Can the reader recover the answer and
   limits above, then recognize the same object or responsibility and understand
-  its newly exposed behavior below? Keep peer cases and sources distinct from
+  its newly exposed behavior below? Identify the question that makes this descent
+  useful and the new explanation that answers it. Consider the prose without
+  its headings: its relationships should still be understandable, rather than
+  existing only as nested labels. Keep peer cases and sources distinct from
   deeper resolution. Reject repeated parent summaries, hidden prerequisites and
   evidence that makes the reader reconstruct the mechanism.
 - **Qualification:** does each detail substantiate or qualify its parent rather
   than introduce an unrelated claim? Do simplifications retain the caveats,
   failures and exceptions that change the answer? Substantive parents explain
   their children's relationship; simple source lists need no filler paragraph.
-- **Reader fit:** did known context actually shape an unfamiliar explanation?
+- **Reader fit:** does the opening connect relevant known context to the subject's
+  whole role and result, with the unfamiliar part identifiable? Check reviews and
+  comparisons too. Background name-dropping, broad category labels and simpler
+  synonyms alone do not establish that connection. If context is absent, a plain
+  explanation is sufficient; do not infer a personal knowledge gap.
   If it uses an analogy, do the mapped concepts and limits support an edge case
   under the literal rules? Do not invent reader familiarity or a guarantee.
   Use [abstraction and analogy](abstraction-and-analogy.md) when repairing this

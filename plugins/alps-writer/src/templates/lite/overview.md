@@ -147,6 +147,18 @@ detailed Feature specifications, implementation plans, or ADR handoff.
 Lite and Full keep separate document state, resume, completion, and export. Completing Lite never
 changes or completes a Full document.
 
+## Optional research after completion
+
+After required Sections 1, 2, and 4 are approved and written, check the selected
+document with `get_alps_document_status(doc_path)`, export it, and ask once whether
+the user wants a deep-research review of the ALPS items' evidence and errors.
+Unwritten optional Section 3 does not block this invitation. Reuse an explicit
+review request or an answered choice in the current conversation. An unanswered
+invitation, decline, deferral, or research failure leaves document completion intact.
+Start only on request and use the bundled `alps-research` skill: built-in deep
+research first, otherwise available web search, with DuckDuckGo MCP when web search
+is unavailable or fails. Keep findings read-only until the user approves specific edits.
+
 ## Feature organization
 
 Before grouping an existing project, inspect repository organization

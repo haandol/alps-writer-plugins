@@ -175,6 +175,17 @@ When user provides PDF, ALPS (PRD), or any reference:
 - In Section 4.2, record only Architecture Constraints that regenerated implementations must preserve. Never persist a replaceable technology inventory.
 </rules>
 
+## Optional research after completion
+
+After all nine Sections are approved and written, check the selected document with
+`get_alps_document_status(doc_path)`, export it, and ask once whether the user wants
+a deep-research review of the ALPS items' evidence and errors. Reuse an explicit
+review request or an answered choice in the current conversation. An unanswered
+invitation, decline, deferral, or research failure leaves document completion intact.
+Start only on request and use the bundled `alps-research` skill: built-in deep
+research first, otherwise available web search, with DuckDuckGo MCP when web search
+is unavailable or fails. Keep findings read-only until the user approves specific edits.
+
 ## Feature organization
 
 Before grouping an existing project, inspect repository organization

@@ -203,6 +203,17 @@
         }
       ],
       "dependsOn": ["alps-authoring/authoring-interaction"]
+    },
+    "alps-authoring/evidence-research": {
+      "feature": "ALPS evidence research and review",
+      "adrs": [
+        {
+          "path": "docs/adr/alps-authoring/evidence-research/0001-research-evidence-and-review-alps-items.md",
+          "status": "Proposed",
+          "summary": "Full·Lite 완료 후 선택적 근거 검토를 안내하고 내장 딥리서치·웹 검색·DuckDuckGo 순으로 조사해 승인한 수정만 반영한다"
+        }
+      ],
+      "dependsOn": ["alps-authoring/authoring-interaction", "alps-authoring/document-selection"]
     }
   }
 }

@@ -6,9 +6,15 @@ owning workflow retains scope, evidence, verdict and permissions.
 ## Establish the reader's question
 
 Identify the reader, question or decision, language, format and available evidence.
-Use relevant known context to choose vocabulary and depth; the stated audience
-and current preferences take precedence. Do not invent familiarity or repeat a
-background interview.
+Use relevant context from the current request, conversation and available user
+memory to choose the starting explanation, vocabulary and depth. Current
+instructions and the stated audience take precedence over remembered preferences.
+A remembered project name alone does not establish knowledge of its internals.
+Use the relevant known concept or experience to explain a relationship in the
+subject; mentioning the reader's background without changing the explanation is
+insufficient. When familiarity is unknown, use a plain account of the problem,
+actors and outcome. Do not invent familiarity, repeat a background interview,
+require personal-data lookup or create a learner-profile record.
 
 Directly below the title, show the standalone heading "Background and goals",
 localized in the report's language. Briefly explain the concrete problem or
@@ -55,10 +61,20 @@ must not silently change machine-readable facts or required fields.
 
 Use C4's idea of changing resolution: show the whole, then the same subject's
 responsibilities, internal relationships, rules and concrete behavior. Upper
-levels defer unnecessary detail while retaining answer-changing limitations.
+levels explain the subject's purpose, boundary, observable result and essential
+relationships in terms the reader can already follow. High abstraction means
+less internal detail, not vaguer language or a list of broad topic names. Keep
+answer-changing limitations visible while deferring unnecessary mechanics.
 Evidence supports an explanation; opening a source, collapsing a section or
 switching to a peer case is not itself a lower abstraction level. Do not require
 literal C4 notation, technical-layer headings or a fixed number of levels.
+
+The domain hierarchy locates responsibilities inside this whole. Establish why
+those responsibilities belong together before presenting them as separate
+branches. A catalog of domains, review categories or implementation components
+can be accurate while leaving the reader to reconstruct their relationships.
+For a review or comparison, unfold the behavior or decision being assessed and
+attach findings or alternatives where they change its explanation.
 
 - **Name meaningful scopes.** Prefer evidenced subdomains and bounded contexts,
   then business responsibilities or concepts. Process stages can define scopes
@@ -72,7 +88,9 @@ literal C4 notation, technical-layer headings or a fixed number of levels.
   use arbitrary numbered groups or add empty levels. Supporting sources and
   quizzes belong to their explanation and do not consume this child allowance.
 - **Orient each descent.** Give each domain an answer-first opening and explain
-  what its children add: a reason, mechanism, condition or worked example.
+  which question about that answer needs a reason, mechanism, condition or
+  worked example. A child opens an identified part of the parent and adds what
+  the reader needs to answer that question; it does not restart the topic.
   Introduce cross-domain relationships before splitting into branches. Titles
   and previews should make the next reading choice clear without repeating an
   inventory. A simple source list needs no artificial parent paragraph.
@@ -105,8 +123,8 @@ limits or apply its rule without guessing hidden steps. If the source does not
 support deeper internals, state that boundary. Use the existing prose and figures;
 do not add a mandatory depth, mapping registry, or authoring-plan artifact.
 
-For unfamiliar or complex concepts, use [abstraction and analogy](abstraction-and-analogy.md)
-to connect known reader context to the actual subject. For figures, use
+When choosing a familiar starting point or connecting it to an unfamiliar part,
+use [abstraction and analogy](abstraction-and-analogy.md). For figures, use
 [diagrams](diagrams.md) when choosing, drawing or reviewing them. Assess useful
 views throughout the explanation; a whole-system or multi-step report normally
 benefits from an overview after the background and answer, before component detail.

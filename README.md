@@ -59,6 +59,20 @@ Both export to Markdown, keep separate files and completion state, and add a glo
 
 For Full ALPS, `/feature-to-adr` transfers each feature's complete implementation requirements into one or more ADRs. After handoff, ADRs govern implementation; the PRD remains a planning record. Re-import a changed PRD explicitly to propose ADR updates. Equivalent input leaves the ADRs unchanged.
 
+After completing Full or Lite ALPS, the agent offers an optional deep-research review.
+Skipping it leaves the document complete. You can also request
+`/alps-research <document-path>` (`$alps-research` in Codex) to find evidence for
+document items and check facts, numbers, citations, and contradictions. The review
+distinguishes errors and evidence gaps from product goals or policy choices.
+
+Research uses the agent's available built-in deep research first. Otherwise, the
+[research skill](./plugins/alps-writer/skills/alps-research/SKILL.md) uses available
+web search and source reading, falling back to connected DuckDuckGo MCP when search
+is unavailable or fails. It reports any fallback or evidence it could not verify.
+DuckDuckGo is supplied by the agent environment; the plugin does not install or
+configure it. Findings include sources and proposed corrections. You choose which
+changes enter ALPS through its existing Section/Feature approval flow.
+
 ### Implement and maintain decisions
 
 New ADRs start as `Proposed`. `/adr-impl` checks prerequisites, implements the approved requirements, runs tests, and reviews the result. It uses `/adr-impl-refactor` when a separate refactoring pass is warranted and `/adr-impl-review` as the completion gate. A passing review promotes the ADR to `Accepted`.
