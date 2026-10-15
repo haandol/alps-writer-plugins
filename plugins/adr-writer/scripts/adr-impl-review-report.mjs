@@ -314,6 +314,9 @@ const UI = {
     requestedChange: "Requested change",
     editTargets: "Where to change",
     completionCriteria: "Done when",
+    missingExpectedBehavior: "The expected outcome needs clarification from the supplied evidence.",
+    missingRequestedChange: "Specify the correction supported by the supplied evidence.",
+    defaultCompletionCriteria: "The expected outcome is verified and the required checks pass.",
     technicalEvidence: "Technical evidence",
     category: "Category",
     confidence: "Confidence",
@@ -445,6 +448,9 @@ const UI = {
     requestedChange: "요청하는 변경",
     editTargets: "수정 위치",
     completionCriteria: "완료 조건",
+    missingExpectedBehavior: "제공된 근거에서 기대 결과를 명확히 적어야 합니다.",
+    missingRequestedChange: "제공된 근거에 맞는 수정 내용을 명확히 적어야 합니다.",
+    defaultCompletionCriteria: "기대 결과가 검증되고 필요한 검사가 통과해야 합니다.",
     technicalEvidence: "상세 기술 근거",
     category: "분류",
     confidence: "근거 수준",
@@ -649,11 +655,24 @@ function renderMarkdown(source, ui) {
   return out.join("\n");
 }
 
-function normalizeFindings(data) {
+/** Keep current failure evidence separate from the outcome and future verification needed to finish. */
+function normalizeFindings(data, ui) {
   const findings = Array.isArray(data.findings) ? data.findings : [];
+  const requirements = new Map(
+    (Array.isArray(data.contractCoverage) ? data.contractCoverage : [])
+      .filter((row) => typeof row?.requirement === "string" && row.requirement.trim())
+      .map((row) => [row.contractId, row.requirement]),
+  );
   const known = Object.prototype.hasOwnProperty.bind(CATEGORIES);
   const mapped = findings.map((f, i) => {
     const category = f.category || "Refactor";
+    const contractIds = Array.isArray(f.contractIds)
+      ? f.contractIds.filter((value) => typeof value === "string" && value.trim())
+      : [];
+    const expected = [
+      ...new Set(contractIds.map((id) => requirements.get(id)).filter(Boolean)),
+    ].join("; ");
+    const test = typeof f.test === "string" && f.test.trim() ? `${ui.tests}: ${f.test}` : "";
     // An unrecognized category (typo, brackets left on, wrong case) must not
     // silently sink into the grey advisory bucket — a mislabeled must-fix would
     // vanish. Flag it so the card renders a visible warning, and warn on stderr.
@@ -670,15 +689,12 @@ function normalizeFindings(data) {
       unknownCat,
       summary: f.summary || "",
       whyItMatters: f.whyItMatters || f.impact || f.evidence || "",
-      expectedBehavior: f.expectedBehavior || f.adrQuote || "",
+      expectedBehavior: f.expectedBehavior || f.adrQuote || expected || ui.missingExpectedBehavior,
       observedBehavior: f.observedBehavior || f.code || "",
-      requestedChange: f.requestedChange || f.fix || f.route || "",
+      requestedChange: f.requestedChange || f.fix || f.route || ui.missingRequestedChange,
       editTargets: f.editTargets || f.code || "",
       completionCriteria:
-        f.completionCriteria ||
-        [f.test, f.testResult]
-          .filter((value) => typeof value === "string" && value.trim())
-          .join(" — "),
+        f.completionCriteria || [ui.defaultCompletionCriteria, test].filter(Boolean).join(" "),
       adrQuote: f.adrQuote || "",
       code: f.code || "",
       fix: f.fix || "",
@@ -691,9 +707,7 @@ function normalizeFindings(data) {
       evidence: f.evidence || "",
       test: f.test || "",
       testResult: f.testResult || "",
-      contractIds: Array.isArray(f.contractIds)
-        ? f.contractIds.filter((value) => typeof value === "string" && value.trim())
-        : [],
+      contractIds,
       actionGroup:
         category === "Best practice" && f.weight === "next-cycle"
           ? "note"
@@ -1447,7 +1461,7 @@ function buildHtml(data) {
   const scope = Array.isArray(data.scope) ? data.scope : [];
   const changeScope = Array.isArray(data.changeScope) ? data.changeScope : [];
   const metrics = data.metrics && typeof data.metrics === "object" ? data.metrics : null;
-  const findings = normalizeFindings(data);
+  const findings = normalizeFindings(data, ui);
   const atAGlance = normalizeAtAGlance(data);
   const narrativeSections = normalizeNarrativeSections(data);
   const reviewHike = normalizeReviewHike(data);
