@@ -133,6 +133,20 @@ codex plugin add adr-writer@alps-writer
 
 The shared authoring rules and procedures (category-split, Status transitions, finding the code an ADR governs) live in `docs/adr/` (`concepts.md` — the principle, dependency model, and Status transitions; `authoring-rules.md`; `structure.md`; plus `README.md` as the index) — seeded from this plugin's `templates/adr/` on first run. Every command reads them as the single source of truth.
 
+Document review checks intent completeness and **provability**: whether each
+requirement states conditions, observable outcomes and criteria that distinguish
+compliance from a violation. It compares supplied intent sources when available;
+without them, it limits its claim to the ADR's recorded intent. It never reads
+code or certifies implementation completion.
+
+Implementation and its final review connect every obligation to enforcing paths,
+actual test assertions and execution results. Coverage distinguishes code
+inspection from verified behavior, accounts for all clauses in a compound row,
+and includes relevant edges and interactions. A green suite or line-coverage
+number cannot replace this evidence. Temporary reproductions do not repair
+missing repository regression assertions, and unavailable execution stays
+unverified. Evidence remains disposable; no new coverage registry is required.
+
 ## Deterministic self-test harness
 
 Six dependency-free scripts let the cycle verify ADRs and deliver implementation-review evidence without an LLM judgment call. The first two check that ADRs are well-formed. The materializer derives repeated Markdown evidence views from `findings.json`, the validator gates `/adr-impl-review` artifacts, the renderer builds a standalone HTML report, and the open helper validates that report before one default-browser open attempt.

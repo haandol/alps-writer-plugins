@@ -155,6 +155,11 @@ An ADR's goal is **not to reproduce the same code, but to make regenerated code 
 
 The same contract must also support the review that follows regeneration. Write each obligation independently and record implementation-independent **observable evidence**: the result a reviewer should see when the obligation is met or violated. This is not a test plan. Tests, commands, files, libraries, and internal data representation remain below ADR resolution. The implementation review derives a disposable Evidence Package from these rows, shows requirement-by-requirement coverage to the human reviewer, and keeps code-level choices separate.
 
+For the intent-to-obligation check and the distinction between reviewable
+completion criteria and implemented completion, apply `authoring-rules.md`
+"Intent completeness and provability". Document review establishes the former;
+code paths, actual assertions and execution evidence establish the latter.
+
 This test takes precedence over the code-readthrough test below. For the full definition and the requirement gate, see [`authoring-rules.md`](./authoring-rules.md#what-an-adr-must-satisfy--the-regeneration-test).
 
 ### Requirements live in both the ADR and the code — and the ADR comes first

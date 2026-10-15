@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-10-15 — current ADR: [의도부터 테스트까지의 증명 가능성](./0001-safe-proportional-development-gates.md)** — 문서에서 의도·요구사항·관찰 기준의 완결성을 확인하고 구현에서 계약별 정상·반례 테스트의 단언과 실행 근거를 연결한다.
+
 - **2026-10-05 — current ADR: [실행 가능한 수용 기준](./0001-safe-proportional-development-gates.md)** — 수용 의무별 검증 준비와 실제 진입점 증거를 연결하고, 구현 위반·실행 또는 판정 오류·계약 모호성에 따른 다음 행동과 진전 없는 반복의 처리를 구체화한다.
 
 - **2026-10-05 — current ADR: [의도를 보존하는 평가](./0001-safe-proportional-development-gates.md)** — 초기 수용과 개선 신호를 구분하고 의미 있는 tension metric을 적극 권장하되 선택 사항으로 유지하며, 관찰용 신호와 필수로 확정한 보호 조건의 판단을 구분한다.

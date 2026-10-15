@@ -45,7 +45,13 @@ Detailed routes:
 - `Impl-fact mismatch` → use `/adr-sync <category>` to remove the stale
   implementation detail, or correct it only when it is an admitted
   public/architectural contract.
-- `Test gap` → add a test that detects the failure first, then fix the code.
+- `Test gap` → add or strengthen the assertion/case that can detect the contract
+  failure, then fix code only if evidence establishes a code defect.
+- Unavailable environment/access or unresolved scope → keep the affected
+  obligation `UNVERIFIED`, recover the evidence path within authorization and
+  rerun the required check. An existing adequate test is not a `Test gap` merely
+  because it could not run. Escalate only a remaining material risk or missing
+  authorization; continue independent work and retain confirmed findings.
 - `Unverified risk` → reproduce or verify the concrete failure hypothesis or
   externally checkable premise first, or explicitly accept the risk. State
   which contract or safety property could fail if the premise is false. Do not

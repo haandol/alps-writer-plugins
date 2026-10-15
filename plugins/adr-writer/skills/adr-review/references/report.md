@@ -26,6 +26,7 @@ owns the junior-facing explanation and any Mermaid visualization.
 - Harness: <pass | n errors, m warnings>
 - Unjudged axes: <none | <rules> — <why: the repo's rule docs lack that section, a reviewer could not reach it, or the scope was batched>, so those rules went unjudged across <n> ADRs>
 - Not covered here: ADR↔code consistency (R1 code-reality, R17) → /adr-sync
+- Intent coverage basis: <supplied intent/requirements compared, or ADR-internal only; name missing source limits without assuming a defect>
 
 ### Verdict
 <n> PASS · <n> FIX_REQUIRED · <n> BLOCK
@@ -46,6 +47,11 @@ Notice: <the one relationship the reader should verify>
     Fix: <one line>
 - <path> — PASS — Comprehension load: <N>/10
 
+### Completion criteria (R19)
+- <per ADR: intent → independent obligations → conditions/input → observable result and pass/fail criterion, with source evidence>
+- <related normal/edge/failure conditions, missing criteria or counterexamples; "none found" when examined and clear>
+- <document PASS establishes reviewable completion criteria only; code, tests and actual implementation completion were not assessed>
+
 ### Prose style (R20, advisory)
 - <the house habit, with 2-3 rewrites and the affected ADRs — or "clean">
 
@@ -54,6 +60,12 @@ Notice: <the one relationship the reader should verify>
 ```
 
 Order the per-ADR section **worst first** (BLOCK, then FIX_REQUIRED, then PASS) so the reader meets the expensive problems first, and keep PASS entries to one line each.
+
+Keep each ADR's detailed provability accounting reachable in its domain section,
+including for PASS. Concise sweep entries must not discard that evidence. A
+missing policy or observable criterion is a document completeness finding;
+never replace it with a request for code-level tests or silently assert that
+unsupplied user intent was checked.
 
 **A `PASS` count is not a clean bill of health while an axis went unjudged.** The per-ADR verdict stays the reviewer's three values (`PASS` / `FIX_REQUIRED` / `BLOCK`) — do not invent a fourth — but an ADR can only be judged against the rules its reviewer could actually reach, so a rule nobody evaluated silently rides along inside `PASS`. That is why `Unjudged axes` sits in Scope, above the verdict: when it is non-empty, **say in the chat summary that the PASS count excludes those rules** rather than reporting "N passed" flat. This is the same discipline `/adr-impl-review` applies with `INCONCLUSIVE` — unverified must never read as verified — expressed without disturbing the reviewer's verdict vocabulary.
 

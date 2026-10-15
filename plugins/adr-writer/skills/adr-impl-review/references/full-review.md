@@ -15,6 +15,13 @@ Create `review-baseline.md` from:
 - a regeneration checklist marking where each contract is stated in the ADR
 - the implementation-independent observable evidence recorded for each contract row
 
+Reconcile the row list with the entire ADR, including Purpose and guarantees in
+prose. Associate each independent clause with its parent contract; keep the
+input/preconditions, observable result and pass/fail criterion explicit. A
+missing policy or criterion is a contract issue, not a license to derive a new
+policy from shipping code. Prior document-review PASS establishes reviewability,
+not implementation completion.
+
 Self-check the baseline against `authoring-rules.md` R18a/R19. A missing contract that can be recovered from the already approved ADR wording is corrected in the baseline. Concrete evidence that the ADR itself is incomplete, contradictory, or requires a new product choice is a blocking contract issue routed to ADR authoring before any code repair; it is not a reason to ask the routine three confirmation questions again. When `/adr-impl-review` is invoked standalone and no approval summary exists, record that limit and use the current ADR as the review baseline.
 
 Before declaring an ADR-completeness gap, apply the same resolution ladder as `/adr-impl`: derive obligations already required by an explicit contract, reuse established project conventions, apply authoritative domain rules, and accept reversible low-risk defaults below ADR resolution. Attach a derived obligation to its parent `D0` or `Rn` coverage row rather than inventing a new contract ID. Keep a domain default as a Notable implementation choice. Only a gap with multiple domain-valid outcomes or protected product-policy impact becomes a blocking contract issue.

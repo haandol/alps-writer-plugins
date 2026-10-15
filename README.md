@@ -65,6 +65,13 @@ New ADRs start as `Proposed`. `/adr-impl` checks prerequisites, implements the a
 
 Use `/adr-review` to review ADR documents without editing them or reading code. Use `/adr-sync` to reconcile proven drift, check broad refactors or manual ADR edits, or run a periodic audit. `/adr-rollup` consolidates the recorded evolution of one decision while preserving its requirements and rationale.
 
+`/adr-review` also checks whether the recorded intent is fully expressed as
+requirements with observable completion criteria. `/adr-impl` connects those
+requirements to meaningful normal and relevant edge-case assertions;
+`/adr-impl-review` reads the actual code paths, assertions and execution results
+to assess coverage. Missing clauses or required evidence prevent completion.
+Document-review PASS does not establish implementation completion.
+
 Changes to requirements or architecture need confirmation before implementation. Fixes that restore intended behavior and refactors that preserve it can proceed without a new ADR.
 
 ### Adopt an existing project

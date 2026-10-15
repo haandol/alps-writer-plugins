@@ -13,8 +13,14 @@ The main session does not merge the two reviews by vote. Verify findings with th
 1. Merge the same problem into one, but keep every source in `perspective`.
 2. Do not hide mutually contradictory conclusions — record them as a `Contradiction` finding.
 3. Confirm a high-impact finding only with a test, a reproduction, or an exact code/ADR comparison.
-4. Downgrade to `Unverified risk` any claim you could not execute or whose call path you could not fully confirm.
+4. Keep a claim `Unverified risk` when its proof depends on execution or a call
+   path that could not be confirmed. Preserve a violation independently
+   established by an exact code/ADR comparison even if another required test
+   cannot run; report that execution limit separately.
 5. Distinguish the fact that a test exists from the fact that a test detects the defect.
+   Read the assertions and their execution conditions against the obligation.
+   A success label, test name, line/branch coverage or mock assumption cannot
+   replace the enforcing path and observed result.
 6. A necessity PASS means "no unnecessary change was found"; a sufficiency PASS means "no counterexample was found at present and the decision ledger is accounted for."
 7. Normalize coverage independently from findings. `D0` is the Decision; `R1..Rn` follow top-level bullets and table data rows under `### Requirement contract` in source order. Each ID has exactly one `contractId`, `requirement`, `status`, `adrBasis`, `implementation`, `evidence`, and `tests` row. `D0.adrBasis` is `Decision`; preserve each source bullet verbatim, or join a table row's trimmed cells with `|`, excluding its header/separator. Use `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`. `PROVEN` means inspected/executed evidence supports the obligation without a found counterexample, not mathematical proof. Reject omissions, duplicates, and invented IDs.
 8. Before normalizing implementation choices, inspect their externally checkable premises. A premise confirmed by code, tests, configuration, or an authoritative external contract may remain part of the choice's evidence. If the premise is unverified and could violate safety or an ADR contract row when false, create an `Unverified risk`, mark the affected coverage `UNVERIFIED`, and block `PASS`. Do not infer private reasoning.
@@ -23,6 +29,43 @@ The main session does not merge the two reviews by vote. Verify findings with th
     Component, and Code route into `reviewHike.hills` exactly as
     `${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/review-hiking.md` and the artifact contract require.
 11. Normalize every finding into a user-action card as well as technical evidence. Keep non-empty `whyItMatters`, `expectedBehavior`, `observedBehavior`, `requestedChange`, `editTargets`, and `completionCriteria` fields. These fields explain the task in plain language; the exact ADR quote, code fragment, evidence, command, and result remain separate audit fields.
+
+### Preserve proof coverage within the existing artifact
+
+Keep the source-based `D0`/`Rn` IDs and required fields. The `requirement` and
+`implementation` text identify every independent clause, condition and derived
+obligation. In `evidence`, connect those clauses to actual enforcing paths,
+test inputs/preconditions, assertions, observable results, relevant
+counterexamples and any excluded edge category's contract/code basis. In
+`tests`, list the corresponding commands and actual required execution outcomes
+only. Put quoted domain states such as `FAILED`, intentional mutant failures
+and explanatory exclusions in `evidence`, not in that execution-result field.
+Never omit a failed or unexecuted required check. Use recognizable clause/test
+labels to connect the fields; do not invent source contract IDs or a permanent
+tracking registry.
+Guarantees outside the mechanically extracted rows belong to their existing
+parent or `D0`, with their exact source location/quote retained in the evidence.
+
+A parent row is `PROVEN` only if every clause and required verification is
+supported. A temporary review reproduction does not repair a required regression
+test or assertion gap; keep the affected parent `UNVERIFIED` for completion
+while explaining any independently code-supported behavior. Preserve each
+clause's violation, missing evidence or contradiction;
+no average or majority can override it. Report obligation coverage separately
+for inspected code and verified tests, using the full semantic inventory as
+the denominator, alongside the existing source-row counts. An inspection count
+is not a claim that the inspected code satisfies the obligation. Derive counts
+from the clause accounting; never infer completeness from a validator accepting
+the artifact's shape. Explain uncovered obligations and evidence limits in the
+same Hill, even when there are no confirmed code defects.
+
+Treat missing tests or ineffective assertions as `Test gap`, confirmed behavior
+mismatches as `Spec violation`, and unavailable execution/unfixed scope as
+`UNVERIFIED`. An undecidable core path makes the verdict `INCONCLUSIVE`; retain
+any separately confirmed must-fix findings. Missing product policy or an
+unresolvable criterion follows the existing contract-decision route. Never
+manufacture a code violation, a new requirement, or evidence of execution to
+make the table complete.
 
 The synthesized verdict:
 

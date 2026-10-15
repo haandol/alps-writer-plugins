@@ -85,7 +85,15 @@ Put `<!-- generated from findings.json -->` under `Abstract`. The JSON
 handoff carries the non-empty `atAGlance.impact`, `atAGlance.action`, and
 `atAGlance.risk` values, and the materializer writes the final visible section.
 
-Under `ADR contract coverage`, state Contract compliance explicitly: compare every recorded value, allowed set, transition, permission, mandatory field, ordering rule, uniqueness rule, and unit against the code. Keep one row per independent ADR obligation and include the implementation-independent observable evidence when selecting verification. The existence of similar logic is not enough when its value or rule differs.
+Under `ADR contract coverage`, state Contract compliance explicitly: compare every recorded value, allowed set, transition, permission, mandatory field, ordering rule, uniqueness rule, and unit against the code. Keep one row per independent ADR obligation in the working ledger, including the implementation-independent observable evidence used in verification. Normalize that ledger to the existing source contract rows without losing any clause's evidence. The existence of similar logic is not enough when its value or rule differs.
+
+Preserve the sufficiency pass's clause-level accounting inside the existing
+source-row IDs and evidence fields. Explain which obligations were inspected in
+code and which were verified by actual test assertions/results, using the full
+obligation inventory as the denominator. Keep relevant counterexamples, edge
+exclusion reasons, mock assumptions and unexecuted paths visible with their
+owning requirement. Do not turn partial evidence into a parent `PROVEN`, derive
+new conclusions from row counts, or substitute line coverage for this accounting.
 
 Render actionable `Findings` after the reader-facing narrative. Put
 `<!-- generated from findings.json -->` under `ADR contract coverage` and
@@ -336,8 +344,11 @@ derive the repair guidance from that contract.
 
 ## Evidence discipline
 
-- Tie every confirmed finding to code evidence and a test or reproduction result.
-- Mark an unexecuted claim as `needs confirmation`; never present it as a confirmed defect.
+- Tie every confirmed finding to an exact code/ADR comparison or an observed
+  test/reproduction result that establishes it.
+- Mark claims dependent on unavailable execution or unconfirmed paths as
+  unverified. Preserve independently code-confirmed violations and report missing
+  execution separately; do not downgrade all findings or invent a test failure.
 - Explain jargon only when it appears in the report.
 - Put the observable symptom before the internal category or symbol name.
 - Keep `Context` and every subject-specific narrative section grounded in the

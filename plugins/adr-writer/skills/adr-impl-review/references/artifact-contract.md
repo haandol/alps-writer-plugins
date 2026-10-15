@@ -146,8 +146,8 @@ result. Show the action layer by default and collapse the technical layer.
 
 Keep ADR contract coverage in structured JSON with `Contract ID`, `Requirement`,
 `Status`, `ADR basis`, `How the implementation meets it`, `Evidence`, and
-`Tests`. Keep the ADR wording recognizable and never merge several obligations
-into one row. `reviewHike.hills[].contractIds` assigns every row to exactly one
+`Tests`. Keep the ADR wording recognizable and never merge distinct source
+rows. Within a compound source row, preserve each obligation's separate evidence. `reviewHike.hills[].contractIds` assigns every row to exactly one
 Hill. The materializer writes the complete requirement, status, implementation,
 evidence, and tests together inside that Hill and writes only contract id,
 status, Hill, and requirement in the global coverage summary. The remaining
@@ -441,6 +441,16 @@ For contract IDs, enumerate top-level bullets and table data rows under the
 canonical Requirement contract in source order. Preserve a bullet verbatim in
 `adrBasis`; for a table row, join trimmed source cells with `|`, excluding the
 header and separator. Retain both the obligation and its observable evidence.
+
+Apply evidence-synthesis.md's proof coverage within these existing fields.
+Source rows and semantic obligations are different counts: preserve every
+clause and guarantee, including those outside the extracted requirement list,
+under its parent or `D0`. Keep actual code paths, test inputs/assertions/results,
+edge applicability and verification limits in the row's evidence and tests.
+The human explanation reports code-inspected and test-verified obligations
+against the full inventory and names the gaps. Neither a nonempty string nor
+schema validation establishes that an assertion detects the contract violation;
+that judgment belongs to the evidence review before materialization.
 
 Each `diagramRequirements` entry has a sequential `V1..Vn` id, one review
 question, a supported Mermaid type, an owning section, selection reason, and

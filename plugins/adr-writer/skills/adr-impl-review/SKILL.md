@@ -113,9 +113,11 @@ Independently build the **complete implementation scope** for the selected ADR:
 3. Search the repository from those terms, open the actual code, and trace
    direct and indirect callers and callees. Check differently named symbols,
    configuration, generated code, and surviving older paths where relevant.
-4. Find every related ideal and edge-case test. Cross-check each contract row
-   from decision to implementation and from implementation back to its entry
-   points.
+4. Find every related ideal and edge-case test. Read its setup, actual assertions,
+   mocks and execution result against the obligation, not just its name. Cross-check
+   each contract row from decision to implementation and back to every relevant
+   entry point. Include independent clauses and derived obligations in compound
+   rows; search the rest of the ADR for guarantees the mechanical row list misses.
 5. Record the confirmed production files, tests, and call paths as the
    implementation scope. A caller-provided file list is a starting floor, never
    a search limit.
@@ -190,6 +192,9 @@ selection and staged self-check belong to the common report skill.
 For `standard`, execute this section and then continue at **Report and artifact stage**. The full-mode baseline and perspective sections below do not apply.
 
 1. Build a decision ledger containing every ADR decision and each independently reviewable requirement-contract row, including its implementation-independent observable evidence. The sufficiency pass also extracts Notable implementation choices once from the complete implementation scope.
+   Apply the obligation accounting in `${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md`
+   in both modes. Code coverage and test success alone never establish contract
+   completeness; all clauses, relevant counterexamples and actual assertions matter.
 2. Apply the `adr-impl-sufficiency-reviewer` role to the original material, Hills, and ledger with the smallest suitable execution strategy.
 3. Review Hills in reader-priority order; record contract status, implementation evidence, and targeted test results. An unexecuted core path yields `INCONCLUSIVE`.
 4. Verify and synthesize findings using section 4's evidence rules. Standard mode has no necessity pass, mandatory separate reporting role, fixed Mermaid quota, or post-implementation spec-fitness gate. The validated HTML report remains required.
