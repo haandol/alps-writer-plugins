@@ -186,4 +186,88 @@ Report the requested/evaluated counts and missing observations with these rates.
       </example>
     </subsection>
   </template>
+  <example>
+The following fictional Feature excerpt connects guided document authoring to its
+evaluation rubric; it is separate from the sign-up examples above.
+
+### 7.1 Feature A (F1: Template-based AI Document Writing)
+
+#### 7.1.1 User Story
+
+- When a user starts a conversation, AI guides document writing based on the ALPS (PRD) template
+- Users complete the document step by step following AI guidance
+
+#### 7.1.2 User Flow
+
+1. Welcome message and getting-started guide on app launch
+2. AI presents questions for the first chapter when user wants to create a new document
+3. After all chapters are complete, guide for final document save
+
+#### 7.1.3 Technical Description
+
+1. Start a new document
+   - UI (User Interface — the chat the user interacts with): the user asks to create a document
+   - API (Application Programming Interface — the system boundary that processes the request): the assistant uses the ALPS template as guidance and asks the first section's questions
+   - Data store (where persistent document information is kept): an in-progress document is created or loaded
+   - Response: the first question is shown to the user
+2. Answer a chapter
+   - UI: user replies in the chat
+   - API: the reply is integrated into the current section; the next question follows
+   - Data: the section content is saved after the user confirms
+
+Because this action crosses several participants, the draft can add this optional
+overview:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as Document chat
+    participant API as Document authoring service
+    participant Data as Document data store
+
+    User->>UI: Request a new document
+    UI->>API: Start guided authoring
+    API->>Data: Create the in-progress document
+    Data-->>API: Document is ready
+    API-->>UI: Return the first section question
+    UI-->>User: Show the question
+```
+
+Values the result must honor:
+
+- One document is capped at 9 sections — the ALPS template defines exactly nine
+- An unconfirmed draft is kept for 30 days, then discarded (storage-cost policy)
+- A section is saved only after explicit user confirmation (never auto-saved)
+
+Note: an LLM/provider boundary appears here only when Section 4 records it as a durable constraint; prompt wording and replaceable provider tooling are not repeated here. Retry counts and cache lifetimes are tuning constants and are likewise absent.
+
+#### 7.1.6 Evaluation Rubric
+
+**Ideal Cases — required:**
+
+| Case and use   | Given / input                           | Observe                                           | Evaluator and rule                                    |
+| -------------- | --------------------------------------- | ------------------------------------------------- | ----------------------------------------------------- |
+| Confirmed save | The user confirms the displayed section | Persistence result corresponding to that approval | Code: that approved section is persisted exactly once |
+
+**Edge Cases — required:**
+
+| Case and use                | Given / input                                                                    | Observe                                     | Evaluator and rule                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Section-count limit         | A document reaches the 9-section boundary and an additional section is requested | Declared section count and rejection result | Code: the document remains capped at 9 sections; no 10th section is added               |
+| Draft retention             | An unconfirmed draft is observed before and at the 30-day expiry                 | Whether that draft is retained or discarded | Code: retain before 30 days and discard at expiry, using the stated storage-cost policy |
+| Approval before persistence | A draft has not received explicit user confirmation                              | Persistence actions for that draft          | Code: no section save occurs before confirmation                                        |
+| Incomplete draft            | A draft remains unapproved                                                       | Displayed section completion state          | User-flow evidence + Code: the draft is not shown as complete                           |
+
+**Automated Evaluation Metrics**
+
+| Eval metric                                                                                                                        | Tension metric, when useful                                                                                | Evaluation method and scope                                                                                                                                                                          | Decision and use                                                                                                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Approved-save success rate increases: approved sections persisted exactly once / evaluated approved-save requests, as a percentage | Unapproved-save rate decreases: unapproved drafts persisted / evaluated unapproved drafts, as a percentage | Code + user-flow evidence. Use the confirmed-save ideal case and approval/completion edge cases, with fixed observation and classification rules. Report requested/evaluated counts and missingness. | Monitoring summaries only; no new percentage target. Every required case remains binding, including the 9-section limit and 30-day retention. Never turn an empty cohort or unavailable judgment into 0 or a pass. |
+
+These values belong to this supplied example, not defaults for every product.
+The metrics expose blocking every save and saving every draft as opposite shortcuts.
+A missing required observation leaves the corresponding case unverified.
+
+- **Demo outcome:** This Feature provides the guided authoring step in the Section 3 journey; completion is visible when the approved section appears and the next incomplete section becomes active.
+  </example>
 </section>

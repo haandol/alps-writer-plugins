@@ -38,6 +38,68 @@ async function connectServer(context: TestContext) {
   return { client, dir };
 }
 
+test("MCP template examples are opt-in, reachable from the Full guide, and independent of Lite", async (context) => {
+  const { client } = await connectServer(context);
+  const call = async (name: string, args: Record<string, unknown> = {}) => {
+    const result = await client.callTool({ name, arguments: args });
+    assert.notEqual(result.isError, true, name);
+    return textContent(result);
+  };
+  const workedFeature = "Template-based AI Document Writing";
+  const guide = await call("get_alps_section_guide", { section: 7 });
+  assert.match(guide, /get_alps_section\(7, include_examples: true\)/);
+  assert.ok(!guide.includes(workedFeature));
+  assert.match(guide, /read_alps_section\(doc_path, 3\), read_alps_section\(doc_path, 6\)/);
+  const full = await call("get_alps_section", { section: 7 });
+  const lite = await call("get_lite_alps_section", { section: 4 });
+  assert.ok(!full.includes(workedFeature));
+  assert.match(full, /7\.x\.6 Evaluation Rubric/);
+  assert.match(lite, /4\.1 Demo Scenario/);
+  assert.doesNotMatch(lite, /Introduce myself on an overseas business trip/);
+  assert.equal(await call("get_alps_section", { section: 7, include_examples: false }), full);
+  assert.equal(await call("get_lite_alps_section", { section: 4, include_examples: false }), lite);
+
+  // Interleave profiles so opting into one cannot change the other's next default response.
+  const examples = await call("get_alps_section", { section: 7, include_examples: true });
+  assert.ok(examples.includes(workedFeature));
+  assert.match(examples, /Account creation.*unregistered valid email/);
+  assert.match(examples, /Confirmed save.*persisted exactly once/);
+  assert.match(examples, /```mermaid\nsequenceDiagram[\s\S]*UI-->>User: Show the question\n```/);
+  assert.match(examples, /Draft retention.*retain before 30 days and discard at expiry/);
+  assert.match(examples, /9-section limit and 30-day retention/);
+  assert.match(
+    examples,
+    /Demo outcome:.*approved section appears and the next incomplete section becomes active/,
+  );
+  assert.equal(await call("get_lite_alps_section", { section: 4 }), lite);
+  const liteExamples = await call("get_lite_alps_section", { section: 4, include_examples: true });
+  assert.match(liteExamples, /Introduce myself on an overseas business trip/);
+  assert.ok(!liteExamples.includes(workedFeature));
+  assert.doesNotMatch(liteExamples, /7\.x|9-section limit|30-day retention/);
+  assert.equal(await call("get_alps_section", { section: 7 }), full);
+  assert.equal(await call("get_lite_alps_section", { section: 4 }), lite);
+  assert.equal(await call("get_alps_section_guide", { section: 7 }), guide);
+
+  for (const name of ["get_alps_full_template", "get_lite_alps_full_template"]) {
+    const defaultTemplate = await call(name);
+    assert.equal(await call(name, { include_examples: false }), defaultTemplate);
+    assert.doesNotMatch(defaultTemplate, /\*\*Example:\*\*/);
+    assert.ok(!defaultTemplate.includes(workedFeature));
+    const withExamples = await call(name, { include_examples: true });
+    assert.ok(withExamples.includes(workedFeature) === (name === "get_alps_full_template"));
+    assert.match(withExamples, /\*\*Example:\*\*/);
+    assert.equal(await call(name), defaultTemplate);
+  }
+  const liteGuide = await call("get_lite_alps_section_guide", { section: 4 });
+  assert.match(liteGuide, /read_alps_section\(doc_path, 1\), read_alps_section\(doc_path, 2\)/);
+  assert.doesNotMatch(liteGuide, /get_alps_section\(7|Template-based AI Document Writing/);
+  const invalidLite = await client.callTool({
+    name: "get_lite_alps_section",
+    arguments: { section: 7, include_examples: true },
+  });
+  assert.equal(invalidLite.isError, true);
+});
+
 test("stdio MCP server exposes schemas and enforces document validation", async (context) => {
   const { client, dir } = await connectServer(context);
   const target = path.join(dir, "integration.alps.xml");

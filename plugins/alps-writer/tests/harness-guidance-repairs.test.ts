@@ -53,9 +53,14 @@ test("the sign-up example keeps password and lockout rules identical in acceptan
 });
 
 test("the rendered authoring example carries declared caps, expiry and approval into evaluable rows", () => {
-  const guide = new TemplateService().getSectionGuide(7);
-  const declared = between(guide, "Values the result must honor:", "#### 7.1.6 Evaluation Rubric");
-  const acceptance = between(guide, "#### 7.1.6 Evaluation Rubric", "</example>");
+  const template = new TemplateService().getSection(7, true);
+  const example = between(template, "### 7.1 Feature A (F1: Template-based AI Document Writing)");
+  const declared = between(
+    example,
+    "Values the result must honor:",
+    "#### 7.1.6 Evaluation Rubric",
+  );
+  const acceptance = between(example, "#### 7.1.6 Evaluation Rubric");
   const cap = declared.match(/capped at (\d+) sections/)?.[1];
   const days = declared.match(/kept for (\d+) days/)?.[1];
   assert.ok(cap && days);
@@ -84,6 +89,90 @@ test("the rendered authoring example carries declared caps, expiry and approval 
   assert.ok(
     rows.some((row) => row[0] === "Incomplete draft" && row[2].includes("completion state")),
   );
+  assert.match(example, /Users complete the document step by step following AI guidance/);
+  assert.match(example, /After all chapters are complete, guide for final document save/);
+  assert.match(example, /Data: the section content is saved after the user confirms/);
+  assert.match(example, /```mermaid\nsequenceDiagram[\s\S]*UI-->>User: Show the question\n```/);
+  assert.match(example, /LLM\/provider boundary.*only when Section 4 records it/);
+  const pair = rows.find((row) => row[0].startsWith("Approved-save success rate"));
+  assert.ok(pair);
+  assert.match(
+    pair[0],
+    /approved sections persisted exactly once \/ evaluated approved-save requests/,
+  );
+  assert.match(pair[1], /unapproved drafts persisted \/ evaluated unapproved drafts/);
+  assert.match(pair[2], /fixed observation and classification rules/);
+  assert.match(pair[2], /requested\/evaluated counts and missingness/);
+  assert.match(pair[3], /Monitoring summaries only; no new percentage target/);
+  assert.match(pair[3], /9-section limit and 30-day retention/);
+  assert.match(pair[3], /Never turn an empty cohort or unavailable judgment into 0 or a pass/);
+  assert.match(example, /values belong to this supplied example, not defaults/);
+  assert.match(example, /blocking every save and saving every draft as opposite shortcuts/);
+  assert.match(example, /missing required observation leaves the corresponding case unverified/);
+  assert.match(
+    example,
+    /Demo outcome:.*approved section appears and the next incomplete section becomes active/,
+  );
+});
+
+test("Section 7 loads worked Features only through opt-in templates and keeps the default guide complete", () => {
+  const service = new TemplateService();
+  const guide = service.getSectionGuide(7);
+  const template = service.getSection(7);
+  const examples = service.getSection(7, true);
+  const workedFeature = "### 7.1 Feature A (F1: Template-based AI Document Writing)";
+
+  for (const response of [guide, template, service.getFullTemplate()]) {
+    assert.ok(!response.includes(workedFeature));
+    assert.doesNotMatch(
+      response,
+      /Approved-save success rate|An unconfirmed draft is kept for 30 days/,
+    );
+  }
+  assert.doesNotMatch(guide, /<example>/);
+  assert.doesNotMatch(template, /\*\*Example:\*\*/);
+  for (const response of [examples, service.getFullTemplate(true)]) {
+    assert.equal(response.split(workedFeature).length - 1, 1);
+    assert.match(response, /Account creation.*unregistered valid email/);
+    assert.match(response, /Confirmed save.*persisted exactly once/);
+  }
+  assert.doesNotMatch(examples, /<\/?(?:example|template|subsection)\b/);
+  assert.equal(service.getSection(7, false), template);
+  assert.equal(service.getSection(7), template);
+  assert.equal(service.getSectionGuide(7), guide);
+
+  assert.match(guide, /get_alps_section\(7, include_examples: true\)/);
+  assert.match(guide, /read_alps_section\(doc_path, 3\), read_alps_section\(doc_path, 6\)/);
+  assert.match(guide, /If a referenced section is empty, STOP and author it first/);
+  assert.match(guide, /Feature `7\.x` is one approval and save unit/);
+  assert.match(guide, /Never save a requirement contract that was absent from\s+the digest/);
+  assert.match(guide, /Batch approval is allowed only when.*explicitly selected batch mode/);
+  assert.match(guide, /8\/10 or higher.*up to three.*option to keep the original/);
+  assert.match(guide, /never blocks approval or saving/);
+  assert.match(guide, /Restate every value from Q5 exactly/);
+  assert.match(guide, /known violation prevents acceptance; otherwise missing required\s+evidence/);
+  assert.match(guide, /all required obligations\s+must be established/);
+  assert.match(
+    guide,
+    /LLM\/provider boundary only when Section 4 records it as a durable constraint/,
+  );
+  assert.match(guide, /A Feature diagram is optional/);
+  assert.match(guide, /Keep diagram participants and messages at\s+product-requirement resolution/);
+  assert.match(guide, /Demo outcome.*one sentence/);
+  assert.match(guide, /do not persist a second demo description/);
+  for (const title of [
+    "User Story",
+    "User Flow",
+    "Technical Description",
+    "Edge Cases",
+    "Error Handling",
+    "Evaluation Rubric",
+  ]) {
+    assert.ok(template.includes(title), title);
+  }
+  assert.match(template, /Restate every value from 7\.x\.3 with its exact unit and rule/);
+  assert.match(template, /Every required ideal and edge case must be established/);
+  assert.match(template, /Demo outcome/);
 });
 
 test("the Feature template exposes a criterion form separately from its opt-in examples", () => {
