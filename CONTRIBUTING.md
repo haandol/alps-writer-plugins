@@ -281,6 +281,12 @@ Explain why this change is needed.
 - Merge commit message must follow Conventional Commits format
 - Do not push directly to `main`
 
+Git hooks must clear inherited repository-local Git environment variables before
+running tests that create temporary repositories. In a linked worktree, an inherited
+absolute `GIT_DIR` can otherwise send fixture commits, config and index writes to
+the checkout being pushed. The pre-push regression test exercises a real local push
+and verifies that fixture work leaves the outer checkout unchanged.
+
 ### Shared report-writing changes
 
 Edit `shared/report-writer/`, not the generated adr-writer copy. Run
