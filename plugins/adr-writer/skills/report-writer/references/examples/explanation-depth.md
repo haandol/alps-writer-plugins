@@ -25,6 +25,19 @@ line, or that the local record always knows the external result. Those propertie
 require their own evidence. Logs or tests supporting the explanation belong with
 it, but are not another level of the request-tracking model.
 
+A report organized only as "caller, stored records, external service" could
+describe every participant without explaining why they must cooperate. The
+descent above keeps one question in view: what makes a repeated request safe?
+The identifier connects the retry to one operation; the recorded result can
+answer a completed request; a missing result leaves the external outcome to be
+checked. Each detail explains a relationship needed by the preceding view.
+
+If the supplied reader context instead establishes HTTP API experience, start
+with the familiar distinction between sending a request and receiving its reply.
+Explain how retry handling preserves one operation across that gap, then open
+the recorded-result and unknown-outcome responsibilities. The system facts stay
+the same; the route from known behavior to the unfamiliar rule changes.
+
 ## Views that reveal the mechanism
 
 For the request-tracking example, the upper view can show one service role;
