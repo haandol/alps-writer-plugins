@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -847,6 +847,126 @@ test("review artifact validator requires a diff for changed scope and permits ex
     writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
     const existingResult = validate(dir);
     assert.equal(existingResult.status, 0, existingResult.stderr);
+  });
+});
+
+test("mixed changed handler diff and unchanged callee excerpt survive materialization and validation", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    findings.scope.push("src/completion.mjs");
+    const component = findings.reviewHike.hills[0].components[0];
+    component.codeEvidence.push({
+      kind: "excerpt",
+      location: "src/completion.mjs:7",
+      content: "return existingResult;",
+      explanation: "The unchanged callee reuses the stored completion result.",
+      tests: "node --test test/stream.test.mjs — PASS",
+    });
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+    const materialized = spawnSync(
+      process.execPath,
+      [path.join(HERE, "../scripts/adr-impl-review-materialize.mjs"), dir],
+      { encoding: "utf8" },
+    );
+    assert.equal(materialized.status, 0, materialized.stderr);
+    const result = validate(dir);
+    assert.equal(result.status, 0, result.stderr);
+    const markdown = readFileSync(path.join(dir, "implementation-review.md"), "utf8");
+    assert.match(markdown, /· diff ·/);
+    assert.match(markdown, /· excerpt ·/);
+    assert.match(markdown, /return existingResult;/);
+    assert.ok(markdown.includes(component.codeEvidence[0].content));
+    assert.match(markdown, /The unchanged callee reuses the stored completion result/);
+
+    // An excerpt may accompany a diff, but cannot replace every changed-code proof.
+    for (const hill of findings.reviewHike.hills)
+      for (const entry of hill.components.flatMap((item) => item.codeEvidence))
+        entry.kind = "excerpt";
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+    const rejected = validate(dir);
+    assert.equal(rejected.status, 1);
+    assert.match(rejected.stderr, /at least one diff Code evidence/);
+  });
+});
+
+test("optional action wording is derived without losing required finding evidence", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    const finding = findings.findings[0];
+    for (const field of Object.keys(actionFields())) delete finding[field];
+    finding.adrQuote = "Settlement completes at most once";
+    finding.fix = "Keep one durable completion result";
+    const save = () =>
+      writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+    save();
+    const accepted = validate(dir);
+    assert.equal(accepted.status, 0, accepted.stderr);
+    const rendered = spawnSync(
+      process.execPath,
+      [
+        path.join(HERE, "../scripts/adr-impl-review-report.mjs"),
+        path.join(dir, "findings.json"),
+        "--stdout",
+      ],
+      { encoding: "utf8", maxBuffer: 12 * 1024 * 1024 },
+    );
+    assert.equal(rendered.status, 0, rendered.stderr);
+    for (const expected of [
+      finding.evidence,
+      finding.adrQuote,
+      finding.code,
+      finding.fix,
+      finding.test,
+      finding.testResult,
+    ])
+      assert.ok(rendered.stdout.includes(expected), `derived presentation lost ${expected}`);
+    // Check the visible action fields, not merely copies in the audit appendix.
+    const card = rendered.stdout.match(/<article class="finding"[^]*?<\/article>/)?.[0];
+    assert.ok(card, "expected an actionable finding");
+    const fields = new Map(
+      [...card.matchAll(/<span class="side__label">([^<]+)<\/span>\s*<p[^>]*>([^<]*)<\/p>/g)].map(
+        ([, label, value]) => [label, value],
+      ),
+    );
+    for (const [label, value] of [
+      ["Why it matters", finding.evidence],
+      ["Expected behavior", finding.adrQuote],
+      ["Observed behavior", finding.code],
+      ["Requested change", finding.fix],
+      ["Where to change", finding.code],
+      [
+        "Done when",
+        `The expected outcome is verified and the required checks pass. Tests: ${finding.test}`,
+      ],
+    ])
+      assert.equal(fields.get(label), value, label);
+    const written = JSON.parse(readFileSync(path.join(dir, "findings.json"), "utf8"));
+    for (const field of Object.keys(actionFields())) assert.ok(!(field in written.findings[0]));
+    assert.deepEqual(written.contractCoverage, findings.contractCoverage);
+
+    for (const field of [
+      "category",
+      "perspective",
+      "summary",
+      "confidence",
+      "code",
+      "evidence",
+      "test",
+      "testResult",
+      "contractIds",
+    ]) {
+      const value = finding[field];
+      delete finding[field];
+      save();
+      const rejected = validate(dir);
+      assert.equal(rejected.status, 1, `missing ${field} must remain invalid`);
+      assert.ok(rejected.stderr.includes(`findings[0].${field}`), rejected.stderr);
+      finding[field] = value;
+    }
   });
 });
 

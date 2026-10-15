@@ -25,6 +25,22 @@ function markdownLinks(relativePath) {
   );
 }
 
+// Assertions about the review contract follow its owned modules. Runtime loading
+// is tested separately with explicit selections; this is not eager prompt loading.
+function readReviewOwners(relativePath) {
+  const seen = new Set();
+  const visit = (relative) => {
+    if (seen.has(relative)) return "";
+    seen.add(relative);
+    const source = readCore(relative);
+    const children = [...markdownLinks(relative)]
+      .map((file) => path.relative(ROOT, file))
+      .filter((file) => file.startsWith("skills/adr-impl-review/references/"));
+    return [source, ...children.map(visit)].join("\n");
+  };
+  return visit(relativePath);
+}
+
 test("review and general report entrypoints reach the same comprehension owner through references", () => {
   const owner = path.join(ROOT, "skills/report-writer/references/comprehension.md");
   for (const entry of [
@@ -36,7 +52,7 @@ test("review and general report entrypoints reach the same comprehension owner t
   assert.ok(readFileSync(owner, "utf8").trim().length > 0);
 });
 test("the report-writer skeleton uses the artifact anchor accepted by the materializer", () => {
-  const writer = read("agents/adr-impl-review-report-writer.md");
+  const writer = readReviewOwners("agents/adr-impl-review-report-writer.md");
   const skeleton = writer.match(/```markdown\n([^]*?)```/)?.[1];
   assert.ok(skeleton, "report writer provides its Markdown skeleton");
   assert.match(skeleton, /^## At a glance$/m);
@@ -46,7 +62,9 @@ test("the report-writer skeleton uses the artifact anchor accepted by the materi
 
 test("adr-impl-review preserves role boundaries without fixing the agent topology", () => {
   const skill = read("skills/adr-impl-review/SKILL.md");
-  const artifactContract = read("skills/adr-impl-review/references/artifact-contract.md");
+  const artifactContract = readReviewOwners(
+    "skills/adr-impl-review/references/artifact-contract.md",
+  );
   const reviewContract = `${skill}\n${artifactContract}`;
   const agents = [
     ["agents/adr-impl-explainer.md", "name: adr-impl-explainer"],
@@ -95,7 +113,7 @@ test("implementation review separates ADR decisions from code-level AI choices",
   const review = read("skills/adr-impl-review/SKILL.md");
   const explainer = read("agents/adr-impl-explainer.md");
   const sufficiency = read("agents/adr-impl-sufficiency-reviewer.md");
-  const reportWriter = read("agents/adr-impl-review-report-writer.md");
+  const reportWriter = readReviewOwners("agents/adr-impl-review-report-writer.md");
   const materializer = read("scripts/adr-impl-review-materialize.mjs");
 
   assert.match(impl, /never written into the ADR/);
@@ -130,10 +148,12 @@ test("implementation review separates ADR decisions from code-level AI choices",
 
 test("implementation review leads with Context and a reader-priority narrative", () => {
   const skill = read("skills/adr-impl-review/SKILL.md");
-  const artifactContract = read("skills/adr-impl-review/references/artifact-contract.md");
+  const artifactContract = readReviewOwners(
+    "skills/adr-impl-review/references/artifact-contract.md",
+  );
   const reviewContract = `${skill}\n${artifactContract}`;
   const explainer = read("agents/adr-impl-explainer.md");
-  const reportWriter = read("agents/adr-impl-review-report-writer.md");
+  const reportWriter = readReviewOwners("agents/adr-impl-review-report-writer.md");
   const guide = read("references/review-report-writing.md");
   const readerFirst = read("references/reader-first-writing.md");
   const hiking = read("skills/adr-impl-review/references/review-hiking.md");
@@ -152,7 +172,7 @@ test("implementation review leads with Context and a reader-priority narrative",
   assert.match(reportWriter, /Between `Context` and `Findings`/);
   assert.match(reportWriter, /causal explanation before the generated evidence/i);
   assert.match(artifactContract, /human-facing order is prose first, evidence second/i);
-  assert.match(guide, /concise tutorial or senior review comment/i);
+  assert.match(guide, /concise tutorial\s+or senior review comment/i);
   for (const source of [reportWriter, artifactContract, guide]) {
     assert.match(
       source,
@@ -166,7 +186,7 @@ test("implementation review leads with Context and a reader-priority narrative",
   assert.match(hiking, /file and symbol|focused unified diff/i);
   assert.match(guide, /language the user explicitly requests or currently uses/i);
   assert.match(guide, /target ADR's dominant\s+language/i);
-  assert.match(guide, /multi-ADR report/i);
+  assert.match(guide, /multi-ADR\s+report/i);
   assert.doesNotMatch(reviewContract, /exactly these top-level sections/i);
   // The common-owner load edges are checked above. Counts, selection state and
   // answer disclosure are exercised in report-comprehension and report tests.
@@ -278,7 +298,9 @@ test("large skill details are loaded through explicit progressive-disclosure ref
   const reconstruction = read("skills/adr-sync/references/current-state-reconstruction.md");
   const reconciliation = read("skills/adr-sync/references/reconciliation-boundary.md");
   const implReview = read("skills/adr-impl-review/SKILL.md");
-  const artifactContract = read("skills/adr-impl-review/references/artifact-contract.md");
+  const artifactContract = readReviewOwners(
+    "skills/adr-impl-review/references/artifact-contract.md",
+  );
   const remediationRouting = read("skills/adr-impl-review/references/remediation-routing.md");
   const reviewHiking = read("skills/adr-impl-review/references/review-hiking.md");
 
@@ -343,7 +365,9 @@ test("implementation and review Hiking use vertical Hills with review zooms", ()
   const implementationHiking = read("skills/adr-impl/references/implementation-hiking.md");
   const review = read("skills/adr-impl-review/SKILL.md");
   const reviewHiking = read("skills/adr-impl-review/references/review-hiking.md");
-  const artifactContract = read("skills/adr-impl-review/references/artifact-contract.md");
+  const artifactContract = readReviewOwners(
+    "skills/adr-impl-review/references/artifact-contract.md",
+  );
 
   assert.match(impl, /read `[^`\n]*references\/implementation-hiking\.md` completely/i);
   assert.match(implementationHiking, /user-flow/);
@@ -377,7 +401,7 @@ test("reader-facing prompts name concrete writing patterns without a generic qua
     read("references/review-report-writing.md"),
     read("skills/adr-new/SKILL.md"),
     read("agents/adr-reviewer.md"),
-    read("agents/adr-impl-review-report-writer.md"),
+    readReviewOwners("agents/adr-impl-review-report-writer.md"),
   ];
 
   for (const source of sources) {
@@ -471,7 +495,7 @@ test("adr-impl uses a risk-selected refactor assessment before final review", ()
   const initialTests = impl.indexOf("initial implementation tests pass");
   const refactor = impl.indexOf("/adr-impl-refactor <category>");
   const fullTests = impl.indexOf("full project test command", refactor);
-  const finalReview = impl.indexOf("/adr-impl-review <category>", fullTests);
+  const finalReview = impl.indexOf("/adr-impl-review <target-adr-path>", fullTests);
   const promotion = impl.indexOf("Automatic Status transition", finalReview);
 
   for (const [label, position] of [
@@ -498,7 +522,9 @@ test("adr-impl uses a risk-selected refactor assessment before final review", ()
   assert.match(impl, /`BLOCK` and unresolved `INCONCLUSIVE` preserve the current lifecycle state/);
 
   const finalReviewSkill = read("skills/adr-impl-review/SKILL.md");
-  const artifactContract = read("skills/adr-impl-review/references/artifact-contract.md");
+  const artifactContract = readReviewOwners(
+    "skills/adr-impl-review/references/artifact-contract.md",
+  );
   const remediationRouting = read("skills/adr-impl-review/references/remediation-routing.md");
   const finalReviewContract = `${finalReviewSkill}\n${artifactContract}\n${remediationRouting}`;
   assert.match(finalReviewSkill, /Report-only/);
@@ -530,13 +556,13 @@ test("adr-impl uses a risk-selected refactor assessment before final review", ()
   );
   assert.match(
     finalReviewContract,
-    /Never finish either review mode without running `adr-impl-review-open\.mjs` once/i,
+    /run `adr-impl-review-open\.mjs` immediately after the non-empty/i,
   );
 
   const explainer = read("agents/adr-impl-explainer.md");
   const necessity = read("agents/adr-impl-necessity-reviewer.md");
   const sufficiency = read("agents/adr-impl-sufficiency-reviewer.md");
-  const reportWriter = read("agents/adr-impl-review-report-writer.md");
+  const reportWriter = readReviewOwners("agents/adr-impl-review-report-writer.md");
   assert.match(explainer, /complete implementation scope/i);
   assert.match(explainer, /Do not stop at files present in the diff/i);
   assert.match(
@@ -760,14 +786,16 @@ test("adr implementation requires boundary docs and ideal plus relevant edge tes
   assert.match(necessity, /implementation-evidence\.md/);
   assert.match(necessity, /not\s+removable scope/i);
 
-  const writer = read("agents/adr-impl-review-report-writer.md");
+  const writer = readReviewOwners("agents/adr-impl-review-report-writer.md");
   assert.match(writer, /implementation-evidence\.md/);
 });
 
 test("implementation review keeps contract evidence without a mandatory merge checklist", () => {
-  const writer = read("agents/adr-impl-review-report-writer.md");
+  const writer = readReviewOwners("agents/adr-impl-review-report-writer.md");
   const skill = read("skills/adr-impl-review/SKILL.md");
-  const artifactContract = read("skills/adr-impl-review/references/artifact-contract.md");
+  const artifactContract = readReviewOwners(
+    "skills/adr-impl-review/references/artifact-contract.md",
+  );
   const reviewContract = `${skill}\n${artifactContract}`;
   const materializer = read("scripts/adr-impl-review-materialize.mjs");
   assert.match(writer, /ADR contract coverage/);
@@ -798,17 +826,20 @@ test("ADR rationale quality is not reduced to driver and alternative quotas", ()
 });
 
 test("repair guidance is conditional and Mermaid may appear across narrative sections", () => {
-  const writer = read("agents/adr-impl-review-report-writer.md");
+  const writer = readReviewOwners("agents/adr-impl-review-report-writer.md");
 
   assert.match(writer, /FIX_REQUIRED|BLOCK/);
   assert.match(writer, /user asks/i);
   assert.match(writer, /only when/i);
-  assert.match(writer, /Any type supported by the bundled Mermaid engine/);
-  assert.match(writer, /not an allowlist or preference hierarchy/);
+  assert.match(writer, /Any type supported\s+by the bundled official Mermaid engine/);
+  assert.match(
+    writer,
+    /not an\s+allowlist or preference hierarchy|Examples are not an\s+allowlist or preference hierarchy/,
+  );
   assert.match(writer, /Preserve\s+class relationships/);
   assert.match(writer, /Never use ASCII or box-drawing diagrams/);
   assert.match(writer, /Draw only relationships confirmed in the actual code/);
-  assert.match(writer, /Use multiple views when they explain different material relationships/);
+  assert.match(writer, /Multiple views are useful when they answer different questions/);
   assert.match(writer, /%% requirement: Vn/);
   assert.match(writer, /Hill/);
   assert.doesNotMatch(writer, /Include at least:/);
@@ -823,9 +854,9 @@ test("human-facing review reports use one junior-readable visual writing guide",
   const reportProducers = [
     read("skills/adr-review/SKILL.md"),
     read("skills/adr-sync/SKILL.md"),
-    read("skills/adr-impl-review/references/artifact-contract.md"),
+    readReviewOwners("skills/adr-impl-review/references/artifact-contract.md"),
     read("skills/adr-impl-refactor/SKILL.md"),
-    read("agents/adr-impl-review-report-writer.md"),
+    readReviewOwners("agents/adr-impl-review-report-writer.md"),
   ];
 
   for (const source of reportProducers) {
@@ -835,30 +866,40 @@ test("human-facing review reports use one junior-readable visual writing guide",
   assert.match(reportProducers[2], /Abstract/);
   assert.match(reportProducers[4], /Abstract/);
 
-  for (const trigger of [
-    /three or more participants/,
-    /system boundary, dependency, or contradiction/,
-    /state transition, failure, retry, rollback, or fallback/,
-    /refactor spanning multiple call sites/,
-  ]) {
-    assert.match(guide, trigger);
-  }
+  assert.match(guide, /skills\/report-writer\/SKILL\.md/);
+  assert.match(guide, /skills\/adr-impl-review\/references\/review-hiking\.md/);
+  assert.match(guide, /skills\/adr-impl-review\/references\/visualization\.md/);
+  const common = "skills/report-writer/";
+  const commonLinks = markdownLinks(`${common}SKILL.md`);
+  for (const owner of ["diagrams", "review-results", "editorial-review", "explanation-design"])
+    assert.ok(commonLinks.has(path.join(ROOT, common, `references/${owner}.md`)));
+  const diagrams = read(`${common}references/diagrams.md`);
+  const results = read(`${common}references/review-results.md`);
+  const editorial = read(`${common}references/editorial-review.md`);
+  const explanation = read(`${common}references/explanation-design.md`);
+  const visualization = read("skills/adr-impl-review/references/visualization.md");
 
-  assert.match(guide, /All types\s+supported by the bundled Mermaid engine are available/);
-  assert.match(guide, /not an allowlist or a fixed preference order/);
-
-  assert.match(guide, /junior developer seeing the subject for the first time/i);
+  // Preserve useful multi-party, boundary, state/failure and multi-call-site views
+  // without reinstating a diagram quota or copying examples into the bridge.
+  assert.match(results, /multi-participant or timing-dependent paths/);
+  assert.match(diagrams, /purpose, boundaries and essential\s+relationships/);
+  assert.match(visualization, /failure\/recovery path, or changed responsibility/);
+  assert.match(guide, /Several interacting call sites may benefit from\s+a flow diagram/);
+  assert.match(diagrams, /any Mermaid type supported by the bundled engine/);
+  assert.match(diagrams, /not an allowlist or fixed preference order/);
+  assert.match(diagrams, /Missing figures alone never block delivery/);
+  assert.match(diagrams, /otherwise explain in prose/);
+  assert.match(guide, /junior developer seeing the subject for the\s+first time/i);
   assert.match(
-    guide,
-    /Every sentence must contribute useful reader context, a verdict, contract,\s+evidence, impact, action, or risk/i,
+    editorial,
+    /adds: evidence, example, condition, result, distinction, judgment or orientation/,
   );
-  assert.match(guide, /preserve the initial request context that explains the reason and goal/i);
-  assert.match(guide, /praise, reassurance, and conversational applause/i);
-  assert.match(guide, /generic best-practice advice/i);
   assert.match(
-    guide,
-    /The prose must remain\s+independently reviewable when\s+Mermaid does not render/i,
+    explanation,
+    /Ground that purpose in the supplied task, trigger, scope\s+and priorities/,
   );
-  assert.match(guide, /diagramOmissionReason/);
-  assert.match(guide, /each Hill through `diagramIds`|to each Hill through `diagramIds`/i);
+  assert.match(editorial, /generic or inflated rhetoric, decorative naming/);
+  assert.match(read("references/reader-first-writing.md"), /praise, and repeated summaries/);
+  assert.match(visualization, /diagramOmissionReason/);
+  assert.match(visualization, /`diagramIds` array linking to them/);
 });

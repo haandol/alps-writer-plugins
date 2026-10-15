@@ -61,29 +61,12 @@ Never invent an anecdote, project outcome, measurement, causal relationship, or
 user reaction. A story must come from the user, ADR, code, tests, configuration,
 or another supplied source.
 
-## Review Hiking
+## Implementation-review explanation
 
-For implementation reviews, organize a broad subject as one **Review Hiking**
-route with one or more low **Hills**. Use reading zooms: Context for
-intent/contracts/scope, Container/Hill for one vertical capability, Component
-for detailed implementation, and Code for focused diff or excerpt evidence.
-
-- Use one Hill for one coherent vertical capability.
-- Use several Hills when the reader would otherwise hold several user flows,
-  logical capabilities, or bounded contexts at once.
-- Never name a technical layer, file group, module boundary, or review phase a
-  Hill.
-- Put the requirement, status, implementation, evidence, and tests next to the
-  owning Container/Hill instead of making the reader shuttle between distant
-  sections.
-- Keep Container language at user, operator, or system-behavior resolution.
-  Put detailed mechanisms in Component and actual changed lines or current
-  excerpts in collapsed Code evidence.
-
-Use the tree-structured table of contents to navigate Context, Container/Hill,
-Component, and Code. Place each supplied Mermaid in Context or the owning Hill, beside the
-request, state, failure, or data relationship it explains. The implementation
-review artifact contract defines the trigger and placement checks.
+Only for an implementation review, read
+`${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/review-hiking.md` for
+Context, vertical Hills, Component/Code evidence and placement. ADR authoring
+and document-only review do not load that implementation module.
 
 ## Remove mechanical writing patterns
 

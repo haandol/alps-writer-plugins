@@ -169,10 +169,8 @@ test("/adr-new keeps pre-save self-checks and recommends the scoped saved-docume
 
 // Removing the reviewer call made /adr-new's step 6(b) DEPEND on the seeded
 // checklist — it says "walk the ADR review checklist, it is the authority here"
-// instead of restating the rules. That is the right call (one source, no drift),
-// but it moves the failure mode: trimming an item from the checklist now silently
-// removes an axis from every /adr-new run, and nothing else in the pipeline
-// re-checks it. So the checklist must carry every axis step 6(b) delegates to it.
+// instead of restating the rules. The recommended post-save review cannot
+// replace this required pre-approval check, so its owner must retain every axis.
 test("the seeded checklist carries every axis /adr-new delegates to it", () => {
   const checklist = read(path.join(ADR_ROOT, "templates", "adr", "authoring-rules.md")).slice(
     read(path.join(ADR_ROOT, "templates", "adr", "authoring-rules.md")).indexOf(
@@ -693,7 +691,10 @@ test("every stage that filters an ADR body names the requirement-value rule", ()
       /Requirement values recorded in the ADR are contract/,
     ],
     "agents/adr-impl-explainer.md": [/What the ADR specifies vs what the code does/],
-    "agents/adr-impl-review-report-writer.md": [/Contract compliance/],
+    "agents/adr-impl-review-report-writer.md": [
+      /one row per independent ADR obligation/,
+      /evidence-synthesis\.md/,
+    ],
     // concepts.md owns the principle and the completeness standard; README.md is
     // the directory index, so the regeneration test is asserted there instead.
     "templates/adr/concepts.md": [/regeneration test/],
@@ -702,6 +703,11 @@ test("every stage that filters an ADR body names the requirement-value rule", ()
     const source = read(path.join(ADR_ROOT, rel));
     for (const pattern of patterns) assert.match(source, pattern, `${rel} must state ${pattern}`);
   }
+  const synthesis = read(
+    path.join(ADR_ROOT, "skills/adr-impl-review/references/evidence-synthesis.md"),
+  );
+  assert.match(synthesis, /preserve each source bullet verbatim/);
+  assert.match(synthesis, /Reject omissions, duplicates, and invented IDs/);
   // the ALPS-side importer must hand the numbers over instead of summarizing
   assert.match(
     read(path.join(PLUGINS_ROOT, "alps-writer", "skills", "feature-to-adr", "SKILL.md")),

@@ -63,5 +63,9 @@ Once automatic fixes are done, run `/adr-impl-review` again to complete the sele
 review path. Full mode completes both necessity and sufficiency passes; standard
 mode completes its sufficiency pass. On `PASS`, the caller completes the Status
 transition and reports the fixes; no routine post-implementation approval
-remains. The comprehension check is not an approval, but it still governs
-whether the human should open or send the PR.
+remains. Apply the [delivery spine's comprehension boundary](artifact-contract.md#3-completion-response):
+unverified or failed comprehension does not block PR publishing by default.
+Only an explicitly selected user/team quiz gate adds that publishing condition;
+user authorization and repository checks remain required. Quiz inclusion never
+authorizes interactive grading or delays evidence-backed remediation and a valid
+Status transition.

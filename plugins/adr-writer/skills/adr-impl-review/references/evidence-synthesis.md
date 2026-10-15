@@ -22,15 +22,26 @@ The main session does not merge the two reviews by vote. Verify findings with th
    A success label, test name, line/branch coverage or mock assumption cannot
    replace the enforcing path and observed result.
 6. A necessity PASS means "no unnecessary change was found"; a sufficiency PASS means "no counterexample was found at present and the decision ledger is accounted for."
-7. Normalize coverage independently from findings. `D0` is the Decision; `R1..Rn` follow top-level bullets and table data rows under `### Requirement contract` in source order. Each ID has exactly one `contractId`, `requirement`, `status`, `adrBasis`, `implementation`, `evidence`, and `tests` row. `D0.adrBasis` is `Decision`; preserve each source bullet verbatim, or join a table row's trimmed cells with `|`, excluding its header/separator. Use `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`. `PROVEN` means inspected/executed evidence supports the obligation without a found counterexample, not mathematical proof. Reject omissions, duplicates, and invented IDs.
+7. Normalize coverage independently from findings. `D0` is the Decision; `R1..Rn` follow top-level bullets and table data rows under `### Requirement contract` in source order. Each ID has exactly one `contractId`, `requirement`, `status`, `adrBasis`, `implementation`, `evidence`, and `tests` row. `D0.adrBasis` is `Decision`; preserve each source bullet verbatim, or join a table row's trimmed cells with the literal separator `" | "` (one space on each side of the pipe), excluding its header/separator. Use `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`. `PROVEN` means inspected/executed evidence supports the obligation without a found counterexample, not mathematical proof. Reject omissions, duplicates, and invented IDs.
 8. Before normalizing implementation choices, inspect their externally checkable premises. A premise confirmed by code, tests, configuration, or an authoritative external contract may remain part of the choice's evidence. If the premise is unverified and could violate safety or an ADR contract row when false, create an `Unverified risk`, mark the affected coverage `UNVERIFIED`, and block `PASS`. Do not infer private reasoning.
 9. Normalize Notable implementation choices independently from findings. Every row has only a concrete selected value or behavior, code evidence, why it fits the ADR intent, and why it matters. Explain fit by naming the preserved contract or boundary, not by guessing why the implementer chose it. A row that changes a requirement contract or durable boundary is removed from the list and raised as `Undecided behavior`.
 10. Normalize the wide view into `reviewHike.context` and the Container,
     Component, and Code route into `reviewHike.hills` exactly as
     `${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/review-hiking.md` and the artifact contract require.
-11. Normalize every finding into a user-action card as well as technical evidence. Keep non-empty `whyItMatters`, `expectedBehavior`, `observedBehavior`, `requestedChange`, `editTargets`, and `completionCriteria` fields. These fields explain the task in plain language; the exact ADR quote, code fragment, evidence, command, and result remain separate audit fields.
+11. Preserve every finding's core evidence and contract links. When serializing
+    the result after verdict selection, use [the native schema](artifact-schema.md)
+    as the owner of required fields and optional derived action wording. Derive
+    presentation fields from the evidence; add precision only when the defaults
+    would lose meaning. Optional wording never makes substantive evidence optional.
 
 ### Preserve proof coverage within the existing artifact
+
+**Contract compliance:** preserve the verified comparison of every recorded
+value, allowed set, transition, permission, mandatory field, ordering rule,
+uniqueness rule, and unit against the actual code. Similar logic is not enough
+when its value or rule differs. Keep each independent obligation and its
+implementation-independent observable evidence in the ledger before normalizing
+to source rows; the report must not summarize away a mismatch.
 
 Keep the source-based `D0`/`Rn` IDs and required fields. The `requirement` and
 `implementation` text identify every independent clause, condition and derived

@@ -227,9 +227,10 @@ remain risks. Normalize every contract row and preserve original evidence.
 
 Only after evidence synthesis and verdict selection, read
 `references/artifact-contract.md` completely and follow it exactly. It owns the
-common standard/full `implementation-review.md`, `findings.json`,
-materialization, validation, HTML rendering/opening, completion response, and
-optional interactive comprehension behavior. Do not load it during scope
+common standard/full delivery of `implementation-review.md`, `findings.json`,
+materialization, validation, HTML rendering/opening and completion response.
+Load its schema, example, quiz, repair and interactive children only for the
+operations it selects. Do not load it during scope
 discovery or the independent review perspectives.
 
 At this stage, build the optional related-ADR comparison under that contract;
@@ -262,22 +263,14 @@ finding-free standalone review.
   as a mandatory report template.
 - Never invent a user reaction, measurement, project outcome, or causal
   relationship that the ADR, code, tests, configuration, or user did not establish.
-- Never generate more than five primary comprehension questions or add filler to
-  reach five.
-- Never generate a free-response comprehension question.
-- Never reveal a question's correct option, option feedback, explanation, or
-  evidence before the reader selects one option.
-- Never add scores, grades, celebration, praise, ability judgments, or
-  gamification to self-check feedback.
 - Never include a comprehension question, grading criterion, evidence, or answer
   request in the ordinary main-session completion response.
 - Never start the interactive comprehension check unless the user explicitly
   requests it.
-- Never call the PR comprehension-ready while a prepared question is failed,
-  skipped, or unanswered.
 - Never state that sufficiency is proven merely because the tests passed.
 - Never report an unreproduced conjecture as though it were a confirmed finding.
 - Never treat the current diff or a caller-provided file list as the ceiling of the ADR implementation scope.
 - Never report either review mode complete without a validated, non-empty `adr-impl-review-report.html`.
-- Never finish either review mode without running `adr-impl-review-open.mjs` once and reporting its `OPENED` or `NOT_OPENED` result.
+- Follow the delivery spine for the default one-time `adr-impl-review-open.mjs`
+  and honest `OPENED` or `NOT_OPENED` result; honor explicit delivery overrides.
 - Never modify product code, ADRs, the mapping, or existing tests during the review.

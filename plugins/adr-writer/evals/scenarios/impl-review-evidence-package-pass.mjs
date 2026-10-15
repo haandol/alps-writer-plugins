@@ -141,8 +141,11 @@ export default {
       }),
       agentText("adr-impl-review-report-writer", {
         references: [
+          "skills/adr-impl-review/references/artifact-contract.md",
+          "skills/adr-impl-review/references/artifact-schema.md",
+          "skills/adr-impl-review/references/review-hiking.md",
+          "skills/adr-impl-review/references/quiz-artifact.md",
           "references/review-report-writing.md",
-          "references/reader-first-writing.md",
           "skills/adr-impl-review/references/visualization.md",
         ],
       }),
