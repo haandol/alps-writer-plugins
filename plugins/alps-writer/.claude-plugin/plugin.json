@@ -1,7 +1,7 @@
 {
   "name": "alps-writer",
   "description": "Author Full or Lite ALPS documents through a guided MCP workflow. Use /alps-research to review item evidence and errors, or hand Full ALPS features to adr-writer.",
-  "version": "0.10.13",
+  "version": "0.10.14",
   "author": {
     "name": "haandol"
   },
