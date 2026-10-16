@@ -30,12 +30,16 @@ A review-only request does not authorize changes to the subject.
 Write model-facing instructions in English and the report in the user's language.
 Keep the report self-contained, preserve exact evidence and the caller's scope,
 and use stable terms whose definitions connect to their examples and later uses.
+Open with separate Purpose and Context sections, in that order, before the answer.
 Build from the reader's relevant known context to an understandable whole, then
 open the same subject's responsibilities, relationships and concrete behavior.
 The opening should give new details a place in that whole; a domain outline alone
 does not establish this connection. Preserve evidenced domain boundaries while
 letting the reader's question guide the route through them. Use this principle
 for reviews and comparisons as well as concept explanations.
+Use HTML interaction proactively where exploring a responsibility, condition or
+case helps the reader understand that subject. Controls must reveal meaningful
+relationships or behavior; their presence does not establish explanation depth.
 
 Reuse loaded guidance. Read the common references once, then load additional
 modules only for the content or format being handled:
@@ -51,6 +55,8 @@ modules only for the content or format being handled:
   quantitative claim supports a judgment, use [quantitative claims](references/quantitative-claims.md).
   Include useful figures when evidence and format support them; prefer an overview
   for whole-system or multi-step explanations. Figures never gate delivery.
+  For HTML exploration, use [interactive explanations](references/interactive-explanations.md)
+  to connect controls, explanation states and their evidence.
 - **Review content:** use [review presentation](references/review-results.md),
   prepare files through [artifact storage](references/review-artifacts.md), and
   read [code evidence](references/code-evidence.md) when actual code matters.

@@ -57,6 +57,7 @@ export function validateReport(doc) {
     [
       "title",
       "language",
+      "purpose",
       "background",
       "summary",
       "summaryTitle",
@@ -68,6 +69,7 @@ export function validateReport(doc) {
     "report",
   );
   strings(doc.summary, "summary", { min: 1 });
+  if (doc.purpose !== undefined) strings(doc.purpose, "purpose", { min: 1 });
   if (doc.background !== undefined) strings(doc.background, "background", { min: 1 });
   if (doc.summaryTitle !== undefined && !nonempty(doc.summaryTitle))
     throw new Error("summaryTitle must be a nonempty string when supplied");
@@ -210,7 +212,8 @@ export function validateReport(doc) {
 
 const labels = {
   en: {
-    backgroundGoals: "Background and goals",
+    purpose: "Purpose",
+    context: "Context",
     revisitExplanation: "Revisit the explanation",
     scope: "Scope",
     evidence: "Evidence",
@@ -222,7 +225,8 @@ const labels = {
     diagramScroll: "Scroll horizontally to read the full diagram.",
   },
   ko: {
-    backgroundGoals: "배경과 목표",
+    purpose: "목표",
+    context: "배경",
     revisitExplanation: "관련 설명 다시 보기",
     scope: "설명 범위",
     evidence: "근거",
@@ -301,7 +305,7 @@ ${
     : ""
 }
 ${reportCss}
-</style></head><body><main><header><h1>${esc(doc.title)}</h1>${doc.background ? `<section class="report-background"><h2>${ui.backgroundGoals}</h2>${paragraphs(doc.background)}</section>` : ""}</header>
+</style></head><body><main><header><h1>${esc(doc.title)}</h1>${doc.purpose ? `<section class="report-purpose"><h2>${ui.purpose}</h2>${paragraphs(doc.purpose)}</section>` : ""}${doc.background ? `<section class="report-background"><h2>${ui.context}</h2>${paragraphs(doc.background)}</section>` : ""}</header>
 <section class="report-answer">${doc.summaryTitle ? `<h2>${esc(doc.summaryTitle)}</h2>` : ""}${paragraphs(doc.summary)}${doc.review.status === "draft" ? `<p class="draft">${ui.draft}</p>` : ""}</section>
 <nav aria-label="Domains">${doc.sections.map((n) => `<a href="#${esc(n.id)}">${esc(n.title)}</a>`).join("")}</nav>
 ${nodes(doc.sections)}<footer><p class="review">${ui.review}: ${esc(doc.review.basis)}</p>${doc.review.limitations ? `<p class="review">${ui.limitations}: ${esc(doc.review.limitations)}</p>` : ""}${result.warnings.map((w) => `<p class="draft">${esc(w)}</p>`).join("")}</footer>
@@ -335,14 +339,10 @@ function renderValidatedMarkdown(doc) {
   const ui = labels[doc.language];
   const quizUi = quizLabels[doc.language];
   const lines = [`# ${md(doc.title)}`, ""];
+  if (doc.purpose) lines.push(`## ${ui.purpose}`, "", ...doc.purpose.flatMap((p) => [md(p), ""]));
   if (doc.background)
-    lines.push(
-      `## ${ui.backgroundGoals}`,
-      "",
-      ...doc.background.flatMap((p) => [md(p), ""]),
-      "---",
-      "",
-    );
+    lines.push(`## ${ui.context}`, "", ...doc.background.flatMap((p) => [md(p), ""]));
+  if (doc.purpose || doc.background) lines.push("---", "");
   if (doc.summaryTitle) lines.push(`## ${md(doc.summaryTitle)}`, "");
   lines.push(...doc.summary.flatMap((p) => [md(p), ""]));
   if (doc.review.status === "draft") lines.push(`> ${ui.draft}`, "");

@@ -27,6 +27,10 @@ Code-review diffs use the bundled diff2html view described in
 [code evidence](code-evidence.md), with print styles that preserve line numbers
 and change markers while wrapping long lines across the available page width.
 
+For modules that expand a responsibility or compare conditions and cases, apply
+[interactive explanations](interactive-explanations.md). Keep controls beside the
+explanation they change, with a coherent static and print reading path.
+
 ## Figures and disclosure
 
 Use semantic headings, anchors and accessible disclosure controls for the
@@ -44,7 +48,7 @@ the reader has opened it and its enclosing evidence group; do not automatically
 add raw logs and code appendices to the handout. Restore the screen state after printing;
 repeated print events must not lose it. The initial HTML itself must contain
 expanded subsections rather than relying on a script to reveal the document.
-Keep the background, answer, child explanations, questions, and included source
+Keep the purpose, context, answer, child explanations, questions, and included source
 evidence in their established reading order. No material limitation or required
 action may exist only in an optional folded source.
 

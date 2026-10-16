@@ -160,7 +160,7 @@
         {
           "path": "docs/adr/reporting/domain-navigation/0001-domain-first-report-navigation.md",
           "status": "Accepted (2026-10-10)",
-          "summary": "리포트는 도메인별로 확대하고 질문에 맞는 Mermaid 종류와 관계 표기를 보존하며 실제 검증 범위를 구분한다"
+          "summary": "리포트는 목표·배경에서 같은 대상의 관계·동작으로 확대하고 HTML 상호작용으로 이해를 도우며 근거와 검증 한계를 보존한다"
         }
       ],
       "dependsOn": []

@@ -79,7 +79,9 @@ A client can retry when the original payment has a recorded completion or when i
     task: `Review these two short explanations against the supplied facts. Explain whether each supports top-down understanding, using specific transitions. Do not rewrite them, use tools or write files. The user excludes quizzes.
 Excerpt A:
 # Retry decision
-## Background and goals
+## Purpose
+Help the operator distinguish when a retry can safely reuse a payment result.
+## Context
 The operator wants to avoid charging twice when a client retries.
 ## Reuse only a known completion
 B reuses completed requests, but an unknown provider outcome still needs reconciliation. The client's request key identifies the payment record used to distinguish these cases.
@@ -87,7 +89,9 @@ B reuses completed requests, but an unknown provider outcome still needs reconci
 For the same key, a completed record returns the earlier result without sending a new charge. A timeout may occur after the provider has charged, so an unknown outcome must be checked with the provider before another charge.
 Excerpt B:
 # Retry decision
-## Background and goals
+## Purpose
+Help the operator distinguish when a retry can safely reuse a payment result.
+## Context
 The operator wants to avoid charging twice when a client retries.
 ## Reuse only a known completion
 B reuses completed requests, but an unknown provider outcome still needs reconciliation.

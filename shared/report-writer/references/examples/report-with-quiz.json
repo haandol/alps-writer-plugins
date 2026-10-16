@@ -1,8 +1,11 @@
 {
   "title": "Repeated requests keep one payment result",
   "language": "en",
+  "purpose": [
+    "This review helps the developer distinguish which payment retry behavior the evidence supports and which recovery path still needs verification before relying on the no-duplicate-charge guarantee."
+  ],
   "background": [
-    "A repeated payment request may have a recorded completion or an unknown provider outcome. This review helps the developer distinguish which retry behavior the evidence supports and which recovery path still needs verification before relying on the no-duplicate-charge guarantee."
+    "A repeated payment request may have a recorded completion or an unknown provider outcome."
   ],
   "summary": [
     "Payment retries must not create a second charge. The completed-payment retry check passed: the same key returned the recorded result. Provider timeout recovery still needs verification, so this result does not establish safety for every retry path."

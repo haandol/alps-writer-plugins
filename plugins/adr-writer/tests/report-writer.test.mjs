@@ -140,6 +140,7 @@ test("semantic paragraphs remain separate without a numeric cap at any reading l
   ];
   for (const paragraphs of [prose, [prose.join("\n\n")]]) {
     const doc = sample();
+    doc.purpose = paragraphs;
     doc.background = paragraphs;
     doc.summary = paragraphs;
     doc.sections[0].paragraphs = paragraphs;
@@ -148,8 +149,8 @@ test("semantic paragraphs remain separate without a numeric cap at any reading l
     const html = renderHtml(doc);
     const markdown = renderMarkdown(doc);
     for (const paragraph of prose) {
-      assert.equal(html.split(`<p>${paragraph}</p>`).length - 1, 4);
-      assert.equal(markdown.split(paragraph).length - 1, 4);
+      assert.equal(html.split(`<p>${paragraph}</p>`).length - 1, 5);
+      assert.equal(markdown.split(paragraph).length - 1, 5);
     }
     const tooMany = structuredClone(doc);
     tooMany.sections[0].children = Array.from({ length: 5 }, (_, i) => ({

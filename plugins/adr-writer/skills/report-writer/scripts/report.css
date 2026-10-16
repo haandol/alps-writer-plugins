@@ -100,9 +100,14 @@ header {
   border-bottom: 1px solid var(--line);
 }
 
+.report-purpose h2,
 .report-background h2 {
   font-size: 1rem;
   letter-spacing: 0;
+}
+
+.report-purpose + .report-background {
+  margin-top: 1.5rem;
 }
 
 .report-background p {
@@ -110,6 +115,7 @@ header {
   font-size: 0.9375em;
 }
 
+.report-purpose p:last-child,
 .report-background p:last-child,
 .report-answer p:last-child {
   margin-bottom: 0;

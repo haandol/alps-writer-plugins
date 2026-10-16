@@ -19,20 +19,23 @@ follow [final delivery](format-and-layout.md#final-delivery).
 
 ## Document fields
 
-- `title`, `language` (`en` or `ko`), `background`, and `summary`.
-  Newly authored reports put the confirmed problem and intended reading outcome
-  in `background` (one or more paragraphs): why this document is useful and what
-  the reader should be able to distinguish, decide, explain or do with it.
+- `title`, `language` (`en` or `ko`), `purpose`, `background`, and `summary`.
+  Newly authored reports put the intended reading outcome in `purpose`:
+  what this report should enable the reader to understand, distinguish, decide,
+  explain or do. Put the confirmed problem, situation and request trigger in
+  `background`, including relevant scope and priorities. Each is one or more paragraphs.
   A request recap or product aspiration alone is insufficient; apply the
   [opening meaning checks](editorial-review.md#check-the-openings-intended-use).
   Put the answer, implication, and material limitations
-  in `summary` (one or more paragraphs). The renderer gives only `background`
-  the localized "Background and goals" heading, then presents the answer in a
-  separate area before navigation. An optional `summaryTitle` supplies an
+  in `summary` (one or more paragraphs). The renderer presents `purpose` under
+  "Purpose" ("목표"), then `background` under a separate "Context" ("배경")
+  heading, followed by the answer in its own area before navigation.
+  An optional `summaryTitle` supplies an
   authored answer heading; no default title is imposed. Do not repeat headings
   as paragraph labels or invent missing context. Legacy inputs may omit
-  `background`: their summary remains intact without being relabeled or split
-  by a guessed meaning. These presentation fields do not alter a caller's
+  `purpose` or `background`: existing text remains intact without being split,
+  moved between fields or supplemented by a guessed meaning. Omitted fields
+  produce no empty sections. These presentation fields do not alter a caller's
   original audit schema or store approval state.
 - `sections`: one to four domain nodes. Each has `id`, `title`, `domain`, `scope`,
   optional `preview`, optional `paragraphs`, optional `children`, optional `diagram`, and optional

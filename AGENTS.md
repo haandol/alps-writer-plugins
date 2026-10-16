@@ -387,14 +387,15 @@ drafts or create an automation browser or local server merely to display a file.
 If opening fails, preserve the HTML and report the path and actual reason.
 Ordinary completion notices need no new report.
 
-Report openings place a standalone localized `Background and goals` heading
-directly below the title, followed by a short paragraph:
-why the report is being written and what the user wants to understand,
-decide, or achieve, using confirmed task context. The answer and material
-limitations follow immediately; domain openings state their outcome before
-behavior and evidence. Subsequent headings and organization follow the report's
-subject and reader questions; preserve mandatory content without a fixed outline.
-Background and answer occupy distinct display areas. Collapsed branches explain
+Report openings place separate localized `Purpose` and `Context` sections
+(`목표` and `배경` in Korean) directly below the title, in that order.
+Purpose states what this report should enable the reader to understand, decide,
+explain or do. Context describes the confirmed situation, problem and request
+trigger, with relevant scope and priorities. The answer and material limitations
+follow immediately in their own display area; domain openings state their outcome
+before behavior and evidence. Subsequent headings and organization follow the
+report's subject and reader questions; preserve mandatory content without a fixed outline.
+Collapsed branches explain
 what opening them will clarify. Sources and quizzes support their owning
 explanation without consuming its four-child allowance; both output formats
 place child explanations before the parent's quiz and source evidence. Review
@@ -418,6 +419,14 @@ is not a new DDD context, fixed writing framework, schema, or approval registry.
 Reports show how material autonomous choices and evidence serve that intent.
 ADR readers and structure checks accept legacy `Context` as the Purpose section;
 agent context, bounded contexts, and C4 Context views retain their names.
+
+HTML reports actively use local interactive explanations when responsibility
+expansion, condition changes or case comparisons help understanding. Preserve the
+same subject from whole to roles and concrete behavior; topic tabs and control
+counts alone do not establish depth. Keep exact source evidence, visible limits,
+keyboard access and a static/print reading path. Interaction does not imply new
+service execution or measured learning. The shared interaction reference owns
+composition and verification guidance.
 
 The shared report skill strongly recommends core-content comprehension quizzes
 when useful; generation is not mandatory. Honor explicit inclusion or exclusion;

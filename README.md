@@ -125,6 +125,15 @@ Removing the plugins leaves PRDs, ADRs, code, and tests readable on their own. H
 
 ADR Writer includes `$report-writer` in Codex and `/report-writer` in Claude Code. It creates standalone HTML for explicit report requests or explanations that need structured detail. Short answers stay in chat; when a report's usefulness is unclear, it asks once. Your format and delivery preferences take precedence.
 
+Reports open with separate Purpose and Context sections, in that order: what
+the report should help the reader understand or decide, then the confirmed
+situation and request that prompted it. The answer and material limitations follow.
+
+HTML reports also use interactive explanations where selecting a responsibility,
+condition or case helps the reader follow the same subject in more detail.
+Controls connect the selection to its result and explanation, with source evidence,
+visible limits and a static reading path preserved.
+
 Reports include useful figures whenever evidence and format support them.
 Whole-system and multi-step explanations prefer a Mermaid overview after the
 brief background and answer, then expand the same responsibilities in detail.
