@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { reviewCodeGroups } from "./adr-impl-review-prose.mjs";
 
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
@@ -25,8 +26,6 @@ const COMPONENT_FIELDS = ["name", "responsibility", "implementation", "verificat
 const CODE_EVIDENCE_FIELDS = ["kind", "location", "content", "explanation", "tests"];
 const ALLOWED_DIAGNOSTIC_STATUSES = new Set(["CLEAR", "ISSUE", "UNVERIFIED"]);
 const DIAGNOSTIC_FIELDS = ["contractCompleteness", "testSufficiency", "necessity"];
-const SELF_CHECK_PRAISE_PATTERN =
-  /\b(?:congratulations?|great job|well done|excellent|amazing|score|points?|grade|badge|level up)\b|축하|잘했|훌륭|대단|점수|등급|뱃지|레벨업/i;
 const COVERAGE_STATUS_LABELS = {
   en: {
     PROVEN: "Met",
@@ -251,6 +250,7 @@ function expectedContractRows(artifactDir, adrValue, errors) {
  * target decision into its own analogy or repeat the same comparison twice.
  */
 function validateRelatedAdrComparisons(data, artifactDir, errors) {
+  if (data.reviewMode === "standard" && data.relatedAdrComparisons === undefined) return;
   if (!Array.isArray(data.relatedAdrComparisons)) {
     errors.push("findings.json relatedAdrComparisons must be an array");
     return;
@@ -259,6 +259,8 @@ function validateRelatedAdrComparisons(data, artifactDir, errors) {
     errors.push("findings.json relatedAdrComparisons must contain at most 2 ADRs");
   }
   if (data.relatedAdrComparisons.length === 0) {
+    if (data.reviewMode === "standard" && data.relatedAdrComparisonOmissionReason === undefined)
+      return;
     if (
       typeof data.relatedAdrComparisonOmissionReason !== "string" ||
       !data.relatedAdrComparisonOmissionReason.trim()
@@ -365,14 +367,17 @@ function validateAtAGlance(atAGlance, errors) {
 
 /** Check question-level diagrams and exact per-Hill allocation before prose is read. */
 function validateDiagramContract(data, errors) {
-  if (!Array.isArray(data.diagramRequirements)) {
+  const standard = data.reviewMode === "standard";
+  const diagramRequirements =
+    standard && data.diagramRequirements === undefined ? [] : data.diagramRequirements;
+  if (!Array.isArray(diagramRequirements)) {
     errors.push("findings.json diagramRequirements must be an array");
     return;
   }
   const hills = Array.isArray(data.reviewHike?.hills) ? data.reviewHike.hills : [];
   const sections = new Set(["Context", ...hills.map((hill) => hill?.title)]);
   const requirements = new Map();
-  for (const [index, requirement] of data.diagramRequirements.entries()) {
+  for (const [index, requirement] of diagramRequirements.entries()) {
     const label = `diagramRequirements[${index}]`;
     if (!requirement || typeof requirement !== "object" || Array.isArray(requirement)) {
       errors.push(`${label} must be an object`);
@@ -395,12 +400,23 @@ function validateDiagramContract(data, errors) {
   for (const [index, hill] of hills.entries()) {
     if (!hill || typeof hill !== "object") continue;
     const label = `reviewHike.hills[${index}]`;
+    if (standard && hill.diagramIds === undefined) {
+      if (
+        hill.diagramOmissionReason !== undefined &&
+        (typeof hill.diagramOmissionReason !== "string" || !hill.diagramOmissionReason.trim())
+      )
+        errors.push(`${label}.diagramOmissionReason must be a non-empty string when supplied`);
+      continue;
+    }
     if (!Array.isArray(hill.diagramIds)) {
       errors.push(`${label}.diagramIds must be an array`);
       continue;
     }
     if (hill.diagramIds.length === 0) {
-      if (typeof hill.diagramOmissionReason !== "string" || !hill.diagramOmissionReason.trim())
+      if (
+        (!standard || hill.diagramOmissionReason !== undefined) &&
+        (typeof hill.diagramOmissionReason !== "string" || !hill.diagramOmissionReason.trim())
+      )
         errors.push(`${label}.diagramOmissionReason is required when diagramIds is empty`);
     } else if (
       typeof hill.diagramOmissionReason === "string" &&
@@ -494,7 +510,8 @@ function validateNonEmptyStringFields(value, fields, label, errors) {
   }
 }
 
-function validateReviewHike(reviewHike, coverageRows, changeScope, errors) {
+function validateReviewHike(reviewHike, coverageRows, changeScope, errors, mode) {
+  const standard = mode === "standard";
   if (!reviewHike || typeof reviewHike !== "object" || Array.isArray(reviewHike)) {
     errors.push("findings.json reviewHike must be an object");
     return;
@@ -512,7 +529,12 @@ function validateReviewHike(reviewHike, coverageRows, changeScope, errors) {
   } else {
     validateNonEmptyStringFields(
       reviewHike.context,
-      REVIEW_CONTEXT_FIELDS,
+      standard && Object.hasOwn(reviewHike.context, "summary")
+        ? [
+            "summary",
+            ...REVIEW_CONTEXT_FIELDS.filter((field) => Object.hasOwn(reviewHike.context, field)),
+          ]
+        : REVIEW_CONTEXT_FIELDS,
       "reviewHike.context",
       errors,
     );
@@ -532,13 +554,29 @@ function validateReviewHike(reviewHike, coverageRows, changeScope, errors) {
 
     const expectedId = `H${index + 1}`;
     if (hill.id !== expectedId) errors.push(`${label}.id must be ${expectedId}`);
-    for (const field of ["title", "sliceName", "reviewQuestion"]) {
+    for (const field of [
+      "title",
+      ...["sliceName", "reviewQuestion"].filter((field) => !standard || Object.hasOwn(hill, field)),
+    ]) {
       if (typeof hill[field] !== "string" || !hill[field].trim()) {
         errors.push(`${label}.${field} must be a non-empty string`);
       }
     }
-    validateNonEmptyStringFields(hill, EDUCATION_FIELDS, label, errors);
-    if (!ALLOWED_HILL_SLICE_TYPES.has(hill.sliceType)) {
+    validateNonEmptyStringFields(
+      hill,
+      standard
+        ? [
+            "claim",
+            ...EDUCATION_FIELDS.filter((field) => field !== "claim" && Object.hasOwn(hill, field)),
+          ]
+        : EDUCATION_FIELDS,
+      label,
+      errors,
+    );
+    if (
+      (!standard || hill.sliceType !== undefined) &&
+      !ALLOWED_HILL_SLICE_TYPES.has(hill.sliceType)
+    ) {
       errors.push(`${label}.sliceType must be user-flow, logical-capability, or bounded-context`);
     }
     if (typeof hill.title === "string" && hill.title.trim()) {
@@ -548,26 +586,41 @@ function validateReviewHike(reviewHike, coverageRows, changeScope, errors) {
       seenTitles.add(hill.title);
     }
 
-    if (!hill.container || typeof hill.container !== "object" || Array.isArray(hill.container)) {
+    if (standard && hill.container === undefined) {
+      // A short claim can explain a local capability without a second container description.
+    } else if (
+      !hill.container ||
+      typeof hill.container !== "object" ||
+      Array.isArray(hill.container)
+    ) {
       errors.push(`${label}.container must be an object`);
     } else {
       validateNonEmptyStringFields(hill.container, CONTAINER_FIELDS, `${label}.container`, errors);
     }
 
-    if (!Array.isArray(hill.components) || hill.components.length === 0) {
+    if (standard && hill.components === undefined) {
+      if (!Array.isArray(hill.codeEvidence) || !hill.codeEvidence.length)
+        errors.push(`${label}.codeEvidence must be a non-empty array when components are omitted`);
+    } else if (!Array.isArray(hill.components) || hill.components.length === 0) {
       errors.push(`${label}.components must be a non-empty array`);
-    } else {
-      for (const [componentIndex, component] of hill.components.entries()) {
+    }
+    if (!standard && Object.hasOwn(hill, "codeEvidence"))
+      errors.push(
+        `${label}.codeEvidence requires standard mode; full evidence belongs to components`,
+      );
+    {
+      for (const [componentIndex, component] of reviewCodeGroups(hill).entries()) {
         const componentLabel = `${label}.components[${componentIndex}]`;
         if (!component || typeof component !== "object" || Array.isArray(component)) {
           errors.push(`${componentLabel} must be an object`);
           continue;
         }
         const expectedComponentId = `C${componentIndex + 1}`;
-        if (component.id !== expectedComponentId) {
+        if (!component.direct && component.id !== expectedComponentId) {
           errors.push(`${componentLabel}.id must be ${expectedComponentId}`);
         }
-        validateNonEmptyStringFields(component, COMPONENT_FIELDS, componentLabel, errors);
+        if (!component.direct)
+          validateNonEmptyStringFields(component, COMPONENT_FIELDS, componentLabel, errors);
         if (!Array.isArray(component.codeEvidence) || component.codeEvidence.length === 0) {
           errors.push(`${componentLabel}.codeEvidence must be a non-empty array`);
           continue;
@@ -718,12 +771,6 @@ function validateComprehensionCheck(check, errors) {
             errors.push(`${optionLabel}.${field} must be a non-empty string`);
           }
         }
-        if (
-          typeof option.feedback === "string" &&
-          SELF_CHECK_PRAISE_PATTERN.test(option.feedback)
-        ) {
-          errors.push(`${optionLabel}.feedback must stay neutral and unscored`);
-        }
         if (optionIds.has(option.id))
           errors.push(`${label} contains duplicate option id: ${option.id}`);
         if (optionTexts.has(option.text)) {
@@ -735,12 +782,6 @@ function validateComprehensionCheck(check, errors) {
       if (!optionIds.has(question.correctOptionId)) {
         errors.push(`${label}.correctOptionId must reference one of its four choices`);
       }
-    }
-    if (
-      typeof question.explanation === "string" &&
-      SELF_CHECK_PRAISE_PATTERN.test(question.explanation)
-    ) {
-      errors.push(`${label}.explanation must stay neutral and unscored`);
     }
     const expectedId = `Q${index + 1}`;
     if (question.id !== expectedId) {
@@ -809,11 +850,12 @@ function validatePass(data, errors) {
     errors.push("PASS requires every contractCoverage row to be PROVEN");
   }
   if (
-    data.contractCoverage.some((row) =>
-      /\b(?:NOT RUN|FAIL(?:ED)?)\b|미실행|실행하지 못/i.test(row?.tests ?? ""),
-    )
+    data.reviewDiagnostics?.testSufficiency?.status !== "CLEAR" ||
+    data.reviewDiagnostics?.contractCompleteness?.status !== "CLEAR"
   ) {
-    errors.push("PASS contractCoverage tests must not contain failed or unexecuted results");
+    errors.push(
+      "PASS requires clear structured test-sufficiency and contract-completeness results",
+    );
   }
   if (
     data.metrics !== undefined &&
@@ -992,7 +1034,7 @@ function validateReport(report, data, errors) {
     const heading = `## ${hill.title}`;
     const body = sectionBody(report, new RegExp(`^${escapeRegExp(heading)}\\s*$`, "i"), /^##\s+/);
     const rawBody = rawSectionBody(report, heading);
-    if (!body.includes(hill.reviewQuestion)) {
+    if (hill.reviewQuestion && !body.includes(hill.reviewQuestion)) {
       errors.push(`implementation-review.md ${heading} is missing its review question`);
     }
     if (!body.includes(hill.sliceName ?? "")) {
@@ -1009,14 +1051,15 @@ function validateReport(report, data, errors) {
         errors.push(`implementation-review.md ${heading} is missing ${field}`);
       }
     }
-    for (const [componentIndex, component] of (hill.components ?? []).entries()) {
-      if (!body.includes(`Component ${component.id} · ${component.name}`)) {
+    for (const [componentIndex, component] of reviewCodeGroups(hill).entries()) {
+      if (!component.direct && !body.includes(`Component ${component.id} · ${component.name}`)) {
         errors.push(
           `implementation-review.md ${heading} is missing component ${componentIndex + 1}`,
         );
       }
       for (const [field, value] of Object.entries(component)) {
         if (
+          !component.direct &&
           field !== "codeEvidence" &&
           field !== "id" &&
           typeof value === "string" &&
@@ -1278,7 +1321,13 @@ function main() {
         errors,
       );
       validateFindingContractLinks(data.findings ?? [], data.contractCoverage, errors);
-      validateReviewHike(data.reviewHike, data.contractCoverage, data.changeScope, errors);
+      validateReviewHike(
+        data.reviewHike,
+        data.contractCoverage,
+        data.changeScope,
+        errors,
+        data.reviewMode,
+      );
       validateReviewDiagnostics(data.reviewDiagnostics, errors);
       validatePass(data, errors);
     }

@@ -40,3 +40,5 @@ questions together using visible IDs.`,
     ].join("\n\n");
   },
 };
+
+export const mechanicalScore = score;

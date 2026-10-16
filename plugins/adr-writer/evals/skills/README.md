@@ -1,8 +1,9 @@
 # Skill evaluation
 
 One workspace command prepares or runs classification probes, controlled Skill
-selection, and actual ADR document operations. The existing scorers and the
-DeepEval GEval adapter are reused. `pnpm eval:llm` is the classification-only
+selection, and actual ADR document operations. Mechanical artifact checks and the DeepEval GEval adapter are reused.
+Natural-language meaning is judged by the live LLM; legacy word/phrase and
+evaluation-tail checks do not gate verdicts. `pnpm eval:llm` is the classification-only
 entry point to the same runner. No evaluation dependency enters the shipped
 ALPS MCP bundle or the dependency-free ADR runtime tests.
 
@@ -70,13 +71,13 @@ instruction bundle, not removing the product/organization contract itself.
 
 `--model` selects the Claude target. All catalog classification probes and execution use
 DeepEval with the existing Bedrock defaults: profile `default`, region
-`us-east-1`, model `us.openai.gpt-5.6-sol`. `--judge-model`, `--judge-profile`,
+`us-east-1`, model `us.openai.gpt-6.1-sol`. `--judge-model`, `--judge-profile`,
 `--judge-region` and `--judge-provider bedrock|claude` override the judge separately.
 There is no automatic provider fallback. A classification trial normally calls
 the semantic judge once. An unsupported source/quotation permits one citation
 repair call against the same evidence and criteria; both raw calls are retained.
 Other schema/score/transport errors are not retried, and a second invalid
-citation remains ERROR. Local checks add no model call. Routing is scored
+citation remains ERROR. Mechanical file/action/schema checks add no model call. Routing is scored
 deterministically and includes a second target call to
 read selected Skill bodies; no second call is needed for an empty selection.
 
@@ -311,19 +312,18 @@ references. They cover simple explanations, local reviews, complex flows,
 unclear usefulness, explicit reports, chat-only overrides, an existing delivery
 choice and mandatory workflow artifacts. They judge the proposed next response
 and actions, not actual file creation, browser opening or native client routing.
-A scenario may also supply `deterministicScore` alongside its explicit obligations,
-using a named export or a property on the default object. The registered catalog
-uses that same function, including its tool-scope guards. Named exports win when
-both forms are present.
-The unified runner then uses only those exact local checks plus GEval, while the
-legacy runner retains `score`. Feature splitting keeps numeric ranges and tail
-cardinalities local; SDK admission keeps file/index absence local. Their prose
-meaning is judged by GEval so word order or nearby negation does not cause a
-keyword-based false failure. A review-only report permits read-only evidence
+A scenario may supply `mechanicalScore` alongside its explicit obligations,
+using a named export or a property on the default object. Named exports win when
+both forms are present. Both unified and compatibility runners combine these
+file/action/schema checks with GEval. Legacy prose scorers and evaluation-only
+tail cardinality checks are not invoked. Meaning is judged by GEval so word order
+or nearby negation does not cause a keyword-based false failure.
+A review-only report permits read-only evidence
 lookup and forbids mutations; its rubric does not invent a no-tools restriction.
 Generic description-based obligations are a starting rubric, not a claim of
-human-calibrated judge accuracy. Existing keyword checks can still reject valid
-paraphrases; inspect the separate local checks and GEval result when they disagree.
+human-calibrated judge accuracy. Runtime scorers do not reject paraphrases, absent/repeated evaluation-only tags
+or `0 fail`. Native schemas and declared failure/unverified states remain
+mechanical gates; prose is checked against actual evidence.
 
 `test-case.json` stores the actual DeepEval input, output evidence and fixed
 expected obligations. Target files and tool events are captured before local
@@ -371,3 +371,38 @@ free operation or at least one scored live outcome (even when its checks fail).
 Exit 2 means invalid setup/preparation or no scorable live result. Existing
 commands remain compatible. CI exercises the new pipeline with stub providers
 through the real DeepEval SDK, plus deterministic metrics and fixture boundary tests.
+
+## Judge policy and saved-evidence reassessment
+
+All default judging paths, including compatibility/custom runners, calibration
+and reassessment, use Bedrock `us.openai.gpt-6.1-sol`, explicit AWS profile
+`default`, region `us-east-1`. Target model/profile settings never select the
+judge. Explicit judge overrides remain separate; errors never trigger provider
+or regex-score fallback.
+
+Scenario `mechanicalScore` exports check only actual files/actions/schemas.
+Legacy `score` and `deterministicScore` prose/tag functions are not runtime
+judges. The wrapper retires the common tail and makes evaluation-only tag hints
+optional without removing product contracts or schemas. Empty responses and
+missing required evidence are still errors or unverified, never success.
+
+```bash
+pnpm eval:skills --live --rejudge .codex/evals/<source-run> --jobs 2
+pnpm eval:skills --prepare --rejudge .codex/evals/<source-run>
+pnpm eval:calibration --live --only semantic- --runs 1
+```
+
+Reassessment restores recorded evidence into a separate check workspace, applies
+current mechanical checks, and calls the current judge without executing the
+target. It retains source obligations and the reference date, excludes previous
+judge grades/reasons from model input, and preserves the original run. The new
+report records scoring policies and the current verifier-source hash; grading
+changes are not Skill behavior gains. Execution reassessment also reruns the
+current policy, document-structure and case-specific evidence checks. Executable
+fixture files must match the trusted current fixture; captured code is never
+executed. An incompatible fixture or missing current verifier remains an error.
+`--report` remains free rendering, not reassessment.
+
+The sixteen `semantic-` calibration controls cover equivalent and opposite meanings,
+including `stays Accepted`, `0 fail`, real failure, routine approval, context-sensitive feedback tone, complete planning, product-gap escalation and hidden contract premises. They are
+AI-authored contract examples, not human ground truth or fresh target generations.

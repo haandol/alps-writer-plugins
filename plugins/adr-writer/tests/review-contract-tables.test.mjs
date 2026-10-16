@@ -15,6 +15,7 @@ function validateContract(
     afterContract = "",
     coverageEvidence = "src/completion.mjs:1 — duplicate request reuses the stored result",
     testResults = "node --test test/completion.test.mjs — PASS",
+    testStatus = "CLEAR",
   } = {},
 ) {
   return withTmp((dir) => {
@@ -121,7 +122,7 @@ Retries preserve the stored result.
       },
       reviewDiagnostics: {
         contractCompleteness: diagnostic,
-        testSufficiency: diagnostic,
+        testSufficiency: { ...diagnostic, status: testStatus },
         necessity: diagnostic,
       },
     };
@@ -290,18 +291,24 @@ test("assertion and mutant evidence cannot be confused with required execution r
   const result = validateContract("- Preserve failures.", ["Preserve failures."], options);
   assert.equal(result.status, 0, result.stderr);
 
-  for (const testResults of [
-    "node --test test/completion.test.mjs — FAIL",
-    "node --test test/completion.test.mjs — NOT RUN: environment unavailable",
+  for (const [testResults, testStatus] of [
+    ["node --test test/completion.test.mjs — FAIL", "ISSUE"],
+    ["node --test test/completion.test.mjs — NOT RUN: environment unavailable", "UNVERIFIED"],
   ]) {
     const rejected = validateContract("- Preserve failures.", ["Preserve failures."], {
       ...options,
       testResults,
+      testStatus,
     });
     assert.equal(rejected.status, 1, rejected.stdout);
-    assert.match(
-      rejected.stderr,
-      /PASS contractCoverage tests must not contain failed or unexecuted/,
-    );
+    assert.match(rejected.stderr, /PASS requires clear structured test-sufficiency/);
   }
+});
+
+test("a successful test count mentioning zero failures remains structurally valid", () => {
+  const result = validateContract("- Preserve failures.", ["Preserve failures."], {
+    testResults: "node --test test/completion.test.mjs — exit 0, 1 pass, 0 fail",
+    testStatus: "CLEAR",
+  });
+  assert.equal(result.status, 0, result.stderr);
 });

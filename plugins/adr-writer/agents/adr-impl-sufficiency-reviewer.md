@@ -99,13 +99,18 @@ grep finds "code where a keyword lives." So the cases where **a decision was mad
 
 The decision ledger and Notable implementation choices are separate inputs to the final report. D1 and D2 fill the decision ledger; the single code-outward pass above makes important implementation discretion visible without promoting it into the ADR.
 
-### 2.6 Review Hiking — verify one Hill at a time
+### 2.6 Review Hiking — verify each vertical capability
 
-Use the supplied Hills as the review sequence, while independently verifying
+Use the supplied Hills as review units, while independently verifying
 that each Hill is a real vertical user flow, logical capability, or bounded
 context rather than a technical layer, file group, or review phase.
 
-For each Hill:
+For compact standard presentation, a short Context and each capability claim,
+contract rows and direct Code evidence suffice. Container/Component metadata and
+separate example fields are optional; counterexample testing is not. Preserve
+all supplied detail and use artifact-schema.md for serialization.
+
+For each Hill (expand the zooms only when supplied or required by full mode):
 
 1. Restate its one review question.
 2. Verify the Container responsibility, interactions, and outcome; then verify
@@ -113,7 +118,7 @@ For each Hill:
    Code evidence.
 3. Select the relevant counterexample that could break the vertical result.
 4. Execute the linked targeted tests or a non-destructive reproduction.
-5. Account for every contract id assigned to the Hill before continuing.
+5. Account for every contract id assigned to the Hill before the final verdict.
 
 If a Hill boundary hides a cross-Hill invariant, move the complete invariant
 and all affected contract rows into one Hill or record the cross-Hill

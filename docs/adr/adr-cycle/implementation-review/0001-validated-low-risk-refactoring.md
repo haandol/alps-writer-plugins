@@ -4,7 +4,7 @@ Date: 2026-08-15
 
 ## Status
 
-Accepted (2026-10-15)
+Accepted (2026-10-16)
 
 ## Purpose
 
@@ -86,13 +86,17 @@ Hill을 수명주기 단계, 기술 계층이나 파일 묶음으로 나누면 �
 
 `standard`는 위 보호 표면을 바꾸지 않는 국소 구현과 기존 결정의 강화에 적용한다. ADR decision ledger, 관련 테스트, 충분성 관점과 간결한 결과를 요구한다. 분류가 모호하면 `full`을 선택한다.
 
+`standard`는 계약별 증거의 완전성을 유지하면서 설명의 깊이를 선택할 수 있다. 의도·전제·계약·검토 범위는 짧게 설명하고, 각 수직 기능에는 동작 설명, 계약 배정과 실제 코드 근거를 직접 연결할 수 있다. 별도 Container·Component 설명, 사례별 반복 서술, 비교·그림 생략 사유는 경량 경로의 필수 조건이 아니다. 제공한 상세 자료는 검증하며 필수 코드·계약·테스트 증거의 누락은 허용하지 않는다. 변경 범위가 있으면 실제 핵심 diff를 포함한다.
+
+리뷰 모드는 변경된 보호 경계와 실제 영향 범위로 고르며 기존 전체 구현이 넓다는 사실만으로 승격하지 않는다. 전체 계약 검토는 두 모드에서 유지하고 분류가 불명확하거나 사용자가 full을 요청하면 full을 사용한다. 사람용 HTML은 검증된 원본에서 직접 생성할 수 있으며 감사용 HTML을 별도로 만든 뒤 재작성하는 중간 단계는 필수가 아니다.
+
 모든 리뷰는 **전체 구현 범위**와 **변경 범위**를 분리한다. 전체 구현 범위는 ADR의 Decision과 모든 requirement contract 행에서 도메인 용어와 행위를 추출하고 저장소 검색, 직접·간접 호출 경로, 관련 설정·생성 코드와 테스트를 따라 현재 계약을 구현하는 코드를 확인한 결과다. 변경 범위는 사용자가 준 PR·commit range나 `--base`, 현재 변경사항 또는 기본 branch와의 merge-base diff다.
 
 diff는 변경 전후 설명과 필요성 검토의 입력이지만 전체 구현 범위의 상한이 아니다. 충분성 검토, ADR contract coverage, 구현 설명과 테스트 선택은 전체 구현 범위를 사용한다. `full`의 필요성 검토는 변경 범위가 있으면 변경 단위를 공격하고, 독립적인 기존 구현 리뷰처럼 변경 범위가 없으면 ADR 관련 구현 단위를 대상으로 제거·축소 가설을 검토한다. 관련 구현을 완전히 좁히지 못했거나 핵심 호출 경로를 읽지 못하면 `PASS` 대신 `INCONCLUSIVE`를 반환한다.
 
-모든 리뷰는 전체 과정을 **Review Hiking**으로 구성한다. Review Hiking은 하나 이상의 **Hill**로 이루어진다. 단순한 국소 구현은 하나의 낮은 Hill로 끝날 수 있고, 여러 사용자·운영·상태·실패 흐름을 가진 구현은 각각 독립적으로 이해하고 검증할 수 있는 여러 Hill로 나눈다.
+`full`과 상세 설명을 선택한 `standard`는 전체 과정을 **Review Hiking**으로 구성한다. Review Hiking은 하나 이상의 **Hill**로 이루어진다. 단순한 국소 구현은 하나의 낮은 Hill로 끝날 수 있고, 여러 사용자·운영·상태·실패 흐름을 가진 구현은 각각 독립적으로 이해하고 검증할 수 있는 여러 Hill로 나눈다.
 
-Review Hiking은 **리뷰 확대 단계**를 사용한다. Context, Container/Hill, Component와 Code는 Evidence Package를 읽는 해상도를 나타낸다.
+상세 설명 경로에서 Review Hiking은 **리뷰 확대 단계**를 사용한다. Context, Container/Hill, Component와 Code는 Evidence Package를 읽는 해상도를 나타낸다.
 
 - **Context** — ADR 의도, 사전 조건과 주변 시스템, 핵심 계약, 전체 구현 범위와 위험을 한 번만 설명한다.
 - **Container** — 각 Hill을 사용자 흐름, 논리 기능 또는 근거가 확인된 bounded context로 설명한다. Container는 이 수직 기능의 책임, 다른 참여자·상태와의 상호작용, 사용자·운영 결과를 보여준다.
@@ -101,11 +105,11 @@ Review Hiking은 **리뷰 확대 단계**를 사용한다. Context, Container/Hi
 
 Hill은 frontend, backend, database 같은 기술 계층, 파일 묶음 또는 조사·설계·구현·테스트 같은 수명주기 단계가 아니다. 하나의 사용자 흐름, 논리 기능 또는 저장소와 ADR에서 근거를 확인한 bounded context를 기준으로 수직 분할하고 사람용 보고서의 Container 확대 수준으로 표시한다. 각 Hill은 수직 단위의 이름과 유형, 하나의 비어 있지 않은 리뷰 질문을 가지며 필요한 UI, API, 데이터, 외부 시스템 경계를 한 Hill 안에서 함께 다룬다.
 
-전체 구현 범위를 확정한 직후, 관점별 판정을 시작하기 전에 확인된 참여자, 상태, 경계와 주요 분기를 **Trail map**으로 외부화한다. Trail map은 scope inventory를 시각화한 공통 검토 자료이며 그 자체가 계약 충족 증거는 아니다. 필요성·충분성 관점은 서로의 결론을 읽지 않는 독립성을 유지하면서 원본 ADR, 코드, 테스트, 확정된 scope와 Trail map의 사실 관계를 입력으로 사용할 수 있다. 최종 Evidence Package에는 코드나 실행 증거로 확인한 node와 edge만 남긴다.
+상세 설명 경로에서 전체 구현 범위를 확정한 직후, 관점별 판정을 시작하기 전에 확인된 참여자, 상태, 경계와 주요 분기를 **Trail map**으로 외부화한다. Trail map은 scope inventory를 시각화한 공통 검토 자료이며 그 자체가 계약 충족 증거는 아니다. 필요성·충분성 관점은 서로의 결론을 읽지 않는 독립성을 유지하면서 원본 ADR, 코드, 테스트, 확정된 scope와 Trail map의 사실 관계를 입력으로 사용할 수 있다. 최종 Evidence Package에는 코드나 실행 증거로 확인한 node와 edge만 남긴다.
 
 사람용 보고서는 Trail map을 맥락 없는 내부 용어로 표시하지 않는다. 사용자 언어로 `전체 등산 지도 (Trail map)`처럼 역할이 드러나는 제목을 사용하고, 지도 바로 앞에 읽는 법을 설명한다. 읽는 법은 상자가 나타내는 참여자·시스템·상태, 화살표가 나타내는 요청·상태 변화·의존 관계, 각 Hill과 연결되는 구간을 해당 지도에 맞게 짚는다. 지도 생성 근거는 검증용 JSON에만 유지하고 사람용 보고서에 반복하지 않는다. 전체 관계가 한두 문장으로 충분하면 지도를 생략한다.
 
-각 Hill은 하나 이상의 계약 ID와 하나 이상의 Component를 가진다. 모든 `D0`, `R1..Rn`은 정확히 하나의 Hill에 배정하며 누락하거나 여러 Hill에 중복 배정하지 않는다. Hill의 Container 설명은 책임, 상호작용과 관찰 결과를 보여준다. Component는 상세 구현과 검증 결과를 설명하며 하나 이상의 Code evidence를 가진다.
+상세 설명 경로에서 각 Hill은 하나 이상의 계약 ID와 하나 이상의 Component를 가진다. 모든 `D0`, `R1..Rn`은 정확히 하나의 Hill에 배정하며 누락하거나 여러 Hill에 중복 배정하지 않는다. Hill의 Container 설명은 책임, 상호작용과 관찰 결과를 보여준다. Component는 상세 구현과 검증 결과를 설명하며 하나 이상의 Code evidence를 가진다.
 
 Code evidence는 `diff` 또는 `excerpt` 종류, 파일과 symbol 위치, 실제 코드 내용, 이 근거가 중요한 이유와 관련 테스트를 포함한다. `diff` 내용은 실제 변경의 핵심 줄만 유지하고 전체 파일이나 무관한 변경을 복사하지 않는다. 변경 범위가 비어 있지 않으면 전체 보고서에 최소 하나의 `diff` evidence가 있어야 한다. 변경 범위가 없는 독립 구현 리뷰에서는 `excerpt`로 현재 구현의 핵심 경로를 보여준다. Code는 기본 화면에서 접고 사용자가 상세 구현을 확인할 때 펼친다.
 
@@ -137,7 +141,7 @@ ADR contract coverage는 Decision과 requirement contract의 각 독립 행을 �
 
 근거 있는 비교 대상이 있으면 review artifact는 대상 ADR, 유사점, 차이점, 검토 영향과 선택 근거를 구조화한다. 유사점은 재사용할 수 있는 mental model이나 계약 경계를 설명한다. 차이점은 채택 대안, requirement contract, 상태·실패 규칙이나 책임 경계의 차이를 설명한다. 검토 영향은 어떤 이해·구현·테스트 가정을 재사용할 수 있고 무엇을 별도로 확인해야 하는지 말한다. 사람용 본문은 이를 관련 ADR과 변경 맥락 안의 짧은 에세이 문단으로 합성하고 표, 대시보드 카드와 별도 판정 항목으로 만들지 않는다.
 
-근거 있는 비교 대상이 없으면 artifact는 빈 비교 목록과 구체적인 생략 근거를 기록한다. 비교는 새로운 dependency, decision ownership, approval 상태나 영속 registry를 만들지 않는다. 함수·파일·라이브러리·내부 호출 흐름은 ADR 비교 내용에 포함하지 않는다.
+상세 설명 경로에서 비교를 검토했으나 근거 있는 대상이 없으면 빈 비교 목록과 생략 근거를 기록한다. 경량 standard는 비교 자체를 생략할 수 있다. 비교는 새로운 dependency, decision ownership, approval 상태나 영속 registry를 만들지 않는다. 함수·파일·라이브러리·내부 호출 흐름은 ADR 비교 내용에 포함하지 않는다.
 
 주요 알고리즘이나 제어·데이터 흐름이 있으면 주제별 설명이 시작 조건, 핵심 단계와 분기, 상태 또는 데이터 변화, 관찰 결과를 하나의 인과 흐름으로 설명한다. 코드와 테스트가 뒷받침하는 경우 작은 예시 입력과 결과를 사용한다. 이 설명은 계약 coverage를 반복하지 않고 구현이 어떻게 동작하는지 보여준다.
 
@@ -245,7 +249,8 @@ flowchart LR
 - 충분성 검토, ADR contract coverage, 구현 설명과 테스트 선택은 전체 구현 범위를 사용한다.
 - 전체 구현 범위나 핵심 호출 경로를 확인하지 못하면 `PASS` 대신 `INCONCLUSIVE`를 반환한다.
 - 모든 리뷰는 Hill 전에 ADR 의도, 사전 조건과 주변 시스템, 핵심 계약, 전체 구현 범위와 위험을 담은 비어 있지 않은 Context를 제공한다.
-- Context, Container, Component와 Code는 사람용 보고서의 확대 수준이다.
+- 경량 standard는 Context와 수직 기능의 짧은 설명, 모든 계약 배정과 직접 Code evidence로 전달할 수 있다. 아래 Container·Component·상세 교육 필드와 시각화·비교 생략 사유의 의무는 full 또는 상세 설명 경로에 적용한다. 이미 제공한 자료는 경량 모드에서도 누락하거나 검증을 건너뛰지 않는다.
+- Context, Container, Component와 Code는 상세 사람용 보고서의 확대 수준이다.
 - 모든 리뷰는 하나 이상의 Hill로 구성하고, 여러 사용자 흐름·논리 기능·bounded context가 있으면 각 기능의 계약·구현·테스트를 독립적으로 확인할 수 있는 여러 낮은 Hill로 나눈다.
 - Hill은 기술 계층, 파일 묶음이나 조사·설계·구현·테스트 단계가 아니라 사용자 흐름, 논리 기능 또는 근거가 확인된 bounded context를 기준으로 수직 분할한다.
 - 각 Hill은 사람용 보고서의 Container 확대 수준이며 `user-flow`, `logical-capability`, `bounded-context` 중 하나의 유형과 비어 있지 않은 수직 단위 이름, 리뷰 질문을 가진다.
@@ -277,7 +282,7 @@ flowchart LR
 - 기본 본문은 연결된 에세이 문단으로 작성하고 `주장`, `대표 사례`, `반례`, `평가`, `책임`, `상호작용`, `관찰 결과` 같은 구조 필드 라벨을 노출하지 않는다.
 - 기본 본문은 verdict stamp, 상태 pill, 집계 chip, 작업 카드와 coverage 표를 사용하지 않는다.
 - 관련 ADR과 맥락은 무엇이 바뀌었는지, 유지할 계약, 참조한 결정과 주의할 실패 조건을 설명한다.
-- review artifact는 유사 ADR 비교 목록을 항상 가지며 비교 대상이 없으면 구체적인 생략 근거를 가진다.
+- 상세 review artifact는 유사 ADR 비교 목록을 가지며 비교 대상이 없으면 생략 근거를 가진다. 경량 standard는 비교를 생략할 수 있다.
 - 유사 ADR 비교는 대상 ADR과 동일하거나 인접한 architectural question, requirement contract, 상태·실패 규칙 또는 durable boundary를 공유하는 ADR만 사용한다.
 - 단순 키워드, 기술 이름, 파일 구조와 내부 구현 유사성은 유사 ADR 선택 근거로 사용하지 않는다.
 - 유사 ADR 비교는 가장 가까운 한 개를 기본으로 하고 두 번째가 별도 차이를 설명할 때만 추가해 최대 두 개로 제한한다.
@@ -356,7 +361,7 @@ flowchart LR
 - ADR completeness gap은 derived obligation, project/domain default, product decision으로 분류한 뒤 escalation한다.
 - Derived obligation은 부모 contract coverage에 연결하고 project/domain default는 구현 재량으로 기록한다.
 - Product decision gap은 추천안과 근거, 2~3개 대안, 영향과 정확한 ADR 문구를 포함한 Decision request로 묶는다.
-- standard와 full은 artifact validator 통과 후 같은 renderer로 자체 포함된 `adr-impl-review-report.html`을 생성한다.
+- standard와 full은 artifact validator 통과 후 자체 포함 HTML을 제공한다. 검증된 원본에서 최종 사람용 HTML을 직접 생성할 수 있으며 별도 감사용 HTML과 재작성은 필수 단계가 아니다.
 - 비어 있지 않은 HTML을 확인한 직후 내용 fingerprint가 포함된 URL로 기본 브라우저에서 열어 이전 보고서가 재사용되지 않게 한다.
 - 로컬 열기 기능이 없거나 열기 시도가 실패하면 리뷰 verdict를 바꾸지 않고 최종 응답에 HTML 경로와 실패 이유를 제공한다.
 - HTML 생성 실패나 빈 파일은 완료로 처리하지 않으며 최종 응답은 항상 생성된 HTML 경로를 제공한다.
@@ -381,6 +386,9 @@ flowchart LR
 - 리뷰 결과는 모드, 실행 시간, 관점별 발견 건수, 미검증 위험과 실행한 테스트 수를 기록한다.
 
 #### 관찰 가능한 검증 기준
+
+- 경량 standard는 별도 Container·Component·상세 사례 필드 없이도 모든 계약 행과 실제 코드·테스트 근거가 있으면 검증·전달된다. 코드 근거 누락, 계약 누락·중복, 미검증 상태의 PASS 또는 full의 상세 구조 누락은 거부한다. 아래 확대 구조 fixture 기준은 상세 경로에 적용한다.
+- 기존 전체 구현은 넓지만 실제 변경과 영향은 국소적이고 보호 경계가 그대로인 경우 standard를 유지한다. 보호 경계 변경이나 모호한 분류는 full을 선택한다.
 
 - 같은 ADR 계약을 리뷰하면 각 독립 계약 행이 Evidence Package에 정확히 한 번 나타나고 상태, 구현 내용, ADR 근거, 증거와 테스트를 함께 보여준다.
 - 모든 fixture는 Hill 전에 의도·전제·계약·범위가 비어 있지 않은 Context를 생성한다.

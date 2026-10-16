@@ -2,7 +2,11 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { relatedAdrComparisonProse, hillNarrativeParagraphs } from "./adr-impl-review-prose.mjs";
+import {
+  relatedAdrComparisonProse,
+  hillNarrativeParagraphs,
+  reviewCodeGroups,
+} from "./adr-impl-review-prose.mjs";
 import { proseLines } from "./adr-impl-review-diagrams.mjs";
 
 function usage(message) {
@@ -156,6 +160,7 @@ function reviewContext(context, comparisons, language) {
     return `Compared with **${tableCell(comparison.title)}** (\`${tableCell(comparison.adr)}\`), ${prose}`;
   });
   return [
+    ...(context.summary ? [tableCell(context.summary), ""] : []),
     tableCell(context.intent),
     "",
     tableCell(context.preconditions),
@@ -198,6 +203,7 @@ function componentZoom(components, language) {
           ].join("\n"),
         )
         .join("\n\n");
+      if (component.direct) return codeBlocks;
       return [
         `### ${labels.component} ${tableCell(component.id)} · ${tableCell(component.name)}`,
         "",
@@ -400,7 +406,7 @@ function main() {
       "<!-- generated component zoom from findings.json -->",
       "<!-- generated component zoom start -->",
       "<!-- generated component zoom end -->",
-      componentZoom(hill.components, language),
+      componentZoom(reviewCodeGroups(hill), language),
     );
     const rows = hill.contractIds.map((contractId) => {
       const row = data.contractCoverage.find((candidate) => candidate.contractId === contractId);

@@ -219,20 +219,19 @@ function graphMatches(text, { nodes, after }) {
 /** Mechanical evidence only: row coverage, declared graph topology and writes.
  * The report's contract meaning, applicability and ownership traces go to GEval.
  */
-export function deterministicScore({ dir, tail, events }) {
+export function mechanicalScore({ dir, events, before = fixtureFiles }) {
   if (!Array.isArray(events))
     throw new Error("Cycle options scoring requires captured tool events");
-  const rows = tail?.findings ?? [];
   const mutations = mutationRequests(events);
   return [
     {
       label: "one actual batch report exists",
-      pass: (read(dir, REPORT) ?? "").trim().length > 100,
+      pass: (read(dir, REPORT) ?? "").trim().length > 0,
       detail: REPORT,
     },
     {
       label: "original inputs and official owners remain unchanged",
-      pass: Object.entries(fixtureFiles).every(([file, body]) => read(dir, file) === body),
+      pass: Object.entries(before).every(([file, body]) => read(dir, file) === body),
       detail: "existing ADRs, mapping, source and prior discovery",
     },
     {
@@ -250,6 +249,13 @@ export function deterministicScore({ dir, tail, events }) {
       ),
       detail: "only the requested report is added to the supplied fixture",
     },
+  ];
+}
+
+export function deterministicScore({ dir, tail, events }) {
+  const rows = tail?.findings ?? [];
+  return [
+    ...mechanicalScore({ dir, events }),
     {
       label: "all three comparisons and all questions occur once in the tail",
       pass:

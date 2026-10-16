@@ -130,18 +130,11 @@ test("missing, duplicate, invented and contradictory records fail closed", () =>
   assert.throws(() => deterministicScore(input), /captured tool events/);
 });
 
-test("catalog retains the local scorer and separate semantic evidence obligations", async () => {
+test("catalog delegates provability meaning to fixed semantic obligations", async () => {
   const item = (await catalog()).find((c) => c.id === scenario.name);
-  assert.equal(item.score, deterministicScore);
+  assert.equal(item.score, undefined);
   assert.deepEqual(item.semanticObligations, obligations);
-  assert.equal(item.supplementalChecks, true);
-  assert.ok(item.score(response()).every((c) => c.pass));
-  const input = response();
-  input.tail.findings[4].summary = input.tail.findings[4].summary.replace(
-    "Unverified risk",
-    "Test gap",
-  );
-  assert.equal(item.score(input).find((c) => c.label === "case E").pass, false);
+  assert.equal(item.supplementalChecks, false);
 });
 
 test("scenario embeds shipping review modules without leaking the semantic answer key", () => {
@@ -308,19 +301,13 @@ test("stage2 malformed records and forbidden tool attempts cannot pass", () => {
   }
 });
 
-test("stage2 catalog preserves local guards independently of semantic explanations", async () => {
+test("stage2 catalog preserves semantic evidence obligations without record-word scoring", async () => {
   const entries = await catalog();
-  for (const { probe, rows, mutations } of stage2) {
+  for (const { probe } of stage2) {
     const item = entries.find((c) => c.id === probe.name);
-    assert.equal(item.score, probe.deterministicScore);
+    assert.equal(item.score, undefined);
     assert.deepEqual(item.semanticObligations, probe.obligations);
-    assert.equal(item.supplementalChecks, true);
-    assert.ok(item.score(stage2Response(rows)).every((c) => c.pass));
-    const input = stage2Response(rows);
-    const [tag, from, to] = mutations[0];
-    const row = input.tail.findings.find((r) => r.tag === tag);
-    row.summary = row.summary.replace(from, to);
-    assert.equal(item.score(input).find((c) => c.label === `case ${tag}`).pass, false);
+    assert.equal(item.supplementalChecks, false);
   }
 });
 

@@ -1,3 +1,4 @@
+import { semanticCases, semanticDefinition } from "./semantic-cases.mjs";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { cases } from "../regression/cases.mjs";
@@ -24,6 +25,15 @@ const merge = "rollup-encbird-turn-chain";
 const priceMerge = "rollup-pixelbank-price-renumber";
 
 export const calibrationCases = [
+  ...semanticCases.map((sample) =>
+    vector(
+      sample.id,
+      sample.caseId,
+      sample.expectedScore,
+      null,
+      sample.expectedScore ? null : "meaning",
+    ),
+  ),
   vector("text-equivalent", chat, 1, null, null),
   vector("text-wrong-units", chat, 0, "text-six", "contract"),
   vector("text-equivalent-holdout", chat, 1, "paraphrase", null, "holdout"),
@@ -48,7 +58,7 @@ export const calibrationCases = [
 ];
 
 export function calibrationDefinition(entry) {
-  const item = cases.find((c) => c.id === entry.caseId);
+  const item = semanticDefinition(entry)?.item ?? cases.find((c) => c.id === entry.caseId);
   if (!item) throw new Error("Unknown calibration case");
   return { entry, item, fixtureHash: sha(item.build()), obligationHash: sha(item.obligations) };
 }
@@ -64,6 +74,20 @@ export function buildCalibrationEvidence(entry, directory, pluginRoot) {
   const root = path.join(directory, "workspace");
   createWorkspace(root, item.build(), pluginRoot);
   const before = snapshot(root);
+  const semantic = semanticDefinition(entry);
+  if (semantic) {
+    const logPath = path.join(directory, "events.jsonl");
+    const tools = makeTools({ root, pluginRoot, logPath, turn: 1 });
+    tools.call("read_file", { path: "source.md" });
+    return {
+      before,
+      after: snapshot(root),
+      turns: item.turns,
+      replies: [semantic.sample.reply],
+      events: readFileSync(logPath, "utf8").trim().split("\n").map(JSON.parse),
+    };
+  }
+
   const logPath = path.join(directory, "events.jsonl");
   let turn = 1;
   let tools = makeTools({ root, pluginRoot, logPath, turn });

@@ -172,3 +172,10 @@ export const VERDICTS = {
 };
 
 export const VERDICT_NAMES = new Set(Object.keys(VERDICTS));
+
+// Keep user-decision controls consistent in both report delivery routes.
+export const USER_DECISION_CATEGORIES = new Set(
+  Object.entries(CATEGORIES)
+    .filter(([, value]) => value.authority === "contested" && value.actionGroup !== "note")
+    .map(([name]) => name),
+);

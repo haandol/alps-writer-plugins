@@ -35,48 +35,18 @@ test("response scope checks allow requested reads but reject mutation attempts a
   );
 });
 
-test("the English article a in request B is not mistaken for request A", async () => {
-  const item = (await catalog()).find((c) => c.id === "hook-admission-routing");
-  const output =
-    "=== EVAL-VERDICT: PASS ===\n=== EVAL-FINDINGS ===\nEXEMPT | Request A: SDK and credential adapter change\nADR_FIRST | Request B: quota 5 to 3 per month is a requirement change\n=== EVAL-END ===";
-  assert.ok(item.score({ output, tail: parseTail(output) }).every((c) => c.pass));
-  const wrong = output.replace("EXEMPT | Request A", "ADR_FIRST | Request A");
-  assert.ok(item.score({ output: wrong, tail: parseTail(wrong) }).some((c) => !c.pass));
-});
-
-test("live paraphrases retain exact artifact gates while prose is judged semantically", async () => {
+test("classification prose and evaluation tags have no local semantic score", async () => {
   const items = await catalog();
-  const split = items.find((c) => c.id === "alps-high-load-suggests-feature-split");
-  const reply =
-    "분할은 권고이며 승인과 저장을 막지 않습니다. 원본 유지도 가능합니다.\n=== EVAL-VERDICT: PASS ===\n=== EVAL-FINDINGS ===\nFEATURE_SCORE | 9/10\nSPLIT_CANDIDATE | invitation\nSPLIT_CANDIDATE | role change\nKEEP_ORIGINAL | keep the original\nNON_BLOCKING | the score does not block approval or saving\n=== EVAL-END ===";
-  assert.ok(split.score({ tail: parseTail(reply), output: reply }).every((c) => c.pass));
-  assert.ok(
-    split
-      .score({
-        tail: parseTail(reply.replace("FEATURE_SCORE | 9/10", "FEATURE_SCORE | 0/10")),
-        output: reply,
-      })
-      .some((c) => !c.pass),
-  );
-  assert.ok(split.semanticObligations.some((o) => o.id === "choice"));
-  const author = items.find((c) => c.id === "author-rejects-implementation-detail");
-  const dir = temp();
-  await author.build(dir);
-  assert.ok(author.score({ dir }).every((c) => c.pass));
-  writeFileSync(path.join(dir, "docs/adr/0001-unwanted.md"), "Unrequested SDK ADR");
-  assert.ok(author.score({ dir }).some((c) => !c.pass));
-});
-
-test("score-only parsing accepts labeled parentheses without hiding a visible/tail mismatch", async () => {
-  const item = (await catalog()).find((c) => c.id === "comprehension-load-score-only");
-  const output =
-    "A (ALPS Feature) — Comprehension load: 1/10\nB (ADR) — Comprehension load: 9/10\n=== EVAL-VERDICT: scored ===\n=== EVAL-FINDINGS ===\nFEATURE_SCORE | 1/10\nADR_SCORE | 9/10\n=== EVAL-END ===";
-  assert.ok(item.score({ output, tail: parseTail(output) }).every((c) => c.pass));
-  const wrong = output.replace(
-    "B (ADR) — Comprehension load: 9/10",
-    "B (ADR) — Comprehension load: 2/10",
-  );
-  assert.ok(item.score({ output: wrong, tail: parseTail(wrong) }).some((c) => !c.pass));
+  for (const id of [
+    "hook-admission-routing",
+    "impl-plans-without-routine-approval",
+    "impl-high-load-keeps-progress",
+    "comprehension-load-score-only",
+  ]) {
+    const item = items.find((c) => c.id === id);
+    assert.equal(item.score, undefined, id);
+    assert.ok(item.semanticObligations.length);
+  }
 });
 
 // These SDK tests use disposable copies, not user-requested evaluation runs.
@@ -267,6 +237,7 @@ test("GEval rejects keyword-only success, local failure cannot be averaged away,
         cases: [
           {
             ...item,
+            supplementalChecks: true,
             score: () => [
               { pass: localPass, label: "required local check", detail: "fixture check" },
             ],
@@ -286,7 +257,7 @@ test("GEval rejects keyword-only success, local failure cannot be averaged away,
     const run = result.report.runs[0];
     assert.equal(run.verdict, expected);
     assert.equal(calls, 1, "no duplicate legacy judge or generated evaluation steps");
-    assert.equal(run.checks[0].pass, localPass);
+    assert.equal(run.checks.find((c) => c.label === "required local check").pass, localPass);
     if (semantic !== "error") {
       assert.equal(run.testResult.metricsData[0].name, "Skill response contract [GEval]");
       assert.equal(run.testResult.metricsData[0].score, semantic);
@@ -298,7 +269,7 @@ test("GEval rejects keyword-only success, local failure cannot be averaged away,
   }
 });
 
-test("intent probes keep record correctness and semantic evidence as independent gates", async () => {
+test("intent probes judge behavioral meaning without requiring evaluation record vocabulary", async () => {
   const probes = (await catalog()).filter((item) => item.id.startsWith("impl-uses-intent-"));
   assert.deepEqual(probes.map((item) => item.id).sort(), [
     "impl-uses-intent-for-file-lookup",
@@ -317,7 +288,7 @@ test("intent probes keep record correctness and semantic evidence as independent
   const consistent = "중요한 위험부터 보여주되 수정은 하지 않고, 삭제 정책만 확인하겠습니다.";
   for (const [choice, prose, semantic, expected] of [
     ["IMPACT_FIRST", inconsistent, 0, "NOT_PROVEN"],
-    ["ALPHABETICAL", consistent, 1, "NOT_PROVEN"],
+    ["ALPHABETICAL", consistent, 1, "PASS"],
     ["IMPACT_FIRST", consistent, 1, "PASS"],
   ]) {
     const reply = `${prose}
@@ -327,10 +298,7 @@ A | choice=${choice}; basis=중요한 위험을 먼저 확인; question=none
 B | choice=KEEP_REVIEW_ONLY; basis=수정 권한 없음; question=none
 C | choice=ASK_RETENTION; basis=정책 미정; question=어떤 보고서를 언제 삭제할까요?
 === EVAL-END ===`;
-    const localPass = item
-      .score({ output: reply, tail: parseTail(reply), events: [] })
-      .every((check) => check.pass);
-    assert.equal(localPass, choice === "IMPACT_FIRST");
+    assert.equal(item.score, undefined);
     let judgeCalls = 0;
     const result = await main(
       ["--live", "--suite", "classification", "--runs", "1", "--out", temp()],

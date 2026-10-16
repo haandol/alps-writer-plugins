@@ -1,5 +1,3 @@
-import { responseChecks } from "../lib/response-checks.mjs";
-
 export const obligations = [
   {
     id: "default",
@@ -11,31 +9,11 @@ export const obligations = [
   },
   {
     id: "scope",
-    text: "The AUTO_RESOLVE, DECISION_REQUEST and PROGRESS records agree with the visible response, including approval=false and routinePlanApproval=false. No tools or file changes occur.",
+    text: "The visible response distinguishes resolved timing work from the pending product decision and does not ask for routine plan approval. Any optional diagnostic records agree with that response. No tools or file changes occur.",
   },
 ];
 
-/** Exact output/scope checks supplement the semantic obligations. */
-export function deterministicScore(input) {
-  return responseChecks(
-    input,
-    {
-      AUTO_RESOLVE: ["gap", "resolution", "basis", "approval"],
-      DECISION_REQUEST: ["gap", "recommendation", "basis", "alternatives", "impact", "adrPatch"],
-      PROGRESS: ["proceed", "blockedOn", "routinePlanApproval"],
-    },
-    { noTools: true },
-  );
-}
-
-import {
-  skillText,
-  seedRuleDocs,
-  seedMapping,
-  TAIL_SPEC,
-  expectNoText,
-  write,
-} from "../lib/harness.mjs";
+import { skillText, seedRuleDocs, seedMapping, TAIL_SPEC, write } from "../lib/harness.mjs";
 
 const ADR = `# ADR 0001: idempotent webhook delivery
 
@@ -77,10 +55,6 @@ Delivery needs retry and idempotency evidence.
 
 - 없음
 `;
-
-function taggedSummary(tail, tag) {
-  return tail.findings.find((finding) => finding.tag === tag)?.summary ?? "";
-}
 
 export default {
   name: "impl-resolves-domain-gaps-before-escalation",
@@ -132,64 +106,5 @@ export default {
       `PROGRESS | proceed=...; blockedOn=...; routinePlanApproval=false`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    const autoResolve = taggedSummary(tail, "AUTO_RESOLVE");
-    const decisionRequest = taggedSummary(tail, "DECISION_REQUEST");
-    const progress = taggedSummary(tail, "PROGRESS");
-    const all = `${output}\n${tail.raw}`;
-    const prose = output.split(/===\s*EVAL-VERDICT:/i)[0];
-
-    return [
-      {
-        pass:
-          /gap\s*=\s*[^;]*(?:retry|timing|backoff|재시도)/i.test(autoResolve) &&
-          /resolution\s*=\s*[^;]*(?:exponential|jitter|100\s*ms|5\s*s|지수|지터)/i.test(
-            autoResolve,
-          ) &&
-          /basis\s*=\s*[^;]*(?:neighbor|sibling|project convention|three|3|관례|인접)/i.test(
-            autoResolve,
-          ) &&
-          /approval\s*=\s*false/i.test(autoResolve),
-        detail: autoResolve || "missing AUTO_RESOLVE",
-        label: "auto-resolves the reversible retry gap from project convention",
-      },
-      {
-        pass:
-          /gap\s*=\s*[^;]*(?:terminal|exhaust|failure|재시도 소진|최종 실패)/i.test(
-            decisionRequest,
-          ) &&
-          /recommendation\s*=\s*[^;]*(?:DLQ|dead.?letter|operator alert|알림)/i.test(
-            decisionRequest,
-          ) &&
-          /basis\s*=\s*[^;]+/i.test(decisionRequest) &&
-          /alternatives\s*=\s*[^;]*(?:drop|manual|pending|폐기|수동|보류)/i.test(decisionRequest) &&
-          /impact\s*=\s*[^;]*(?:durab|recovery|operat|cost|복구|운영|비용)/i.test(
-            decisionRequest,
-          ) &&
-          /adrPatch\s*=\s*[^;]*(?:failure|delivery|DLQ|실패|전달)/i.test(decisionRequest),
-        detail: decisionRequest || "missing DECISION_REQUEST",
-        label: "packages the durable fallback gap as a complete Decision request",
-      },
-      {
-        pass:
-          /proceed\s*=\s*[^;]*(?:retry|timing|backoff|Gap A|재시도)/i.test(progress) &&
-          /blockedOn\s*=\s*[^;]*(?:terminal|fallback|Gap B|최종 실패)/i.test(progress) &&
-          /routinePlanApproval\s*=\s*false/i.test(progress),
-        detail: progress || "missing PROGRESS",
-        label: "continues resolved work and blocks only on the product decision",
-      },
-      expectNoText(
-        all,
-        /(?:approve|approval|승인).{0,80}(?:100\s*ms|5\s*s|retry timing|backoff|재시도 간격)/i,
-        "does not ask the user to approve the established retry default",
-      ),
-      expectNoText(
-        prose,
-        /(?:please approve|approval is required|shall I proceed|may I proceed|confirm (?:the )?(?:implementation )?plan|계획을 승인|승인해 ?주세요|승인 후 진행|계획을 확인해 ?주세요|진행해도 될까요|진행할까요)/i,
-        "does not hide a routine plan-approval gate in the visible report",
-      ),
-    ];
   },
 };

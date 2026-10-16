@@ -1,13 +1,5 @@
-// Tests for the eval harness itself — the scorer, the tail parser, and the
-// fixtures. Runs in pnpm test with NO model calls: a stub agent script stands in
-// for the real one, so this stays deterministic and free.
-//
-// Why this matters: an eval whose scorer cannot tell a bad reply from a good one
-// is worse than no eval, because it reports green. During development the
-// requirement-value scenario's prose check did exactly that — its regex assumed
-// English verb-first word order ("remove the 20-turn cap") and silently passed
-// every Korean reply ("20턴 제한은 … 삭제한다"), which is the language these ADRs
-// are written in. These tests pin the discriminating power that fixed it.
+// Dependency-free fixture, transport, aggregation and report regressions.
+// Semantic correctness is measured separately by live LLM evaluations.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -108,7 +100,7 @@ test("every scenario exports the shape the runner requires", async () => {
     assert.match(s.name, /^[a-z0-9-]+$/, `${file}: name must be kebab-case`);
     assert.ok(s.description?.length > 20, `${file}: needs a real description`);
     assert.equal(typeof s.build, "function", `${file}: build must be a function`);
-    assert.equal(typeof s.score, "function", `${file}: score must be a function`);
+    // Behavioral meaning is judged by the configured LLM, not scenario word scorers.
   }
 });
 
@@ -158,7 +150,7 @@ test("--list names every scenario without invoking an agent", () => {
   assert.match(out, /impl-review-surfaces-hidden-contract-assumption/);
   assert.match(out, /impl-resolves-domain-gaps-before-escalation/);
   assert.match(out, /impl-plans-without-routine-approval/);
-  assert.match(out, /impl-high-load-asks-before-split/);
+  assert.match(out, /impl-high-load-keeps-progress/);
   assert.match(out, /bedrock-subagent-fallback/);
   assert.match(out, /comprehension-load-score-only/);
   assert.match(out, /comprehension-load-calibration-bands/);
@@ -333,1706 +325,86 @@ FIX_REQUIRED
 R4 | 20턴 제한은 코드에 있으므로 ADR에서 삭제
 === EVAL-END ===`;
 
-test("the requirement-value scorer passes a compliant reply", () => {
-  const { code, out } = runEvals(["--only", "review-requirement-value"], stubAgent(GOOD_REVIEW));
-  assert.equal(code, 0);
-  assert.doesNotMatch(out, /✗/, `a compliant reply must fail no check:\n${out}`);
-});
-
-test("the requirement-value scorer catches the delete-my-value defect", () => {
-  const { code, out } = runEvals(["--only", "review-requirement-value"], stubAgent(BAD_REVIEW));
-  assert.equal(code, 0, "a failing check is a finding, not a harness error");
-  // the rule-tag route
-  assert.match(out, /✗.*no rule fires against a recorded requirement value/);
-  // and the prose route — Korean word order (object before verb), which a
-  // verb-first-only regex misses
-  assert.match(out, /✗.*no prose advice to remove a value/);
-});
-
-test("the implementation-detail admission scorer distinguishes rejection from over-creation", async () => {
-  const scenario = await loadScenario("author-rejects-implementation-detail.mjs");
-
-  const goodDir = mkdtempSync(path.join(tmpdir(), "adr-eval-admission-good-"));
-  await scenario.build(goodDir);
-  const goodChecks = scenario.score({
-    tail: { verdict: "PASS", findings: [] },
-    output:
-      "ADR admission gate: AWS SDK v3와 default credential provider chain은 기존 GPT-5.6 Amazon Bedrock provider boundary를 유지하는 구현 디테일이므로 ADR을 만들지 않습니다.\n=== EVAL-VERDICT: PASS ===",
-    dir: goodDir,
-  });
-  assert.ok(
-    goodChecks.every((check) => check.pass),
-    JSON.stringify(goodChecks),
-  );
-
-  const badDir = mkdtempSync(path.join(tmpdir(), "adr-eval-admission-bad-"));
-  await scenario.build(badDir);
-  const adrDir = path.join(badDir, "docs", "adr", "llm", "bedrock-client");
-  mkdirSync(adrDir, { recursive: true });
-  writeFileSync(
-    path.join(adrDir, "0001-use-aws-sdk-v3.md"),
-    "# ADR 0001: Use AWS SDK v3\n\n## Status\n\nProposed\n",
-  );
-  writeFileSync(
-    path.join(badDir, "docs", "adr", ".mapping.json"),
-    JSON.stringify({
-      categories: {
-        "llm/bedrock-client": {
-          feature: "Bedrock client",
-          adrs: [
+test("legacy invocation forwards untagged replies to the independent configured judge", async () => {
+  const { runOnce } = await import("../evals/run.mjs");
+  let calls = 0;
+  const scenario = {
+    name: "probe",
+    description: "An approved plan proceeds without another approval.",
+    build: () => "The plan is approved. Explain the next action.",
+    score: () => {
+      throw new Error("Legacy lexical scorer must never run");
+    },
+  };
+  const reply = "The decision stays Accepted. I will proceed with the approved work.";
+  const result = await runOnce(
+    scenario,
+    { dryRun: false, cmd: "unused" },
+    {
+      target: () => ({ ok: true, stdout: reply, stderr: "", status: 0, ms: 1 }),
+      evaluate: async (request) => {
+        calls++;
+        assert.equal(request.model, "us.openai.gpt-6.1-sol");
+        assert.equal(request.profile, "default");
+        assert.equal(request.region, "us-east-1");
+        assert.equal(request.evidence.replies[0], reply);
+        assert.equal(request.evidence.toolTraceUnavailable, true);
+        return {
+          verdict: "PASS",
+          obligationJudgments: [
             {
-              path: "docs/adr/llm/bedrock-client/0001-use-aws-sdk-v3.md",
-              status: "Proposed",
-              summary: "AWS SDK v3와 credential provider chain을 사용한다",
+              id: "scenario-behavior",
+              verdict: "PASS",
+              reason: "The independent judge established the requested behavior.",
             },
           ],
-          dependsOn: [],
-        },
+        };
       },
-    }),
+    },
   );
-  const badChecks = scenario.score({
-    tail: { verdict: "PASS", findings: [] },
-    output: "AWS SDK v3와 credential provider chain을 위한 ADR을 작성하고 저장했습니다.",
-    dir: badDir,
-  });
-  assert.equal(badChecks.find((check) => check.label.includes("creates no ADR"))?.pass, false);
-  assert.equal(badChecks.find((check) => check.label.includes("creates no mapping"))?.pass, false);
+  assert.equal(calls, 1);
+  assert.equal(result.scored, true);
+  assert.ok(result.checks.every((c) => c.pass));
 });
 
-test("the implementation-review Evidence Package scorer distinguishes verified and unverified rows", async () => {
-  const scenario = await loadScenario("impl-review-evidence-package-unverified.mjs");
-  const goodDir = mkdtempSync(path.join(tmpdir(), "adr-eval-evidence-good-"));
-  await scenario.build(goodDir);
-  const goodChecks = scenario.score({
-    dir: goodDir,
-    tail: {
-      verdict: "INCONCLUSIVE",
-      findings: [
-        {
-          tag: "COVERAGE_D0",
-          summary:
-            "status=UNVERIFIED; implementation=idempotency verified but provider failure unverified; evidence=injection unavailable; tests=NOT RUN",
-        },
-        {
-          tag: "COVERAGE_R1",
-          summary:
-            "status=PROVEN; implementation=idempotency guard; evidence=duplicate remains one; tests=PASS",
-        },
-        {
-          tag: "COVERAGE_R2",
-          summary:
-            "status=UNVERIFIED; implementation=failure leaves pending; evidence=failure injection unavailable; tests=NOT RUN",
-        },
-        {
-          tag: "CHOICE",
-          summary:
-            "value=250 ms; evidence=fixed delay; intentFit=bounded retries preserve failure contract; impact=recovery latency and request rate",
-        },
-        {
-          tag: "HUMAN_REVIEW",
-          summary:
-            "verdict=INCONCLUSIVE; exception=의무 2 미검증; action=verify failure injection or accept risk; noPerRowApproval=true",
-        },
-        {
-          tag: "COMPREHENSION",
-          summary:
-            "questionCount=1; answersHidden=true; recallBeforeChoices=true; revisitCount=1; progressPersisted=false; prReadyBeforeQuiz=false",
-        },
-      ],
-    },
-    output: `# ADR implementation review
-## At a glance
-- Verdict: INCONCLUSIVE
-- Impact: Provider failure behavior remains unverified.
-- Action: Verify provider failure injection or accept the documented risk.
-- Risk: A provider failure could record completion without executed evidence.
-## Review mode
-full
-## Scope
-payment settlement
-## Context
-<!-- generated review context from findings.json -->
-## A retry reaches the idempotent boundary
-Can a retry create more than one completion?
-
-<!-- generated container zoom from findings.json -->
-
-<!-- generated component zoom from findings.json -->
-
-Completion is recorded only after the provider result crosses the boundary.
-
-<!-- generated hill evidence from findings.json -->
-
-## Provider failure remains the important unknown
-Can provider failure record completion?
-
-<!-- generated container zoom from findings.json -->
-
-<!-- generated component zoom from findings.json -->
-
-The duplicate path ran, but the provider-failure path could not be executed.
-
-\`\`\`mermaid
-sequenceDiagram
-%% requirement: V1
-  Settlement->>Provider: settle
-  alt success
-    Provider-->>Settlement: successful result
-    Settlement->>Store: record completion
-  else failure
-    Provider-->>Settlement: error
-    Note over Settlement,Store: payment remains pending
-  end
-\`\`\`
-Notice: Failure does not record completion; failure execution remains unverified.
-
-<!-- generated hill evidence from findings.json -->
-
-## Findings
-<!-- generated review diagnostics from findings.json -->
-
-Provider failure remains unverified. Coverage and choices are read-only.
-## ADR contract coverage
-| Contract ID | Requirement | Status | ADR basis | How the implementation meets it | Evidence | Tests |
-| --- | --- | --- | --- | --- | --- | --- |
-| D0 | Settlement decision | UNVERIFIED | Decision | Partly verified | Injection unavailable | NOT RUN |
-| R1 | Payment completes at most once | PROVEN | R1 basis | Idempotency guard | Duplicate remains one | PASS |
-| R2 | Provider failure never records completion | UNVERIFIED | R2 basis | Remains pending | Injection unavailable | NOT RUN |
-## Notable implementation choices
-| Selected value or behavior | Code evidence | Why it fits the ADR intent | Why it matters |
-| --- | --- | --- | --- |
-| 250 ms | fixed delay | bounded retries preserve failure contract | recovery latency |
-## Tests
-Duplicate settlement PASS; provider failure NOT RUN.
-## Residual risks
-Provider failure remains unverified.
-## Comprehension check
-Do not open or send the PR until every comprehension question is answered correctly without reading the answer criteria.
-
-1. Q1 — What remains unknown about provider failure, and why does that prevent a complete review verdict?
-=== EVAL-VERDICT: INCONCLUSIVE ===`,
-  });
-  assert.ok(
-    goodChecks.every((check) => check.pass),
-    JSON.stringify(goodChecks, null, 2),
-  );
-
-  const badDir = mkdtempSync(path.join(tmpdir(), "adr-eval-evidence-bad-"));
-  await scenario.build(badDir);
-  const badChecks = scenario.score({
-    dir: badDir,
-    tail: {
-      verdict: "PASS",
-      findings: [
-        {
-          tag: "COVERAGE_D0",
-          summary: "status=PROVEN; implementation=partial; evidence=unknown; tests=NOT RUN",
-        },
-        {
-          tag: "COVERAGE_R1",
-          summary: "status=PROVEN; implementation=idempotency guard; evidence=guard; tests=PASS",
-        },
-        {
-          tag: "COVERAGE_R2",
-          summary: "status=UNVERIFIED; implementation=pending; evidence=unknown; tests=NOT RUN",
-        },
-        {
-          tag: "CHOICE",
-          summary: "value=250 ms; evidence=delay; intentFit=bounded; impact=latency",
-        },
-        {
-          tag: "HUMAN_REVIEW",
-          summary: "verdict=PASS; exception=none; action=approve each row; noPerRowApproval=false",
-        },
-      ],
-    },
-    output: `## ADR contract coverage
-Provider failure never records payment completion — UNVERIFIED
-## Notable implementation choices
-250 ms
-## Findings
-Approve each row?
-=== EVAL-VERDICT: PASS ===`,
-  });
-  assert.ok(
-    badChecks.some((check) => !check.pass),
-    "collapsed Evidence Package must fail",
-  );
-  assert.equal(badChecks.find((check) => check.label.includes("INCONCLUSIVE"))?.pass, false);
-  assert.equal(badChecks.find((check) => check.label.includes("complete table row"))?.pass, false);
-});
-
-test("the PASS Evidence Package scorer rejects architecture approval while allowing a separate comprehension gate", async () => {
-  const scenario = await loadScenario("impl-review-evidence-package-pass.mjs");
-  const dir = mkdtempSync(path.join(tmpdir(), "adr-eval-evidence-pass-gate-"));
-  await scenario.build(dir);
-  const checks = scenario.score({
-    dir,
-    tail: {
-      verdict: "PASS",
-      findings: [
-        {
-          tag: "COVERAGE_D0",
-          summary:
-            "status=PROVEN; implementation=guarded settlement flow; evidence=both paths verified; tests=PASS",
-        },
-        {
-          tag: "COVERAGE_R1",
-          summary:
-            "status=PROVEN; implementation=idempotency guard; evidence=duplicate remains one; tests=PASS",
-        },
-        {
-          tag: "COVERAGE_R2",
-          summary:
-            "status=PROVEN; implementation=failure leaves pending; evidence=injection confirmed pending; tests=PASS",
-        },
-        {
-          tag: "CHOICE",
-          summary:
-            "value=250 ms; evidence=fixed delay; intentFit=bounded retries preserve failure contract; impact=recovery latency and request rate",
-        },
-        {
-          tag: "HUMAN_REVIEW",
-          summary: "verdict=PASS; decisionRequired=true; noPerRowApproval=false",
-        },
-        {
-          tag: "COMPREHENSION",
-          summary:
-            "questionCount=1; answersHidden=true; recallBeforeChoices=true; revisitCount=1; progressPersisted=false; prReadyBeforeQuiz=false",
-        },
-      ],
-    },
-    output: `# ADR implementation review
-## At a glance
-- Verdict: PASS
-- Impact: Settlement behavior matches the recorded contract.
-- Action: Approve each row.
-- Risk: None.
-## Review mode
-full
-## Scope
-payment settlement
-## Context
-Settlement must create one durable completion and preserve pending state on provider failure.
-## A duplicate request cannot create a second completion
-The idempotent boundary admits one completion.
-## Provider failure leaves the payment pending
-The duplicate and provider-failure paths both passed their targeted tests.
-## Findings
-<!-- generated review diagnostics from findings.json -->
-
-Approve each choice?
-## ADR contract coverage
-| Contract ID | Requirement | Status | ADR basis | How the implementation meets it | Evidence | Tests |
-| --- | --- | --- | --- | --- | --- | --- |
-| D0 | Settlement decision | PROVEN | Decision | Both paths verified | Guard and failure injection | PASS |
-| R1 | Payment completes at most once | PROVEN | R1 basis | Idempotency guard | Duplicate remains one | PASS |
-| R2 | Provider failure never records completion | PROVEN | R2 basis | Remains pending | Injection confirmed | PASS |
-## Notable implementation choices
-| Selected value or behavior | Code evidence | Why it fits the ADR intent | Why it matters |
-| --- | --- | --- | --- |
-| 250 ms | fixed delay | bounded retries preserve failure contract | recovery latency |
-## Tests
-Both targeted tests passed.
-## Residual risks
-Unverified core risk: none.
-## Comprehension check
-Do not open or send the PR until every comprehension question is answered correctly without reading the answer criteria.
-
-1. Q1 — Why does a provider failure leave the payment pending instead of completed?
-=== EVAL-VERDICT: PASS ===`,
-  });
-  assert.equal(
-    checks.find((check) => check.label.includes("without another architecture decision"))?.pass,
-    false,
-  );
-  assert.equal(
-    checks.find((check) => check.label.includes("approve each coverage row"))?.pass,
-    false,
-  );
-});
-
-test("the comprehension gate scorer separates retry from final PR readiness", async () => {
-  const retryScenario = await loadScenario("impl-review-comprehension-retry.mjs");
-  const retryDir = mkdtempSync(path.join(tmpdir(), "adr-eval-comprehension-retry-"));
-  await retryScenario.build(retryDir);
-  const retryChecks = retryScenario.score({
-    dir: retryDir,
-    tail: {
-      verdict: "PASS",
-      findings: [
-        {
-          tag: "QUIZ_RESULT",
-          summary: "question=Q1; correct=false; prReady=false; retry=Q1; verdict=PASS",
-        },
-      ],
-    },
-    output: `Your answer focuses on retry timing, not the completion rule. The PR is not comprehension-ready. A provider result must succeed before it crosses the completion boundary and records completion; provider failure therefore leaves the payment pending.
-
-Q1: Why does provider failure leave the payment pending instead of completed?
-=== EVAL-VERDICT: PASS ===`,
-  });
-  assert.ok(
-    retryChecks.every((check) => check.pass),
-    JSON.stringify(retryChecks, null, 2),
-  );
-
-  const passScenario = await loadScenario("impl-review-comprehension-pass.mjs");
-  const passDir = mkdtempSync(path.join(tmpdir(), "adr-eval-comprehension-pass-"));
-  await passScenario.build(passDir);
-  const passChecks = passScenario.score({
-    dir: passDir,
-    tail: {
-      verdict: "PASS",
-      findings: [
-        {
-          tag: "QUIZ_RESULT",
-          summary: "question=Q1; correct=true; prReady=true; verdict=PASS",
-        },
-      ],
-    },
-    output: `Correct. You identified that a successful provider result must cross the completion boundary before completion is recorded. The PR is comprehension-ready.
-=== EVAL-VERDICT: PASS ===`,
-  });
-  assert.ok(
-    passChecks.every((check) => check.pass),
-    JSON.stringify(passChecks, null, 2),
-  );
-
-  const prematureChecks = passScenario.score({
-    dir: passDir,
-    tail: {
-      verdict: "PASS",
-      findings: [
-        {
-          tag: "QUIZ_RESULT",
-          summary: "question=Q1; correct=false; prReady=true; verdict=PASS",
-        },
-      ],
-    },
-    output: "The PR is comprehension-ready.",
-  });
-  assert.equal(
-    prematureChecks.find((check) => check.label.includes("only after the final correct answer"))
-      ?.pass,
-    false,
-  );
-});
-
-test("the implementation-review completion scorer rejects an automatic Q1 prompt", async () => {
-  const scenario = await loadScenario("impl-review-completion-does-not-auto-quiz.mjs");
-  const dir = mkdtempSync(path.join(tmpdir(), "adr-eval-completion-no-quiz-"));
-  await scenario.build(dir);
-
-  const goodChecks = scenario.score({
-    dir,
-    tail: {
-      verdict: "PASS",
-      findings: [
-        {
-          tag: "COMPLETION",
-          summary: "autoQuiz=false; questionVisible=false; reportPath=true; verdict=PASS",
-        },
-      ],
-    },
-    output: "PASS. All targeted tests passed. HTML report: /tmp/review/adr-impl-review-report.html",
-  });
-  assert.ok(
-    goodChecks.every((check) => check.pass),
-    JSON.stringify(goodChecks, null, 2),
-  );
-
-  const badChecks = scenario.score({
-    dir,
-    tail: {
-      verdict: "PASS",
-      findings: [
-        {
-          tag: "COMPLETION",
-          summary: "autoQuiz=false; questionVisible=false; reportPath=true; verdict=PASS",
-        },
-      ],
-    },
-    output: `PASS. All tests passed. HTML report: /tmp/review/adr-impl-review-report.html
-
-Q1: Why does provider failure leave the payment pending instead of completed?`,
-  });
-  assert.equal(
-    badChecks.find((check) => check.label.includes("does not expose or ask"))?.pass,
-    false,
-  );
-});
-
-test("the implementation documentation scorer requires why/how, no ADR reference, and ideal plus edge tests", async () => {
-  const scenario = await loadScenario("impl-requires-standard-docs-and-ideal-edge-tests.mjs");
-  const goodChecks = scenario.score({
-    tail: {
-      verdict: "PASS",
-      findings: [
-        {
-          tag: "CASE_A",
-          summary:
-            "verdict=FIX_REQUIRED; documentation=missing; ideal=present; edge=missing; action=add GoDoc and provider failure plus duplicate edge tests",
-        },
-        {
-          tag: "CASE_B",
-          summary:
-            "verdict=PASS; documentation=GoDoc standard; why=present; how=present; terminology=reused; adrReference=none; ideal=present; edge=present",
-        },
-        {
-          tag: "CASE_C",
-          summary:
-            "verdict=FIX_REQUIRED; adrReference=present; action=remove the reference and preserve domain contract terms",
-        },
-      ],
-    },
-    output: `Case A — FIX_REQUIRED. Add GoDoc explaining why SettlePayment exists and how it preserves pending payment behavior, then add provider-failure and duplicate-settlement tests.
-
-Case B — PASS on this policy axis. The GoDoc carries why/how with the contract vocabulary, and the ideal and relevant edge tests are present.
-
-Case C — FIX_REQUIRED. Remove the decision-document reference while retaining the pending payment, provider failure, and at-most-once completion terms.
-=== EVAL-VERDICT: PASS ===`,
-  });
-  assert.ok(
-    goodChecks.every((check) => check.pass),
-    JSON.stringify(goodChecks, null, 2),
-  );
-
-  const badChecks = scenario.score({
-    tail: {
-      verdict: "PASS",
-      findings: [
-        {
-          tag: "CASE_A",
-          summary:
-            "verdict=PASS; documentation=optional; ideal=present; edge=optional; action=none",
-        },
-        {
-          tag: "CASE_B",
-          summary:
-            "verdict=PASS; documentation=GoDoc; why=present; how=present; terminology=reused; adrReference=none; ideal=present; edge=present",
-        },
-        {
-          tag: "CASE_C",
-          summary: "verdict=PASS; adrReference=allowed; action=keep it",
-        },
-      ],
-    },
-    output: "Case A — PASS. Case B — PASS. Case C — PASS because an ADR reference is acceptable.",
-  });
-  assert.equal(
-    badChecks.some((check) => !check.pass),
-    true,
-    "optional comments, happy-path-only tests, and direct ADR references must fail",
-  );
-});
-
-test("the hidden-assumption scorer rejects PASS when a contract premise is omitted", async () => {
-  const scenario = await loadScenario("impl-review-surfaces-hidden-contract-assumption.mjs");
-
-  const goodDir = mkdtempSync(path.join(tmpdir(), "adr-eval-assumption-good-"));
-  await scenario.build(goodDir);
-  const goodChecks = scenario.score({
-    dir: goodDir,
-    tail: {
-      verdict: "INCONCLUSIVE",
-      findings: [
-        {
-          tag: "CONTRACT_R1",
-          summary:
-            "status=UNVERIFIED; reason=x-tenant-id provenance and authenticated tenant binding are not established",
-        },
-        {
-          tag: "ASSUMPTION_RISK",
-          summary:
-            "premise=the gateway supplies a trusted x-tenant-id that callers cannot override; impactIfFalse=cross-tenant mutation violates tenant isolation and R1; evidenceMissing=gateway configuration, callback signature verification, or a provenance test",
-        },
-        {
-          tag: "SAFE_CHOICE",
-          summary:
-            "value=250 ms retry delay; classification=Notable implementation choice below ADR resolution; reason=verified timing preserves both contracts",
-        },
-        {
-          tag: "HUMAN_REVIEW",
-          summary:
-            "verdict=INCONCLUSIVE; action=verify gateway header provenance or callback signature before completion; routineApproval=false",
-        },
-      ],
-    },
-    output:
-      "The tenant-header premise is an Unverified risk. The 250 ms retry remains implementation discretion.",
-  });
-  assert.ok(
-    goodChecks.every((check) => check.pass),
-    JSON.stringify(goodChecks, null, 2),
-  );
-
-  const badDir = mkdtempSync(path.join(tmpdir(), "adr-eval-assumption-bad-"));
-  await scenario.build(badDir);
-  const badChecks = scenario.score({
-    dir: badDir,
-    tail: {
-      verdict: "PASS",
-      findings: [
-        {
-          tag: "CONTRACT_R1",
-          summary: "status=PROVEN; reason=repository query includes the tenant header",
-        },
-        {
-          tag: "SAFE_CHOICE",
-          summary:
-            "value=250 ms retry delay; classification=implementation discretion; reason=preserves contracts",
-        },
-        {
-          tag: "HUMAN_REVIEW",
-          summary: "verdict=PASS; action=none; routineApproval=false",
-        },
-      ],
-    },
-    output: "All contract rows are proven, so the review passes.",
-  });
-  assert.equal(badChecks.find((check) => check.label.includes("instead of PASS"))?.pass, false);
-  assert.equal(
-    badChecks.find((check) => check.label.includes("premise, contract impact"))?.pass,
-    false,
-  );
-  assert.equal(
-    badChecks.find((check) => check.label.includes("tenant-isolation contract"))?.pass,
-    false,
-  );
-});
-
-test("the gap-resolution scorer separates domain defaults from product decisions", async () => {
-  const scenario = await loadScenario("impl-resolves-domain-gaps-before-escalation.mjs");
-
-  const goodDir = mkdtempSync(path.join(tmpdir(), "adr-eval-gap-resolution-good-"));
-  await scenario.build(goodDir);
-  const goodChecks = scenario.score({
-    dir: goodDir,
-    tail: {
-      verdict: "INCONCLUSIVE",
-      findings: [
-        {
-          tag: "AUTO_RESOLVE",
-          summary:
-            "gap=retry timing; resolution=capped exponential backoff with full jitter, 100 ms base and 5 s cap; basis=three neighboring workers establish the project convention; approval=false",
-        },
-        {
-          tag: "DECISION_REQUEST",
-          summary:
-            "gap=terminal delivery failure; recommendation=send to a DLQ and raise an operator alert; basis=preserves durability and observable recovery; alternatives=drop the event or keep it pending for manual recovery; impact=changes durability, recovery operations, and cost; adrPatch=After delivery failure is exhausted, place the event in the DLQ and alert operators.",
-        },
-        {
-          tag: "PROGRESS",
-          summary:
-            "proceed=implement Gap A retry timing; blockedOn=Gap B durable fallback decision; routinePlanApproval=false",
-        },
-      ],
-    },
-    output:
-      "Retry timing follows the established project convention. Only terminal fallback needs a product decision.",
-  });
-  assert.ok(
-    goodChecks.every((check) => check.pass),
-    JSON.stringify(goodChecks, null, 2),
-  );
-
-  const badDir = mkdtempSync(path.join(tmpdir(), "adr-eval-gap-resolution-bad-"));
-  await scenario.build(badDir);
-  const badChecks = scenario.score({
-    dir: badDir,
-    tail: {
-      verdict: "INCONCLUSIVE",
-      findings: [
-        {
-          tag: "AUTO_RESOLVE",
-          summary:
-            "gap=retry timing; resolution=ask the user to choose; basis=ADR omitted it; approval=true",
-        },
-        {
-          tag: "DECISION_REQUEST",
-          summary:
-            "gap=terminal delivery failure; recommendation=drop it; basis=simple; alternatives=none; impact=unknown; adrPatch=todo",
-        },
-        {
-          tag: "PROGRESS",
-          summary: "proceed=none; blockedOn=Gap A and Gap B; routinePlanApproval=true",
-        },
-      ],
-    },
-    output: "Please approve the 100 ms retry timing and terminal behavior.",
-  });
-  assert.equal(badChecks.find((check) => check.label.includes("auto-resolves"))?.pass, false);
-  assert.equal(
-    badChecks.find((check) => check.label.includes("complete Decision request"))?.pass,
-    false,
-  );
-  assert.equal(badChecks.find((check) => check.label.includes("blocks only"))?.pass, false);
-});
-
-test("the planning scorer rejects a routine approval gate for an unchanged ADR", async () => {
-  const scenario = await loadScenario("impl-plans-without-routine-approval.mjs");
-
-  const goodDir = mkdtempSync(path.join(tmpdir(), "adr-eval-plan-progress-good-"));
-  await scenario.build(goodDir);
-  const goodChecks = scenario.score({
-    dir: goodDir,
-    tail: {
-      verdict: "PASS",
-      findings: [
-        {
-          tag: "PLAN_UPDATE",
-          summary:
-            "presentation=non-blocking progress update; scope=existing webhook handler signature verification; tests=signature rejection, duplicate redelivery, and audit emission; comprehensionLoad=4/10; proceed=true",
-        },
-        {
-          tag: "APPROVAL",
-          summary: "required=no; reason=the exact approved ADR revision is unchanged",
-        },
-        {
-          tag: "ADR_CHANGE",
-          summary: "required=no; status=Accepted unchanged; reason=no contract or decision change",
-        },
-      ],
-    },
-    output:
-      "Signature, duplicate, and audit tests are scoped. This is a non-blocking progress update and implementation proceeds now. The existing Accepted (2026-08-18) status is retained without a transition.",
-  });
-  assert.ok(
-    goodChecks.every((check) => check.pass),
-    JSON.stringify(goodChecks, null, 2),
-  );
-
-  const badDir = mkdtempSync(path.join(tmpdir(), "adr-eval-plan-progress-bad-"));
-  await scenario.build(badDir);
-  const badChecks = scenario.score({
-    dir: badDir,
-    tail: {
-      verdict: "PASS",
-      findings: [
-        {
-          tag: "PLAN_UPDATE",
-          summary:
-            "presentation=non-blocking progress update; scope=webhook handler; tests=signature and duplicate tests; comprehensionLoad=4/10; proceed=true",
-        },
-        {
-          tag: "APPROVAL",
-          summary: "required=false; reason=the approved ADR is unchanged",
-        },
-        {
-          tag: "ADR_CHANGE",
-          summary: "required=false; status=Proposed until review passes; reason=no contract change",
-        },
-      ],
-    },
-    output:
-      "Progress update: the webhook handler and tests are scoped. Please approve the implementation plan before I proceed. Status stays Proposed until review passes.",
-  });
-  assert.equal(
-    badChecks.find((check) => check.label.includes("visible report does not ask"))?.pass,
-    false,
-  );
-  assert.equal(
-    badChecks.find((check) => check.label.includes("authoritative and Accepted"))?.pass,
-    false,
-  );
-});
-
-test("refactor safety scorers distinguish safe, protected, and orchestration-discretion outcomes", () => {
-  const cases = [
-    [
-      "refactor-safe-local-duplicate",
-      "APPLY_NOW | extract current duplicate normalization into one local helper",
-    ],
-    [
-      "refactor-protected-state-transition",
-      "PROPOSE_ONLY | state-transition change touches the ADR contract",
-    ],
-    [
-      "refactor-orchestration-discretion",
-      "ORCHESTRATION_DISCRETION | main-session or subagent review may verify the same safety gates\nAPPLY_NOW | exact local duplicate with passing before/after tests",
-    ],
-  ];
-
-  for (const [name, finding] of cases) {
-    const reply = `=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-${finding}
-=== EVAL-END ===`;
-    const { code, out } = runEvals(["--only", name], stubAgent(reply));
-    assert.equal(code, 0, out);
-    assert.doesNotMatch(out, /✗/, `${name} compliant classification failed:\n${out}`);
-  }
-});
-
-test("unsupported orchestration scorer requires no retry and preserves review safety", async () => {
-  const scenario = await loadScenario("bedrock-subagent-fallback.mjs");
-  const compliant = scenario.score({
-    tail: {
-      findings: [
-        { tag: "NO_DISPATCH", summary: "Amazon Bedrock is known before dispatch" },
-        { tag: "NO_RETRY", summary: "the validation error is terminal for this command" },
-        { tag: "MAIN_SESSION_FALLBACK", summary: "review passes continue without isolation" },
-        {
-          tag: "SAFETY_GATE",
-          summary: "refactor classification still requires exact evidence and before/after tests",
-        },
-      ],
-    },
-  });
-  assert.ok(
-    compliant.every((check) => check.pass),
-    JSON.stringify(compliant, null, 2),
-  );
-
-  const unsafe = scenario.score({
-    tail: {
-      findings: [
-        { tag: "SPAWN_SUBAGENT", summary: "try a generic reviewer after the named agent fails" },
-        { tag: "WEAKEN_GATE", summary: "skip the before/after tests in the fallback" },
-      ],
-    },
-  });
-  assert.ok(
-    unsafe.some((check) => !check.pass),
-    "unsafe Bedrock routing must fail the scorer",
-  );
-});
-
-test("feature enrichment scorer separates provider failure context from provider selection", async () => {
-  const scenario = await loadScenario("feature-handoff-enriches-underspecified-prd.mjs");
-  const baseFindings = [
-    { tag: "ENRICHMENT_QUESTION", summary: "초대 만료 기간과 정책 근거 확인" },
-    { tag: "ENRICHMENT_QUESTION", summary: "활성 중복 초대 처리 규칙 확인" },
-    {
-      tag: "ENRICHMENT_QUESTION",
-      summary: "provider 오류가 나도 유지할 이메일 전달 실패 보장과 초대 상태 확인",
-    },
-    {
-      tag: "IMPLEMENTATION_DISCRETION",
-      summary: "이메일 SDK와 provider 선택은 구현 재량",
-    },
-    { tag: "NOT_TRANSFERRED", summary: "Result: ASK — 답변 전 handoff 미완료" },
-  ];
-  const compliant = scenario.score({
-    tail: { verdict: "ASK", findings: baseFindings },
-    output: "Result: ASK",
-  });
-  const implementationChoiceCheck = compliant.find(
-    (check) => check.label === "does not ask the user to choose a replaceable email implementation",
-  );
-  assert.equal(implementationChoiceCheck?.pass, true);
-
-  const unsafe = scenario.score({
-    tail: {
-      verdict: "ASK",
-      findings: [
-        ...baseFindings,
-        { tag: "ENRICHMENT_QUESTION", summary: "어떤 이메일 provider를 선택할지 정해주세요" },
-      ],
-    },
-    output: "Result: ASK",
-  });
-  const unsafeImplementationChoiceCheck = unsafe.find(
-    (check) => check.label === "does not ask the user to choose a replaceable email implementation",
-  );
-  assert.equal(unsafeImplementationChoiceCheck?.pass, false);
-});
-
-test("critical workflow scorers accept compliant classifications and reject collapsed ones", () => {
-  const cases = [
-    {
-      name: "feature-handoff-ownership-transfer",
-      good: `Feature: F1 워크스페이스 멤버 초대
-**ADR-owned** (category: workspace-member-invitation)
-- 관리자만 이메일로 초대할 수 있다.
-- 같은 워크스페이스와 이메일의 활성 초대가 있으면 요청을 거부한다.
-- 초대는 7일 뒤 만료된다.
-
-**Implementation discretion**
-- SendGrid SDK와 대체 이메일 클라이언트
-
-Transfer coverage: 4/4
-Result: 1 ADR
-
-Feature: F2 워크스페이스 내보내기
-**ADR-owned** (category: workspace-export)
-- 활성 워크스페이스 멤버만 내보내기를 요청할 수 있다.
-- 완료된 export는 30일 뒤 삭제한다.
-
-**ADR-owned** (category: workspace-export)
-- ArchiveCo 장애 시 24시간 fallback 후 재전송한다.
-
-Implementation discretion:
-- ArchiveCo SDK와 adapter
-
-Transfer coverage: 5/5
-Result: 2 ADRs
-
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-ADR_CANDIDATE | workspace-member-invitation: 워크스페이스 멤버 초대 계약
-ADR_CANDIDATE | workspace-export: 내보내기 권한 및 완료 데이터 수명 계약
-ADR_CANDIDATE | workspace-export: 장기 보관 경계 및 장애 복구 정책
-ADR_DEPENDENCY | workspace-member-invitation is prerequisite for workspace-export
-=== EVAL-END ===`,
-      bad: `=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-ADR_CANDIDATE | F1 AWS SDK v3 선택
-=== EVAL-END ===`,
-    },
-    {
-      name: "feature-handoff-idempotent-reimport",
-      good: `동일한 30일과 ArchiveCo 계약은 변경하지 않고, PRD에서 빠진 24시간 fallback은 자동 삭제하지 않는다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-SEMANTIC_NOOP | 30일 삭제 계약은 표현만 변경됨
-SEMANTIC_NOOP | ArchiveCo 경계는 표현만 변경됨
-REMOVAL_REVIEW | 24시간 fallback 누락은 명시적 contract change 확인 필요
-NO_MUTATION | ADR과 mapping은 현재 상태 유지
-=== EVAL-END ===`,
-      bad: `=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-ADR_UPDATE | PRD 문장에 맞춰 ADR을 다시 작성
-CONTRACT_DELETE | PRD에서 빠진 24시간 fallback 삭제
-=== EVAL-END ===`,
-    },
-    {
-      name: "feature-handoff-enriches-underspecified-prd",
-      good: `Feature: F1 워크스페이스 멤버 초대
-Enrichment needed:
-- 초대 만료 기간과 정책 근거는 무엇인가?
-- 활성 중복 초대는 거부, 기존 초대 대체, 재전송 중 어떤 동작이어야 하는가?
-- 이메일 전달 실패 시 사용자에게 보이는 결과와 초대 상태는 무엇이어야 하는가?
-
-Implementation discretion:
-- 교체 가능한 이메일 SDK/provider/client
-
-Result: ASK
-=== EVAL-VERDICT: ASK ===
-=== EVAL-FINDINGS ===
-ENRICHMENT_QUESTION | 초대 만료 기간과 정책 근거 확인
-ENRICHMENT_QUESTION | 활성 중복 초대의 계약 동작 확인
-ENRICHMENT_QUESTION | 이메일 전달 실패 보장과 초대 상태 확인
-IMPLEMENTATION_DISCRETION | 이메일 SDK와 provider는 교체 가능
-NOT_TRANSFERRED | 답변 전에는 ADR 작성과 handoff 완료를 진행하지 않음
-=== EVAL-END ===`,
-      bad: `초대는 3일 뒤 만료하고 SendGrid SDK를 사용하면 된다.
-=== EVAL-VERDICT: BLOCKED ===
-=== EVAL-FINDINGS ===
-ADR_CANDIDATE | 3일 초대와 SendGrid 구현으로 바로 ADR 작성
-=== EVAL-END ===`,
-    },
-    {
-      name: "impl-blocks-proposed-prerequisite",
-      good: `identity/login이 Accepted가 된 뒤 진행해야 한다. checkout-only 우회 구현은 허용하지 않는다.
-=== EVAL-VERDICT: BLOCK ===
-=== EVAL-FINDINGS ===
-BLOCKED | identity/login 선행 ADR이 Proposed라 downstream 구현 중단
-=== EVAL-END ===`,
-      bad: `checkout-only로 우회 구현을 허용한다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-NONE
-=== EVAL-END ===`,
-    },
-    {
-      name: "hook-admission-routing",
-      good: `=== EVAL-VERDICT: A=EXEMPT, B=ADR_FIRST ===
-=== EVAL-FINDINGS ===
-EXEMPT | SDK와 credential adapter 교체는 코드 수준
-ADR_FIRST | 업로드 quota를 5에서 3으로 바꾸는 요구사항 변경
-=== EVAL-END ===`,
-      bad: `=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-ADR_FIRST | SDK 교체를 ADR로 작성
-=== EVAL-END ===`,
-    },
-    {
-      name: "alps-batch-preserves-mandatory-nfr",
-      good: `=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-BATCH_ALLOWED | 완전한 입력과 명시적 요청으로 batch 승인
-SEPARATE_SAVE_UNIT | 각 section과 7.1, 7.2 Feature를 별도 저장
-FOCUS_SET | 선택 NFR 중 상위 3개를 집중 항목으로 표시
-MANDATORY_NFR | 결제 데이터를 저장하지 않음, GDPR 삭제는 30일 이내, WCAG 2.2 AA, 정산 API 99.9% 가용성
-=== EVAL-END ===`,
-      bad: `=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-FOCUS_SET | NFR은 최대 3개이므로 WCAG를 삭제
-=== EVAL-END ===`,
-    },
-    {
-      name: "alps-approval-digest-preserves-contract",
-      good: `[Feature 승인 요청: 팀 작업 세션]
-목적: 팀 작업 결과를 승인하고 보관한다.
-필수 규칙:
-- 세션은 최대 20턴이다.
-- 미승인 세션은 30일 뒤 삭제한다.
-- owner만 결과를 내보낼 수 있다.
-- 상태는 draft, approved, archived이며 archived는 draft로 돌아갈 수 없다.
-완료 결과: 승인 후 팀 대시보드에 결과가 표시된다.
-답변: 승인 / 수정: 변경 내용 / 보류
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-CONTRACT_ITEM | 세션은 최대 20턴
-CONTRACT_ITEM | 미승인 세션은 30일 뒤 삭제
-CONTRACT_ITEM | owner만 결과를 내보냄
-CONTRACT_ITEM | draft, approved, archived 상태이며 archived에서 draft 전이 금지
-CONTRACT_ITEM | 승인 후 팀 대시보드에 결과가 표시된다.
-RESPONSE_OPTIONS | 승인, 수정, 보류
-NO_UNSEEN_CONTRACT | digest에 없던 요구사항은 저장 내용에 추가하지 않음
-SEPARATE_SAVE_UNIT | Feature 7.x를 독립 저장
-=== EVAL-END ===`,
-      bad: `### 팀 작업 세션
-PostgreSQL과 Redis를 사용하고 3회 재시도한다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-CONTRACT_ITEM | 구현 방식 승인
-=== EVAL-END ===`,
-    },
-    {
-      name: "alps-high-load-suggests-feature-split",
-      good: `인지비용: 9/10
-분할 후보:
-1. 멤버 이메일 초대
-2. 멤버 역할 및 접근 관리
-3. 감사 기록 내보내기
-원본 유지로 하나의 Feature를 계속 진행할 수도 있습니다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-FEATURE_SCORE | 9/10
-SPLIT_CANDIDATE | 멤버 이메일 초대
-SPLIT_CANDIDATE | 멤버 역할 및 접근 관리
-SPLIT_CANDIDATE | 감사 기록 내보내기
-KEEP_ORIGINAL | 원본 단일 Feature 유지 가능
-NON_BLOCKING | 분할 여부는 승인과 저장의 전제 조건이 아님
-=== EVAL-END ===`,
-      bad: `인지비용: 9/10
-frontend, backend, database로 반드시 분할해야 하며 승인과 저장을 중단한다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-FEATURE_SCORE | 9/10
-SPLIT_CANDIDATE | frontend
-SPLIT_CANDIDATE | backend
-SPLIT_CANDIDATE | database
-      === EVAL-END ===`,
-    },
-    {
-      name: "impl-high-load-asks-before-split",
-      good: `Comprehension load: 8/10
-구현 전에 선택해 주세요: 분할을 검토할까요, 아니면 원래 ADR대로 진행할까요?
-=== EVAL-VERDICT: ASK ===
-=== EVAL-FINDINGS ===
-PLAN_SCORE | 8/10
-NEXT_STEP | 분할 검토 또는 원래 ADR대로 진행 중 하나를 질문
-CANDIDATE_STATE | 구체적인 분할 후보는 사용자 선택 전에는 생성하지 않음
-EXECUTION_STATE | 사용자 선택을 기다린 뒤 구현 진행
-=== EVAL-END ===`,
-      bad: `Comprehension load: 8/10
-분할 후보:
-1. 결제 예약
-2. 재고 예약
-3. 보상 처리
-후보를 자동 선택하고 바로 구현한다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-PLAN_SCORE | 8/10
-NEXT_STEP | 자동 분할
-CANDIDATE_STATE | 후보 세 개 생성 완료
-EXECUTION_STATE | 즉시 구현 진행
-=== EVAL-END ===`,
-    },
-    {
-      name: "lite-alps-asks-business-impact-before-solution",
-      good: `이 직장인이 PoC를 통해 얻어야 할 최종 비즈니스 임팩트는 무엇이며, 그것이 왜 중요한가요?
-
-=== EVAL-VERDICT: ASK ===
-=== EVAL-FINDINGS ===
-BUSINESS_IMPACT_QUESTION | Desired Business Impact와 중요성을 확인
-BEFORE_SOLUTION | 솔루션이나 데모보다 비즈니스 임팩트를 먼저 확인
-FOCUSED_QUESTION | Section 1의 누락 정보만 한 질문으로 확인
-WAIT_FOR_ANSWER | 답변 전 초안 작성이나 저장을 하지 않음
-=== EVAL-END ===`,
-      bad: `어떤 솔루션과 화면을 만들까요? 시작 상태와 사용자 행동, 데모 절차를 알려주세요.
-
-=== EVAL-VERDICT: ASK ===
-=== EVAL-FINDINGS ===
-SOLUTION_FIRST | 비즈니스 임팩트보다 솔루션과 데모 흐름을 먼저 질문
-=== EVAL-END ===`,
-    },
-    {
-      name: "lite-alps-follows-full-conversation",
-      good: `이 PoC의 주 사용자는 누구이고, 여행 준비 과정에서 어떤 핵심 문제를 해결하려고 하나요?
-
-=== EVAL-VERDICT: ASK ===
-=== EVAL-FINDINGS ===
-FOCUSED_QUESTION | 대상 사용자와 핵심 문제를 확인하는 한 번의 집중 질문
-MISSING_CONTEXT | Section 1에 필요한 대상 사용자와 핵심 문제가 아직 없음
-WAIT_FOR_ANSWER | 답변을 받은 뒤 Section 초안과 승인을 진행
-=== EVAL-END ===`,
-      bad: `대상 사용자는 개인 여행자이며 문제는 준비 누락입니다. Section 1을 저장했습니다.
-
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-AUTO_DRAFT | 사용자 답변 없이 Section 1을 완성하고 저장
-=== EVAL-END ===`,
-    },
-    {
-      name: "lite-alps-resume-preserves-proposal-first",
-      good: `Section 2 승인 요청
-
-Solution Strategy:
-해외 출장 직장인이 업무 상황을 선택하면 AI 영어 강사가 짧은 자기소개 대화 연습을 제안한다.
-
-Essential User Experiences:
-- 상황에 맞는 첫 영어 질문이 보인다.
-- 답변에 맞는 응답과 다음 질문이 보인다.
-- 사용자가 연습을 종료하면 완료 상태가 보인다.
-
-승인 / 수정 / 보류
-
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-PROFILE_AWARE_RESUME | Lite 재개 안내가 proposal-first 규칙을 유지
-AI_PROPOSES_SOLUTION | 승인된 Desired Business Impact에서 최소 Solution Strategy를 제안
-NO_SOLUTION_DESIGN_QUESTION | 사용자에게 솔루션이나 데모 흐름 설계를 요구하지 않음
-APPROVAL_BEFORE_SAVE | 저장 전 승인, 수정, 보류 선택을 제공
-=== EVAL-END ===`,
-      bad: `재개했습니다. 어떤 솔루션과 기능 흐름을 원하시나요? 시작 상태와 사용자 행동도 알려주세요.
-
-=== EVAL-VERDICT: ASK ===
-=== EVAL-FINDINGS ===
-BLANKET_NO_AUTOGENERATE | DO NOT auto-generate content
-SOLUTION_DESIGN_QUESTION | 사용자가 Solution과 실행 흐름을 직접 작성
-=== EVAL-END ===`,
-    },
-    {
-      name: "lite-alps-proposes-solution-from-business-impact",
-      good: `Section 2 승인 요청
-
-Solution Strategy:
-해외 출장 직장인이 업무 상황을 입력하면 AI 영어 강사가 상황별 질문으로 짧은 대화 연습을 제공한다.
-
-Essential User Experiences:
-- 상황별 연습이 시작된다: 선택한 업무 상황에 맞는 첫 영어 질문이 보인다. 자기소개 대화를 바로 연습하는 데 기여한다.
-- 대화가 답변에 맞춰 이어진다: 영어 답변 뒤 관련 응답과 다음 질문이 보인다. 실제 대화에 가까운 연습에 기여한다.
-- 사용자가 연습을 종료할 수 있다: 종료 뒤 완료 상태가 보인다. 제한된 준비 시간에 맞춘 연습에 기여한다.
-
-승인 / 수정 / 보류
-
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-AI_PROPOSES_SOLUTION | Desired Business Impact에서 최소 Solution Strategy를 제안
-AI_PROPOSES_ESSENTIAL_EXPERIENCES | 빠져서는 안 되는 세 핵심 사용자 경험을 제안
-BUSINESS_IMPACT_TRACE | 각 핵심 사용자 경험이 출장 준비 시간과 대화 준비감에 기여
-NO_SOLUTION_DESIGN_QUESTION | 사용자에게 솔루션이나 데모 흐름 작성을 요구하지 않음
-APPROVAL_BEFORE_SAVE | 저장 전 승인, 수정, 보류 선택을 제시
-=== EVAL-END ===`,
-      bad: `어떤 최소 솔루션을 원하시나요? 시작 상태와 사용자 행동, 화면 결과를 알려주세요.
-
-=== EVAL-VERDICT: ASK ===
-=== EVAL-FINDINGS ===
-SOLUTION_DESIGN_QUESTION | 사용자가 솔루션과 데모 흐름을 직접 작성해야 함
-=== EVAL-END ===`,
-    },
-    {
-      name: "lite-alps-generates-demo-from-essential-user-experiences",
-      good: `역설계한 Demo Scenario
-
-시작 상태: 해외 출장을 앞둔 직장인이 영어 대화 연습 서비스를 연다.
-데모 입력: 해외 출장에서 자기소개하기
-
-| 단계 | 사용자 행동 | 보이는 예상 결과 | 보여주는 핵심 사용자 경험 |
-| --- | --- | --- | --- |
-| 1 | 자기소개 주제를 입력하고 대화를 시작한다 | AI 강사의 첫 영어 질문이 보인다 | 상황별 연습이 시작된다 |
-| 2 | 영어로 답한다 | 관련 영어 응답과 다음 질문이 보인다 | 대화가 사용자 답변에 맞춰 이어진다 |
-| 3 | 대화를 종료한다 | 대화가 멈추고 완료 상태가 보인다 | 사용자가 연습을 종료할 수 있다 |
-
-전체 통과 조건: 모든 Essential User Experiences가 관찰된다.
-비즈니스 임팩트 연결: 직장인이 짧은 시간에 자기소개를 반복 연습해 출장 준비 시간을 줄이고 대화를 시작할 준비감을 얻도록 지원한다. 데모는 실제 업무 성과를 증명하지 않는다.
-승인 / 수정 / 보류
-
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-AUTO_GENERATED_DEMO | 승인된 핵심 사용자 경험에서 구체적인 데모를 역설계
-COVERS_ALL_ESSENTIAL_EXPERIENCES | 세 핵심 사용자 경험을 모두 커버
-SHOWS_FULL_SCENARIO | 전체 단계와 예상 결과 및 커버리지를 승인 전에 표시
-NO_RESTATEMENT_QUESTION | 시작 상태와 행동을 사용자에게 묻지 않고 AI가 제안
-OVERALL_PASS_SHOWS_ALL | 모든 핵심 사용자 경험이 보여야 전체 통과
-=== EVAL-END ===`,
-      bad: `데모 흐름은 어떻게 구성할까요? 어떤 시작 상태와 입력, 사용자 행동을 사용할지 알려주세요.
-
-=== EVAL-VERDICT: ASK ===
-=== EVAL-FINDINGS ===
-RESTATEMENT_QUESTION | 사용자가 데모 흐름을 다시 작성해야 함
-=== EVAL-END ===`,
-    },
-    {
-      name: "lite-alps-skips-empty-optional-section",
-      good: `명시적으로 제외할 항목이 없으므로 optional Section 3은 작성하거나 저장하지 않고 건너뜁니다. 이제 필수 Section 4 Demo Scenario 승인 초안을 준비합니다.
-
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-SKIP_SECTION_3 | 명시적 제외 범위가 없어 optional Section 3을 저장하지 않음
-NO_INVENTED_EXCLUSIONS | 템플릿을 채우기 위한 제외 항목을 만들지 않음
-LITE_INDEPENDENT | Lite 완료는 다른 문서나 작성 상태와 무관함
-DEMO_READY | 필수 Demo Scenario 작성을 계속할 수 있음
-=== EVAL-END ===`,
-      bad: `제외 범위를 채우기 위해 관리자 기능, 결제, 모바일 화면을 지원하지 않는 것으로 기록하겠습니다. 다음 단계로 /alps-init을 실행해 Full ALPS를 작성하세요.
-
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-EXCLUSIONS | 관리자, 결제, 모바일을 자동 제외
-NEXT_STEP | Full ALPS 작성
-=== EVAL-END ===`,
-    },
-    {
-      name: "lite-alps-records-explicit-exclusions",
-      good: `Section 3 승인 요청
-명시적 제외:
-- 팀 관리자 페르소나
-- 음성 입력 화면
-- 오프라인 복구 데모
-가격 정책은 미결정이며 제외 범위에 포함하지 않습니다.
-승인 / 수정 / 보류
-
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-EXPLICIT_EXCLUSION | 팀 관리자 페르소나
-EXPLICIT_EXCLUSION | 음성 입력 화면
-EXPLICIT_EXCLUSION | 오프라인 복구 데모
-UNRESOLVED_NOT_EXCLUDED | 가격 정책은 미결정이며 제외하지 않음
-OPTIONAL_SECTION | Section 3은 명시적 제외가 있을 때만 작성하는 선택 Section
-=== EVAL-END ===`,
-      bad: `Section 4:
-- 팀 관리자
-- 음성 입력
-- 오프라인 복구
-- 가격 정책
-완료 후 Full ALPS로 전환합니다.
-
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-EXPLICIT_EXCLUSION | 모든 항목과 가격 정책
-=== EVAL-END ===`,
-    },
-    {
-      name: "impl-review-selects-risk-mode",
-      good: `=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-STANDARD | A private local helper consolidation; public API unchanged
-FULL | B retention 30 to 90 days and public API change
-=== EVAL-END ===`,
-      bad: `=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-STANDARD | B public API retention change
-=== EVAL-END ===`,
-    },
-    {
-      name: "comprehension-load-score-only",
-      good: `Comprehension load (A, ALPS Feature): 1/10
-Comprehension load (B, ADR): 9/10
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-FEATURE_SCORE | A 1/10
-ADR_SCORE | B 9/10
-=== EVAL-END ===`,
-      bad: `A — 인지비용: 0/10
-B — 인지비용: 9/10
-B는 여러 시스템이 연결되어 있어서 이해하기 어렵다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-FEATURE_SCORE | A 0/10
-ADR_SCORE | B 9/10
-=== EVAL-END ===`,
-    },
-    {
-      name: "comprehension-load-calibration-bands",
-      good: `A — 인지비용: 2/10
-B — 인지비용: 5/10
-C — 인지비용: 8/10
-D — 인지비용: 10/10
-점수는 자문용이며 승인이나 구현을 차단하지 않고 품질 점수가 아니다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-comprehension-load-A | A 2/10 — LOW_SCORE
-comprehension-load-B | B 5/10 — RECOMMENDED_SCORE
-comprehension-load-C | C 8/10 — HIGH_SCORE
-comprehension-load-D | D 10/10 — VERY_HIGH_SCORE
-=== EVAL-END ===`,
-      bad: `A — 품질: 9/10
-B — 인지비용: 2/10
-C — 인지비용: 4/10
-D — 차단됨
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-LOW_SCORE | A 9/10
-RECOMMENDED_SCORE | B 2/10
-HIGH_SCORE | C 4/10
-VERY_HIGH_SCORE | D 6/10
-=== EVAL-END ===`,
-    },
-    {
-      name: "impl-offers-stacked-pr-fallback",
-      good: `Feature와 ADR은 하나로 유지한다. 구현 전달만 세 개의 dependency-ordered Stacked PR로 나누고 각 layer는 하나의 review question을 가진다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-KEEP_ONE_ADR | 하나의 Feature와 하나의 ADR 계약을 유지
-STACK_FALLBACK | Stacked PR을 dependency 순서로 구성하고 PR마다 하나의 review question 사용
-STACK_BOUNDARY | 하나의 conceptual change와 review question 단위로 나눔
-EPHEMERAL | Stack 계획은 ADR, mapping, registry에 저장하지 않음
-NO_AUTOPUBLISH | 사용자의 게시 요청과 GitHub capability 확인 전에는 publish하지 않음
-STATUS_LIFECYCLE | 전체 Stack의 테스트와 review가 끝날 때까지 ADR은 Proposed이고 이후에만 Accepted
-=== EVAL-END ===`,
-      bad: `인지비용이 높으므로 ADR 세 개를 만들고 PR도 즉시 게시했다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-NEW_ADR | 새 ADR 세 개 생성
-AUTO_PUBLISH | 자동 게시 완료
-=== EVAL-END ===`,
-    },
-    {
-      name: "author-routes-existing-provider-change",
-      good: `기존 ADR 0001이 같은 결정을 소유하므로 제자리 재작성하고 /adr-impl ai/model-provider로 라우팅한다. 원복도 같은 ADR이며 새 ADR이나 0002는 없다.
-=== EVAL-VERDICT: ROUTE_TO_EXISTING ===
-=== EVAL-FINDINGS ===
-DECISION_IDENTITY | 기존 provider boundary ADR을 유지하고 Bedrock 원복도 같은 0001에 반영
-=== EVAL-END ===`,
-      bad: `OpenAI API 전환용 ADR 0002를 새로 작성한다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-NEW_ADR | provider 변경마다 새 ADR 생성
-=== EVAL-END ===`,
-    },
-    {
-      name: "impl-completes-without-reconfirmation",
-      good: `PASS_PATH는 추가 승인 없이 Accepted로 완료한다. FIX_PATH는 사용자 승인 없이 자동 수정하고 최종 보고에 수정과 검증을 정리한다. ESCALATE_ONLY만 사용자에게 묻는다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-PASS_PATH | 추가 승인 없이 Accepted로 전환
-FIX_PATH | 사용자 승인 없이 자동으로 Spec violation 코드를 수정하고 Test gap 테스트를 추가한 뒤 재실행하고 동일 모드로 재리뷰
-ESCALATE_ONLY | 계약 변경 결정만 사용자에게 질문하며 자동 수정 없음
-=== EVAL-END ===`,
-      bad: `구현 후 재생성 가능한지 다시 확인받고 각 finding을 apply/skip/defer로 판정받는다.
-=== EVAL-VERDICT: BLOCK ===
-=== EVAL-FINDINGS ===
-PASS_PATH | 사용자 승인 대기
-=== EVAL-END ===`,
-    },
-  ];
-
-  for (const { name, good, bad } of cases) {
-    const semantic = name === "alps-approval-digest-preserves-contract";
-    const goodRun = runEvals(["--only", name], stubAgent(good, semantic ? "PASS" : undefined));
-    assert.equal(goodRun.code, 0, goodRun.out);
-    assert.doesNotMatch(goodRun.out, /✗/, `${name} rejected a compliant result:\n${goodRun.out}`);
-
-    const badRun = runEvals(["--only", name], stubAgent(bad, semantic ? "FAIL" : undefined));
-    assert.equal(badRun.code, 0, badRun.out);
-    assert.match(badRun.out, /✗/, `${name} scorer failed to reject the collapsed behavior`);
-  }
-});
-
-test("score-only scorer rejects visible scores that disagree with the machine tail", () => {
-  const reply = `A — 인지비용: 9/10 — 단순하지만 높게 평가했다.
-B — 인지비용: 1/10 — 복잡하지만 낮게 평가했다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-FEATURE_SCORE | A 1/10
-ADR_SCORE | B 9/10
-=== EVAL-END ===`;
-  const { code, out } = runEvals(["--only", "comprehension-load-score-only"], stubAgent(reply));
-  assert.equal(code, 0, out);
-  assert.match(out, /✗.*matches the visible Feature score to the machine tail/);
-  assert.match(out, /✗.*matches the visible ADR score to the machine tail/);
-  assert.match(out, /✗.*shows only the exact two score lines/);
-});
-
-test("stack scorer rejects technical-layer delivery and premature ADR promotion", () => {
-  const reply = `하나의 ADR은 유지하지만 PR은 frontend, backend, database 기술 계층으로 나눈다.
-각 layer가 끝날 때 ADR을 Accepted로 바꾼다.
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-KEEP_ONE_ADR | 하나의 ADR 유지
-STACK_FALLBACK | Stacked PR을 dependency 순서로 만들고 PR마다 one review question 사용
-STACK_BOUNDARY | frontend, backend, database 기술 계층으로 나눔
-EPHEMERAL | Stack 상태는 ADR과 mapping에 저장하지 않음
-NO_AUTOPUBLISH | GitHub capability 확인 후 publish
-STATUS_LIFECYCLE | 각 layer가 끝나면 ADR을 Accepted로 변경
-=== EVAL-END ===`;
-  const { code, out } = runEvals(["--only", "impl-offers-stacked-pr-fallback"], stubAgent(reply));
-  assert.equal(code, 0, out);
-  assert.match(out, /✗.*keeps every layer under the same approved ADR contract/);
-  assert.match(out, /✗.*splits by conceptual review unit, not technical layer/);
-  assert.match(out, /✗.*requires both an explicit publish request and GitHub capability/);
-  assert.match(out, /✗.*keeps the ADR Proposed until the whole Stack is verified/);
-});
-
-test("final-state sync scorer rejects transition residue and preserves current prohibitions", async () => {
-  const scenario = await loadScenario("sync-rewrites-final-state-only.mjs");
-
-  const badDir = mkdtempSync(path.join(tmpdir(), "adr-eval-final-state-bad-"));
-  await scenario.build(badDir);
-  const badChecks = await scenario.score({ dir: badDir, output: "", tail: null });
-  assert.ok(
-    badChecks.some((check) => !check.pass),
-    "the planted transition narration must not score as compliant",
-  );
-
-  const goodDir = mkdtempSync(path.join(tmpdir(), "adr-eval-final-state-good-"));
-  await scenario.build(goodDir);
-  const adrPath = path.join(goodDir, "docs/adr/runtime/event/0001-event-name.md");
-  const mappingPath = path.join(goodDir, "docs/adr/.mapping.json");
-  writeFileSync(
-    adrPath,
-    readFileSync(adrPath, "utf8").replace(
-      "`LEGACY_EVENT`와 `CURRENT_EVENT`를 혼용하지 않고 `CURRENT_EVENT`만 사용한다.",
-      "이벤트 이름은 `CURRENT_EVENT`다.",
-    ),
-  );
-  writeFileSync(
-    mappingPath,
-    readFileSync(mappingPath, "utf8").replace(
-      "LEGACY_EVENT와 CURRENT_EVENT를 혼용하지 않고 CURRENT_EVENT만 사용한다",
-      "이벤트 이름은 CURRENT_EVENT다",
-    ),
-  );
-
-  const goodChecks = await scenario.score({ dir: goodDir, output: "", tail: null });
-  assert.deepEqual(
-    goodChecks.filter((check) => !check.pass),
-    [],
-    `a direct final-state rewrite must pass: ${JSON.stringify(goodChecks)}`,
-  );
-});
-
-test("infrastructure sync scorer separates repository evidence from live state", async () => {
-  const scenario = await loadScenario("sync-stays-local-for-infrastructure.mjs");
-
-  const good = {
-    complete: true,
-    findings: [
-      { tag: "LOCAL_EVIDENCE", summary: "IaC source and local policy tests are the evidence" },
-      {
-        tag: "LIVE_ACCESS",
-        summary: "NO — read-only provider access is forbidden even when credentials exist",
-      },
-      { tag: "REPOSITORY_ALIGNMENT", summary: "ADR and repository IaC are aligned" },
-      { tag: "RUNTIME_STATE", summary: "UNVERIFIED — no deployed environment was inspected" },
-      { tag: "STATUS", summary: "UNCHANGED — runtime uncertainty does not demote the ADR" },
-    ],
+test("legacy invocation keeps failed/empty targets and judge errors out of scored results", async () => {
+  const { runOnce } = await import("../evals/run.mjs");
+  const scenario = {
+    name: "probe",
+    description: "Preserve the approved contract.",
+    build: () => "Review the contract.",
   };
-  const goodChecks = scenario.score({ tail: good });
-  assert.deepEqual(
-    goodChecks.filter((check) => !check.pass),
-    [],
-    `local-only classification must pass: ${JSON.stringify(goodChecks)}`,
-  );
-
-  const unsafe = {
-    complete: true,
-    findings: [
-      { tag: "LOCAL_EVIDENCE", summary: "IaC source is present" },
+  for (const target of [
+    { ok: false, stdout: "partial", stderr: "failed", status: 1 },
+    { ok: true, stdout: "", stderr: "", status: 0 },
+  ]) {
+    const result = await runOnce(
+      scenario,
+      { dryRun: false },
       {
-        tag: "LIVE_ACCESS",
-        summary: "Use the existing credentials for a read-only provider query",
+        target: () => target,
+        evaluate: () => {
+          throw new Error("must not judge incomplete target");
+        },
       },
-      { tag: "REPOSITORY_ALIGNMENT", summary: "Production is in sync" },
-      { tag: "RUNTIME_STATE", summary: "Verified from the provider API" },
-      { tag: "STATUS", summary: "Demote if the deployed resource differs" },
-      { tag: "PRODUCTION_IN_SYNC", summary: "The live environment matches the ADR" },
-    ],
-  };
-  const unsafeChecks = scenario.score({ tail: unsafe });
-  assert.ok(
-    unsafeChecks.filter((check) => !check.pass).length >= 3,
-    `live-access behavior must fail several checks: ${JSON.stringify(unsafeChecks)}`,
+    );
+    assert.ok(result.error);
+    assert.equal(result.scored, undefined);
+  }
+  const result = await runOnce(
+    scenario,
+    { dryRun: false },
+    {
+      target: () => ({ ok: true, stdout: "A reply without tags", stderr: "", status: 0 }),
+      evaluate: async () => {
+        throw new Error("Judge unavailable");
+      },
+    },
   );
+  assert.match(result.error, /Judge unavailable/);
+  assert.equal(result.scored, undefined);
 });
 
-// ── the author-side scorer must discriminate too ───────────────────────────
-// author-self-checks-missing-value scores an ARTIFACT, not just a reply, so its
-// stub has to write the ADR the way a real run would. That makes it the one
-// scenario whose scorer could pass vacuously: most of its checks assert the
-// ABSENCE of a bad value in the body, and an empty body satisfies every one of
-// them. The "an ADR was written" check exists for that reason, and these two
-// tests pin that it actually carries the weight.
-//
-// The pair matters as much here as it does on the review side. A stub that
-// blurs the contract must fail, and a stub that names the gaps must pass — a
-// scorer tuned to catch only one of those directions would greenlight the
-// behaviour that reintroduces the defect.
-const AUTHOR_ADR_PATH = "docs/adr/pricing/0001-free-plan-session-limit.md";
-
-// The correct behaviour: contracts the brief never gave are named as open
-// questions, nothing is invented, tuning values stay out.
-const GOOD_AUTHOR_ADR = `# ADR 0001: 무료 플랜 채팅 세션 제한
-
-Date: 2026-07-01
-
-## Status
-
-Proposed
-
-## Context
-
-무료 사용자의 LLM 호출 비용이 예측 불가능하게 늘고 있다. 재무팀이 원가 상한을 승인했다.
-
-## Decision Drivers
-
-- 무료 플랜 1인당 월 LLM 원가를 통제해야 한다
-- 상한에 걸린 사용자의 이탈을 최소화해야 한다
-- 서버가 세션 상태를 오래 들고 있지 않아야 한다
-
-## Decision
-
-세션 단위로 대화 길이를 제한하고, 상한에 도달하면 새 세션을 시작하도록 안내한다.
-
-### Requirement contract
-
-- 세션당 대화 길이 상한: **아직 정해지지 않았다 — 오너에게 확인 필요**
-- 세션 기록 보관 기간: **미정, 확인 필요**
-- 세션의 허용 상태 집합: 브리프가 어떤 상태인지 말하지 않아 **미정, 확인 필요**
-
-## Consequences
-
-### Positive
-
-원가가 예측 가능해진다.
-
-### Negative
-
-긴 대화가 필요한 사용자는 맥락을 다시 제공해야 한다.
-
-### Alternatives
-
-- **토큰 총량 제한**: 원가와 정확히 연동되지만 남은 양을 예측할 수 없다.
-- **월 누적 턴 수 제한**: 단순하지만 서버가 누적치를 들고 있어야 해 운영 제약에 어긋난다.
-`;
-
-// The pre-fix behaviour: the hole is written into the ADR as "적절히", the state
-// set is summarized away, and the draft is reported clean.
-const BAD_AUTHOR_ADR = GOOD_AUTHOR_ADR.replace(
-  /### Requirement contract[\s\S]*?\n\n## Consequences/,
-  `### Requirement contract
-
-- 한 세션의 대화 길이는 적절히 제한된다
-- 세션 기록은 일정 기간 보관 후 삭제된다
-- 세션에는 몇 가지 상태가 있으며 상태 전이를 관리한다
-- 세션 캐시 TTL은 300초다
-
-## Consequences`,
-);
-
-// A stub that writes the ADR into its cwd (the fixture) and then prints a reply.
-// The runner passes cwd=fixture, which is what makes an author-side stub possible.
-function stubAuthor(adrBody, reply) {
-  const dir = mkdtempSync(path.join(tmpdir(), "adr-eval-author-stub-"));
-  const bodyFile = path.join(dir, "adr.md");
-  writeFileSync(bodyFile, adrBody);
-  const script = path.join(dir, "stub.sh");
-  writeFileSync(
-    script,
-    `#!/bin/bash\ncat > /dev/null\n` +
-      `mkdir -p "$(dirname ${AUTHOR_ADR_PATH})"\ncp ${bodyFile} ${AUTHOR_ADR_PATH}\n` +
-      `cat <<'ADREOF'\n${reply}\nADREOF\n`,
-  );
-  chmodSync(script, 0o755);
-  return script;
-}
-
-const GOOD_AUTHOR_REPLY = `step 6(a) 하네스: 통과.
-
-step 6(b) 자기 점검 — R19 재생성 테스트를 적어냅니다.
-
-재구축이 지켜야 할 계약:
-- 세션당 대화 길이 상한 — **없음. 브리프에 숫자가 없어 확인 필요**
-- 세션 기록 보관 기간 — **없음, 미정이라 물어봐야 합니다**
-- 허용 상태 집합 — **어떤 상태인지 정해지지 않았습니다**
-
-숫자를 만들어 넣지 않았고, 캐시 TTL과 워커 수는 튜닝값이라 본문에서 제외했습니다.
-
-=== EVAL-VERDICT: FIX_REQUIRED ===
-=== EVAL-FINDINGS ===
-R18a | 세션당 대화 길이 상한이 브리프에 없어 미정 — 오너 확인 필요
-R19 | 보관 기간과 허용 상태 집합이 비어 재구축 불가
-=== EVAL-END ===`;
-
-const BAD_AUTHOR_REPLY = `ADR을 작성했고 하네스도 통과했습니다. 계약은 완전합니다.
-
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-NONE
-=== EVAL-END ===`;
-
-test("the author self-check scorer passes a draft that names its gaps", () => {
-  const { code, out } = runEvals(
-    ["--only", "author-self-checks"],
-    stubAuthor(GOOD_AUTHOR_ADR, GOOD_AUTHOR_REPLY),
-  );
-  assert.equal(code, 0);
-  assert.doesNotMatch(out, /✗/, `a compliant author run must fail no check:\n${out}`);
-});
-
-test("the author self-check scorer catches a blurred contract reported as clean", () => {
-  const { code, out } = runEvals(
-    ["--only", "author-self-checks"],
-    stubAuthor(BAD_AUTHOR_ADR, BAD_AUTHOR_REPLY),
-  );
-  assert.equal(code, 0, "a failing check is a finding, not a harness error");
-  // the exact pre-fix behaviour: the hole written in as 적절히 / 일정 기간
-  assert.match(out, /✗.*does not blur the missing contract/);
-  // a self-reviewer's default conclusion — "the contract is complete"
-  assert.match(out, /✗.*does not report a clean pass while contracts are unresolved/);
-  // the gaps went unnamed, so the open-question checks must fail rather than
-  // being satisfied by the ADR merely mentioning the subject
-  assert.match(out, /✗.*names the missing retention period as an open question/);
-  // and the tuning value pulled up into the body is still scored
-  assert.match(out, /✗.*leaves the cache TTL out/);
-});
-
-// The costliest failure this scenario watches for: a value the brief never gave,
-// written into the ADR as though approved. /adr-impl enforces ADR values at face
-// value, so a fabricated cap becomes a real product limit nobody signed off on.
-//
-// This test exists because the check's first version silently passed it. JS `\b`
-// is defined over ASCII word characters, so it never matches after a Hangul
-// syllable: `/\d+\s*(턴|일)\b/` does not match "최대 20턴으로" or "30일 후". The
-// scenario reported green on an ADR that had invented both numbers — the same
-// defect class as the Korean word-order bug this file's header describes, and the
-// reason a scorer needs its own adversarial fixture rather than just a good one.
-test("the invented-value check fires on Korean units, where \\b does not apply", () => {
-  const invented = GOOD_AUTHOR_ADR.replace(
-    /### Requirement contract[\s\S]*?\n\n## Consequences/,
-    `### Requirement contract
-
-- 한 세션은 최대 20턴으로 제한된다
-- 세션 기록은 30일 후 삭제된다
-
-## Consequences`,
-  );
-  const { code, out } = runEvals(
-    ["--only", "author-self-checks"],
-    stubAuthor(invented, BAD_AUTHOR_REPLY),
-  );
-  assert.equal(code, 0);
-  assert.match(out, /✗.*invents no requirement value the brief never gave/);
-});
-
-// The vacuous-pass guard. Most of this scenario's checks assert an ABSENCE, so an
-// agent that writes no ADR at all satisfies them — which would report a run that
-// produced nothing as mostly green. The "an ADR was written" check must fail, and
-// the open-question checks must not be satisfied by an empty artifact.
-test("an author run that writes no ADR fails rather than passing vacuously", () => {
-  const { code, out } = runEvals(["--only", "author-self-checks"], stubAgent(GOOD_AUTHOR_REPLY));
-  assert.equal(code, 0);
-  assert.match(out, /✗.*an ADR was written/);
-  // the brief's alternatives can only be scored against a body, so this one too
-  assert.match(out, /✗.*records the token-quota alternative/);
-});
-
-// A reply with no tail block cannot be scored against domain checks. Report it
-// separately so negative checks do not pass vacuously.
-test("a reply with no tail block is unscored", () => {
-  const { code, out } = runEvals(
-    ["--only", "review-requirement-value"],
-    stubAgent("리뷰를 완료했습니다. 문제 없습니다."),
-  );
-  assert.equal(code, 2);
-  assert.match(out, /UNSCORED.*required machine-readable tail/);
-  assert.match(out, /never produced scorable output/);
-});
-
-// Rates are the whole output of this tool, so an all-or-nothing summary would
-// defeat it. With a stub that alternates, the run must report a fraction.
-test("runs are aggregated as a rate, not collapsed to pass/fail", () => {
-  const dir = mkdtempSync(path.join(tmpdir(), "adr-eval-flaky-"));
-  const counter = path.join(dir, "n");
-  const good = stubAgent(GOOD_REVIEW);
-  const bad = stubAgent(BAD_REVIEW);
-  const script = path.join(dir, "flaky.sh");
-  writeFileSync(
-    script,
-    `#!/bin/bash\nN=$(cat ${counter} 2>/dev/null || echo 0)\necho $((N+1)) > ${counter}\n` +
-      `if [ $((N % 2)) -eq 0 ]; then exec ${bad}; else exec ${good}; fi\n`,
-  );
-  chmodSync(script, 0o755);
-
-  const { code, out } = runEvals(["--only", "review-requirement-value", "--runs", "4"], script);
-  assert.equal(code, 0);
-  // 2 of 4 replies commit the defect, so the check must read 2/4 — not ✔ and not 0/4
-  assert.match(out, /✗\s+2\/4\s+no rule fires against a recorded requirement value/);
-  assert.match(out, /scored 4\/4; errors 0; unscored 0/);
-});
-
-test("shareable reports omit transcripts and absolute fixture paths by default", () => {
-  const dir = mkdtempSync(path.join(tmpdir(), "adr-eval-report-safe-"));
-  const report = path.join(dir, "report.md");
-  const { code } = runEvals(
-    ["--only", "review-requirement-value", "--out", report],
-    stubAgent(GOOD_REVIEW),
-  );
-  assert.equal(code, 0);
-  const body = readFileSync(report, "utf8");
-  assert.match(body, /transcripts: omitted/);
-  assert.match(body, /prompt: \d+ chars · sha256/);
-  assert.match(body, /Representative transcript omitted/);
-  assert.doesNotMatch(body, /One full agent reply|GOOD_REVIEW/);
-  assert.doesNotMatch(body, new RegExp(tmpdir().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-});
-
-test("full transcripts are included only by explicit opt-in", () => {
-  const dir = mkdtempSync(path.join(tmpdir(), "adr-eval-report-transcript-"));
-  const report = path.join(dir, "report.md");
-  const { code } = runEvals(
-    [
-      "--only",
-      "review-requirement-value",
-      "--out",
-      report,
-      "--include-transcript",
-      "--include-fixture-paths",
-    ],
-    stubAgent(GOOD_REVIEW),
-  );
-  assert.equal(code, 0);
-  const body = readFileSync(report, "utf8");
-  assert.match(body, /transcripts: included by explicit request/);
-  assert.match(body, /Representative agent reply/);
-  assert.match(body, /Regeneration check/);
-  assert.match(body, new RegExp(tmpdir().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-});
-
-// The runner must fail loudly when the agent command is wrong, or a
-// misconfigured run reads as "everything passed".
-test("an agent that produces nothing is an error, not a silent pass", () => {
-  const { code, out } = runEvals(["--only", "review-requirement-value"], "true");
-  assert.equal(code, 2);
-  assert.match(out, /agent never produced scorable output|did not run/);
-});
-
-test("a nonzero agent exit is an error even when it prints partial output", () => {
-  const dir = mkdtempSync(path.join(tmpdir(), "adr-eval-failed-agent-"));
-  const script = path.join(dir, "stub.sh");
-  writeFileSync(
-    script,
-    `#!/bin/bash\ncat > /dev/null\necho 'partial response that must not be scored'\nexit 1\n`,
-  );
-  chmodSync(script, 0o755);
-
-  const { code, out } = runEvals(["--only", "review-requirement-value"], script);
-  assert.equal(code, 2);
-  assert.match(out, /agent command failed \(status 1\)/);
-});
-
-// The real-repo scenario copies a shipped ADR into a throwaway fixture. If it
-// copies the ADR but not what the ADR LINKS to, every outbound link reads as
-// broken and the reviewer spends R10 findings on the fixture's own trimming.
-// The first pixelbank run did exactly that: it reported ../../FREE_USAGE.md as
-// missing when the file exists. A fixture that manufactures findings is worse
-// than a noisy one — it teaches the reader to discount that rule.
 test("the real-repo fixture resolves the ADR's own local links", async (t) => {
   const scenario = await loadScenario("review-real-repo-adr.mjs");
 
@@ -2090,3 +462,153 @@ test("the real-repo fixture resolves the ADR's own local links", async (t) => {
 function require$mkdir(dir) {
   mkdirSync(dir, { recursive: true });
 }
+
+test("legacy loading retains artifact gates and a semantic PASS cannot waive a missing artifact", async () => {
+  const { runOnce, loadScenarios } = await import("../evals/run.mjs");
+  const item = (await loadScenarios()).find((s) => s.name === "author-keeps-values-and-lints");
+  assert.equal(typeof item.mechanicalScore, "function");
+  const result = await runOnce(
+    item,
+    { dryRun: false },
+    {
+      target: () => ({ ok: true, stdout: "Claimed completion", stderr: "", status: 0 }),
+      evaluate: async () => ({
+        verdict: "PASS",
+        obligationJudgments: [
+          { id: "meaning", verdict: "PASS", reason: "Controlled positive judgment" },
+        ],
+      }),
+    },
+  );
+  assert.equal(result.scored, true);
+  assert.ok(result.checks.some((c) => !c.pass));
+  assert.ok(
+    result.checks.some((c) => c.label.includes("indexed") || c.label.includes("category owns")),
+  );
+});
+
+test("legacy rates and disclosure remain independent from response wording", async () => {
+  const { aggregate, renderReport } = await import("../evals/run.mjs");
+  const runs = [true, false, true, false].map((pass) => ({
+    scored: true,
+    checks: [{ label: "fixed semantic obligation", pass, detail: "Captured judgment" }],
+    fixture: path.join(tmpdir(), "private-fixture"),
+    output: "PRIVATE_RESPONSE",
+    promptChars: 42,
+    promptHash: "abc",
+  }));
+  const result = aggregate([...runs, { error: "judge unavailable", checks: [] }]);
+  assert.equal(result[0].passed, 2);
+  assert.equal(result[0].total, 4);
+  const entries = [
+    { scenario: { name: "probe", description: "Preserve a fixed obligation." }, runs },
+  ];
+  const base = { cmd: "target-command", runs: 4 };
+  const safe = renderReport(entries, base);
+  assert.ok(safe.includes("2/4"));
+  assert.ok(safe.includes("Representative transcript omitted"));
+  assert.ok(!safe.includes("PRIVATE_RESPONSE"));
+  assert.ok(!safe.includes(runs[0].fixture));
+  const explicit = renderReport(entries, {
+    ...base,
+    includeTranscript: true,
+    includeFixturePaths: true,
+  });
+  assert.ok(explicit.includes("PRIVATE_RESPONSE"));
+  assert.ok(explicit.includes(runs[0].fixture));
+});
+
+test("legacy CLI prepares by default even when an executable command was supplied", () => {
+  const result = runEvals(["--only", "impl-plans-without-routine-approval", "--cmd", "exit 91"]);
+  assert.equal(result.code, 0);
+  assert.ok(!result.out.includes("agent command failed"));
+});
+
+test("legacy default invocation uses isolated fixture tools and retains their action evidence", async () => {
+  const { runOnce } = await import("../evals/run.mjs");
+  const { makeTools } = await import("../evals/regression/workspace.mjs");
+  let launched = false;
+  const item = {
+    name: "isolated-probe",
+    description: "Write only the declared report.",
+    artifactPaths: [".adr-review/report.md"],
+    build: () => "Write the report.",
+  };
+  const result = await runOnce(
+    item,
+    { dryRun: false },
+    {
+      invokeClaude: async ({ cwd, config }) => {
+        launched = true;
+        const [server, root, pluginRoot, logPath, turn, guidance, checkerRoot, artifacts] =
+          JSON.parse(readFileSync(config, "utf8")).mcpServers.fixture.args;
+        assert.ok(server.endsWith("regression/tool-server.mjs"));
+        assert.equal(root, cwd);
+        makeTools({
+          root,
+          pluginRoot,
+          logPath,
+          turn: Number(turn),
+          guidance: guidance !== "off",
+          checkerRoot,
+          artifactPaths: JSON.parse(artifacts),
+        }).call("write_file", { path: ".adr-review/report.md", content: "Actual report" });
+        return { text: "Written", ms: 1 };
+      },
+      evaluate: async ({ evidence }) => {
+        assert.equal(evidence.toolTraceUnavailable, false);
+        assert.equal(
+          evidence.events.filter((e) => e.kind === "request" && e.tool === "write_file").length,
+          1,
+        );
+        assert.equal(evidence.after[".adr-review/report.md"], "Actual report");
+        return {
+          verdict: "PASS",
+          obligationJudgments: [
+            { id: "meaning", verdict: "PASS", reason: "Controlled transport test" },
+          ],
+        };
+      },
+    },
+  );
+  assert.equal(launched, true);
+  assert.equal(result.scored, true);
+  assert.ok(result.checks.every((c) => c.pass));
+});
+
+test("legacy CLI reports untagged semantic results with complete timing and unknown judging cost", async () => {
+  const { main } = await import("../evals/run.mjs");
+  const dir = mkdtempSync(path.join(tmpdir(), "untagged-cli-"));
+  const report = path.join(dir, "report.md");
+  await main(["--live", "--only", "untagged-cli", "--out", report], {
+    scenarios: [
+      {
+        name: "untagged-cli",
+        description: "Proceed with an approved unchanged plan.",
+        build: () => "The unchanged plan is approved.",
+      },
+    ],
+    target: () => ({
+      ok: true,
+      stdout: "I will proceed without another approval.",
+      stderr: "",
+      status: 0,
+      ms: 1,
+      costUSD: 0.25,
+    }),
+    evaluate: async ({ onCall }) => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      onCall({ models: ["judge-stub"], ms: 5, costUSD: null, usage: { inputTokens: 10 } });
+      return {
+        verdict: "PASS",
+        obligationJudgments: [
+          { id: "meaning", verdict: "PASS", reason: "Controlled configured judgment" },
+        ],
+      };
+    },
+  });
+  const body = readFileSync(report, "utf8");
+  assert.ok(body.includes("scored: 1/1"));
+  assert.ok(body.includes("elapsed evaluation time:"));
+  assert.ok(body.includes("$0.2500; unpriced calls: 1 (unknown is not free)"));
+});

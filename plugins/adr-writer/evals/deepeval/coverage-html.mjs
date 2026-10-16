@@ -19,7 +19,8 @@ function caseSummary(report, id) {
       const runs = report.runs.filter((run) => run.caseId === id && run.variant === variant);
       if (!runs.length) return `${variant === "baseline" ? "기준" : "후보"} 미채점`;
       const passed = runs.filter((run) => run.verdict === "PASS").length;
-      return `${variant === "baseline" ? "기준" : "후보"} ${passed}/${runs.length} 충족`;
+      const scored = runs.filter((run) => ["PASS", "NOT_PROVEN"].includes(run.verdict)).length;
+      return `${variant === "baseline" ? "기준" : "후보"} ${passed}/${scored} 충족 · 요청 ${runs.length}건`;
     })
     .join(" · ");
 }

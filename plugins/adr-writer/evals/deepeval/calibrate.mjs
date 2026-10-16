@@ -65,7 +65,7 @@ export async function main(args) {
   }
   if (options.help || (!options.prepare && !options.live)) {
     process.stdout.write(
-      "pnpm eval:calibration --prepare | --live [--split all|development|holdout] [--jobs 2] [--runs 1]\nUses authored reference evidence, not new agent executions. Draft expected labels are NOT human review. Defaults to Bedrock GPT-5.6 Sol / default / us-east-1.\n",
+      "pnpm eval:calibration --prepare | --live [--split all|development|holdout] [--jobs 2] [--runs 1]\nUses authored reference evidence, not new agent executions. Draft expected labels are NOT human review. Defaults to Bedrock GPT-6.1 Sol / default / us-east-1.\n",
     );
     return 0;
   }
@@ -80,7 +80,9 @@ export async function main(args) {
     return { ...definition, obligations: item.obligations };
   });
   const referenceHash = sha(
-    readFileSync(new URL("./calibration-set.mjs", import.meta.url), "utf8"),
+    ["calibration-set.mjs", "semantic-cases.mjs"].map((file) =>
+      readFileSync(new URL(file, import.meta.url), "utf8"),
+    ),
   );
   const report = {
     generatedAt: new Date().toISOString(),
@@ -101,7 +103,7 @@ export async function main(args) {
  A["고정 사례·기대 의무"] --> B["작성한 기준 산출물·도구 행동"]
  B --> C["정상 동의 표현 또는 통제된 반례"]
  C --> D["기대 점수·라벨·분할 정보를 제외한 증거"]
- D --> E["DeepEval GEval · GPT-5.6 Sol"]
+ D --> E["DeepEval GEval · GPT-6.1 Sol"]
  E --> F["관찰 점수·이유"]
  L["계약에서 도출한 기대 판정 초안"] --> G["초안 기대 판정과 비교"]
  F --> G

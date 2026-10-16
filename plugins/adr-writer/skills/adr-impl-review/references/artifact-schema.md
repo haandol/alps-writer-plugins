@@ -7,6 +7,31 @@ owns clause coverage and [Review Hiking](review-hiking.md) owns Code evidence
 kinds and Hill boundaries. Reuse already loaded owners. The
 [worked example](artifact-example.md) is optional, not required reading.
 
+## Compact standard presentation
+
+In `standard`, Context may be `{ "summary": "<intent, preconditions, contract, scope and risk>" }`.
+Each Hill needs `id`, a behavior-specific `title`, `claim`, `contractIds` and
+nonempty direct `codeEvidence` (the same kind/location/content/explanation/tests
+fields used by a Component). A short claim can explain a localized capability;
+Container, Components, slice metadata and separate workedExample/counterexample/
+assessment fields are optional. Relevant counterexample execution remains part
+of contract coverage even when its prose has no separate field.
+
+If detailed fields or Components are supplied, validate and preserve them.
+Full mode retains the detailed schema below. Both modes reject missing/duplicate
+contract assignments, missing code/test evidence, or PASS with an unproven row.
+Changed scope still requires an actual diff. Compact standard may omit comparison
+and diagram metadata when unused, without omission records. Selected diagrams
+and comparisons keep their reference and evidence checks.
+
+Reuse the narrative anchors and generated markers below; the materializer fills
+repeated evidence without requiring extra authored paragraphs. For a compact
+standard report without selected diagrams, quizzes or human-decision controls,
+`adr-impl-review-article.mjs <findings.json> <report.html>` validates the native
+artifacts and creates the final shared-report HTML directly. Broader explanation
+hierarchies and selected interactions use the rich composition path; never drop
+them merely to use the compact renderer.
+
 ## Narrative source and generated sections
 
 The source starts with `# ADR implementation review`. Keep these required
@@ -284,3 +309,5 @@ Allowed categories:
 - Sufficiency: `Spec violation`, `Decision changed in code`, `Undecided behavior`, `Impl-fact mismatch`, `Test gap`
 - Shared quality: `Best practice`, `Refactor`
 - Verification state: `Unverified risk`, `Contradiction`
+
+The validator checks serialization and declared coverage/diagnostic states. PASS requires CLEAR contract-completeness and test-sufficiency diagnostics. It does not infer test failure, praise or behavioral meaning from words inside prose. The reviewer must establish those states from actual code/assertions/execution evidence and judge feedback meaning before assigning a verdict; a structurally valid self-declaration is not evidence.

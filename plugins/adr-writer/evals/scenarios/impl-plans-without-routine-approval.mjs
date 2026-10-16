@@ -1,11 +1,4 @@
-import {
-  skillText,
-  seedRuleDocs,
-  seedMapping,
-  TAIL_SPEC,
-  expectNoText,
-  write,
-} from "../lib/harness.mjs";
+import { skillText, seedRuleDocs, seedMapping, TAIL_SPEC, write } from "../lib/harness.mjs";
 
 const ADR = `# ADR 0001: signed webhook ingestion
 
@@ -50,9 +43,20 @@ The handler needs signature, duplicate-delivery, and audit-event tests.
 - 없음
 `;
 
-function taggedSummary(tail, tag) {
-  return tail.findings.find((finding) => finding.tag === tag)?.summary ?? "";
-}
+export const obligations = [
+  {
+    id: "progress",
+    text: "Present the existing webhook handler scope and the signature-before-parsing, duplicate-redelivery and audit-event tests as a complete nonblocking progress update. Explain immediate implementation progress, without executing tools in this response-only fixture.",
+  },
+  {
+    id: "approval",
+    text: "The exact ADR revision is already approved and unchanged, all dependencies are Accepted and no new risk or policy gap exists. Do not ask for routine plan approval or wait for permission in the visible response, even if optional diagnostic records say approval=false.",
+  },
+  {
+    id: "status",
+    text: "Keep Accepted (2026-08-18) authoritative without changing its decision or requirement contract, demoting it to Proposed or running a status transition. Equivalent natural wording is allowed; optional tags do not establish correctness.",
+  },
+];
 
 export default {
   name: "impl-plans-without-routine-approval",
@@ -108,67 +112,5 @@ export default {
       `ADR_CHANGE | required=...; status=<exact resulting ADR status>; reason=...`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    const planUpdate = taggedSummary(tail, "PLAN_UPDATE");
-    const approval = taggedSummary(tail, "APPROVAL");
-    const adrChange = taggedSummary(tail, "ADR_CHANGE");
-    const prose = output.split(/===\s*EVAL-VERDICT:/i)[0];
-    const negativeRequired = /required\s*=\s*(?:false|no|not required|없음|아니오)/i;
-
-    return [
-      {
-        pass:
-          /presentation\s*=\s*[^;]*(?:non.?blocking|progress|비차단|진행 상황|진행 보고)/i.test(
-            planUpdate,
-          ) &&
-          /scope\s*=\s*[^;]*(?:webhook|handler|signature|웹훅|서명)/i.test(planUpdate) &&
-          /tests\s*=\s*[^;]*(?:signature|duplicate|audit|서명|중복|감사)/i.test(planUpdate) &&
-          /comprehensionLoad\s*=\s*(?:[1-9]|10)\s*\/\s*10/i.test(planUpdate) &&
-          /proceed\s*=\s*(?:true|yes|immediate|now|즉시|진행)/i.test(planUpdate),
-        detail: planUpdate || "missing PLAN_UPDATE",
-        label: "publishes a complete non-blocking plan and proceeds",
-      },
-      {
-        pass:
-          negativeRequired.test(approval) &&
-          /reason\s*=\s*[^;]*(?:approved|unchanged|same revision|승인|변경 없)/i.test(approval),
-        detail: approval || "missing APPROVAL",
-        label: "does not require routine implementation-plan approval",
-      },
-      {
-        pass:
-          negativeRequired.test(adrChange) &&
-          /status\s*=\s*[^;]*Accepted/i.test(adrChange) &&
-          /reason\s*=\s*[^;]*(?:unchanged|no [^;]*change|same contract|behavior-preserving|변경\s*(?:없|되지 않)|무변경|동일|불변|동작 보존)/i.test(
-            adrChange,
-          ) &&
-          /Accepted\s*\(\d{4}-\d{2}-\d{2}\)/i.test(prose) &&
-          /(?:retain|remain|unchanged|no transition|유지|변경 없|전환 스크립트.*(?:실행하지|미실행))/i.test(
-            prose,
-          ),
-        detail: adrChange || "missing ADR_CHANGE",
-        label: "keeps the unchanged ADR authoritative and Accepted",
-      },
-      {
-        pass:
-          /(?:progress update|progress report|non.?blocking|진행 상황|진행 보고|비차단)/i.test(
-            prose,
-          ) && /(?:test|verification|검증|테스트)/i.test(prose),
-        detail:
-          /(?:progress update|progress report|non.?blocking|진행 상황|진행 보고|비차단)/i.test(
-            prose,
-          ) && /(?:test|verification|검증|테스트)/i.test(prose)
-            ? "visible progress framing and test scope are both present"
-            : "missing progress framing or test scope in the visible report",
-        label: "visible report presents the plan as progress rather than a gate",
-      },
-      expectNoText(
-        prose,
-        /(?:please approve|approval is required|do not proceed until approval|shall I proceed|may I proceed|confirm (?:the )?(?:implementation )?plan|계획을 승인|승인해 ?주세요|승인 후 진행|계획을 확인해 ?주세요|진행해도 될까요|진행할까요)/i,
-        "visible report does not ask for routine plan approval",
-      ),
-    ];
   },
 };

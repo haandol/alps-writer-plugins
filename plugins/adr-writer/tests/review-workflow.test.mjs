@@ -352,7 +352,11 @@ test("large skill details are loaded through explicit progressive-disclosure ref
   );
   assert.match(artifactContract, /Implementation review artifact contract/);
   assert.match(remediationRouting, /Implementation review remediation routing/);
-  assert.match(implReview, /read `[^`\n]*references\/review-hiking\.md` completely/i);
+  assert.ok(
+    markdownLinks("skills/adr-impl-review/SKILL.md").has(
+      path.join(ROOT, "skills/adr-impl-review/references/review-hiking.md"),
+    ),
+  );
   assert.match(reviewHiking, /Review Hiking/);
   assert.ok(
     readCore("skills/adr-impl-review/SKILL.md").trim().split(/\s+/).length < 4500,
@@ -378,11 +382,8 @@ test("implementation and review Hiking use vertical Hills with review zooms", ()
   assert.match(implementationHiking, /Implementation/);
   assert.match(implementationHiking, /Verification/);
   assert.match(implementationHiking, /Never use frontend\/backend\/data layers/);
-  assert.match(
-    impl,
-    /Finish the Hill's necessary cross-layer behavior and targeted ideal\/edge verification/,
-  );
-  assert.match(review, /Implementation Hill boundaries, reuse them/i);
+  assert.match(impl, /Independent Hills may run in parallel or batches/);
+  assert.match(review, /Reuse Implementation Hill boundaries/i);
   assert.match(reviewHiking, /Context/);
   assert.match(reviewHiking, /sliceType/);
   assert.match(reviewHiking, /Components/);
@@ -531,8 +532,11 @@ test("adr-impl uses a risk-selected refactor assessment before final review", ()
   assert.match(finalReviewSkill, /This command itself remains report-only/);
   assert.match(finalReviewSkill, /selected pre-promotion completion review/);
   assert.match(finalReviewSkill, /Select the review mode/);
-  assert.match(finalReviewSkill, /Use `standard` only for localized implementation/);
-  assert.match(finalReviewSkill, /Use `full` when any of these surfaces changes/);
+  assert.match(finalReviewSkill, /implementation-review-mode\.md/);
+  assert.match(read("skills/adr-impl/references/completion.md"), /implementation-review-mode\.md/);
+  const mode = readCore("references/implementation-review-mode.md");
+  assert.match(mode, /Use `standard` for localized implementation/);
+  assert.match(mode, /Use `full` for changes/);
   assert.match(
     finalReviewSkill,
     /In full mode, the necessity and sufficiency perspectives are grounded separately/,
@@ -544,7 +548,7 @@ test("adr-impl uses a risk-selected refactor assessment before final review", ()
   assert.match(finalReviewSkill, /complete implementation scope/i);
   assert.match(finalReviewSkill, /never the ceiling of the implementation\s+review/i);
   assert.match(finalReviewSkill, /direct and indirect callers and callees/i);
-  assert.match(artifactContract, /Validate and build the HTML in both modes/i);
+  assert.match(artifactContract, /Materialize and validate both modes/i);
   assert.match(
     artifactContract,
     /node \$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/adr-impl-review-open\.mjs <artifact-dir>\/adr-impl-review-report\.html/i,
@@ -577,15 +581,15 @@ test("adr-impl uses a risk-selected refactor assessment before final review", ()
   assert.match(impl, /once per ADR revision/);
   assert.match(impl, /reuse that approved baseline/);
   assert.match(impl, /non-blocking progress update/);
-  assert.match(impl, /score is below `8\/10`[\s\S]{0,100}without asking for approval or waiting/i);
-  assert.match(impl, /`8\/10` or higher[\s\S]{0,120}split-review-versus-original-ADR/i);
-  assert.match(impl, /Do not include concrete split candidates/i);
+  assert.match(impl, /unchanged approved revision needs no new plan approval at any score/i);
+  assert.match(impl, /`8\/10` or higher[\s\S]{0,140}non-blocking split/i);
+  assert.match(impl, /score alone never requires an answer/i);
   assert.match(impl, /publish the implementation plan as a progress update/i);
   assert.match(impl, /Do not demote an unchanged `Accepted` ADR to `Proposed`/i);
   assert.match(impl, /unchanged behavior-preserving reinforcement.*remains `Accepted`/i);
   assert.match(impl, /do not run the transition script/i);
   assert.doesNotMatch(impl, /only obtain normal approval for the implementation plan/i);
-  assert.match(impl, /externally checkable assumption/i);
+  assert.match(impl, /unverified material contract\/safety premise/i);
   assert.match(impl, /contract\/safety-affecting implementation premise unverified/i);
   assert.match(impl, /Resolve gaps before asking questions/i);
   assert.match(impl, /derived obligation/i);

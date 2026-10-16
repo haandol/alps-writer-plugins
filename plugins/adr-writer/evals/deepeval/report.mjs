@@ -35,6 +35,13 @@ export function compareDeepEval(before, after) {
   if (![before?.verdict, after?.verdict].every((v) => ["PASS", "NOT_PROVEN"].includes(v)))
     return "INCONCLUSIVE";
   if (
+    !before.conditionHash ||
+    before.conditionHash !== after.conditionHash ||
+    before.modelIdentityIncomplete ||
+    after.modelIdentityIncomplete
+  )
+    return "INCONCLUSIVE";
+  if (
     !before.models?.length ||
     !after.models?.length ||
     JSON.stringify([...before.models].sort()) !== JSON.stringify([...after.models].sort())
@@ -72,6 +79,7 @@ export function renderDeepEvalReport(report) {
   const candidate = report.runs.filter((r) => r.variant === "candidate");
   const before = report.runs.filter((r) => r.variant === "baseline");
   const count = (runs) => runs.filter((r) => r.verdict === "PASS").length;
+  const scored = (runs) => runs.filter((r) => ["PASS", "NOT_PROVEN"].includes(r.verdict)).length;
   const cost =
     report.runs.flatMap((r) => r.calls ?? []).reduce((sum, call) => sum + (call.costUSD ?? 0), 0) +
     (report.controls ?? []).reduce((sum, control) => sum + (control.costUSD ?? 0), 0);
@@ -112,7 +120,7 @@ ${run.error || metric?.error ? `<pre>${esc(run.error ?? metric.error)}</pre>` : 
 *{box-sizing:border-box}body{margin:0;background:#f3f6fa;color:#183046;font:15px/1.85 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}main{max-width:1240px;margin:auto;padding:30px 25px 70px}header{background:#193b50;color:white;padding:36px;border-radius:16px}h1{font-size:34px;line-height:1.4;word-break:keep-all}h2{margin-top:38px}h3{font-size:22px;line-height:1.5}small,.meta{font-size:12px;color:#607387;overflow-wrap:anywhere}header small{color:#bfd7e2}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}.stat{background:white;border:1px solid #d6e0ed;padding:20px;border-radius:10px}.stat strong{display:block;font-size:28px}.stat span{font-size:12px}.box,article{border:1px solid #d6e0ed;border-radius:12px;padding:25px 28px;margin:22px 0;background:white}.note{padding:18px 23px;border-left:4px solid #497d9c;background:#e7f0f8}.run{border-top:1px solid #d6e0ed;margin-top:18px;padding-top:10px}.reason{white-space:pre-wrap}.PASS{color:#176747}.NOT_PROVEN,.ERROR,.NOT_EVALUABLE{color:#a12d3c}.table{overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;vertical-align:top;border-bottom:1px solid #d6e0ed;padding:13px}th{background:#eaf0f7}td:first-child{min-width:250px}a,summary{color:#2655a3}summary{cursor:pointer}code,pre{font-family:ui-monospace,SFMono-Regular,monospace}code{font-size:.88em;overflow-wrap:anywhere}pre{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;background:#17283e;color:#e4eef9;padding:18px;border-radius:8px}li{margin:8px 0}button{padding:8px 14px;border:1px solid #9bb1c7;border-radius:7px;background:white;color:#25445a;cursor:pointer}footer{margin-top:35px;font-size:12px;color:#607387}@media(max-width:700px){main{padding:15px}header,.box,article{padding:22px}h1{font-size:27px}.stats{grid-template-columns:1fr 1fr}.stat{padding:16px}}@media print{body{background:white}header{background:white;color:#183046}main{padding:0}.table{overflow:visible}td:first-child{min-width:0}table{font-size:10px}button{display:none}details:not([open]){display:none}article{break-inside:avoid}}
 ${coverageStyles}
 </style></head><body><main><header><small>DEEPEVAL ${esc(report.frameworkVersion)} · GEVAL · LOCAL REPORT</small><h1>ADR 프롬프트 회귀 평가<br>DeepEval 판정 결과</h1><p>DeepEval의 GEval이 실제 실행 증거를 고정 기준으로 판정했습니다. 기존 자체 판정 점수는 입력으로 사용하지 않았습니다.</p><p>${esc(report.baselineLabel ?? "기준 없음")} → ${esc(report.candidateLabel ?? "현재 스냅샷")} · 기준일 ${esc(report.referenceDate)} · ${esc(report.generatedAt)}</p></header>
-<div class="stats"><div class="stat"><strong>${report.cases.length}</strong><span>고정 사례</span></div><div class="stat"><strong>${count(before)}/${before.length}</strong><span>기준 버전 GEval 충족</span></div><div class="stat"><strong>${count(candidate)}/${candidate.length}</strong><span>후보 버전 GEval 충족</span></div><div class="stat"><strong>${report.runs.filter((r) => ["ERROR", "NOT_EVALUABLE"].includes(r.verdict)).length}</strong><span>오류·증거 부족</span></div></div>
+<div class="stats"><div class="stat"><strong>${report.cases.length}</strong><span>고정 사례</span></div><div class="stat"><strong>${count(before)}/${scored(before)}</strong><span>기준 버전 GEval 충족</span></div><div class="stat"><strong>${count(candidate)}/${scored(candidate)}</strong><span>후보 버전 GEval 충족</span></div><div class="stat"><strong>${report.runs.filter((r) => ["ERROR", "NOT_EVALUABLE"].includes(r.verdict)).length}</strong><span>오류·증거 부족</span></div></div>
 <p class="note">strict GEval은 모든 의무가 증명되면 1, 하나라도 미충족 또는 근거 부족이면 0입니다. 점수 0을 곧바로 실제 기능 위반으로 단정하지 않고 이유를 함께 확인합니다. 동일 사례를 버전별 ${report.runsPerCase}회 평가한 관찰이며 인과관계나 모든 입력의 정상 동작을 보장하지 않습니다.</p>
 ${report.comparisonNote ? `<section class="box"><h2>비교한 변경</h2><p>${esc(report.comparisonNote)}</p></section>` : ""}
 ${renderCoverage(report)}
