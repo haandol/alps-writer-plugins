@@ -25,7 +25,8 @@ const question = (index = 1) => ({
 const report = () => ({
   title: "Retry decision",
   language: "en",
-  background: ["The operator needs to decide which payment retries are safe."],
+  purpose: ["Help the operator decide which payment retries are safe."],
+  background: ["Payment requests can have a recorded completion or an unknown outcome."],
   summary: ["Completed requests reuse a result; unknown outcomes need reconciliation."],
   sections: [
     {
@@ -70,30 +71,63 @@ const report = () => ({
   },
 });
 
-test("background and answer remain distinct with optional authored titles and legacy text intact", () => {
+test("purpose precedes context and the answer in separate localized sections without changing content", () => {
   for (const language of ["en", "ko"]) {
     const doc = { ...report(), language, summaryTitle: "Decision <with conditions>" };
+    const [purposeLabel, contextLabel] =
+      language === "en" ? ["Purpose", "Context"] : ["목표", "배경"];
     const before = structuredClone(doc);
     const html = renderHtml(doc),
       markdown = renderMarkdown(doc);
     const header = html.match(/<header>([\s\S]*?)<\/header>/)[1];
-    assert.ok(header.includes(doc.background[0]));
+    assert.ok(
+      header.includes(
+        `<section class="report-purpose"><h2>${purposeLabel}</h2><p>${doc.purpose[0]}</p></section>`,
+      ),
+    );
+    assert.ok(
+      header.includes(
+        `<section class="report-background"><h2>${contextLabel}</h2><p>${doc.background[0]}</p></section>`,
+      ),
+    );
+    assert.ok(header.indexOf(doc.purpose[0]) < header.indexOf(doc.background[0]));
     assert.ok(!header.includes(doc.summary[0]));
     assert.ok(html.indexOf(doc.summary[0]) > html.indexOf("</header>"));
     assert.ok(html.indexOf(doc.summary[0]) < html.indexOf("<nav"));
+    assert.ok(markdown.includes(`## ${purposeLabel}\n\n${doc.purpose[0]}`));
+    assert.ok(markdown.includes(`## ${contextLabel}\n\n${doc.background[0]}`));
+    assert.ok(markdown.indexOf(doc.purpose[0]) < markdown.indexOf(doc.background[0]));
     assert.ok(markdown.indexOf(doc.background[0]) < markdown.indexOf("## Decision"));
     assert.ok(markdown.indexOf("## Decision") < markdown.indexOf(doc.summary[0]));
     assert.ok(html.includes("Decision &lt;with conditions&gt;"));
     assert.deepEqual(doc, before);
   }
+});
+
+test("legacy openings keep all supplied text without inventing purpose or empty sections", () => {
   const legacy = report();
-  delete legacy.background;
-  const html = renderHtml(legacy),
-    markdown = renderMarkdown(legacy);
-  assert.ok(html.includes(legacy.summary[0]));
-  assert.ok(markdown.includes(legacy.summary[0]));
-  assert.doesNotMatch(html, /<h2>Background and goals<\/h2>/);
-  assert.doesNotMatch(markdown, /## Background and goals/);
+  delete legacy.purpose;
+  legacy.background = [
+    "The operator requested this review to decide which payment retries are safe.",
+  ];
+  for (const background of [legacy.background, undefined]) {
+    legacy.background = background;
+    const before = structuredClone(legacy);
+    const html = renderHtml(legacy),
+      markdown = renderMarkdown(legacy);
+    assert.ok(html.includes(legacy.summary[0]));
+    assert.ok(markdown.includes(legacy.summary[0]));
+    assert.doesNotMatch(html, /<section class="report-purpose">/);
+    assert.doesNotMatch(markdown, /## Purpose/);
+    if (background) {
+      assert.ok(html.includes(background[0]));
+      assert.ok(markdown.includes(background[0]));
+    } else {
+      assert.doesNotMatch(html, /<section class="report-background">/);
+      assert.doesNotMatch(markdown, /## Context/);
+    }
+    assert.deepEqual(legacy, before);
+  }
   assert.doesNotMatch(renderHtml(report()), /<section class="report-answer"><h2>/);
 });
 
@@ -279,6 +313,12 @@ test("four branches can retain many sources and all five questions without inven
 
 test("new presentation fields fail explicitly on invalid values rather than being silently dropped", () => {
   for (const [change, error] of [
+    ...[[], "A purpose", [""], null].map((value) => [
+      (d) => {
+        d.purpose = value;
+      },
+      /purpose/,
+    ]),
     [
       (d) => {
         d.background = [];

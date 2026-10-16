@@ -8,8 +8,9 @@ without turning reading-order review into an unrequested browser or print sessio
 
 ### Check the opening's intended use
 
-Does the opening identify the concrete problem and what reading should enable,
-then give the answer, significance and conclusion-changing conditions? Does the
+Does the opening first state what the report should enable under Purpose, then
+explain the confirmed situation under a separate Context heading, before giving
+the answer, significance and conclusion-changing conditions? Does the
 body support that promise? Use [explanation design](explanation-design.md) for
 authoring rules; narrow unsupported promises rather than inventing intent.
 
@@ -40,6 +41,10 @@ premises at their point of use; retain real evidence gaps and limit affected cla
   existing only as nested labels. Keep peer cases and sources distinct from
   deeper resolution. Reject repeated parent summaries, hidden prerequisites and
   evidence that makes the reader reconstruct the mechanism.
+  Follow an actual whole-to-behavior path: do roles and relationships appear
+  before unfamiliar implementation names? Treat a missing explanatory bridge
+  separately from optional detail reduction. Topic grouping and control counts
+  cannot establish that the subject becomes understandable at a lower level.
 - **Qualification:** does each detail substantiate or qualify its parent rather
   than introduce an unrelated claim? Do simplifications retain the caveats,
   failures and exceptions that change the answer? Substantive parents explain
@@ -108,6 +113,10 @@ Remove summaries that merely repeat the preceding point and caveats repeated
 around a figure or across adjacent paragraphs. Keep useful transitions, required
 report fields, missing reader context, and conditions that change the conclusion.
 Judge their function in context rather than enforcing a phrase ban.
+
+For interactive HTML, use the [interaction checks](interactive-explanations.md#verify-the-explanation-states).
+Check what the reader learns when a selection changes, which facts remain fixed,
+and whether returning to the parent preserves the same subject and its limits.
 
 ## Content-specific checks
 

@@ -16,12 +16,15 @@ insufficient. When familiarity is unknown, use a plain account of the problem,
 actors and outcome. Do not invent familiarity, repeat a background interview,
 require personal-data lookup or create a learner-profile record.
 
-Directly below the title, show the standalone heading "Background and goals",
-localized in the report's language. Briefly explain the concrete problem or
-unresolved question and what reading should enable the reader to distinguish,
-decide, explain or do. Ground that purpose in the supplied task, trigger, scope
-and priorities. A task recap or an aspiration such as "improve reliability" alone
-does not explain the report's use. Do not invent motives or learning results.
+Directly below the title, place two separate sections in this order:
+"Purpose", then "Context" ("목표", then "배경" in Korean).
+Purpose briefly states what this report should enable the reader to understand,
+distinguish, decide, explain or do. Ground that purpose in the supplied task, trigger, scope
+and priorities. A task recap or a product aspiration such as "improve reliability"
+alone does not explain the report's use.
+Context then introduces the confirmed problem or unresolved question, situation
+and request trigger, including the relevant subject, scope and priorities.
+Do not invent motives or learning results, or repeat the purpose as background.
 
 Immediately follow with the answer, material implication, conclusion-changing
 limitations and required next action in a distinct display area. Its heading is
@@ -103,6 +106,12 @@ attach findings or alternatives where they change its explanation.
 
 ### Open the same process at a lower level
 
+For top-down or drill-down explanations, follow one substantive path from the
+whole to a responsibility, its relationships and conditions, then concrete
+behavior. At each transition, identify what the reader already understands and
+what the next passage adds. A sequence of topic areas or nested headings alone
+does not provide that path. Do not impose a fixed number of levels.
+
 The whole view establishes the process boundary, its input and observable result,
 and the relationships between its material responsibilities. Each responsibility
 continues into a recognizable explanation or a bounded leaf. A child identifies
@@ -118,6 +127,13 @@ identifiers makes them equal, then how the supplied price rule decides whether
 to combine or reject those rows. The input, rule and outcome make the parent's
 work understandable; another heading or repeated summary does not.
 
+Introduce the roles and connections needed to understand an implementation name
+before using that name as evidence. At lower levels, exact functions, fields or
+query languages can be useful; they must not replace the missing relationship
+explanation. Keep full hashes, reproduction settings and diagnostic history in
+supporting evidence, while retaining conditions that change the conclusion in
+the main explanation. Preserve exact values rather than deleting detail.
+
 Stop when the intended reader can explain the responsibility's behavior and
 limits or apply its rule without guessing hidden steps. If the source does not
 support deeper internals, state that boundary. Use the existing prose and figures;
@@ -129,3 +145,5 @@ use [abstraction and analogy](abstraction-and-analogy.md). For figures, use
 views throughout the explanation; a whole-system or multi-step report normally
 benefits from an overview after the background and answer, before component detail.
 Honor exclusions and evidence limits; a missing figure alone never blocks delivery.
+For HTML, use [interactive explanations](interactive-explanations.md) when the
+reader can learn by expanding a responsibility or changing a condition or case.
