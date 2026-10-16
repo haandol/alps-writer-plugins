@@ -52,12 +52,12 @@ Implements the specified ADR in code. Once implementation, tests, the verified r
    the implementation intent baseline. Publish the plan as a non-blocking update
    when the exact ADR revision is already approved; never request routine plan
    approval again. Resolve protected contract choices before implementation.
-   For comprehension load `8/10` or higher, ask the split-review-versus-original
-   choice before offering concrete split candidates. Keep plans ephemeral.
+   At comprehension load `8/10` or higher, give a useful non-blocking split
+   direction without delaying approved implementation. Keep plans ephemeral.
 
 4. **Implement**
    - Edit/Write in small units.
-   - Implement one vertical Hill at a time using `references/implementation-hiking.md`. Finish the Hill's necessary cross-layer behavior and targeted ideal/edge verification before making the next Hill the primary implementation unit. Hill progress is ephemeral and creates no approval or lifecycle gate.
+   - Use `references/implementation-hiking.md` to preserve each vertical Hill's cross-layer behavior and targeted ideal/edge evidence. Independent Hills may run in parallel or batches, or become the primary work unit while another verifies. Sequence actual prerequisites and shared-resource conflicts; never mark an unverified Hill complete.
    - Follow the behavior rules, state transitions, and integration methods stated in the ADR exactly. To implement something differently from the ADR, change the ADR first.
    - **Enforce the requirement values the ADR records, at face value** — do not arbitrarily change or "roughly approximate" limits, quotas, intervals, retention periods, ceilings, or targets; actually put in the code that enforces those values (ceiling checks, counters, expiry handling). **Non-numeric requirements are the same** — enforce exactly the allowed value sets, transition rules, mandatory-ness, permissions, visibility, ordering, uniqueness, and units that the ADR fixed (do not add a state that is not allowed, do not open a forbidden transition, and do not turn a required input into an optional one). Enum identifier names are at your discretion, but **the set and the transition rules are the contract**. If a reason arises to change a value, do not fix the code first — update the ADR first (a requirement value change is at minimum major, so also leave a one-line entry in `decision-log.md` — `authoring-rules.md` "What to log — minor vs major").
    - **Unspecified values below ADR resolution are implementation discretion** — after applying the requirement gate, choose connection pool size, backoff, cache TTL, worker count, and similar replaceable means to serve the recorded intent. Absence from the ADR alone does not make a product rule discretionary. Keep implementation values out of the ADR.
@@ -75,7 +75,7 @@ Implements the specified ADR in code. Once implementation, tests, the verified r
      Compound rows require all clauses and relevant counterexamples; a test name,
      green suite or line coverage does not establish completion. Preserve missing
      evidence and test gaps for repair before the completion gate.
-   - Before moving to the next Implementation Hill, run its targeted ideal case and relevant counterexample and record the command and observed result. After every Hill has verified results, run the project's full test command.
+   - Run each Implementation Hill's targeted ideal case and relevant counterexample and record the command and observed result. Independent work may continue while verification runs. After every Hill has verified results, run the project's full test command.
    - Find the project's test command in `AGENTS.md` or `package.json`; the full run above satisfies this check.
    - Apply the ideal-case, relevant-edge, test-naming, and missing-test-path rules from `${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md`.
    - If tests fail, do not move on to step 6 — if it is an implementation bug go back to step 4; if the ADR made the wrong decision, fix the ADR first and then go back to step 4.

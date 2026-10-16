@@ -6,11 +6,12 @@ classification, controlled Skill selection and DeepEval document operations, use
 It adds execution Skill-on/off comparisons and reuses the scorers below.
 `pnpm eval:llm --prepare --runs 1` selects the response probes. Its explicit
 `--live` path adds DeepEval GEval semantic judgment to every catalog probe and
-retains the existing local checks; the legacy runner below keeps its original scorers.
+keeps mechanical file/action/schema checks. The compatibility runner below also uses an independent Bedrock GPT-6.1 judge.
 `pnpm eval:report <run-directory>` regenerates either report format without model calls.
 
-`pnpm test` proves the prompts **say** something. These evals check whether an
-agent given those prompts **does** it.
+`pnpm test` checks fixtures, serialization, boundaries and judge transport.
+Live evals run the actual model and judge what its response and actions mean.
+Word/phrase presence and evaluation-only tail records do not decide behavioral success.
 
 They exist to reproduce reported defects. When someone says "the reviewer told me
 to delete my requirement value", you encode that situation once, run it ten
@@ -45,12 +46,12 @@ cd plugins/adr-writer
 
 node evals/run.mjs --list                        # scenario names
 node evals/run.mjs --dry-run --only review-      # build fixtures, print prompts, no agent
-node evals/run.mjs --only review-catches         # one scenario, one run
-node evals/run.mjs --only review-catches --runs 10   # rates
+node evals/run.mjs --live --only review-catches         # one scenario, one run
+node evals/run.mjs --live --only review-catches --runs 10   # rates
 node evals/run.mjs --changed main --list          # affected scenarios only
-node evals/run.mjs --changed main --runs 5        # affected branch + working-tree scenarios
-node evals/run.mjs --runs 5 --out /tmp/report.md     # everything, shareable report
-node evals/run.mjs --only review-catches --out /tmp/report.md \
+node evals/run.mjs --live --changed main --runs 5        # affected branch + working-tree scenarios
+node evals/run.mjs --live --runs 5 --out /tmp/report.md     # everything, shareable report
+node evals/run.mjs --live --only review-catches --out /tmp/report.md \
   --include-transcript --include-fixture-paths        # explicit sensitive detail
 ```
 
@@ -71,24 +72,32 @@ The agent command is configurable, since this plugin ships for two clients and
 models outlive this directory:
 
 ```bash
-ADR_EVAL_CMD="claude -p --allowedTools ''" node evals/run.mjs      # default
-ADR_EVAL_CMD="claude -p --model opus --allowedTools ''" node evals/run.mjs
-ADR_EVAL_CMD="codex exec" node evals/run.mjs
+node evals/run.mjs --live  # isolated default adapter and logged fixture tools
+ADR_EVAL_CMD="claude -p --model opus --allowedTools ''" node evals/run.mjs --live
+ADR_EVAL_CMD="codex exec" node evals/run.mjs --live
 ```
 
-The command receives the prompt on **stdin** and must print the reply to stdout.
+The target command receives the prompt on **stdin** and prints the reply to stdout.
+Preparation is the default; only `--live` permits model calls. Custom
+`--cmd`/`ADR_EVAL_CMD` targets have unverified client isolation and no guaranteed
+action trace; they cannot establish controlled temporal behavior. The default
+uses the isolated adapter and confined, logged fixture tools.
+
+The independent judge defaults to Bedrock `us.openai.gpt-6.1-sol`, explicit profile
+`default`, region `us-east-1`. The default adapter captures action timing as well
+as final files. A custom command must not be treated as equivalent trace evidence.
 Scenarios that only read files can run with tools disabled; `author-*` scenarios
 write an ADR, so they need write access to the fixture directory:
 
 ```bash
 ADR_EVAL_CMD="claude -p --add-dir . --allowedTools 'Read Write Edit Bash'" \
-  node evals/run.mjs --only author-
+  node evals/run.mjs --live --only author-
 ```
 
 Exit code is 0 whenever at least one run was scored, **including when checks
 fail** — a failing check is the finding, not an error. Exit 2 means no requested
 run produced a scorable response (bad `--only`, command failure, empty output,
-or a missing machine-readable tail). Error and unscored runs are reported
+or missing required execution evidence). Error and unscored runs are reported
 separately and never enter a behavior-rate denominator.
 
 Reports omit raw transcripts and absolute fixture paths by default. They include
@@ -124,9 +133,11 @@ same packaged guidance through both direct authoring and Feature handoff.
 3. **Record the report verbatim** in `bugReport`. It lands in the shareable
    report, which is what lets the reporter confirm you reproduced _their_
    problem rather than an adjacent one.
-4. **Write the checks as the behaviour you expect**, not as the text you expect.
-   `expectNotMiscategorized(tail, /cancel/, /Impl-fact/)` survives rewording;
-   `expectText(output, /the transition is forbidden/)` breaks on a synonym.
+4. **Write fixed semantic obligations from the task contract.** Judge actual
+   responses, files and tool evidence with GPT-6.1. Add `mechanicalScore` only
+   for file preservation, authorized actions, native schemas, exact citations or
+   structured execution states. Evaluation-only tags are optional diagnostics.
+
 5. `--runs 10` and read the rate.
 6. After a fix, run again — **and run the paired scenario.** Most of these come
    in pairs because a prompt can be made to pass one by breaking the other:
@@ -170,7 +181,7 @@ same packaged guidance through both direct authoring and Feature handoff.
      against fixed obligations. Numbers or role names alone cannot establish a
      preserved contract. Each obligation needs an evidence-backed verdict;
      invalid judge output or command failure is an unscorable error. This adds
-     one model call per run; other scenarios retain their existing scorers.
+     one semantic judge call per trial (plus a permitted citation repair when needed).
    - `alps-reference-routes-only-durable-context` checks the source-lifetime
      boundary: an incident or ticket may supply product and architecture
      constraints, but its ID, logs, code paths, and recoverable technology
@@ -251,9 +262,9 @@ same packaged guidance through both direct authoring and Feature handoff.
      a why/how comment using contract vocabulary plus ideal and relevant edge
      tests can pass. A comment that cites an ADR number or path still fails and
      must retain only the domain vocabulary.
-   - `impl-high-load-asks-before-split` checks that an `/adr-impl` plan at
-     `8/10` or higher asks whether to review a split or proceed with the original
-     ADR, waits for that choice, and does not generate concrete candidates first.
+   - `impl-high-load-keeps-progress` checks that an `/adr-impl` plan at
+     `8/10` or higher continues already approved work without a score-triggered
+     question, while leaving ADR boundaries unchanged.
    - `bedrock-subagent-fallback` checks that an unsupported subagent path is not
      retried, document and implementation review continue through an available
      strategy, and refactoring preserves the same evidence and before/after-test
@@ -296,19 +307,22 @@ export default {
   build(dir) {
     /* write the fixture, return the prompt */
   },
-  score({ tail, output, dir, cmd }) {
-    /* return an array (or Promise) of {pass, detail, label} */
+  obligations: [{ id: "contract", text: "Describe the required behavior and evidence." }],
+  mechanicalScore({ dir, events, before, files }) {
+    /* Optional actual-file/action/schema checks; no prose or evaluation-tag scoring. */
+    return [];
   },
 };
 ```
 
-`build` gets a fresh temp directory and returns the whole prompt. `score` gets
-the parsed tail block, the raw reply, fixture path and selected agent command — so a check can read
-what the agent wrote to disk, not just what it said.
+`build` gets a fresh directory and returns the task and shipping instructions.
+The runtime sends actual responses and evidence to the judge. `mechanicalScore`
+receives captured files/events for objective artifact checks. Historical
+`score`/`deterministicScore` helpers are not called for runtime meaning judgments.
 
 Helpers are in `lib/harness.mjs`: `skillText` / `agentText` (real instruction
 text; scenarios explicitly select the Markdown modules their task needs),
-`seedRuleDocs` / `seedMapping` / `write`, the `expect*` scorers, and
+`seedRuleDocs` / `seedMapping` / `write`, and
 `expectLintClean` which runs the shipped `adr-structure-lint.mjs` over the result.
 Default loading includes only the entrypoint. A response-only probe that cannot
 read files must list its phase modules in `references`. For a nested reference,
@@ -344,7 +358,7 @@ ADR_EVAL_REPO=~/git/pixelbank \
 ADR_EVAL_ADR=docs/adr/token/0002-free-trial.md \
 ADR_EVAL_VALUES="2회,3회,1회" \
 ADR_EVAL_CMD="claude -p --allowedTools 'Read Grep Glob'" \
-  node evals/run.mjs --only review-real-repo-adr --runs 3 --out /tmp/report.md
+  node evals/run.mjs --live --only review-real-repo-adr --runs 3 --out /tmp/report.md
 ```
 
 The ADR, its sibling category, the repo's own rule docs, and **everything the ADR

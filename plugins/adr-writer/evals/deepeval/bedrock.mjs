@@ -1,12 +1,8 @@
 import { BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
 import { fromIni } from "@aws-sdk/credential-providers";
 
-export const BEDROCK_DEFAULTS = Object.freeze({
-  provider: "bedrock",
-  profile: "default",
-  region: "us-east-1",
-  model: "us.openai.gpt-5.6-sol",
-});
+import { BEDROCK_DEFAULTS } from "../lib/judge-defaults.mjs";
+export { BEDROCK_DEFAULTS } from "../lib/judge-defaults.mjs";
 
 export function bedrockClientConfig({ profile, region }) {
   // Explicit profile selection avoids inheriting another task's AWS_PROFILE

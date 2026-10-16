@@ -26,8 +26,10 @@ Calibration:
 - 10 — maximum review load; first check for mixed Features or decisions.
 
 A low score never requires merging. A high score does not by itself block work.
-The calling skill owns what happens at 8/10 or higher, including whether it
-offers a split review, split candidates, or a delivery fallback.
+At 8/10 or higher, the calling skill may offer useful non-blocking split
+guidance. A score alone never requires a reply before approved implementation.
+A user-requested split review or a material contract/ownership/publishing choice
+retains its normal decision boundary.
 
 Show only `Comprehension load: <N>/10`. The score is advisory and ephemeral.
 It may appear in conversation or a disposable review report under the report

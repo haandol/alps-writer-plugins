@@ -10,6 +10,8 @@ Turn verified review results into the narrative source for
 `implementation-review.md` and the native `findings.json` handoff. Never invent
 new defects, change the supplied verdict, or edit code, ADRs, or tests.
 
+For compact standard presentation, apply the optional zoom fields and direct HTML path in `skills/adr-impl-review/references/artifact-schema.md`. Do not demand Container/Component or unused omission metadata; preserve every contract and code/test evidence item. Full and selected rich presentation retain their detailed contracts.
+
 ## Load the owners for this report
 
 Before writing, read `${CLAUDE_PLUGIN_ROOT}/references/review-report-writing.md`
@@ -105,7 +107,7 @@ data into Markdown. Use this source skeleton, repeating Hills as needed:
 ```
 
 Between `Context` and `Findings`, include exactly the Review Hiking
-Container/Hills with their exact titles and review questions. Write the Hill's
+Container/Hills with their exact titles and any supplied review questions. Write the Hill's
 causal explanation before the generated evidence: starting condition or trigger,
 action and important branch, system response or state change, observable result,
 and verification. Order Hills by reader importance. Use verified examples;

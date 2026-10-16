@@ -295,10 +295,9 @@ test("raw inputs are independently exportable and judge expectations do not leak
 
 test("the catalog retains both mechanical guards and semantic obligations", async () => {
   const entry = (await catalog()).find((item) => item.id === scenario.name);
-  assert.equal(entry.score, deterministicScore);
-  assert.equal(entry.supplementalChecks, true);
+  assert.equal(entry.score, undefined);
+  assert.equal(entry.supplementalChecks, false);
   assert.deepEqual(entry.semanticObligations, obligations);
-  assert.ok(entry.score({ output: output(answer()), events: [] }).every((c) => c.pass));
 
   // Correct path records cannot prove prose meaning. Preserve contradictory
   // prose and raw originals for the separate semantic judge, with no SDK call.

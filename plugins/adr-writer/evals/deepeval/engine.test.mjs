@@ -329,6 +329,7 @@ test("comparison distinguishes not-proven results from errors and requires match
     targetModels: ["target"],
     referenceDate: "2026-09-19",
     pluginHash: "old",
+    conditionHash: "same-fixed-task-rubric-verifier-and-limits",
   };
   const after = { ...before, verdict: "NOT_PROVEN", pluginHash: "new" };
   assert.equal(compareDeepEval(before, after), "REGRESSION_SIGNAL");
@@ -337,6 +338,15 @@ test("comparison distinguishes not-proven results from errors and requires match
   assert.equal(compareDeepEval(before, { ...after, models: ["other"] }), "INCONCLUSIVE");
   assert.equal(compareDeepEval(before, { ...after, targetModels: ["other"] }), "INCONCLUSIVE");
   assert.equal(compareDeepEval(before, { ...before }), "SAME_SNAPSHOT");
+  assert.equal(
+    compareDeepEval(before, { ...after, conditionHash: "changed-rubric" }),
+    "INCONCLUSIVE",
+  );
+  assert.equal(
+    compareDeepEval(before, { ...after, modelIdentityIncomplete: true }),
+    "INCONCLUSIVE",
+  );
+  assert.equal(compareDeepEval(before, { ...after, conditionHash: null }), "INCONCLUSIVE");
 });
 
 test("recorded-run loading rejects missing pairs, duplicate identities and escaping evidence paths", () => {

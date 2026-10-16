@@ -1,10 +1,15 @@
 import { gradeEvidence, judgeSchema } from "../regression/judge.mjs";
-import { DEFAULT_CMD, mkFixture, runAgent } from "./harness.mjs";
+import { BEDROCK_DEFAULTS } from "./judge-defaults.mjs";
 
-// Use the selected agent command in a separate context. The target never sees
-// the scoring obligations; format/provider errors stay outside behavior rates.
-export async function semanticScore({ obligations, sources, cmd = DEFAULT_CMD, invoke }) {
-  const cwd = invoke ? undefined : mkFixture("adr-eval-judge-");
+/** Judge independently of the target command; explicit injected transport is used by deterministic tests. */
+export async function semanticScore({
+  obligations,
+  sources,
+  invoke,
+  model = BEDROCK_DEFAULTS.model,
+  profile = BEDROCK_DEFAULTS.profile,
+  region = BEDROCK_DEFAULTS.region,
+}) {
   const judgment = await gradeEvidence({
     obligations,
     sources,
@@ -12,15 +17,8 @@ export async function semanticScore({ obligations, sources, cmd = DEFAULT_CMD, i
     invoke:
       invoke ??
       (async (prompt) => {
-        const result = runAgent(
-          `${prompt}\n\nReturn only JSON matching this schema:\n${JSON.stringify(judgeSchema)}`,
-          { cmd, cwd },
-        );
-        if (!result.ok || !result.stdout.trim())
-          throw new Error(
-            `semantic judge failed: ${result.error || result.stderr.trim() || `exit ${result.status} with empty output`}`,
-          );
-        return { text: result.stdout };
+        const { invokeBedrock } = await import("../deepeval/bedrock.mjs");
+        return invokeBedrock({ prompt, schema: judgeSchema, model, profile, region });
       }),
   });
   return judgment.obligations.map((item) => ({

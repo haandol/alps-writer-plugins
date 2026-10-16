@@ -1,3 +1,4 @@
+import { capturedChecks } from "../evals/skills/mechanical-checks.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync, symlinkSync } from "node:fs";
@@ -123,7 +124,7 @@ test("discovery requires successful correlated reads of exact fixture files", ()
     assert.ok(importScenario.score({ dir: root, events: broken }).some((c) => !c.pass));
   }));
 
-test("catalog routing preserves authored obligations and the same strong local guards", async () => {
+test("catalog routing preserves semantic obligations and actual mutation guards", async () => {
   const entries = await catalog();
   const cases = {
     "sync-batches-unclear-decisions": ["READY", "ASK_INTENT", "ASK_CONFLICT"],
@@ -159,20 +160,20 @@ test("catalog routing preserves authored obligations and the same strong local g
   for (const [id, summaries] of Object.entries(cases)) {
     const { default: original } = await import(`../evals/scenarios/${id}.mjs`);
     const item = entries.find((c) => c.id === id);
-    assert.equal(item.score, original.deterministicScore);
+    assert.equal(item.score, undefined);
     assert.deepEqual(item.semanticObligations, original.obligations);
     const input = {
       events: [],
       tail: { findings: summaries.map((summary, i) => ({ tag: "ABCDEFG"[i], summary })) },
     };
-    assert.ok(item.score(input).every((c) => c.pass));
+    assert.ok(capturedChecks(item, { ...input, before: {}, files: {} }).every((c) => c.pass));
     input.events.push({
       kind: "request",
       tool: "write_file",
       arguments: { path: "docs/unapproved.md" },
     });
     assert.ok(
-      item.score(input).some((c) => !c.pass),
+      capturedChecks(item, { ...input, before: {}, files: {} }).some((c) => !c.pass),
       id,
     );
   }

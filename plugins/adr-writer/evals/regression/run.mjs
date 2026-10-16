@@ -14,8 +14,13 @@ import {
   snapshot,
 } from "./workspace.mjs";
 import { JUDGE_PROMPT, evidenceSources, judgeSchema, gradeEvidence } from "./judge.mjs";
+import { BEDROCK_DEFAULTS } from "../lib/judge-defaults.mjs";
 import { invokeClaude } from "./claude.mjs";
 import { saveReport } from "./report.mjs";
+import { executionChecks } from "../lib/execution-checks.mjs";
+import { capturedChecks } from "../skills/mechanical-checks.mjs";
+import { verifierIdentity } from "../lib/verifier-identity.mjs";
+import { checkRequiredGuidance } from "../lib/required-guidance.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN = path.resolve(HERE, "../..");
@@ -44,6 +49,8 @@ export function parseArgs(args) {
     "baseline",
     "model",
     "judge-model",
+    "judge-profile",
+    "judge-region",
     "timeout",
     "candidate-root",
     "reference-date",
@@ -88,7 +95,8 @@ function help() {
 Without --live, no model is called. --prepare writes fixtures and a NOT_RUN HTML report.
 --baseline <git-ref> compares the selected plugin instructions against that commit.
 --candidate-root <adr-writer-directory> evaluates a separate working copy.
---model / --judge-model use explicit CLI model names; otherwise local defaults apply.
+--model selects the Claude target. The judge defaults to Bedrock GPT-6.1 Sol,
+profile default, region us-east-1; --judge-model/profile/region are explicit overrides.
 --timeout <seconds> bounds each CLI invocation (default 300).
 --jobs <count> runs independent cases concurrently (default 1); each case keeps baseline before candidate.
 --reference-date <YYYY-MM-DD> freezes the date supplied to both variants; defaults to today's local calendar date.
@@ -204,6 +212,21 @@ export async function runCase(item, variant, repeat, directory, options) {
     calls: [],
     models: [],
     changes: [],
+    conditionHash: sha({
+      verifier: verifierIdentity(options.checkerRoot ?? variant.root),
+      before,
+      turns: item.turns,
+      obligations: item.obligations,
+      timeout: options.timeout,
+      checker: options.checkerHash ?? variant.hash,
+      tools: sha(readFileSync(path.join(HERE, "workspace.mjs"), "utf8")),
+      judge: {
+        ...BEDROCK_DEFAULTS,
+        model: options["judge-model"] ?? BEDROCK_DEFAULTS.model,
+        profile: options["judge-profile"] ?? BEDROCK_DEFAULTS.profile,
+        region: options["judge-region"] ?? BEDROCK_DEFAULTS.region,
+      },
+    }),
   };
   const started = Date.now();
   const logPath = path.join(artifactDir, "events.jsonl");
@@ -221,6 +244,7 @@ export async function runCase(item, variant, repeat, directory, options) {
       checkerRoot: options.checkerRoot ?? variant.root,
       artifactPaths: item.artifactPaths,
     });
+    if (variant.guidance !== false) checkRequiredGuidance(item, tools);
     const policy = tools.call("run_check", { kind: "policy-tests" });
     const lint = tools.call("run_check", { kind: "structure" });
     writeFileSync(
@@ -292,10 +316,16 @@ export async function runCase(item, variant, repeat, directory, options) {
         obligations: item.obligations,
         sources,
         invoke: (prompt) =>
-          (options.invoke ?? invokeClaude)({
+          (
+            options.judgeInvoke ??
+            options.invoke ??
+            (async (request) => (await import("../deepeval/bedrock.mjs")).invokeBedrock(request))
+          )({
             prompt,
             cwd: artifactDir,
-            model: options["judge-model"] ?? options.model,
+            model: options["judge-model"] ?? BEDROCK_DEFAULTS.model,
+            profile: options["judge-profile"] ?? BEDROCK_DEFAULTS.profile,
+            region: options["judge-region"] ?? BEDROCK_DEFAULTS.region,
             schema: judgeSchema,
             timeoutMs: options.timeout * 1000,
           }),
@@ -318,6 +348,31 @@ export async function runCase(item, variant, repeat, directory, options) {
         },
       });
       result.verdict = result.judgment.verdict;
+      const evidence = {
+        before,
+        after: snapshot(root),
+        events: readEvents(logPath),
+        replies: result.replies,
+        turns: item.turns,
+        checkpoints,
+        referenceDate,
+      };
+      const currentCase = { ...item, type: "execution" };
+      result.checks = capturedChecks(currentCase, {
+        before,
+        files: evidence.after,
+        events: evidence.events,
+      });
+      result.checks.push(
+        ...executionChecks(
+          path.join(artifactDir, "final-check-workspace"),
+          currentCase,
+          currentCase,
+          evidence,
+          options.checkerRoot ?? variant.root,
+        ),
+      );
+      if (result.verdict === "PASS" && result.checks.some((c) => !c.pass)) result.verdict = "FAIL";
     }
   } catch (error) {
     result.verdict = phase === "judge" ? "GRADER_ERROR" : "ERROR";
@@ -420,7 +475,9 @@ export async function main(args) {
       node: process.version,
       platform: process.platform,
       requestedModel: options.model ?? null,
-      requestedJudgeModel: options["judge-model"] ?? options.model ?? null,
+      requestedJudgeModel: options["judge-model"] ?? BEDROCK_DEFAULTS.model,
+      judgeProfile: options["judge-profile"] ?? BEDROCK_DEFAULTS.profile,
+      judgeRegion: options["judge-region"] ?? BEDROCK_DEFAULTS.region,
       harnessHash: sha(
         ["run.mjs", "workspace.mjs", "tool-server.mjs", "claude.mjs", "judge.mjs"].map((file) =>
           readFileSync(path.join(HERE, file), "utf8"),
@@ -467,7 +524,12 @@ export async function main(args) {
           a.name.localeCompare(b.name),
         )) {
           process.stdout.write(`running ${item.id} ${variant.name} ${repeat}/${options.runs}\n`);
-          const result = await runCase(item, variant, repeat, directory, options);
+          const result = await runCase(item, variant, repeat, directory, {
+            ...options,
+            fixturePluginRoot: candidate.root,
+            checkerRoot: candidate.root,
+            checkerHash: candidate.hash,
+          });
           report.runs.push(result);
           saveReport(directory, report);
           process.stdout.write(

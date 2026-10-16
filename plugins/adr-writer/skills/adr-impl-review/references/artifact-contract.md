@@ -49,7 +49,21 @@ never gates delivery; source fallback or pending figures are not rendered figure
 
 ## 2. Materialize, validate, compose, and open
 
-Validate and build the HTML in both modes:
+Materialize and validate both modes. A compact standard report without selected
+diagrams, quizzes or human-decision controls can then create its final HTML directly:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-materialize.mjs <artifact-dir>
+node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-article.mjs <artifact-dir>/findings.json <artifact-dir>/adr-impl-review-report.html
+node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-open.mjs <artifact-dir>/adr-impl-review-report.html
+```
+
+The article command runs the existing artifact validator before writing. It does
+not replace semantic review of the final prose or the normal open/verification
+boundary. Keep complete source evidence; no intermediate audit HTML is needed.
+
+For full or rich standard presentation, preserve selected diagrams, quizzes,
+decision controls and the existing composition path:
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-materialize.mjs <artifact-dir>

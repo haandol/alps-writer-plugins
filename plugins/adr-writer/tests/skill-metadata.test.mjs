@@ -1063,11 +1063,9 @@ test("Feature and ADR comprehension load is scored internally but shown as one a
 
   const adrImpl = skills[2];
   assert.match(adrImpl, /8\/10.*or higher/i);
-  assert.match(adrImpl, /review a split[\s\S]{0,80}proceed with the original ADR/i);
-  assert.match(adrImpl, /Do not include concrete split candidates/i);
-  assert.match(adrImpl, /wait for the user's answer/i);
-  assert.match(adrImpl, /Only after the user chooses split review[\s\S]{0,120}up to three/i);
+  assert.match(adrImpl, /score alone never requires an answer/i);
   assert.match(adrImpl, /independent decisions/i);
+  assert.doesNotMatch(adrImpl, /wait for the user's answer/i);
 });
 
 test("adr-impl offers Stacked PR only as a requested delivery fallback", () => {

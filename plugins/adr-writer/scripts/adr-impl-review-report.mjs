@@ -185,8 +185,12 @@ import {
   quizLabels,
   quizScript,
 } from "../skills/report-writer/scripts/comprehension.mjs";
-import { CATEGORIES, AUTHORITY } from "./adr-impl-review-categories.mjs";
-import { relatedAdrComparisonProse, hillNarrativeParagraphs } from "./adr-impl-review-prose.mjs";
+import { CATEGORIES, AUTHORITY, USER_DECISION_CATEGORIES } from "./adr-impl-review-categories.mjs";
+import {
+  relatedAdrComparisonProse,
+  hillNarrativeParagraphs,
+  reviewCodeGroups,
+} from "./adr-impl-review-prose.mjs";
 import {
   renderMermaid,
   mermaidRuntime,
@@ -235,13 +239,6 @@ function inlineScriptJson(value) {
     return escapes[char];
   });
 }
-
-const USER_DECISION_CATEGORIES = new Set([
-  "Decision changed in code",
-  "Undecided behavior",
-  "Unverified risk",
-  "Contradiction",
-]);
 
 const UI = {
   en: {
@@ -895,6 +892,7 @@ function normalizeReviewHike(data) {
   const hills = Array.isArray(value.hills) ? value.hills : [];
   return {
     context: {
+      summary: value.context?.summary || "",
       intent: value.context?.intent || "",
       preconditions: value.context?.preconditions || "",
       contracts: value.context?.contracts || "",
@@ -916,24 +914,23 @@ function normalizeReviewHike(data) {
         interactions: hill?.container?.interactions || "",
         outcome: hill?.container?.outcome || "",
       },
-      components: (Array.isArray(hill?.components) ? hill.components : []).map(
-        (component, componentIndex) => ({
-          id: component?.id || `C${componentIndex + 1}`,
-          name: component?.name || "",
-          responsibility: component?.responsibility || "",
-          implementation: component?.implementation || "",
-          verification: component?.verification || "",
-          codeEvidence: (Array.isArray(component?.codeEvidence) ? component.codeEvidence : []).map(
-            (codeEvidence) => ({
-              kind: codeEvidence?.kind || "",
-              location: codeEvidence?.location || "",
-              content: codeEvidence?.content || "",
-              explanation: codeEvidence?.explanation || "",
-              tests: codeEvidence?.tests || "",
-            }),
-          ),
-        }),
-      ),
+      components: reviewCodeGroups(hill).map((component, componentIndex) => ({
+        id: component?.id || `C${componentIndex + 1}`,
+        direct: component?.direct === true,
+        name: component?.name || "",
+        responsibility: component?.responsibility || "",
+        implementation: component?.implementation || "",
+        verification: component?.verification || "",
+        codeEvidence: (Array.isArray(component?.codeEvidence) ? component.codeEvidence : []).map(
+          (codeEvidence) => ({
+            kind: codeEvidence?.kind || "",
+            location: codeEvidence?.location || "",
+            content: codeEvidence?.content || "",
+            explanation: codeEvidence?.explanation || "",
+            tests: codeEvidence?.tests || "",
+          }),
+        ),
+      })),
       contractIds: Array.isArray(hill?.contractIds) ? hill.contractIds : [],
     })),
   };
@@ -1043,7 +1040,8 @@ function reviewContextCard(context, comparisons, ui, language, body = "", linked
   <section class="paper-section" id="review-context">
     <h2 class="explanation__title">${esc(ui.reviewContext)}</h2>
     <div class="context-narrative" aria-label="${esc(ui.reviewContext)}">
-      <p class="narrative-lead">${esc(context.intent)}</p>
+      ${context.summary ? `<p class="narrative-lead">${esc(context.summary)}</p>` : ""}
+      ${context.intent ? `<p class="narrative-lead">${esc(context.intent)}</p>` : ""}
       <p>${esc(context.preconditions)}</p>
       <p>${esc(context.contracts)}</p>
       <p>${esc(context.scopeAndRisk)}</p>
@@ -1074,6 +1072,7 @@ function componentCard(component, ui, hillId) {
   const codeCards = component.codeEvidence
     .map((codeEvidence, index) => codeEvidenceCard(codeEvidence, index, ui, hillId, component.id))
     .join("\n");
+  if (component.direct) return codeCards;
   return `
     <article class="component" id="component-${esc(hillId)}-${esc(component.id.toLowerCase())}">
       <header class="component__head">
@@ -1144,7 +1143,7 @@ function reviewHillCard(hill, body, rows, ui) {
         <span>${esc(ui.flowEvidence)}</span>
       </summary>
       <div class="hill__details-body">
-        <h3 class="component-section-title">${esc(ui.components)}</h3>
+        ${hill.components.some((component) => !component.direct) ? `<h3 class="component-section-title">${esc(ui.components)}</h3>` : ""}
         <div class="components">${components}</div>
         <div class="hill__evidence">${coverageCards}</div>
       </div>
@@ -1559,15 +1558,19 @@ function buildHtml(data) {
         level: 1,
       },
       ...hill.components.flatMap((component) => [
-        {
-          id: `component-${hill.id.toLowerCase()}-${component.id.toLowerCase()}`,
-          label: `${component.id} · ${component.name}`,
-          level: 2,
-        },
+        ...(!component.direct
+          ? [
+              {
+                id: `component-${hill.id.toLowerCase()}-${component.id.toLowerCase()}`,
+                label: `${component.id} · ${component.name}`,
+                level: 2,
+              },
+            ]
+          : []),
         ...component.codeEvidence.map((codeEvidence, index) => ({
           id: `code-${hill.id.toLowerCase()}-${component.id.toLowerCase()}-${index + 1}`,
           label: `Code ${index + 1} · ${codeEvidence.kind}`,
-          level: 3,
+          level: component.direct ? 2 : 3,
         })),
       ]),
     ]),

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { PLUGIN_ROOT, withTmp, write } from "./helpers.mjs";
@@ -464,3 +464,160 @@ for (const verdict of ["FIX_REQUIRED", "BLOCK"]) {
     });
   });
 }
+
+function compactFixture(dir) {
+  const data = fixture(dir);
+  const original = data.reviewHike.hills[0];
+  data.reviewHike = {
+    context: { summary: Object.values(data.reviewHike.context).join(" ") },
+    hills: [
+      {
+        id: "H1",
+        title: original.title,
+        claim: original.claim,
+        contractIds: original.contractIds,
+        codeEvidence: original.components[0].codeEvidence,
+      },
+    ],
+  };
+  delete data.relatedAdrComparisons;
+  delete data.relatedAdrComparisonOmissionReason;
+  delete data.diagramRequirements;
+  write(dir, "findings.json", JSON.stringify(data));
+  return data;
+}
+
+test("compact standard preserves exact contract and code evidence through direct HTML delivery", () => {
+  withTmp((dir) => {
+    const data = compactFixture(dir);
+    assert.equal(materialize(dir).status, 0);
+    const checked = validate(dir);
+    assert.equal(checked.status, 0, checked.stderr);
+    const output = path.join(dir, "report.html");
+    const rendered = spawnSync(
+      process.execPath,
+      [
+        path.join(PLUGIN_ROOT, "scripts/adr-impl-review-article.mjs"),
+        path.join(dir, "findings.json"),
+        output,
+      ],
+      { encoding: "utf8" },
+    );
+    assert.equal(rendered.status, 0, rendered.stderr);
+    const html = readFileSync(output, "utf8");
+    for (const row of data.contractCoverage) assert.ok(html.includes(row.requirement));
+    assert.ok(html.includes("count &lt; 2"));
+    assert.ok(html.includes("test/admission.test.mjs"));
+    assert.doesNotMatch(html, /Component C1/);
+    assert.match(html, /Purpose/);
+    assert.match(html, /Context/);
+  });
+});
+
+test("compact presentation cannot bypass evidence, full-mode depth, or PASS gates", () => {
+  for (const mutate of [
+    (d) => {
+      d.reviewHike.hills[0].codeEvidence = [];
+    },
+    (d) => {
+      delete d.reviewHike.hills[0].codeEvidence[0].tests;
+    },
+    (d) => {
+      d.reviewHike.hills[0].contractIds.pop();
+    },
+    (d) => {
+      d.reviewHike.hills[0].contractIds.push("R1");
+    },
+    (d) => {
+      d.contractCoverage[1].status = "UNVERIFIED";
+    },
+    (d) => {
+      d.reviewMode = "full";
+    },
+    (d) => {
+      d.changeScope = ["src/admission.mjs"];
+    },
+    (d) => {
+      d.diagramRequirements = [
+        {
+          id: "V1",
+          question: "Where?",
+          diagramType: "flowchart",
+          section: d.reviewHike.hills[0].title,
+          reason: "Relationships",
+          evidence: "source",
+        },
+      ];
+    },
+    (d) => {
+      d.relatedAdrComparisons = [{}];
+    },
+    (d) => {
+      d.reviewHike.hills[0].diagramOmissionReason = 17;
+    },
+  ])
+    withTmp((dir) => {
+      const data = compactFixture(dir);
+      mutate(data);
+      write(dir, "findings.json", JSON.stringify(data));
+      materialize(dir);
+      const result = validate(dir);
+      assert.notEqual(result.status, 0, "invalid compact evidence must fail");
+    });
+});
+
+test("an authored direct flag cannot bypass full component validation", () => {
+  withTmp((dir) => {
+    const data = fixture(dir);
+    data.reviewMode = "full";
+    const component = data.reviewHike.hills[0].components[0];
+    component.direct = true;
+    delete component.responsibility;
+    write(dir, "findings.json", JSON.stringify(data));
+    materialize(dir);
+    const result = validate(dir);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /responsibility/);
+  });
+});
+
+test("direct delivery refuses invalid evidence and preserves selected rich interactions", async () => {
+  const { standardArticle } = await import("../scripts/adr-impl-review-article.mjs");
+  withTmp((dir) => {
+    const data = compactFixture(dir);
+    for (const category of [
+      "Decision changed in code",
+      "Undecided behavior",
+      "Unverified risk",
+      "Contradiction",
+    ]) {
+      assert.throws(
+        () => standardArticle({ ...data, findings: [{ category }] }, "findings.json"),
+        /rich report composition/,
+      );
+    }
+    assert.throws(
+      () => standardArticle({ ...data, diagramRequirements: [{}] }, "findings.json"),
+      /rich report composition/,
+    );
+    assert.throws(
+      () => standardArticle({ ...data, comprehensionCheck: { questions: [{}] } }, "findings.json"),
+      /rich report composition/,
+    );
+    data.contractCoverage[1].status = "UNVERIFIED";
+    write(dir, "findings.json", JSON.stringify(data));
+    materialize(dir);
+    const output = path.join(dir, "report.html");
+    const result = spawnSync(
+      process.execPath,
+      [
+        path.join(PLUGIN_ROOT, "scripts/adr-impl-review-article.mjs"),
+        path.join(dir, "findings.json"),
+        output,
+      ],
+      { encoding: "utf8" },
+    );
+    assert.notEqual(result.status, 0);
+    assert.equal(existsSync(output), false);
+  });
+});

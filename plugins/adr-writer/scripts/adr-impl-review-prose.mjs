@@ -52,3 +52,17 @@ export function hillNarrativeParagraphs(hill) {
     )
     .filter(Boolean);
 }
+
+/** Expose direct code evidence without inventing a component or dropping authored groups. */
+export function reviewCodeGroups(hill) {
+  const groups = Array.isArray(hill?.components)
+    ? hill.components.map((component) =>
+        component && typeof component === "object" && !Array.isArray(component)
+          ? { ...component, direct: false }
+          : component,
+      )
+    : [];
+  return hill && Object.hasOwn(hill, "codeEvidence")
+    ? [...groups, { id: "direct", direct: true, codeEvidence: hill.codeEvidence }]
+    : groups;
+}

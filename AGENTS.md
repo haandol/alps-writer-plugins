@@ -125,30 +125,31 @@ Build (inside `plugins/alps-writer/`) runs `tsc --noEmit` (typecheck), then esbu
 
 Tests use Node's built-in test runner. ALPS TypeScript tests run through `tsx`; ADR tests are dependency-free `.mjs` tests. Run all suites with `pnpm test`.
 
-**Behaviour evals** (`plugins/adr-writer/evals/`) are separate and NOT in `pnpm test`. `pnpm test` proves a prompt _says_ something; the evals check whether an agent given that prompt _does_ it, by running real scenarios against a live model and reporting per-check hit rates. They cost money, take minutes, and are non-deterministic, so they never gate CI — their job is reproducing a reported defect (`node evals/run.mjs --only <name> --runs 10`) and telling you whether it happens 3/10 or 10/10, which decides the fix. Use `node evals/run.mjs --changed <base> --list` to preview the disposable impact-map selection for a branch without invoking a model. The harness itself _is_ covered by `pnpm test` via a stub agent, because an eval whose scorer cannot tell a bad reply from a good one reports green and is worse than no eval. See `plugins/adr-writer/evals/README.md`.
+**Behaviour evals** (`plugins/adr-writer/evals/`) are separate and NOT in `pnpm test`. `pnpm test` proves a prompt _says_ something; the evals check whether an agent given that prompt _does_ it, by running real scenarios against a live model and reporting per-check hit rates. They cost money, take minutes, and are non-deterministic, so they never gate CI — their job is reproducing a reported defect (`node evals/run.mjs --live --only <name> --runs 10`) and telling you whether it happens 3/10 or 10/10, which decides the fix. Use `node evals/run.mjs --changed <base> --list` to preview the disposable impact-map selection for a branch without invoking a model. The harness itself _is_ covered by `pnpm test` via a stub agent, because an eval whose scorer cannot tell a bad reply from a good one reports green and is worse than no eval. See `plugins/adr-writer/evals/README.md`.
 
 `pnpm eval:skills` is the unified workspace entry point for classification,
 controlled Skill routing and actual document-operation evaluation. Preparation is
 the default and makes no model calls; `--live` is explicit. Execution comparisons
 keep task contracts and verifiers fixed while varying instruction access.
 `pnpm eval:llm` selects the classification suite: all LLM response probes use
-DeepEval GEval, with existing local scorer checks retained as independent gates.
+DeepEval GEval, with mechanical artifact/action checks retained as independent gates; natural-language word/phrase and evaluation-tail scores are not runtime gates.
 The authored scenario description supplies the default semantic obligation;
 explicit obligation arrays take precedence and never invoke a second legacy judge.
+`pnpm eval:skills --live --rejudge <run-directory>` reuses saved target evidence with the current GPT-6.1 judge and current mechanical checks, preserves original results and labels grading-policy changes.
 `pnpm eval:report` regenerates both unified and legacy DeepEval HTML without model
 calls. The source and usage contract are in `plugins/adr-writer/evals/skills/`.
 Workspace-only integration tests in `evals/deepeval/skills.test.mjs` use the real
 DeepEval SDK with stub providers; dependency-free metric tests stay in `tests/`.
 
 The rollup/sync artifact regression path uses `pnpm eval:regression` with DeepEval GEval.
-The judge defaults to Bedrock `us.openai.gpt-5.6-sol`, explicit AWS profile `default`,
+The judge defaults to Bedrock `us.openai.gpt-6.1-sol`, explicit AWS profile `default`,
 and region `us-east-1`; `--model` selects only the Claude Code target agent.
 Its fixture tool boundary, live opt-in, framework integration, and HTML report workflow
 are documented in `plugins/adr-writer/evals/deepeval/README.md`. `test:deepeval` is a
 workspace-only SDK integration suite included in `pnpm test`; the bare-Node runtime
 suite remains dependency-free. `pnpm eval:custom` retains the earlier grader.
 `eval:golden` exports the 11-case corpus and pinned provenance without model calls.
-`eval:calibration` checks the judge against 21 authored examples; labels are explicit
+`eval:calibration` checks the judge against 37 authored examples; labels are explicit
 AI drafts until human review, and their agreement is not human-ground-truth accuracy.
 
 ## Repository Structure
@@ -320,6 +321,18 @@ codex plugin add adr-writer@alps-writer
 - **adr-writer** ships local `skills/`, `agents/`, `hooks/`, and `templates/adr/`. Codex requires users to review and trust the bundled hook before it runs. No MCP.
 
 The hook script (in adr-writer) is Node ESM (`.mjs`) and reads NDJSON events from stdin per the Claude Code hooks spec. It uses only Node built-ins (no extra deps), so the plugin requires nothing beyond a Node.js >= 24 runtime.
+
+### Proportional implementation and review
+
+An unchanged approved implementation proceeds at every comprehension-load score;
+high load can prompt non-blocking split guidance. Independent Implementation
+Hills may run in parallel/batches or become the primary work while another
+verifies. Actual prerequisites and shared-resource conflicts retain their order.
+Review mode uses changed protected surfaces and actual impact, not existing
+implementation breadth. Standard can use a short Context, capability claims,
+complete contract coverage and direct code evidence; detailed zooms are optional.
+Selected rich interactions keep their existing delivery route. Compact standard
+can render the final shared-report HTML directly from validated native artifacts.
 
 ### Shared report-writing skill
 

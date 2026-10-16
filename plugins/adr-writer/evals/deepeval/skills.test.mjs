@@ -62,6 +62,9 @@ test("a broad review filter cannot opt into a separate real repository", async (
     id: "review-real-repo-adr",
     type: "classification",
     title: "Explicit real-repository opt-in",
+    semanticObligations: [
+      { id: "scope", text: "Inspect only the explicitly selected local repository." },
+    ],
     build: () => {
       builds++;
       return "Local probe";

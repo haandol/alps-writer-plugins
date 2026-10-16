@@ -9,6 +9,10 @@ import { EVALUATION_STEPS, deepEvalInput, evaluateEvidence } from "./engine.mjs"
 import { saveDeepEvalReport } from "./report.mjs";
 import { prepareCoverageVisuals } from "./coverage-render.mjs";
 import { BEDROCK_DEFAULTS } from "./bedrock.mjs";
+import { cases as currentCases } from "../regression/cases.mjs";
+import { executionChecks } from "../lib/execution-checks.mjs";
+import { capturedChecks } from "../skills/mechanical-checks.mjs";
+import { verifierIdentity } from "../lib/verifier-identity.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../../../..");
@@ -107,12 +111,12 @@ then DeepEval GEval evaluates the actual evidence. The custom judge is skipped.
 --live explicitly permits LLM calls. --prepare only exports the dataset.
 --out must be a new/empty directory. --model selects the Claude Code target model.
 DeepEval defaults: Bedrock, profile default, region us-east-1,
-model us.openai.gpt-5.6-sol. --judge-model / --judge-profile / --judge-region override them.
+model us.openai.gpt-6.1-sol. --judge-model / --judge-profile / --judge-region override them.
 --judge-provider claude explicitly selects the legacy Claude Code judge.
 No automatic provider fallback, Confident AI upload or telemetry is enabled.
 `;
 
-export async function main(args) {
+export async function main(args, injected = {}) {
   const options = parseDeepEvalArgs(args);
   if (options.list && options.from) throw new Error("omit --from when listing built-in cases");
   if (options.list || (options.prepare && !options.from)) return collect(options.collectorArgs);
@@ -207,6 +211,21 @@ export async function main(args) {
         calls: [],
         models: [],
         targetModels: [...new Set(original.models ?? [])],
+        modelIdentityIncomplete:
+          !original.calls?.length ||
+          original.calls.some(
+            (c) => !c.models?.length || c.modelEvidence === "requested-bedrock-inference-profile",
+          ),
+        conditionHash: original.conditionHash
+          ? sha({
+              source: original.conditionHash,
+              dataset: source.datasetHash,
+              judge: options.judge,
+              rubric: report.rubricHash,
+              framework: report.frameworkVersion,
+              verifier: verifierIdentity(),
+            })
+          : null,
       };
       const started = Date.now();
       let phase = "evidence";
@@ -222,11 +241,27 @@ export async function main(args) {
         const input = deepEvalInput(item, evidence);
         writeFileSync(path.join(target, "test-case.json"), JSON.stringify(input, null, 2));
         if (options.live) {
+          const currentCase = currentCases.find((c) => c.id === item.id);
+          const execution = { ...item, type: "execution" };
+          record.checks = capturedChecks(execution, {
+            before: evidence.before,
+            files: evidence.after,
+            events: evidence.events,
+          });
+          record.checks.push(
+            ...executionChecks(
+              path.join(target, "check-workspace"),
+              execution,
+              currentCase && { ...currentCase, type: "execution" },
+              evidence,
+              path.resolve(HERE, "../.."),
+            ),
+          );
           phase = "deepeval";
           process.stdout.write(
             `DeepEval GEval: ${item.id} ${original.variant} ${original.repeat}\n`,
           );
-          const result = await evaluateEvidence({
+          const result = await (injected.evaluate ?? evaluateEvidence)({
             item,
             evidence,
             name: `${item.id}/${original.variant}/${original.repeat}`,
@@ -237,6 +272,11 @@ export async function main(args) {
             region: options.judge.region,
             timeoutMs: options.timeout * 1000,
             onCall(response) {
+              if (
+                !response.models?.length ||
+                response.modelEvidence === "requested-bedrock-inference-profile"
+              )
+                record.modelIdentityIncomplete = true;
               record.calls.push({ ...response, text: undefined, structured: undefined });
               record.models.push(...response.models);
               writeFileSync(
@@ -246,6 +286,8 @@ export async function main(args) {
             },
           });
           Object.assign(record, result);
+          if (record.verdict === "PASS" && record.checks.some((c) => !c.pass))
+            record.verdict = "NOT_PROVEN";
         }
       } catch (error) {
         record.verdict = phase === "evidence" ? "NOT_EVALUABLE" : "ERROR";

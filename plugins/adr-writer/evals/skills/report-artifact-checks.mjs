@@ -85,6 +85,10 @@ export function checkReportArtifact({ files, events, source }) {
   return checks;
 }
 
-export function scoreReportArtifact({ dir, events }, source) {
-  return checkReportArtifact({ files: snapshot(dir), events, source });
+export function scoreReportArtifact({ dir, events, before, files }, source) {
+  return checkReportArtifact({
+    files: files ?? snapshot(dir),
+    events,
+    source: before?.["source.md"] ?? source,
+  });
 }

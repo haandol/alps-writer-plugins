@@ -16,6 +16,9 @@ import {
   snapshot,
   listFiles,
 } from "../regression/workspace.mjs";
+import { semanticPrompt } from "./response-contract.mjs";
+import { capturedChecks } from "./mechanical-checks.mjs";
+import { checkRequiredGuidance } from "../lib/required-guidance.mjs";
 import { parseTail } from "../lib/harness.mjs";
 import { scenarioNamesForChangedPaths } from "../impact-map.mjs";
 import { BEDROCK_DEFAULTS } from "../deepeval/bedrock.mjs";
@@ -30,6 +33,7 @@ const HELP = `Skill evaluation — classification, routing, execution
   pnpm eval:skills --live --suite execution --compare both --baseline HEAD~1
   pnpm eval:skills --live --suite routing --runs 3
   pnpm eval:skills --report .codex/evals/<run> --open
+  pnpm eval:skills --live --rejudge .codex/evals/<run> --jobs 2
 
 Defaults: --prepare, --suite all, --runs 3, --compare none. --live explicitly
 permits target and semantic-judge calls. Deterministic scorers do not call a judge.
@@ -66,6 +70,7 @@ export function parseSkillsArgs(args) {
     "judge-region",
     "judge-provider",
     "report",
+    "rejudge",
     "reference-date",
   ]);
   for (let i = 0; i < args.length; i++) {
@@ -85,6 +90,13 @@ export function parseSkillsArgs(args) {
     throw new Error("Live cannot be combined with preparation, listing or report-only");
   if (o.report && args.some((arg) => arg.startsWith("--") && !["--report", "--open"].includes(arg)))
     throw new Error("Report-only accepts --report and --open");
+  if (
+    o.rejudge &&
+    args.some((a) => ["--runs", "--model", "--target-profile", "--target-region"].includes(a))
+  )
+    throw new Error("Rejudge reuses captured target replies and repeat counts");
+  if (o.rejudge && (o.changed || o.compare !== "none" || o.baseline || o.list || o.report))
+    throw new Error("Rejudge uses captured cases; omit changed/compare/baseline/list/report");
   if (o.changed && o.only) throw new Error("Choose --changed or --only");
   if (["versions", "both"].includes(o.compare) !== Boolean(o.baseline))
     throw new Error("Version comparison requires --compare versions|both and --baseline");
@@ -286,7 +298,7 @@ async function runRouting(item, record, folder, entries, options, dependencies) 
   record.verdict = record.checks.every((c) => c.pass) ? "PASS" : "NOT_PROVEN";
 }
 
-/** Retain existing scorers while collecting isolated replies, actual files and semantic-judge calls. */
+/** Judge captured replies semantically while retaining objective artifact and action checks. */
 async function runClassification(item, record, folder, pluginRoot, options, dependencies) {
   validateReportEvaluation(item);
   if (item.id === "review-real-repo-adr" && options.only !== item.id) {
@@ -294,9 +306,11 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
       "외부 저장소 사례는 --only review-real-repo-adr로 명시하고 입력을 설정해야 합니다.";
     return;
   }
+  if (!Array.isArray(item.semanticObligations) || !item.semanticObligations.length)
+    throw new Error("Classification requires fixed semantic obligations before target execution");
   const root = path.join(folder, "workspace");
   mkdirSync(root);
-  const prompt = await item.build(root);
+  const prompt = semanticPrompt(await item.build(root));
   checkReferences(prompt, pluginRoot);
   const log = path.join(folder, "events.jsonl");
   // Validate case capabilities before any paid target invocation.
@@ -347,16 +361,21 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
     .filter(Boolean)
     .map((line) => JSON.parse(line));
   json(folder, "evidence.json", { reply: response.text, tail, files, events: rawEvents });
-  if (!response.text?.trim() || !tail.complete)
-    throw new Error("Missing scorable reply or machine-readable tail");
-  if (!item.semanticObligations || item.supplementalChecks) {
-    record.checks = await item.score({ tail, output: response.text, dir: root, events });
-    if (
-      !Array.isArray(record.checks) ||
-      !record.checks.length ||
-      record.checks.some((c) => typeof c.pass !== "boolean")
-    )
-      throw new Error("No valid scorer checks");
+  if (!response.text?.trim()) throw new Error("Missing scorable reply");
+  const before = JSON.parse(readFileSync(path.join(folder, "input.json"), "utf8")).files;
+  record.checks = capturedChecks(item, { before, files, events });
+  if (item.supplementalChecks && item.score) {
+    const additional = await item.score({
+      tail,
+      output: response.text,
+      dir: root,
+      events,
+      before,
+      files,
+    });
+    if (!Array.isArray(additional) || additional.some((check) => typeof check.pass !== "boolean"))
+      throw new Error("Invalid mechanical artifact checks");
+    record.checks.push(...additional);
   }
   if (item.semanticObligations) {
     const input = JSON.parse(readFileSync(path.join(folder, "input.json"), "utf8"));
@@ -377,8 +396,6 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
     );
     if (record.verdict === "PASS" && record.checks?.some((c) => !c.pass))
       record.verdict = "NOT_PROVEN";
-  } else {
-    record.verdict = record.checks.every((c) => c.pass) ? "PASS" : "NOT_PROVEN";
   }
 }
 
@@ -426,11 +443,13 @@ async function runExecution(
   createWorkspace(prepared, item.build(), candidate.root);
   const tools = makeTools({
     root: prepared,
-    pluginRoot: candidate.root,
+    pluginRoot: variant.root,
+    checkerRoot: candidate.root,
     logPath: path.join(folder, "checks.jsonl"),
     turn: 0,
     artifactPaths: item.artifactPaths,
   });
+  if (variant.guidance !== false) checkRequiredGuidance(item, tools);
   const checks = [
     tools.call("run_check", { kind: "policy-tests" }),
     tools.call("run_check", { kind: "structure" }),
@@ -513,6 +532,11 @@ export async function main(args, injected = {}) {
     process.stdout.write(HELP);
     return { status: 0 };
   }
+  if (options.rejudge) {
+    const result = await (await import("./rejudge.mjs")).rejudge(options, injected);
+    if (options.open) (injected.open ?? openReport)(result.html);
+    return result;
+  }
   if (options.report) {
     const html = renderSavedSkillsReport(options.report);
     if (options.open) (injected.open ?? openReport)(html);
@@ -584,6 +608,7 @@ export async function main(args, injected = {}) {
     : null;
   const report = {
     schemaVersion: 1,
+    scoringPolicy: "semantic-v1",
     framework: "skill-evals",
     generatedAt: new Date().toISOString(),
     mode: options.live ? "LIVE" : "PREPARED",

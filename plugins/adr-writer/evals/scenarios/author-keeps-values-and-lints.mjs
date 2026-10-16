@@ -1,3 +1,4 @@
+import { authorArtifactChecks } from "../skills/mechanical-checks.mjs";
 // Scenario: the generate-then-evaluate direction.
 //
 // Instead of handing the agent a finished ADR, hand it /adr-new's authoring
@@ -196,4 +197,12 @@ function findFirstAdr(dir) {
     }
   }
   return null;
+}
+
+export function mechanicalScore(input) {
+  return [
+    ...authorArtifactChecks(input),
+    ...authoringEvidenceChecks(input.events, { draftRoot, category: "media/upload" }),
+    expectLintClean(input.dir),
+  ];
 }

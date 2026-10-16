@@ -127,13 +127,14 @@ export async function catalog() {
     const {
       default: scenario,
       obligations,
-      deterministicScore,
+      mechanicalScore,
     } = await import(path.join(folder, file));
     const authoredObligations = obligations ?? scenario.obligations;
-    const localScore = deterministicScore ?? scenario.deterministicScore;
+    const localScore = mechanicalScore ?? scenario.mechanicalScore;
+    const id = scenario.name;
     classification.push({
       ...scenario,
-      score: localScore ?? scenario.score,
+      score: localScore,
       id: scenario.name,
       title: scenario.description,
       type: "classification",
@@ -141,7 +142,8 @@ export async function catalog() {
       scorerHash: sha(readFileSync(path.join(folder, file), "utf8")),
       semanticObligations: authoredObligations ?? responseObligations(scenario),
       // An explicit semantic scorer must not also invoke its legacy LLM judge.
-      supplementalChecks: Boolean(localScore) || !authoredObligations,
+      supplementalChecks: Boolean(localScore),
+      scoringPolicy: "semantic-v1",
       group: scenario.name.split("-")[0],
     });
   }

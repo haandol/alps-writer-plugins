@@ -12,7 +12,7 @@ test("shared comprehension guidance selects scoring and split-decision scenarios
     "comprehension-load-score-only",
     "comprehension-load-calibration-bands",
     "alps-high-load-suggests-feature-split",
-    "impl-high-load-asks-before-split",
+    "impl-high-load-keeps-progress",
     "impl-offers-stacked-pr-fallback",
     "author-keeps-values-and-lints",
     "feature-handoff-ownership-transfer",

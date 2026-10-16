@@ -92,7 +92,7 @@ test("post-save policy is reachable explicitly without loading it during authori
 
 test("follow-up catalog keeps decision checks separate from semantic review evidence", async () => {
   const item = (await catalog()).find((entry) => entry.id === scenario.name);
-  assert.equal(item.score, deterministicScore);
+  assert.equal(item.score, undefined);
   assert.deepEqual(item.semanticObligations, obligations);
-  assert.ok(item.score(response()).every((check) => check.pass));
+  assert.equal(item.supplementalChecks, false);
 });

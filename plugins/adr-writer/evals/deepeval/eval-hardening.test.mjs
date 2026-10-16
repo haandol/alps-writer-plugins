@@ -97,7 +97,7 @@ test("a semantic PASS cannot hide a forbidden response-only write after catalog 
   assert.equal(result.report.runs[0].verdict, "NOT_PROVEN");
   assert.ok(
     result.report.runs[0].checks.some(
-      (c) => c.label === "response task invokes no tools" && !c.pass,
+      (c) => c.label === "mutations remain within fixture task permissions" && !c.pass,
     ),
   );
 });

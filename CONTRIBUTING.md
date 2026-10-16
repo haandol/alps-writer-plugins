@@ -193,7 +193,7 @@ Automated in two places, so you rarely have to remember:
 
 Behaviour evals (`plugins/adr-writer/evals/`) are **not** part of `pnpm test` —
 they call a real model, cost money, and are non-deterministic. Run them by hand
-when reproducing a reported LLM defect: `node evals/run.mjs --only <name> --runs 10`.
+when reproducing a reported LLM defect: `node evals/run.mjs --live --only <name> --runs 10`.
 
 The [rollup/sync regression suite](./plugins/adr-writer/evals/deepeval/README.md)
 adds actual fixture edits, DeepEval GEval judgments, and local HTML/JSON reports.

@@ -398,6 +398,11 @@ export function saveSkillsReport(directory, report) {
     scope: "원본 결과의 재현과 한계",
     paragraphs: [
       `평가 시각 ${report.generatedAt}. 선택 ${JSON.stringify(report.selection)}. 반복 ${report.runsPerCase}회. ${summaryText(report.runs)}`,
+      ...(report.sourceReport
+        ? [
+            `재판정: ${report.sourceReport}. 대상 응답은 재사용했으며 새로 생성하지 않았습니다. 이전 검사 정책 ${report.sourceScoringPolicy}, 현재 ${report.scoringPolicy}. 판정 정책 변경에 따른 점수 차이는 Skill 행동 개선율이 아닙니다.`,
+          ]
+        : []),
       `환경 ${JSON.stringify(report.runtime)}. 평가 집합 ${report.datasetHash}. 준비 결과는 모델 성능 측정이 아닙니다. 미사용 조건에서도 필수 제품·조직 계약과 초기 파일은 유지합니다.`,
       "비교 예시(가상): 동일한 100개 유효 쌍에서 미사용 60회, 사용 85회 충족이면 85% − 60% = +25%p입니다. 오류가 있거나 모델·실행 조건이 다르면 해당 쌍을 제외하며, 유효한 쌍이 없으면 차이를 계산하지 않습니다.",
       "판정·시각 검토는 자동 렌더링과 별개입니다. 실제 클라이언트 자동 호출, 배포 환경과 일반 사용자 전체에 대한 효과는 이 평가에서 입증하지 않습니다.",

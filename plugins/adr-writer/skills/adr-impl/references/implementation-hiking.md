@@ -24,16 +24,17 @@ entry.
    - **Implementation** — every UI, API, data, and external-system change needed
      to make the vertical result work;
    - **Verification** — the targeted ideal case, relevant counterexample,
-     command, and actual entry-point result required before moving to the next Hill.
+     command, and actual entry-point result required to count the Hill as verified.
      Preserve the given input, evidence and decision rule for each obligation;
      classify missing/failed execution separately from an observed product violation.
      Read the assertions that distinguish compliance from a violation. Connect
      relevant boundary/interaction cases and justified edge exclusions to the
      same obligation. Keep code-inspected and test-verified coverage separate;
      a green test that omits a required assertion leaves this Hill incomplete.
-4. Finish the Hill's implementation and targeted verification before making the
-   next Hill the primary work unit. A failing or unexecuted core path keeps the
-   Hill open.
+4. Choose order, parallelism or batching from actual dependencies and shared-resource
+   conflicts. An independent Hill may become the primary work unit while another
+   verifies. A failing or unexecuted core path remains unverified and cannot be
+   counted as complete; it does not block unrelated authorized work.
 5. After every Hill has implementation evidence and passing targeted tests, run the full project verification and the
    risk-selected implementation review. Reuse the same Hill boundaries in
    Review Hiking when they still reflect the shipping behavior.

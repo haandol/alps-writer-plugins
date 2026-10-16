@@ -20,7 +20,7 @@
 ## 실행
 
 저장소 루트에서 `pnpm install`을 먼저 수행한다. 스킬 실행은 로그인된 Claude Code
-CLI를 사용한다. DeepEval 판정은 Bedrock의 `us.openai.gpt-5.6-sol`을 AWS `default`
+CLI를 사용한다. DeepEval 판정은 Bedrock의 `us.openai.gpt-6.1-sol`을 AWS `default`
 프로필, `us-east-1` 리전으로 호출한다. 해당 프로필에 모델 호출 권한이 필요하고 실제
 호출 비용이 발생한다.
 
@@ -61,7 +61,7 @@ pnpm eval:deepeval --prepare --from .codex/evals/captured-run
 | `--judge-provider` | `bedrock`               |
 | `--judge-profile`  | `default`               |
 | `--judge-region`   | `us-east-1`             |
-| `--judge-model`    | `us.openai.gpt-5.6-sol` |
+| `--judge-model`    | `us.openai.gpt-6.1-sol` |
 
 기존 Claude Code 판정기는 `--judge-provider claude`로 명시적으로 선택한다.
 Bedrock 오류 시 다른 모델이나 제공자로 자동 전환하지 않는다.

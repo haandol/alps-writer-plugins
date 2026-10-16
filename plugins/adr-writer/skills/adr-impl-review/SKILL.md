@@ -23,17 +23,17 @@ The review establishes the following evidence dependencies; orchestration remain
 ```mermaid
 flowchart TD
     ADR["Target ADR"] --> SCOPE["Find complete implementation scope"]
-    SCOPE --> CONTEXT["Write Context: intent, contracts, scope"]
-    CONTEXT --> HIKE["Review Container/Hill → Component → Code"]
+    SCOPE --> RISK
+    STANDARD --> CONTEXT["Short Context + behavior and code evidence"]
+    FULL --> HIKE["Review Container/Hill → Component → Code"]
     CHANGE["Implementation change context"] --> RISK{"Protected surface?"}
-    HIKE --> RISK
     RISK -->|No| STANDARD["Standard: ledger + sufficiency + targeted tests"]
     RISK -->|Yes or unclear| FULL["Full: necessity + sufficiency + evidence artifacts"]
-    STANDARD --> RULING["Validated HTML Evidence Package"]
-    FULL --> RULING
+    CONTEXT --> RULING["Validated HTML Evidence Package"]
+    HIKE --> RULING
 ```
 
-In full mode, the necessity and sufficiency perspectives are grounded separately and do not see each other's conclusions before synthesis (section 3). They may run in parallel or sequentially. Standard mode runs only the sufficiency perspective defined below. The user's intent and the ADR's regeneration checklist are settled before implementation; this command consumes that baseline and does not reopen it as a routine post-implementation gate.
+In full mode, the necessity and sufficiency perspectives are grounded separately and do not see each other's conclusions before synthesis (section 3). They may run in parallel or sequentially. Standard mode runs only the sufficiency perspective defined below and may use compact evidence presentation. The user's intent and the ADR's regeneration checklist are settled before implementation; this command consumes that baseline and does not reopen it as a routine post-implementation gate.
 
 This is not a mathematical proof of necessity and sufficiency. It is **a disproof-based review that hunts for unnecessary changes and missing behavior from two different perspectives.** A passing test is only evidence that no counterexample was found among the cases actually executed — not a proof of completeness.
 
@@ -147,24 +147,21 @@ path to every agent that follows. Record the review start time when this directo
 is created. The final artifact records the selected mode and rationale,
 elapsed time, per-perspective finding counts, unverified-risk count, and executed test-command count.
 
-### 1.1 Build the Review Hiking route
+### 1.1 Select the review mode
 
-Read `references/review-hiking.md` completely. Then read
-`references/visualization.md` completely. They own Context,
-Container/Hill, Component, Code evidence, contract assignment, test selection,
-ephemeral state, and perspective isolation. Produce `reviewHike.context` and
-`reviewHike.hills` before mode selection. If
-`/adr-impl` supplies Implementation Hill boundaries, reuse them when they match
-shipping user flows, capabilities, or bounded contexts; adjust only when final
-evidence shows a different vertical boundary.
+Read `${CLAUDE_PLUGIN_ROOT}/references/implementation-review-mode.md` and record
+`reviewMode` with change and impact evidence. Select this before preparing the
+explanation structure. Both modes retain the complete contract coverage.
 
-### 1.2 Select the review mode
+### 1.2 Choose the explanation depth
 
-Use `full` when any of these surfaces changes: requirement values or rules, public API or wire form, schema or persistence, state or transitions, permissions or visibility, security boundaries, external fallback, concurrency, transactions, resource lifetime, or error semantics. Also use `full` when the complete implementation scope spans bounded contexts or broad modules, when the user requests a full review, or whenever classification is unclear.
-
-Use `standard` only for localized implementation or reinforcement of an existing decision that changes none of those protected surfaces. An explicit `--mode standard` never overrides the criteria; upgrade it to `full` and explain why. An explicit `--mode full` is always honored.
-
-Record `reviewMode` and the classification evidence in the artifacts.
+For a local standard review, a short Context and each vertical capability's
+claim, contract rows and direct code evidence suffice. Container/Component
+zooms and repeated example/assessment fields are optional. Read
+[Review Hiking](references/review-hiking.md) when preparing detailed zooms;
+read [visualization](references/visualization.md) when diagrams help the reader.
+Reuse Implementation Hill boundaries when they still match shipping behavior.
+For full mode, apply both modules and their detailed evidence structure.
 
 ### 1.3 Prepare optional explanation input
 

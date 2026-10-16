@@ -18,8 +18,8 @@ import { renderGoldenReport } from "./golden-report.mjs";
 
 const PLUGIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 test("all calibration labels are explicit unreviewed drafts with valid primary obligations", () => {
-  assert.equal(calibrationCases.length, 21);
-  assert.equal(new Set(calibrationCases.map((c) => c.id)).size, 21);
+  assert.equal(calibrationCases.length, 37);
+  assert.equal(new Set(calibrationCases.map((c) => c.id)).size, 37);
   assert.ok(calibrationCases.every((c) => c.labelStatus === "needs-human-review"));
   for (const split of ["development", "holdout"]) {
     const selected = calibrationCases.filter((c) => c.split === split);

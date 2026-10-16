@@ -9,6 +9,7 @@ import scenario, {
   fixtureFiles,
   obligations,
   deterministicScore,
+  mechanicalScore,
 } from "../evals/scenarios/import-cycle-options-batch.mjs";
 import { parseTail } from "../evals/lib/harness.mjs";
 import { createWorkspace, makeTools, snapshot } from "../evals/regression/workspace.mjs";
@@ -214,7 +215,7 @@ test("cycle scenario loads the current conditional reference and is catalogued w
     );
   const registered = (await catalog()).find((entry) => entry.id === scenario.name);
   assert.equal(registered.type, "classification");
-  assert.equal(registered.score, deterministicScore);
+  assert.equal(registered.score, mechanicalScore);
   assert.deepEqual(registered.semanticObligations, obligations);
   assert.equal(registered.supplementalChecks, true);
   assert.deepEqual(

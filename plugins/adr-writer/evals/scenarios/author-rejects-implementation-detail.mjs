@@ -128,3 +128,5 @@ function findNumberedAdrFiles(root) {
   }
   return out;
 }
+
+export const mechanicalScore = deterministicScore;

@@ -462,19 +462,38 @@ test("parallel case workers keep a bounded count and await owned work after an e
 test("a model change or missing model identity prevents a prompt-regression conclusion", () => {
   const before = {
     verdict: "PASS",
+    conditionHash: "same-fixed-task-rubric-verifier-and-limits",
     referenceDate: "2026-09-19",
     calls: [
       { stage: "target", models: ["model-a"] },
       { stage: "judge", models: ["judge"] },
     ],
   };
-  const after = { verdict: "FAIL", referenceDate: before.referenceDate, calls: before.calls };
+  const after = { ...before, verdict: "FAIL" };
   assert.equal(compareRuns(before, after), "REGRESSION");
   assert.equal(
     compareRuns(before, { ...after, calls: [{ stage: "target", models: ["model-b"] }] }),
     "INCONCLUSIVE",
   );
   assert.equal(compareRuns({ verdict: "PASS" }, after), "INCONCLUSIVE");
+  assert.equal(
+    compareRuns(before, { ...after, conditionHash: "different-rubric" }),
+    "INCONCLUSIVE",
+  );
+  assert.equal(
+    compareRuns(before, {
+      ...after,
+      calls: [
+        {
+          stage: "target",
+          models: ["model-a"],
+          modelEvidence: "requested-bedrock-inference-profile",
+        },
+        { stage: "judge", models: ["judge"] },
+      ],
+    }),
+    "INCONCLUSIVE",
+  );
   assert.equal(
     compareRuns({ ...before, pluginHash: "identical" }, { ...after, pluginHash: "identical" }),
     "SAME_SNAPSHOT",

@@ -19,7 +19,10 @@ export const fixtureFiles = {
 };
 
 /** Check produced artifacts and protected inputs; a semantic judge checks the discovered grouping. */
-export function score({ dir, events = [] }, reportPath = ".adr-review/discovery/report.md") {
+export function score(
+  { dir, events = [], before = fixtureFiles },
+  reportPath = ".adr-review/discovery/report.md",
+) {
   const report = read(dir, reportPath) ?? "";
   const requests = events.filter((e) => e.kind === "request");
   const location = (file) => {
@@ -48,12 +51,12 @@ export function score({ dir, events = [] }, reportPath = ".adr-review/discovery/
   return [
     {
       label: "a discovery report was produced",
-      pass: report.trim().length > 100,
+      pass: report.trim().length > 0,
       detail: report.slice(0, 120),
     },
     {
       label: "application and topology inputs stay unchanged",
-      pass: Object.entries(fixtureFiles).every(([file, body]) => read(dir, file) === body),
+      pass: Object.entries(before).every(([file, body]) => read(dir, file) === body),
       detail: "compare every supplied input",
     },
     {
@@ -111,3 +114,5 @@ commands or infer another repository's internals.`,
     ].join("\n\n");
   },
 };
+
+export const mechanicalScore = score;

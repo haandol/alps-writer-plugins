@@ -21,7 +21,7 @@ const response = {
   $metadata: { requestId: "test-request" },
 };
 
-test("DeepEval defaults to Bedrock default / GPT-5.6 Sol independently of target model", () => {
+test("DeepEval defaults to Bedrock default / GPT-6.1 Sol independently of target model", () => {
   assert.deepEqual(parseDeepEvalArgs(["--model", "target-model"]).judge, BEDROCK_DEFAULTS);
   const explicit = parseDeepEvalArgs([
     "--judge-profile",
@@ -84,7 +84,7 @@ test("Bedrock adapter preserves prompt, schema, model and usage and closes its c
     clientFactory: (config) => ({
       async send(command, options) {
         assert.equal(config.region, "us-east-1");
-        assert.equal(command.input.modelId, "us.openai.gpt-5.6-sol");
+        assert.equal(command.input.modelId, "us.openai.gpt-6.1-sol");
         assert.equal(command.input.messages[0].content[0].text, "Complete evidence");
         assert.match(command.input.system[0].text, /JSON Schema/);
         assert.equal(command.input.toolConfig, undefined);
@@ -98,7 +98,7 @@ test("Bedrock adapter preserves prompt, schema, model and usage and closes its c
   });
   assert.equal(closed, 1);
   assert.equal(result.structured.score, 0);
-  assert.deepEqual(result.models, ["us.openai.gpt-5.6-sol"]);
+  assert.deepEqual(result.models, ["us.openai.gpt-6.1-sol"]);
   assert.deepEqual(result.usage, response.usage);
   assert.equal(result.costUSD, null);
   assert.equal(result.profile, "default");
@@ -194,6 +194,6 @@ test("actual GEval can use Bedrock transport and the report names the selected p
   });
   assert.match(html, /Bedrock Converse/);
   assert.match(html, /AWS 프로필 default/);
-  assert.match(html, /us.openai.gpt-5.6-sol/);
+  assert.match(html, /us.openai.gpt-6.1-sol/);
   assert.doesNotMatch(html, /어댑터가 기존 Claude Code 제공자 설정을 사용/);
 });

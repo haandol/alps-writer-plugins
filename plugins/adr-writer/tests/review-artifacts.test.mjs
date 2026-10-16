@@ -1577,6 +1577,12 @@ test("review artifact validator accepts concise standard-mode artifacts without 
     findings.reviewMode = "standard";
     findings.reviewHike = validParserReviewHike();
     findings.verdict = "PASS";
+    for (const field of ["contractCompleteness", "testSufficiency"])
+      findings.reviewDiagnostics[field] = {
+        status: "CLEAR",
+        assessment: "Parser contract and targeted assertions are complete.",
+        evidence: "node --test test/parser.test.mjs — PASS",
+      };
     findings.atAGlance = { ...STANDARD_AT_A_GLANCE };
     findings.comprehensionCheck = validParserComprehensionCheck();
     findings.findings = [];
@@ -1621,6 +1627,12 @@ test("review artifact validator accepts PASS without metrics, comprehension, or 
     findings.reviewMode = "standard";
     findings.reviewHike = validParserReviewHike();
     findings.verdict = "PASS";
+    for (const field of ["contractCompleteness", "testSufficiency"])
+      findings.reviewDiagnostics[field] = {
+        status: "CLEAR",
+        assessment: "Parser contract and targeted assertions are complete.",
+        evidence: "node --test test/parser.test.mjs — PASS",
+      };
     findings.atAGlance = { ...STANDARD_AT_A_GLANCE };
     delete findings.metrics;
     delete findings.comprehensionCheck;
@@ -1733,7 +1745,7 @@ test("PASS rejects omitted ADR rows, duplicate IDs, unexecuted tests, and blocki
     assert.equal(result.status, 1);
     assert.match(result.stderr, /duplicate contractId: D0/);
     assert.match(result.stderr, /missing ADR contract row: R1/);
-    assert.match(result.stderr, /tests must not contain failed or unexecuted results/);
+    assert.match(result.stderr, /clear structured test-sufficiency/);
     assert.match(result.stderr, /at least one executed test/);
     assert.match(result.stderr, /unresolved blocking findings: 1/);
   });
@@ -1879,16 +1891,16 @@ test("review artifact validator requires one or two revisit questions", () => {
   });
 });
 
-test("review artifact validator rejects praise, scores, and gamification in self-check feedback", () => {
+test("structural artifact validation leaves feedback meaning to the reviewer", () => {
   withArtifacts((dir) => {
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
     writeFileSync(path.join(dir, "implementation-review.md"), validReport());
     const findings = validFindings(dir);
-    findings.comprehensionCheck.questions[0].options[0].feedback = "Great job — 10 points.";
+    findings.comprehensionCheck.questions[0].options[0].feedback =
+      "The phrase Great job is not an explanation of the contract boundary.";
     writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
 
     const result = validate(dir);
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /feedback must stay neutral and unscored/);
+    assert.equal(result.status, 0, result.stderr);
   });
 });

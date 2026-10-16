@@ -1,7 +1,8 @@
 # Review Hiking
 
-Read this reference after the complete implementation scope is fixed and before
-the review mode and perspective execution are planned.
+Read this reference after selecting the review mode when preparing detailed zooms.
+Compact standard uses the short presentation contract in artifact-schema.md;
+its omitted zoom fields do not relax contract or code/test evidence requirements.
 
 Treat the complete review as **Review Hiking**: one or more low **Hills** whose
 contracts, implementation evidence, and targeted test results the reader can
