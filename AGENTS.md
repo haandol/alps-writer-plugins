@@ -94,7 +94,7 @@ Root is a private pnpm workspace; the MCP server package lives in `plugins/alps-
 
 ```bash
 pnpm install          # Install dependencies (whole workspace)
-pnpm test             # ALPS, dependency-free ADR, and DeepEval integration tests; blocks pre-push
+pnpm test             # Asset/guidance checks, ALPS, then pooled ADR/DeepEval/browser tests
 pnpm build            # Bundle the alps-writer MCP server (pnpm --filter alps-writer build)
 pnpm lint             # ESLint the MCP server
 pnpm format           # Prettier across the repo
@@ -123,7 +123,7 @@ Both `package.json` files are **deliberately pinned to `0.0.0`** and are not par
 
 Build (inside `plugins/alps-writer/`) runs `tsc --noEmit` (typecheck), then esbuild bundles `src/index.ts` → `dist/index.js` with deps inlined (ESM, node24 target), then copies static assets `cp -r src/templates dist/ && cp -r src/guides dist/`. The asset copy is required because the server reads XML templates / MD guides at runtime via `fs.readFileSync` (`import.meta.url`-relative). **`dist/` is committed** — regenerate and commit it whenever `src/` changes.
 
-Tests use Node's built-in test runner. ALPS TypeScript tests run through `tsx`; ADR tests are dependency-free `.mjs` tests. Run all suites with `pnpm test`.
+Tests use Node's built-in test runner. ALPS TypeScript tests run through `tsx`; ADR tests are dependency-free `.mjs` tests. `pnpm test` checks generated assets and synchronized guidance, runs ALPS, then schedules ADR, DeepEval and browser test files together in one Node worker pool. This overlaps independent tests without multiplying the CPU-based worker limit across separate runners. `pnpm test:workspace` runs the same checks and installed-dependency suites; CI pairs it with the complete ADR suite in the no-install `runtime` job. Each test file retains process isolation and every suite failure blocks success.
 
 **Behaviour evals** (`plugins/adr-writer/evals/`) are separate and NOT in `pnpm test`. `pnpm test` proves a prompt _says_ something; the evals check whether an agent given that prompt _does_ it, by running real scenarios against a live model and reporting per-check hit rates. They cost money, take minutes, and are non-deterministic, so they never gate CI — their job is reproducing a reported defect (`node evals/run.mjs --live --only <name> --runs 10`) and telling you whether it happens 3/10 or 10/10, which decides the fix. Use `node evals/run.mjs --changed <base> --list` to preview the disposable impact-map selection for a branch without invoking a model. The harness itself _is_ covered by `pnpm test` via a stub agent, because an eval whose scorer cannot tell a bad reply from a good one reports green and is worse than no eval. See `plugins/adr-writer/evals/README.md`.
 
@@ -492,7 +492,7 @@ Verify before completing any task:
 These are automated in two places, so the list above is what you run locally to
 avoid a round trip — not the only thing standing between a bad commit and `main`:
 
-- **`.husky/pre-push`** — everything CI runs, all blocking, ~20s: typecheck,
+- **`.husky/pre-push`** — everything CI runs, all blocking: typecheck (inside build),
   `pnpm test`, `lint`, `format:check`, `bump:check`, the committed-bundle boot and
   hook-start checks, and the dist-drift rebuild. The rule is **if CI fails on it,
   pre-push fails on it** — the two were split before, so a push could be green
@@ -506,10 +506,10 @@ avoid a round trip — not the only thing standing between a bad commit and `mai
   regenerated. With the checks the other way round a hand-edited or truncated
   `dist/` passed, because the file under test was no longer the file in the commit.
 
-- **`.github/workflows/ci.yaml`** — three jobs, all on Node 24. `test` runs the
-  suite; `build` adds lint, `format:check`, `bump:check`, and a rebuild that fails
-  if the committed `plugins/alps-writer/dist/` differs; `runtime` re-runs what a
-  consumer executes with **no install step**. The hooks only exist for someone who
+- **`.github/workflows/ci.yaml`** — three jobs, all on Node 24. `test` runs
+  `test:workspace`; `build` adds lint, `format:check`, `bump:check`, and a rebuild
+  that fails if the committed `plugins/alps-writer/dist/` differs; `runtime` runs
+  the complete ADR suite once and checks consumer entry points with **no install step**. The hooks only exist for someone who
   ran `pnpm install` and can be skipped with `--no-verify`, so CI is the gate that
   actually holds.
 

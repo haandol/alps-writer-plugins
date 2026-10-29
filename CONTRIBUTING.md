@@ -160,7 +160,7 @@ This project uses **ESLint** for linting and **Prettier** for code formatting.
 pnpm lint                          # Run ESLint on the MCP server (--filter alps-writer)
 pnpm --filter alps-writer lint:fix # Run ESLint with auto-fix
 pnpm format                        # Format all files with Prettier (repo-wide)
-pnpm format:check                  # Check formatting without writing
+pnpm format:check                  # Check formatting; reuse unchanged content results
 ```
 
 - Run `pnpm lint` and `pnpm format:check` before committing to ensure code quality
@@ -170,21 +170,41 @@ pnpm format:check                  # Check formatting without writing
 ### Tests
 
 ```bash
-pnpm test        # ALPS + dependency-free ADR + DeepEval SDK integration tests
+pnpm test        # Asset/guidance checks, ALPS, then pooled ADR + DeepEval + browser tests
 pnpm bump:check  # every release-version site agrees (13 of them)
 ```
 
+After ALPS, ADR, DeepEval and browser test files share one Node worker pool,
+so independent files overlap within a single CPU-based concurrency limit. Test
+files keep process isolation and their own temporary fixtures. Run one with
+`pnpm test:alps`, `pnpm test:adr`, `pnpm test:deepeval`, or
+`pnpm test:report-rendering`. `pnpm test:workspace` runs the installed-dependency
+suites and shared asset/guidance checks; CI pairs it with the full ADR suite in
+`runtime`, so the tests run once across those two required jobs.
+
+`format:check` uses Prettier's content cache under `node_modules/.cache/prettier`.
+Changes to file content, formatting options or the Prettier version invalidate
+entries. Delete that disposable cache or run `pnpm exec prettier --check .` for
+a full scan. CI still checks every file on a fresh checkout.
+
+The Node test scripts also enable Node's compile cache in temporary storage and
+share its path with child CLI processes. Source or runtime changes invalidate
+compiled entries; test execution and assertions always run. CI uses runner
+temporary storage and does not upload the cache between runs. An unavailable
+cache falls back to normal execution. Set `NODE_DISABLE_COMPILE_CACHE=1` to
+disable it, or `NODE_COMPILE_CACHE` to choose a different directory.
+
 Automated in two places, so you rarely have to remember:
 
-- **`.husky/pre-push`** runs the whole CI set locally (~20s) and blocks the push on
-  any failure: typecheck, `pnpm test`, `lint`, `format:check`, `bump:check`, a boot
+- **`.husky/pre-push`** runs the whole CI set locally and blocks the push on
+  any failure: typecheck (once, inside build), `pnpm test`, `lint`, `format:check`, `bump:check`, a boot
   check on the committed MCP bundle and the adr-writer hook, and a rebuild that
   fails if `plugins/alps-writer/dist/` is stale. If CI would fail on it, this fails
   on it first. For a WIP branch you know is red: `SKIP_TESTS=1 git push …` — that
   skips only the test suite, nothing else.
-- **`.github/workflows/ci.yaml`** runs the same commands plus `lint`,
-  `format:check`, and a rebuild that fails if the committed
-  `plugins/alps-writer/dist/` is stale. A separate `runtime` job re-runs what a
+- **`.github/workflows/ci.yaml`** splits `pnpm test` between `test` and `runtime`,
+  and runs `lint`, `format:check`, version checks and a rebuild that fails if the
+  committed `plugins/alps-writer/dist/` is stale. The `runtime` job checks what a
   marketplace install actually executes with **no install step** — the
   dependency-free adr-writer suite, an MCP `initialize` round-trip against the
   committed bundle, and the hook — since a consumer has no `node_modules` and the

@@ -90,13 +90,20 @@ attach findings or alternatives where they change its explanation.
   comparisons by meaningful scope; do not truncate, hide an unstructured dump,
   use arbitrary numbered groups or add empty levels. Supporting sources and
   quizzes belong to their explanation and do not consume this child allowance.
-- **Orient each descent.** Give each domain an answer-first opening and explain
-  which question about that answer needs a reason, mechanism, condition or
-  worked example. A child opens an identified part of the parent and adds what
-  the reader needs to answer that question; it does not restart the topic.
-  Introduce cross-domain relationships before splitting into branches. Titles
-  and previews should make the next reading choice clear without repeating an
-  inventory. A simple source list needs no artificial parent paragraph.
+- **Lead with the answer and orient each descent.** After the required Purpose
+  and Context opening, start each explanatory section with the direct answer
+  in one or two sentences, retaining conditions that change it. When answering
+  a reader's question, summarize it in the title while preserving required
+  schema headings. Use an explicit answer label such as `답:` only under a
+  question-form title; under a descriptive title, start with the answer sentence.
+  Follow with what substantiates or qualifies the answer, removing repeated
+  background, restated summaries and unnecessary detail.
+  A child opens an identified part of the parent and explains which question
+  about it needs a reason, mechanism, condition or worked example; it does not
+  restart the topic. Introduce cross-domain relationships before splitting into
+  branches. Titles and previews should make the next reading choice clear
+  without repeating an inventory. A simple source list needs no artificial
+  parent paragraph.
 - **Separate explanation from evidence disclosure.** Default all explanatory
   subsections to expanded; readers may collapse them or explicitly request a
   collapsed view. Detailed evidence, logs and code default to collapsed. Expand

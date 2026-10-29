@@ -45,8 +45,10 @@ premises at their point of use; retain real evidence gaps and limit affected cla
   before unfamiliar implementation names? Treat a missing explanatory bridge
   separately from optional detail reduction. Topic grouping and control counts
   cannot establish that the subject becomes understandable at a lower level.
-- **Qualification:** does each detail substantiate or qualify its parent rather
-  than introduce an unrelated claim? Do simplifications retain the caveats,
+- **Answer first and qualification:** after Purpose and Context, does each
+  explanatory section open with its answer and any condition that changes it?
+  Does each detail substantiate or qualify its parent rather than introduce an
+  unrelated claim? Do simplifications retain the caveats,
   failures and exceptions that change the answer? Substantive parents explain
   their children's relationship; simple source lists need no filler paragraph.
 - **Reader fit:** does the opening connect relevant known context to the subject's

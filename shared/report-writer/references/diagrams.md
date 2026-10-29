@@ -17,10 +17,14 @@ of its parent responsibility. An overview elsewhere cannot cover a hidden
 mechanism. Keep the outside relationship visible enough to orient the reader,
 and connect analogy labels to actual terms before relying on them.
 
-There is no figure quota or requirement for every leaf. Simple facts and one-step
-instructions may be clearer in prose. Honor exclusions and format or evidence
-limits; explain supported relationships and material limitations in prose when
-a figure is not feasible. Never invent participants or calls to fill a diagram.
+Give each top-level section that explains a flow, data path, classification,
+comparison or decision its own focused figure when evidence and format support
+it. Recheck prose-only sections for useful missing views; an overview does not
+replace a needed detail view. There is no quota for leaves, and simple facts
+and one-step instructions may be clearer in prose. Honor exclusions and format
+or evidence limits; explain supported relationships and material limitations
+in prose when a figure is not feasible. Never invent participants or calls to
+fill a diagram.
 Missing figures alone never block delivery, including top-down or C4-like requests.
 
 Choose any Mermaid type supported by the bundled engine that answers the question
