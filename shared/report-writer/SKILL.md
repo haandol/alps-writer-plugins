@@ -36,6 +36,14 @@ The opening should give new details a place in that whole; a domain outline alon
 does not establish this connection. Preserve evidenced domain boundaries while
 letting the reader's question guide the route through them. Use this principle
 for reviews and comparisons as well as concept explanations.
+
+After Purpose and Context, lead each explanatory section with its answer in one
+or two sentences, including conditions that change it. Summarize the reader's
+question in the section title while preserving required schema headings. Keep
+supporting prose concise. Give top-level sections explaining flows, data paths,
+classifications, comparisons or decisions focused figures when evidence and
+format support them; simple facts and one-step instructions may stay in prose.
+
 Use HTML interaction proactively where exploring a responsibility, condition or
 case helps the reader understand that subject. Controls must reveal meaningful
 relationships or behavior; their presence does not establish explanation depth.
