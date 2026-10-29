@@ -8,8 +8,8 @@
   "scripts": {
     "build": "node scripts/vendor-report-diff.mjs && node scripts/vendor-report-mermaid.mjs && node scripts/sync-authoring-guidance.mjs && node scripts/sync-report-skill.mjs && pnpm --filter alps-writer build",
     "lint": "pnpm --filter alps-writer lint",
-    "test": "pnpm report-assets:check && pnpm authoring-guidance:check && pnpm report-skill:check && pnpm --filter alps-writer test && node --test \"plugins/adr-writer/tests/**/*.test.mjs\" && pnpm test:deepeval && pnpm test:report-rendering",
-    "test:deepeval": "node --test \"plugins/adr-writer/evals/deepeval/*.test.mjs\"",
+    "test": "pnpm test:checks && pnpm test:alps && node --import ./scripts/test-compile-cache.mjs --test \"plugins/adr-writer/tests/**/*.test.mjs\" \"plugins/adr-writer/evals/deepeval/*.test.mjs\" \"plugins/adr-writer/integration-tests/*.test.mjs\"",
+    "test:deepeval": "node --import ./scripts/test-compile-cache.mjs --test \"plugins/adr-writer/evals/deepeval/*.test.mjs\"",
     "eval:regression": "node plugins/adr-writer/evals/deepeval/run.mjs",
     "eval:skills": "node plugins/adr-writer/evals/skills/run.mjs",
     "eval:llm": "node plugins/adr-writer/evals/skills/run.mjs --suite classification",
@@ -19,7 +19,7 @@
     "eval:calibration": "node plugins/adr-writer/evals/deepeval/calibrate.mjs",
     "eval:custom": "node plugins/adr-writer/evals/regression/run.mjs",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --check . --cache --cache-strategy content",
     "bump": "node scripts/bump-version.mjs",
     "bump:check": "node scripts/bump-version.mjs --check",
     "prepare": "husky",
@@ -29,7 +29,11 @@
     "authoring-guidance:check": "node scripts/sync-authoring-guidance.mjs --check",
     "report-assets:sync": "node scripts/vendor-report-diff.mjs && node scripts/vendor-report-mermaid.mjs",
     "report-assets:check": "node scripts/vendor-report-diff.mjs --check && node scripts/vendor-report-mermaid.mjs --check",
-    "test:report-rendering": "node --test plugins/adr-writer/integration-tests/mermaid.test.mjs"
+    "test:report-rendering": "node --import ./scripts/test-compile-cache.mjs --test plugins/adr-writer/integration-tests/mermaid.test.mjs",
+    "test:checks": "pnpm report-assets:check && pnpm authoring-guidance:check && pnpm report-skill:check",
+    "test:alps": "pnpm --filter alps-writer test",
+    "test:adr": "node --import ./scripts/test-compile-cache.mjs --test \"plugins/adr-writer/tests/**/*.test.mjs\"",
+    "test:workspace": "pnpm test:checks && pnpm test:alps && node --import ./scripts/test-compile-cache.mjs --test \"plugins/adr-writer/evals/deepeval/*.test.mjs\" \"plugins/adr-writer/integration-tests/*.test.mjs\""
   },
   "keywords": [
     "claude-code",

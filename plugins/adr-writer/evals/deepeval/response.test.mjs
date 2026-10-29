@@ -372,24 +372,37 @@ test("report-writing and review rubrics use one real GEval judgment each without
   const items = (await catalog()).filter(
     (c) => c.skill === "report-writer" && !c.supplementalChecks,
   );
-  for (const item of items) {
-    const reply =
-      "10회 요청 중 8회 완료, 6회 성공, 2회 실패와 2회 오류입니다. 완료 기준 75%이며 비용은 USD 0.48입니다. 운영 검증과 스킬 효과 비교는 하지 않았습니다." +
-      tail;
-    let calls = 0;
-    const result = await main(
-      ["--live", "--suite", "classification", "--runs", "1", "--out", temp()],
-      {
-        cases: [{ ...item, score: noCall }],
-        target: async () => ({ text: reply, models: ["target-stub"], costUSD: 0 }),
-        judge: async () => {
-          calls++;
-          return judge(item, 1, "완료 기준 75%이며 비용은 USD 0.48입니다.");
-        },
+  assert.ok(items.length);
+  const byRun = new Map(items.map((item) => [`${item.id}-candidate-1`, item]));
+  const calls = new Map(items.map((item) => [item.id, 0]));
+  const reply =
+    "10회 요청 중 8회 완료, 6회 성공, 2회 실패와 2회 오류입니다. 완료 기준 75%이며 비용은 USD 0.48입니다. 운영 검증과 스킬 효과 비교는 하지 않았습니다." +
+    tail;
+  // Share plugin snapshots and run setup; each case still has its own fixture,
+  // captured evidence and real GEval invocation with the stub provider.
+  const result = await main(
+    ["--live", "--suite", "classification", "--runs", "1", "--out", temp()],
+    {
+      cases: items.map((item) => ({ ...item, score: noCall })),
+      target: async () => ({ text: reply, models: ["target-stub"], costUSD: 0 }),
+      judge: async ({ cwd }) => {
+        const item = byRun.get(path.basename(cwd));
+        assert.ok(item, `Unexpected judge workspace: ${cwd}`);
+        calls.set(item.id, calls.get(item.id) + 1);
+        return judge(item, 1, "완료 기준 75%이며 비용은 USD 0.48입니다.");
       },
-    );
-    assert.equal(calls, 1);
-    assert.equal(result.report.runs[0].verdict, "PASS");
+    },
+  );
+  assert.equal(result.status, 0);
+  assert.deepEqual(
+    result.report.runs.map((run) => run.caseId).sort(),
+    items.map((item) => item.id).sort(),
+  );
+  for (const run of result.report.runs) {
+    assert.equal(calls.get(run.caseId), 1, run.caseId);
+    assert.equal(run.verdict, "PASS", run.caseId);
+    assert.equal(run.testResult.metricsData.length, 1, run.caseId);
+    assert.equal(run.testResult.metricsData[0].name, "Skill response contract [GEval]");
   }
 });
 

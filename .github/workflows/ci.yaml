@@ -2,8 +2,8 @@ name: CI
 
 # 테스트·빌드·포맷 게이트. pre-push 훅이 같은 검사를 로컬에서 돌리지만, 훅은
 # `pnpm install`을 한 사람에게만 설치되고 `--no-verify`로 우회할 수 있다.
-# 여기서 한 번 더 막는다. 로컬과 같은 스크립트(pnpm test / build / format:check /
-# bump:check)를 실행하므로 두 곳의 결과가 항상 일치한다.
+# 여기서 한 번 더 막는다. 로컬 pnpm test의 전체 검증을 test와 runtime에 나누고,
+# build / format:check / bump:check는 로컬과 같은 스크립트로 실행한다.
 #
 # Node 는 전부 24 로 통일한다(engines.node ">= 24"). 낮은 버전을 매트릭스로 돌려봤자
 # pnpm 11 은 node:sqlite 때문에 >= 22.13 을, `node --test` 의 glob 은 21+ 을 요구해서
@@ -11,10 +11,11 @@ name: CI
 # 실제에 맞췄다.
 #
 # job 세 개:
-#   test·build — 워크스페이스를 설치하고 로컬과 같은 스크립트를 돌린다.
+#   test       — 워크스페이스 검증·ALPS·DeepEval·브라우저 테스트를 실행한다.
+#   build      — lint·포맷·버전·빌드와 커밋된 번들의 일치를 검증한다.
 #   runtime    — 소비자가 실제로 실행하는 것(번들·스크립트·훅)을 install 없이 검증한다.
 #                마켓플레이스 설치본에는 node_modules 가 없으므로, 위 두 job 이 통과해도
-#                이쪽이 깨질 수 있다.
+#                이쪽이 깨질 수 있다. ADR 전체 테스트는 이 job에서 한 번만 실행한다.
 on:
   workflow_dispatch:
   pull_request:
@@ -27,7 +28,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The full suite, exactly as `pnpm test` runs it locally.
+  # Together with runtime, this covers every check in local `pnpm test`.
+  # Keep the required job names test/build/runtime stable for branch protection.
   test:
     runs-on: ubuntu-latest
     steps:
@@ -50,8 +52,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Test
-        run: pnpm test
+      - name: Workspace tests
+        env:
+          # Reuse compiled modules in child processes, never cached test results.
+          NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
+        run: pnpm test:workspace
 
   # What a CONSUMER actually runs. A marketplace install ships no node_modules:
   # the MCP server is an esbuild bundle with its dependencies inlined, and the
@@ -82,6 +87,8 @@ jobs:
 
       # The dependency-free suite, run the way a contributor without pnpm would.
       - name: adr-writer suite (no install)
+        env:
+          NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
         run: node --test "plugins/adr-writer/tests/**/*.test.mjs"
 
       # The committed bundle is what a marketplace install executes. Boot it over

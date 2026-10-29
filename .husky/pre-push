@@ -1,5 +1,4 @@
-# pre-push — run everything CI runs, so a red CI is something you learn in ~20s
-# here instead of after the push.
+# pre-push — run everything CI runs, so failures are visible before the push.
 #
 # The rule this file follows: if CI fails on it, this hook fails on it. The gates
 # were split before, and the gap was not hypothetical — CI checks lint,
@@ -10,7 +9,7 @@
 # checking it again here is what catches a commit made with --no-verify.
 #
 # Mirrors .github/workflows/ci.yaml:
-#   test job     → pnpm test
+#   test/runtime → pnpm test (workspace suites + dependency-free ADR suite)
 #   build job    → pnpm lint, pnpm format:check, pnpm bump:check, pnpm build +
 #                  the committed-bundle drift check
 #   runtime job  → the bundle answers MCP initialize, and the hook starts, both
@@ -39,10 +38,6 @@ fail() {
   echo "    (CI would fail on this too — fix it, or see .husky/pre-push for the bypass.)"
   exit 1
 }
-
-# ── typecheck ──────────────────────────────────────────────────────────────
-pnpm --filter alps-writer exec tsc --noEmit ||
-  fail "typecheck failed."
 
 # ── the suite ──────────────────────────────────────────────────────────────
 if [ "${SKIP_TESTS:-}" = "1" ]; then
@@ -90,7 +85,8 @@ echo '{"hook_event_name":"SessionStart","source":"startup"}' | node plugins/adr-
 # plugins/alps-writer/dist/ is committed and a marketplace install runs it
 # directly, so a stale bundle ships old code. pre-commit rebuilds it when src is
 # staged, but --no-verify defeats that; this is the backstop.
-pnpm build >/dev/null ||
+# The build includes tsc --noEmit; do not typecheck the same tree twice.
+pnpm build ||
   fail "build failed."
 
 if ! git diff --quiet -- plugins/alps-writer/dist; then
