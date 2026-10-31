@@ -31753,9 +31753,6 @@ var DocumentService = class _DocumentService {
     scoped.loadDocument(docPath);
     return scoped;
   }
-  attribute(attributes, name) {
-    return attribute(attributes, name);
-  }
   isNotStarted(sectionContent) {
     return !sectionContent || sectionContent.includes(NOT_STARTED);
   }
@@ -31764,7 +31761,7 @@ var DocumentService = class _DocumentService {
     const re = /<section\b([^>]*)>\s*([\s\S]*?)<\/section>/g;
     let match;
     while ((match = re.exec(content)) !== null) {
-      const id = this.attribute(match[1], "id");
+      const id = attribute(match[1], "id");
       if (id && /^\d+$/.test(id)) {
         sections.set(Number.parseInt(id, 10), match[2].trim());
       }
@@ -31776,8 +31773,8 @@ var DocumentService = class _DocumentService {
     const re = /<section\b([^>]*)>/g;
     let match;
     while ((match = re.exec(content)) !== null) {
-      const id = this.attribute(match[1], "id");
-      const title = this.attribute(match[1], "title");
+      const id = attribute(match[1], "id");
+      const title = attribute(match[1], "title");
       if (id && /^\d+$/.test(id)) {
         headers.push({ id: Number.parseInt(id, 10), title });
       }
@@ -31789,8 +31786,8 @@ var DocumentService = class _DocumentService {
     const re = /<subsection\b([^>]*)>\s*([\s\S]*?)\s*<\/subsection>/g;
     let match;
     while ((match = re.exec(sectionContent)) !== null) {
-      const id = this.attribute(match[1], "id");
-      const title = this.attribute(match[1], "title");
+      const id = attribute(match[1], "id");
+      const title = attribute(match[1], "title");
       if (!id || title == null || !id.startsWith(`${sectionId}.`)) continue;
       subsections.set(id, { title, content: decodeXml(match[2].trim()) });
     }
@@ -31801,7 +31798,6 @@ var DocumentService = class _DocumentService {
     return remainder.length > 0;
   }
   fixedSubsectionError(profile, section, sectionContent) {
-    if (section === profile.dynamicSection?.section) return null;
     if (this.hasUnparsedContent(sectionContent)) {
       return `Lite ALPS Section ${section} contains unrecognized content.`;
     }
@@ -31809,8 +31805,8 @@ var DocumentService = class _DocumentService {
     const subsectionRe = /<subsection\b([^>]*)>\s*[\s\S]*?\s*<\/subsection>/g;
     let subsectionMatch;
     while ((subsectionMatch = subsectionRe.exec(sectionContent)) !== null) {
-      const id = this.attribute(subsectionMatch[1], "id");
-      const title = this.attribute(subsectionMatch[1], "title");
+      const id = attribute(subsectionMatch[1], "id");
+      const title = attribute(subsectionMatch[1], "title");
       const prefix = `${section}.`;
       if (!id || title == null || !id.startsWith(prefix)) {
         return `Lite ALPS Section ${section} contains a subsection with an invalid id or title.`;
@@ -31827,35 +31823,6 @@ var DocumentService = class _DocumentService {
       if (!validation.ok) return `Lite ALPS ${validation.message}`;
     }
     return null;
-  }
-  featureNames(sectionContent, sectionId, subsectionId) {
-    const source = this.parseSubsections(sectionContent, sectionId).get(subsectionId);
-    const features = /* @__PURE__ */ new Map();
-    if (!source) return features;
-    for (const line of source.content.split(/\r?\n/)) {
-      const table = line.match(/^\s*\|?\s*F(\d+)\s*\|\s*([^|]+?)\s*(?:\||$)/i);
-      const list = line.match(/^\s*(?:[-*]\s*)?F(\d+)\s*:\s*(.+?)\s*$/i);
-      const match = table ?? list;
-      if (!match) continue;
-      features.set(Number.parseInt(match[1], 10), match[2].trim());
-    }
-    return features;
-  }
-  liteFeatureError(profile, sections, subsectionId, title) {
-    const dynamic = profile.dynamicSection;
-    if (!dynamic) return null;
-    const features = this.featureNames(
-      sections.get(dynamic.sourceSection) || "",
-      dynamic.sourceSection,
-      dynamic.sourceSubsectionId
-    );
-    const featureNumber = Number.parseInt(subsectionId, 10);
-    const featureName = features.get(featureNumber);
-    if (!featureName) {
-      return `Lite ALPS Feature F${featureNumber} must be declared with a name in Section ${dynamic.sourceSubsectionId} before Section ${dynamic.section} can save it.`;
-    }
-    const expectedTitle = `F${featureNumber}: ${featureName}`;
-    return title.trim() === expectedTitle ? null : `Lite ALPS Feature ${dynamic.section}.${featureNumber} title must be "${expectedTitle}".`;
   }
   buildSubsection(subId, title, content) {
     return `<subsection id="${escapeXmlAttribute(subId)}" title="${escapeXmlAttribute(title)}">
@@ -31883,7 +31850,7 @@ ${content}
   extractProjectName(content) {
     const root = content.match(/<(?:alps-document|prd-document)\b([^>]*)>/);
     if (root) {
-      const project = this.attribute(root[1], "project");
+      const project = attribute(root[1], "project");
       if (project) return project;
     }
     const match = content.match(/^# (.+?) (?:Lite )?(?:ALPS|PRD)/m);
@@ -31901,7 +31868,7 @@ ${content}
     } catch (error51) {
       return { error: error51.message };
     }
-    const profileValue = this.attribute(root[2], "profile");
+    const profileValue = attribute(root[2], "profile");
     const headers = this.parseSectionHeaders(content);
     let profile = null;
     if (profileValue == null || profileValue === "" || profileValue === "alps") {
@@ -31922,11 +31889,6 @@ ${content}
     if (sections.size === 0) return { error: "Document contains no valid sections." };
     if (isLiteProfile(profile)) {
       const expected = sectionNumbers(profile);
-      if (expected.length !== headers.length || expected.some((section, index) => section !== headers[index]?.id)) {
-        return {
-          error: `Lite ALPS documents must contain Sections ${sectionRange(profile)} exactly once and in order.`
-        };
-      }
       const titleMismatch = expected.find(
         (section, index) => headers[index]?.title !== profile.sectionTitles[section]
       );
@@ -31942,28 +31904,6 @@ ${content}
           sections.get(section) || ""
         );
         if (subsectionError) return { error: subsectionError };
-      }
-      const dynamic = profile.dynamicSection;
-      if (dynamic) {
-        const savedFeatureIds = /* @__PURE__ */ new Set();
-        const subsectionRe = /<subsection\b([^>]*)>/g;
-        let subsectionMatch;
-        while ((subsectionMatch = subsectionRe.exec(sections.get(dynamic.section) || "")) !== null) {
-          const id = this.attribute(subsectionMatch[1], "id");
-          const title = this.attribute(subsectionMatch[1], "title");
-          if (!id || !new RegExp(`^${dynamic.section}\\.[1-9]\\d*$`).test(id)) {
-            return {
-              error: `Lite ALPS Feature subsection ${id ?? "(missing id)"} must use ${dynamic.section}.x with a positive number.`
-            };
-          }
-          if (savedFeatureIds.has(id)) {
-            return { error: `Lite ALPS Feature subsection ${id} must appear exactly once.` };
-          }
-          savedFeatureIds.add(id);
-          const featureNumber = id.slice(`${dynamic.section}.`.length);
-          const featureError = this.liteFeatureError(profile, sections, featureNumber, title ?? "");
-          if (featureError) return { error: featureError };
-        }
       }
     }
     return { profile };
@@ -32118,10 +32058,6 @@ ${this.resumeGuidance(inspection.profile)}`;
     }
     const projectName = this.extractProjectName(document.content);
     const sections = this.parseSections(document.content);
-    if (isLiteProfile(profile) && section === profile.dynamicSection?.section) {
-      const featureError = this.liteFeatureError(profile, sections, subsectionId, title);
-      if (featureError) throw new Error(`Invalid subsection: ${featureError}`);
-    }
     const sectionContent = sections.get(section) || "";
     if (this.hasUnparsedContent(sectionContent)) {
       throw new Error(
