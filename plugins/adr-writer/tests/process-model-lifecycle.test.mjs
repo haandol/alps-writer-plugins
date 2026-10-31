@@ -3,7 +3,7 @@
 // semantic change makes Proposed, the approval summary's data, the one-change-
 // unit apply, and the mechanical gates of the alignment review.
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, readFileSync, renameSync, rmSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
@@ -1076,7 +1076,7 @@ test("change-log lines are newest first across saves", () => {
         "draft/model.ttl",
         readFileSync(path.join(dir, "docs/process/model.ttl"), "utf8").replace(from, to),
       );
-      execFileSync("rm", ["-f", path.join(dir, "draft/change-log.md")]);
+      rmSync(path.join(dir, "draft/change-log.md"), { force: true });
       const { baseHash } = JSON.parse(cli(dir, ["impact", "--draft", "draft", "--json"]).out);
       assert.equal(
         cli(dir, ["apply", "--draft", "draft", "--base-hash", baseHash, "--log", line]).code,

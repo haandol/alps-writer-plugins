@@ -1,6 +1,7 @@
 // Shared helpers for adr-writer tests. No external deps — Node's built-in
 // test runner + child_process only. Each test builds a throwaway fixture
 // repo under os.tmpdir() so runs are hermetic and parallel-safe.
+import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
   appendFileSync,
@@ -56,6 +57,12 @@ export const RULE_DOCS = SEEDED_RULE_DOCS;
 export function seedRuleDocs(dir) {
   for (const f of RULE_DOCS) copyFileSync(path.join(TEMPLATES, f), write(dir, `docs/adr/${f}`, ""));
 }
+
+/** Match a phrase across line wraps without depending on exact spacing. */
+const phrase = (text) =>
+  new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+"));
+/** Assert that `source` holds every phrase. */
+export const has = (source, ...texts) => texts.forEach((t) => assert.match(source, phrase(t)));
 
 /**
  * The ADR files an index lists, each stating its recorded Status, as a repository

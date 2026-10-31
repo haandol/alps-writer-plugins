@@ -46,6 +46,8 @@ const temp = () => {
 after(() => {
   for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true });
 });
+// One cache of initial fixture checks for this file's runs: identical fixtures check alike.
+const fixtureChecks = new Map();
 
 test("a baseline snapshot holds every plugin file its commit lists, with the committed bytes", (t) => {
   const repo = path.resolve(PLUGIN, "../..");
@@ -92,6 +94,7 @@ test("retiring a skill preserves its task and leaves the no-skill condition exec
     "capture-only": true,
     fixturePluginRoot: PLUGIN,
     checkerRoot: PLUGIN,
+    fixtureChecks,
     invoke: async () => ({
       text: "Task still exists after retiring guidance.",
       models: ["stub"],
@@ -715,6 +718,7 @@ test("the real execution-to-judgment pipeline packages observable files and keep
     timeout: 30,
     invoke,
     referenceDate: "2026-09-19",
+    fixtureChecks,
   });
   assert.equal(result.verdict, "PASS", result.error);
   assert.equal(targets, 1);
@@ -736,6 +740,7 @@ test("capture-only runs the target without double-charging a custom judge before
     timeout: 30,
     referenceDate: "2026-09-19",
     "capture-only": true,
+    fixtureChecks,
     invoke: async ({ schema }) => {
       invocations++;
       assert.equal(schema, undefined, "capture mode must never invoke the custom judge");

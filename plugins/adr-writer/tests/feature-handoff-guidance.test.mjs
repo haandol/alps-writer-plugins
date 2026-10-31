@@ -6,6 +6,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { has } from "./helpers.mjs";
 
 const ADR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ALPS = path.resolve(ADR, "..", "alps-writer");
@@ -19,11 +20,6 @@ const DELEGATION = [
 ];
 const GLOSSARY = read(ADR, "references/glossary.md");
 const CONCEPTS = read(ADR, "templates/adr/concepts.md");
-
-/** Match a phrase across line wraps without depending on exact spacing. */
-const phrase = (text) =>
-  new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+"));
-const has = (source, ...texts) => texts.forEach((t) => assert.match(source, phrase(t)));
 
 test("terms keep their contract in the owning ADR and hold completion while unclear", () => {
   has(MODULE, "After approval the owning ADR body keeps the short explanation its contract needs.");

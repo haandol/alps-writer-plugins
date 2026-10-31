@@ -347,8 +347,11 @@ test("missing targets and unlinked features are reported, not returned empty", (
   assert.match(confirmed.note, /do not ask the three-way judgment again/);
 });
 
-/** The same reading the CLI query does, in-process, for a repository directory. */
-function contextIn(dir, target) {
+/**
+ * The same reading the CLI query does, in-process, for a repository directory: one
+ * reading of the model and its history serves every target asked about that state.
+ */
+function contextsIn(dir, targets) {
   const rel = (p) => path.relative(dir, p).split(path.sep).join("/");
   const mapping = JSON.parse(readFileSync(path.join(dir, "docs/adr/.mapping.json"), "utf8"));
   const { findings, index } = processLevelFindings({
@@ -359,13 +362,11 @@ function contextIn(dir, target) {
     rel,
     cwd: dir,
   });
-  return queryContext({
-    index,
-    mapping,
-    findings,
-    changes: changeFlags("docs/process", index, { cwd: dir }),
-    target,
-  });
+  const changes = changeFlags("docs/process", index, { cwd: dir });
+  return targets.map((target) => queryContext({ index, mapping, findings, changes, target }));
+}
+function contextIn(dir, target) {
+  return contextsIn(dir, [target])[0];
 }
 const changesOf = (dir, id) => contextIn(dir, { kind: "category", id }).changes;
 
@@ -433,7 +434,11 @@ test("committed direct edits of an Accepted process are flagged until it is acce
       ),
     );
     commitAll(dir, "direct edit");
-    const r = contextIn(dir, { kind: "category", id: "fulfilment" });
+    const [r, viaConcept, other] = contextsIn(dir, [
+      { kind: "category", id: "fulfilment" },
+      { kind: "category", id: "ordering" },
+      { kind: "category", id: "reports" },
+    ]);
     assert.deepEqual(r.changes.unsyncedAccepted, [
       {
         process: "shipping.ship-order",
@@ -442,13 +447,11 @@ test("committed direct edits of an Accepted process are flagged until it is acce
         compositionChanged: true,
       },
     ]);
-    const viaConcept = contextIn(dir, { kind: "category", id: "ordering" });
     assert.deepEqual(
       viaConcept.changes.unsyncedAccepted.map((u) => u.process),
       ["shipping.ship-order"],
       "packing shares the Order concept",
     );
-    const other = contextIn(dir, { kind: "category", id: "reports" });
     assert.equal(other.changes.unsyncedAcceptedElsewhere, true);
 
     // Description and lifecycle edits are not composition changes.

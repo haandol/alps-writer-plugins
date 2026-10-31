@@ -102,6 +102,19 @@ export const directEdit = (dir) =>
     ACCEPTED.replace(STEP_DEFINITION, '"The customer approves the card charge."'),
     "direct edit",
   );
+/** The passed review with a direct edit committed on top, built once per test process. */
+export const directlyEdited = (dir) =>
+  cachedRepo(dir, "history: direct edit", (at) => {
+    repo(at);
+    directEdit(at);
+  });
+/** The passed review re-dated by hand, then undone together with a step edit; built once too. */
+export const undoneRedate = (dir) =>
+  cachedRepo(dir, "history: re-date undone with an edit", (at) => {
+    repo(at);
+    model(at, REDATED, "re-dated by hand");
+    model(at, REWORDED, "undone, together with an edit");
+  });
 
 export function read(dir) {
   return readFileSync(path.join(dir, "docs/process/model.ttl"), "utf8");

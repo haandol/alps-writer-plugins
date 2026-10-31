@@ -6,13 +6,10 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { runHook, withTmp, write } from "./helpers.mjs";
+import { has, runHook, withTmp, write } from "./helpers.mjs";
 
 const ADR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel) => readFileSync(path.join(ADR, rel), "utf8");
-const phrase = (text) =>
-  new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+"));
-const has = (source, ...texts) => texts.forEach((t) => assert.match(source, phrase(t)));
 const EXAMPLE = read("templates/process/example.ttl");
 const CONTEXT = read("references/business-context.md");
 const MODEL = read("references/process-model.md");

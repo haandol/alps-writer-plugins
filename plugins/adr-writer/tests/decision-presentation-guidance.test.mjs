@@ -6,12 +6,10 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { has } from "./helpers.mjs";
 
 const ADR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel) => readFileSync(path.join(ADR, rel), "utf8");
-const phrase = (text) =>
-  new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+"));
-const has = (source, ...texts) => texts.forEach((t) => assert.match(source, phrase(t)));
 
 const NEW = read("skills/adr-new/SKILL.md");
 const DRAFT = read("skills/adr-new/references/draft-and-index.md");

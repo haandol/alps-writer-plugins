@@ -26,7 +26,6 @@ import {
   OPEN_PATH,
   PAYMENT_PROCESS,
   PAYMENT_STATUS,
-  REDATED,
   RETIRED,
   RETIRED_LINE,
   SHALLOW,
@@ -35,6 +34,7 @@ import {
   cli,
   cloneOf,
   directEdit,
+  directlyEdited,
   exits,
   head,
   json,
@@ -43,17 +43,13 @@ import {
   read,
   repo,
   trackChangeLog,
+  undoneRedate,
 } from "./process-model-history-helpers.mjs";
 
 test("a partial clone reports history as unavailable instead of fetching or failing", () => {
   withTmp((dir) => {
     const source = path.join(dir, "source");
-    repo(source);
-    model(
-      source,
-      ACCEPTED.replace(STEP_DEFINITION, '"The customer approves the card charge."'),
-      "direct edit",
-    );
+    directlyEdited(source);
     git(source, ["config", "uploadpack.allowFilter", "true"]);
     execFileSync("git", ["clone", "-q", "--filter=blob:none", `file://${source}`, "clone"], {
       cwd: dir,
@@ -81,8 +77,7 @@ test("a partial clone reports history as unavailable instead of fetching or fail
 test("a shallow clone cut at a commit that does not parse reports Accepted edits as unknown, never clean", () => {
   withTmp((dir) => {
     const source = path.join(dir, "source");
-    repo(source);
-    directEdit(source);
+    directlyEdited(source);
     write(source, "docs/process/notes.ttl", "m:x a\n");
     commitAll(source, "broken notes");
     rmSync(path.join(source, "docs/process/notes.ttl"));
@@ -104,8 +99,7 @@ test("a shallow clone cut at a commit that does not parse reports Accepted edits
 test("a depth-1 clone reports edits since acceptance as unknown and refuses a demotion it cannot judge", () => {
   withTmp((dir) => {
     const source = path.join(dir, "source");
-    repo(source);
-    directEdit(source);
+    directlyEdited(source);
     const clone = cloneOf(source, path.join(dir, "clone"), "--depth", "1");
     const changes = cli(clone, ["changes", "--json"]);
     assert.equal(changes.code, 1, changes.out);
@@ -171,8 +165,7 @@ test("a query warns that unknown edits of an Accepted process outside its scope 
 test("in a partial clone, changes reports committed-edit flags as unavailable and is not clean", () => {
   withTmp((dir) => {
     const source = path.join(dir, "source");
-    repo(source);
-    directEdit(source);
+    directlyEdited(source);
     git(source, ["config", "uploadpack.allowFilter", "true"]);
     const clone = cloneOf(source, path.join(dir, "clone"), "--filter=blob:none");
     renameSync(source, path.join(dir, "gone"));
@@ -186,9 +179,8 @@ test("in a partial clone, changes reports committed-edit flags as unavailable an
 test("history reads refuse every git transport, so a git ignoring the lazy-fetch switch still cannot fetch", () => {
   withTmp((dir) => {
     const source = path.join(dir, "source");
-    repo(source);
     // Two earlier model documents the clone lacks: one for each read below that fetches.
-    directEdit(source);
+    directlyEdited(source);
     git(source, ["config", "uploadpack.allowFilter", "true"]);
     const clone = cloneOf(source, path.join(dir, "clone"), "--filter=blob:none");
     const missing = () =>
@@ -237,8 +229,7 @@ test("history reads refuse every git transport, so a git ignoring the lazy-fetch
 test("lifecycle says what history it could not audit instead of reporting a clean result alone", () => {
   withTmp((dir) => {
     const source = path.join(dir, "source");
-    repo(source);
-    directEdit(source);
+    directlyEdited(source);
     const shallow = cloneOf(source, path.join(dir, "shallow"), "--depth", "1");
     const cut = JSON.parse(cli(shallow, ["lifecycle", "--json"]).out);
     assert.match(cut.historyLimited, /the clone is shallow/);
@@ -313,13 +304,7 @@ for (const depth of ["2", "3"])
   test(`a depth-${depth} clone cut inside an undone hand edit reports the edits since acceptance as unknown`, () => {
     withTmp((dir) => {
       const source = path.join(dir, "source");
-      repo(source);
-      model(source, REDATED, "re-dated by hand");
-      model(
-        source,
-        ACCEPTED.replace(STEP_DEFINITION, '"The customer approves the card charge."'),
-        "undone, together with an edit",
-      );
+      undoneRedate(source);
       // Depth 2 cuts where the re-dating appeared; depth 3, where the undone value appeared.
       const clone = cloneOf(source, path.join(dir, "clone"), "--depth", depth);
       const changes = cli(clone, ["changes", "--json"]);
@@ -364,13 +349,7 @@ test("lifecycle reads the base change log through the model directory's link", (
 test("lifecycle names what a shallow clone keeps it from judging, never a clean result alone", () => {
   withTmp((dir) => {
     const source = path.join(dir, "source");
-    repo(source);
-    model(source, REDATED, "re-dated by hand");
-    model(
-      source,
-      ACCEPTED.replace(STEP_DEFINITION, '"The customer approves the card charge."'),
-      "undone, together with an edit",
-    );
+    undoneRedate(source);
     const clone = cloneOf(source, path.join(dir, "clone"), "--depth", "2");
     const out = cli(clone, ["lifecycle"]);
     assert.match(

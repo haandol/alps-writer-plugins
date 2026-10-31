@@ -40,12 +40,25 @@ const PLUGIN_ROOT = path.resolve(HERE, "..");
 const EVALS = path.join(PLUGIN_ROOT, "evals");
 const RUN = path.join(EVALS, "run.mjs");
 
+// Each scenario is built once per file: the tests that read its prompt or its
+// fixture share that build instead of rebuilding the same files.
+const builds = new Map();
+function built(file) {
+  if (!builds.has(file))
+    builds.set(
+      file,
+      loadScenario(file).then(async (scenario) => {
+        const dir = scratch("adr-eval-built-");
+        return { scenario, dir, prompt: await scenario.build(dir) };
+      }),
+    );
+  return builds.get(file);
+}
+
 test("comprehension scoring prompts include the shipping rubric without requiring tools", async () => {
   const rubric = readFileSync(path.join(PLUGIN_ROOT, "references/comprehension-load.md"), "utf8");
   for (const name of ["comprehension-load-score-only", "comprehension-load-calibration-bands"]) {
-    const scenario = await loadScenario(`${name}.mjs`);
-    const dir = scratch("adr-comprehension-input-");
-    const prompt = await scenario.build(dir);
+    const { prompt } = await built(`${name}.mjs`);
     assert.ok(prompt.includes(rubric), `${name} must receive the full current rubric`);
     assert.equal(prompt.split(rubric).length - 1, 1, `${name} receives the rubric only once`);
   }
@@ -159,8 +172,7 @@ test("prompts embed the real skill/agent text, not a paraphrase", async () => {
     // Scenarios that point at a repo supplied via the environment cannot build
     // without it; the real-repo one has its own test below.
     if (needsEnv(s)) continue;
-    const dir = scratch("adr-eval-shape-");
-    const prompt = await s.build(dir);
+    const { prompt } = await built(file);
     assert.ok(prompt.length > 5000, `${s.name}: prompt is too short to hold a real skill body`);
     assert.ok(
       prompt.length <= 100_000,
@@ -233,9 +245,7 @@ test("prompt loaders include only explicitly selected direct references", async 
 });
 
 test("the Lite resume eval embeds the shipping profile-aware runtime guidance", async () => {
-  const scenario = await loadScenario("lite-alps-resume-preserves-proposal-first.mjs");
-  const dir = scratch("lite-resume-eval-");
-  const prompt = await scenario.build(dir);
+  const { prompt } = await built("lite-alps-resume-preserves-proposal-first.mjs");
 
   assert.match(prompt, /get_lite_alps_section_guide/);
   assert.match(prompt, /propose Sections 2 and 4 before asking the user to design them/i);
@@ -263,8 +273,7 @@ test("review fixtures are valid repos by the shipped lint", async () => {
     // ADR yet, which is the point of the scenario. Env-driven ones lint whatever
     // the target repo holds, which is not this harness's business.
     if (s.name.startsWith("author-") || needsEnv(s)) continue;
-    const dir = scratch("adr-eval-lint-");
-    await s.build(dir);
+    const { dir } = await built(file);
     const r = spawnSync("node", [lint, "--no-invariants", "--json"], {
       cwd: dir,
       encoding: "utf8",
