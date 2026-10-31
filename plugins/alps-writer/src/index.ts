@@ -92,10 +92,7 @@ Every document-specific tool requires doc_path. Use the source path returned by 
 );
 
 const tc = new TemplateController(new TemplateService());
-const liteTc = new TemplateController(
-  new TemplateService(LITE_ALPS_PROFILE),
-  "get_lite_alps_section_guide",
-);
+const liteTc = new TemplateController(new TemplateService(LITE_ALPS_PROFILE));
 const dc = new DocumentController(new DocumentService());
 const documentPath = z
   .string()

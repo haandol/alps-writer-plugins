@@ -272,10 +272,7 @@ test("the metrics guide checks both NF1 obligations and carries Section 2 KPI un
 
 test("both overview responses distinguish new documents from resume in their own authoring order", () => {
   for (const profile of [ALPS_PROFILE, LITE_ALPS_PROFILE]) {
-    const controller = new TemplateController(
-      new TemplateService(profile),
-      profile.sectionGuideTool,
-    );
+    const controller = new TemplateController(new TemplateService(profile));
     const response = controller.getAlpsOverview();
     assert.match(response, /get_alps_document_status/);
     assert.match(response, /New document:/);

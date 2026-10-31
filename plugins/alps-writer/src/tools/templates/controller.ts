@@ -1,16 +1,14 @@
 import { TemplateService } from "./service.js";
 
 export class TemplateController {
-  constructor(
-    private service: TemplateService,
-    private sectionGuideTool = "get_alps_section_guide",
-  ) {}
+  constructor(private service: TemplateService) {}
 
   /**
    * Explain how to enter the profile without restarting an already written document.
    * The caller uses document status and the profile order, so this controller stays stateless.
    */
   getAlpsOverview(): string {
+    const { sectionGuideTool, authoringOrder } = this.service.profile;
     return (
       this.service.getOverview() +
       `
@@ -19,10 +17,10 @@ export class TemplateController {
 ## Next Step
 
 Read \`get_alps_document_status()\` after initializing or loading the document.
-- New document: begin with \`${this.sectionGuideTool}(1)\`.
-- Resume: use the first incomplete required section in this order: ${this.service.profile.authoringOrder.join(" → ")}. Do not restart a completed, unchanged section.
+- New document: begin with \`${sectionGuideTool}(1)\`.
+- Resume: use the first incomplete required section in this order: ${authoringOrder.join(" → ")}. Do not restart a completed, unchanged section.
 - Follow the profile's optional-section rules; an unwritten optional section does not force a restart.
-Call \`${this.sectionGuideTool}(N)\` for the selected section. Reuse supplied context, ask only for missing information, and obtain approval before saving.`
+Call \`${sectionGuideTool}(N)\` for the selected section. Reuse supplied context, ask only for missing information, and obtain approval before saving.`
     );
   }
 

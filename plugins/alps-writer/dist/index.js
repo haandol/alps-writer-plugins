@@ -31489,27 +31489,26 @@ ${guide}`;
 
 // src/tools/templates/controller.ts
 var TemplateController = class {
-  constructor(service, sectionGuideTool = "get_alps_section_guide") {
+  constructor(service) {
     this.service = service;
-    this.sectionGuideTool = sectionGuideTool;
   }
   service;
-  sectionGuideTool;
   /**
    * Explain how to enter the profile without restarting an already written document.
    * The caller uses document status and the profile order, so this controller stays stateless.
    */
   getAlpsOverview() {
+    const { sectionGuideTool, authoringOrder } = this.service.profile;
     return this.service.getOverview() + `
 
 ---
 ## Next Step
 
 Read \`get_alps_document_status()\` after initializing or loading the document.
-- New document: begin with \`${this.sectionGuideTool}(1)\`.
-- Resume: use the first incomplete required section in this order: ${this.service.profile.authoringOrder.join(" \u2192 ")}. Do not restart a completed, unchanged section.
+- New document: begin with \`${sectionGuideTool}(1)\`.
+- Resume: use the first incomplete required section in this order: ${authoringOrder.join(" \u2192 ")}. Do not restart a completed, unchanged section.
 - Follow the profile's optional-section rules; an unwritten optional section does not force a restart.
-Call \`${this.sectionGuideTool}(N)\` for the selected section. Reuse supplied context, ask only for missing information, and obtain approval before saving.`;
+Call \`${sectionGuideTool}(N)\` for the selected section. Reuse supplied context, ask only for missing information, and obtain approval before saving.`;
   }
   listAlpsSections() {
     return this.service.listSections();
@@ -32337,10 +32336,7 @@ Every document-specific tool requires doc_path. Use the source path returned by 
   }
 );
 var tc = new TemplateController(new TemplateService());
-var liteTc = new TemplateController(
-  new TemplateService(LITE_ALPS_PROFILE),
-  "get_lite_alps_section_guide"
-);
+var liteTc = new TemplateController(new TemplateService(LITE_ALPS_PROFILE));
 var dc = new DocumentController(new DocumentService());
 var documentPath = external_exports.string().min(1).refine((value) => value.trim().length > 0, "Document path must not be blank").describe(
   "Required source document path. Always pass the path returned by init/load; another call never selects it for this request."
