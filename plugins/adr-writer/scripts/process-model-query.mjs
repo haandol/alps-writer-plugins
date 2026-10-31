@@ -10,6 +10,7 @@ import {
   elementId,
   elementIri,
   inRetiredOnly,
+  isSystemStep,
   isValidElementId,
   isRetired,
   openScopeOf,
@@ -153,7 +154,7 @@ export function queryContext({
   const stepRef = (s) => {
     const by = untrusted.unreadable ? [] : (realizers.get(elementId(s)) ?? []);
     // An outside-system step is never a realization target, so its realization is never unknown.
-    const system = index.literal(s, "stepKind")[0]?.value === "system";
+    const system = isSystemStep(index, s);
     const known = !system || realizationKnown(untrusted, by);
     return ref(s, {
       process: processRef(processOfStep(index, s)),

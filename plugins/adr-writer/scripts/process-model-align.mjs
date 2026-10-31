@@ -11,7 +11,9 @@ import {
   elementId,
   elementIri,
   glossaryOverlap,
+  isAccepted,
   isRetired,
+  isSystemStep,
   majorChangeCandidates,
   openScopeKeys,
   processOfStep,
@@ -24,7 +26,6 @@ import { implementationState, realizersByStep } from "./process-model-query.mjs"
 
 const byId = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const sorted = (list) => [...new Set(list)].sort(byId);
-const isSystemStep = (index, s) => index.literal(s, "stepKind")[0]?.value === "system";
 
 /** Steps connected to one changed element: the features realizing them are directly affected. */
 function stepsTouchedBy(index, iri) {
@@ -190,7 +191,7 @@ export function alignmentPlan({
   const categoriesOf = (s) => (realizers.get(elementId(s)) ?? []).map((r) => r.category).sort(byId);
   const statusOf = (proc) => processStatus(index, proc);
   const joint = new Set([p, ...together.map(elementIri)]);
-  const runnable = (proc) => joint.has(proc) || /^Accepted\b/.test(statusOf(proc) ?? "");
+  const runnable = (proc) => joint.has(proc) || isAccepted(index, proc);
   const steps = sorted(index.out(p, "hasStep")).filter((s) => index.typeOf(s) === "Step");
   const stepRef = (s) => {
     const owner = processOfStep(index, s);

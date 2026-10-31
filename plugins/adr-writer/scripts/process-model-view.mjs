@@ -13,8 +13,10 @@ import {
   RELATIONS,
   elementId,
   elementIri,
+  flowCrossesProcesses,
   inRetiredOnly,
   isRetired,
+  isSystemStep,
   isValidElementId,
   openScopeOf,
   processStatus,
@@ -223,7 +225,7 @@ export function realizationOf(
   realizers = realizersByStep(mapping),
   { untrusted = { unreadable: false, all: false, categories: new Set() } } = {},
 ) {
-  const system = index.literal(stepIri, "stepKind")[0]?.value === "system";
+  const system = isSystemStep(index, stepIri);
   const found = realizers.get(elementId(stepIri)) ?? [];
   if (system && !realizationKnown(untrusted, found))
     return { system, state: "unknown", features: [] };
@@ -318,12 +320,6 @@ export function renderView({
     const key = keyOf(f.element);
     errorsOf.set(key, [...(errorsOf.get(key) ?? []), f]);
   }
-  /** A flow statement between steps of two different processes, as validation judges it. */
-  const crossesProcesses = (s, o) => {
-    const a = index.into(s, "hasStep");
-    const b = index.into(o, "hasStep");
-    return a.length === 1 && b.length === 1 && a[0] !== b[0];
-  };
 
   const changedIds = new Set(
     changes?.available
@@ -699,7 +695,9 @@ ${f.incomplete ? notice(t.incomplete, f.errors.map(errorItem)) : ""}${f.source ?
       return `<li>${head} <code>${esc(keyOf(x))}</code>${badge("broken", index.subjects.has(x) ? t.mistyped : t.missing)}</li>`;
     if (!shown(x)) return "";
     const wrong =
-      !fits || !endTypes.includes(type) || (r.key === "flowsTo" && crossesProcesses(s, o));
+      !fits ||
+      !endTypes.includes(type) ||
+      (r.key === "flowsTo" && flowCrossesProcesses(index, s, o));
     return `<li>${head} ${link(x)}${retiredMember(x) ? badge("retired", t.retired) : ""}${wrong ? badge("broken", t.errorMark) : ""}</li>`;
   };
   const details = shownElements

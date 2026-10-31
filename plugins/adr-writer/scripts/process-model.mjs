@@ -94,6 +94,7 @@ import path from "node:path";
 import {
   PM,
   TRANSITIONS,
+  addedLines,
   businessComposition,
   checkRealizes,
   compositionAndOpenScope,
@@ -103,6 +104,7 @@ import {
   elementIri,
   glossaryOverlap,
   indexGraph,
+  isAccepted,
   lifecycleFindings,
   parseDocument,
   parseTurtle,
@@ -1112,7 +1114,7 @@ function apply(opts) {
     for (const p of current.index.ofType("Process")) {
       const id = elementId(p);
       if (propose.has(id) || proposedResult.typeOf(p) !== "Process") continue;
-      if (!/^Accepted\b/.test(processStatus(proposedResult, p) ?? "")) continue;
+      if (!isAccepted(proposedResult, p)) continue;
       if (processStatus(proposedResult, p) !== processStatus(current.index, p)) continue;
       if (
         sameKeys(
@@ -1635,10 +1637,7 @@ function lifecycleAudit(
   history,
   { committed = true, historyAudit = null } = {},
 ) {
-  const added = (readText(path.join(opts.processDir, CHANGE_LOG)) ?? "")
-    .split("\n")
-    .filter((l) => !baseLog.split("\n").includes(l))
-    .join("\n");
+  const added = addedLines(readText(path.join(opts.processDir, CHANGE_LOG)) ?? "", baseLog);
   const { findings: level, mapping } = levelFindings(opts);
   const errors = level.filter((f) => f.level === "error");
   const promotion = (p) =>

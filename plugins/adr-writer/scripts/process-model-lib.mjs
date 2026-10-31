@@ -978,9 +978,7 @@ export function validateModel(documents, options = {}) {
   // Flow is ordering inside one process.
   for (const t of triples) {
     if (t.p !== PM + "flowsTo" || t.o.type !== "iri") continue;
-    const a = index.into(t.s, "hasStep");
-    const b = index.into(t.o.value, "hasStep");
-    if (a.length === 1 && b.length === 1 && a[0] !== b[0])
+    if (flowCrossesProcesses(index, t.s, t.o.value))
       add(
         "error",
         "process-flow-cross",
@@ -1587,6 +1585,26 @@ export function inRetiredOnly(index, iri) {
   return false;
 }
 
+/** Whether a process is Accepted, whatever its date. */
+export function isAccepted(index, processIri) {
+  return /^Accepted\b/.test(processStatus(index, processIri) ?? "");
+}
+
+/** Whether a step is a system step: a target of realization, unlike an outside-system step. */
+export function isSystemStep(index, stepIri) {
+  return index.literal(stepIri, "stepKind")[0]?.value === "system";
+}
+
+/**
+ * Whether a flow from one step to another crosses processes: each belongs to one
+ * process and the two differ. Validation reports such a flow and the view marks it.
+ */
+export function flowCrossesProcesses(index, from, to) {
+  const a = index.into(from, "hasStep");
+  const b = index.into(to, "hasStep");
+  return a.length === 1 && b.length === 1 && a[0] !== b[0];
+}
+
 /** The single process a step belongs to, or null when membership is broken. */
 export function processOfStep(index, stepIri) {
   const owners = [...new Set(index.into(stepIri, "hasStep"))].filter(
@@ -1799,6 +1817,19 @@ export const TRANSITIONS = {
   Deprecated: [],
   Superseded: [],
 };
+
+/**
+ * The lines of `text` its base lacks, in order: the change-log lines a change added,
+ * which `lifecycleFindings` reads as `changeLogAdded`. The base is split once, so the
+ * cost grows with the log, not with its square.
+ */
+export function addedLines(text, base) {
+  const had = new Set(base.split("\n"));
+  return text
+    .split("\n")
+    .filter((l) => !had.has(l))
+    .join("\n");
+}
 
 /**
  * Lifecycle changes between two models that ADR Writer's transitions cannot

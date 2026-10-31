@@ -19,6 +19,7 @@ import path from "node:path";
 import { bodyStatus, isAdrFile } from "./adr-lint-lib.mjs";
 import { alignmentPlan } from "./process-model-align.mjs";
 import {
+  addedLines,
   businessComposition,
   checkRealizes,
   compositionAndOpenScope,
@@ -27,6 +28,7 @@ import {
   elementIri,
   glossaryOverlap,
   indexGraph,
+  isAccepted,
   isRetired,
   lifecycleFindings,
   modelReferenceHits,
@@ -613,18 +615,36 @@ function resolveInTrees(top, requests, cache) {
   // caller keeps across reads serves them again.
   const roots = (cache.roots ??= new Map());
   const texts = (cache.texts ??= new Map());
+  const split = (p) => p.split("/").filter((x) => x && x !== ".");
   const commits = [...new Set(requests.map((r) => r.commit))].filter((c) => !roots.has(c));
-  const rootObjects = catObjects(
-    commits.map((c) => `${c}^{tree}`),
-    top,
-  );
+  // The trees on the way to each path of a commit read for the first time ride along with
+  // its root tree, shallowest first as the walk below reads them, so a path costs one
+  // batch instead of one per level. Git names them without following links; a name it
+  // cannot resolve that way is missing and is walked below, as is a name holding a line
+  // break, which the batch's one name per line cannot carry. A tree is the same object
+  // whichever name read it.
+  const fresh = new Set(commits);
+  const ways = requests
+    .filter((r) => fresh.has(r.commit))
+    .map((r) => ({ commit: r.commit, parts: split(r.path) }))
+    .filter((w) => !w.parts.some((x) => /[\r\n]/.test(x)));
+  const onTheWay = [];
+  for (let depth = 1; ways.some((w) => w.parts.length >= depth); depth++)
+    for (const w of ways)
+      if (w.parts.length >= depth)
+        onTheWay.push(`${w.commit}:${w.parts.slice(0, depth).join("/")}`);
+  const rootObjects = catObjects([...commits.map((c) => `${c}^{tree}`), ...onTheWay], top);
   for (const c of commits) {
     const obj = rootObjects.get(`${c}^{tree}`);
     if (!obj || obj.type !== "tree") throw new MissingObjects();
     trees.set(obj.id, treeEntries(obj.data, idBytes));
     roots.set(c, obj.id);
   }
-  const split = (p) => p.split("/").filter((x) => x && x !== ".");
+  for (const spec of onTheWay) {
+    const obj = rootObjects.get(spec);
+    if (obj?.type === "tree" && !trees.has(obj.id))
+      trees.set(obj.id, treeEntries(obj.data, idBytes));
+  }
   const states = requests.map((r) => ({
     commit: r.commit,
     parts: split(r.path),
@@ -1700,7 +1720,7 @@ export function changeFlags(
   if (!h.history.available) return flags;
 
   for (const p of head.ofType("Process")) {
-    if (!/^Accepted\b/.test(processStatus(head, p) ?? "")) continue;
+    if (!isAccepted(head, p)) continue;
     const id = elementId(p);
     // An appearance that only undoes a hand edit is no baseline; the earlier one is.
     const settled = processAudit(h, p, (input) => alignmentPlan(input)).settled();
@@ -1833,7 +1853,7 @@ export function acceptedBaselines(history) {
   const head = history.graphAt(history.head);
   if (!head) return out;
   for (const p of head.ofType("Process")) {
-    if (!/^Accepted\b/.test(processStatus(head, p) ?? "")) continue;
+    if (!isAccepted(head, p)) continue;
     const baseline = acceptedBaselineOf(
       history,
       p,
@@ -1893,16 +1913,11 @@ function processAudit(history, p, gates) {
       after?.typeOf(p) === "Process" &&
       isRetired(after, p) &&
       !(before.typeOf(p) === "Process" && isRetired(before, p));
-    const added = unknownLog
-      ? null
-      : (log(at) ?? "")
-          .split("\n")
-          .filter((l) => !(log(logParent) ?? "").split("\n").includes(l))
-          .join("\n");
+    const added = unknownLog ? null : addedLines(log(at) ?? "", log(logParent) ?? "");
     // Accepted → Proposed is judged against the composition where the earlier Accepted
     // appeared — settled, as the change flags and the working-tree check judge it.
     const acceptedBaseline = new Map();
-    if (from && /^Accepted\b/.test(processStatus(before, p) ?? "")) {
+    if (from && isAccepted(before, p)) {
       const earlier = acceptedBaselineOf(history, p, settledFrom(from, value(before)));
       if (earlier) acceptedBaseline.set(p, earlier);
     }
