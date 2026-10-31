@@ -4,6 +4,13 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const cache = new Map();
+const CACHE_LIMIT = 128;
+const PARSER = fileURLToPath(new URL("./vendor/mermaid-parser.mjs", import.meta.url));
+/** Keep one parse result, dropping the oldest beyond the limit. */
+function remember(source, parsed) {
+  if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value);
+  cache.set(source, parsed);
+}
 const esc = (value) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -38,11 +45,12 @@ export function normalizeDiagramType(type) {
 export function parseMermaid(source) {
   source = String(source ?? "");
   if (cache.has(source)) return cache.get(source);
-  const result = spawnSync(
-    process.execPath,
-    [fileURLToPath(new URL("./vendor/mermaid-parser.mjs", import.meta.url))],
-    { input: source, encoding: "utf8", timeout: 20000, maxBuffer: 8 * 1024 * 1024 },
-  );
+  const result = spawnSync(process.execPath, [PARSER], {
+    input: source,
+    encoding: "utf8",
+    timeout: 20000,
+    maxBuffer: 8 * 1024 * 1024,
+  });
   let parsed;
   try {
     if (result.error || result.status !== 0)
@@ -55,9 +63,40 @@ export function parseMermaid(source) {
   } catch (error) {
     parsed = { error: String(error.message).slice(0, 2000) };
   }
-  if (cache.size >= 128) cache.delete(cache.keys().next().value);
-  cache.set(source, parsed);
+  remember(source, parsed);
   return parsed;
+}
+
+/** Validate several sources with one parser process, so `parseMermaid` answers them from its
+ * cache. Upstream resets its configuration for every diagram it parses. A batch that fails or
+ * answers in another shape caches nothing, and each source is then parsed on its own.
+ */
+export function parseMermaidAll(sources) {
+  const fresh = [...new Set(sources.map((s) => String(s ?? "")))]
+    .filter((s) => !cache.has(s))
+    .slice(0, CACHE_LIMIT);
+  if (fresh.length < 2) return;
+  const result = spawnSync(process.execPath, [PARSER, "--batch"], {
+    input: JSON.stringify(fresh),
+    encoding: "utf8",
+    timeout: 20000,
+    maxBuffer: 8 * 1024 * 1024,
+  });
+  if (result.error || result.status !== 0) return;
+  let answers;
+  try {
+    answers = JSON.parse(result.stdout);
+  } catch {
+    return;
+  }
+  if (!Array.isArray(answers) || answers.length !== fresh.length) return;
+  for (const [i, source] of fresh.entries()) {
+    const parsed = answers[i];
+    // Cache only what a parse of its own would keep from the same answer.
+    if (parsed?.type) parsed.type = normalizeDiagramType(parsed.type);
+    else if (!parsed?.error) continue;
+    remember(source, parsed);
+  }
 }
 
 /** Preserve source until the official browser renderer has produced the SVG. */

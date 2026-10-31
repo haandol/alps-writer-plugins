@@ -29,7 +29,11 @@ import {
   realizersByStep,
   untrustedRealization,
 } from "./process-model-query.mjs";
-import { mermaidRuntime, renderMermaid } from "../skills/report-writer/scripts/mermaid.mjs";
+import {
+  mermaidRuntime,
+  parseMermaidAll,
+  renderMermaid,
+} from "../skills/report-writer/scripts/mermaid.mjs";
 
 const UI = {
   en: {
@@ -644,6 +648,8 @@ export function renderView({
   const notice = (message, items) =>
     `<div class="incomplete" role="note"><p>${esc(message)}</p>${items.length ? `<ul>${items.join("")}</ul>` : ""}</div>`;
 
+  // The landscape and every flow figure are checked by one parser process, not one each.
+  parseMermaidAll([landscape.source, ...processes.map((p) => flows.get(p).source).filter(Boolean)]);
   const lostItems = landscape.lost.map((c) => {
     const steps = [c.from === null ? c.emitter : null, c.to === null ? c.started : null].filter(
       Boolean,

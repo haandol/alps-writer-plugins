@@ -62,6 +62,27 @@ test("the packaged parser works outside the workspace without installed dependen
   }
 });
 
+test("one batch validation answers every source as a parse of its own does", async () => {
+  const sources = [
+    "flowchart LR\nA --> B",
+    "flowchart LR\nA -->",
+    "%%{init: {'theme': 'dark'}}%%\nflowchart LR\nC --> D",
+    "unknownDiagram\nx",
+    "sequenceDiagram\nA->>B: hi",
+  ];
+  // Two module instances keep separate caches: one parses each source in its own process,
+  // the other validates them all in one batch first and then answers from its cache.
+  const helper = "../skills/report-writer/scripts/mermaid.mjs";
+  const single = await import(`${helper}?single`);
+  const batch = await import(`${helper}?batch`);
+  const own = sources.map((source) => single.parseMermaid(source));
+  batch.parseMermaidAll(sources);
+  assert.deepEqual(
+    sources.map((source) => batch.parseMermaid(source)),
+    own,
+  );
+});
+
 test("fence discovery ignores nested Markdown examples and records ownership and review cues", () => {
   const source = `## Context
 \`\`\`\`text
