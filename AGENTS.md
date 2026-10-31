@@ -10,11 +10,12 @@ Everything in this repo serves one idea, so weigh changes against it.
 
 **PRD, ADR, and code are not three documents about three topics. They are the same system at three resolutions** — the way a C4 diagram shows one architecture at context, container, and component zoom. What gives a level its value is what it **refuses to show**: a context diagram that also drew every class would answer no question better than the code already does.
 
-| Level        | Artifact                  | The one question it answers                                                | Owner           |
-| ------------ | ------------------------- | -------------------------------------------------------------------------- | --------------- |
-| **Zoom out** | ALPS PRD (`*.alps.xml`)   | WHAT / WHY — the user's problem                                            | **alps-writer** |
-| **Middle**   | ADR (`docs/adr/`)         | HOW (architecture) — the decision, its rationale, the requirement contract | **adr-writer**  |
-| **Zoom in**  | Code / AGENTS.md / README | HOW (detail) — structure, names, signatures, tuning values                 | the user's repo |
+| Level                     | Artifact                                      | The one question it answers                                                 | Owner           |
+| ------------------------- | --------------------------------------------- | --------------------------------------------------------------------------- | --------------- |
+| **Zoom out**              | ALPS PRD (`*.alps.xml`)                       | WHAT / WHY — the user's problem                                             | **alps-writer** |
+| **Above ADRs (optional)** | Business process model (`docs/process/*.ttl`) | HOW the business flows across features — events, policies, cross-step rules | **adr-writer**  |
+| **Middle**                | ADR (`docs/adr/`)                             | HOW (architecture) — the decision, its rationale, the requirement contract  | **adr-writer**  |
+| **Zoom in**               | Code / AGENTS.md / README                     | HOW (detail) — structure, names, signatures, tuning values                  | the user's repo |
 
 Full ALPS applies the C4 analogy literally in Section 4 with both a Mermaid
 `C4Context` and `C4Container` diagram. Lite ALPS keeps only one product-level
@@ -62,7 +63,7 @@ Two leaks break it, and nearly every rule in `plugins/adr-writer/templates/adr/`
 - **Detail pulled up from a lower level** (signatures, field types, pool sizes, pseudocode, file paths in an ADR) — the level stops being trustworthy alone, because it asserts things the level below may already have changed. A reader must open the code to learn which half still holds.
 - **A requirement pushed out of the ADR** ("the PRD or code has the number, so drop it") — worse, because code shows enforcement and the PRD shows user intent, but neither explains the admitted architectural contract and rationale. This is the failure mode the plugin guards hardest, and why the requirement gate is asked before any exclusion filter.
 
-Section 7 may state reproducible requirement values and rules at user-problem resolution. `/feature-to-adr` classifies every implementation-relevant input and completes the handoff only when ADRs own the full contract. From that point ADRs are the sole implementation authority and the PRD remains a legacy planning document. A later PRD edit has no effect unless the user explicitly re-imports it; equivalent input is a no-op, and changed or removed contracts require an ADR-first decision.
+Section 7 may state reproducible requirement values and rules at user-problem resolution. `/feature-to-adr` classifies every implementation-relevant input and completes each Feature's handoff only when ADRs own its full contract and every current-reference-level proposal it depends on is approved. From that point ADRs are the sole implementation authority and the PRD remains a legacy planning document. A later PRD edit has no effect unless the user explicitly re-imports it; equivalent input is a no-op, and changed or removed contracts require an ADR-first decision.
 
 Both reduce to one test, and it is the test to apply when reviewing a change to any prompt, template, or rule here:
 
@@ -191,7 +192,8 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 ├── .claude-plugin/plugin.json   # Claude metadata; hooks/ is auto-discovered
 ├── .codex-plugin/plugin.json    # Codex metadata; registers skills + hooks
 ├── README.md
-├── skills/               # adr-import, adr-new, adr-impl, adr-impl-refactor, adr-impl-review, adr-sync, adr-rollup
+├── skills/               # adr-import, adr-new, adr-impl, adr-impl-refactor, adr-impl-review, adr-sync, adr-rollup,
+│                         # process-edit, process-sync, process-align, process-build, process-view (business process model)
 ├── agents/               # ADR authoring reviewer + isolated refactor/impl explainer/review/report roles
 ├── evals/                # behaviour evals (real model; NOT in pnpm test)
 │   ├── run.mjs           # runner — N runs per scenario, hit rates, shareable report
@@ -201,6 +203,9 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 │   ├── adr-invariants.sh          # one-way dependency oracle (code→ADR, ADR→PRD, rollup)
 │   ├── adr-structure-lint.mjs     # per-ADR + mapping structure CLI; shells out to the above
 │   ├── adr-lint-lib.mjs           # pure checkers + the shared vocabularies the CLI and tests read
+│   ├── process-model-lib.mjs      # process model vocabulary, Turtle subset, closed-world checks, canonical form, diff
+│   ├── process-model-fs.mjs       # model documents + index-link findings shared by the lint and the CLI
+│   ├── process-model.mjs          # process model CLI: validate, format, diff
 │   ├── adr-impl-review-categories.mjs  # finding-category table shared by the validator + renderer
 │   ├── adr-impl-review-materialize.mjs # derives repeated Markdown sections from findings.json
 │   ├── adr-impl-review-validate.mjs    # /adr-impl-review artifact validator
@@ -209,6 +214,10 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 ├── hooks/
 │   ├── hooks.json        # SessionStart registration
 │   └── surface-adr-context.mjs  # SessionStart — inject a compact ADR admission directive
+├── references/process-model.md   # business process model level: ownership, vocabulary, validation
+├── templates/process/
+│   ├── vocabulary.ttl    # RDFS vocabulary of the business process model (never copied into docs/process)
+│   └── example.ttl       # canonical example model
 └── templates/adr/
     ├── README.md         # ADR concepts (copied into docs/adr/ on /adr-new)
     ├── authoring-rules.md, structure.md
@@ -292,8 +301,10 @@ Section approval. `read_alps_glossary` and `save_alps_glossary_entry` operate on
 explicitly selected document. The optional XML glossary follows all Sections, survives later
 saves and reloads, and exports last. Never pre-seed a dictionary or add a separate DDD exercise for glossary maintenance.
 
-`/feature-to-adr` transfers needed definitions to `docs/adr/glossary.md`; ADR
-authoring creates or updates it under the existing approval when needed.
+`/feature-to-adr` transfers needed definitions to `docs/adr/glossary.md` unless a
+current reference level such as the business process model owns the term, in
+which case it routes a change proposal to that level; ADR authoring creates or
+updates the glossary under the existing approval when needed.
 Equivalent meanings are no-ops, unrelated entries are preserved, and conflicting
 meanings are resolved before replacement. This file is supporting material at the
 ADR level, without Status or mapping registration; contract rules remain in the

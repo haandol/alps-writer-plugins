@@ -65,6 +65,27 @@ export function seedMapping(dir, mapping = { categories: {} }) {
   write(dir, "docs/adr/.mapping.json", JSON.stringify(mapping, null, 2) + "\n");
 }
 
+/**
+ * Write a minimal, lint-clean ADR for every indexed path a scenario does not
+ * supply itself, so a fixture's index never points at a missing file.
+ */
+export function seedIndexedAdrs(dir, mapping, supplied = {}) {
+  for (const entry of Object.values(mapping.categories ?? {}))
+    for (const rec of entry.adrs ?? []) {
+      if (supplied[rec.path]) {
+        write(dir, rec.path, supplied[rec.path]);
+        continue;
+      }
+      const number = path.basename(rec.path).slice(0, 4);
+      const title = rec.summary ?? "recorded decision";
+      write(
+        dir,
+        rec.path,
+        `# ADR ${number}: ${title}\n\nDate: 2026-10-01\n\n## Status\n\n${rec.status}\n\n## Purpose\n\nThe feature needs a recorded decision.\n\n## Decision Drivers\n\n- Customers see consistent results.\n- Support can explain each result.\n- The rule stays stable across releases.\n\n## Decision\n\n${title}.\n\n## Alternatives\n\n1. **Leave it undecided** — rejected; results would vary.\n\n## Consequences\n\n### Positive\n\n- Results are consistent.\n`,
+      );
+    }
+}
+
 export function validateReviewArtifact(dir, report, findings) {
   const artifactDir = path.join(dir, "review-artifact");
   const reportPath = write(artifactDir, "implementation-review.md", report);

@@ -34,6 +34,23 @@ export const IMPACT_RULES = [
     scenarioPrefixes: ["author-", "alps-", "lite-alps-", "feature-handoff-", "import-"],
   },
   {
+    pathPrefixes: [
+      "plugins/adr-writer/references/business-context.md",
+      "plugins/adr-writer/references/process-model.md",
+      "plugins/adr-writer/scripts/process-model",
+      "plugins/adr-writer/templates/process/",
+    ],
+    scenarioPrefixes: ["author-checks-business-", "impl-reports-business-", "process-"],
+  },
+  {
+    pathPrefixes: ["plugins/adr-writer/skills/process-"],
+    scenarioPrefixes: ["process-"],
+  },
+  {
+    pathPrefixes: ["plugins/adr-writer/references/glossary.md"],
+    scenarioPrefixes: ["author-defers-model-owned-", "feature-handoff-routes-model-owned-"],
+  },
+  {
     pathPrefixes: ["plugins/adr-writer/references/decision-questions.md"],
     scenarioPrefixes: ["sync-", "rollup-", "import-"],
   },

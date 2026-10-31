@@ -138,6 +138,13 @@ test("candidate copies are independent, ignored, checked in their own root, and 
       !(`${scenario.draftRoot}/docs/adr/authoring-rules.md` in evidence),
       "only immutable duplicate rules are excluded",
     );
+    assert.ok(
+      existsSync(path.join(f.root, scenario.draftRoot, "docs/adr/decision-log.template.md")),
+    );
+    assert.ok(
+      !(`${scenario.draftRoot}/docs/adr/decision-log.template.md` in evidence),
+      "the draft's copy of the log template is a rule copy, not an authored file",
+    );
     assert.equal(obligations[0].id, "scenario-behavior");
     assert.equal(obligations[1].id, "candidate-before-apply");
   }));

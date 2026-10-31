@@ -1,6 +1,6 @@
 // Dependency-free fixture, transport, aggregation and report regressions.
 // Semantic correctness is measured separately by live LLM evaluations.
-import { test } from "node:test";
+import { after, test } from "node:test";
 import assert from "node:assert/strict";
 import {
   readdirSync,
@@ -10,6 +10,7 @@ import {
   mkdtempSync,
   mkdirSync,
   existsSync,
+  rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -18,6 +19,25 @@ import { fileURLToPath } from "node:url";
 import { obligations as digestObligations } from "../evals/scenarios/alps-approval-digest-preserves-contract.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+
+// Every fixture directory this file creates is removed when the file finishes,
+// so repeated runs do not fill the system temporary directory.
+const scratchDirs = [];
+const scratch = (prefix) => {
+  const dir = mkdtempSync(path.join(tmpdir(), prefix));
+  scratchDirs.push(dir);
+  return dir;
+};
+after(() => {
+  for (const dir of scratchDirs) rmSync(dir, { recursive: true, force: true });
+});
+/** `runOnce` for these tests: its fixture folder joins the ones removed at the end. */
+async function runScenario(...args) {
+  const { runOnce } = await import("../evals/run.mjs");
+  const result = await runOnce(...args);
+  if (result.fixture) scratchDirs.push(path.dirname(result.fixture));
+  return result;
+}
 const PLUGIN_ROOT = path.resolve(HERE, "..");
 const EVALS = path.join(PLUGIN_ROOT, "evals");
 const RUN = path.join(EVALS, "run.mjs");
@@ -26,7 +46,7 @@ test("comprehension scoring prompts include the shipping rubric without requirin
   const rubric = readFileSync(path.join(PLUGIN_ROOT, "references/comprehension-load.md"), "utf8");
   for (const name of ["comprehension-load-score-only", "comprehension-load-calibration-bands"]) {
     const scenario = await loadScenario(`${name}.mjs`);
-    const dir = mkdtempSync(path.join(tmpdir(), "adr-comprehension-input-"));
+    const dir = scratch("adr-comprehension-input-");
     const prompt = await scenario.build(dir);
     assert.ok(prompt.includes(rubric), `${name} must receive the full current rubric`);
     assert.equal(prompt.split(rubric).length - 1, 1, `${name} receives the rubric only once`);
@@ -51,7 +71,7 @@ function needsEnv(scenario) {
 // A stub "agent": ignores stdin, prints the canned reply. Stands in for the real
 // command so the scorer can be exercised without a model.
 function stubAgent(reply, semanticVerdict) {
-  const dir = mkdtempSync(path.join(tmpdir(), "adr-eval-stub-"));
+  const dir = scratch("adr-eval-stub-");
   const script = path.join(dir, "stub.mjs");
   writeFileSync(
     script,
@@ -82,7 +102,12 @@ function runEvals(args, cmd) {
   const r = spawnSync("node", [RUN, ...args], {
     cwd: PLUGIN_ROOT,
     encoding: "utf8",
-    env: { ...process.env, ...(cmd ? { ADR_EVAL_CMD: cmd } : {}) },
+    // The runner keeps each fixture as evidence; here they live in a scratch folder.
+    env: {
+      ...process.env,
+      TMPDIR: scratch("adr-eval-run-"),
+      ...(cmd ? { ADR_EVAL_CMD: cmd } : {}),
+    },
     // Match the production eval timeout. The full test command schedules
     // several subprocess-heavy files together, so 120 seconds can kill a
     // completed stub run while its parent runner is still exiting.
@@ -166,7 +191,7 @@ test("prompts embed the real skill/agent text, not a paraphrase", async () => {
     // Scenarios that point at a repo supplied via the environment cannot build
     // without it; the real-repo one has its own test below.
     if (needsEnv(s)) continue;
-    const dir = mkdtempSync(path.join(tmpdir(), "adr-eval-shape-"));
+    const dir = scratch("adr-eval-shape-");
     const prompt = await s.build(dir);
     assert.ok(prompt.length > 5000, `${s.name}: prompt is too short to hold a real skill body`);
     assert.ok(
@@ -241,7 +266,7 @@ test("prompt loaders include only explicitly selected direct references", async 
 
 test("the Lite resume eval embeds the shipping profile-aware runtime guidance", async () => {
   const scenario = await loadScenario("lite-alps-resume-preserves-proposal-first.mjs");
-  const dir = mkdtempSync(path.join(tmpdir(), "lite-resume-eval-"));
+  const dir = scratch("lite-resume-eval-");
   const prompt = await scenario.build(dir);
 
   assert.match(prompt, /get_lite_alps_section_guide/);
@@ -270,7 +295,7 @@ test("review fixtures are valid repos by the shipped lint", async () => {
     // ADR yet, which is the point of the scenario. Env-driven ones lint whatever
     // the target repo holds, which is not this harness's business.
     if (s.name.startsWith("author-") || needsEnv(s)) continue;
-    const dir = mkdtempSync(path.join(tmpdir(), "adr-eval-lint-"));
+    const dir = scratch("adr-eval-lint-");
     await s.build(dir);
     const r = spawnSync("node", [lint, "--no-invariants", "--json"], {
       cwd: dir,
@@ -326,7 +351,6 @@ R4 | 20턴 제한은 코드에 있으므로 ADR에서 삭제
 === EVAL-END ===`;
 
 test("legacy invocation forwards untagged replies to the independent configured judge", async () => {
-  const { runOnce } = await import("../evals/run.mjs");
   let calls = 0;
   const scenario = {
     name: "probe",
@@ -337,7 +361,7 @@ test("legacy invocation forwards untagged replies to the independent configured 
     },
   };
   const reply = "The decision stays Accepted. I will proceed with the approved work.";
-  const result = await runOnce(
+  const result = await runScenario(
     scenario,
     { dryRun: false, cmd: "unused" },
     {
@@ -368,7 +392,6 @@ test("legacy invocation forwards untagged replies to the independent configured 
 });
 
 test("legacy invocation keeps failed/empty targets and judge errors out of scored results", async () => {
-  const { runOnce } = await import("../evals/run.mjs");
   const scenario = {
     name: "probe",
     description: "Preserve the approved contract.",
@@ -378,7 +401,7 @@ test("legacy invocation keeps failed/empty targets and judge errors out of score
     { ok: false, stdout: "partial", stderr: "failed", status: 1 },
     { ok: true, stdout: "", stderr: "", status: 0 },
   ]) {
-    const result = await runOnce(
+    const result = await runScenario(
       scenario,
       { dryRun: false },
       {
@@ -391,7 +414,7 @@ test("legacy invocation keeps failed/empty targets and judge errors out of score
     assert.ok(result.error);
     assert.equal(result.scored, undefined);
   }
-  const result = await runOnce(
+  const result = await runScenario(
     scenario,
     { dryRun: false },
     {
@@ -410,7 +433,7 @@ test("the real-repo fixture resolves the ADR's own local links", async (t) => {
 
   // Build a miniature "real repo": an ADR that links to a sibling and to a doc
   // outside docs/adr/, plus a link that is genuinely absent.
-  const repo = mkdtempSync(path.join(tmpdir(), "adr-eval-fakerepo-"));
+  const repo = scratch("adr-eval-fakerepo-");
   const w = (rel, body) => {
     const full = path.join(repo, rel);
     require$mkdir(path.dirname(full));
@@ -442,7 +465,7 @@ test("the real-repo fixture resolves the ADR's own local links", async (t) => {
       `${path.join(EVALS, "scenarios", "review-real-repo-adr.mjs")}?repo=${encodeURIComponent(repo)}`
     )
   ).default;
-  const dir = mkdtempSync(path.join(tmpdir(), "adr-eval-real-"));
+  const dir = scratch("adr-eval-real-");
   await fresh.build(dir);
 
   const exists = (rel) => existsSync(path.join(dir, rel));
@@ -464,10 +487,10 @@ function require$mkdir(dir) {
 }
 
 test("legacy loading retains artifact gates and a semantic PASS cannot waive a missing artifact", async () => {
-  const { runOnce, loadScenarios } = await import("../evals/run.mjs");
+  const { loadScenarios } = await import("../evals/run.mjs");
   const item = (await loadScenarios()).find((s) => s.name === "author-keeps-values-and-lints");
   assert.equal(typeof item.mechanicalScore, "function");
-  const result = await runOnce(
+  const result = await runScenario(
     item,
     { dryRun: false },
     {
@@ -525,7 +548,6 @@ test("legacy CLI prepares by default even when an executable command was supplie
 });
 
 test("legacy default invocation uses isolated fixture tools and retains their action evidence", async () => {
-  const { runOnce } = await import("../evals/run.mjs");
   const { makeTools } = await import("../evals/regression/workspace.mjs");
   let launched = false;
   const item = {
@@ -534,7 +556,7 @@ test("legacy default invocation uses isolated fixture tools and retains their ac
     artifactPaths: [".adr-review/report.md"],
     build: () => "Write the report.",
   };
-  const result = await runOnce(
+  const result = await runScenario(
     item,
     { dryRun: false },
     {
@@ -578,35 +600,43 @@ test("legacy default invocation uses isolated fixture tools and retains their ac
 
 test("legacy CLI reports untagged semantic results with complete timing and unknown judging cost", async () => {
   const { main } = await import("../evals/run.mjs");
-  const dir = mkdtempSync(path.join(tmpdir(), "untagged-cli-"));
+  const dir = scratch("untagged-cli-");
   const report = path.join(dir, "report.md");
-  await main(["--live", "--only", "untagged-cli", "--out", report], {
-    scenarios: [
-      {
-        name: "untagged-cli",
-        description: "Proceed with an approved unchanged plan.",
-        build: () => "The unchanged plan is approved.",
+  // The runner keeps its fixture as evidence; here it lives in the scratch folder.
+  const systemTemp = process.env.TMPDIR;
+  process.env.TMPDIR = dir;
+  try {
+    await main(["--live", "--only", "untagged-cli", "--out", report], {
+      scenarios: [
+        {
+          name: "untagged-cli",
+          description: "Proceed with an approved unchanged plan.",
+          build: () => "The unchanged plan is approved.",
+        },
+      ],
+      target: () => ({
+        ok: true,
+        stdout: "I will proceed without another approval.",
+        stderr: "",
+        status: 0,
+        ms: 1,
+        costUSD: 0.25,
+      }),
+      evaluate: async ({ onCall }) => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        onCall({ models: ["judge-stub"], ms: 5, costUSD: null, usage: { inputTokens: 10 } });
+        return {
+          verdict: "PASS",
+          obligationJudgments: [
+            { id: "meaning", verdict: "PASS", reason: "Controlled configured judgment" },
+          ],
+        };
       },
-    ],
-    target: () => ({
-      ok: true,
-      stdout: "I will proceed without another approval.",
-      stderr: "",
-      status: 0,
-      ms: 1,
-      costUSD: 0.25,
-    }),
-    evaluate: async ({ onCall }) => {
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      onCall({ models: ["judge-stub"], ms: 5, costUSD: null, usage: { inputTokens: 10 } });
-      return {
-        verdict: "PASS",
-        obligationJudgments: [
-          { id: "meaning", verdict: "PASS", reason: "Controlled configured judgment" },
-        ],
-      };
-    },
-  });
+    });
+  } finally {
+    if (systemTemp === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = systemTemp;
+  }
   const body = readFileSync(report, "utf8");
   assert.ok(body.includes("scored: 1/1"));
   assert.ok(body.includes("elapsed evaluation time:"));

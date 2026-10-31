@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the adr-authoring/deci
 category. Each ADR body describes only the current state, while the timeline of "what
 changed and why" accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-10-29 — 상위 레벨이 정의를 소유한 업무 용어는 용어집에 다시 정의하지 않음
+
+- **Current ADR**: [present-decision-digest-and-semantic-diff](./0001-present-decision-digest-and-semantic-diff.md)
+- **Change type**: requirement rule change
+- **What**: 필요한 정의는 모두 ADR 루트 용어집에 기록 → 현재 기준 레벨(인계 뒤에도 ADR이 따르는 상위 레벨, PRD 제외)이 정의를 소유한 업무 용어는 그 정의를 재사용하고, 새 정의와 의미 변경은 그 레벨의 변경 제안으로 ADR 승인 요약에 함께 보이며, 승인 전이나 거절된 동안 그 뜻에 기대는 계약 행은 미정으로 저장하고 그 ADR은 Proposed로 남으며, 기존 용어집 항목은 그 레벨의 승인 경로에서 정리한다.
+- **Why**: 업무 프로세스 모델이 있는 저장소에서는 업무 용어를 모델이 소유하므로, 같은 용어의 정의가 두 레벨의 기준이 되지 않아야 한다.
+
 ## 2026-09-30 — 의도·충돌의 일괄 질문과 자동 재개를 제안
 
 - **Current ADR**: [present-decision-digest-and-semantic-diff](./0001-present-decision-digest-and-semantic-diff.md)

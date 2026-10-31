@@ -1,6 +1,6 @@
-import { test } from "node:test";
+import { after, test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { main } from "../skills/run.mjs";
@@ -8,7 +8,17 @@ import { catalog } from "../skills/catalog.mjs";
 import { makeTools } from "../regression/workspace.mjs";
 import { adopt } from "../../tests/fixtures/import-approved-documents.mjs";
 
-const temp = () => mkdtempSync(path.join(tmpdir(), "eval-hardening-"));
+// Every temporary folder this file creates is removed when the file finishes,
+// so repeated runs do not fill the system temporary directory.
+const created = [];
+const temp = () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "eval-hardening-"));
+  created.push(dir);
+  return dir;
+};
+after(() => {
+  for (const dir of created) rmSync(dir, { recursive: true, force: true });
+});
 const text = "Controlled fixture response.";
 const reply = (rows) =>
   `${text}\n=== EVAL-VERDICT: PASS ===\n=== EVAL-FINDINGS ===\n${rows}\n=== EVAL-END ===`;

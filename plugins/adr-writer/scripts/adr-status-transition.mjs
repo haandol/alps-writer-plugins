@@ -36,7 +36,12 @@ function parseArgs(argv) {
   }
 
   if (positional.length !== 2) usage("ADR path and target status are required");
-  return { adrArg: positional[0], status: positional[1], summary, root: path.resolve(root) };
+  return {
+    adrArg: positional[0],
+    status: positional[1].trim(),
+    summary,
+    root: path.resolve(root),
+  };
 }
 
 function normalizeAdrPath(root, adrArg) {

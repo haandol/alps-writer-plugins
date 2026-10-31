@@ -69,10 +69,10 @@ export function snapshot(root, { draftRoot } = {}) {
     listFiles(root)
       .filter(
         (file) =>
-          !SEEDED_RULE_DOCS.some(
-            (name) =>
-              file === `docs/adr/${name}` ||
-              (draftRoot && file === `${draftRoot}/docs/adr/${name}`),
+          !SEEDED_RULE_DOCS.some((name) => file === `docs/adr/${name}`) &&
+          // prepare_draft copies every stamped rule document, the log template included.
+          !(
+            draftRoot && STAMPED_RULE_DOCS.some((name) => file === `${draftRoot}/docs/adr/${name}`)
           ),
       )
       .map((file) => [file, readFileSync(confined(root, file), "utf8")]),

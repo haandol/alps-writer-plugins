@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { after, test } from "node:test";
 import {
   chmodSync,
   existsSync,
@@ -8,6 +8,7 @@ import {
   symlinkSync,
   writeFileSync,
   unlinkSync,
+  rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -35,7 +36,16 @@ import { invokeClaude } from "../evals/regression/claude.mjs";
 const PLUGIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RUNNER = path.join(PLUGIN, "evals/regression/run.mjs");
 const SERVER = path.join(PLUGIN, "evals/regression/tool-server.mjs");
-const temp = () => mkdtempSync(path.join(tmpdir(), "adr-regression-test-"));
+// Removed when the file finishes, so repeated runs do not fill the temporary directory.
+const tempDirs = [];
+const temp = () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "adr-regression-test-"));
+  tempDirs.push(dir);
+  return dir;
+};
+after(() => {
+  for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true });
+});
 
 test("retiring a skill preserves its task and leaves the no-skill condition executable", async () => {
   const folder = temp();

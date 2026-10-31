@@ -1,0 +1,108 @@
+# Business context before ADR and code changes
+
+Read this module when the repository has a business process model — one or more
+Turtle documents in `docs/process/` — and the current workflow creates or
+changes an ADR decision or contract, or changes code of a feature linked to a
+process step. Without model documents, skip it entirely: add no output,
+question, link judgment or index change. Vocabulary and validation are in
+[process model](process-model.md).
+
+## When to check
+
+Check the upper level before the lower one, the same way code waits for its ADR.
+These paths query the target feature's business context before finalizing ADR
+content: a new ADR, an edit-in-place change, an `/adr-sync` body change, an
+`/adr-import` adoption, a PRD handoff, and a user-approved deprecation or
+supersede. A deprecation or supersede also shows, in its approval summary, the
+steps that lose their realizing feature.
+
+A category split or merge that keeps every meaning, and a rollup, do not query.
+They only move `realizes` links in `docs/adr/.mapping.json`:
+
+- A merge unites the links. A split moves each step's link to the category whose
+  ADR holds that step's compliance contract; when no ADR or several ADRs hold it,
+  show the assignment in the approval summary.
+- A category created by a split or merge starts without an empty record; merged
+  into a linked category, only the links remain. A rollup keeps the category, its
+  links and its empty record.
+
+Automatic lifecycle transitions — `/adr-impl` promoting to `Accepted`,
+`/adr-sync` returning an ADR to `Proposed` — never wait for a query.
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/process-model.mjs query --category <key>
+```
+
+The query also takes `--process`, `--concept` or `--event`, and
+`--include-retired`. It returns only connected elements: the feature's steps and
+their neighbours, the events and policies that start them and the steps emitting
+those events, the policies and steps — in any process — reacting to the events
+the steps emit, the steps sharing their business concepts, the applicable rules
+with their basis, and the open scope. Every step carries its process Status and
+its realizing features with their ADR Status. Never persist a result; it is not
+a record or a second authority.
+
+## Unlinked features
+
+When the target feature realizes no step, judge one of three outcomes and show
+it with its reason in the approval summary or report: it realizes an existing
+step (name the candidate), the model needs a new step (a process change
+proposal), or it is unrelated to the business flow. Skip the judgment for a
+deprecation without a replacement. When the user confirms the feature stays
+unlinked, record `"realizes": []` for its category; never store a link candidate
+or an empty record before approval. A category with an empty record is not asked
+again.
+
+## Using the context
+
+- **Choose within the model.** Pick details the ADR leaves open so they do not
+  contradict the model's flow, events, policies, cross-feature rules or terms.
+- **Propose, do not absorb.** When no such choice exists, or the change needs a
+  different flow, event, policy, cross-feature rule, or a business concept or
+  term the model defines, raise a process change proposal through
+  `/process-edit`. Until it is approved, or while it is rejected, do not finalize
+  ADR content that depends on it: save that contract row with a visible pending
+  marker and the awaited business change in business language, without the
+  model's file location or element ids. A pending row is not implemented, keeps
+  the ADR `Proposed`, and is reported as pending by implementation review and
+  process sync. After a rejection, rewrite the row with the model's current
+  meaning or keep it pending until the user decides. A PRD handoff leaves that
+  Feature unresolved.
+- **Compliance contracts.** When an approval-bound authoring path — new ADR,
+  edit-in-place, import, PRD handoff — finds that the context's event hand-off,
+  policy or business rule has no compliance contract in the realizing ADR,
+  propose one in the draft at feature resolution: the inputs the feature accepts
+  and the events it emits for that relation, rejection and failure behavior,
+  exact values and conditions, and guarantees such as duplicate delivery. Report
+  other realizing ADRs missing the same contract as alignment issues. In the
+  context of a `Proposed` process, first check model meaning no realizing ADR
+  reflects yet, and fold the compliance contracts it needs into that process's
+  change approval summary so they are asked once. `/adr-sync` never adds a
+  compliance contract itself; it reports the gap as an alignment issue for
+  `/process-sync`.
+- **Report contradictions.** An ADR or code change that learns of a
+  contradiction with the context reports it in its completion report — as an
+  alignment issue (the model and the realizing ADR contract differ) or as a
+  process change proposal. Completion is still judged by ADR contract rows only.
+- **Not settled.** When the context shows validation errors, uncommitted model
+  edits, unsynced direct edits or a lifecycle edit of an `Accepted` process,
+  report that and do not treat that part as a settled reference. Propose
+  compliance contracts for it only after presenting `/process-sync` and its
+  approval. When the change flags are unavailable or unknown for part of the
+  scope, say so and treat the `Accepted` processes there as possibly edited
+  directly until the history is available and `/process-sync` has checked them
+  with it.
+- **State what you checked.** Name the business context you checked in the ADR
+  approval summary and in the implementation plan. Keep model locations and
+  element ids out of ADR bodies.
+
+## Limits
+
+- Absence from the model is not absence from the business. An open path stays
+  something to confirm; a flow, policy or rule the model lacks is never evidence
+  that no rule applies.
+- A not-applicable item is evidence only that the business-level path does not
+  exist; do not turn it back into a question. Never use it to drop a failure
+  guarantee inside a step.
+- The business context is never an implementation obligation or completion
+  condition by itself; only ADR contract rows are.

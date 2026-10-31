@@ -1,6 +1,6 @@
-import { test } from "node:test";
+import { after, test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -24,7 +24,17 @@ const evidence = {
   turns: item.turns,
   referenceDate: "2026-09-19",
 };
-const folder = () => mkdtempSync(path.join(tmpdir(), "adr-deepeval-"));
+// Every temporary folder this file creates is removed when the file finishes,
+// so repeated runs do not fill the system temporary directory.
+const created = [];
+const folder = () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "adr-deepeval-"));
+  created.push(dir);
+  return dir;
+};
+after(() => {
+  for (const dir of created) rmSync(dir, { recursive: true, force: true });
+});
 const judgmentOutput = (score, reason, verdict = score === 1 ? "PASS" : "UNVERIFIED") => ({
   score,
   reason,

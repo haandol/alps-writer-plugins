@@ -72,6 +72,17 @@
             "type": "array",
             "description": "Paths to schema/table documents (e.g., docs/tables/*.md, prisma/schema.prisma) that must stay bidirectionally linked with ADRs in this category. Used by the authoring-rules DB schema co-change rule and by adr-sync auxiliary doc check.",
             "items": { "type": "string" }
+          },
+          "realizes": {
+            "type": "array",
+            "description": "Only in a repository with a business process model (docs/process/*.ttl): the identifiers of the model steps this category realizes (the local part of urn:adr-writer:model:<id>, e.g. 'ordering.submit-order'). The index is the only place a feature-to-step link lives — the model never names categories, so renaming, splitting or rolling up a category edits only this field. An empty list records that the feature was confirmed to realize no step; it is not a link. adr-structure-lint reports a link to a step the model does not have and links left when the model is gone.",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "^[^\\s:<>\"]+$"
+            },
+            "uniqueItems": true
           }
         }
       }

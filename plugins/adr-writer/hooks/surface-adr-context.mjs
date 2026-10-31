@@ -3,10 +3,21 @@
 //
 // startup/resume/clear/compact cover the points where session context is created
 // or replaced without adding noise to every user prompt. The model reads the ADR
-// index only after a request passes the admission gate.
+// index only after a request passes the admission gate. When the repository also
+// has a business process model, two lines ask for the business-context query
+// first; neither the model nor the index content is rendered.
 
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
+import { hasModel } from "../scripts/process-model-fs.mjs";
+
+const QUERY_CLI = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "scripts",
+  "process-model.mjs",
+);
 
 const MAPPING_PATH = process.env.ALPS_ADR_MAPPING || "docs/adr/.mapping.json";
 
@@ -66,12 +77,19 @@ function main() {
     "Confirm a new or changed ADR contract once before implementation. Use risk-proportional review and auto-repair evidence-backed code/test findings. Escalate changed contracts, contradictions, unverified material risk or destructive scope.",
     "Use /adr-sync for proven drift, broad refactors, manual ADR edits, or audits; else use targeted checks and risk-selected review.",
     "Constrain artifacts and actions, not private reasoning. Choose orchestration from current capability; persist none.",
-  ].join("\n");
+  ];
+  // The business process model sits above ADRs: check it before ADR changes and
+  // before code of linked features, the same way code waits for its ADR.
+  if (hasModel(path.join(path.dirname(path.dirname(mappingFile)), "process")))
+    directive.push(
+      `Business process model present: before creating or changing an ADR decision or contract, first check the feature's business context (node ${QUERY_CLI} query --category <key>).`,
+      "Before changing code of a feature linked to a process step, query its business context; use it to catch contradictions, never as new obligations.",
+    );
 
   const out = {
     hookSpecificOutput: {
       hookEventName: "SessionStart",
-      additionalContext: directive,
+      additionalContext: directive.join("\n"),
     },
   };
   process.stdout.write(JSON.stringify(out) + "\n");

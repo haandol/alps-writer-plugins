@@ -34,7 +34,7 @@ technical layer.
 <write "none" only when the complete contract is empty>
 **Why this decision**: <the discriminating rationale against the realistic alternatives>
 **Main risks**: <the negative consequences or material uncertainties>
-**Regeneration checklist**: <each contract rebuilt code must honor and the observable result used to review it, marked present; unresolved items are explicit questions>
+**Regeneration checklist**: <each contract rebuilt code must honor and the observable result used to review it, marked present; unresolved items are explicit questions; a pending row awaiting an upper-level business change is listed as pending, not as an approved contract>
 **Alternatives considered**: <N realistic options; expand only on request or when one affects approval>
 **Prerequisites**: <dependency ADRs, or none>
 **Verification**: <harness: pass | n warnings> · R1-R20 checked · independent read: <used|not needed>

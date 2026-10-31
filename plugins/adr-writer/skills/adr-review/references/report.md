@@ -69,8 +69,10 @@ unsupplied user intent was checked.
 
 **A `PASS` count is not a clean bill of health while an axis went unjudged.** The per-ADR verdict stays the reviewer's three values (`PASS` / `FIX_REQUIRED` / `BLOCK`) — do not invent a fourth — but an ADR can only be judged against the rules its reviewer could actually reach, so a rule nobody evaluated silently rides along inside `PASS`. That is why `Unjudged axes` sits in Scope, above the verdict: when it is non-empty, **say in the chat summary that the PASS count excludes those rules** rather than reporting "N passed" flat. This is the same discipline `/adr-impl-review` applies with `INCONCLUSIVE` — unverified must never read as verified — expressed without disturbing the reviewer's verdict vocabulary.
 
-**Summarize in chat rather than dumping the whole report**: the At a glance
-verdict, impact, action and risk, then the two or three ADRs that need attention
-most. For a large sweep, write the full report to a file and give the path.
-
-Lead the chat summary with the four questions a reader must answer: **Decision** (what was chosen), **Contract** (what the result must honor), **Rationale** (why this option won), and **Risk** (what remains costly, uncertain, or unjudged). Keep rule IDs, quotations, paths, confidence, and detailed evidence in the full report unless they are needed to understand an actionable finding. Progressive disclosure must never hide a requirement value, a `BLOCK`, or an unjudged axis.
+**Summarize in chat rather than dumping the whole report**: open with the At a
+glance verdict, impact, action and risk, then compress the two or three ADRs
+that need attention most through the four questions a reader must answer:
+**Decision** (what was chosen), **Contract** (what the result must honor),
+**Rationale** (why this option won), and **Risk** (what remains costly,
+uncertain, or unjudged). For a large sweep, write the full report to a file and
+give the path. Keep rule IDs, quotations, paths, confidence, and detailed evidence in the full report unless they are needed to understand an actionable finding. Progressive disclosure must never hide a requirement value, a `BLOCK`, or an unjudged axis.

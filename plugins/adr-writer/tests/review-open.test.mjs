@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { openerCommand, openReviewReport } from "../scripts/adr-impl-review-open.mjs";
@@ -30,6 +31,35 @@ test("the opener uses the host default browser command", () => {
     args: ["/tmp/report.html"],
   });
   assert.equal(openerCommand("/tmp/report.html", "aix"), null);
+});
+
+test("a named browser replaces the default opener on every platform", () => {
+  assert.deepEqual(openerCommand("file:///tmp/report.html", "darwin", "Firefox"), {
+    command: "open",
+    args: ["-a", "Firefox", "file:///tmp/report.html"],
+  });
+  assert.deepEqual(openerCommand("C:\\report.html", "win32", "firefox"), {
+    command: "cmd.exe",
+    args: ["/d", "/s", "/c", "start", "", "firefox", "C:\\report.html"],
+  });
+  assert.deepEqual(openerCommand("/tmp/report.html", "linux", "firefox"), {
+    command: "firefox",
+    args: ["/tmp/report.html"],
+  });
+  withReport((report) => {
+    const calls = [];
+    const result = openReviewReport(report, {
+      platform: "linux",
+      browser: "firefox",
+      spawn(command, args) {
+        calls.push({ command, args });
+        return { status: 0 };
+      },
+    });
+    assert.equal(result.opened, true);
+    assert.equal(calls.length, 1, "still exactly one open attempt");
+    assert.equal(calls[0].command, "firefox");
+  });
 });
 
 test("a valid report is opened exactly once", () => {
@@ -88,6 +118,91 @@ test("an unavailable or failed opener preserves the validated report path", () =
     assert.match(failed.reason, /status 3/);
   });
 });
+
+test("a failed opener's own message is reported with its exit status after one attempt", () => {
+  withReport((report) => {
+    // A private temporary directory shows whether the captured output is cleaned up.
+    const temp = path.join(path.dirname(report), "tmp");
+    mkdirSync(temp);
+    const names = ["TMPDIR", "TMP", "TEMP"];
+    const saved = names.map((name) => [name, process.env[name]]);
+    for (const name of names) process.env[name] = temp;
+    let calls = 0;
+    let result;
+    try {
+      result = openReviewReport(report, {
+        platform: "darwin",
+        browser: "NoSuchBrowser",
+        // A real process writes to whatever error output the opener provides.
+        spawn(_command, _args, options) {
+          calls++;
+          return spawnSync(
+            process.execPath,
+            [
+              "-e",
+              "process.stderr.write(\"LSOpenURLsWithRole() failed\\nUnable to find application named 'NoSuchBrowser'\\n\"); process.exit(1)",
+            ],
+            options,
+          );
+        },
+      });
+    } finally {
+      for (const [name, value] of saved)
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+    }
+    assert.equal(calls, 1, "still exactly one open attempt");
+    assert.equal(result.opened, false);
+    assert.equal(result.validArtifact, true);
+    assert.equal(
+      result.reason,
+      "open exited with status 1: Unable to find application named 'NoSuchBrowser'",
+    );
+    assert.deepEqual(readdirSync(temp), [], "the captured output leaves no file behind");
+  });
+});
+
+test(
+  "a browser the opener leaves running does not hold the open attempt",
+  {
+    skip: process.platform === "win32" && "detached POSIX process groups only",
+  },
+  () => {
+    withReport((report) => {
+      const pidFile = path.join(path.dirname(report), "browser.pid");
+      let pid = 0;
+      try {
+        const result = openReviewReport(report, {
+          platform: "linux",
+          // The opener starts a long-running browser that inherits its output and exits.
+          spawn: (_command, _args, options) =>
+            spawnSync(
+              process.execPath,
+              [
+                "-e",
+                `const browser = require("node:child_process").spawn(process.execPath, ["-e", "setTimeout(() => {}, 20000)"], { detached: true, stdio: "inherit" });
+require("node:fs").writeFileSync(${JSON.stringify(pidFile)}, String(browser.pid));
+browser.unref();`,
+              ],
+              options,
+            ),
+        });
+        pid = Number(readFileSync(pidFile, "utf8"));
+        assert.equal(result.opened, true);
+        assert.doesNotThrow(
+          () => process.kill(pid, 0),
+          "the attempt returned while the browser still runs",
+        );
+      } finally {
+        try {
+          if (pid) process.kill(pid);
+        } catch {
+          // already gone
+        }
+      }
+    });
+  },
+);
 
 test("a missing report fails before any opener runs", () => {
   let called = false;

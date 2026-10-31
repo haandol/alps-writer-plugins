@@ -1,6 +1,6 @@
-import { test } from "node:test";
+import { after, test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { importExecutionCases } from "../evals/skills/import-execution.mjs";
@@ -12,7 +12,16 @@ import { PLUGIN_ROOT } from "./helpers.mjs";
 import { adopt } from "./fixtures/import-approved-documents.mjs";
 
 const DATE = "2026-09-30";
-const temp = () => mkdtempSync(path.join(tmpdir(), "import-execution-"));
+// Removed when the file finishes, so repeated runs do not fill the temporary directory.
+const tempDirs = [];
+const temp = () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "import-execution-"));
+  tempDirs.push(dir);
+  return dir;
+};
+after(() => {
+  for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true });
+});
 
 const questionReport =
   "# decision-1 — Order intent\nConfirm the exact member and three-item order contract and its current purpose.\n# decision-2 — Payment intent\nConfirm that provider failure leaves payment pending and completed outcomes remain completed. Original history is unknown.\n";

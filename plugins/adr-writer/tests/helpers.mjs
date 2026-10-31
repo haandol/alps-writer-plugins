@@ -2,7 +2,17 @@
 // test runner + child_process only. Each test builds a throwaway fixture
 // repo under os.tmpdir() so runs are hermetic and parallel-safe.
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, copyFileSync } from "node:fs";
+import {
+  appendFileSync,
+  copyFileSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -47,14 +57,51 @@ export function seedRuleDocs(dir) {
   for (const f of RULE_DOCS) copyFileSync(path.join(TEMPLATES, f), write(dir, `docs/adr/${f}`, ""));
 }
 
+/**
+ * The ADR files an index lists, each stating its recorded Status, as a repository
+ * holding that index has them; files that exist are left alone.
+ */
+export function writeAdrFiles(dir, mapping) {
+  for (const entry of Object.values(mapping?.categories ?? {}))
+    for (const rec of entry?.adrs ?? [])
+      if (typeof rec?.path === "string" && !existsSync(path.join(dir, rec.path)))
+        write(
+          dir,
+          rec.path,
+          `# ${path.basename(rec.path, ".md")}\n\n## Status\n\n${rec.status ?? "Proposed"}\n`,
+        );
+}
+
 export function git(dir, args) {
   return execFileSync("git", args, { cwd: dir, encoding: "utf8" });
 }
 
 export function initRepo(dir) {
   git(dir, ["init", "-q"]);
-  git(dir, ["config", "user.email", "t@t.co"]);
-  git(dir, ["config", "user.name", "t"]);
+  // The fixture's identity, as `git config` writes it, without two more git processes.
+  appendFileSync(path.join(dir, ".git", "config"), "[user]\n\temail = t@t.co\n\tname = t\n");
+}
+
+const templates = new Map();
+let templateRoot = null;
+/**
+ * Make `dir` the repository `build` makes in an empty folder: built once per test
+ * process for each `key` and copied after that, since a fixture's commits cost several
+ * git processes and a copy costs none. A folder that already holds something (a link
+ * the fixture must write through) is built in place.
+ */
+export function cachedRepo(dir, key, build) {
+  if (existsSync(dir) && readdirSync(dir).length) return build(dir);
+  if (!templates.has(key)) {
+    if (!templateRoot) {
+      templateRoot = mkdtempSync(path.join(tmpdir(), "adr-fixture-"));
+      process.on("exit", () => rmSync(templateRoot, { recursive: true, force: true }));
+    }
+    const template = mkdtempSync(path.join(templateRoot, "t-"));
+    build(template);
+    templates.set(key, template);
+  }
+  cpSync(templates.get(key), dir, { recursive: true });
 }
 
 export function commitAll(dir, msg = "init") {

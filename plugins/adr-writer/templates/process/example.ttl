@@ -1,0 +1,165 @@
+@prefix m: <urn:adr-writer:model:> .
+@prefix pm: <urn:adr-writer:process:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+m:customer a pm:Actor ;
+    rdfs:label "Customer" ;
+    pm:definition "A person who buys products from the store." ;
+    pm:performs m:ordering.submit-order, m:payment.request-payment .
+
+m:order-system a pm:Actor ;
+    rdfs:label "Order system" ;
+    pm:definition "The system role that confirms orders automatically." ;
+    pm:performs m:ordering.confirm-order .
+
+m:payment-provider a pm:Actor ;
+    rdfs:label "Payment provider" ;
+    pm:definition "The outside organization that approves and settles card payments." ;
+    pm:performs m:payment.capture-payment .
+
+m:ordering a pm:BoundedContext ;
+    rdfs:label "Ordering" ;
+    pm:definition "Taking a customer's purchase request and confirming it." .
+
+m:payment a pm:BoundedContext ;
+    rdfs:label "Payment" ;
+    pm:definition "Collecting the money for an order." .
+
+m:ordering.buyer a pm:BusinessConcept ;
+    rdfs:label "Buyer" ;
+    pm:definition "The customer who placed an order." ;
+    pm:correspondsTo m:payment.payer ;
+    pm:inContext m:ordering .
+
+m:ordering.order a pm:BusinessConcept ;
+    rdfs:label "Order" ;
+    pm:definition "A customer's confirmed request to buy products." ;
+    pm:hasPart m:ordering.order-line ;
+    pm:refersTo m:ordering.buyer ;
+    pm:inContext m:ordering .
+
+m:ordering.order-line a pm:BusinessConcept ;
+    rdfs:label "Order line" ;
+    pm:definition "One product and its quantity inside an order." ;
+    pm:inContext m:ordering .
+
+m:payment.payer a pm:BusinessConcept ;
+    rdfs:label "Payer" ;
+    pm:definition "The person whose card pays for an order." ;
+    pm:inContext m:payment .
+
+m:payment.payment a pm:BusinessConcept ;
+    rdfs:label "Payment" ;
+    pm:definition "The record that the money for one order was collected." ;
+    pm:refersTo m:payment.payer ;
+    pm:inContext m:payment .
+
+m:ordering.order-confirmed a pm:BusinessEvent ;
+    rdfs:label "Order confirmed" ;
+    pm:definition "The store accepted the order for fulfilment." ;
+    pm:inContext m:ordering .
+
+m:ordering.order-placed a pm:BusinessEvent ;
+    rdfs:label "Order placed" ;
+    pm:definition "A customer submitted an order." ;
+    pm:triggers m:payment.request-on-order ;
+    pm:inContext m:ordering .
+
+m:payment.payment-completed a pm:BusinessEvent ;
+    rdfs:label "Payment completed" ;
+    pm:definition "The money for an order was collected." ;
+    pm:triggers m:ordering.confirm-on-payment ;
+    pm:inContext m:payment .
+
+m:ordering.place-order a pm:Process ;
+    rdfs:label "Place an order" ;
+    pm:definition "A customer orders products and the store confirms the order." ;
+    pm:startCondition "A customer submits the products in the cart." ;
+    pm:businessOutcome "The order is confirmed and the customer can see it." ;
+    pm:openScope "Handling an order whose payment fails."^^pm:OpenPath ;
+    pm:summary "From order submission to order confirmation." ;
+    pm:status "Proposed" ;
+    pm:hasStep m:ordering.confirm-order, m:ordering.submit-order .
+
+m:payment.take-payment a pm:Process ;
+    rdfs:label "Take a payment" ;
+    pm:definition "The store collects the money for a placed order." ;
+    pm:startCondition "An order is placed." ;
+    pm:businessOutcome "The order has a completed payment." ;
+    pm:openScope "Hand-offs: payment never passes work to another organization."^^pm:NotApplicable, "Retrying after the payment provider declines a card."^^pm:OpenPath ;
+    pm:summary "From payment request to payment completion." ;
+    pm:status "Proposed" ;
+    pm:hasStep m:payment.capture-payment, m:payment.request-payment .
+
+m:ordering.confirm-order a pm:Step ;
+    rdfs:label "Confirm the order" ;
+    pm:definition "The store accepts a paid order for fulfilment." ;
+    pm:stepKind "system" ;
+    pm:emits m:ordering.order-confirmed ;
+    pm:uses m:ordering.order ;
+    pm:inContext m:ordering .
+
+m:ordering.submit-order a pm:Step ;
+    rdfs:label "Submit the order" ;
+    pm:definition "The customer sends the cart as an order." ;
+    pm:stepKind "system" ;
+    pm:flowsTo m:ordering.confirm-order ;
+    pm:emits m:ordering.order-placed ;
+    pm:uses m:ordering.order ;
+    pm:inContext m:ordering .
+
+m:payment.capture-payment a pm:Step ;
+    rdfs:label "Capture the payment" ;
+    pm:definition "The payment provider approves the card charge and collects the money." ;
+    pm:stepKind "outside-system" ;
+    pm:emits m:payment.payment-completed ;
+    pm:uses m:payment.payment ;
+    pm:inContext m:payment .
+
+m:payment.request-payment a pm:Step ;
+    rdfs:label "Request the payment" ;
+    pm:definition "The customer authorizes the card charge for the order." ;
+    pm:stepKind "system" ;
+    pm:flowsTo m:payment.capture-payment ;
+    pm:uses m:payment.payment ;
+    pm:inContext m:payment .
+
+m:ordering.confirm-on-payment a pm:Policy ;
+    rdfs:label "Confirm once paid" ;
+    pm:definition "A paid order is confirmed." ;
+    pm:reactionCondition "The completed payment belongs to the order." ;
+    pm:basisKind "operating-policy" ;
+    pm:basis "Store policy: no order is confirmed before its payment completes." ;
+    pm:starts m:ordering.confirm-order ;
+    pm:uses m:ordering.order ;
+    pm:inContext m:ordering .
+
+m:payment.request-on-order a pm:Policy ;
+    rdfs:label "Request payment for a new order" ;
+    pm:definition "Every placed order asks the customer to pay." ;
+    pm:reactionCondition "The order has no payment yet." ;
+    pm:basisKind "user-decision" ;
+    pm:basis "The store decided that payment starts right after an order is placed." ;
+    pm:starts m:payment.request-payment ;
+    pm:inContext m:payment .
+
+m:payment.amount-matches-order a pm:BusinessRule ;
+    rdfs:label "Payment covers the order" ;
+    pm:definition "The collected amount equals the amount of the order it pays for." ;
+    pm:basisKind "operating-policy" ;
+    pm:basis "Store accounting policy." ;
+    pm:constrains m:ordering.order, m:payment.payment .
+
+m:ordering.place-order.confirmed a pm:ObservationCriterion ;
+    rdfs:label "A placed order ends confirmed" ;
+    pm:startCondition "A customer submits an order and pays for it." ;
+    pm:observedResult "The customer sees the order as confirmed." ;
+    pm:criterionOf m:ordering.place-order ;
+    pm:passesThrough m:ordering.order-confirmed, m:ordering.order-placed, m:payment.payment-completed .
+
+m:payment.take-payment.completed a pm:ObservationCriterion ;
+    rdfs:label "A placed order gets paid" ;
+    pm:startCondition "An order is placed." ;
+    pm:observedResult "The order shows a completed payment." ;
+    pm:criterionOf m:payment.take-payment ;
+    pm:passesThrough m:payment.payment-completed .

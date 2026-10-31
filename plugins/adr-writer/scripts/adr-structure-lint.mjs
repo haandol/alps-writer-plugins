@@ -18,6 +18,12 @@
 // It shells out to adr-invariants.sh (unless --no-invariants) so a single run
 // covers reverse references too, folding that exit code into the aggregate.
 //
+// When the repository has a business process model (Turtle documents in the
+// ADR directory's sibling `process/`, docs/process by default) or
+// `realizes` links in the index, it also runs the closed-world model checks and
+// the index-link checks of scripts/process-model-fs.mjs. Without either, the
+// report is exactly what it was before that level existed.
+//
 // Usage:
 //   node adr-structure-lint.mjs [--adr-dir docs/adr] [category] [--json]
 //                               [--no-invariants | --documents-only] [--warn-as-error]
@@ -52,11 +58,13 @@ import {
   codeRefHits,
   constantAssignmentHits,
   validateMappingShape,
-  sectionRange,
+  bodyStatus,
+  isAdrFile,
   numberingGaps,
   rulesVersion,
   compareVersions,
 } from "./adr-lint-lib.mjs";
+import { processLevelFindings } from "./process-model-fs.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
@@ -151,9 +159,6 @@ function findFiles(root, matches) {
   return out.sort();
 }
 
-// docs/adr/**/NNNN-*.md — the ADRs themselves.
-const isAdrFile = (name) => /^[0-9]{4}-.*\.md$/.test(name);
-
 // The per-category decision-log.md. Matched separately from an ADR so the log is
 // never treated as one (it stays out of the index, numbering, orphan and per-ADR
 // section checks) — the only thing checked is that its ADR pointers still
@@ -223,7 +228,7 @@ function main() {
   const mappedStatusByPath = new Map();
   if (mapping?.categories) {
     for (const entry of Object.values(mapping.categories))
-      for (const rec of entry?.adrs || []) {
+      for (const rec of Array.isArray(entry?.adrs) ? entry.adrs : []) {
         const p = rec && typeof rec === "object" ? rec.path : rec;
         if (typeof p === "string" && p) {
           mappedAdrs.add(p);
@@ -299,10 +304,10 @@ function main() {
     // status is the single ADR-status index (README has none), so it must
     // mirror the body's ## Status line — adr-impl/adr-sync update both in
     // lockstep. A mismatch means the index went stale.
-    const statusSec = sectionRange(body, (h) => h.text.trim() === "Status");
-    if (!statusSec) rep.error("status-missing", where, "no ## Status section");
+    const status = bodyStatus(body);
+    if (!status.present) rep.error("status-missing", where, "no ## Status section");
     else {
-      const val = firstNonEmpty(statusSec.lines, statusSec.start + 1, statusSec.end);
+      const val = status.value;
       const st = classifyStatus(val);
       if (!st.ok)
         rep.error("status-enum", where, `Status "${val ?? ""}" — ${statusReason(st.reason)}`);
@@ -375,7 +380,7 @@ function main() {
   // ── mapping→disk: every adrs[] path exists ────────────────────────────
   if (mapping?.categories) {
     for (const [key, entry] of Object.entries(mapping.categories)) {
-      for (const rec of entry?.adrs || []) {
+      for (const rec of Array.isArray(entry?.adrs) ? entry.adrs : []) {
         const a = rec && typeof rec === "object" ? rec.path : rec;
         if (typeof a !== "string" || !a) continue; // shape errors already reported
         if (opts.category && !(key === opts.category || key.startsWith(opts.category + "/")))
@@ -387,6 +392,47 @@ function main() {
             `adrs path for category "${key}" does not exist on disk: ${a}`,
           );
       }
+    }
+  }
+
+  // ── business process model (optional level above ADRs) ────────────────
+  // Silent unless the repository has model documents or realizes links. Model
+  // checks are global; index-link and realizing-ADR checks follow the category
+  // filter.
+  {
+    const { findings } = processLevelFindings({
+      processDir: path.join(path.dirname(adrRoot), "process"),
+      adrRoot,
+      mapping,
+      mappingPath,
+      rel: relFromRepo,
+      inScope: (key) =>
+        !opts.category || key === opts.category || key.startsWith(opts.category + "/"),
+    });
+    // The mapping-shape check above reports a realizes value that is not a list of ids.
+    // A realizing feature's record finding is left out only where a check above
+    // reported the same record or file; what only the process level sees — a file of
+    // the feature that another category records, a record naming another folder's
+    // ADR — is reported here.
+    const lintErrors = rep.errors;
+    const coveredBy = {
+      "process-adr-status-mismatch": (f, e) =>
+        e.rule === "status-index-mismatch" && e.where === f.where,
+      "process-adr-missing": (f, e) =>
+        (e.rule === "mapping-dangling-adr" && e.msg.endsWith(`: ${f.where}`)) ||
+        (e.rule === "read" && e.where === f.where),
+      "process-adr-unindexed": (f, e) => e.rule === "index-orphan-mapping" && e.where === f.where,
+      "process-adr-record-invalid": (f, e) =>
+        (f.where === f.category &&
+          /^map-adrs-/.test(e.rule) &&
+          e.msg.includes(`category "${f.category}"`)) ||
+        (e.rule === "mapping-dangling-adr" && e.msg.endsWith(`: ${f.where}`)) ||
+        (e.rule === "map-adr-double-indexed" && e.msg.includes(`ADR "${f.where}"`)),
+    };
+    for (const f of findings) {
+      if (f.code === "process-link-shape") continue;
+      if (coveredBy[f.code] && lintErrors.some((e) => coveredBy[f.code](f, e))) continue;
+      rep.add(f.level === "error" ? "error" : "warn", f.code, f.where, f.msg);
     }
   }
 
@@ -581,14 +627,6 @@ function main() {
 // ── helpers ────────────────────────────────────────────────────────────────
 function escapeRe(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function firstNonEmpty(lines, start, end) {
-  for (let i = start; i < end; i++) {
-    const t = lines[i].trim();
-    if (t) return t;
-  }
-  return null;
 }
 
 function filenameMsg(fn) {

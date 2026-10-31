@@ -12,6 +12,8 @@
 // gray-zone fidelity, R14 strawman nuance, R3, and R18's requirement-vs-tuning
 // call) stay with the reviewer — see agents/adr-reviewer.md.
 
+import { isValidElementId } from "./process-model-lib.mjs";
+
 // ── category-key shape ───────────────────────────────────────────────────
 // ≤2 lowercase-kebab segments (context or context/feature). Stricter than a
 // bare [a-z0-9-]+ : rejects leading/trailing hyphens and empty segments, and
@@ -49,6 +51,7 @@ export const KNOWN_ENTRY_FIELDS = new Set([
   "adrs",
   "dependsOn",
   "tableDocs",
+  "realizes",
 ]);
 
 // Recognized fields on an adrs[] index record (mapping.schema.json adrs.items).
@@ -277,6 +280,24 @@ export function sectionRange(body, pred) {
     }
   }
   return { start, end, lines, heading: heads[idx] };
+}
+
+/** An ADR file name: `NNNN-kebab-title.md`. */
+export const isAdrFile = (name) => /^[0-9]{4}-.*\.md$/.test(name);
+
+/**
+ * An ADR body's `## Status`: whether the section exists, and its first non-empty
+ * line (null when it has none). The structure lint and the process level read the
+ * Status the same way.
+ */
+export function bodyStatus(body) {
+  const section = sectionRange(body, (h) => h.text.trim() === "Status");
+  if (!section) return { present: false, value: null };
+  for (let i = section.start + 1; i < section.end; i++) {
+    const line = section.lines[i].trim();
+    if (line) return { present: true, value: line };
+  }
+  return { present: true, value: null };
 }
 
 // The alternatives heading, in either language. Harness prompts and rule docs
@@ -537,6 +558,23 @@ export function validateMappingShape(mapping) {
     }
     if ("tableDocs" in entry && !Array.isArray(entry.tableDocs))
       err("tabledocs-not-array", `category "${key}": "tableDocs" is not an array`);
+    // realizes: the business process model steps this category realizes. Its
+    // targets are checked against the model by process-model-fs.mjs; here only
+    // the shape. An empty list is a confirmed "realizes no step" record.
+    if ("realizes" in entry) {
+      if (!Array.isArray(entry.realizes))
+        err("realizes-not-array", `category "${key}": "realizes" is not an array`);
+      else {
+        if (new Set(entry.realizes).size !== entry.realizes.length)
+          err("realizes-dup", `category "${key}": duplicate realizes entries`);
+        for (const id of entry.realizes)
+          if (!isValidElementId(id))
+            err(
+              "realizes-item",
+              `category "${key}": realizes item ${JSON.stringify(id)} is not a process step identifier`,
+            );
+      }
+    }
     for (const f of Object.keys(entry))
       if (!KNOWN_ENTRY_FIELDS.has(f))
         warn("unknown-field", `category "${key}": unknown field "${f}" (typo? silently ignored)`);

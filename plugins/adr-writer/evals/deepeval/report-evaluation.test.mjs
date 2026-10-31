@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import test from "node:test";
-import { mkdtempSync, readFileSync } from "node:fs";
+import test, { after } from "node:test";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { evaluateEvidence } from "./engine.mjs";
@@ -10,7 +10,17 @@ import { main } from "../skills/run.mjs";
 import { catalog, PLUGIN } from "../skills/catalog.mjs";
 import { makeTools } from "../regression/workspace.mjs";
 
-const temp = () => mkdtempSync(path.join(os.tmpdir(), "report-eval-contract-"));
+// Every temporary folder this file creates is removed when the file finishes,
+// so repeated runs do not fill the system temporary directory.
+const created = [];
+const temp = () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "report-eval-contract-"));
+  created.push(dir);
+  return dir;
+};
+after(() => {
+  for (const dir of created) rmSync(dir, { recursive: true, force: true });
+});
 const quote = "Member and Order are classes";
 const judgment = (item, source = `after:${REPORT_OUTPUT}`, failAxis) => ({
   score: failAxis ? 0 : 1,

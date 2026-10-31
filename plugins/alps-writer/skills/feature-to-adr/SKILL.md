@@ -50,6 +50,9 @@ Load:
 - `docs/adr/.mapping.json` when it exists
 - the optional trailing Glossary Appendix and any supplied term explanations needed
   by the selected Features; read `docs/adr/glossary.md` if it exists
+- whether a current reference level above ADRs exists: ADR Writer's business
+  process model is one or more Turtle documents in `docs/process/`. The PRD being
+  transferred is never a current reference level.
 
 Parse the dependency graph before processing features:
 
@@ -87,6 +90,12 @@ Create the Markdown glossary only when needed, with term and meaning columns.
 Preserve unrelated entries and existing layout; equivalent meanings are no-ops.
 Resolve conflicting definitions with the user before overwriting them or completing
 the affected handoff. Do not introduce DDD or domain classification as a separate glossary task.
+
+When step 1 found a current reference level, read
+[current reference level](references/current-reference-level.md) completely
+before routing terms or feature relationships. Without a current reference level,
+skip that module, transfer definitions to the glossary as above and create no
+proposal or added question.
 
 Transfer definitions without PRD paths, Section IDs, or source links. Keep short
 explanations and all requirement values, states, permissions and success conditions
@@ -165,10 +174,14 @@ exactly one final route:
 3. **Legacy planning context** — narrative, workshop history, duplicate
    explanation, and other material whose loss cannot change a compliant
    implementation.
-4. **Unresolved** — a required enrichment answer the user deferred, a
-   contradiction the user did not resolve, or unowned material that could
-   change user behavior, a requirement contract, a boundary, or the adopted
-   decision.
+4. **Current reference level** — a business-term definition or feature
+   relationship that the current reference level owns, routed as its change
+   proposal. It counts as routed only once that level approves the proposal.
+5. **Unresolved** — a required enrichment answer the user deferred, a
+   contradiction the user did not resolve, unowned material that could change
+   user behavior, a requirement contract, a boundary, or the adopted decision,
+   or a current-reference-level proposal that is still awaiting approval or was
+   rejected.
 
 Apply the ADR admission gate independently to each durable decision. Apply the
 requirement gate before excluding any requirement value or rule. The Feature's
@@ -183,7 +196,8 @@ Preflight succeeds only when:
 
 - no enrichment question remains open
 - every implementation-relevant item has one route
-- `Unresolved` is empty
+- `Unresolved` is empty, apart from current-reference-level proposals that
+  await this handoff's approval summary and the items that depend on them
 - every requirement value and non-numeric rule has an ADR owner
 - every transferable Feature has at least one real contract-owning ADR
 - independent decisions are split rather than combined
@@ -216,9 +230,9 @@ Result: ASK | BLOCKED | 1 | N ADRs
 
 When enrichment questions remain, report `Result: ASK`, ask them, and resume
 this preflight after the answer. Do not label an answerable PRD gap as final
-`BLOCKED`. If anything remains unresolved or unowned after enrichment, stop
-before writing ADRs and report `Result: BLOCKED`. Do not report the Feature as
-transferred.
+`BLOCKED`. If anything remains unresolved or unowned after enrichment, apart
+from a proposal awaiting this handoff's approval summary and the items depending
+on it, stop before writing ADRs and report `Result: BLOCKED`. Do not report the Feature as transferred.
 
 Before scoring the Feature or ADR candidates, read
 `${CLAUDE_PLUGIN_ROOT}/references/comprehension-load.md`
@@ -272,8 +286,9 @@ The `/adr-new` path owns drafting, verification, mapping registration, user
 approval, and the initial `Proposed` Status.
 
 A Feature's ownership transfer commits only after all of its ADR owners are
-approved and saved, every contract item has an owner, and mapping validation
-passes. Until then, the PRD remains authoritative for that Feature and
+approved and saved, every contract item has an owner, every
+current-reference-level proposal it depends on is approved, and mapping
+validation passes. Until then, the PRD remains authoritative for that Feature and
 implementation must not start from a partial ADR set. After commit, the PRD
 scope is legacy planning context and ADRs alone drive implementation.
 
@@ -302,6 +317,10 @@ Do not create edges for shared SDKs, helper reuse, preferred work order, or
 technical-layer sequencing. Never create an empty placeholder ADR. Every
 dependency target from a completed handoff is a real contract-owning category.
 
+If a required prerequisite Feature has not been transferred yet, do not commit
+the dependent Feature either. It stays Unresolved until the prerequisite
+commits, so no `dependsOn` edge points at a category that does not exist.
+
 ## 7. Approval and completion
 
 Show the requested scope and dependency order as a non-blocking progress update.
@@ -317,6 +336,8 @@ At completion report:
 - ADRs created by category
 - explicit re-import semantic no-ops
 - removals or conflicts left unresolved
+- Features left unresolved, with the current-reference-level proposals or
+  prerequisite Features they wait for
 - implementation discretion and legacy context excluded from ADRs
 - actual ADR `dependsOn` edges written
 - that committed PRD scopes are now legacy planning documents and normal

@@ -189,3 +189,20 @@ test("status transition rejects summaries that violate the mapping schema", () =
     }
   });
 });
+
+test("status transition writes the Status value without stray spaces from its argument", () => {
+  withTmp((dir) => {
+    seedRepo(dir);
+    const result = runStatusTransition(dir, [
+      "docs/adr/analytics/0001-truth.md",
+      " Accepted (2026-08-12) ",
+    ]);
+    assert.equal(result.code, 0, result.stdout);
+    const mapping = JSON.parse(readFileSync(path.join(dir, "docs/adr/.mapping.json"), "utf8"));
+    assert.equal(mapping.categories.analytics.adrs[0].status, "Accepted (2026-08-12)");
+    assert.match(
+      readFileSync(path.join(dir, "docs/adr/analytics/0001-truth.md"), "utf8"),
+      /## Status\n\nAccepted \(2026-08-12\)\n/,
+    );
+  });
+});

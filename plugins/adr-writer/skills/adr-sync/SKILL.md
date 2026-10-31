@@ -11,8 +11,15 @@ argument-hint: "[category?] [--quick]"
 Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Its absence is normal; preserve it as supporting material, not an indexed ADR.
 When this workflow permits ADR writing and a definition needs creation or change,
-apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
-boundary. Review-only work reports unclear or conflicting meanings without editing.
+or ADR content relies on a business term where `docs/process/` holds Turtle
+documents, apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing
+approval boundary. Review-only work reports unclear or conflicting meanings without editing.
+
+When `docs/process/` holds Turtle documents, read
+`${CLAUDE_PLUGIN_ROOT}/references/business-context.md` before changing an ADR
+body or realigning categories. Report a missing compliance contract as an
+alignment issue instead of adding it; returning an ADR to `Proposed` does not
+query. Without them, skip it.
 
 Verify that every ADR in `docs/adr/` matches the repository implementation, including IaC and repository-local configuration. Fix drifted ADRs, resolve contradictions between related ADRs, and synchronize the `.mapping.json` index (the adrs[] path/status/summary).
 
@@ -91,7 +98,8 @@ skips this module and all actual moves.
 ### 7. Report and resume
 
 Apply `${CLAUDE_PLUGIN_ROOT}/references/review-report-writing.md` and
-`references/report.md` for the complete result fields and evidence boundary.
+[result presentation](references/report.md) for the complete result fields and
+evidence boundary.
 Lead with At a glance, then the semantic diff of each changed Decision and Requirement contract.
 New ADR needed findings must pass the ADR admission gate.
 `Unchanged` means that axis was inspected and still matches.

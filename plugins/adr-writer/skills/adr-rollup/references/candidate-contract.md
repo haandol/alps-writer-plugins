@@ -26,7 +26,9 @@ Keep **adoption** separate from **completion**. `Proposed` can describe an adopt
 but unfinished target or an unadopted proposal. Established adoption permits a
 target in the candidate; step 4 rule 0 determines its Status. Unapproved or
 uncertain proposals stay out of the current contract; hold that decision and
-present the exact choice under step 5 while preparing independent ones.
+present the exact choice under step 5 while preparing independent ones. Carry a
+row pending on an upper-level business change over as pending with the change it
+awaits; a rollup never resolves or drops it.
 
 Revive gray-zone decisions and requirements from original evidence. Apply the
 requirement gate before the code-readthrough test; do not carry ordinary

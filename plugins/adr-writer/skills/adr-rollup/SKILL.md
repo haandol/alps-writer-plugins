@@ -10,9 +10,15 @@ disable-model-invocation: true
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
-Preserve this optional supporting file. For permitted definition edits, apply
-`${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under existing approval.
+Preserve this optional supporting file. For permitted definition edits, and for
+business terms the merged ADR relies on where `docs/process/` holds Turtle
+documents, apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under existing
+approval.
 Review-only work reports unclear or conflicting meanings without editing.
+
+When `docs/process/` holds Turtle documents, a rollup keeps each category's
+`realizes` links and empty record unchanged and does not query business context
+(`${CLAUDE_PLUGIN_ROOT}/references/business-context.md`).
 
 The goal is **one logical decision = one current-state ADR.** Consolidate an
 evolution chain only when its ADRs record successive answers to the same
