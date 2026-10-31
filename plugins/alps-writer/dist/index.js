@@ -31749,7 +31749,7 @@ var DocumentService = class _DocumentService {
   /** Bind one tool operation to its explicit document, sharing only immutable templates. */
   forDocument(docPath) {
     const scoped = new _DocumentService(this.templates.alps, this.templates.lite);
-    scoped.loadDocument(docPath);
+    scoped.selectDocument(docPath);
     return scoped;
   }
   isNotStarted(sectionContent) {
@@ -32011,6 +32011,17 @@ NEVER save generated content without user approval.`;
    * profile's conversation rules so resume cannot cross document boundaries.
    */
   loadDocument(docPath) {
+    const profile = this.selectDocument(docPath);
+    return `${this.getStatus()}
+
+---
+${this.resumeGuidance(profile)}`;
+  }
+  /**
+   * Select a structurally valid ALPS document at a path its profile allows. Every
+   * request selects its document this way; only loading also reports the status.
+   */
+  selectDocument(docPath) {
     this.workingDoc = null;
     const filepath = this.expandPath(docPath);
     if (!filepath.toLowerCase().endsWith(ALPS_PROFILE.filenameSuffix)) {
@@ -32031,10 +32042,7 @@ NEVER save generated content without user approval.`;
     const pathError = this.pathError(filepath, inspection.profile);
     if (pathError) throw new Error(pathError);
     this.workingDoc = filepath;
-    return `${this.getStatus()}
-
----
-${this.resumeGuidance(inspection.profile)}`;
+    return inspection.profile;
   }
   /** Save one approved subsection without dropping definitions collected elsewhere in the document. */
   saveSection(section, subsectionId, title, content) {
