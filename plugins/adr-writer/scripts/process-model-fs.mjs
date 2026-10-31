@@ -484,8 +484,19 @@ function git(args, cwd) {
   });
 }
 
-/** Read objects named by `<rev>:<path>` or object id in one `git cat-file --batch`; missing ones are null. */
-function catObjects(specs, cwd) {
+/** The blob ids of the ADR index as each read commit resolves it. */
+function indexIdsOf(indexOf) {
+  return [...indexOf.values()]
+    .filter((r) => r?.entry && r.entry.mode !== "40000")
+    .map((r) => r.entry.id);
+}
+
+/**
+ * Read objects named by `<rev>:<path>` or object id in one `git cat-file --batch`; missing
+ * ones are null. With `exact`, every spec must be an object id answered by itself and the
+ * answers must fill the output exactly; otherwise it throws, as when git fails.
+ */
+function catObjects(specs, cwd, { exact = false } = {}) {
   const out = new Map();
   const unique = [...new Set(specs)];
   if (!unique.length) return out;
@@ -507,9 +518,12 @@ function catObjects(specs, cwd) {
       continue;
     }
     const size = Number(m[3]);
+    if (exact && m[1] !== spec) throw new Error("git cat-file answered another object");
     out.set(spec, { id: m[1], type: m[2], data: raw.subarray(at, at + size) });
     at += size + 1;
   }
+  // An object shorter than its header says shifts every later answer.
+  if (exact && at !== raw.length) throw new Error("git cat-file output did not match its sizes");
   return out;
 }
 
@@ -911,6 +925,49 @@ function readTreeFiles(
 }
 
 /**
+ * The top level, HEAD and the shallow state from one `rev-parse`, or null. Only a work tree
+ * with a commit whose shallow state git can read answers all four lines; anything else is
+ * asked for one at a time, as before, so its failure is decided where it always was.
+ */
+function repositoryFacts(cwd) {
+  let out;
+  try {
+    out = git(
+      [
+        "rev-parse",
+        "--show-toplevel",
+        "--is-shallow-repository",
+        "--git-path",
+        "shallow",
+        "--verify",
+        "-q",
+        "HEAD",
+      ],
+      cwd,
+    );
+  } catch {
+    return null;
+  }
+  const lines = out.replace(/\n$/, "").split("\n");
+  if (
+    lines.length !== 4 ||
+    !/^(true|false)$/.test(lines[1]) ||
+    !/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(lines[3])
+  )
+    return null;
+  const top = lines[0].trim();
+  // The shallow file's path is relative to where it was asked. It is the separate read's
+  // only when asked from the top level itself; elsewhere that read is still made.
+  let here = null;
+  try {
+    here = realpathSync(cwd);
+  } catch {
+    // the separate read decides
+  }
+  return { top, head: lines[3], shallow: here === top ? [lines[1], lines[2].trimEnd()] : null };
+}
+
+/**
  * Read the history of the model directory and the ADR index. HEAD is read first:
  * its model and the comparison with the working tree stay available when older
  * history is not (a partial or shallow clone, a git failure).
@@ -933,11 +990,14 @@ function readTreeFiles(
  *   `changeLogAt(commit)` (undefined where history cannot see the change log).
  */
 export function readModelHistory(processDir, { cwd = process.cwd(), mappingPath = null } = {}) {
-  let top;
-  try {
-    top = git(["rev-parse", "--show-toplevel"], cwd).trim();
-  } catch {
-    return { available: false, reason: "not a git work tree", noHistory: true };
+  const facts = repositoryFacts(cwd);
+  let top = facts?.top;
+  if (!facts) {
+    try {
+      top = git(["rev-parse", "--show-toplevel"], cwd).trim();
+    } catch {
+      return { available: false, reason: "not a git work tree", noHistory: true };
+    }
   }
   const dir = repositoryName(top, cwd, processDir);
   if (dir === null)
@@ -951,11 +1011,13 @@ export function readModelHistory(processDir, { cwd = process.cwd(), mappingPath 
   const mapRel = mappingPath ? repositoryName(top, cwd, mappingPath) : null;
   const also = mapRel ? [mapRel] : [];
   const logRel = `${dir}/${CHANGE_LOG}`;
-  let head = null;
-  try {
-    head = git(["rev-parse", "--verify", "-q", "HEAD"], top).trim();
-  } catch {
-    head = null; // no commit yet: every model element is uncommitted
+  let head = facts?.head ?? null;
+  if (!facts) {
+    try {
+      head = git(["rev-parse", "--verify", "-q", "HEAD"], top).trim();
+    } catch {
+      head = null; // no commit yet: every model element is uncommitted
+    }
   }
   const none = () => null;
   if (!head)
@@ -1036,14 +1098,15 @@ export function readModelHistory(processDir, { cwd = process.cwd(), mappingPath 
       }
     : { available: true };
   let boundary = new Set();
+  // Index blobs already read with the model's, keyed like `catObjects` (null when missing).
+  let indexRead = null;
   if (history.available) {
     try {
-      const [shallow, shallowFile] = git(
-        ["rev-parse", "--is-shallow-repository", "--git-path", "shallow"],
-        top,
-      )
-        .trim()
-        .split("\n");
+      const [shallow, shallowFile] =
+        facts?.shallow ??
+        git(["rev-parse", "--is-shallow-repository", "--git-path", "shallow"], top)
+          .trim()
+          .split("\n");
       if (shallow === "true")
         boundary = new Set(
           readFileSync(path.resolve(top, shallowFile), "utf8").split("\n").filter(Boolean),
@@ -1146,13 +1209,20 @@ export function readModelHistory(processDir, { cwd = process.cwd(), mappingPath 
           ...[...reads].map(([c, at]) => [c, at.resolved.get(mapRel)]),
           [head, headResolved.get(mapRel)],
         ]);
-      const more = catObjects(
-        [...new Set([...filesOf.values()].flatMap((f) => (f ? [...f.values()] : [])))].filter(
-          (id) => !blobs.has(id),
-        ),
-        top,
-      );
-      for (const [id, obj] of more) {
+      const modelIds = [
+        ...new Set([...filesOf.values()].flatMap((f) => (f ? [...f.values()] : []))),
+      ].filter((id) => !blobs.has(id));
+      // The index blobs ride along in the same batch. When that batch fails or its answers
+      // do not line up, the model's blobs and then the index's are read apart, so a failure
+      // keeps its old scope.
+      try {
+        indexRead = catObjects([...modelIds, ...indexIdsOf(indexOf)], top, { exact: true });
+      } catch {
+        indexRead = null;
+      }
+      const more = indexRead ?? catObjects(modelIds, top);
+      for (const id of modelIds) {
+        const obj = more.get(id);
         if (!obj) throw new MissingObjects();
         blobs.set(id, obj);
       }
@@ -1171,11 +1241,11 @@ export function readModelHistory(processDir, { cwd = process.cwd(), mappingPath 
   }
   // The index as each read commit resolves it; what cannot be read stays unknown.
   const indexBlobs = new Map();
-  const indexIds = [...indexOf.values()]
-    .filter((r) => r?.entry && r.entry.mode !== "40000")
-    .map((r) => r.entry.id);
+  const indexIds = indexIdsOf(indexOf);
+  for (const id of indexIds) if (indexRead?.get(id)) indexBlobs.set(id, indexRead.get(id));
   try {
-    for (const [id, obj] of catObjects(indexIds, top)) if (obj) indexBlobs.set(id, obj);
+    const unread = indexIds.filter((id) => !indexRead?.has(id));
+    for (const [id, obj] of catObjects(unread, top)) if (obj) indexBlobs.set(id, obj);
   } catch {
     // unreadable index objects: the gates of those commits stay unknown
   }

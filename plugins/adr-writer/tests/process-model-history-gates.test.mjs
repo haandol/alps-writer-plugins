@@ -3,9 +3,18 @@
 // records as its commit holds them — unknown where history cannot read them, failed
 // where they do not hold.
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
+import { deflateSync } from "node:zlib";
 import { commitAll, git, initRepo, withTmp, write, writeAdrFiles } from "./helpers.mjs";
 import {
   ACCEPTED,
@@ -15,6 +24,7 @@ import {
   REFUND_PROCESS,
   UNLINKED_PAYMENTS,
   cli,
+  directEdit,
   exits,
   json,
   model,
@@ -573,5 +583,22 @@ test("a hand promotion over a realizing ADR missing under a link history follows
     );
     const lifecycle = exits(dir, ["lifecycle"], 1);
     assert.match(lifecycle.out, /became Accepted while the alignment gates did not hold/);
+  });
+});
+
+test("a history object shorter than its stored size never spills into the index read", () => {
+  withTmp((dir) => {
+    repo(dir);
+    directEdit(dir);
+    // The first commit's model blob claims more bytes than it holds, so in a batch shared
+    // with the index blobs every later answer would be read from the wrong place.
+    const first = git(dir, ["rev-list", "--max-parents=0", "HEAD"]).trim();
+    const blob = git(dir, ["rev-parse", `${first}:docs/process/model.ttl`]).trim();
+    const loose = path.join(dir, ".git/objects", blob.slice(0, 2), blob.slice(2));
+    chmodSync(loose, 0o644);
+    writeFileSync(loose, deflateSync(Buffer.from("blob 4000\0@prefix m: <urn:x:> .\n")));
+    const lifecycle = json(dir, ["lifecycle"]);
+    assert.deepEqual(lifecycle.findings, []);
+    assert.equal(lifecycle.historyLimited, undefined, "the gates read the index on their own");
   });
 });
