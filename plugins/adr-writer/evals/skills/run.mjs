@@ -319,9 +319,10 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
   });
   const config = toolConfig(folder, root, pluginRoot, log, item.artifactPaths, item.draftRoot);
   const wrapped = `This is an isolated classification probe, not a native client routing test.\nUse only the local fixture MCP tools. Fixture root ${root}; use relative paths for fixture reads/writes. CLAUDE_PLUGIN_ROOT is plugin/. Resolve referenced skills and guidance through plugin/skills and plugin/references.\n${prompt}`;
-  json(folder, "input.json", { prompt: wrapped, files: snapshot(root, item) });
+  const initial = snapshot(root, item);
+  json(folder, "input.json", { prompt: wrapped, files: initial });
   record.promptHash = sha(prompt.split(root).join("<FIXTURE>"));
-  record.inputHash = sha({ prompt: record.promptHash, files: snapshot(root, item) });
+  record.inputHash = sha({ prompt: record.promptHash, files: initial });
   if (!options.live) return;
   let response;
   try {

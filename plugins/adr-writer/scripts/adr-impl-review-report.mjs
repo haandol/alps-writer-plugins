@@ -185,7 +185,12 @@ import {
   quizLabels,
   quizScript,
 } from "../skills/report-writer/scripts/comprehension.mjs";
-import { CATEGORIES, AUTHORITY, USER_DECISION_CATEGORIES } from "./adr-impl-review-categories.mjs";
+import {
+  CATEGORIES,
+  AUTHORITY,
+  COVERAGE_STATUS_LABELS,
+  USER_DECISION_CATEGORIES,
+} from "./adr-impl-review-categories.mjs";
 import {
   relatedAdrComparisonProse,
   hillNarrativeParagraphs,
@@ -318,10 +323,10 @@ const UI = {
     category: "Category",
     confidence: "Confidence",
     reviewResult: "Review result",
-    statusProven: "Met",
-    statusViolated: "Fix required",
-    statusUnverified: "Verification required",
-    statusContradicted: "Conflicting evidence",
+    statusProven: COVERAGE_STATUS_LABELS.en.PROVEN,
+    statusViolated: COVERAGE_STATUS_LABELS.en.VIOLATED,
+    statusUnverified: COVERAGE_STATUS_LABELS.en.UNVERIFIED,
+    statusContradicted: COVERAGE_STATUS_LABELS.en.CONTRADICTED,
     choices: "Notable implementation choices",
     comprehension: "Comprehension check",
     residualNotes: "Review notes",
@@ -452,10 +457,10 @@ const UI = {
     category: "분류",
     confidence: "근거 수준",
     reviewResult: "검토 결과",
-    statusProven: "충족됨",
-    statusViolated: "수정 필요",
-    statusUnverified: "검증 필요",
-    statusContradicted: "근거 충돌",
+    statusProven: COVERAGE_STATUS_LABELS.ko.PROVEN,
+    statusViolated: COVERAGE_STATUS_LABELS.ko.VIOLATED,
+    statusUnverified: COVERAGE_STATUS_LABELS.ko.UNVERIFIED,
+    statusContradicted: COVERAGE_STATUS_LABELS.ko.CONTRADICTED,
     choices: "주요 구현 선택",
     comprehension: "이해도 확인",
     residualNotes: "리뷰 메모",
