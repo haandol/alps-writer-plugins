@@ -39,46 +39,79 @@ fail() {
   exit 1
 }
 
-# ── the suite ──────────────────────────────────────────────────────────────
-if [ "${SKIP_TESTS:-}" = "1" ]; then
-  if printf '%s\n' "$PUSH_UPDATES" | awk '$3 == "refs/heads/main" { found = 1 } END { exit !found }'; then
-    fail "SKIP_TESTS=1 is not allowed when updating main." "Push the WIP branch, then merge through a protected pull request."
-  fi
-  echo "[pre-push] ⚠ SKIP_TESTS=1 — skipping the test suite."
-else
-  pnpm test ||
-    fail "tests failed." "Push a known-red WIP branch with: SKIP_TESTS=1 git push …"
-fi
+# ── checks that only read the tree, started alongside the suite ─────────────
+# They take seconds each and touch nothing the suite reads or writes, so they run
+# while it runs. Each one's output is kept and shown after the suite, in this
+# order, and the first failure is reported exactly as when they ran in turn.
+# The rebuild below rewrites generated files the suite checks, so it waits.
+CHECKS="$(mktemp -d "${TMPDIR:-/tmp}/pre-push.XXXXXX")"
+trap 'rm -rf "$CHECKS"' EXIT
 
-# ── lint + formatting (CI build job) ───────────────────────────────────────
-pnpm lint ||
-  fail "ESLint reported problems." "Auto-fix what it can: pnpm --filter alps-writer lint:fix"
+# lint + formatting (CI build job)
+check_lint() { pnpm lint; }
+check_format() { pnpm format:check; }
 
-pnpm format:check ||
-  fail "files are not Prettier-formatted." "Fix with: pnpm format"
+# Release version across all 13 sites. Only 8 are covered by a test; the five
+# rules-version stamps in templates/adr/ are checked nowhere else, and a stamp
+# left behind makes the plugin report its own templates as stale to every
+# consumer at once.
+check_bump() { pnpm bump:check; }
 
-# ── release version across all 13 sites ────────────────────────────────────
-# Only 8 are covered by a test; the five rules-version stamps in templates/adr/
-# are checked nowhere else, and a stamp left behind makes the plugin report its
-# own templates as stale to every consumer at once.
-pnpm bump:check ||
-  fail "the release version drifted between sites." "Fix with: pnpm bump <version>"
-
-# ── what a consumer runs, with no node_modules (CI runtime job) ────────────
-# A marketplace install ships no dependencies: the MCP server is a bundle with
-# them inlined, and the adr-writer hook is Node built-ins only. Both are executed
-# by `node` directly, so `pnpm test` passing says nothing about them starting.
+# What a consumer runs, with no node_modules (CI runtime job). A marketplace
+# install ships no dependencies: the MCP server is a bundle with them inlined,
+# and the adr-writer hook is Node built-ins only. Both are executed by `node`
+# directly, so `pnpm test` passing says nothing about them starting.
 #
 # This runs BEFORE the rebuild below, on purpose: it must judge the bundle being
 # pushed, not one `pnpm build` just regenerated. Checking after the rebuild made
 # this vacuous — a hand-edited or truncated dist/ passed, because the file under
 # test was no longer the file in the commit.
 INIT='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"pre-push","version":"0"}}}'
-printf '%s\n' "$INIT" | node plugins/alps-writer/dist/index.js 2>/dev/null | head -1 |
-  grep -q '"name":"alps-writer"' ||
-  fail "the committed MCP bundle did not answer initialize." "Try it by hand: node plugins/alps-writer/dist/index.js"
+check_bundle() {
+  printf '%s\n' "$INIT" | node plugins/alps-writer/dist/index.js 2>/dev/null | head -1 |
+    grep -q '"name":"alps-writer"'
+}
+check_hook() {
+  echo '{"hook_event_name":"SessionStart","source":"startup"}' |
+    node plugins/adr-writer/hooks/surface-adr-context.mjs >/dev/null
+}
 
-echo '{"hook_event_name":"SessionStart","source":"startup"}' | node plugins/adr-writer/hooks/surface-adr-context.mjs >/dev/null ||
+for check in lint format bump bundle hook; do
+  (
+    if "check_$check" >"$CHECKS/$check.log" 2>&1; then status=0; else status=1; fi
+    echo "$status" >"$CHECKS/$check.status"
+  ) &
+done
+
+# ── the suite ──────────────────────────────────────────────────────────────
+suite=0
+if [ "${SKIP_TESTS:-}" = "1" ]; then
+  if printf '%s\n' "$PUSH_UPDATES" | awk '$3 == "refs/heads/main" { found = 1 } END { exit !found }'; then
+    wait
+    fail "SKIP_TESTS=1 is not allowed when updating main." "Push the WIP branch, then merge through a protected pull request."
+  fi
+  echo "[pre-push] ⚠ SKIP_TESTS=1 — skipping the test suite."
+else
+  pnpm test || suite=1
+fi
+wait
+[ "$suite" = 0 ] ||
+  fail "tests failed." "Push a known-red WIP branch with: SKIP_TESTS=1 git push …"
+
+# Report the checks that ran alongside, in order.
+passed() {
+  cat "$CHECKS/$1.log"
+  [ "$(cat "$CHECKS/$1.status" 2>/dev/null)" = 0 ]
+}
+passed lint ||
+  fail "ESLint reported problems." "Auto-fix what it can: pnpm --filter alps-writer lint:fix"
+passed format ||
+  fail "files are not Prettier-formatted." "Fix with: pnpm format"
+passed bump ||
+  fail "the release version drifted between sites." "Fix with: pnpm bump <version>"
+passed bundle ||
+  fail "the committed MCP bundle did not answer initialize." "Try it by hand: node plugins/alps-writer/dist/index.js"
+passed hook ||
   fail "the adr-writer SessionStart hook failed to run." "It seeds ADR context when a session starts or is restored, so this breaks the plugin immediately."
 
 # ── the committed bundle matches src (CI build job) ────────────────────────

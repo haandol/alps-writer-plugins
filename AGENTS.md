@@ -516,6 +516,9 @@ avoid a round trip — not the only thing standing between a bad commit and `mai
   `pnpm build` rebuild, so it judges the bundle being pushed rather than one just
   regenerated. With the checks the other way round a hand-edited or truncated
   `dist/` passed, because the file under test was no longer the file in the commit.
+  The checks that only read the tree (lint, formatting, versions, bundle boot,
+  hook start) run while the suite runs and report after it in that order; the
+  rebuild rewrites generated files the suite checks, so it waits for the suite.
 
 - **`.github/workflows/ci.yaml`** — three jobs, all on Node 24. `test` runs
   `test:workspace`; `build` adds lint, `format:check`, `bump:check`, and a rebuild

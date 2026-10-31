@@ -200,8 +200,10 @@ Automated in two places, so you rarely have to remember:
   any failure: typecheck (once, inside build), `pnpm test`, `lint`, `format:check`, `bump:check`, a boot
   check on the committed MCP bundle and the adr-writer hook, and a rebuild that
   fails if `plugins/alps-writer/dist/` is stale. If CI would fail on it, this fails
-  on it first. For a WIP branch you know is red: `SKIP_TESTS=1 git push …` — that
-  skips only the test suite, nothing else.
+  on it first. The checks that only read the tree run while the suite runs and
+  report after it, in order; the rebuild waits for the suite. For a WIP branch you
+  know is red: `SKIP_TESTS=1 git push …` — that skips only the test suite, nothing
+  else.
 - **`.github/workflows/ci.yaml`** splits `pnpm test` between `test` and `runtime`,
   and runs `lint`, `format:check`, version checks and a rebuild that fails if the
   committed `plugins/alps-writer/dist/` is stale. The `runtime` job checks what a
