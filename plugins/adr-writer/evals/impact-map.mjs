@@ -83,6 +83,7 @@ export const IMPACT_RULES = [
       "plugins/adr-writer/templates/adr/",
       "plugins/adr-writer/evals/lib/",
       "plugins/adr-writer/evals/run.mjs",
+      "plugins/adr-writer/evals/regression/tool-config.mjs",
       "plugins/adr-writer/evals/impact-map.mjs",
       "plugins/adr-writer/scripts/adr-lint-lib.mjs",
     ],

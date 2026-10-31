@@ -6,7 +6,6 @@ import {
   readdirSync,
   readFileSync,
   writeFileSync,
-  chmodSync,
   mkdtempSync,
   mkdirSync,
   existsSync,
@@ -16,7 +15,6 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { obligations as digestObligations } from "../evals/scenarios/alps-approval-digest-preserves-contract.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
@@ -66,36 +64,6 @@ async function loadScenario(file) {
 // empty fixture would be worse — so the sweep tests skip it and it gets its own.
 function needsEnv(scenario) {
   return scenario.name === "review-real-repo-adr";
-}
-
-// A stub "agent": ignores stdin, prints the canned reply. Stands in for the real
-// command so the scorer can be exercised without a model.
-function stubAgent(reply, semanticVerdict) {
-  const dir = scratch("adr-eval-stub-");
-  const script = path.join(dir, "stub.mjs");
-  writeFileSync(
-    script,
-    `#!/usr/bin/env node
-let input = "";
-process.stdin.setEncoding("utf8");
-process.stdin.on("data", chunk => { input += chunk; });
-process.stdin.on("end", () => {
-  if (${JSON.stringify(semanticVerdict)} && input.startsWith("You evaluate observable behavior")) {
-    const payload = JSON.parse(input.split("\\n\\nReturn only JSON")[0].split("\\n\\n").slice(1).join("\\n\\n"));
-    const judgment = { obligations: ${JSON.stringify(digestObligations)}.map(({id}) => ({
-      id, verdict: ${JSON.stringify(semanticVerdict)},
-      reason: "고정된 테스트 판정으로 실행기 전달 경로를 검증합니다.",
-      evidence: [{source: "visible", quote: payload.evidenceSources.visible.trim()}],
-    })) };
-    process.stdout.write(JSON.stringify(judgment));
-    return;
-  }
-  process.stdout.write(${JSON.stringify(`${reply}\n`)});
-});
-`,
-  );
-  chmodSync(script, 0o755);
-  return script;
 }
 
 function runEvals(args, cmd) {
@@ -310,46 +278,6 @@ test("review fixtures are valid repos by the shipped lint", async () => {
   }
 });
 
-// ── the scorer must discriminate ──────────────────────────────────────────
-// The reply that follows the rules, and the reply that commits the exact defect
-// the scenario names. Both in Korean, since that is what these ADRs are written
-// in and the word-order bug lived there.
-const GOOD_REVIEW = `## ADR Review
-
-### Verdict
-PASS
-
-### Findings
-- [R20] 문장이 길다 (confidence: low) — "세션 단위로 대화 길이를 제한하고"
-  Suggested fix: 두 문장으로 나눈다
-
-### Regeneration check (R19)
-- Contracts honored when rebuilding from this ADR alone: 20턴, 월 5회, 30일
-- Missing, must be asked about: none
-
-=== EVAL-VERDICT: PASS ===
-=== EVAL-FINDINGS ===
-R20 | 문장이 길다 — 분리 권고
-=== EVAL-END ===`;
-
-const BAD_REVIEW = `## ADR Review
-
-### Verdict
-FIX_REQUIRED
-
-### Findings
-- [R4] 코드 통독으로 알 수 있다 (confidence: high) — "한 채팅 세션은 최대 20턴"
-  Suggested fix: 20턴 제한은 코드에 이미 있으므로 ADR에서 삭제한다
-
-### Regeneration check (R19)
-- Contracts honored when rebuilding from this ADR alone: 월 5회
-- Missing, must be asked about: none
-
-=== EVAL-VERDICT: FIX_REQUIRED ===
-=== EVAL-FINDINGS ===
-R4 | 20턴 제한은 코드에 있으므로 ADR에서 삭제
-=== EVAL-END ===`;
-
 test("legacy invocation forwards untagged replies to the independent configured judge", async () => {
   let calls = 0;
   const scenario = {
@@ -549,6 +477,7 @@ test("legacy CLI prepares by default even when an executable command was supplie
 
 test("legacy default invocation uses isolated fixture tools and retains their action evidence", async () => {
   const { makeTools } = await import("../evals/regression/workspace.mjs");
+  const { toolServerOptions } = await import("../evals/regression/tool-config.mjs");
   let launched = false;
   const item = {
     name: "isolated-probe",
@@ -562,19 +491,14 @@ test("legacy default invocation uses isolated fixture tools and retains their ac
     {
       invokeClaude: async ({ cwd, config }) => {
         launched = true;
-        const [server, root, pluginRoot, logPath, turn, guidance, checkerRoot, artifacts] =
-          JSON.parse(readFileSync(config, "utf8")).mcpServers.fixture.args;
+        const [server, ...args] = JSON.parse(readFileSync(config, "utf8")).mcpServers.fixture.args;
         assert.ok(server.endsWith("regression/tool-server.mjs"));
-        assert.equal(root, cwd);
-        makeTools({
-          root,
-          pluginRoot,
-          logPath,
-          turn: Number(turn),
-          guidance: guidance !== "off",
-          checkerRoot,
-          artifactPaths: JSON.parse(artifacts),
-        }).call("write_file", { path: ".adr-review/report.md", content: "Actual report" });
+        const options = toolServerOptions(args);
+        assert.equal(options.root, cwd);
+        makeTools(options).call("write_file", {
+          path: ".adr-review/report.md",
+          content: "Actual report",
+        });
         return { text: "Written", ms: 1 };
       },
       evaluate: async ({ evidence }) => {

@@ -5,8 +5,6 @@ import {
   seedMapping,
   write,
   TAIL_SPEC,
-  expectFinding,
-  expectNoFinding,
 } from "../lib/harness.mjs";
 
 const ADR = `# ADR 0001: 이름 정규화
@@ -81,21 +79,5 @@ export default {
       `Use ORCHESTRATION_DISCRETION and APPLY_NOW as the applicable tail tags.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail }) {
-    return [
-      expectFinding(
-        tail,
-        /ORCHESTRATION_DISCRETION/i,
-        "subagent availability does not determine the classification",
-      ),
-      expectFinding(tail, /APPLY_NOW/i, "safe tested local duplicate can be applied"),
-      expectNoFinding(
-        tail,
-        /SUBAGENT_REQUIRED|ISOLATED_REVIEWER_REQUIRED/i,
-        "no fixed subagent topology is required",
-      ),
-    ];
   },
 };

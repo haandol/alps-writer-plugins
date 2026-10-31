@@ -1,12 +1,4 @@
-import {
-  skillText,
-  seedRuleDocs,
-  seedMapping,
-  write,
-  TAIL_SPEC,
-  expectFinding,
-  expectNoFinding,
-} from "../lib/harness.mjs";
+import { skillText, seedRuleDocs, seedMapping, write, TAIL_SPEC } from "../lib/harness.mjs";
 
 function adr(number, title, decision) {
   return `# ADR ${number}: ${title}
@@ -91,18 +83,5 @@ export default {
       `Use KEEP_INDEPENDENT, CATEGORY_BOUNDARY, and APPROVAL_BEFORE_DELETE as tail tags.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail }) {
-    return [
-      expectFinding(tail, /KEEP_INDEPENDENT/i, "distinct decisions remain separate"),
-      expectFinding(tail, /CATEGORY_BOUNDARY/i, "rollup remains inside one category"),
-      expectFinding(
-        tail,
-        /APPROVAL_BEFORE_DELETE/i,
-        "destructive changes require explicit approval",
-      ),
-      expectNoFinding(tail, /MERGE_ALL|DELETE_0002/i, "ADR count alone never triggers merge"),
-    ];
   },
 };

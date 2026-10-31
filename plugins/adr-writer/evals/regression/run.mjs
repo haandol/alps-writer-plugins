@@ -21,6 +21,7 @@ import { executionChecks } from "../lib/execution-checks.mjs";
 import { capturedChecks } from "../skills/mechanical-checks.mjs";
 import { verifierIdentity } from "../lib/verifier-identity.mjs";
 import { checkRequiredGuidance } from "../lib/required-guidance.mjs";
+import { toolServerConfig } from "./tool-config.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN = path.resolve(HERE, "../..");
@@ -117,6 +118,31 @@ function git(args) {
   return result.stdout;
 }
 
+/** The text of each blob id, read in one `git cat-file --batch`; a missing object fails. */
+function gitBlobs(ids) {
+  const texts = new Map();
+  if (!ids.length) return texts;
+  const result = spawnSync("git", ["cat-file", "--batch"], {
+    cwd: REPO,
+    input: ids.join("\n") + "\n",
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  if (result.status !== 0) throw new Error(`git failed: ${result.stderr}`);
+  const raw = result.stdout;
+  let at = 0;
+  for (const id of ids) {
+    const nl = raw.indexOf(10, at);
+    const header = raw.subarray(at, nl).toString("utf8");
+    const match = /^([0-9a-f]+) blob (\d+)$/.exec(header);
+    if (!match) throw new Error(`git failed: ${header}`);
+    at = nl + 1;
+    const size = Number(match[2]);
+    texts.set(id, raw.subarray(at, at + size).toString("utf8"));
+    at += size + 1;
+  }
+  return texts;
+}
+
 /** Snapshot instructions without requiring retired skills in an ablation-capable caller. */
 export function copyPlugin(destination, source, baseline, { allowMissingSkills = false } = {}) {
   mkdirSync(destination, { recursive: true });
@@ -124,15 +150,18 @@ export function copyPlugin(destination, source, baseline, { allowMissingSkills =
   if (baseline) {
     if (baseline.startsWith("-")) throw new Error("invalid baseline ref");
     const commit = git(["rev-parse", "--verify", `${baseline}^{commit}`]).trim();
+    const listed = [];
     for (const line of git(["ls-tree", "-r", commit, "--", "plugins/adr-writer"])
       .trim()
       .split("\n")) {
-      const match = line.match(/^(\d+) blob [a-f0-9]+\tplugins\/adr-writer\/(.+)$/);
-      if (!match || !DIRECTORIES.some((dir) => match[2].startsWith(`${dir}/`))) continue;
+      const match = line.match(/^(\d+) blob ([a-f0-9]+)\tplugins\/adr-writer\/(.+)$/);
+      if (!match || !DIRECTORIES.some((dir) => match[3].startsWith(`${dir}/`))) continue;
       if (match[1] !== "100644" && match[1] !== "100755")
         throw new Error("baseline plugin contains a non-regular file");
-      files[match[2]] = git(["show", `${commit}:plugins/adr-writer/${match[2]}`]);
+      listed.push([match[3], match[2]]);
     }
+    const texts = gitBlobs(listed.map(([, id]) => id));
+    for (const [file, id] of listed) files[file] = texts.get(id);
   } else {
     for (const dir of DIRECTORIES) {
       for (const file of listFiles(source, dir)) {
@@ -191,7 +220,11 @@ ${JSON.stringify(history, null, 2)}
 </conversation>`;
 }
 
-/** Collect observable edits and events, fixing fixture and verifier versions when comparing guidance. */
+/**
+ * Collect observable edits and events, fixing fixture and verifier versions when comparing guidance.
+ * Tests may pass `options.invoke` for the model and `options.fixtureChecks`, a Map shared across
+ * their runs, to reuse the initial checks of a byte-identical fixture; live runs pass neither.
+ */
 export async function runCase(item, variant, repeat, directory, options) {
   const referenceDate = options.referenceDate ?? options["reference-date"] ?? calendarDate();
   const relative = `runs/${item.id}-${variant.name}-${repeat}`;
@@ -200,6 +233,7 @@ export async function runCase(item, variant, repeat, directory, options) {
   mkdirSync(artifactDir, { recursive: true });
   createWorkspace(root, item.build(), options.fixturePluginRoot ?? variant.root);
   const before = snapshot(root);
+  const verifier = verifierIdentity(options.checkerRoot ?? variant.root);
   const result = {
     caseId: item.id,
     variant: variant.name,
@@ -213,7 +247,7 @@ export async function runCase(item, variant, repeat, directory, options) {
     models: [],
     changes: [],
     conditionHash: sha({
-      verifier: verifierIdentity(options.checkerRoot ?? variant.root),
+      verifier,
       before,
       turns: item.turns,
       obligations: item.obligations,
@@ -245,8 +279,19 @@ export async function runCase(item, variant, repeat, directory, options) {
       artifactPaths: item.artifactPaths,
     });
     if (variant.guidance !== false) checkRequiredGuidance(item, tools);
-    const policy = tools.call("run_check", { kind: "policy-tests" });
-    const lint = tools.call("run_check", { kind: "structure" });
+    // A test may share one cache across its runs (`options.fixtureChecks`): a byte-identical
+    // fixture under the same checker gives the same initial checks, so only its first run
+    // executes them. Live runs pass no cache and check every run.
+    const checkKey = options.fixtureChecks && sha({ before, verifier });
+    let initial = checkKey && options.fixtureChecks.get(checkKey);
+    if (!initial) {
+      initial = {
+        policy: tools.call("run_check", { kind: "policy-tests" }),
+        lint: tools.call("run_check", { kind: "structure" }),
+      };
+      if (checkKey) options.fixtureChecks.set(checkKey, initial);
+    }
+    const { policy, lint } = initial;
     writeFileSync(
       path.join(artifactDir, "fixture-checks.json"),
       JSON.stringify({ policy, lint }, null, 2),
@@ -258,23 +303,17 @@ export async function runCase(item, variant, repeat, directory, options) {
       const config = path.join(artifactDir, `mcp-${index + 1}.json`);
       writeFileSync(
         config,
-        JSON.stringify({
-          mcpServers: {
-            fixture: {
-              command: process.execPath,
-              args: [
-                path.join(HERE, "tool-server.mjs"),
-                root,
-                variant.root,
-                logPath,
-                String(index + 1),
-                variant.guidance === false ? "off" : "on",
-                options.checkerRoot ?? variant.root,
-                JSON.stringify(item.artifactPaths ?? []),
-              ],
-            },
-          },
-        }),
+        JSON.stringify(
+          toolServerConfig({
+            root,
+            pluginRoot: variant.root,
+            logPath,
+            turn: index + 1,
+            guidance: variant.guidance !== false,
+            checkerRoot: options.checkerRoot ?? variant.root,
+            artifactPaths: item.artifactPaths ?? [],
+          }),
+        ),
       );
       const response = await (options.invoke ?? invokeClaude)({
         prompt: executionPrompt(
@@ -479,9 +518,14 @@ export async function main(args) {
       judgeProfile: options["judge-profile"] ?? BEDROCK_DEFAULTS.profile,
       judgeRegion: options["judge-region"] ?? BEDROCK_DEFAULTS.region,
       harnessHash: sha(
-        ["run.mjs", "workspace.mjs", "tool-server.mjs", "claude.mjs", "judge.mjs"].map((file) =>
-          readFileSync(path.join(HERE, file), "utf8"),
-        ),
+        [
+          "run.mjs",
+          "workspace.mjs",
+          "tool-server.mjs",
+          "tool-config.mjs",
+          "claude.mjs",
+          "judge.mjs",
+        ].map((file) => readFileSync(path.join(HERE, file), "utf8")),
       ),
     },
     runsPerCase: options.runs,

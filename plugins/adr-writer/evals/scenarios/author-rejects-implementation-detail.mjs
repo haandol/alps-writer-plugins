@@ -2,15 +2,7 @@
 // while the requested work changes only the SDK and credential plumbing.
 // /adr-new must reject the request at the admission gate instead of creating a
 // polished ADR whose core subject lives at code resolution.
-import {
-  skillText,
-  seedRuleDocs,
-  seedMapping,
-  read,
-  TAIL_SPEC,
-  expectText,
-  expectNoText,
-} from "../lib/harness.mjs";
+import { skillText, seedRuleDocs, seedMapping, read, TAIL_SPEC } from "../lib/harness.mjs";
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
@@ -46,37 +38,6 @@ export default {
       BRIEF,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output, dir }) {
-    return [
-      ...deterministicScore({ dir }),
-      expectText(
-        output,
-        /admission gate|implementation substitution/i,
-        "applies the admission gate",
-      ),
-      expectText(
-        output,
-        /implementation detail|implementation discretion|코드 수준|구현 디테일/i,
-        "routes the SDK and credential choice to code",
-      ),
-      expectText(
-        output,
-        /GPT-5\.6.{0,80}(Bedrock|Amazon Bedrock)|Bedrock.{0,80}provider boundary/is,
-        "preserves the distinction from the provider/model boundary",
-      ),
-      expectNoText(
-        output,
-        /(?:create|write|save|작성|생성|저장).{0,50}(?:ADR).{0,80}(?:SDK|credential provider)/i,
-        "does not recommend an ADR for the SDK or credential provider",
-      ),
-      {
-        pass: tail.verdict !== null && !/^(BLOCK|FIX_REQUIRED)$/i.test(tail.verdict.trim()),
-        detail: tail.verdict ? `verdict was ${tail.verdict}` : "no verdict in the tail block",
-        label: "reports the request as out of ADR scope rather than a document defect",
-      },
-    ];
   },
 };
 

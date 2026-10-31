@@ -19,8 +19,6 @@ import {
   seedMapping,
   write,
   TAIL_SPEC,
-  expectFinding,
-  expectNoFinding,
 } from "../lib/harness.mjs";
 
 const ADR = `# ADR 0001: 문서 리뷰 경계
@@ -91,17 +89,5 @@ export default {
       `Use DOCUMENT_ONLY and SYNC_ROUTE as tail tags.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail }) {
-    return [
-      expectFinding(tail, /DOCUMENT_ONLY/i, "document review does not inspect product code"),
-      expectFinding(tail, /SYNC_ROUTE/i, "implementation reality routes to adr-sync"),
-      expectNoFinding(
-        tail,
-        /OPEN_CODE|CODE_MATCH_VERDICT|IMPLEMENTATION_EXISTS/i,
-        "document review does not claim code consistency",
-      ),
-    ];
   },
 };

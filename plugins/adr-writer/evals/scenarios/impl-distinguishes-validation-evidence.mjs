@@ -55,7 +55,6 @@ export default {
     "Completion distinguishes observed user-flow failures, missing evidence, semantic-judge uncertainty and policy decisions.",
   obligations,
   deterministicScore,
-  score: deterministicScore,
   build() {
     return [
       skillText("adr-impl", {

@@ -24,6 +24,7 @@ import { scenarioNamesForChangedPaths } from "../impact-map.mjs";
 import { BEDROCK_DEFAULTS } from "../deepeval/bedrock.mjs";
 import { validateReportEvaluation } from "./report-evaluation.mjs";
 import { finalChecks } from "../lib/execution-checks.mjs";
+import { toolServerConfig } from "../regression/tool-config.mjs";
 
 const HELP = `Skill evaluation — classification, routing, execution
 
@@ -155,7 +156,7 @@ export function selectImpacted(cases, paths) {
     cases.filter((c) => c.type === "classification").map((c) => ({ ...c, name: c.id })),
   );
   const shared = paths.some((p) =>
-    /^(shared\/report-writer\/|plugins\/adr-writer\/skills\/report-writer\/|plugins\/adr-writer\/evals\/(skills|lib|deepeval)\/|plugins\/adr-writer\/evals\/regression\/(judge|claude|workspace|tool-server)\.mjs$)/.test(
+    /^(shared\/report-writer\/|plugins\/adr-writer\/skills\/report-writer\/|plugins\/adr-writer\/evals\/(skills|lib|deepeval)\/|plugins\/adr-writer\/evals\/regression\/(judge|claude|workspace|tool-server|tool-config)\.mjs$)/.test(
       p,
     ),
   );
@@ -205,24 +206,17 @@ function toolConfig(directory, root, pluginRoot, logPath, artifactPaths = [], dr
   const file = path.join(directory, "mcp.json");
   writeFileSync(
     file,
-    JSON.stringify({
-      mcpServers: {
-        fixture: {
-          command: process.execPath,
-          args: [
-            path.join(PLUGIN, "evals/regression/tool-server.mjs"),
-            root,
-            pluginRoot,
-            logPath,
-            "1",
-            "on",
-            pluginRoot,
-            JSON.stringify(artifactPaths),
-            ...(draftRoot ? [draftRoot] : []),
-          ],
-        },
-      },
-    }),
+    JSON.stringify(
+      toolServerConfig({
+        root,
+        pluginRoot,
+        logPath,
+        turn: 1,
+        checkerRoot: pluginRoot,
+        artifactPaths,
+        draftRoot,
+      }),
+    ),
   );
   return file;
 }
@@ -713,7 +707,8 @@ export async function main(args, injected = {}) {
           }
           record.elapsedMs = Date.now() - started;
           json(output, `${record.artifactDirectory}/result.json`, record);
-          save();
+          // A live run saves its progress; a preparation calls no model and saves once at the end.
+          if (options.live) save();
           process.stdout.write(
             `${item.type} ${item.id} ${variant.name} #${repeat}: ${record.verdict}${record.error ? ` — ${record.error}` : ""}\n`,
           );

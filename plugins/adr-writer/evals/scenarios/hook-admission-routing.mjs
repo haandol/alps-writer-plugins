@@ -1,4 +1,4 @@
-import { hookContext, ruleText, seedRuleDocs, TAIL_SPEC, expectText } from "../lib/harness.mjs";
+import { hookContext, ruleText, seedRuleDocs, TAIL_SPEC } from "../lib/harness.mjs";
 
 export default {
   name: "hook-admission-routing",
@@ -20,30 +20,5 @@ export default {
       `Use EXEMPT for code-level work and ADR_FIRST for admitted work in the tail.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    const all = `${output}\n${tail.raw}`;
-    const wronglyAdmitted = tail.findings.filter(
-      (finding) =>
-        /ADR_FIRST/i.test(finding.tag) &&
-        (/(?:^|\s)A(?:\s|:)/.test(finding.summary) ||
-          /SDK|credential adapter/i.test(finding.summary)),
-    );
-    return [
-      expectText(all, /EXEMPT.{0,180}(SDK|credential|adapter)/is, "routes the SDK swap to code"),
-      expectText(
-        all,
-        /ADR_FIRST.{0,180}(5.{0,40}3|quota|쿼터|업로드)/is,
-        "routes the quota change ADR-first",
-      ),
-      {
-        pass: wronglyAdmitted.length === 0,
-        detail:
-          wronglyAdmitted.map((finding) => `${finding.tag} | ${finding.summary}`).join(" ; ") ||
-          "no ADR_FIRST finding for request A",
-        label: "does not promote the replaceable SDK choice",
-      },
-    ];
   },
 };

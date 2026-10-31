@@ -4,7 +4,6 @@ import {
   seedRuleDocs,
   seedMapping,
   TAIL_SPEC,
-  expectText,
 } from "../lib/harness.mjs";
 
 const SOURCE = `
@@ -36,36 +35,5 @@ export default {
       `Use BATCH_ALLOWED, SEPARATE_SAVE_UNIT, FOCUS_SET, and MANDATORY_NFR tags in the tail.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    const all = `${output}\n${tail.raw}`;
-    const mandatory = tail.findings.filter((finding) => /MANDATORY_NFR/i.test(finding.tag));
-    const mandatoryText = mandatory.map((item) => item.summary).join("\n");
-    const mandatoryContracts = [
-      /결제.{0,40}(저장하지|미저장|0건)|payment.{0,40}(not stored|no storage)/is,
-      /GDPR.{0,40}30\s*일|GDPR.{0,40}30 days/is,
-      /WCAG\s*2\.2\s*AA/is,
-      /99\.9\s*%/is,
-    ];
-    return [
-      expectText(all, /BATCH_ALLOWED/i, "allows the explicitly requested batch"),
-      expectText(
-        all,
-        /SEPARATE_SAVE_UNIT.{0,180}(section|feature|7\.1|7\.2|각)/is,
-        "keeps sections and features as separate save units",
-      ),
-      expectText(all, /FOCUS_SET.{0,120}(3|three|상위)/is, "uses top three as a focus set"),
-      {
-        pass: mandatoryContracts.every((pattern) => pattern.test(mandatoryText)),
-        detail: `mandatory NFRs: ${mandatoryText || "none"}`,
-        label: "preserves all four mandatory NFRs",
-      },
-      expectText(
-        mandatoryText,
-        /GDPR|30\s*일|WCAG|99\.9|결제 데이터/is,
-        "names the mandatory security, regulatory, accessibility, and contract constraints",
-      ),
-    ];
   },
 };

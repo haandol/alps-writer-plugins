@@ -6,6 +6,7 @@ import path from "node:path";
 import { main } from "../skills/run.mjs";
 import { catalog } from "../skills/catalog.mjs";
 import { makeTools } from "../regression/workspace.mjs";
+import { toolServerOptions } from "../regression/tool-config.mjs";
 import { adopt } from "../../tests/fixtures/import-approved-documents.mjs";
 
 // Every temporary folder this file creates is removed when the file finishes,
@@ -23,22 +24,10 @@ const text = "Controlled fixture response.";
 const reply = (rows) =>
   `${text}\n=== EVAL-VERDICT: PASS ===\n=== EVAL-FINDINGS ===\n${rows}\n=== EVAL-END ===`;
 function fixtureTools(config) {
-  const [, root, pluginRoot, logPath, turn, guidance, checkerRoot, artifacts] = JSON.parse(
-    readFileSync(config, "utf8"),
-  ).mcpServers.fixture.args;
-  return {
-    root,
-    turn: Number(turn),
-    tools: makeTools({
-      root,
-      pluginRoot,
-      logPath,
-      turn: Number(turn),
-      guidance: guidance !== "off",
-      checkerRoot,
-      artifactPaths: JSON.parse(artifacts ?? "[]"),
-    }),
-  };
+  const options = toolServerOptions(
+    JSON.parse(readFileSync(config, "utf8")).mcpServers.fixture.args.slice(1),
+  );
+  return { root: options.root, turn: options.turn, tools: makeTools(options) };
 }
 const passingJudge = (item) => async () => ({
   structured: {
@@ -114,43 +103,51 @@ test("a semantic PASS cannot hide a forbidden response-only write after catalog 
 
 test("execution checks gate real multi-turn capture even when final files and semantic judgment look valid", async () => {
   const item = (await catalog()).find((c) => c.id === "import-confirmed-adoption-and-repeat");
-  for (const rewrite of [false, true]) {
-    const result = await main(
-      [
-        "--live",
-        "--suite",
-        "execution",
-        "--reference-date",
-        "2026-09-30",
-        "--runs",
-        "1",
-        "--out",
-        temp(),
-      ],
-      {
-        cases: [item],
-        judge: passingJudge(item),
-        target: async ({ config }) => {
-          const { tools, turn } = fixtureTools(config);
-          if (turn === 1)
-            tools.call("write_file", {
-              path: item.artifactPaths[0],
-              content:
-                "# decision-1 and decision-2\nConfirm the displayed member-order and payment-completion contracts and their current intent. Both owners are identified and official ADRs have not been written.\n",
-            });
-          if (turn === 2) adopt(tools, ["ordering", "billing"]);
-          if (turn === 3 && rewrite) {
-            const file = "docs/adr/ordering/0001-ordering.md";
-            tools.call("write_file", {
-              path: file,
-              content: tools.call("read_file", { path: file }),
-            });
-          }
-          return { text, models: ["target-stub"], costUSD: 0, ms: 1 };
-        },
+  // One runner call shares plugin snapshots; each combination is its own case with its own
+  // fixture, captured turns, execution checks and judgment.
+  const combinations = [false, true].map((rewrite, index) => ({
+    id: `${item.id}-${index + 1}`,
+    rewrite,
+  }));
+  const byRun = new Map(combinations.map((c) => [`${c.id}-candidate-1`, c]));
+  const result = await main(
+    [
+      "--live",
+      "--suite",
+      "execution",
+      "--reference-date",
+      "2026-09-30",
+      "--runs",
+      "1",
+      "--out",
+      temp(),
+    ],
+    {
+      cases: combinations.map(({ id }) => ({ ...item, id })),
+      judge: passingJudge(item),
+      target: async ({ cwd, config }) => {
+        const { rewrite } = byRun.get(path.basename(path.dirname(cwd)));
+        const { tools, turn } = fixtureTools(config);
+        if (turn === 1)
+          tools.call("write_file", {
+            path: item.artifactPaths[0],
+            content:
+              "# decision-1 and decision-2\nConfirm the displayed member-order and payment-completion contracts and their current intent. Both owners are identified and official ADRs have not been written.\n",
+          });
+        if (turn === 2) adopt(tools, ["ordering", "billing"]);
+        if (turn === 3 && rewrite) {
+          const file = "docs/adr/ordering/0001-ordering.md";
+          tools.call("write_file", {
+            path: file,
+            content: tools.call("read_file", { path: file }),
+          });
+        }
+        return { text, models: ["target-stub"], costUSD: 0, ms: 1 };
       },
-    );
-    const record = result.report.runs[0];
+    },
+  );
+  for (const { id, rewrite } of combinations) {
+    const record = result.report.runs.find((r) => r.caseId === id);
     assert.equal(record.verdict, rewrite ? "NOT_PROVEN" : "PASS", record.error);
     assert.equal(record.calls.filter((c) => c.stage === "target").length, 3);
     assert.ok(

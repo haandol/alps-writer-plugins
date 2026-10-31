@@ -3,30 +3,14 @@
 // No network transport, external accounts, arbitrary shell, or SDK dependency.
 import { createInterface } from "node:readline";
 import { makeTools } from "./workspace.mjs";
+import { toolServerOptions } from "./tool-config.mjs";
 
-const [
-  root,
-  pluginRoot,
-  logPath,
-  rawTurn,
-  rawGuidance,
-  checkerRoot,
-  rawArtifactPaths,
-  rawDraftRoot,
-] = process.argv.slice(2);
+const args = process.argv.slice(2);
+const [root, pluginRoot, logPath, rawTurn] = args;
 if (!root || !pluginRoot || !logPath || !/^\d+$/.test(rawTurn ?? "")) {
   throw new Error("tool-server requires fixture root, plugin root, event log, turn");
 }
-const tools = makeTools({
-  root,
-  pluginRoot,
-  logPath,
-  turn: Number(rawTurn),
-  guidance: rawGuidance !== "off",
-  checkerRoot,
-  artifactPaths: rawArtifactPaths === undefined ? [] : JSON.parse(rawArtifactPaths),
-  ...(rawDraftRoot ? { draftRoot: rawDraftRoot } : {}),
-});
+const tools = makeTools(toolServerOptions(args));
 const send = (message) => process.stdout.write(JSON.stringify(message) + "\n");
 
 for await (const line of createInterface({ input: process.stdin })) {

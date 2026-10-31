@@ -1,8 +1,6 @@
 import {
   alpsLiteGuideText,
   alpsSkillText,
-  expectNoText,
-  expectText,
   seedMapping,
   seedRuleDocs,
   TAIL_SPEC,
@@ -37,36 +35,5 @@ export default {
       `In the tail use EXPLICIT_EXCLUSION three times, UNRESOLVED_NOT_EXCLUDED once, and OPTIONAL_SECTION once.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    const visible = output.split(/---\s*\n\s*## Machine-readable tail|===\s*EVAL-VERDICT/i)[0];
-    const exclusions = tail.findings
-      .filter((finding) => /EXPLICIT_EXCLUSION/i.test(finding.tag))
-      .map((finding) => finding.summary)
-      .join("\n");
-    return [
-      {
-        pass:
-          tail.findings.filter((finding) => /EXPLICIT_EXCLUSION/i.test(finding.tag)).length === 3,
-        detail: exclusions || "none",
-        label: "records exactly the three explicit exclusions",
-      },
-      expectText(exclusions, /팀 관리자/i, "keeps the excluded persona"),
-      expectText(exclusions, /음성 입력/i, "keeps the excluded screen or capability"),
-      expectText(exclusions, /오프라인 복구/i, "keeps the excluded demo edge case"),
-      expectText(
-        tail.raw,
-        /UNRESOLVED_NOT_EXCLUDED.{0,160}가격 정책/is,
-        "keeps unresolved pricing out of exclusions",
-      ),
-      expectText(tail.raw, /OPTIONAL_SECTION/i, "recognizes Section 3 as optional"),
-      expectNoText(exclusions, /가격|pricing/i, "does not classify unresolved pricing as excluded"),
-      expectNoText(
-        visible,
-        /Full ALPS|\/alps-init|다음 문서|후속 문서/i,
-        "keeps the Lite workflow independent",
-      ),
-    ];
   },
 };

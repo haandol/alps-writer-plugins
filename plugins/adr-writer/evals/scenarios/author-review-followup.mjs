@@ -39,7 +39,6 @@ export default {
     "Recommend a scoped saved-ADR review and reuse the implementation completion review without weakening its gate.",
   obligations,
   deterministicScore,
-  score,
   build() {
     return [
       skillText("adr-new", {

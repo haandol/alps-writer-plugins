@@ -19,8 +19,6 @@ import {
   seedMapping,
   write,
   TAIL_SPEC,
-  expectFinding,
-  expectNoFinding,
 } from "../lib/harness.mjs";
 
 const ADR = `# ADR 0001: 입력 이름 정규화
@@ -101,16 +99,5 @@ export default {
       `Classify the duplicated trim().toLowerCase() operation. Do not edit files.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail }) {
-    return [
-      expectFinding(tail, /APPLY_NOW/i, "safe current duplication is classified APPLY_NOW"),
-      expectNoFinding(
-        tail,
-        /PROPOSE_ONLY/i,
-        "the local tested extraction is not unnecessarily proposal-only",
-      ),
-    ];
   },
 };

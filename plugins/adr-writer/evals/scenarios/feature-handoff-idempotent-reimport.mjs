@@ -1,11 +1,4 @@
-import {
-  alpsSkillText,
-  seedRuleDocs,
-  seedMapping,
-  write,
-  TAIL_SPEC,
-  expectText,
-} from "../lib/harness.mjs";
+import { alpsSkillText, seedRuleDocs, seedMapping, write, TAIL_SPEC } from "../lib/harness.mjs";
 
 const ADR_PATH = "docs/adr/workspace/export/0001-export-retention-and-archive.md";
 
@@ -116,39 +109,5 @@ export default {
       `should immediately mutate or weaken the current ADR.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail }) {
-    const serialized = tail.findings
-      .map((finding) => `${finding.tag} | ${finding.summary}`)
-      .join("\n");
-    const mutations = tail.findings.filter((finding) =>
-      /ADR_UPDATE|CONTRACT_DELETE/i.test(finding.tag),
-    );
-    return [
-      expectText(
-        serialized,
-        /SEMANTIC_NOOP.{0,160}30/i,
-        "treats the reworded 30-day rule as no-op",
-      ),
-      expectText(
-        serialized,
-        /SEMANTIC_NOOP.{0,160}ArchiveCo/i,
-        "treats the reworded ArchiveCo boundary as no-op",
-      ),
-      expectText(
-        serialized,
-        /REMOVAL_REVIEW.{0,180}24/i,
-        "requires explicit review before removing the 24-hour fallback",
-      ),
-      expectText(serialized, /NO_MUTATION/i, "keeps the current ADR state unchanged"),
-      {
-        pass: mutations.length === 0,
-        detail:
-          mutations.map((item) => `${item.tag} | ${item.summary}`).join(" ; ") ||
-          "no ADR update or contract deletion",
-        label: "does not mutate or weaken the ADR during comparison",
-      },
-    ];
   },
 };

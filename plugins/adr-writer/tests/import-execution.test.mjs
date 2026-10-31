@@ -6,10 +6,14 @@ import path from "node:path";
 import { importExecutionCases } from "../evals/skills/import-execution.mjs";
 import { catalog } from "../evals/skills/catalog.mjs";
 import { createWorkspace, makeTools, snapshot } from "../evals/regression/workspace.mjs";
+import { toolServerOptions } from "../evals/regression/tool-config.mjs";
 import { runCase } from "../evals/regression/run.mjs";
 import { PLUGIN_ROOT } from "./helpers.mjs";
 
 import { adopt } from "./fixtures/import-approved-documents.mjs";
+
+// One cache of initial fixture checks for this file's runs: identical fixtures check alike.
+const fixtureChecks = new Map();
 
 const DATE = "2026-09-30";
 // Removed when the file finishes, so repeated runs do not fill the temporary directory.
@@ -37,20 +41,14 @@ async function execute(item, mutant) {
       timeout: 10,
       referenceDate: DATE,
       "capture-only": true,
+      fixtureChecks,
       invoke: async ({ cwd, config }) => {
-        const [, root, pluginRoot, logPath, rawTurn, guidance, checkerRoot, rawArtifacts] =
-          JSON.parse(readFileSync(config, "utf8")).mcpServers.fixture.args;
-        assert.equal(root, cwd);
-        const turn = Number(rawTurn);
-        const tools = makeTools({
-          root,
-          pluginRoot,
-          logPath,
-          turn,
-          guidance: guidance !== "off",
-          checkerRoot,
-          artifactPaths: JSON.parse(rawArtifacts),
-        });
+        const options = toolServerOptions(
+          JSON.parse(readFileSync(config, "utf8")).mcpServers.fixture.args.slice(1),
+        );
+        assert.equal(options.root, cwd);
+        const { turn } = options;
+        const tools = makeTools(options);
         const domains = item.approvedDomains;
         if (turn === 1) {
           for (const file of [

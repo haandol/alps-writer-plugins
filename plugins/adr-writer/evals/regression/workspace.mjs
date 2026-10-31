@@ -91,8 +91,8 @@ export function diff(before, after) {
     }));
 }
 
-/** Give every comparison condition the same rules and mandatory log seed before model execution. */
-export function createWorkspace(root, files, pluginRoot) {
+/** Write the fixture files and the same stamped rule documents for every comparison condition. */
+export function writeWorkspace(root, files, pluginRoot) {
   mkdirSync(root, { recursive: true });
   for (const [file, content] of Object.entries(files)) {
     const target = confined(root, file);
@@ -104,6 +104,11 @@ export function createWorkspace(root, files, pluginRoot) {
     mkdirSync(path.dirname(dest), { recursive: true });
     writeFileSync(dest, readFileSync(path.join(pluginRoot, "templates/adr", name)));
   }
+}
+
+/** Give every comparison condition the same rules and mandatory log seed before model execution. */
+export function createWorkspace(root, files, pluginRoot) {
+  writeWorkspace(root, files, pluginRoot);
   // Track the initial fixture so the shipped invariant checks see the same
   // authored files as a normal repository; no commit or external remote.
   for (const args of [

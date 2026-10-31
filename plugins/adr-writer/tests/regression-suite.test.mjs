@@ -47,6 +47,39 @@ after(() => {
   for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true });
 });
 
+test("a baseline snapshot holds every plugin file its commit lists, with the committed bytes", (t) => {
+  const repo = path.resolve(PLUGIN, "../..");
+  const git = (...args) => spawnSync("git", args, { cwd: repo, encoding: "utf8" });
+  if (git("rev-parse", "--verify", "HEAD^{commit}").status !== 0)
+    return t.skip("needs a git checkout of the plugin");
+  const listed = new Map(
+    git("ls-tree", "-r", "-l", "HEAD", "--", "plugins/adr-writer")
+      .stdout.trim()
+      .split("\n")
+      .map((line) => line.match(/^\d+ blob [0-9a-f]+\s+(\d+)\tplugins\/adr-writer\/(.+)$/))
+      .filter(
+        (m) =>
+          m &&
+          ["skills", "agents", "references", "templates", "scripts"].some((dir) =>
+            m[2].startsWith(`${dir}/`),
+          ),
+      )
+      .map((m) => [m[2], Number(m[1])]),
+  );
+  const root = path.join(temp(), "baseline");
+  copyPlugin(root, null, "HEAD");
+  for (const [file, size] of listed)
+    assert.equal(readFileSync(path.join(root, file)).length, size, file);
+  const files = [...listed.keys()];
+  for (const file of [files[0], files[Math.floor(files.length / 2)], files.at(-1)])
+    assert.equal(
+      readFileSync(path.join(root, file), "utf8"),
+      git("show", `HEAD:plugins/adr-writer/${file}`).stdout,
+      file,
+    );
+  assert.ok(files.length > 50, "the listing names the plugin's files");
+});
+
 test("retiring a skill preserves its task and leaves the no-skill condition executable", async () => {
   const folder = temp();
   const selected = cases.find((c) => c.id === "sync-encbird-turn-units");

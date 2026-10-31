@@ -41,6 +41,7 @@ import { runAgent } from "./lib/harness.mjs";
 import { scenarioNamesForChangedPaths } from "./impact-map.mjs";
 import { capturedChecks } from "./skills/mechanical-checks.mjs";
 import { invokeClaude } from "./regression/claude.mjs";
+import { toolServerConfig } from "./regression/tool-config.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
@@ -195,24 +196,17 @@ export async function runOnce(scenario, opts, injected = {}) {
   const pluginRoot = path.resolve(HERE, "..");
   writeFileSync(
     config,
-    JSON.stringify({
-      mcpServers: {
-        fixture: {
-          command: process.execPath,
-          args: [
-            path.join(HERE, "regression/tool-server.mjs"),
-            dir,
-            pluginRoot,
-            logPath,
-            "1",
-            "on",
-            pluginRoot,
-            JSON.stringify(scenario.artifactPaths ?? []),
-            ...(scenario.draftRoot ? [scenario.draftRoot] : []),
-          ],
-        },
-      },
-    }),
+    JSON.stringify(
+      toolServerConfig({
+        root: dir,
+        pluginRoot,
+        logPath,
+        turn: 1,
+        checkerRoot: pluginRoot,
+        artifactPaths: scenario.artifactPaths ?? [],
+        draftRoot: scenario.draftRoot,
+      }),
+    ),
   );
   let res;
   try {

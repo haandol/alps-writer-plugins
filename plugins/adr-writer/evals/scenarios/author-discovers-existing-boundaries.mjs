@@ -94,7 +94,6 @@ export default {
       text: "Use actual repository evidence to distinguish one monorepo from three independently deployed services; group checkout and worker under Ordering, settlement under Billing. Preserve the 1..3 item/member rules and valid confirmation transition. Ask for missing intent rather than inventing it. Do not claim access to fulfillment or change application sources or official ADR/index.",
     },
   ],
-  score,
   deterministicScore: score,
   build(dir) {
     for (const [file, body] of Object.entries(fixtureFiles)) write(dir, file, body);

@@ -2,8 +2,6 @@ import {
   alpsLiteGuideText,
   alpsLiteResumeText,
   alpsSkillText,
-  expectNoText,
-  expectText,
   seedMapping,
   seedRuleDocs,
   TAIL_SPEC,
@@ -45,40 +43,5 @@ export default {
       `In the tail use PROFILE_AWARE_RESUME, AI_PROPOSES_SOLUTION, NO_SOLUTION_DESIGN_QUESTION, and APPROVAL_BEFORE_SAVE once each.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    const visible = output.split(/---\s*\n\s*## Machine-readable tail|===\s*EVAL-VERDICT/i)[0];
-    return [
-      expectText(
-        visible,
-        /Solution Strategy|솔루션 전략|최소 솔루션/i,
-        "resumed Lite proposes the minimum solution",
-      ),
-      expectText(
-        visible,
-        /Essential User Experiences|핵심 사용자 경험/i,
-        "resumed Lite proposes essential user experiences",
-      ),
-      expectText(visible, /승인|수정|보류/i, "keeps approval before save"),
-      expectNoText(
-        visible,
-        /어떤.{0,20}(솔루션|기능|흐름).{0,20}(원하|필요|알려)|시작 상태.{0,20}(알려|정해)|사용자 행동.{0,20}(알려|작성)/i,
-        "does not ask the user to design the resumed solution or demo",
-      ),
-      expectNoText(
-        visible,
-        /DO NOT auto-generate content/i,
-        "does not repeat the obsolete blanket resume instruction",
-      ),
-      expectText(tail.raw, /PROFILE_AWARE_RESUME/i, "records profile-aware resume guidance"),
-      expectText(tail.raw, /AI_PROPOSES_SOLUTION/i, "records proposal-first Section 2"),
-      expectText(
-        tail.raw,
-        /NO_SOLUTION_DESIGN_QUESTION/i,
-        "records that no solution-design question was asked",
-      ),
-      expectText(tail.raw, /APPROVAL_BEFORE_SAVE/i, "keeps explicit approval before save"),
-    ];
   },
 };

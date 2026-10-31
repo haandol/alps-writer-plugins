@@ -7,7 +7,6 @@ import { catalog, PLUGIN } from "../skills/catalog.mjs";
 import { main, parseSkillsArgs, selectImpacted } from "../skills/run.mjs";
 import { makeTools } from "../regression/workspace.mjs";
 import { responseObligations } from "../skills/response-contract.mjs";
-import { parseTail } from "../lib/harness.mjs";
 import { responseChecks } from "../lib/response-checks.mjs";
 
 test("response scope checks allow requested reads but reject mutation attempts and missing fields", () => {
@@ -224,39 +223,47 @@ test("GEval rejects keyword-only success, local failure cannot be averaged away,
   );
   const reply =
     "Solution Strategy. Essential User Experiences. 해외 출장. 승인. 완료했다고 주장합니다." + tail;
-  for (const [localPass, semantic, expected] of [
+  // One runner call shares plugin snapshots; each combination is its own case with its own
+  // fixture, local check, captured evidence and real GEval invocation.
+  const combinations = [
     [true, 0, "NOT_PROVEN"],
     [false, 1, "NOT_PROVEN"],
     [true, 1, "PASS"],
     [true, "error", "ERROR"],
-  ]) {
-    let calls = 0;
-    const result = await main(
-      ["--live", "--suite", "classification", "--runs", "1", "--out", temp()],
-      {
-        cases: [
-          {
-            ...item,
-            supplementalChecks: true,
-            score: () => [
-              { pass: localPass, label: "required local check", detail: "fixture check" },
-            ],
-          },
-        ],
-        target: async () => ({ text: reply, models: ["target-stub"], costUSD: 0 }),
-        judge: async ({ prompt, schema }) => {
-          calls++;
-          assert.ok(prompt.includes(item.semanticObligations[0].text));
-          assert.ok(schema.required.includes("obligations"));
-          assert.doesNotMatch(prompt, /required local check|fixture check/);
-          if (semantic === "error") throw new Error("Stub judge unavailable");
-          return judge(item, semantic, "완료했다고 주장합니다.");
-        },
+  ].map(([localPass, semantic, expected], index) => ({
+    id: `${item.id}-${index + 1}`,
+    localPass,
+    semantic,
+    expected,
+  }));
+  const byRun = new Map(combinations.map((c) => [`${c.id}-candidate-1`, c]));
+  const calls = new Map(combinations.map((c) => [c.id, 0]));
+  const result = await main(
+    ["--live", "--suite", "classification", "--runs", "1", "--out", temp()],
+    {
+      cases: combinations.map(({ id, localPass }) => ({
+        ...item,
+        id,
+        supplementalChecks: true,
+        score: () => [{ pass: localPass, label: "required local check", detail: "fixture check" }],
+      })),
+      target: async () => ({ text: reply, models: ["target-stub"], costUSD: 0 }),
+      judge: async ({ prompt, schema, cwd }) => {
+        const combination = byRun.get(path.basename(cwd));
+        assert.ok(combination, `Unexpected judge workspace: ${cwd}`);
+        calls.set(combination.id, calls.get(combination.id) + 1);
+        assert.ok(prompt.includes(item.semanticObligations[0].text));
+        assert.ok(schema.required.includes("obligations"));
+        assert.doesNotMatch(prompt, /required local check|fixture check/);
+        if (combination.semantic === "error") throw new Error("Stub judge unavailable");
+        return judge(item, combination.semantic, "완료했다고 주장합니다.");
       },
-    );
-    const run = result.report.runs[0];
-    assert.equal(run.verdict, expected);
-    assert.equal(calls, 1, "no duplicate legacy judge or generated evaluation steps");
+    },
+  );
+  for (const { id, localPass, semantic, expected } of combinations) {
+    const run = result.report.runs.find((r) => r.caseId === id);
+    assert.equal(run.verdict, expected, id);
+    assert.equal(calls.get(id), 1, "no duplicate legacy judge or generated evaluation steps");
     assert.equal(run.checks.find((c) => c.label === "required local check").pass, localPass);
     if (semantic !== "error") {
       assert.equal(run.testResult.metricsData[0].name, "Skill response contract [GEval]");
@@ -286,41 +293,51 @@ test("intent probes judge behavioral meaning without requiring evaluation record
   const item = probes.find((entry) => entry.id === "impl-uses-intent-to-bound-discretion");
   const inconsistent = "검토 편의를 위해 수정을 자동 적용하고 삭제 시점도 정하겠습니다.";
   const consistent = "중요한 위험부터 보여주되 수정은 하지 않고, 삭제 정책만 확인하겠습니다.";
-  for (const [choice, prose, semantic, expected] of [
+  assert.equal(item.score, undefined);
+  // The combinations share one runner call as separate cases, each with its own reply and judgment.
+  const combinations = [
     ["IMPACT_FIRST", inconsistent, 0, "NOT_PROVEN"],
     ["ALPHABETICAL", consistent, 1, "PASS"],
     ["IMPACT_FIRST", consistent, 1, "PASS"],
-  ]) {
-    const reply = `${prose}
+  ].map(([choice, prose, semantic, expected], index) => ({
+    id: `${item.id}-${index + 1}`,
+    prose,
+    semantic,
+    expected,
+    reply: `${prose}
 === EVAL-VERDICT: PASS ===
 === EVAL-FINDINGS ===
 A | choice=${choice}; basis=중요한 위험을 먼저 확인; question=none
 B | choice=KEEP_REVIEW_ONLY; basis=수정 권한 없음; question=none
 C | choice=ASK_RETENTION; basis=정책 미정; question=어떤 보고서를 언제 삭제할까요?
-=== EVAL-END ===`;
-    assert.equal(item.score, undefined);
-    let judgeCalls = 0;
-    const result = await main(
-      ["--live", "--suite", "classification", "--runs", "1", "--out", temp()],
-      {
-        cases: [item],
-        target: async () => ({ text: reply, models: ["target-stub"], costUSD: 0 }),
-        judge: async ({ prompt }) => {
-          judgeCalls++;
-          assert.ok(prompt.includes(prose));
-          assert.ok(
-            prompt.includes(item.semanticObligations.find((o) => o.id === "evidence").text),
-          );
-          return judge(item, semantic, prose);
-        },
+=== EVAL-END ===`,
+  }));
+  const byRun = new Map(combinations.map((c) => [`${c.id}-candidate-1`, c]));
+  const judgeCalls = new Map(combinations.map((c) => [c.id, 0]));
+  const result = await main(
+    ["--live", "--suite", "classification", "--runs", "1", "--out", temp()],
+    {
+      cases: combinations.map(({ id }) => ({ ...item, id })),
+      target: async ({ cwd }) => ({
+        text: byRun.get(path.basename(path.dirname(cwd))).reply,
+        models: ["target-stub"],
+        costUSD: 0,
+      }),
+      judge: async ({ prompt, cwd }) => {
+        const combination = byRun.get(path.basename(cwd));
+        assert.ok(combination, `Unexpected judge workspace: ${cwd}`);
+        judgeCalls.set(combination.id, judgeCalls.get(combination.id) + 1);
+        assert.ok(prompt.includes(combination.prose));
+        assert.ok(prompt.includes(item.semanticObligations.find((o) => o.id === "evidence").text));
+        return judge(item, combination.semantic, combination.prose);
       },
-    );
-    assert.equal(result.report.runs[0].verdict, expected);
-    assert.equal(judgeCalls, 1);
-    assert.equal(
-      result.report.runs[0].testResult.metricsData[0].name,
-      "Skill response contract [GEval]",
-    );
+    },
+  );
+  for (const { id, expected } of combinations) {
+    const run = result.report.runs.find((r) => r.caseId === id);
+    assert.equal(run.verdict, expected, id);
+    assert.equal(judgeCalls.get(id), 1, id);
+    assert.equal(run.testResult.metricsData[0].name, "Skill response contract [GEval]");
   }
 });
 
@@ -408,64 +425,75 @@ test("report-writing and review rubrics use one real GEval judgment each without
 
 test("report artifacts use actual capture plus GEval and cannot hide format failure with semantic PASS", async () => {
   const item = (await catalog()).find((c) => c.id === "report-artifact-limited-evidence");
-  for (const valid of [true, false]) {
-    let calls = 0;
-    const result = await main(
-      ["--live", "--suite", "classification", "--runs", "1", "--out", temp()],
-      {
-        cases: [item],
-        target: async ({ cwd }) => {
-          const tools = makeTools({
-            root: cwd,
-            pluginRoot: PLUGIN,
-            logPath: path.join(cwd, "..", "events.jsonl"),
-            turn: 1,
-            artifactPaths: item.artifactPaths,
-          });
-          for (const file of [
-            "source.md",
-            "plugin/skills/report-writer/SKILL.md",
-            "plugin/skills/report-writer/references/report-document.md",
-          ])
-            tools.call("read_file", { path: file });
-          tools.call("write_file", {
-            path: item.artifactPaths[0],
-            content: JSON.stringify({
-              title: "Document results",
-              language: "en",
-              summary: ["Internal stages are unspecified."],
-              requiredEvidenceIds: valid ? ["S1"] : [],
-              review: { status: "draft", basis: "Fixture stub", limitations: "No semantic claim" },
-              sections: [
-                {
-                  id: "result",
-                  title: "Results",
-                  domain: "Documents",
-                  scope: "Query and download",
-                  paragraphs: ["An available result can be downloaded."],
-                  evidence: [{ id: "S1", label: "Original", source: "../source.md" }],
-                },
-              ],
-            }),
-          });
-          return { text: "보고서를 저장했습니다." + tail, models: ["target-stub"], costUSD: 0 };
-        },
-        judge: async ({ prompt }) => {
-          calls++;
-          assert.match(prompt, /Internal stages are unspecified/);
-          assert.match(prompt, /report.json/);
-          const result = judge(item, 1, "An available result can be downloaded.");
-          for (const obligation of result.structured.obligations)
-            obligation.evidence[0].source = "after:.adr-review/report.json";
-          return result;
-        },
+  // Both combinations share one runner call as separate cases with their own fixture and judgment.
+  const combinations = [true, false].map((valid, index) => ({
+    id: `${item.id}-${index + 1}`,
+    valid,
+  }));
+  const byRun = new Map(combinations.map((c) => [`${c.id}-candidate-1`, c]));
+  const calls = new Map(combinations.map((c) => [c.id, 0]));
+  const result = await main(
+    ["--live", "--suite", "classification", "--runs", "1", "--out", temp()],
+    {
+      cases: combinations.map(({ id }) => ({ ...item, id })),
+      target: async ({ cwd }) => {
+        const { valid } = byRun.get(path.basename(path.dirname(cwd)));
+        const tools = makeTools({
+          root: cwd,
+          pluginRoot: PLUGIN,
+          logPath: path.join(cwd, "..", "events.jsonl"),
+          turn: 1,
+          artifactPaths: item.artifactPaths,
+        });
+        for (const file of [
+          "source.md",
+          "plugin/skills/report-writer/SKILL.md",
+          "plugin/skills/report-writer/references/report-document.md",
+        ])
+          tools.call("read_file", { path: file });
+        tools.call("write_file", {
+          path: item.artifactPaths[0],
+          content: JSON.stringify({
+            title: "Document results",
+            language: "en",
+            summary: ["Internal stages are unspecified."],
+            requiredEvidenceIds: valid ? ["S1"] : [],
+            review: { status: "draft", basis: "Fixture stub", limitations: "No semantic claim" },
+            sections: [
+              {
+                id: "result",
+                title: "Results",
+                domain: "Documents",
+                scope: "Query and download",
+                paragraphs: ["An available result can be downloaded."],
+                evidence: [{ id: "S1", label: "Original", source: "../source.md" }],
+              },
+            ],
+          }),
+        });
+        return { text: "보고서를 저장했습니다." + tail, models: ["target-stub"], costUSD: 0 };
       },
-    );
-    assert.equal(calls, 1);
-    assert.equal(result.report.runs[0].verdict, valid ? "PASS" : "NOT_PROVEN");
+      judge: async ({ prompt, cwd }) => {
+        const combination = byRun.get(path.basename(cwd));
+        assert.ok(combination, `Unexpected judge workspace: ${cwd}`);
+        calls.set(combination.id, calls.get(combination.id) + 1);
+        assert.match(prompt, /Internal stages are unspecified/);
+        assert.match(prompt, /report.json/);
+        const result = judge(item, 1, "An available result can be downloaded.");
+        for (const obligation of result.structured.obligations)
+          obligation.evidence[0].source = "after:.adr-review/report.json";
+        return result;
+      },
+    },
+  );
+  for (const { id, valid } of combinations) {
+    const run = result.report.runs.find((r) => r.caseId === id);
+    assert.equal(calls.get(id), 1, id);
+    assert.equal(run.verdict, valid ? "PASS" : "NOT_PROVEN", id);
     assert.equal(
-      result.report.runs[0].checks.every((c) => c.pass),
+      run.checks.every((c) => c.pass),
       valid,
+      id,
     );
   }
 });

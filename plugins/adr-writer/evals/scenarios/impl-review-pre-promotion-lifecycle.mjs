@@ -5,8 +5,6 @@ import {
   seedMapping,
   write,
   TAIL_SPEC,
-  expectFinding,
-  expectNoFinding,
 } from "../lib/harness.mjs";
 
 const ADR = `# ADR 0001: 승격 전 구현 검토
@@ -78,17 +76,5 @@ export default {
       `Use PRE_PROMOTION and PROMOTE_AFTER_PASS as tail tags.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail }) {
-    return [
-      expectFinding(tail, /PRE_PROMOTION/i, "review runs while the target is Proposed"),
-      expectFinding(tail, /PROMOTE_AFTER_PASS/i, "Accepted follows review PASS"),
-      expectNoFinding(
-        tail,
-        /PROMOTED_BEFORE_REVIEW|ALREADY_ACCEPTED/i,
-        "review does not assume prior promotion",
-      ),
-    ];
   },
 };

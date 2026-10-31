@@ -16,14 +16,7 @@ export function deterministicScore(input) {
   return responseChecks(input, {}, { noTools: false });
 }
 
-import {
-  skillText,
-  seedRuleDocs,
-  seedMapping,
-  write,
-  TAIL_SPEC,
-  expectText,
-} from "../lib/harness.mjs";
+import { skillText, seedRuleDocs, seedMapping, write, TAIL_SPEC } from "../lib/harness.mjs";
 
 function adr(title, status, decision) {
   return `# ADR 0001: ${title}
@@ -108,34 +101,5 @@ export default {
       `Use BLOCKED as the finding tag when the gate prevents downstream implementation.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    const affirmativeOverride =
-      /(checkout[- ]only|downstream).{0,100}(허용(?:한다|합니다)|진행(?:한다|합니다| 가능)|can proceed|may proceed|implement now|is allowed)/is.test(
-        output,
-      ) ||
-      tail.findings.some((finding) =>
-        /OVERRIDE_ALLOWED|ALLOW_DOWNSTREAM|PROCEED_DOWNSTREAM/i.test(finding.tag),
-      );
-    return [
-      expectText(
-        `${output}\n${tail.raw}`,
-        /BLOCKED.{0,180}(identity\/login|Proposed|선행)/is,
-        "blocks on the Proposed prerequisite",
-      ),
-      expectText(
-        output,
-        /(Accepted|구현 완료|implementation complete).{0,120}(before|먼저|뒤|후)|선행.{0,120}(Accepted|구현 완료|implementation complete)/is,
-        "requires the prerequisite to become Accepted first",
-      ),
-      {
-        pass: !affirmativeOverride,
-        detail: affirmativeOverride
-          ? "found an affirmative downstream-only override"
-          : "no affirmative downstream-only override",
-        label: "offers no user-confirmed downstream override",
-      },
-    ];
   },
 };

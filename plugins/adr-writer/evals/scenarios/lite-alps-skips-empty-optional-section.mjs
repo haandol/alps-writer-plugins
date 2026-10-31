@@ -24,8 +24,6 @@ export function deterministicScore(input) {
 import {
   alpsLiteGuideText,
   alpsSkillText,
-  expectNoText,
-  expectText,
   seedMapping,
   seedRuleDocs,
   TAIL_SPEC,
@@ -55,29 +53,5 @@ export default {
       `In the tail use SKIP_SECTION_3, NO_INVENTED_EXCLUSIONS, LITE_INDEPENDENT, and DEMO_READY once each.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    const visible = output.split(/---\s*\n\s*## Machine-readable tail|===\s*EVAL-VERDICT/i)[0];
-    return [
-      expectText(tail.raw, /SKIP_SECTION_3/i, "skips optional Section 3"),
-      expectText(
-        tail.raw,
-        /NO_INVENTED_EXCLUSIONS/i,
-        "does not invent exclusions to fill the template",
-      ),
-      expectText(tail.raw, /LITE_INDEPENDENT/i, "keeps Lite completion independent from Full ALPS"),
-      expectText(tail.raw, /DEMO_READY/i, "continues to required Demo Scenario"),
-      expectNoText(
-        visible,
-        /Full ALPS|\/alps-init|다음 문서|후속 문서|구현 준비|Feature ID/i,
-        "does not suggest a Full ALPS transition or extra planning",
-      ),
-      expectNoText(
-        visible,
-        /제외 범위\s*[:：]\s*\S|지원하지 않|다루지 않.{0,80}(기능|사용자|화면)/i,
-        "does not fabricate exclusion content",
-      ),
-    ];
   },
 };

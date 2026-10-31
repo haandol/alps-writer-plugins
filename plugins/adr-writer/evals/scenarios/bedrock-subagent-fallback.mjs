@@ -1,12 +1,4 @@
-import {
-  skillText,
-  seedRuleDocs,
-  seedMapping,
-  write,
-  TAIL_SPEC,
-  expectFinding,
-  expectNoFinding,
-} from "../lib/harness.mjs";
+import { skillText, seedRuleDocs, seedMapping, write, TAIL_SPEC } from "../lib/harness.mjs";
 
 const ADR = `# ADR 0001: 구현 검토
 
@@ -87,28 +79,5 @@ export default {
       `NO_DISPATCH, NO_RETRY, MAIN_SESSION_FALLBACK, SAFETY_GATE.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail }) {
-    return [
-      expectFinding(tail, /NO_DISPATCH/i, "known Bedrock provider prevents subagent dispatch"),
-      expectFinding(tail, /NO_RETRY/i, "known validation error is never retried"),
-      expectFinding(
-        tail,
-        /MAIN_SESSION_FALLBACK/i,
-        "document and implementation reviews continue in the main session",
-      ),
-      expectFinding(
-        tail,
-        /SAFETY_GATE/i,
-        "refactor fallback preserves evidence and before/after-test gates",
-      ),
-      expectNoFinding(tail, /RETRY_SUBAGENT|SPAWN_SUBAGENT/i, "no subagent retry is proposed"),
-      expectNoFinding(
-        tail,
-        /WEAKEN_GATE|SKIP_TESTS|AUTO_APPLY_WITHOUT_EVIDENCE/i,
-        "fallback does not weaken refactor safety",
-      ),
-    ];
   },
 };

@@ -6,9 +6,13 @@ import path from "node:path";
 import { importPrerequisiteCases } from "../evals/skills/import-prerequisites.mjs";
 import { catalog } from "../evals/skills/catalog.mjs";
 import { makeTools } from "../evals/regression/workspace.mjs";
+import { toolServerOptions } from "../evals/regression/tool-config.mjs";
 import { runCase } from "../evals/regression/run.mjs";
 import { hasCycle, validateMappingShape } from "../scripts/adr-lint-lib.mjs";
 import { PLUGIN_ROOT } from "./helpers.mjs";
+
+// One cache of initial fixture checks for this file's runs: identical fixtures check alike.
+const fixtureChecks = new Map();
 
 const DATE = "2026-10-01";
 const INDEX = "docs/adr/.mapping.json";
@@ -138,21 +142,15 @@ async function execute(item, mutant, { guidance = true, finalChecks = false } = 
         timeout: 10,
         referenceDate: DATE,
         "capture-only": true,
+        fixtureChecks,
         invoke: async ({ cwd, config }) => {
-          const [, root, pluginRoot, logPath, rawTurn, rawGuidance, checkerRoot, rawArtifacts] =
-            JSON.parse(readFileSync(config, "utf8")).mcpServers.fixture.args;
-          assert.equal(root, cwd);
-          assert.equal(rawGuidance !== "off", guidance);
-          const turn = Number(rawTurn);
-          const tools = makeTools({
-            root,
-            pluginRoot,
-            logPath,
-            turn,
-            guidance,
-            checkerRoot,
-            artifactPaths: JSON.parse(rawArtifacts),
-          });
+          const options = toolServerOptions(
+            JSON.parse(readFileSync(config, "utf8")).mcpServers.fixture.args.slice(1),
+          );
+          assert.equal(options.root, cwd);
+          assert.equal(options.guidance, guidance);
+          const { turn } = options;
+          const tools = makeTools(options);
           const write = (file, content) => tools.call("write_file", { path: file, content });
           let reportBody = report(item);
           if (mutant === "hidden-report-edge" && turn >= 2)

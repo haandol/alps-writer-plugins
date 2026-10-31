@@ -19,14 +19,24 @@ const run = (script, dir) =>
 const materialize = (dir) => run("adr-impl-review-materialize.mjs", dir);
 const validate = (dir) => run("adr-impl-review-validate.mjs", dir);
 
+// The admission test's result depends only on its two files, so one execution serves every
+// fixture with the same sources; a changed source runs again.
+const admissionRuns = new Map();
 function runAdmissionTest(dir) {
-  const env = { ...process.env };
-  delete env.NODE_TEST_CONTEXT;
-  const execution = spawnSync(process.execPath, ["--test", "test/admission.test.mjs"], {
-    cwd: dir,
-    encoding: "utf8",
-    env,
-  });
+  const key = ["src/admission.mjs", "test/admission.test.mjs"]
+    .map((file) => readFileSync(path.join(dir, file), "utf8"))
+    .join("\0");
+  let execution = admissionRuns.get(key);
+  if (!execution) {
+    const env = { ...process.env };
+    delete env.NODE_TEST_CONTEXT;
+    execution = spawnSync(process.execPath, ["--test", "test/admission.test.mjs"], {
+      cwd: dir,
+      encoding: "utf8",
+      env,
+    });
+    admissionRuns.set(key, execution);
+  }
   assert.match(execution.stdout, /admit below the two-request limit, reject at and above it/);
   assert.doesNotMatch(execution.stderr, /recursively|skipping running files/);
   return execution;

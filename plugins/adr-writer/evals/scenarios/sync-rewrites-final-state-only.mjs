@@ -1,13 +1,4 @@
-import {
-  skillText,
-  seedRuleDocs,
-  seedMapping,
-  write,
-  read,
-  TAIL_SPEC,
-  expectText,
-  expectNoText,
-} from "../lib/harness.mjs";
+import { skillText, seedRuleDocs, seedMapping, write, TAIL_SPEC } from "../lib/harness.mjs";
 
 const ADR_PATH = "docs/adr/runtime/event/0001-event-name.md";
 
@@ -112,40 +103,5 @@ export default {
       `wording and its mapping summary; do not ask another question.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ dir }) {
-    const body = read(dir, ADR_PATH) ?? "";
-    const decision = body.match(/## Decision\n([\s\S]*?)\n### Alternatives/)?.[1] ?? "";
-    const mapping = read(dir, "docs/adr/.mapping.json") ?? "";
-
-    return [
-      expectText(
-        decision,
-        /이벤트 이름은\s*`?CURRENT_EVENT`?다/,
-        "states CURRENT_EVENT as the direct result",
-      ),
-      expectNoText(
-        decision,
-        /LEGACY_EVENT/,
-        "removes the replaced event name from current-state prose",
-      ),
-      expectNoText(
-        decision,
-        /혼용하지|대신|rather than|instead of|no longer/i,
-        "removes transition and comparison carriers",
-      ),
-      expectText(
-        decision,
-        /완료된 작업은 처리 중 상태로 돌아가지 않는다/,
-        "preserves the current forbidden transition",
-      ),
-      expectText(mapping, /"summary":\s*"[^"]*CURRENT_EVENT[^"]*"/, "updates the mapping summary"),
-      expectNoText(
-        mapping,
-        /"summary":\s*"[^"]*LEGACY_EVENT[^"]*"/,
-        "removes LEGACY_EVENT from the summary",
-      ),
-    ];
   },
 };
