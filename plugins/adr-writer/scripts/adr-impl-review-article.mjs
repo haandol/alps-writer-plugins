@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { USER_DECISION_CATEGORIES } from "./adr-impl-review-categories.mjs";
+import { COVERAGE_STATUS_LABELS, USER_DECISION_CATEGORIES } from "./adr-impl-review-categories.mjs";
 import { renderHtml } from "../skills/report-writer/scripts/render-report.mjs";
 import { hillNarrativeParagraphs, reviewCodeGroups } from "./adr-impl-review-prose.mjs";
 
@@ -37,14 +37,7 @@ export function standardArticle(data, inputPath) {
   const context = Object.values(data.reviewHike.context).filter(
     (value) => typeof value === "string" && value.trim(),
   );
-  const status = ko
-    ? {
-        PROVEN: "충족됨",
-        VIOLATED: "수정 필요",
-        UNVERIFIED: "검증 필요",
-        CONTRADICTED: "근거 충돌",
-      }
-    : {};
+  const status = ko ? COVERAGE_STATUS_LABELS.ko : {};
   const behavior = hills.map((hill, index) => {
     const rows = hill.contractIds.map((id) =>
       data.contractCoverage.find((row) => row.contractId === id),

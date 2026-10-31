@@ -378,8 +378,11 @@ const SRC_EXT = "tsx?|jsx?|go|py|java|rb|rs|c|cc|cpp|h|hpp|cs|kt|swift|php|scala
 export function codeRefHits(body) {
   const all = body.split(/\r?\n/);
   const hits = [];
-  const pathRe = new RegExp(`[\\w./-]+\\.(?:${SRC_EXT})\\b`);
-  const lineCiteRe = /[\w./-]+\.[a-z0-9]+:[0-9]+/;
+  // A match that starts inside a run of path characters also matches from the
+  // run's first character, so starting only there keeps every hit while each run
+  // is scanned once instead of once per character.
+  const pathRe = new RegExp(`(?<![\\w./-])[\\w./-]+\\.(?:${SRC_EXT})\\b`);
+  const lineCiteRe = /(?<![\w./-])[\w./-]+\.[a-z0-9]+:[0-9]+/;
   all.forEach((line, i) => {
     // Skip markdown-link targets pointing at .md (Related/table docs are allowed).
     const stripped = line.replace(/\([^)]*\.md[^)]*\)/g, "");

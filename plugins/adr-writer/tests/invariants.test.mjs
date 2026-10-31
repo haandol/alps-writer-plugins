@@ -7,26 +7,37 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { withTmp, write, initRepo, runInvariants, seedRuleDocs, TEMPLATES } from "./helpers.mjs";
+import {
+  cachedRepo,
+  withTmp,
+  write,
+  initRepo,
+  runInvariants,
+  seedRuleDocs,
+  TEMPLATES,
+} from "./helpers.mjs";
 
 // A minimal but realistic canonical fixture: DDD context × feature folders,
-// canonical NNNN-title.md filenames (no fN prefix), seeded rule docs.
+// canonical NNNN-title.md filenames (no fN prefix), seeded rule docs. Built once
+// per test process and copied into each test's empty folder.
 function seedCanonicalRepo(dir) {
-  initRepo(dir);
-  // seeded rule docs legitimately mention ALPS — check (b) must not flag them
-  seedRuleDocs(dir);
-  write(
-    dir,
-    "docs/adr/identity/login/0001-password-policy.md",
-    "# 0001. 비밀번호 정책\n\n## Status\nAccepted (2026-07-02)\n\n## Decision\nbcrypt.\n",
-  );
-  write(
-    dir,
-    "docs/adr/infra/0001-deploy-topology.md",
-    "# 0001. 배포\n\n## Status\nAccepted (2026-07-02)\n\n## Decision\n단일 리전.\n",
-  );
-  write(dir, "docs/adr/.mapping.json", JSON.stringify({ categories: {} }));
-  write(dir, "src/features/login/index.ts", 'export const login = () => "ok";\n');
+  cachedRepo(dir, "invariants: canonical", (at) => {
+    initRepo(at);
+    // seeded rule docs legitimately mention ALPS — check (b) must not flag them
+    seedRuleDocs(at);
+    write(
+      at,
+      "docs/adr/identity/login/0001-password-policy.md",
+      "# 0001. 비밀번호 정책\n\n## Status\nAccepted (2026-07-02)\n\n## Decision\nbcrypt.\n",
+    );
+    write(
+      at,
+      "docs/adr/infra/0001-deploy-topology.md",
+      "# 0001. 배포\n\n## Status\nAccepted (2026-07-02)\n\n## Decision\n단일 리전.\n",
+    );
+    write(at, "docs/adr/.mapping.json", JSON.stringify({ categories: {} }));
+    write(at, "src/features/login/index.ts", 'export const login = () => "ok";\n');
+  });
 }
 
 test("clean canonical repo passes all invariants (exit 0)", () => {

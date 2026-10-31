@@ -23,6 +23,7 @@ import { parseTail } from "../lib/harness.mjs";
 import { scenarioNamesForChangedPaths } from "../impact-map.mjs";
 import { BEDROCK_DEFAULTS } from "../deepeval/bedrock.mjs";
 import { validateReportEvaluation } from "./report-evaluation.mjs";
+import { finalChecks } from "../lib/execution-checks.mjs";
 
 const HELP = `Skill evaluation — classification, routing, execution
 
@@ -377,26 +378,24 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
       throw new Error("Invalid mechanical artifact checks");
     record.checks.push(...additional);
   }
-  if (item.semanticObligations) {
-    const input = JSON.parse(readFileSync(path.join(folder, "input.json"), "utf8"));
-    await judgeEvidence(
-      { ...item, obligations: item.semanticObligations, turns: [prompt] },
-      {
-        before: input.files,
-        after: files,
-        events,
-        turns: [prompt],
-        replies: [response.text],
-        referenceDate: options.referenceDate,
-      },
-      record,
-      folder,
-      options,
-      dependencies,
-    );
-    if (record.verdict === "PASS" && record.checks?.some((c) => !c.pass))
-      record.verdict = "NOT_PROVEN";
-  }
+  const input = JSON.parse(readFileSync(path.join(folder, "input.json"), "utf8"));
+  await judgeEvidence(
+    { ...item, obligations: item.semanticObligations, turns: [prompt] },
+    {
+      before: input.files,
+      after: files,
+      events,
+      turns: [prompt],
+      replies: [response.text],
+      referenceDate: options.referenceDate,
+    },
+    record,
+    folder,
+    options,
+    dependencies,
+  );
+  if (record.verdict === "PASS" && record.checks?.some((c) => !c.pass))
+    record.verdict = "NOT_PROVEN";
 }
 
 /** Use one citation-validated DeepEval path for semantic probes and actual document operations. */
@@ -497,14 +496,7 @@ async function runExecution(
     turn: item.turns.length,
     artifactPaths: item.artifactPaths,
   });
-  record.checks = ["policy-tests", "structure"].map((kind) => {
-    const result = finalTools.call("run_check", { kind });
-    return {
-      label: `final ${kind}`,
-      pass: result.exitCode === 0,
-      detail: result.stdout + result.stderr,
-    };
-  });
+  record.checks = finalChecks(finalTools);
   if (item.verifyEvidence) {
     const checks = item.verifyEvidence(evidence);
     if (!Array.isArray(checks) || !checks.length || checks.some((c) => typeof c.pass !== "boolean"))

@@ -8,6 +8,7 @@ import {
   reviewCodeGroups,
 } from "./adr-impl-review-prose.mjs";
 import { proseLines } from "./adr-impl-review-diagrams.mjs";
+import { COVERAGE_STATUS_LABELS } from "./adr-impl-review-categories.mjs";
 
 function usage(message) {
   if (message) process.stderr.write(`adr-impl-review-materialize: ${message}\n`);
@@ -48,21 +49,6 @@ function replaceSection(source, heading, nextHeading, body) {
     ...lines.slice(stop),
   ].join("\n");
 }
-
-const COVERAGE_STATUS_LABELS = {
-  en: {
-    PROVEN: "Met",
-    VIOLATED: "Fix required",
-    UNVERIFIED: "Verification required",
-    CONTRADICTED: "Conflicting evidence",
-  },
-  ko: {
-    PROVEN: "충족됨",
-    VIOLATED: "수정 필요",
-    UNVERIFIED: "검증 필요",
-    CONTRADICTED: "근거 충돌",
-  },
-};
 
 const HILL_EVIDENCE_LABELS = {
   en: {

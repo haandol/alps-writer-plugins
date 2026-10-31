@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { withTmp, write, PLUGIN_ROOT, parseLint } from "./helpers.mjs";
+import { cachedRepo, withTmp, write, PLUGIN_ROOT, parseLint } from "./helpers.mjs";
 import { createWorkspace, makeTools, snapshot } from "../evals/regression/workspace.mjs";
 import { buildRollupExecutionFixture } from "../evals/skills/rollup-execution-fixture.mjs";
 import { SEEDED_RULE_DOCS } from "../scripts/adr-lint-lib.mjs";
@@ -38,7 +38,9 @@ const storageReport = ".adr-review/rollup/storage.md";
 function fixture(temp) {
   const root = path.join(temp, "repo"),
     logPath = path.join(temp, "events.jsonl");
-  createWorkspace(root, buildRollupExecutionFixture(), PLUGIN_ROOT);
+  cachedRepo(root, "rollup-execution", (at) =>
+    createWorkspace(at, buildRollupExecutionFixture(), PLUGIN_ROOT),
+  );
   // The generic artifact snapshot omits guidance. Keep its actual contents in
   // this retrieval fixture so global search hits and guidance reads are auditable.
   const capture = () => ({

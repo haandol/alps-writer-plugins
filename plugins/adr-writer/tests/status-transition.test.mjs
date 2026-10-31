@@ -2,51 +2,60 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { initRepo, runStatusTransition, seedRuleDocs, withTmp, write } from "./helpers.mjs";
+import {
+  cachedRepo,
+  initRepo,
+  runStatusTransition,
+  seedRuleDocs,
+  withTmp,
+  write,
+} from "./helpers.mjs";
 
 function seedRepo(dir) {
-  initRepo(dir);
-  seedRuleDocs(dir);
-  write(
-    dir,
-    "docs/adr/analytics/0001-truth.md",
-    "# ADR 0001: Truth\n\n## Status\n\nProposed\n\n## Context\n\nContext.\n",
-  );
-  write(
-    dir,
-    "docs/adr/voicechat/0003-call-mission.md",
-    "# ADR 0003: Call mission\n\n## Status\n\nProposed\n\n## Context\n\nContext.\n",
-  );
-  write(
-    dir,
-    "docs/adr/.mapping.json",
-    `${JSON.stringify(
-      {
-        categories: {
-          analytics: {
-            adrs: [
-              {
-                path: "docs/adr/analytics/0001-truth.md",
-                status: "Proposed",
-                summary: "analytics summary",
-              },
-            ],
-          },
-          voicechat: {
-            adrs: [
-              {
-                path: "docs/adr/voicechat/0003-call-mission.md",
-                status: "Proposed",
-                summary: "old call summary",
-              },
-            ],
+  cachedRepo(dir, "status-transition: seed", (at) => {
+    initRepo(at);
+    seedRuleDocs(at);
+    write(
+      at,
+      "docs/adr/analytics/0001-truth.md",
+      "# ADR 0001: Truth\n\n## Status\n\nProposed\n\n## Context\n\nContext.\n",
+    );
+    write(
+      at,
+      "docs/adr/voicechat/0003-call-mission.md",
+      "# ADR 0003: Call mission\n\n## Status\n\nProposed\n\n## Context\n\nContext.\n",
+    );
+    write(
+      at,
+      "docs/adr/.mapping.json",
+      `${JSON.stringify(
+        {
+          categories: {
+            analytics: {
+              adrs: [
+                {
+                  path: "docs/adr/analytics/0001-truth.md",
+                  status: "Proposed",
+                  summary: "analytics summary",
+                },
+              ],
+            },
+            voicechat: {
+              adrs: [
+                {
+                  path: "docs/adr/voicechat/0003-call-mission.md",
+                  status: "Proposed",
+                  summary: "old call summary",
+                },
+              ],
+            },
           },
         },
-      },
-      null,
-      2,
-    )}\n`,
-  );
+        null,
+        2,
+      )}\n`,
+    );
+  });
 }
 
 test("status transition changes only the mapping record with the exact ADR path", () => {

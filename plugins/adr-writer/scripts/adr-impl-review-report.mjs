@@ -972,19 +972,25 @@ function stripGeneratedHillContent(body) {
     .trim();
 }
 
+/** The reader-language label of a coverage status; any other value reads as unverified. */
+function coverageStatusLabel(status, ui) {
+  return (
+    {
+      PROVEN: ui.statusProven,
+      VIOLATED: ui.statusViolated,
+      UNVERIFIED: ui.statusUnverified,
+      CONTRADICTED: ui.statusContradicted,
+    }[status] || ui.statusUnverified
+  );
+}
+
 function contractCoverageCard(row, index, total, ui) {
   const idx = String(index + 1).padStart(2, "0");
   const status = String(row.status || "UNVERIFIED").toUpperCase();
   const statusClass = ["PROVEN", "VIOLATED", "UNVERIFIED", "CONTRADICTED"].includes(status)
     ? status.toLowerCase()
     : "unverified";
-  const statusLabel =
-    {
-      PROVEN: ui.statusProven,
-      VIOLATED: ui.statusViolated,
-      UNVERIFIED: ui.statusUnverified,
-      CONTRADICTED: ui.statusContradicted,
-    }[status] || ui.statusUnverified;
+  const statusLabel = coverageStatusLabel(status, ui);
 
   const open = status === "PROVEN" ? "" : " open";
   return `
@@ -1094,13 +1100,7 @@ function hillResult(rows, ui) {
     rows.some((row) => String(row.status || "").toUpperCase() === candidate),
   );
   const normalizedStatus = status || "UNVERIFIED";
-  const label =
-    {
-      PROVEN: ui.statusProven,
-      VIOLATED: ui.statusViolated,
-      UNVERIFIED: ui.statusUnverified,
-      CONTRADICTED: ui.statusContradicted,
-    }[normalizedStatus] || ui.statusUnverified;
+  const label = coverageStatusLabel(normalizedStatus, ui);
   return {
     statusClass: normalizedStatus.toLowerCase(),
     label,
@@ -1155,13 +1155,7 @@ function coverageIndex(rows, hillByContract, ui) {
   return `<ul class="coverage-index">${rows
     .map((row) => {
       const hill = hillByContract.get(row.contractId);
-      const status =
-        {
-          PROVEN: ui.statusProven,
-          VIOLATED: ui.statusViolated,
-          UNVERIFIED: ui.statusUnverified,
-          CONTRADICTED: ui.statusContradicted,
-        }[row.status] || ui.statusUnverified;
+      const status = coverageStatusLabel(row.status, ui);
       return `<li><a href="#contract-${esc(row.contractId)}">${esc(row.contractId)}</a><span>${esc(
         status,
       )}</span><a href="#hill-${esc((hill?.id || "").toLowerCase())}">${esc(

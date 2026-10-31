@@ -2,6 +2,20 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { skillText, PLUGIN_ROOT, TAIL_SPEC } from "../lib/harness.mjs";
 
+// The shipped hook's directive depends only on the hook's own location, so one
+// run per process serves every probe. A failed run is not remembered.
+let reportDirective;
+function shippedReportDirective() {
+  if (reportDirective !== undefined) return reportDirective;
+  const hook = spawnSync(
+    process.execPath,
+    [path.join(PLUGIN_ROOT, "skills/report-writer/scripts/surface-report-context.mjs")],
+    { input: '{"hook_event_name":"SessionStart","source":"startup"}', encoding: "utf8" },
+  );
+  if (hook.status !== 0) throw new Error(`Report hook failed: ${hook.stderr}`);
+  return (reportDirective = JSON.parse(hook.stdout).hookSpecificOutput.additionalContext);
+}
+
 /** Delivery-choice probes exercise the shipped hook and skill, not a copy of their policy. */
 export const reportScopeCases = [
   {
@@ -91,13 +105,7 @@ export const reportScopeCases = [
   supplementalChecks: false,
   semanticObligations: [{ id: "delivery", text: expectation }],
   build() {
-    const hook = spawnSync(
-      process.execPath,
-      [path.join(PLUGIN_ROOT, "skills/report-writer/scripts/surface-report-context.mjs")],
-      { input: '{"hook_event_name":"SessionStart","source":"startup"}', encoding: "utf8" },
-    );
-    if (hook.status !== 0) throw new Error(`Report hook failed: ${hook.stderr}`);
-    const directive = JSON.parse(hook.stdout).hookSpecificOutput.additionalContext;
+    const directive = shippedReportDirective();
     return [
       directive.replaceAll(PLUGIN_ROOT, "plugin"),
       skillText("report-writer", {

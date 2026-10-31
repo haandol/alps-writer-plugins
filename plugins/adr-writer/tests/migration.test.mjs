@@ -8,16 +8,18 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { withTmp, write, initRepo, commitAll, git } from "./helpers.mjs";
+import { cachedRepo, withTmp, write, initRepo, commitAll, git } from "./helpers.mjs";
 
 function seedLegacyFn(dir) {
-  initRepo(dir);
-  write(
-    dir,
-    "docs/adr/f1/0001-f1-email-signup.md",
-    "# 0001. 이메일 가입\n\n## Status\nAccepted (2026-07-02)\n",
-  );
-  commitAll(dir);
+  cachedRepo(dir, "migration: legacy fN", (at) => {
+    initRepo(at);
+    write(
+      at,
+      "docs/adr/f1/0001-f1-email-signup.md",
+      "# 0001. 이메일 가입\n\n## Status\nAccepted (2026-07-02)\n",
+    );
+    commitAll(at);
+  });
 }
 
 function gitMv(dir, from, to) {

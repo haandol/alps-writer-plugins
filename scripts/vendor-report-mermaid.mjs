@@ -27,22 +27,28 @@ const bundle = await build({
   legalComments: "inline",
   metafile: true,
 });
+// Thousands of bundled modules share a few hundred directories, so each
+// directory's owning package is looked up once.
+const owners = new Map();
+function owningPackage(dir) {
+  if (dir === path.dirname(dir)) return null;
+  if (owners.has(dir)) return owners.get(dir);
+  let owner = null;
+  try {
+    const pkg = JSON.parse(readFileSync(path.join(dir, "package.json"), "utf8"));
+    if (pkg.name && pkg.version) owner = { dir, pkg };
+  } catch {
+    /* Walk up from a bundled module to its owning package. */
+  }
+  owner ??= owningPackage(path.dirname(dir));
+  owners.set(dir, owner);
+  return owner;
+}
 const packages = new Map();
 for (const input of Object.keys(bundle.metafile.inputs)) {
   if (!input.includes("node_modules/")) continue;
-  let dir = path.dirname(path.resolve(root, input));
-  while (dir !== path.dirname(dir)) {
-    try {
-      const pkg = JSON.parse(readFileSync(path.join(dir, "package.json"), "utf8"));
-      if (pkg.name && pkg.version) {
-        packages.set(pkg.name, { dir, pkg });
-        break;
-      }
-    } catch {
-      /* Walk up from a bundled module to its owning package. */
-    }
-    dir = path.dirname(dir);
-  }
+  const owner = owningPackage(path.dirname(path.resolve(root, input)));
+  if (owner) packages.set(owner.pkg.name, owner);
 }
 const licenses = [...packages.values()]
   .sort((a, b) => a.pkg.name.localeCompare(b.pkg.name))
