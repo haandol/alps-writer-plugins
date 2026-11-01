@@ -2,7 +2,7 @@
 // process-model save tests share.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, readFileSync, rmSync } from "node:fs";
+import { cpSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import {
   elementIri,
@@ -166,15 +166,5 @@ export function insideGit(dir) {
     return true;
   } catch {
     return false;
-  }
-}
-
-/** Whether this volume reads two spellings of a name as one entry (the macOS and Windows defaults). */
-export function foldsSpelling(dir, stored, other) {
-  write(dir, `probe/${stored}`, "");
-  try {
-    return existsSync(path.join(dir, "probe", other));
-  } finally {
-    rmSync(path.join(dir, "probe"), { recursive: true, force: true });
   }
 }

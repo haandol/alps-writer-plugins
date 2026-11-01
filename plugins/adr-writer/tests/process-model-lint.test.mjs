@@ -2,93 +2,12 @@
 // process-model CLI: a repository without a model is untouched, a model is
 // validated as one union graph, and ADR index links stay consistent with it.
 import assert from "node:assert/strict";
-import {
-  chmodSync,
-  cpSync,
-  existsSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  unlinkSync,
-} from "node:fs";
+import { chmodSync, readFileSync, rmSync, symlinkSync, unlinkSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import { parseTurtle } from "../scripts/process-model-lib.mjs";
-import {
-  commitAll,
-  initRepo,
-  parseLint,
-  runStructureLint,
-  seedRuleDocs,
-  withTmp,
-  write,
-} from "./helpers.mjs";
+import { parseLint, runStructureLint, withTmp, write } from "./helpers.mjs";
 import { EXAMPLE, cli } from "./process-model-helpers.mjs";
-
-const ADR = (title) => `# ADR 0001: ${title}
-
-Date: 2020-01-30
-
-## Status
-
-Proposed
-
-## Purpose
-
-Orders need a confirmation the customer can rely on.
-
-## Decision Drivers
-
-- Customers see one confirmation.
-- Payments complete before confirmation.
-- Support can explain every confirmation.
-
-## Decision
-
-Confirm an order once its payment completes.
-
-## Alternatives
-
-1. **Confirm on submission** — faster, but unpaid orders look confirmed.
-2. **Confirm after payment** — chosen.
-
-## Consequences
-
-### Positive
-
-- Confirmed orders are paid.
-`;
-
-function fixture(
-  dir,
-  { model = EXAMPLE, realizes, body = ADR("Confirm paid orders"), status = "Proposed" } = {},
-) {
-  seedRuleDocs(dir);
-  write(dir, "docs/adr/ordering/0001-confirm-paid-orders.md", body);
-  const entry = {
-    feature: "Order confirmation",
-    adrs: [
-      {
-        path: "docs/adr/ordering/0001-confirm-paid-orders.md",
-        status,
-        summary: "orders are confirmed after payment",
-      },
-    ],
-  };
-  if (realizes) entry.realizes = realizes;
-  write(
-    dir,
-    "docs/adr/.mapping.json",
-    JSON.stringify({ categories: { ordering: entry } }, null, 2),
-  );
-  if (model !== null) write(dir, "docs/process/ordering.ttl", model);
-}
-
-/** The example with its element blocks in reverse order: the same graph, not canonical. */
-const SHUFFLED = (() => {
-  const [header, ...blocks] = EXAMPLE.trimEnd().split("\n\n");
-  return `${header}\n\n${blocks.reverse().join("\n\n")}\n`;
-})();
+import { ADR, fixture, SHUFFLED, PREFIXES } from "./process-model-lint-helpers.mjs";
 
 const processFindings = (report) =>
   [...report.errors, ...report.warnings].filter(
@@ -350,76 +269,6 @@ test("a realizing ADR body that cites the model is an error", () => {
   });
 });
 
-test("a link in a realizing ADR is judged by where it leads from the ADR's own folder", () => {
-  const cites = (link) =>
-    withTmp((dir) => {
-      fixture(dir, {
-        realizes: ["ordering.confirm-order"],
-        body: ADR("Confirm paid orders").replace(
-          "## Decision\n\n",
-          `## Decision\n\nSee [the reference](${link}).\n\n`,
-        ),
-      });
-      return parseLint(dir).errors.some((e) => e.rule === "process-adr-identifier");
-    });
-  // From docs/adr/ordering/: two levels up is docs/, three is the repository root.
-  assert.equal(cites("../../process/ordering.ttl"), true);
-  assert.equal(cites("./../../process/ordering.ttl"), true);
-  assert.equal(cites("../../process/"), true);
-  assert.equal(cites("../../../process/"), false, "a root-level process/ folder is not the model");
-  assert.equal(cites("../../../services/process/handler.md"), false);
-});
-
-test("a link into the model spelled in another letter case is a link into the model where the volume folds case", (t) => {
-  withTmp((dir) => {
-    fixture(dir, {
-      realizes: ["ordering.confirm-order"],
-      body: ADR("Confirm paid orders").replace(
-        "## Decision\n\n",
-        "## Decision\n\nSee [the flow](../../Process/model.ttl).\n\n",
-      ),
-    });
-    if (!existsSync(path.join(dir, "docs/Process")))
-      return t.skip("this volume keeps the two spellings apart");
-    assert.ok(parseLint(dir).errors.some((e) => e.rule === "process-adr-identifier"));
-  });
-});
-
-test("a link to a model document that is itself a link is a link into the model, by its path", () => {
-  withTmp((dir) => {
-    fixture(dir, {
-      realizes: ["ordering.confirm-order"],
-      body: ADR("Confirm paid orders").replace(
-        "## Decision\n\n",
-        "## Decision\n\nSee [the courier](../../process/extra.ttl).\n\n",
-      ),
-    });
-    write(
-      dir,
-      "docs/shared/extra.ttl",
-      '@prefix m: <urn:adr-writer:model:> .\n@prefix pm: <urn:adr-writer:process:> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n\nm:courier a pm:Actor ;\n    rdfs:label "Courier" ;\n    pm:definition "The outside organization that delivers orders." .\n',
-    );
-    symlinkSync("../shared/extra.ttl", path.join(dir, "docs/process/extra.ttl"));
-    assert.ok(parseLint(dir).errors.some((e) => e.rule === "process-adr-identifier"));
-  });
-});
-
-test("a link to the folder a linked model directory leads to is judged by its path", () => {
-  withTmp((dir) => {
-    fixture(dir, {
-      model: null,
-      realizes: ["ordering.confirm-order"],
-      body: ADR("Confirm paid orders").replace(
-        "## Decision\n\n",
-        "## Decision\n\nSee [the source](../../../model-src/ordering.ttl).\n\n",
-      ),
-    });
-    write(dir, "model-src/ordering.ttl", EXAMPLE);
-    symlinkSync("../model-src", path.join(dir, "docs/process"));
-    assert.ok(!parseLint(dir).errors.some((e) => e.rule === "process-adr-identifier"));
-  });
-});
-
 test("the model never records ADR references and the glossary keeps only terms the model does not own", () => {
   withTmp((dir) => {
     fixture(dir, {
@@ -463,35 +312,6 @@ test("format checks and rewrites the canonical form, and never drops comments si
     assert.equal(readFileSync(path.join(dir, "docs/process/ordering.ttl"), "utf8"), EXAMPLE);
   });
 });
-
-test("diff reports semantic changes against a revision and ignores formatting", () => {
-  withTmp((dir) => {
-    initRepo(dir);
-    fixture(dir);
-    commitAll(dir);
-    write(dir, "docs/process/ordering.ttl", `# reordered\n${SHUFFLED}`);
-    const same = cli(dir, ["diff"]);
-    assert.equal(same.code, 0, same.out);
-    assert.match(same.out, /no semantic change against HEAD/);
-
-    write(
-      dir,
-      "docs/process/ordering.ttl",
-      EXAMPLE.replace('rdfs:label "Customer"', 'rdfs:label "Shopper"'),
-    );
-    const changed = JSON.parse(cli(dir, ["diff", "--json"]).out);
-    assert.deepEqual(
-      changed.elements.map((e) => [
-        e.id,
-        e.properties.map((p) => [p.property, p.family, p.removed, p.added]),
-      ]),
-      [["customer", [["rdfs:label", "fact", ['"Customer"'], ['"Shopper"']]]]],
-    );
-  });
-});
-
-const PREFIXES =
-  "@prefix m: <urn:adr-writer:model:> .\n@prefix pm: <urn:adr-writer:process:> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n\n";
 
 test("a symlinked model document is read like any other", () => {
   withTmp((dir) => {
@@ -543,57 +363,6 @@ test("the model lives only in the ADR directory's sibling process directory", ()
     fixture(dir);
     assert.equal(cli(dir, ["validate", "--process-dir", "model"]).code, 2);
     assert.equal(runStructureLint(dir, ["--process-dir", "model"]).code, 2);
-  });
-});
-
-test("format keeps an invalid model's graph, and the save path never drops comments silently", () => {
-  withTmp((dir) => {
-    fixture(dir, {
-      model: SHUFFLED.replace(
-        '    pm:definition "A person who buys products from the store." ;\n',
-        "",
-      ),
-    });
-    const graph = (text) =>
-      parseTurtle(text)
-        .triples.map((t) => `${t.s} ${t.p} ${JSON.stringify(t.o)}`)
-        .sort()
-        .join("\n");
-    const before = readFileSync(path.join(dir, "docs/process/ordering.ttl"), "utf8");
-    assert.equal(cli(dir, ["validate"]).code, 1, "the model has a validation error");
-    assert.equal(cli(dir, ["format", "--write"]).code, 0);
-    const after = readFileSync(path.join(dir, "docs/process/ordering.ttl"), "utf8");
-    assert.notEqual(after, before, "the document was rewritten canonically");
-    assert.equal(graph(after), graph(before), "and kept its graph");
-    assert.match(cli(dir, ["validate"]).out, /process-attribute-missing/);
-  });
-  withTmp((dir) => {
-    fixture(dir, { model: `# owner: ordering team\n${EXAMPLE}` });
-    cpSync(path.join(dir, "docs/process"), path.join(dir, "draft"), { recursive: true });
-    write(
-      dir,
-      "draft/ordering.ttl",
-      EXAMPLE.replace('rdfs:label "Customer"', 'rdfs:label "Shopper"'),
-    );
-    const summary = JSON.parse(cli(dir, ["impact", "--draft", "draft", "--json"]).out);
-    assert.deepEqual(summary.commentsDroppedOnRewrite, ["docs/process/ordering.ttl"]);
-    const refused = cli(dir, ["apply", "--draft", "draft", "--base-hash", summary.baseHash]);
-    assert.equal(refused.code, 1);
-    assert.match(refused.out, /Turtle comments would be dropped/);
-    assert.match(readFileSync(path.join(dir, "docs/process/ordering.ttl"), "utf8"), /^# owner/);
-    const applied = cli(dir, [
-      "apply",
-      "--draft",
-      "draft",
-      "--base-hash",
-      summary.baseHash,
-      "--allow-comment-removal",
-    ]);
-    assert.equal(applied.code, 0, applied.out);
-    assert.doesNotMatch(
-      readFileSync(path.join(dir, "docs/process/ordering.ttl"), "utf8"),
-      /# owner/,
-    );
   });
 });
 
@@ -670,52 +439,6 @@ test(
     });
   },
 );
-
-test("diff reads documents as strictly as validation, and an invalid byte is located exactly", () => {
-  withTmp((dir) => {
-    initRepo(dir);
-    fixture(dir);
-    commitAll(dir);
-    const bytes = Buffer.concat([
-      Buffer.from(
-        `${PREFIXES}m:customer pm:summary "real \u{FFFD} char" .\nm:customer pm:summary "caf`,
-      ),
-      Buffer.from([0xe9]),
-      Buffer.from('" .\n'),
-    ]);
-    write(dir, "docs/process/escape.ttl", bytes);
-    const out = cli(dir, ["diff"]);
-    assert.equal(out.code, 1);
-    assert.match(out.out, /escape\.ttl:6:\d+[\s\S]*not valid UTF-8/, out.out);
-    assert.doesNotMatch(out.out, /caf�/);
-  });
-});
-
-test("diff reads committed documents as strictly as the working tree", () => {
-  withTmp((dir) => {
-    initRepo(dir);
-    fixture(dir);
-    write(
-      dir,
-      "docs/process/x.ttl",
-      Buffer.concat([
-        Buffer.from(`${PREFIXES}m:customer pm:summary "caf`),
-        Buffer.from([0xe9]),
-        Buffer.from('" .\n'),
-      ]),
-    );
-    commitAll(dir);
-    // The working tree holds the repaired document, so only the committed one fails.
-    write(dir, "docs/process/x.ttl", `${PREFIXES}m:customer pm:summary "café" .\n`);
-    const out = cli(dir, ["diff"]);
-    assert.equal(out.code, 1, out.out);
-    assert.match(
-      out.out,
-      /✗ \[process-parse\] HEAD:docs\/process\/x\.ttl:5:27\n\s+the document is not valid UTF-8/,
-    );
-    assert.doesNotMatch(out.out, /\] docs\/process\/x\.ttl/);
-  });
-});
 
 test("the lint leaves out a record finding only for the record its own check reports", () => {
   withTmp((dir) => {

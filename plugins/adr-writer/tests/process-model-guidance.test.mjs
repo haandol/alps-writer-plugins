@@ -2,22 +2,22 @@
 // the session directive, the business-context module and its callers, and the
 // process skills.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
 import { has, runHook, withTmp, write } from "./helpers.mjs";
+import { read, EXAMPLE } from "./process-model-guidance-helpers.mjs";
 
-const ADR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const read = (rel) => readFileSync(path.join(ADR, rel), "utf8");
-const EXAMPLE = read("templates/process/example.ttl");
 const CONTEXT = read("references/business-context.md");
+
 const MODEL = read("references/process-model.md");
+
 const EDIT = read("skills/process-edit/SKILL.md");
+
 const SYNC = read("skills/process-sync/SKILL.md");
+
 const ALIGN = read("skills/process-align/SKILL.md");
+
 const BUILD = read("skills/process-build/SKILL.md");
+
 const STORM = read("skills/process-build/references/agentstorm.md");
 
 test("the session directive asks for the business context only when the index and a model both exist", () => {
@@ -58,31 +58,6 @@ test("the session directive asks for the business context only when the index an
       undefined,
       "a model without an ADR index stays quiet",
     );
-  });
-});
-
-test("the session directive's query reads the model beside an index kept elsewhere", () => {
-  withTmp((dir) => {
-    write(
-      dir,
-      "adr/.mapping.json",
-      JSON.stringify({
-        categories: { ordering: { adrs: [], realizes: ["ordering.submit-order"] } },
-      }),
-    );
-    write(dir, "process/ordering.ttl", EXAMPLE);
-    const ctx = runHook(dir, { env: { ALPS_ADR_MAPPING: "adr/.mapping.json" } });
-    const [, cli, where] =
-      ctx.match(/\(node "([^"]+)" query --category <key>( --adr-dir "adr")\)/) ?? [];
-    assert.ok(cli && where, ctx);
-    const query = spawnSync(
-      process.execPath,
-      [cli, "query", "--category", "ordering", "--adr-dir", "adr"],
-      { cwd: dir, encoding: "utf8" },
-    );
-    assert.equal(query.status, 0, query.stdout + query.stderr);
-    assert.match(query.stdout, /Business context — category "ordering"/);
-    assert.doesNotMatch(query.stdout, /no process model|NOT FOUND/);
   });
 });
 

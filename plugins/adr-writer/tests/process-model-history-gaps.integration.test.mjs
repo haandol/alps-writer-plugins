@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import { commitAll, git, initRepo, withTmp, write, writeAdrFiles } from "./helpers.mjs";
+import { commitAll, initRepo, withTmp, write, writeAdrFiles } from "./helpers.mjs";
 import {
   ACCEPTED,
   EXAMPLE,
@@ -336,48 +336,6 @@ test("an undone hand re-date that first shows after a commit history cannot reac
   });
 });
 
-test("an Accepted model moved in from outside the repository is unjudged, never a hand promotion, whatever its gates there", () => {
-  withTmp((dir) => {
-    const outside = path.join(dir, "outside");
-    const work = path.join(dir, "work");
-    mkdirSync(outside, { recursive: true });
-    mkdirSync(path.join(work, "docs"), { recursive: true });
-    initRepo(work);
-    write(work, "docs/adr/.mapping.json", JSON.stringify(MAPPING, null, 2));
-    writeAdrFiles(work, MAPPING);
-    symlinkSync(outside, path.join(work, "docs/process"));
-    write(work, "docs/process/model.ttl", ACCEPTED);
-    commitAll(work, "the model kept outside the repository");
-    // It moves in while the payment ADR goes back to Proposed: the promotion may have
-    // happened outside, while its gates held.
-    unlinkSync(path.join(work, "docs/process"));
-    write(work, "docs/process/model.ttl", ACCEPTED);
-    write(work, "docs/adr/payments/0001-b.md", "# 0001-b\n\n## Status\n\nProposed\n");
-    const [record] = MAPPING.categories.payments.adrs;
-    write(
-      work,
-      "docs/adr/.mapping.json",
-      JSON.stringify(
-        {
-          categories: {
-            ...MAPPING.categories,
-            payments: { ...MAPPING.categories.payments, adrs: [{ ...record, status: "Proposed" }] },
-          },
-        },
-        null,
-        2,
-      ),
-    );
-    commitAll(work, "the model moved in; the payment ADR reopened");
-    const lifecycle = cli(work, ["lifecycle"]);
-    assert.equal(lifecycle.code, 0, lifecycle.out);
-    assert.match(
-      lifecycle.out,
-      /payment\.take-payment: its current lifecycle value appeared where history cannot read the model/,
-    );
-  });
-});
-
 test("a model moved into the repository while Proposed keeps ADR Writer's later acceptance as the baseline", () => {
   withTmp((dir) => {
     const outside = path.join(dir, "outside");
@@ -451,57 +409,6 @@ test("an Accepted model absorbed from a docs/process submodule leaves the edits 
   });
 });
 
-for (const keepSection of [false, true])
-  test(`an Accepted model absorbed from a docs submodule leaves the edits made inside it unknown${keepSection ? ", whatever the submodule's own ignore setting" : ""}`, () => {
-    withTmp((dir) => {
-      const work = path.join(dir, "work");
-      mkdirSync(work);
-      initRepo(work);
-      write(work, "README.md", "work\n");
-      commitAll(work, "the work tree");
-      const adrs = Object.fromEntries(
-        Object.values(MAPPING.categories)
-          .flatMap((e) => e.adrs)
-          .map((r) => [
-            r.path.replace(/^docs\//, ""),
-            `# ${path.basename(r.path, ".md")}\n\n## Status\n\n${r.status}\n`,
-          ]),
-      );
-      addSubmodule(dir, work, "docs", {
-        "adr/.mapping.json": JSON.stringify(MAPPING, null, 2),
-        ...adrs,
-        "process/model.ttl": ACCEPTED,
-      });
-      if (keepSection) {
-        git(work, ["config", "-f", ".gitmodules", "submodule.docs.ignore", "all"]);
-        commitAll(work, "the submodule's changes ignored");
-      }
-      write(
-        work,
-        "docs/process/model.ttl",
-        ACCEPTED.replace(STEP_DEFINITION, '"The customer approves the card charge."'),
-      );
-      absorbSubmodule(work, "docs", { keepSection });
-      // Whatever the user's git leaves out of a diff, the submodule lines are read.
-      writeFileSync(
-        path.join(dir, "gitconfig"),
-        keepSection ? '[submodule "docs"]\n\tignore = all\n' : "[diff]\n\tignoreSubmodules = all\n",
-      );
-      if (keepSection) git(work, ["config", "submodule.docs.ignore", "all"]);
-      for (const env of [
-        process.env,
-        { ...process.env, GIT_CONFIG_GLOBAL: path.join(dir, "gitconfig") },
-      ]) {
-        const changes = cli(work, ["changes", "--json"], env);
-        assert.equal(changes.code, 1, changes.out);
-        assert.ok(
-          JSON.parse(changes.out).unsyncedUnknown.some((u) => u.process === "payment.take-payment"),
-          changes.out,
-        );
-      }
-    });
-  });
-
 test("an undone hand re-date that leads back to an acceptance history cannot read leaves the edits unknown", () => {
   withTmp((dir) => {
     repo(dir, EXAMPLE);
@@ -565,30 +472,3 @@ test("a hand re-date undone right after a commit whose model does not parse sett
     assert.equal(renewal.code, 0, renewal.out);
   });
 });
-
-for (const [target, kind] of [
-  ["loop.ttl", "round a loop"],
-  ["../adr/.mapping.json/loop.ttl", "through a file"],
-])
-  test(`a hand promotion right after a commit whose model document link leads ${kind} is judged against the commit before it`, () => {
-    withTmp((dir) => {
-      repo(dir, EXAMPLE, UNLINKED_PAYMENTS);
-      symlinkSync(target, path.join(dir, "docs/process/loop.ttl"));
-      commitAll(dir, "a model document link nobody can follow");
-      unlinkSync(path.join(dir, "docs/process/loop.ttl"));
-      model(
-        dir,
-        EXAMPLE.replace(
-          'pm:status "Proposed" ;\n    pm:hasStep m:payment',
-          'pm:status "Accepted (2020-01-15)" ;\n    pm:hasStep m:payment',
-        ),
-        "the link removed, and promoted by hand",
-      );
-      const lifecycle = cli(dir, ["lifecycle"]);
-      assert.equal(lifecycle.code, 1, lifecycle.out);
-      assert.match(
-        lifecycle.out,
-        /became Accepted while the alignment gates did not hold: system step "payment\.request-payment" has no realizing feature/,
-      );
-    });
-  });

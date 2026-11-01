@@ -44,8 +44,6 @@ m:courier a pm:Actor ;
     rdfs:label "Courier" ;
     pm:definition "The outside organization that delivers orders." .
 `;
-export const SHALLOW =
-  "the clone is shallow; fetch more history to see edits since it became Accepted";
 /** A process saved by hand as Accepted, whose only criterion executes no system step. */
 export const REFUND_PROCESS = `@prefix m: <urn:adr-writer:model:> .
 @prefix pm: <urn:adr-writer:process:> .
@@ -113,59 +111,9 @@ export const directlyEdited = (dir) =>
     repo(at);
     directEdit(at);
   });
-/** The passed review re-dated by hand, then undone together with a step edit; built once too. */
-export const undoneRedate = (dir) =>
-  cachedRepo(dir, "history: re-date undone with an edit", (at) => {
-    repo(at);
-    model(at, REDATED, "re-dated by hand");
-    model(at, REWORDED, "undone, together with an edit");
-  });
-
 export function read(dir) {
   return readFileSync(path.join(dir, "docs/process/model.ttl"), "utf8");
 }
-
-export const AUDIT = (status) => `@prefix m: <urn:adr-writer:model:> .
-@prefix pm: <urn:adr-writer:process:> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-
-m:auditor a pm:Actor ;
-    rdfs:label "Auditor" ;
-    pm:definition "A person who keeps the store's records." ;
-    pm:performs m:audit.record-order .
-
-m:audit a pm:BoundedContext ;
-    rdfs:label "Audit" ;
-    pm:definition "Keeping the records the store must hold." .
-
-m:audit.keep-records a pm:Process ;
-    rdfs:label "Keep records" ;
-    pm:definition "The store keeps a record of every order." ;
-    pm:startCondition "An order is about to be submitted." ;
-    pm:businessOutcome "The order has a record." ;
-    pm:openScope "none"^^pm:NoOpenScope ;
-    pm:status "${status}" ;
-    pm:hasStep m:audit.record-order .
-
-m:audit.record-order a pm:Step ;
-    rdfs:label "Record the order" ;
-    pm:definition "The auditor writes the order into the records." ;
-    pm:stepKind "system" ;
-    pm:inContext m:audit .
-
-m:audit.record-before-submit a pm:BusinessRule ;
-    rdfs:label "Recorded before submission" ;
-    pm:definition "An order is recorded before it is submitted." ;
-    pm:basisKind "regulation" ;
-    pm:basis "The record-keeping law the store follows." ;
-    pm:constrains m:audit.record-order, m:ordering.submit-order .
-
-m:audit.keep-records.recorded a pm:ObservationCriterion ;
-    rdfs:label "A submitted order has a record" ;
-    pm:startCondition "An order is submitted." ;
-    pm:observedResult "The order has a record." ;
-    pm:criterionOf m:audit.keep-records .
-`;
 
 export const REDATED = ACCEPTED.replace(
   PAYMENT_STATUS,
@@ -316,13 +264,6 @@ export function linkChangeLog(dir, text = "# Process model change log\n") {
   rmSync(path.join(dir, "docs/process/change-log.md"), { force: true });
   symlinkSync("../../local/change-log.md", path.join(dir, "docs/process/change-log.md"));
 }
-
-export const RETIRED_LINE =
-  "# Process model change log\n\n- 2020-01-15 — `payment.take-payment` deprecated: moved to invoicing\n";
-export const RETIRED = ACCEPTED.replace(
-  PAYMENT_STATUS,
-  'pm:status "Deprecated (2020-01-15)" ;\n    pm:hasStep m:payment',
-);
 
 export const PROCESS_DEFINITION = '"The store collects the money for a placed order."';
 export const STEP_RENEWAL = ["--same-meaning", "payment.request-payment=pm:definition"];

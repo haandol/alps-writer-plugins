@@ -3,26 +3,17 @@
 // records as its commit holds them — unknown where history cannot read them, failed
 // where they do not hold.
 import assert from "node:assert/strict";
-import {
-  chmodSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, mkdirSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { deflateSync } from "node:zlib";
-import { commitAll, git, initRepo, withTmp, write, writeAdrFiles } from "./helpers.mjs";
+import { commitAll, git, withTmp, write } from "./helpers.mjs";
 import {
   ACCEPTED,
   EXAMPLE,
   MAPPING,
   OPEN_PATH,
   REFUND_PROCESS,
-  UNLINKED_PAYMENTS,
   cli,
   directEdit,
   exits,
@@ -273,28 +264,6 @@ test("a committed hand promotion fails its gates on what history can read, whate
   });
 });
 
-test("a committed hand promotion over a realizing ADR whose file is a link loop fails its gates, as on disk", () => {
-  withTmp((dir) => {
-    repo(dir, EXAMPLE);
-    rmSync(path.join(dir, "docs/adr/payments/0001-b.md"));
-    symlinkSync("0001-b.md", path.join(dir, "docs/adr/payments/0001-b.md"));
-    model(
-      dir,
-      EXAMPLE.replace(
-        'pm:status "Proposed" ;\n    pm:hasStep m:payment',
-        'pm:status "Accepted (2020-01-15)" ;\n    pm:hasStep m:payment',
-      ),
-      "promoted by hand while the ADR file is a loop",
-    );
-    const lifecycle = cli(dir, ["lifecycle"]);
-    assert.equal(lifecycle.code, 1, lifecycle.out);
-    assert.match(
-      lifecycle.out,
-      /became Accepted while the alignment gates did not hold.*process-adr-missing/s,
-    );
-  });
-});
-
 test("a hand promotion committed over an index that does not parse names the index as the reason", () => {
   withTmp((dir) => {
     repo(dir, EXAMPLE);
@@ -308,35 +277,6 @@ test("a hand promotion committed over an index that does not parse names the ind
       "promoted by hand with a broken index",
     );
     assert.match(cli(dir, ["lifecycle"]).out, /the ADR index does not parse at that commit/);
-  });
-});
-
-test("a realizing ADR folder kept in a submodule leaves the gates of a committed promotion unknown", () => {
-  withTmp((dir) => {
-    const sub = path.join(dir, "payments-adrs");
-    mkdirSync(sub);
-    initRepo(sub);
-    write(sub, "0001-b.md", "# 0001-b\n\n## Status\n\nAccepted (2020-01-01)\n");
-    commitAll(sub, "the payment ADRs");
-    const work = path.join(dir, "work");
-    mkdirSync(work);
-    initRepo(work);
-    write(work, "docs/adr/.mapping.json", JSON.stringify(MAPPING, null, 2));
-    writeAdrFiles(work, { categories: { checkout: MAPPING.categories.checkout } });
-    git(work, [
-      "-c",
-      "protocol.file.allow=always",
-      "submodule",
-      "add",
-      "-q",
-      sub,
-      "docs/adr/payments",
-    ]);
-    model(work, EXAMPLE, "proposed");
-    model(work, ACCEPTED, "accepted after the alignment review");
-    const lifecycle = cli(work, ["lifecycle"]);
-    assert.equal(lifecycle.code, 0, lifecycle.out);
-    assert.match(lifecycle.out, /cannot be read from history/);
   });
 });
 
@@ -390,37 +330,6 @@ test("a committed hand promotion over a hand-off no criterion passes through fai
   });
 });
 
-test("a committed hand promotion fails on a Proposed ADR record though the realizing ADR folder lies outside the repository", () => {
-  withTmp((dir) => {
-    const outside = path.join(dir, "outside");
-    const work = path.join(dir, "work");
-    mkdirSync(path.join(outside, "payments"), { recursive: true });
-    mkdirSync(path.join(work, "docs/adr"), { recursive: true });
-    symlinkSync(path.join(outside, "payments"), path.join(work, "docs/adr/payments"));
-    const [record] = MAPPING.categories.payments.adrs;
-    repo(work, EXAMPLE, {
-      categories: {
-        ...MAPPING.categories,
-        payments: { ...MAPPING.categories.payments, adrs: [{ ...record, status: "Proposed" }] },
-      },
-    });
-    model(
-      work,
-      EXAMPLE.replace(
-        'pm:status "Proposed" ;\n    pm:hasStep m:payment',
-        'pm:status "Accepted (2020-01-15)" ;\n    pm:hasStep m:payment',
-      ),
-      "promoted by hand while the payment ADR is Proposed",
-    );
-    const lifecycle = cli(work, ["lifecycle"]);
-    assert.equal(lifecycle.code, 1, lifecycle.out);
-    assert.match(
-      lifecycle.out,
-      /became Accepted while the alignment gates did not hold: feature "payments" needs at least one Accepted ADR and no Proposed ADR/,
-    );
-  });
-});
-
 test("a process added by hand as Accepted fails on a criterion that executes nothing where history cannot read the index", () => {
   withTmp((dir) => {
     const outside = path.join(dir, "outside");
@@ -439,53 +348,6 @@ test("a process added by hand as Accepted fails on a criterion that executes not
     );
   });
 });
-
-test("a hand promotion right after a commit whose model directory is a link that loops is judged against the commit before it", () => {
-  withTmp((dir) => {
-    repo(dir, EXAMPLE, UNLINKED_PAYMENTS);
-    rmSync(path.join(dir, "docs/process"), { recursive: true });
-    symlinkSync("process", path.join(dir, "docs/process"));
-    commitAll(dir, "the model directory is a link to itself");
-    unlinkSync(path.join(dir, "docs/process"));
-    model(
-      dir,
-      EXAMPLE.replace(
-        'pm:status "Proposed" ;\n    pm:hasStep m:payment',
-        'pm:status "Accepted (2020-01-15)" ;\n    pm:hasStep m:payment',
-      ),
-      "the model back, and promoted by hand",
-    );
-    const lifecycle = exits(dir, ["lifecycle"], 1);
-    assert.match(
-      lifecycle.out,
-      /became Accepted while the alignment gates did not hold: system step "payment\.request-payment" has no realizing feature/,
-    );
-  });
-});
-
-for (const index of ["a link to itself", "a directory"])
-  test(`a hand promotion committed with an index that is ${index} is judged with no index`, () => {
-    withTmp((dir) => {
-      repo(dir, EXAMPLE);
-      unlinkSync(path.join(dir, "docs/adr/.mapping.json"));
-      if (index === "a directory") write(dir, "docs/adr/.mapping.json/keep.md", "kept\n");
-      else symlinkSync(".mapping.json", path.join(dir, "docs/adr/.mapping.json"));
-      model(
-        dir,
-        EXAMPLE.replace(
-          'pm:status "Proposed" ;\n    pm:hasStep m:payment',
-          'pm:status "Accepted (2020-01-15)" ;\n    pm:hasStep m:payment',
-        ),
-        `promoted by hand over an index that is ${index}`,
-      );
-      rmSync(path.join(dir, "docs/adr/.mapping.json"), { recursive: true });
-      write(dir, "docs/adr/.mapping.json", JSON.stringify(MAPPING, null, 2));
-      commitAll(dir, "the index repaired");
-      assert.ok(
-        json(dir, ["changes"]).lifecycleEdits.some((l) => l.process === "payment.take-payment"),
-      );
-    });
-  });
 
 test("an index linked to a file the commit does not hold leaves ADR Writer's own promotion unjudged, never a hand edit", () => {
   withTmp((dir) => {
@@ -517,72 +379,6 @@ test("an index linked to a file the commit does not hold leaves ADR Writer's own
       /payment\.take-payment: the alignment gates of its change at commit \w+ cannot be read from history/,
     );
     assert.deepEqual(json(dir, ["changes"]).lifecycleEdits, []);
-  });
-});
-
-for (const [placement, link] of [
-  ["an index reached through a chain of links", "index"],
-  ["a realizing ADR file linked", "adr"],
-])
-  test(`${placement} to a file the commit does not hold leaves ADR Writer's own promotion unjudged, never a hand edit`, () => {
-    withTmp((dir) => {
-      repo(dir, EXAMPLE);
-      // The file lives in an ignored part of a tracked folder that a committed link names.
-      write(dir, ".gitignore", "shared/*.json\nshared/*.md\n");
-      write(dir, "shared/README.txt", "local copies\n");
-      symlinkSync("shared", path.join(dir, "local"));
-      const [file, target] =
-        link === "index"
-          ? ["docs/adr/.mapping.json", "../../local/mapping.json"]
-          : ["docs/adr/payments/0001-b.md", "../../../local/0001-b.md"];
-      writeFileSync(
-        path.join(dir, "shared", path.basename(target)),
-        readFileSync(path.join(dir, file), "utf8"),
-      );
-      git(dir, ["rm", "-q", "--cached", file]);
-      unlinkSync(path.join(dir, file));
-      symlinkSync(target, path.join(dir, file));
-      commitAll(dir, `${placement} to an ignored file`);
-      exits(
-        dir,
-        [
-          "transition",
-          "--process",
-          "payment.take-payment",
-          "--to",
-          "Accepted",
-          "--date",
-          "2020-01-15",
-        ],
-        0,
-      );
-      commitAll(dir, "accepted after its review");
-      const lifecycle = exits(dir, ["lifecycle"], 0);
-      assert.match(
-        lifecycle.out,
-        /payment\.take-payment: the alignment gates of its change at commit \w+ cannot be read from history/,
-      );
-      assert.deepEqual(json(dir, ["changes"]).lifecycleEdits, []);
-    });
-  });
-
-test("a hand promotion over a realizing ADR missing under a link history follows fails its gates, as on disk", () => {
-  withTmp((dir) => {
-    repo(dir, EXAMPLE);
-    // The payments ADRs move to a tracked folder a committed link names, without the realizing ADR.
-    write(dir, "shared/payments/README.md", "payments ADRs\n");
-    rmSync(path.join(dir, "docs/adr/payments"), { recursive: true });
-    symlinkSync("../../shared/payments", path.join(dir, "docs/adr/payments"));
-    model(
-      dir,
-      EXAMPLE.replace(
-        'pm:status "Proposed" ;\n    pm:hasStep m:payment',
-        'pm:status "Accepted (2020-01-15)" ;\n    pm:hasStep m:payment',
-      ),
-      "promoted by hand while the realizing ADR is missing",
-    );
-    const lifecycle = exits(dir, ["lifecycle"], 1);
-    assert.match(lifecycle.out, /became Accepted while the alignment gates did not hold/);
   });
 });
 

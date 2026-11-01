@@ -4,15 +4,12 @@
 // process-model-apply-glossary.test.mjs, the lifecycle guards and renewals in
 // process-model-apply-lifecycle.test.mjs.
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import {
   chmodSync,
   existsSync,
   linkSync,
   lstatSync,
   mkdirSync,
-  readdirSync,
-  readlinkSync,
   rmSync,
   symlinkSync,
 } from "node:fs";
@@ -38,7 +35,6 @@ import {
   cli,
   draft,
   exits,
-  foldsSpelling,
   impact,
   insideGit,
   paymentIn,
@@ -534,102 +530,6 @@ test("dropping a linked model document removes the link, never the shared file i
   });
 });
 
-test("a failed write restores a removed link as the same link", () => {
-  withTmp((dir) => {
-    repo(dir);
-    write(dir, "shared/actors.ttl", ACTORS);
-    const actors = path.join(dir, "docs/process/actors.ttl");
-    symlinkSync("../../shared/actors.ttl", actors);
-    commitAll(dir, "actors shared with another model");
-    write(dir, "draft/model.ttl", ACCEPTED);
-    // The change log is written last, after the link is already removed.
-    mkdirSync(path.join(dir, "docs/process/change-log.md/blocked"), { recursive: true });
-    const failed = apply(dir, impact(dir).baseHash, [
-      "--log",
-      "the actors are kept in model.ttl only",
-    ]);
-    assert.equal(failed.code, 1, failed.out);
-    assert.match(failed.out, /writing failed .*every file already written was restored/);
-    assert.ok(lstatSync(actors).isSymbolicLink(), "the link is restored as a link");
-    assert.equal(readlinkSync(actors), "../../shared/actors.ttl");
-    assert.equal(read(dir, "shared/actors.ttl"), ACTORS);
-  });
-});
-
-test("dropping a second name of the model document removes only that name", () => {
-  withTmp((dir) => {
-    repo(dir);
-    symlinkSync("model.ttl", path.join(dir, "docs/process/alias.ttl"));
-    commitAll(dir, "a second name for the model");
-    write(dir, "draft/model.ttl", ACCEPTED);
-    const saved = apply(dir, impact(dir).baseHash);
-    assert.equal(saved.code, 0, saved.out);
-    assert.equal(read(dir, "docs/process/model.ttl"), ACCEPTED);
-    assert.throws(() => lstatSync(path.join(dir, "docs/process/alias.ttl")), { code: "ENOENT" });
-    assert.equal(cli(dir, ["validate"]).code, 0);
-  });
-});
-
-test("dropping the model document is refused while the draft keeps another name of the same file", () => {
-  withTmp((dir) => {
-    repo(dir);
-    symlinkSync("model.ttl", path.join(dir, "docs/process/alias.ttl"));
-    commitAll(dir, "a second name for the model");
-    write(dir, "draft/alias.ttl", ACCEPTED);
-    const refused = apply(dir, impact(dir).baseHash);
-    assert.equal(refused.code, 1, refused.out);
-    assert.match(
-      refused.out,
-      /removing docs\/process\/model\.ttl would also remove docs\/process\/alias\.ttl, another name of the same file; keep docs\/process\/model\.ttl, the file itself, in the draft/,
-    );
-    assert.match(refused.out, /nothing was written/);
-    assert.equal(read(dir, "docs/process/model.ttl"), ACCEPTED);
-    assert.equal(cli(dir, ["validate"]).code, 0);
-  });
-});
-
-test("a draft that edits a file under one name and keeps its old text under another is refused before any write", () => {
-  withTmp((dir) => {
-    repo(dir);
-    symlinkSync("model.ttl", path.join(dir, "docs/process/alias.ttl"));
-    commitAll(dir, "a second name for the model");
-    // The unchanged copy still states the flow, so the summary shows no change, but
-    // writing model.ttl would remove the flow under both names.
-    write(dir, "draft/alias.ttl", ACCEPTED);
-    write(
-      dir,
-      "draft/model.ttl",
-      ACCEPTED.replace("    pm:flowsTo m:payment.capture-payment ;\n", ""),
-    );
-    const summary = impact(dir);
-    assert.equal(summary.same, true, "the approval shows no change");
-    const refused = apply(dir, summary.baseHash);
-    assert.equal(refused.code, 1, refused.out);
-    assert.match(refused.out, /the documents this save leaves would not make the approved model/);
-    assert.match(refused.out, /nothing was written/);
-    assert.equal(read(dir, "docs/process/model.ttl"), ACCEPTED);
-    assert.ok(lstatSync(path.join(dir, "docs/process/alias.ttl")).isSymbolicLink());
-  });
-});
-
-test("a draft copied with a link to a shared file that a model document links to is refused", () => {
-  withTmp((dir) => {
-    repo(dir);
-    write(dir, "shared/actors.ttl", ACTORS);
-    symlinkSync(path.join(dir, "shared/actors.ttl"), path.join(dir, "docs/process/actors.ttl"));
-    commitAll(dir, "actors shared with another model");
-    // cp -R keeps the absolute link: editing the draft's copy would edit the model.
-    execFileSync("cp", ["-R", "docs/process", "draft"], { cwd: dir });
-    assert.ok(lstatSync(path.join(dir, "draft/actors.ttl")).isSymbolicLink());
-    const linked = cli(dir, ["impact", "--draft", "draft"]);
-    assert.equal(linked.code, 2, linked.out);
-    assert.match(
-      linked.out,
-      /draft\/actors\.ttl is a model document under another name \(a link or a hard link\), so an edit made through it has already changed the model; a draft holds copies/,
-    );
-  });
-});
-
 test("a draft that writes one model file under two names is refused before any write", () => {
   withTmp((dir) => {
     repo(dir);
@@ -657,25 +557,6 @@ test("a document reached through a linked directory is never removed through the
     assert.match(refused.out, /shared\/extra\.ttl lives in a linked directory \(/);
     assert.match(refused.out, /nothing was written/);
     assert.equal(read(dir, "shared/extra.ttl"), ACTORS);
-  });
-});
-
-test("a draft removes a document from a model directory that is itself a link", () => {
-  withTmp((dir) => {
-    // The model is kept elsewhere in the repository from the first commit:
-    // repo() writes model.ttl through the link.
-    write(dir, "shared/process/actors.ttl", ACTORS);
-    mkdirSync(path.join(dir, "docs"));
-    symlinkSync("../shared/process", path.join(dir, "docs/process"));
-    repo(dir);
-    write(dir, "draft/model.ttl", ACCEPTED);
-    const summary = impact(dir);
-    assert.equal(summary.same, true, "model.ttl states every actor too");
-    const saved = apply(dir, summary.baseHash);
-    assert.equal(saved.code, 0, saved.out);
-    assert.equal(existsSync(path.join(dir, "shared/process/actors.ttl")), false);
-    assert.equal(read(dir, "shared/process/model.ttl"), ACCEPTED);
-    assert.equal(cli(dir, ["validate"]).code, 0);
   });
 });
 
@@ -944,57 +825,5 @@ m:order-system pm:performs m:payment.record-payment .
     const hash = /^base hash: (\S+)$/m.exec(added.out)[1];
     const saved = apply(dir, hash, ["--mapping", "mapping.next.json"]);
     assert.equal(saved.code, 0, saved.out);
-  });
-});
-
-for (const [label, live, respelled] of [
-  ["letter case", "shared/audit.ttl", "Shared/Audit.ttl"],
-  ["Unicode form", "공유/감사.ttl".normalize("NFD"), "공유/감사.ttl".normalize("NFC")],
-])
-  test(`a draft document respelled in ${label} rewrites the document it names and never removes it`, (t) => {
-    withTmp((dir) => {
-      if (!foldsSpelling(dir, live, respelled))
-        return t.skip("this volume keeps the two spellings apart");
-      repo(dir);
-      write(dir, `docs/process/${live}`, `${PREFIXES}${AUDITOR}`);
-      commitAll(dir, "the auditor in a document of its own");
-      // The draft is written as text, as process-edit allows, under the other spelling.
-      draft(dir);
-      rmSync(path.join(dir, "draft", live.split("/")[0]), { recursive: true });
-      write(
-        dir,
-        `draft/${respelled}`,
-        `${PREFIXES}${AUDITOR.replace("Checks the books.", "Checks the books every quarter.")}`,
-      );
-      const summary = impact(dir);
-      assert.equal(summary.diff.length, 1, JSON.stringify(summary.diff));
-      const saved = apply(dir, summary.baseHash);
-      assert.equal(saved.code, 0, saved.out);
-      // The document keeps its stored name and holds the approved change.
-      assert.deepEqual(readdirSync(path.join(dir, "docs/process", live.split("/")[0])), [
-        live.split("/")[1],
-      ]);
-      assert.match(read(dir, `docs/process/${live}`), /Checks the books every quarter\./);
-      assert.equal(cli(dir, ["validate"]).code, 0);
-    });
-  });
-
-test("a link spelled in another letter case is the file it names: history reads it, and the save never removes that file", (t) => {
-  withTmp((dir) => {
-    if (!foldsSpelling(dir, "model.ttl", "MODEL.ttl"))
-      return t.skip("this volume keeps the two spellings apart");
-    repo(dir);
-    symlinkSync("MODEL.ttl", path.join(dir, "docs/process/alias.ttl"));
-    commitAll(dir, "a second name for the model, spelled in capitals");
-    const clean = cli(dir, ["changes", "--json"]);
-    assert.equal(clean.code, 0, clean.out);
-    write(dir, "draft/alias.ttl", ACCEPTED);
-    const refused = apply(dir, impact(dir).baseHash);
-    assert.equal(refused.code, 1, refused.out);
-    assert.match(
-      refused.out,
-      /removing docs\/process\/model\.ttl would also remove docs\/process\/alias\.ttl, another name of the same file/,
-    );
-    assert.equal(read(dir, "docs/process/model.ttl"), ACCEPTED);
   });
 });

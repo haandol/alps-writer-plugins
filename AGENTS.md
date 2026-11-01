@@ -95,6 +95,8 @@ Root is a private pnpm workspace; the MCP server package lives in `plugins/alps-
 
 ```bash
 pnpm install          # Install dependencies (whole workspace)
+pnpm test:unit        # Unit tests: no git, browser or other external tool (seconds)
+pnpm test:integration # Integration tests: git, a browser or another external tool
 pnpm test             # Asset/guidance checks, ALPS, then pooled ADR/DeepEval/browser tests
 pnpm build            # Bundle the alps-writer MCP server (pnpm --filter alps-writer build)
 pnpm lint             # ESLint the MCP server
@@ -124,7 +126,7 @@ Both `package.json` files are **deliberately pinned to `0.0.0`** and are not par
 
 Build (inside `plugins/alps-writer/`) runs `tsc --noEmit` (typecheck), then esbuild bundles `src/index.ts` → `dist/index.js` with deps inlined (ESM, node24 target), then copies static assets `cp -r src/templates dist/ && cp -r src/guides dist/`. The asset copy is required because the server reads XML templates / MD guides at runtime via `fs.readFileSync` (`import.meta.url`-relative). **`dist/` is committed** — regenerate and commit it whenever `src/` changes.
 
-Tests use Node's built-in test runner. ALPS TypeScript tests run through `tsx`; ADR tests are dependency-free `.mjs` tests. `pnpm test` checks generated assets and synchronized guidance, runs ALPS, then schedules ADR, DeepEval and browser test files together in one Node worker pool. This overlaps independent tests without multiplying the CPU-based worker limit across separate runners. `pnpm test:workspace` runs the same checks and installed-dependency suites; CI pairs it with the complete ADR suite in the no-install `runtime` job. Each test file retains process isolation and every suite failure blocks success.
+Tests use Node's built-in test runner. ALPS TypeScript tests run through `tsx`; ADR tests are dependency-free `.mjs` tests. A unit test needs no external tool (it runs in process or starts only this repository's Node scripts, which start none either); an integration test needs git, a browser or another external tool, and its file is named `*.integration.test.mjs` or lives in `plugins/adr-writer/integration-tests/`. `pnpm test:unit` runs ALPS and the ADR and DeepEval unit tests; `pnpm test:integration` runs the rest. Keep git and file-system special cases to one representative test per kind. `pnpm test` checks generated assets and synchronized guidance, runs ALPS, then schedules ADR, DeepEval and browser test files together in one Node worker pool. This overlaps independent tests without multiplying the CPU-based worker limit across separate runners. `pnpm test:workspace` runs the same checks and installed-dependency suites; CI pairs it with the complete ADR suite in the no-install `runtime` job. Each test file retains process isolation and every suite failure blocks success.
 
 **Behaviour evals** (`plugins/adr-writer/evals/`) are separate and NOT in `pnpm test`. `pnpm test` proves a prompt _says_ something; the evals check whether an agent given that prompt _does_ it, by running real scenarios against a live model and reporting per-check hit rates. They cost money, take minutes, and are non-deterministic, so they never gate CI — their job is reproducing a reported defect (`node evals/run.mjs --live --only <name> --runs 10`) and telling you whether it happens 3/10 or 10/10, which decides the fix. Use `node evals/run.mjs --changed <base> --list` to preview the disposable impact-map selection for a branch without invoking a model. The harness itself _is_ covered by `pnpm test` via a stub agent, because an eval whose scorer cannot tell a bad reply from a good one reports green and is worse than no eval. See `plugins/adr-writer/evals/README.md`.
 
@@ -139,7 +141,7 @@ explicit obligation arrays take precedence and never invoke a second legacy judg
 `pnpm eval:skills --live --rejudge <run-directory>` reuses saved target evidence with the current GPT-6.1 judge and current mechanical checks, preserves original results and labels grading-policy changes.
 `pnpm eval:report` regenerates both unified and legacy DeepEval HTML without model
 calls. The source and usage contract are in `plugins/adr-writer/evals/skills/`.
-Workspace-only integration tests in `evals/deepeval/skills.test.mjs` use the real
+Workspace-only integration tests in `evals/deepeval/skills.integration.test.mjs` use the real
 DeepEval SDK with stub providers; dependency-free metric tests stay in `tests/`.
 
 The rollup/sync artifact regression path uses `pnpm eval:regression` with DeepEval GEval.
@@ -503,12 +505,13 @@ Verify before completing any task:
 These are automated in two places, so the list above is what you run locally to
 avoid a round trip — not the only thing standing between a bad commit and `main`:
 
-- **`.husky/pre-push`** — everything CI runs, all blocking: typecheck (inside build),
-  `pnpm test`, `lint`, `format:check`, `bump:check`, the committed-bundle boot and
-  hook-start checks, and the dist-drift rebuild. The rule is **if CI fails on it,
-  pre-push fails on it** — the two were split before, so a push could be green
-  locally and red on GitHub over a lint or formatting problem already sitting in
-  the tree. `SKIP_TESTS=1 git push …` bypasses only the slow suite for a
+- **`.husky/pre-push`** — the fast part, all blocking: the generated-asset checks,
+  `pnpm test:unit`, `lint`, `format:check`, `bump:check`, the committed-bundle boot
+  and hook-start checks, and the dist-drift rebuild with its typecheck. Every static
+  check CI runs is here, so a push is not red on GitHub over a lint or formatting
+  problem already sitting in the tree; the integration tests are left to CI, whose
+  required jobs run them on every pull request (`pnpm test:integration` runs them
+  locally). `SKIP_TESTS=1 git push …` bypasses only the unit tests for a
   knowingly-red WIP branch and is rejected when the push updates `main`; every
   other check always runs.
 
@@ -517,8 +520,8 @@ avoid a round trip — not the only thing standing between a bad commit and `mai
   regenerated. With the checks the other way round a hand-edited or truncated
   `dist/` passed, because the file under test was no longer the file in the commit.
   The checks that only read the tree (lint, formatting, versions, bundle boot,
-  hook start) run while the suite runs and report after it in that order; the
-  rebuild rewrites generated files the suite checks, so it waits for the suite.
+  hook start) run while the unit tests run and report after them in that order;
+  the rebuild rewrites generated files the tests check, so it waits for the tests.
 
 - **`.github/workflows/ci.yaml`** — three jobs, all on Node 24. `test` runs
   `test:workspace`; `build` adds lint, `format:check`, `bump:check`, and a rebuild
