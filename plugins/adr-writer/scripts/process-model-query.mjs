@@ -75,6 +75,13 @@ export function untrustedRealization(findings) {
 export const currentRecord = (rec) =>
   !/^(Deprecated|Superseded)\b/.test(String(rec?.status ?? "").trim());
 
+/** The ADR files of a feature's current decisions, from its index entry. */
+export const currentAdrPaths = (entry) =>
+  (Array.isArray(entry?.adrs) ? entry.adrs : [])
+    .filter(currentRecord)
+    .map((r) => r?.path)
+    .filter((p) => typeof p === "string");
+
 /** Whether a step's realization can be told from the index, given its realizing features. */
 export const realizationKnown = (untrusted, realizers) =>
   !untrusted.all && !realizers.some((r) => untrusted.categories.has(r.category));

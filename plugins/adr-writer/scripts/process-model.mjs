@@ -134,7 +134,7 @@ import {
 } from "./process-model-fs.mjs";
 import { openReviewReport } from "./adr-impl-review-open.mjs";
 import { renderView } from "./process-model-view.mjs";
-import { currentRecord, queryContext, renderContext } from "./process-model-query.mjs";
+import { currentAdrPaths, queryContext, renderContext } from "./process-model-query.mjs";
 
 const rel = (p) => path.relative(process.cwd(), p).split(path.sep).join("/");
 // Text output keeps a list this long on one line; a longer one takes a line per item.
@@ -628,13 +628,10 @@ function relinked(current, draft) {
     Array.isArray(m?.categories?.[k]?.realizes) && m.categories[k].realizes.length > 0;
   const adrs = categories
     .filter((k) => realizing(current, k) || realizing(draft, k))
-    .flatMap((k) =>
-      [draft.categories?.[k]?.adrs, current?.categories?.[k]?.adrs]
-        .flatMap((list) => (Array.isArray(list) ? list : []))
-        .filter(currentRecord)
-        .map((r) => r?.path)
-        .filter((p) => typeof p === "string"),
-    );
+    .flatMap((k) => [
+      ...currentAdrPaths(draft.categories?.[k]),
+      ...currentAdrPaths(current?.categories?.[k]),
+    ]);
   return { categories, adrs: [...new Set(adrs)].sort() };
 }
 

@@ -22,7 +22,7 @@ import {
   ruleReach,
   sameMeaningKey,
 } from "./process-model-lib.mjs";
-import { currentRecord, implementationState, realizersByStep } from "./process-model-query.mjs";
+import { currentAdrPaths, implementationState, realizersByStep } from "./process-model-query.mjs";
 
 const byId = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const sorted = (list) => [...new Set(list)].sort(byId);
@@ -148,10 +148,7 @@ export function impactSummary({
   const categoriesOfProposedProcesses = categoriesOf(stepsOfProposed);
   const affectedAdrs = sorted(
     [...directlyAffectedCategories, ...categoriesOfProposedProcesses].flatMap((c) =>
-      (Array.isArray(mapping?.categories?.[c]?.adrs) ? mapping.categories[c].adrs : [])
-        .filter(currentRecord)
-        .map((r) => r?.path)
-        .filter((p) => typeof p === "string"),
+      currentAdrPaths(mapping?.categories?.[c]),
     ),
   );
   return {
