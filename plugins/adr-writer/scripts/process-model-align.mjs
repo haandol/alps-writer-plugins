@@ -22,7 +22,7 @@ import {
   ruleReach,
   sameMeaningKey,
 } from "./process-model-lib.mjs";
-import { implementationState, realizersByStep } from "./process-model-query.mjs";
+import { currentRecord, implementationState, realizersByStep } from "./process-model-query.mjs";
 
 const byId = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const sorted = (list) => [...new Set(list)].sort(byId);
@@ -114,10 +114,32 @@ export function impactSummary({
           : null;
     if (reason) for (const r of list) linkChanges.push({ category: r.category, step: id, reason });
   }
+  // The system steps the summary shows: those of processes that become Proposed, and
+  // those the change touches itself or through their process. A retired process's
+  // steps need no realization.
+  const shownProcesses = new Set(propose);
+  const shownSteps = new Set(stepsOfProposed);
+  for (const e of elements) {
+    const iri = elementIri(e.id);
+    if (after.typeOf(iri) === "Process") shownProcesses.add(e.id);
+    else if (after.typeOf(iri) === "Step") {
+      shownSteps.add(e.id);
+      const owner = processOfStep(after, iri);
+      if (owner) shownProcesses.add(elementId(owner));
+    }
+  }
+  for (const p of shownProcesses)
+    for (const s of after.out(elementIri(p), "hasStep")) shownSteps.add(elementId(s));
   const unrealizedSystemSteps = sorted(
-    stepsOfProposed.filter(
-      (id) => isSystemStep(after, elementIri(id)) && !(realizers.get(id) ?? []).length,
-    ),
+    [...shownSteps].filter((id) => {
+      const iri = elementIri(id);
+      const owner = processOfStep(after, iri);
+      return (
+        isSystemStep(after, iri) &&
+        !(owner && isRetired(after, owner)) &&
+        !(realizers.get(id) ?? []).length
+      );
+    }),
   );
   const directlyAffectedCategories = sorted([
     ...categoriesOf([...touched]),
@@ -127,6 +149,7 @@ export function impactSummary({
   const affectedAdrs = sorted(
     [...directlyAffectedCategories, ...categoriesOfProposedProcesses].flatMap((c) =>
       (Array.isArray(mapping?.categories?.[c]?.adrs) ? mapping.categories[c].adrs : [])
+        .filter(currentRecord)
         .map((r) => r?.path)
         .filter((p) => typeof p === "string"),
     ),

@@ -71,6 +71,10 @@ export function untrustedRealization(findings) {
   };
 }
 
+/** Whether an ADR index record is a current decision: a Deprecated or Superseded one is not. */
+export const currentRecord = (rec) =>
+  !/^(Deprecated|Superseded)\b/.test(String(rec?.status ?? "").trim());
+
 /** Whether a step's realization can be told from the index, given its realizing features. */
 export const realizationKnown = (untrusted, realizers) =>
   !untrusted.all && !realizers.some((r) => untrusted.categories.has(r.category));
@@ -162,6 +166,7 @@ export function queryContext({
         untrusted.categories.has(r.category) ? { ...r, untrusted: true } : r,
       ),
       ...(known ? {} : { realizationUnknown: true }),
+      ...(system ? {} : { outsideSystem: true }),
     });
   };
   const contextRef = (iri) => {
@@ -527,6 +532,8 @@ const stepLine = (s) => {
   const proc = s.process
     ? ` — ${s.process.id}${q(s.process.label)} [${s.process.status ?? "no Status"}${s.process.retired ? ", retired" : ""}]`
     : " — (no single process)";
+  if (s.outsideSystem && !s.realizedBy.length)
+    return `${s.id}${q(s.label)}${proc}; outside the system — not realized by a feature`;
   const by = s.realizedBy.length
     ? s.realizedBy.map((r) => r.category).join(", ")
     : s.realizationUnknown
@@ -537,6 +544,32 @@ const stepLine = (s) => {
     : "";
   return `${s.id}${q(s.label)}${proc}; realized by: ${by}${unknown}`;
 };
+
+/** Step contexts in flow order: each after the steps flowing into it; ties and loops by id. */
+function inFlowOrder(contexts) {
+  const contextOf = new Map(contexts.map((c) => [c.step.id, c]));
+  const waiting = new Map(contexts.map((c) => [c.step.id, 0]));
+  for (const c of contexts)
+    for (const n of c.next)
+      if (contextOf.has(n.id) && n.id !== c.step.id) waiting.set(n.id, waiting.get(n.id) + 1);
+  const ready = contexts.filter((c) => waiting.get(c.step.id) === 0).map((c) => c.step.id);
+  const done = new Set();
+  const out = [];
+  while (out.length < contexts.length) {
+    ready.sort(byId);
+    // A loop leaves no step ready: it is entered at its smallest id.
+    const id = ready.shift() ?? contexts.find((c) => !done.has(c.step.id)).step.id;
+    if (done.has(id)) continue;
+    done.add(id);
+    out.push(contextOf.get(id));
+    for (const n of contextOf.get(id).next) {
+      if (!contextOf.has(n.id) || done.has(n.id)) continue;
+      waiting.set(n.id, waiting.get(n.id) - 1);
+      if (waiting.get(n.id) === 0) ready.push(n.id);
+    }
+  }
+  return out;
+}
 const scopeItems = (items) =>
   items.map((i) => (i.kind === "none" ? "no open scope" : `${i.kind}: ${i.text}`)).join(" | ");
 
@@ -611,6 +644,9 @@ export function renderContext(r) {
     }
   }
   if (r.note) say(0, `Note: ${r.note}`);
+  // A process's open scope and a rule are written out once; later steps refer back.
+  const scopeShown = new Set();
+  const rulesShown = new Set();
   const stepBlock = (ctx, depth) => {
     say(depth, `Step ${stepText(ctx.step)}`);
     if (ctx.performers)
@@ -652,16 +688,23 @@ export function renderContext(r) {
           `used by policy ${p.policy.id}${q(p.policy.label)} which starts: ${p.starts.map(stepText).join(" ; ") || "—"}`,
         );
     }
-    for (const rule of ctx.rules)
+    for (const rule of ctx.rules) {
       say(
         depth + 1,
-        `rule ${rule.id}${q(rule.label)}: ${rule.definition} (basis ${rule.basisKind}: ${rule.basis}; via ${rule.via.join(", ")})`,
+        rulesShown.has(rule.id)
+          ? `rule ${rule.id}${q(rule.label)} (stated above; via ${rule.via.join(", ")})`
+          : `rule ${rule.id}${q(rule.label)}: ${rule.definition} (basis ${rule.basisKind}: ${rule.basis}; via ${rule.via.join(", ")})`,
       );
-    if (ctx.openScope.process.length || ctx.openScope.step.length)
-      say(
-        depth + 1,
-        `open scope — process: ${scopeItems(ctx.openScope.process) || "—"}; step: ${scopeItems(ctx.openScope.step) || "—"}`,
-      );
+      rulesShown.add(rule.id);
+    }
+    const owner = ctx.step.process?.id;
+    const processScope = owner && scopeShown.has(owner) ? [] : ctx.openScope.process;
+    if (owner) scopeShown.add(owner);
+    const parts = [
+      processScope.length ? `process: ${scopeItems(processScope)}` : null,
+      ctx.openScope.step.length ? `step: ${scopeItems(ctx.openScope.step)}` : null,
+    ].filter(Boolean);
+    if (parts.length) say(depth + 1, `open scope — ${parts.join("; ")}`);
   };
   if (r.kind === "category") {
     say(0, `ADRs: ${adrList(r.adrs)}`);
@@ -669,7 +712,16 @@ export function renderContext(r) {
     if (r.retiredLinks)
       say(0, `Links to retired processes (excluded): ${r.retiredLinks.join(", ")}`);
     if (r.brokenLinks) say(0, `Links to missing steps: ${r.brokenLinks.join(", ")}`);
-    for (const s of r.steps) stepBlock(s, 0);
+    // The realized steps grouped by process, each group in flow order.
+    const groups = [...Map.groupBy(r.steps, (s) => s.step.process?.id ?? "")].sort(([a], [b]) =>
+      byId(a, b),
+    );
+    if (r.steps.length)
+      say(
+        0,
+        `Realized steps: ${r.steps.length} in ${groups.length} process(es) — ${groups.map(([p, list]) => `${p || "no single process"} (${list.length})`).join(", ")}`,
+      );
+    for (const [, list] of groups) for (const s of inFlowOrder(list)) stepBlock(s, 0);
   } else if (r.kind === "process") {
     say(
       0,
@@ -677,12 +729,13 @@ export function renderContext(r) {
     );
     say(1, `start: ${r.startCondition}; outcome: ${r.businessOutcome}`);
     say(1, `open scope: ${scopeItems(r.openScope) || "—"}`);
+    scopeShown.add(r.process.id);
     for (const c of r.criteria)
       say(
         1,
         `criterion ${c.id}${q(c.label)}: ${c.startCondition} → ${c.observedResult} (passes through ${c.passesThrough.map((e) => e.id).join(", ") || "—"})`,
       );
-    for (const s of r.steps) stepBlock(s, 0);
+    for (const s of inFlowOrder(r.steps)) stepBlock(s, 0);
   } else if (r.kind === "concept") {
     say(
       0,

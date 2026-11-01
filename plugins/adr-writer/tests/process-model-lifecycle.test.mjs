@@ -324,6 +324,67 @@ test("the impact summary lists processes, features, link changes, unrealized ste
   ]);
 });
 
+test("the summary shows unrealized system steps the change touches, and only current ADRs as affected", () => {
+  // An open path on a step changes no business composition, so no process becomes
+  // Proposed, but the summary shows the step and the rest of its process.
+  const openPath = EXAMPLE.replace(
+    'rdfs:label "Submit the order" ;',
+    'rdfs:label "Submit the order" ;\n    pm:openScope "Resubmitting an order the store rejected."^^pm:OpenPath ;',
+  );
+  assert.notEqual(openPath, EXAMPLE);
+  const touched = impactSummary({
+    before: index(EXAMPLE),
+    after: index(openPath),
+    mapping: { categories: {} },
+    glossary: null,
+  });
+  assert.deepEqual(touched.processesToPropose, []);
+  assert.deepEqual(touched.unrealizedSystemSteps, [
+    "ordering.confirm-order",
+    "ordering.submit-order",
+  ]);
+  // A retired process's steps need no realizing feature.
+  const retired = EXAMPLE.replace(
+    'pm:status "Proposed" ;\n    pm:hasStep m:ordering',
+    'pm:status "Deprecated (2020-01-30)" ;\n    pm:hasStep m:ordering',
+  );
+  assert.notEqual(retired, EXAMPLE);
+  assert.deepEqual(
+    impactSummary({
+      before: index(retired),
+      after: index(
+        retired.replace(
+          'rdfs:label "Submit the order" ;',
+          'rdfs:label "Submit the order" ;\n    pm:openScope "Resubmitting an order the store rejected."^^pm:OpenPath ;',
+        ),
+      ),
+      mapping: { categories: {} },
+      glossary: null,
+    }).unrealizedSystemSteps,
+    [],
+  );
+  // A Superseded ADR of an affected feature is no current decision to revise.
+  const withHistory = structuredClone(MAPPING);
+  withHistory.categories.checkout.adrs.push({
+    path: "docs/adr/checkout/0002-old.md",
+    status: "Superseded by [ADR 0001](0001-a.md)",
+    summary: "s",
+  });
+  const affected = impactSummary({
+    before: index(EXAMPLE),
+    after: index(
+      EXAMPLE.replace(
+        '"The customer sends the cart as an order."',
+        '"The customer sends the whole cart."',
+      ),
+    ),
+    mapping: withHistory,
+    glossary: null,
+  });
+  assert.deepEqual(affected.directlyAffectedCategories, ["checkout"]);
+  assert.deepEqual(affected.affectedAdrs, ["docs/adr/checkout/0001-a.md"]);
+});
+
 test("the alignment plan gates realization and ADR Status and places compliance contracts", () => {
   const plan = alignmentPlan({
     index: index(EXAMPLE),

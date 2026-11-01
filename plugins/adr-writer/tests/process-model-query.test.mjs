@@ -170,6 +170,43 @@ test("results contain only connected elements and are deterministic", () => {
   assert.equal(renderContext(r), renderContext(run({ kind: "category", id: "fulfilment" })));
 });
 
+test("the text follows each process's flow, states its open scope and each rule once, and marks steps outside the system", () => {
+  const process = renderContext(run({ kind: "process", id: "ordering.place-order" }));
+  // Submitting flows into confirming, though "confirm" sorts first by id.
+  assert.ok(
+    process.indexOf("Step ordering.submit-order ") <
+      process.indexOf("Step ordering.confirm-order "),
+    process,
+  );
+  const category = renderContext(run({ kind: "category", id: "ordering" }));
+  assert.match(category, /^Realized steps: 2 in 1 process\(es\) — ordering\.place-order \(2\)$/m);
+  assert.ok(
+    category.indexOf("Step ordering.submit-order ") <
+      category.indexOf("Step ordering.confirm-order "),
+    category,
+  );
+  // Both steps share the process's open path and a rule reached through the Order concept.
+  assert.equal(category.split("Handling an order whose payment fails.").length, 2, category);
+  assert.equal(
+    category.split("The collected amount equals the amount of the order it pays for.").length,
+    2,
+    category,
+  );
+  assert.match(
+    category,
+    /rule payment\.amount-matches-order "Payment covers the order" \(stated above; via concept ordering\.order\)/,
+  );
+  // Capturing the payment is the provider's step: no feature is expected to realize it.
+  const unlinked = structuredClone(MAPPING);
+  unlinked.categories.payments.realizes = ["payment.request-payment"];
+  const outside = renderContext(run({ kind: "category", id: "ordering" }, { mapping: unlinked }));
+  assert.match(
+    outside,
+    /payment\.capture-payment "Capture the payment" — [^\n;]*; outside the system — not realized by a feature/,
+  );
+  assert.doesNotMatch(outside, /payment\.capture-payment[^\n]*not realized by any feature/);
+});
+
 test("the text names each step's realizing features and lists their ADRs once", () => {
   const text = renderContext(run({ kind: "process", id: "ordering.place-order" }));
   assert.match(

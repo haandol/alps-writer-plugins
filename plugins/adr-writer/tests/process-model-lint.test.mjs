@@ -499,3 +499,20 @@ test("output larger than a pipe buffer reaches the reader whole", () => {
     assert.ok(report.findings.some((f) => f.element === "x1999"));
   });
 });
+
+test("help prints the usage, a missing command points to it, and format says when there is no model", () => {
+  withTmp((dir) => {
+    for (const ask of ["help", "--help", "-h"]) {
+      const help = cli(dir, [ask]);
+      assert.equal(help.code, 0, help.out);
+      assert.match(help.out, /^Usage:\n {2}node process-model\.mjs validate/);
+      assert.match(help.out, /^Exit: 0 = clean/m);
+    }
+    const missing = cli(dir, []);
+    assert.equal(missing.code, 2);
+    assert.match(missing.out, /expected a command: .* \(help shows the usage\)/);
+    const empty = cli(dir, ["format", "--check"]);
+    assert.equal(empty.code, 0, empty.out);
+    assert.equal(empty.out, "no process model in docs/process; nothing to format\n");
+  });
+});

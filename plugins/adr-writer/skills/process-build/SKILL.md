@@ -65,8 +65,10 @@ Work in a disposable run directory under `.adr-review/` following
 
 - Judge four axes — start, end and normal flow; performers and rules;
   exceptions, rejections and hand-offs; evidence conflicts — as sufficient,
-  insufficient or unconfirmed, with reasons. An insufficient or unconfirmed axis
-  becomes a question or an open-scope candidate.
+  insufficient or unconfirmed, with reasons. The first three are the coverage a
+  process's open scope records: an insufficient or unconfirmed one becomes a
+  question or an open-scope candidate. Evidence conflicts are judged for the
+  report only: each becomes a question, never open scope.
 - Check the candidate graph against the model's required attributes,
   memberships and minimum connections: criteria, performers, reaction
   conditions, a policy's trigger and started step, a rule's target and its reach

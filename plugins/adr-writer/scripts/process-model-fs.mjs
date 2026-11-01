@@ -2276,7 +2276,10 @@ export function lifecycleHistoryAudit(history, gates) {
  */
 export function allocateRunDirectory(root, kind) {
   const base = path.join(root, ".adr-review");
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..*/, "").replace("T", "-");
+  // Named by the local time, as the other review runs are, so they sort together.
+  const now = new Date();
+  const two = (n) => String(n).padStart(2, "0");
+  const stamp = `${now.getFullYear()}${two(now.getMonth() + 1)}${two(now.getDate())}-${two(now.getHours())}${two(now.getMinutes())}${two(now.getSeconds())}`;
   try {
     mkdirSync(base, { recursive: true });
     let ignored = true;

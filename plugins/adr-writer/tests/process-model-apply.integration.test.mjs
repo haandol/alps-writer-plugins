@@ -777,6 +777,100 @@ test("the summary judges links as the index draft saves them, and its text names
   });
 });
 
+test("a relink binds only current ADRs of a feature that realizes a step before or after it", () => {
+  withTmp((dir) => {
+    repo(dir);
+    draft(dir);
+    // A retired ADR the payment feature keeps beside its current one.
+    write(
+      dir,
+      "docs/adr/payments/0002-old.md",
+      "# ADR 0002: old\n\n## Status\n\nSuperseded by [ADR 0001](0001-b.md)\n",
+    );
+    const next = structuredClone(MAPPING);
+    next.categories.payments.adrs.push({
+      path: "docs/adr/payments/0002-old.md",
+      status: "Superseded by [ADR 0001](0001-b.md)",
+      summary: "s",
+    });
+    next.categories.payments.realizes = ["payment.request-payment", "payment.capture-payment"];
+    // A feature first recorded as realizing no step.
+    write(
+      dir,
+      "docs/adr/reports/0001-r.md",
+      "# ADR 0001: r\n\n## Status\n\nAccepted (2020-01-01)\n",
+    );
+    next.categories.reports = {
+      adrs: [{ path: "docs/adr/reports/0001-r.md", status: "Accepted (2020-01-01)", summary: "s" }],
+      realizes: [],
+    };
+    write(dir, "mapping.next.json", JSON.stringify(next, null, 2));
+    const summary = impact(dir, ["--mapping", "mapping.next.json"]);
+    assert.deepEqual(summary.relinkedCategories, ["payments", "reports"]);
+    assert.deepEqual(summary.affectedAdrs, ["docs/adr/payments/0001-b.md"]);
+  });
+});
+
+test("a large change keeps the impact text readable and apply names what it marked Proposed", () => {
+  withTmp((dir) => {
+    repo(dir);
+    const steps = Array.from(
+      { length: 22 },
+      (_, i) => `audit.step-${String(i + 1).padStart(2, "0")}`,
+    );
+    const audit = `
+m:audit.keep-records a pm:Process ;
+    rdfs:label "Keep records" ;
+    pm:definition "The store keeps a record of every order." ;
+    pm:startCondition "An order is placed." ;
+    pm:businessOutcome "The order has a record." ;
+    pm:openScope "none"^^pm:NoOpenScope ;
+    pm:status "Proposed" ;
+    pm:hasStep ${steps.map((s) => `m:${s}`).join(", ")} .
+${steps
+  .map(
+    (s, i) => `
+m:${s} a pm:Step ;
+    rdfs:label "Record part ${i + 1}" ;
+    pm:definition "The clerk records part ${i + 1} of the order." ;
+    pm:stepKind "outside-system" ;${i + 1 < steps.length ? `\n    pm:flowsTo m:${steps[i + 1]} ;` : ""}
+    pm:inContext m:ordering .
+m:customer pm:performs m:${s} .`,
+  )
+  .join("\n")}
+
+m:audit.keep-records.kept a pm:ObservationCriterion ;
+    rdfs:label "Every order is kept" ;
+    pm:startCondition "An order is placed." ;
+    pm:observedResult "The order has a record." ;
+    pm:criterionOf m:audit.keep-records .
+`;
+    draft(dir, `${ACCEPTED}${audit}`);
+    const text = exits(dir, ["impact", "--draft", "draft"], 0).out;
+    assert.match(
+      text,
+      /^semantic change: 25 element\(s\) — added 22 Step, 1 ObservationCriterion, 1 Process; changed 1 Actor$/m,
+    );
+    // The candidates are counted by bounded context; --json lists each one.
+    assert.match(
+      text,
+      /^change-log candidates \(24; each one is listed by --json\):\n {2}audit: added 22 Step, 1 ObservationCriterion\n {2}customer: changed 1 Actor$/m,
+    );
+    for (const line of text.split("\n")) assert.ok(line.length <= 400, line.slice(0, 120));
+    const summary = impact(dir);
+    assert.equal(summary.majorChangeCandidates.length, 24);
+    const saved = apply(dir, summary.baseHash, [
+      "--log",
+      "`audit.keep-records`: added — every order is kept",
+    ]);
+    assert.equal(saved.code, 0, saved.out);
+    assert.match(
+      saved.out,
+      /^✓ applied; processes this save marked Proposed: audit\.keep-records$/m,
+    );
+  });
+});
+
 test("impact refuses an index draft the model it saves cannot resolve, as the save would", () => {
   withTmp((dir) => {
     repo(dir);

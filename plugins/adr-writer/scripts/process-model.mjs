@@ -134,13 +134,27 @@ import {
 } from "./process-model-fs.mjs";
 import { openReviewReport } from "./adr-impl-review-open.mjs";
 import { renderView } from "./process-model-view.mjs";
-import { queryContext, renderContext } from "./process-model-query.mjs";
+import { currentRecord, queryContext, renderContext } from "./process-model-query.mjs";
 
 const rel = (p) => path.relative(process.cwd(), p).split(path.sep).join("/");
+// Text output keeps a list this long on one line; a longer one takes a line per item.
+const SHORT_LIST = 20;
 const mappingPathOf = (opts) => path.join(opts.adrDir, ".mapping.json");
+
+/** The usage the header comment documents, without its comment markers. */
+function usageText() {
+  const lines = readFileSync(new URL(import.meta.url), "utf8").split("\n");
+  const start = lines.findIndex((l) => l.startsWith("// Usage:"));
+  const end = lines.findIndex((l, i) => i > start && !l.startsWith("//"));
+  return `${lines
+    .slice(start, end)
+    .map((l) => l.replace(/^\/\/ ?/, ""))
+    .join("\n")}\n`;
+}
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
+  if (["help", "--help", "-h"].includes(command)) return { command: "help" };
   const opts = {
     command,
     adrDir: "docs/adr",
@@ -212,7 +226,8 @@ function parseArgs(argv) {
     "lifecycle",
     "view",
   ];
-  if (!commands.includes(command)) usage(`expected a command: ${commands.join(", ")}`);
+  if (!commands.includes(command))
+    usage(`expected a command: ${commands.join(", ")} (help shows the usage)`);
   if (command === "query" && !opts.target)
     usage("query needs --category, --process, --concept or --event");
   if (command === "apply" && !opts.draft && !argv.includes("--base"))
@@ -312,6 +327,10 @@ function validate(opts) {
 
 function format(opts) {
   const files = findModelDocuments(opts.processDir);
+  if (!files.length) {
+    process.stdout.write(`no process model in ${rel(opts.processDir)}; nothing to format\n`);
+    return 0;
+  }
   const documents = files.map((file) => ({ file, doc: rel(file), ...readDocument(file) }));
   const check = validateModel(documents, { modelDir: rel(opts.processDir) });
   const parseErrors = check.findings.filter(
@@ -603,12 +622,19 @@ function relinked(current, draft) {
     ...Object.keys(draft?.categories ?? {}),
   ]);
   const categories = [...keys].filter((k) => links(current, k) !== links(draft, k)).sort();
-  const adrs = categories.flatMap((k) =>
-    [draft.categories?.[k]?.adrs, current?.categories?.[k]?.adrs]
-      .flatMap((list) => (Array.isArray(list) ? list : []))
-      .map((r) => r?.path)
-      .filter((p) => typeof p === "string"),
-  );
+  // A feature binds its current ADRs when it realizes a step before or after the change:
+  // recording that a feature realizes none, when it realized none, revises no ADR.
+  const realizing = (m, k) =>
+    Array.isArray(m?.categories?.[k]?.realizes) && m.categories[k].realizes.length > 0;
+  const adrs = categories
+    .filter((k) => realizing(current, k) || realizing(draft, k))
+    .flatMap((k) =>
+      [draft.categories?.[k]?.adrs, current?.categories?.[k]?.adrs]
+        .flatMap((list) => (Array.isArray(list) ? list : []))
+        .filter(currentRecord)
+        .map((r) => r?.path)
+        .filter((p) => typeof p === "string"),
+    );
   return { categories, adrs: [...new Set(adrs)].sort() };
 }
 
@@ -833,31 +859,66 @@ function impact(opts) {
         `${f.level === "error" ? "✗" : "⚠"} [${f.code}] ${f.where}\n    ${f.msg}\n`,
       );
     if (summary) {
-      const list = (xs) => xs.join(", ") || "none";
       const say = (s) => process.stdout.write(`${s}\n`);
+      // A short list stays on its line; a long one takes a line per item, so no line runs on.
+      const show = (label, xs) => {
+        if (xs.length <= SHORT_LIST && xs.join(", ").length <= 200)
+          say(`${label}: ${xs.join(", ") || "none"}`);
+        else {
+          say(`${label} (${xs.length}):`);
+          for (const x of xs) say(`  ${x}`);
+        }
+      };
+      // "added 3 Step, 1 Policy; changed 2 Step": counts of a list by change, then by `key`.
+      const tally = (items, key) =>
+        [...Map.groupBy(items, (x) => x.change)]
+          .map(
+            ([change, group]) =>
+              `${change} ${[...Map.groupBy(group, key)]
+                .map(([k, v]) => [k, v.length])
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                .map(([k, n]) => `${n} ${k}`)
+                .join(", ")}`,
+          )
+          .join("; ");
       if (summary.scope) say(`scope: process ${summary.scope}`);
-      say(`semantic change: ${summary.same ? "none" : `${summary.diff.length} element(s)`}`);
-      if (out.sameMeaning.length) say(`confirmed same-meaning wording: ${list(out.sameMeaning)}`);
-      say(`processes that become Proposed: ${list(summary.processesToPropose)}`);
-      say(`directly affected features: ${list(summary.directlyAffectedCategories)}`);
       say(
-        `features of processes that become Proposed: ${list(summary.categoriesOfProposedProcesses)}`,
+        `semantic change: ${summary.same ? "none" : `${summary.diff.length} element(s) — ${tally(summary.diff, (e) => e.type)}`}`,
       );
-      say(`features whose index links change: ${list(out.relinkedCategories)}`);
-      say(`affected ADRs: ${list(out.affectedAdrs)}`);
-      say(
-        `index links to remove or move: ${list(summary.linkChanges.map((l) => `${l.category} → ${l.step} (${l.reason})`))}`,
+      if (out.sameMeaning.length) show("confirmed same-meaning wording", out.sameMeaning);
+      show("processes that become Proposed", summary.processesToPropose);
+      show("directly affected features", summary.directlyAffectedCategories);
+      show("features of processes that become Proposed", summary.categoriesOfProposedProcesses);
+      show("features whose index links change", out.relinkedCategories);
+      show("affected ADRs", out.affectedAdrs);
+      show(
+        "index links to remove or move",
+        summary.linkChanges.map((l) => `${l.category} → ${l.step} (${l.reason})`),
       );
-      say(`system steps without a realizing feature: ${list(summary.unrealizedSystemSteps)}`);
-      say(
-        `glossary entries the model would own: ${list(summary.glossaryCleanup.filter((g) => !g.possible).map((g) => g.term))}`,
+      show("system steps without a realizing feature", summary.unrealizedSystemSteps);
+      show(
+        "glossary entries the model would own",
+        summary.glossaryCleanup.filter((g) => !g.possible).map((g) => g.term),
       );
-      say(
-        `glossary table cells that may define a term the model would own (ask the user): ${list(summary.glossaryCleanup.filter((g) => g.possible).map((g) => g.term))}`,
+      show(
+        "glossary table cells that may define a term the model would own (ask the user)",
+        summary.glossaryCleanup.filter((g) => g.possible).map((g) => g.term),
       );
-      say(
-        `change-log candidates: ${list(summary.majorChangeCandidates.map((c) => `${c.id} (${c.change})`))}`,
-      );
+      // A first build or a large edit lists every added element as a candidate: counted by
+      // bounded context here, listed in full by --json.
+      const candidates = summary.majorChangeCandidates;
+      if (candidates.length <= SHORT_LIST)
+        show(
+          "change-log candidates",
+          candidates.map((c) => `${c.id} (${c.change})`),
+        );
+      else {
+        say(`change-log candidates (${candidates.length}; each one is listed by --json):`);
+        for (const [context, group] of [...Map.groupBy(candidates, (c) => c.id.split(".")[0])].sort(
+          ([a], [b]) => a.localeCompare(b),
+        ))
+          say(`  ${context}: ${tally(group, (c) => c.type)}`);
+      }
     }
     if (commented.length)
       process.stdout.write(
@@ -1328,7 +1389,7 @@ function apply(opts) {
   const written = writeUnit(ops, { modelDir: opts.processDir });
   if (!written.ok) return refuse([written.error]);
   process.stdout.write(
-    `✓ applied; processes now Proposed: ${[...propose].sort().join(", ") || "none"}${renewed.size ? `; Accepted renewed: ${[...renewed].sort().join(", ")}` : ""}\n`,
+    `✓ applied; processes this save marked Proposed: ${[...propose].sort().join(", ") || "none"}${renewed.size ? `; Accepted renewed: ${[...renewed].sort().join(", ")}` : ""}\n`,
   );
   for (const [id, why] of [...notRenewed].sort())
     process.stdout.write(`⚠ Accepted date of ${id} not renewed: ${why}\n`);
@@ -1982,4 +2043,8 @@ process.exitCode = {
   align,
   lifecycle,
   view,
+  help: () => {
+    process.stdout.write(usageText());
+    return 0;
+  },
 }[opts.command](opts);

@@ -40,6 +40,32 @@ function cli(dir, args, env = {}) {
   }
 }
 
+test("a view run directory is named by the local time, as the other review runs are", () => {
+  withTmp((dir) => {
+    initRepo(dir);
+    // Nine hours from UTC, so a name taken from UTC cannot match by chance.
+    const probe = `
+      const { allocateRunDirectory } = await import(${JSON.stringify(pathToFileURL(path.join(path.dirname(CLI), "process-model-fs.mjs")).href)});
+      const two = (n) => String(n).padStart(2, "0");
+      const stamp = (d) => \`\${d.getFullYear()}\${two(d.getMonth() + 1)}\${two(d.getDate())}-\${two(d.getHours())}\${two(d.getMinutes())}\${two(d.getSeconds())}\`;
+      const before = stamp(new Date());
+      const { dir } = allocateRunDirectory(process.cwd(), "process-view");
+      console.log(JSON.stringify({ name: dir.split("/").pop(), before, after: stamp(new Date()) }));
+    `;
+    const { name, before, after } = JSON.parse(
+      execFileSync(process.execPath, ["--input-type=module", "-e", probe], {
+        cwd: dir,
+        env: { ...process.env, TZ: "Asia/Seoul" },
+        encoding: "utf8",
+      }),
+    );
+    assert.ok(
+      name.startsWith(`${before}-process-view-`) || name.startsWith(`${after}-process-view-`),
+      `${name} vs ${before}..${after}`,
+    );
+  });
+});
+
 test("the CLI writes one ignored file, opens it on request, and creates nothing without a model", () => {
   withTmp((dir) => {
     initRepo(dir);
