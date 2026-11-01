@@ -1,5 +1,6 @@
-// Dependency-free fixture, transport, aggregation and report regressions.
-// Semantic correctness is measured separately by live LLM evaluations.
+// Eval harness regressions that need git: scenarios built in a git workspace, and the
+// legacy runner's fixtures, transport, aggregation and reports. Semantic correctness is
+// measured separately by live LLM evaluations.
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, rmSync } from "node:fs";
@@ -12,6 +13,7 @@ import {
   scenarioFiles,
   loadScenario,
   needsEnv,
+  assertShippedPrompt,
 } from "./evals-harness-helpers.mjs";
 
 after(() => {
@@ -26,36 +28,13 @@ async function runScenario(...args) {
   return result;
 }
 
-// The prompt has to carry the SHIPPED instruction text. If a scenario ever
-// paraphrased the rules instead, the eval would measure the paraphrase — the one
-// failure mode that makes the whole directory misleading.
-test("prompts embed the real skill/agent text, not a paraphrase", async () => {
+// The author-* scenarios build their fixture in a git workspace; the unit file checks
+// every other scenario's prompt.
+test("author scenarios' prompts embed the real skill/agent text, not a paraphrase", async () => {
   for (const file of scenarioFiles()) {
     const s = await loadScenario(file);
-    // Scenarios that point at a repo supplied via the environment cannot build
-    // without it; the real-repo one has its own test below.
-    if (needsEnv(s)) continue;
-    const { prompt } = await built(file);
-    assert.ok(prompt.length > 5000, `${s.name}: prompt is too short to hold a real skill body`);
-    assert.ok(
-      prompt.length <= 100_000,
-      `${s.name}: prompt exceeds the non-invasive 100k-character budget (${prompt.length})`,
-    );
-    // a distinctive line from the shipped docs, not something a summary would coin
-    if (s.name.startsWith("alps-") || s.name.startsWith("lite-alps-")) {
-      assert.match(
-        prompt,
-        /Atomic is the default|top-3 focus set|separately labeled draft|plain-text approval digest|Comprehension load/i,
-      );
-    } else {
-      assert.match(
-        prompt,
-        /abstraction ladder|requirement gate|admission gate|Regeneration|decision ledger/i,
-      );
-    }
-    // and the machine-readable tail the scorer depends on
-    assert.match(prompt, /EVAL-VERDICT/);
-    assert.match(prompt, /EVAL-FINDINGS/);
+    if (!s.name.startsWith("author-") || needsEnv(s)) continue;
+    assertShippedPrompt(s, (await built(file)).prompt);
   }
 });
 

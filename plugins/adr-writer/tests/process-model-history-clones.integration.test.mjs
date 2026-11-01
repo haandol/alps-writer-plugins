@@ -1,6 +1,6 @@
 // What history reads in other repository shapes and settings: shallow and partial
 // clones, refused git transports and user git settings, documents that are not UTF-8,
-// volumes that fold letter case or Unicode form, and a change log kept behind a link.
+// a volume that folds letter case, and a change log kept behind a link.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, renameSync, writeFileSync } from "node:fs";

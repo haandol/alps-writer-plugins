@@ -1,19 +1,10 @@
-// lifecycle.test.mjs — end-to-end tests of how an ADR is CREATED and evolved.
+// lifecycle.integration.test.mjs — the FULL run (structure + invariants) over an ADR
+// set authored the way /adr-new and /adr-impl author one.
 //
-// The /adr-new and /adr-impl skills are LLM prompts, so this suite can't invoke
-// them directly. Instead it reproduces their DETERMINISTIC contract via
-// authoring.mjs (seed scaffold → author ADR → register in the .mapping.json
-// index → promote Status in body + index) and asserts, at each step, that the
-// deterministic oracle — scripts/adr-structure-lint.mjs, which itself runs
-// adr-invariants.sh — agrees the artifacts are well-formed.
-//
-// .mapping.json is the single ADR index (the README holds no ADR list), so the
-// index-orphan check is disk↔mapping only, and promotion must keep the index
-// record's Status in lockstep with the body.
-//
-// The load-bearing tests (skip one authoring step → harness goes red) prove the
-// harness actually gates each part of the contract, not just that a happy path
-// passes. That is the real value: it pins WHAT a correct /adr-new must produce.
+// Like lifecycle.test.mjs, it reproduces their DETERMINISTIC contract via
+// authoring.mjs. The full run also starts adr-invariants.sh, which reads the
+// scope from git, so this test needs bash and git. The load-bearing tests (skip
+// one authoring step → harness goes red) are in lifecycle.test.mjs.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { withTmp, initRepo, parseLint } from "./helpers.mjs";

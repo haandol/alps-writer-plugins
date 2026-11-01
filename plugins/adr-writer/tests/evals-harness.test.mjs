@@ -14,6 +14,7 @@ import {
   scenarioFiles,
   loadScenario,
   needsEnv,
+  assertShippedPrompt,
 } from "./evals-harness-helpers.mjs";
 
 after(() => {
@@ -178,6 +179,17 @@ test("prompt reference resolution uses the selected plugin root", () => {
     source,
     /path\.join\(pluginRoot, reference\.slice\("\$\{CLAUDE_PLUGIN_ROOT\}\/"\.length\)\)/,
   );
+});
+
+// The prompt has to carry the SHIPPED instruction text. The author-* scenarios build in a
+// git workspace, so the integration file checks theirs; scenarios that point at a repo
+// supplied through the environment cannot build without it.
+test("prompts embed the real skill/agent text, not a paraphrase", async () => {
+  for (const file of scenarioFiles()) {
+    const s = await loadScenario(file);
+    if (s.name.startsWith("author-") || needsEnv(s)) continue;
+    assertShippedPrompt(s, (await built(file)).prompt);
+  }
 });
 
 // Fixtures must be repos the plugin would accept. A fixture that trips the

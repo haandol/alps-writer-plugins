@@ -1,8 +1,7 @@
-// Tests for the ADR structure-lint harness — both the pure checkers in
-// scripts/adr-lint-lib.mjs (unit) and the CLI scripts/adr-structure-lint.mjs
-// end-to-end against fixture repos (integration). This is the deterministic
-// self-test the user asked for: it proves each "ADR item well-formed?" rule
-// fires on a bad fixture and passes a clean one.
+// The ADR structure-lint CLI scripts/adr-structure-lint.mjs end-to-end in its full
+// run, which also starts adr-invariants.sh in bash, and git to find its scope.
+// The pure checkers in scripts/adr-lint-lib.mjs and the CLI runs that start no
+// external tool are in structure-lint.test.mjs.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

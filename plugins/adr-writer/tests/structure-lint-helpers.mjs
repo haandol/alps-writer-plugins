@@ -1,7 +1,6 @@
 // Fixtures that structure-lint.test.mjs and structure-lint.integration.test.mjs share.
 import { write } from "./helpers.mjs";
 
-// ── integration: CLI end-to-end ─────────────────────────────────────────
 // A reusable clean fixture. inScope/mapping/README all consistent.
 export function seedClean(dir) {
   write(

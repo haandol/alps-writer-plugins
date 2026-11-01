@@ -1,8 +1,8 @@
 // The approved save path: impact binds the summary, apply writes one change unit or
 // nothing, documents and links are written as the working tree names them, and every
 // input the approval saw is checked again before any write. The glossary guard is in
-// process-model-apply-glossary.test.mjs, the lifecycle guards and renewals in
-// process-model-apply-lifecycle.test.mjs.
+// process-model-apply-glossary.integration.test.mjs, the lifecycle guards and renewals
+// in process-model-apply-lifecycle.integration.test.mjs.
 import assert from "node:assert/strict";
 import {
   chmodSync,

@@ -1,7 +1,7 @@
 // Commits history cannot read: an Accepted Status that first shows after them, models
 // moved in from outside the repository or absorbed from a submodule, and a change judged
 // from the readable commit before them. A promotion they may hide is in
-// process-model-history-hidden.test.mjs.
+// process-model-history-hidden.integration.test.mjs.
 import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";

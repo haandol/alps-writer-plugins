@@ -1,7 +1,8 @@
 // How history reads the model through links where the working tree does: linked
 // documents and folders, chains of links and their earlier targets, links nobody can
-// follow, and submodules. Clones, git settings, encodings, folding volumes and the change
-// log behind a link are in process-model-history-clones.test.mjs.
+// follow, and submodules. Clones, git settings, encodings, a volume that folds letter
+// case and the change log behind a link are in
+// process-model-history-clones.integration.test.mjs.
 import assert from "node:assert/strict";
 import { mkdirSync, renameSync, symlinkSync, unlinkSync } from "node:fs";
 import path from "node:path";
