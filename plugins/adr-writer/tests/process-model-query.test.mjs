@@ -11,6 +11,22 @@ import { HEAD, SHIPPING, MAPPING, run } from "./process-model-query-helpers.mjs"
 /** A rule on two reacting policies, neither of which starts an ordering step. */
 const FAR_RULE = `${HEAD}m:far-rule a pm:BusinessRule ; rdfs:label "Far rule" ; pm:definition "d" ; pm:basisKind "user-decision" ; pm:basis "b" ; pm:constrains m:shipping.pack-when-paid, m:payment.request-on-order .\n`;
 
+/** A process whose flow loops between entering and fixing a card; accepting it, first by id, follows the loop. */
+const CARD_LOOP = `${HEAD}m:ordering.pay-by-card a pm:Process ; rdfs:label "Pay by card" ; pm:definition "A customer pays with a card, fixing its details until it is accepted." ;
+  pm:startCondition "A customer chooses to pay by card." ; pm:businessOutcome "The card is accepted." ;
+  pm:openScope "none"^^pm:NoOpenScope ; pm:status "Proposed" ; pm:hasStep m:ordering.accept-card, m:ordering.enter-card, m:ordering.fix-card .
+m:ordering.enter-card a pm:Step ; rdfs:label "Enter the card" ; pm:definition "The customer enters the card details." ;
+  pm:stepKind "outside-system" ; pm:inContext m:ordering ; pm:flowsTo m:ordering.accept-card, m:ordering.fix-card .
+m:ordering.fix-card a pm:Step ; rdfs:label "Fix the card details" ; pm:definition "The customer corrects the details the card issuer declined." ;
+  pm:stepKind "outside-system" ; pm:inContext m:ordering ; pm:flowsTo m:ordering.enter-card .
+m:ordering.accept-card a pm:Step ; rdfs:label "Accept the card" ; pm:definition "The card issuer accepts the card." ;
+  pm:stepKind "outside-system" ; pm:inContext m:ordering .
+m:customer pm:performs m:ordering.enter-card, m:ordering.fix-card .
+m:payment-provider pm:performs m:ordering.accept-card .
+m:ordering.pay-by-card.accepted a pm:ObservationCriterion ; rdfs:label "A card gets accepted" ; pm:startCondition "A customer chooses to pay by card." ;
+  pm:observedResult "The customer sees the card accepted." ; pm:criterionOf m:ordering.pay-by-card .
+`;
+
 const ids = (refs) => refs.map((r) => r.id);
 
 const stepOf = (result, id) => result.steps.find((s) => s.step.id === id);
@@ -205,6 +221,16 @@ test("the text follows each process's flow, states its open scope and each rule 
     /payment\.capture-payment "Capture the payment" — [^\n;]*; outside the system — not realized by a feature/,
   );
   assert.doesNotMatch(outside, /payment\.capture-payment[^\n]*not realized by any feature/);
+});
+
+test("a loop in the flow is entered where no other step flows in, so a step after it still follows it", () => {
+  const r = run(
+    { kind: "process", id: "ordering.pay-by-card" },
+    { texts: [EXAMPLE, SHIPPING, CARD_LOOP] },
+  );
+  assert.equal(r.complete, true);
+  const order = [...renderContext(r).matchAll(/^Step (\S+) /gm)].map((m) => m[1]);
+  assert.deepEqual(order, ["ordering.enter-card", "ordering.accept-card", "ordering.fix-card"]);
 });
 
 test("the text names each step's realizing features and lists their ADRs once", () => {

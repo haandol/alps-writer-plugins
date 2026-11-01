@@ -811,6 +811,22 @@ test("a relink binds only current ADRs of a feature that realizes a step before 
   });
 });
 
+test("the impact text still summarizes a draft that parses but has an element of no known type", () => {
+  withTmp((dir) => {
+    repo(dir);
+    // Sorted after the step, the unknown type is the one a type-keyed sort reaches second.
+    draft(
+      dir,
+      `${ACCEPTED}\nm:zz.thing a pm:Bogus ; rdfs:label "Thing" .\nm:aa.new-step a pm:Step ; rdfs:label "New step" .\n`,
+    );
+    const run = cli(dir, ["impact", "--draft", "draft"]);
+    assert.equal(run.code, 1, run.out);
+    assert.doesNotMatch(run.out, /TypeError|at .*\.mjs:\d+/);
+    assert.match(run.out, /^semantic change: 2 element\(s\) — added 1 \?, 1 Step$/m);
+    assert.match(run.out, /^base hash: [0-9a-f]{64}$/m);
+  });
+});
+
 test("a large change keeps the impact text readable and apply names what it marked Proposed", () => {
   withTmp((dir) => {
     repo(dir);

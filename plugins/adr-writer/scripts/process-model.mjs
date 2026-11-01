@@ -870,6 +870,7 @@ function impact(opts) {
         }
       };
       // "added 3 Step, 1 Policy; changed 2 Step": counts of a list by change, then by `key`.
+      // An element whose type the model does not settle counts as "?", as `diff` shows it.
       const tally = (items, key) =>
         [...Map.groupBy(items, (x) => x.change)]
           .map(
@@ -883,7 +884,7 @@ function impact(opts) {
           .join("; ");
       if (summary.scope) say(`scope: process ${summary.scope}`);
       say(
-        `semantic change: ${summary.same ? "none" : `${summary.diff.length} element(s) — ${tally(summary.diff, (e) => e.type)}`}`,
+        `semantic change: ${summary.same ? "none" : `${summary.diff.length} element(s) — ${tally(summary.diff, (e) => e.type ?? "?")}`}`,
       );
       if (out.sameMeaning.length) show("confirmed same-meaning wording", out.sameMeaning);
       show("processes that become Proposed", summary.processesToPropose);
@@ -917,7 +918,7 @@ function impact(opts) {
         for (const [context, group] of [...Map.groupBy(candidates, (c) => c.id.split(".")[0])].sort(
           ([a], [b]) => a.localeCompare(b),
         ))
-          say(`  ${context}: ${tally(group, (c) => c.type)}`);
+          say(`  ${context}: ${tally(group, (c) => c.type ?? "?")}`);
       }
     }
     if (commented.length)

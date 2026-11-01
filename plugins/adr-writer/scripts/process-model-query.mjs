@@ -555,10 +555,35 @@ function inFlowOrder(contexts) {
   const ready = contexts.filter((c) => waiting.get(c.step.id) === 0).map((c) => c.step.id);
   const done = new Set();
   const out = [];
+  // The remaining steps reachable from `from` through flows between them.
+  const reach = (from) => {
+    const seen = new Set([from]);
+    const todo = [from];
+    while (todo.length)
+      for (const n of contextOf.get(todo.pop()).next)
+        if (contextOf.has(n.id) && !done.has(n.id) && !seen.has(n.id)) {
+          seen.add(n.id);
+          todo.push(n.id);
+        }
+    return seen;
+  };
+  // A loop leaves no step ready. It is entered at the smallest id of a loop that no other
+  // remaining step flows into, so a step after the loop still follows it.
+  const entry = () => {
+    const remaining = contexts
+      .map((c) => c.step.id)
+      .filter((id) => !done.has(id))
+      .sort(byId);
+    const reached = new Map(remaining.map((id) => [id, reach(id)]));
+    return (
+      remaining.find((v) =>
+        remaining.every((u) => !reached.get(u).has(v) || reached.get(v).has(u)),
+      ) ?? remaining[0]
+    );
+  };
   while (out.length < contexts.length) {
     ready.sort(byId);
-    // A loop leaves no step ready: it is entered at its smallest id.
-    const id = ready.shift() ?? contexts.find((c) => !done.has(c.step.id)).step.id;
+    const id = ready.shift() ?? entry();
     if (done.has(id)) continue;
     done.add(id);
     out.push(contextOf.get(id));
