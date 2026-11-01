@@ -594,6 +594,21 @@ test("the same graph has one canonical text and formatting is not a semantic cha
   assert.equal(commented.ok, true);
   assert.ok(commented.findings.some((f) => f.level === "warn" && f.code === "process-comment"));
   assert.doesNotMatch(serializeTurtle(parseTurtle(`# heading\n${EXAMPLE}`).triples), /^\s*#/m);
+
+  // The `a` keyword may run straight into a comment, and into a term the model rejects.
+  const keyword = EXAMPLE.replace(
+    "m:ordering a pm:BoundedContext",
+    "m:ordering a# kind\n  pm:BoundedContext",
+  );
+  assert.notEqual(keyword, EXAMPLE);
+  const tight = parseTurtle(keyword, "a.ttl");
+  assert.deepEqual(tight.errors, []);
+  assert.equal(serializeTurtle(tight.triples), EXAMPLE);
+  const prefixes = EXAMPLE.match(/^(?:@prefix[^\n]*\n)+/)[0];
+  assert.match(
+    parseTurtle(`${prefixes}m:x a[ rdfs:label "y" ] .\n`, "b.ttl").errors[0].message,
+    /blank nodes are not allowed/,
+  );
 });
 
 test("the semantic diff names each change with its attribute family", () => {

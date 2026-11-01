@@ -257,6 +257,40 @@ test("an approved direct edit saves only the index, glossary and log, bound to i
   });
 });
 
+test("an approved direct edit is saved only against the revision its summary compared with", () => {
+  withTmp((dir) => {
+    repo(dir);
+    // HEAD and HEAD~1 hold the same model, so a summary against either lists the same ADRs.
+    write(dir, "notes.md", "unrelated\n");
+    commitAll(dir, "an unrelated commit");
+    write(
+      dir,
+      "docs/process/model.ttl",
+      ACCEPTED.replace('"The money for an order was collected."', SETTLED),
+    );
+    for (const p of ["ordering.place-order", "payment.take-payment"])
+      assert.equal(cli(dir, ["transition", "--process", p, "--to", "Proposed"]).code, 0, p);
+    const summary = JSON.parse(cli(dir, ["impact", "--base", "HEAD", "--json"]).out);
+    const other = JSON.parse(cli(dir, ["impact", "--base", "HEAD~1", "--json"]).out);
+    assert.deepEqual(other.affectedAdrs, summary.affectedAdrs);
+    const log = ["--log", "`payment.payment-completed`: settled too"];
+    const save = (base, hash) => cli(dir, ["apply", "--base", base, "--base-hash", hash, ...log]);
+    assert.match(
+      save("HEAD~1", summary.baseHash).out,
+      /the compared revision, .*changed after the approval summary; nothing was written/,
+    );
+    // A ref that moves after the summary names another revision too.
+    git(dir, ["commit", "--allow-empty", "-qm", "HEAD moves"]);
+    assert.match(
+      save("HEAD", summary.baseHash).out,
+      /the compared revision, .*changed after the approval summary; nothing was written/,
+    );
+    const fresh = JSON.parse(cli(dir, ["impact", "--base", "HEAD", "--json"]).out);
+    const applied = save("HEAD", fresh.baseHash);
+    assert.equal(applied.code, 0, applied.out);
+  });
+});
+
 for (const state of ["with a commit", "with no commit yet", "outside git"])
   test(`a first model is saved into a repository without one, ${state}, every new process Proposed`, (t) => {
     withTmp((dir) => {

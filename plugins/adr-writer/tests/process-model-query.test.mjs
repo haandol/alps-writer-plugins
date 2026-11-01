@@ -634,6 +634,29 @@ test("an unreadable ADR index makes every result incomplete and never reads as a
   });
 });
 
+test("an ADR index that exists but cannot be read is unreadable, never absent", () => {
+  withTmp((dir) => {
+    repo(dir);
+    // A folder where the index file belongs: it exists, but no read succeeds.
+    rmSync(path.join(dir, "docs/adr/.mapping.json"));
+    mkdirSync(path.join(dir, "docs/adr/.mapping.json"));
+    const category = cli(dir, ["query", "--category", "ordering"]);
+    assert.equal(category.code, 1, category.out);
+    assert.match(
+      category.out,
+      /INCOMPLETE[\s\S]*process-index-unreadable\] docs\/adr\/\.mapping\.json the ADR index cannot be read/,
+    );
+    assert.doesNotMatch(category.out, /NOT FOUND/);
+    assert.equal(cli(dir, ["validate"]).code, 1);
+    const impact = cli(dir, ["impact", "--base", "HEAD"]);
+    assert.equal(impact.code, 1, impact.out);
+    assert.match(
+      impact.out,
+      /\[process-index-unreadable\] docs\/adr\/\.mapping\.json: fix the ADR index before a change approval/,
+    );
+  });
+});
+
 test("while the ADR index cannot be read, the process query text says a system step's realization is unknown until that error is fixed", () => {
   withTmp((dir) => {
     repo(dir);

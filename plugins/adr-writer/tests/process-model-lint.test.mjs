@@ -615,6 +615,19 @@ test("format rewrites no document while one cannot be parsed, and says where", (
   });
 });
 
+test("a model that cannot be validated is reported at its own directory, wherever the ADRs live", () => {
+  withTmp((dir) => {
+    write(dir, "adr/.mapping.json", JSON.stringify({ categories: {} }));
+    write(dir, "process/ordering.ttl", EXAMPLE);
+    write(dir, "process/broken.ttl", '@prefix m: <urn:adr-writer:model:> .\nm:a m:b "open\n');
+    const checked = cli(dir, ["validate", "--adr-dir", "adr"]);
+    assert.equal(checked.code, 1, checked.out);
+    assert.match(checked.out, /✗ \[process-parse\] process\/broken\.ttl:2:\d+/);
+    assert.match(checked.out, /✗ \[process-not-validated\] process\n/);
+    assert.doesNotMatch(checked.out, /docs\/process/);
+  });
+});
+
 test(
   "documents under a linked directory are read, and a dangling or unreadable document is an error",
   {

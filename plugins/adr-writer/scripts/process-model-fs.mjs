@@ -363,7 +363,10 @@ export function processLevelFindings({
   const findings = [];
   let index = null;
   if (documents.length) {
-    const result = validateModel(documents, { categoryKeys: Object.keys(categories) });
+    const result = validateModel(documents, {
+      categoryKeys: Object.keys(categories),
+      modelDir: rel(processDir),
+    });
     findings.push(...result.findings);
     index = result.index;
   }
@@ -1373,7 +1376,10 @@ export function readModelHistory(processDir, { cwd = process.cwd(), mappingPath 
           doc: file,
           ...decodeDocument(blobs.get(id)?.data ?? Buffer.alloc(0)),
         }));
-      const v = validateModel(docs, { categoryKeys: Object.keys(mapping?.categories ?? {}) });
+      const v = validateModel(docs, {
+        categoryKeys: Object.keys(mapping?.categories ?? {}),
+        modelDir: dir,
+      });
       const records = v.index && mapping ? recordFindingsAt(c, mapping, v.index) : null;
       errors = {
         errors: [
@@ -1491,8 +1497,9 @@ const firstLine = (error) =>
  *
  * @param {string} ref A git revision.
  * @param {string} processDir Model directory, relative to `cwd`.
- * @returns {{docs: {file: string, text: string, unreadable?: object}[], changeLog: string}}
- *   repository paths, sorted, and the change log ("" when the revision has none).
+ * @returns {{docs: {file: string, text: string, unreadable?: object}[], changeLog: string, commit: string}}
+ *   repository paths, sorted, the change log ("" when the revision has none) and the
+ *   commit the revision names.
  */
 export function modelDocumentsAt(ref, processDir, { cwd = process.cwd() } = {}) {
   const top = git(["rev-parse", "--show-toplevel"], cwd).trim();
@@ -1515,7 +1522,11 @@ export function modelDocumentsAt(ref, processDir, { cwd = process.cwd() } = {}) 
     if (!obj) throw new Error(`${file} is not available locally`);
     return { file, ...decodeDocument(obj.data) };
   });
-  return { docs, changeLog: logId ? (blobs.get(logId)?.data.toString("utf8") ?? "") : "" };
+  return {
+    docs,
+    changeLog: logId ? (blobs.get(logId)?.data.toString("utf8") ?? "") : "",
+    commit: sha,
+  };
 }
 
 /**
@@ -2023,6 +2034,7 @@ function processAudit(history, p, gates) {
     };
     // A promotion whose gates held cannot be told from a reviewed one.
     const errors = lifecycleFindings(before, after, {
+      modelDir: history.dir,
       changeLogAdded: added,
       acceptedBaseline,
       promotion,

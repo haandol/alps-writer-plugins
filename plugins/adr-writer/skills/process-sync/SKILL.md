@@ -154,8 +154,8 @@ approved index, glossary and change-log changes with
 `apply --base <ref> [--also-base <commit>]... [--process <id>] --base-hash <hash>`,
 passing the same bases, process, `--mapping`, `--glossary` and `--same-meaning`
 list as the `impact` run the summary showed.
-It never rewrites the model, and its base hash binds the ADRs that run listed
-as `affectedAdrs`. When `apply` refuses because the bound state changed, compare
+It never rewrites the model, and its base hash binds the commits those bases
+named and the ADRs that run listed as `affectedAdrs`. When `apply` refuses because the bound state changed, compare
 each affected ADR with the version the draft started from, keep the user's newer
 edit, and re-present only the changed range.
 

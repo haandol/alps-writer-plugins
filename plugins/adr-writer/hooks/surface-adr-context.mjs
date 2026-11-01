@@ -80,11 +80,16 @@ function main() {
   ];
   // The business process model sits above ADRs: check it before ADR changes and
   // before code of linked features, the same way code waits for its ADR.
-  if (hasModel(path.join(path.dirname(path.dirname(mappingFile)), "process")))
+  if (hasModel(path.join(path.dirname(path.dirname(mappingFile)), "process"))) {
+    // The query reads the model beside the index found here, wherever that index lives.
+    const adrDir = path.dirname(MAPPING_PATH);
+    const where =
+      path.normalize(adrDir) === path.normalize("docs/adr") ? "" : ` --adr-dir "${adrDir}"`;
     directive.push(
-      `Business process model present: before creating or changing an ADR decision or contract, first check the feature's business context (node ${QUERY_CLI} query --category <key>).`,
+      `Business process model present: before creating or changing an ADR decision or contract, first check the feature's business context (node "${QUERY_CLI}" query --category <key>${where}).`,
       "Before changing code of a feature linked to a process step, query its business context; use it to catch contradictions, never as new obligations.",
     );
+  }
 
   const out = {
     hookSpecificOutput: {

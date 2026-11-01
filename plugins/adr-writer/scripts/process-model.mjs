@@ -237,7 +237,7 @@ function usage(msg) {
 }
 
 /**
- * The ADR index and, when the file exists but cannot be parsed, an error
+ * The ADR index and, when the file exists but cannot be read or parsed, an error
  * finding with its position — an unreadable index is never read as "no index".
  */
 function loadMapping(adrDir) {
@@ -245,8 +245,19 @@ function loadMapping(adrDir) {
   let text;
   try {
     text = readFileSync(file, "utf8");
-  } catch {
-    return { mapping: null, finding: null };
+  } catch (error) {
+    if (error.code === "ENOENT" || error.code === "ENOTDIR")
+      return { mapping: null, finding: null };
+    return {
+      mapping: null,
+      finding: {
+        level: "error",
+        code: "process-index-unreadable",
+        where: rel(file),
+        element: null,
+        msg: `the ADR index cannot be read (${error.message}); every business context that depends on it is incomplete`,
+      },
+    };
   }
   try {
     return { mapping: JSON.parse(text), finding: null };
@@ -302,7 +313,7 @@ function validate(opts) {
 function format(opts) {
   const files = findModelDocuments(opts.processDir);
   const documents = files.map((file) => ({ file, doc: rel(file), ...readDocument(file) }));
-  const check = validateModel(documents);
+  const check = validateModel(documents, { modelDir: rel(opts.processDir) });
   const parseErrors = check.findings.filter(
     (f) => f.level === "error" && f.code !== "process-not-validated" && !check.index,
   );
@@ -354,7 +365,7 @@ function graphAt(ref, processDir) {
     throw new Error(`cannot read ${ref}: ${String(e.stderr || e.message).trim()}`);
   }
   const parsed = read.docs.map((d) => parseDocument({ ...d, doc: `${ref}:${d.file}` }));
-  return { parsed, triples: unionGraph(parsed), changeLog: read.changeLog };
+  return { parsed, triples: unionGraph(parsed), changeLog: read.changeLog, commit: read.commit };
 }
 
 /**
@@ -368,6 +379,7 @@ function headRevision(history) {
     parsed,
     triples: unionGraph(parsed),
     changeLog: history.changeLogAt(history.head) ?? "",
+    commit: history.head,
   };
 }
 
@@ -450,7 +462,10 @@ function readText(file) {
 /** Parse every model document of a directory; null documents mean a parse failure was printed. */
 function loadModel(dir) {
   const docs = findModelDocuments(dir).map((f) => ({ file: f, ...readDocument(f) }));
-  const check = validateModel(docs.map((d) => ({ ...d, doc: rel(d.file) })));
+  const check = validateModel(
+    docs.map((d) => ({ ...d, doc: rel(d.file) })),
+    { modelDir: rel(dir) },
+  );
   if (!check.index) {
     for (const e of check.findings.filter((f) => f.level === "error"))
       process.stdout.write(`✗ [${e.code}] ${e.where}\n    ${e.msg}\n`);
@@ -543,7 +558,8 @@ function draftDocuments(draft, processDir) {
  * The hash a process change approval binds: the model documents, the index, the
  * glossary and the change log as they are now, the draft, the index and glossary
  * drafts, every ADR file of the affected and relinked features, the confirmed
- * same-meaning changes and the summary's scope.
+ * same-meaning changes, the summary's scope and the commits a direct edit was compared
+ * with, so an apply against another base or a moved ref is not the approved change.
  */
 function baseHash(
   opts,
@@ -554,6 +570,8 @@ function baseHash(
     scope = null,
     mappingDraft = null,
     glossaryDraft = null,
+    base = null,
+    alsoBases = [],
   } = {},
 ) {
   const h = createHash("sha256");
@@ -569,7 +587,7 @@ function baseHash(
   h.update(`mapping-draft\0${mappingDraft ?? ""}\0glossary-draft\0${glossaryDraft ?? ""}\0`);
   for (const a of [...adrs].sort()) h.update(`adr:${a}\0${readText(a) ?? ""}\0`);
   h.update(`same-meaning\0${[...sameMeaning].sort().join("\n")}\0scope\0${scope ?? ""}\0`);
-  h.update(`also-base\0${opts.alsoBase.join("\n")}\0`);
+  h.update(`base\0${base ?? ""}\0also-base\0${alsoBases.join("\n")}\0`);
   return h.digest("hex");
 }
 
@@ -640,14 +658,18 @@ function renewalConfirmations(opts, candidates, to) {
  */
 function summaryOverBases(opts, before, after, { mapping, glossary, scope }) {
   const befores = [before];
+  // The commits the extra bases name, which the approval binds.
+  const alsoBases = [];
   for (const ref of opts.alsoBase) {
     const at = revision(ref, opts.processDir);
     if (at.parsed.some((x) => x.errors.length))
       return { error: `the model at ${ref} cannot be parsed` };
     befores.push(indexGraph(at.triples));
+    alsoBases.push(at.commit);
   }
   if (befores.length === 1)
     return {
+      alsoBases,
       summary: impactSummary({
         before,
         after,
@@ -671,6 +693,7 @@ function summaryOverBases(opts, before, after, { mapping, glossary, scope }) {
     ...new Map(summaries.flatMap((x) => x[key]).map((v) => [id(v), v])).values(),
   ];
   return {
+    alsoBases,
     summary: {
       ...summaries[0],
       same: summaries.every((x) => x.same),
@@ -693,12 +716,14 @@ function impact(opts) {
   // current documents (a direct edit) with a git revision.
   let before = current.index;
   let documents;
+  let base = null;
   if (opts.draft) documents = draftDocuments(opts.draft, opts.processDir);
   else {
     const at = revision(opts.base, opts.processDir);
     if (at.parsed.some((p) => p.errors.length))
       return fail(`the model at ${opts.base} cannot be parsed`);
     before = indexGraph(at.triples);
+    base = at.commit;
     documents = current.docs.map((d) => ({ doc: rel(d.file), text: d.text }));
   }
   const { mapping, finding: mappingError } = loadMapping(opts.adrDir);
@@ -743,7 +768,10 @@ function impact(opts) {
       `${shapes.map((f) => `[${f.code}] ${f.where}: ${f.msg}`).join("; ")}; fix the ADR index before a change approval`,
     );
   const relink = relinked(mapping, draftIndex);
-  const check = validateModel(documents, { categoryKeys: Object.keys(mapping?.categories ?? {}) });
+  const check = validateModel(documents, {
+    categoryKeys: Object.keys(mapping?.categories ?? {}),
+    modelDir: rel(opts.draft ?? opts.processDir),
+  });
   if (
     opts.process &&
     before.typeOf(elementIri(opts.process)) !== "Process" &&
@@ -772,6 +800,8 @@ function impact(opts) {
       scope: opts.process,
       mappingDraft,
       glossaryDraft,
+      base,
+      alsoBases: over.alsoBases ?? [],
     }),
     draftValid: check.ok,
     findings: check.findings,
@@ -999,7 +1029,12 @@ function changeLogText(processDir, lines, date) {
     : `${existing.slice(0, at + 1)}${entries}${existing.slice(at + 1)}`;
 }
 
-const today = () => new Date().toLocaleDateString("sv-SE");
+/** Today's local calendar date as YYYY-MM-DD, whatever locale data the runtime carries. */
+const today = () => {
+  const now = new Date();
+  const two = (n) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())}`;
+};
 
 function refuse(lines) {
   for (const l of lines) process.stdout.write(`✗ ${l}\n`);
@@ -1017,11 +1052,13 @@ function apply(opts) {
     ? current.docs.map((d) => ({ doc: rel(d.file), text: d.text }))
     : draftDocuments(opts.draft, opts.processDir);
   let before = current.index;
+  let base = null;
   if (direct) {
     const at = revision(opts.base, opts.processDir);
     if (at.parsed.some((x) => x.errors.length))
       return refuse([`nothing was written: the model at ${opts.base} cannot be parsed`]);
     before = indexGraph(at.triples);
+    base = at.commit;
   }
   const mappingPath = path.join(opts.adrDir, ".mapping.json");
   const { mapping: currentMapping, finding: mappingError } = loadMapping(opts.adrDir);
@@ -1057,7 +1094,10 @@ function apply(opts) {
       return refuse([`nothing was written: cannot read --glossary ${opts.glossaryFile}`]);
   }
 
-  const check = validateModel(documents, { categoryKeys: Object.keys(mapping?.categories ?? {}) });
+  const check = validateModel(documents, {
+    categoryKeys: Object.keys(mapping?.categories ?? {}),
+    modelDir: rel(opts.draft ?? opts.processDir),
+  });
   const modelErrors = check.findings.filter((f) => f.level === "error");
   if (modelErrors.length)
     return refuse([
@@ -1082,10 +1122,12 @@ function apply(opts) {
     scope: direct ? opts.process : null,
     mappingDraft: mappingText,
     glossaryDraft: glossaryText,
+    base,
+    alsoBases: over.alsoBases,
   });
   if (hash !== opts.baseHash)
     return refuse([
-      "the model, index, glossary, change log, a draft, an affected ADR or the same-meaning confirmations changed after the approval summary; nothing was written. Rerun impact, keep the newer edits and present only the changed range again",
+      "the model, index, glossary, change log, a draft, the compared revision, an affected ADR or the same-meaning confirmations changed after the approval summary; nothing was written. Rerun impact, keep the newer edits and present only the changed range again",
     ]);
 
   // An approved semantic change makes every process whose business composition
@@ -1211,6 +1253,7 @@ function apply(opts) {
     );
   if (!direct)
     for (const f of lifecycleFindings(current.index, result, {
+      modelDir: rel(opts.processDir),
       changeLogAdded: opts.logs.join("\n"),
       promotion: (q) => (renewed.has(elementId(q)) ? "holds" : undefined),
     }))
@@ -1647,6 +1690,7 @@ function lifecycleAudit(
       : "holds";
   return [
     ...lifecycleFindings(before, workingIndex, {
+      modelDir: rel(opts.processDir),
       changeLogAdded: added,
       acceptedBaseline: history?.available ? acceptedBaselines(history) : null,
       promotion,

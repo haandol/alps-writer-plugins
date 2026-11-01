@@ -437,7 +437,8 @@ export function parseTurtle(text, doc = "(input)") {
 
   const readVerb = () => {
     skipSpace();
-    if (src[i] === "a" && /[\s<"']/.test(src[i + 1] ?? " ")) {
+    // `a` ends where a name cannot go on: at white space, a comment or the next term.
+    if (src[i] === "a" && /[\s<"'#[(]/.test(src[i + 1] ?? " ")) {
       i++;
       return RDF_TYPE;
     }
@@ -608,6 +609,8 @@ const isText = (o) =>
  *   skipped when any document fails to parse, so a partial model never passes.
  */
 export function validateModel(documents, options = {}) {
+  // Where a finding about the model as a whole points: the model directory as the caller names it.
+  const modelDir = options.modelDir ?? "docs/process";
   const findings = [];
   const add = (level, code, where, element, msg) =>
     findings.push({ level, code, where, element, msg });
@@ -635,7 +638,7 @@ export function validateModel(documents, options = {}) {
     add(
       "error",
       "process-not-validated",
-      "docs/process",
+      modelDir,
       null,
       "the model was not validated because a document could not be parsed; fix the reported position first",
     );
@@ -1862,7 +1865,12 @@ export function addedLines(text, base) {
 export function lifecycleFindings(
   before,
   after,
-  { changeLogAdded = "", acceptedBaseline = null, promotion = () => undefined } = {},
+  {
+    changeLogAdded = "",
+    acceptedBaseline = null,
+    promotion = () => undefined,
+    modelDir = "docs/process",
+  } = {},
 ) {
   const out = [];
   const promoted = (
@@ -1898,7 +1906,7 @@ export function lifecycleFindings(
     out.push({
       level,
       code,
-      where: first ? `${first.doc}:${first.line}` : "docs/process",
+      where: first ? `${first.doc}:${first.line}` : modelDir,
       element: elementId(p),
       msg,
     });

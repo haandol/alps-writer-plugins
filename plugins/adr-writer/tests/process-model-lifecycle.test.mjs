@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, readFileSync, renameSync, rmSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
+import { pathToFileURL } from "node:url";
 import {
   MODEL,
   businessComposition,
@@ -1087,6 +1088,37 @@ test("change-log lines are newest first across saves", () => {
     save('"The order is unpaid."', '"The order has no payment."', "second change");
     const log = readFileSync(path.join(dir, "docs/process/change-log.md"), "utf8");
     assert.ok(log.indexOf("second change") < log.indexOf("first change"), log);
+  });
+});
+
+test("the dates a save records are ISO calendar dates whatever locale data the runtime has", () => {
+  withTmp((dir) => {
+    initRepo(dir);
+    write(dir, "docs/adr/.mapping.json", JSON.stringify(MAPPING, null, 2));
+    write(dir, "docs/process/model.ttl", EXAMPLE);
+    commitAll(dir);
+    // A runtime without the Swedish locale data formats a date the way its default locale does.
+    const preload = write(
+      dir,
+      "us-dates.mjs",
+      'Date.prototype.toLocaleDateString = () => "11/1/2026";\n',
+    );
+    const env = { ...process.env, NODE_OPTIONS: `--import ${pathToFileURL(preload).href}` };
+    cpSync(path.join(dir, "docs/process"), path.join(dir, "draft"), { recursive: true });
+    write(
+      dir,
+      "draft/model.ttl",
+      EXAMPLE.replace('"The order has no payment yet."', '"The order is unpaid."'),
+    );
+    const { baseHash } = JSON.parse(cli(dir, ["impact", "--draft", "draft", "--json"], env).out);
+    const saved = cli(
+      dir,
+      ["apply", "--draft", "draft", "--base-hash", baseHash, "--log", "reworded"],
+      env,
+    );
+    assert.equal(saved.code, 0, saved.out);
+    const log = readFileSync(path.join(dir, "docs/process/change-log.md"), "utf8");
+    assert.match(log, /^- \d{4}-\d{2}-\d{2} — reworded$/m, log);
   });
 });
 
