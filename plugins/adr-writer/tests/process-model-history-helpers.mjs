@@ -82,12 +82,17 @@ export const model = (dir, text, message) => {
 /** A repository whose processes started Proposed; an Accepted text is committed as the passed review. */
 export function repo(dir, text = ACCEPTED, mapping = MAPPING) {
   cachedRepo(dir, JSON.stringify(["history", text, mapping]), (at) => {
+    // An Accepted text is committed over the cached Proposed history of the same index.
+    if (text !== EXAMPLE) {
+      repo(at, EXAMPLE, mapping);
+      model(at, text, "accepted after the alignment review");
+      return;
+    }
     mkdirSync(at, { recursive: true });
     initRepo(at);
     write(at, "docs/adr/.mapping.json", JSON.stringify(mapping, null, 2));
     writeAdrFiles(at, mapping);
     model(at, EXAMPLE, "proposed");
-    if (text !== EXAMPLE) model(at, text, "accepted after the alignment review");
   });
 }
 export const head = (dir) => git(dir, ["rev-parse", "HEAD"]).trim();

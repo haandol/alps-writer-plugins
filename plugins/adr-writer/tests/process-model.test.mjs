@@ -604,9 +604,8 @@ test("the same graph has one canonical text and formatting is not a semantic cha
   const tight = parseTurtle(keyword, "a.ttl");
   assert.deepEqual(tight.errors, []);
   assert.equal(serializeTurtle(tight.triples), EXAMPLE);
-  const prefixes = EXAMPLE.match(/^(?:@prefix[^\n]*\n)+/)[0];
   assert.match(
-    parseTurtle(`${prefixes}m:x a[ rdfs:label "y" ] .\n`, "b.ttl").errors[0].message,
+    parseTurtle(`${HEAD}m:x a[ rdfs:label "y" ] .\n`, "b.ttl").errors[0].message,
     /blank nodes are not allowed/,
   );
 });

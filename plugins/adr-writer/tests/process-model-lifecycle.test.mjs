@@ -1077,12 +1077,19 @@ test("the alignment plan's hand-offs are event and policy hand-offs, never the f
   );
 });
 
+/** A committed repository holding the example model and its index, built once per test process. */
+function committedExample(dir) {
+  cachedRepo(dir, "lifecycle: example committed", (at) => {
+    initRepo(at);
+    write(at, "docs/adr/.mapping.json", JSON.stringify(MAPPING, null, 2));
+    write(at, "docs/process/model.ttl", EXAMPLE);
+    commitAll(at);
+  });
+}
+
 test("change-log lines are newest first across saves", () => {
   withTmp((dir) => {
-    initRepo(dir);
-    write(dir, "docs/adr/.mapping.json", JSON.stringify(MAPPING, null, 2));
-    write(dir, "docs/process/model.ttl", EXAMPLE);
-    commitAll(dir);
+    committedExample(dir);
     const save = (from, to, line) => {
       cpSync(path.join(dir, "docs/process"), path.join(dir, "draft"), {
         recursive: true,
@@ -1109,10 +1116,7 @@ test("change-log lines are newest first across saves", () => {
 
 test("the dates a save records are ISO calendar dates whatever locale data the runtime has", () => {
   withTmp((dir) => {
-    initRepo(dir);
-    write(dir, "docs/adr/.mapping.json", JSON.stringify(MAPPING, null, 2));
-    write(dir, "docs/process/model.ttl", EXAMPLE);
-    commitAll(dir);
+    committedExample(dir);
     // A runtime without the Swedish locale data formats a date the way its default locale does.
     const preload = write(
       dir,

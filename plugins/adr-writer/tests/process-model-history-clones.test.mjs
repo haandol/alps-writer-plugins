@@ -436,9 +436,8 @@ test("on a volume that folds Unicode form, a link to a name stored in another fo
 
 test("an inherited pathspec mode never changes which commits history reads", () => {
   withTmp((dir) => {
-    repo(dir);
-    const accepted = head(dir);
-    directEdit(dir);
+    directlyEdited(dir);
+    const accepted = git(dir, ["rev-parse", "HEAD~1"]).trim();
     const env = { ...process.env, GIT_LITERAL_PATHSPECS: "1", GIT_ICASE_PATHSPECS: "0" };
     const changes = JSON.parse(cli(dir, ["changes", "--json"], env).out);
     const flag = changes.unsyncedAccepted.find((u) => u.process === "payment.take-payment");

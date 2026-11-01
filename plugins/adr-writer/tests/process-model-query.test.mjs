@@ -412,6 +412,21 @@ function repo(dir) {
     commitAll(at, "accepted after the alignment review");
   });
 }
+/** That repository with the Accepted shipping process's packing step edited directly and committed. */
+function shippingEdited(dir) {
+  cachedRepo(dir, "query: shipping edited directly", (at) => {
+    repo(at);
+    write(
+      at,
+      "docs/process/shipping.ttl",
+      SHIPPING.replace(
+        'pm:definition "The warehouse packs the order lines."',
+        'pm:definition "The warehouse packs and labels the order lines."',
+      ),
+    );
+    commitAll(at, "direct edit");
+  });
+}
 
 test("uncommitted edits are flagged inside the scope and only counted outside it", () => {
   withTmp((dir) => {
@@ -448,17 +463,8 @@ test("uncommitted edits are flagged inside the scope and only counted outside it
 
 test("committed direct edits of an Accepted process are flagged until it is accepted again", () => {
   withTmp((dir) => {
-    repo(dir);
     // A committed direct edit of the Accepted shipping process's composition.
-    write(
-      dir,
-      "docs/process/shipping.ttl",
-      SHIPPING.replace(
-        'pm:definition "The warehouse packs the order lines."',
-        'pm:definition "The warehouse packs and labels the order lines."',
-      ),
-    );
-    commitAll(dir, "direct edit");
+    shippingEdited(dir);
     const [r, viaConcept, other] = contextsIn(dir, [
       { kind: "category", id: "fulfilment" },
       { kind: "category", id: "ordering" },
@@ -1004,16 +1010,7 @@ test("a shallow clone marks committed edits unknown, and an unparsable HEAD stil
   withTmp((dir) => {
     const source = path.join(dir, "source");
     mkdirSync(source);
-    repo(source);
-    write(
-      source,
-      "docs/process/shipping.ttl",
-      SHIPPING.replace(
-        '"The warehouse packs the order lines."',
-        '"The warehouse packs and labels the order lines."',
-      ),
-    );
-    commitAll(source, "direct edit");
+    shippingEdited(source);
     execFileSync("git", ["clone", "-q", "--depth", "1", `file://${source}`, "clone"], { cwd: dir });
     const clone = path.join(dir, "clone");
     const shallow = JSON.parse(cli(clone, ["query", "--category", "fulfilment", "--json"]).out);
