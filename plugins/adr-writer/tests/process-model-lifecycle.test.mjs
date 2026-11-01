@@ -264,6 +264,22 @@ test("change-log candidates are the major change kinds; wording of names is not 
     ),
     ["ordering.order-placed:changed"],
   );
+  // An actor or concept the change adds or removes is a candidate as that change.
+  assert.deepEqual(
+    candidates(
+      `${EXAMPLE}\nm:auditor a pm:Actor ; rdfs:label "Auditor" ; pm:definition "Checks the books." .\n`,
+    ),
+    ["auditor:added"],
+  );
+  assert.deepEqual(
+    candidates(
+      EXAMPLE.replace("    pm:hasPart m:ordering.order-line ;\n", "").replace(
+        /m:ordering\.order-line a pm:BusinessConcept[\s\S]*?\n\n/,
+        "",
+      ),
+    ),
+    ["ordering.order-line:removed"],
+  );
 });
 
 const MAPPING = {

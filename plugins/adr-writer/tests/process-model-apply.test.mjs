@@ -31,6 +31,7 @@ import {
   PREFIXES,
   RETURNS,
   SETTLED,
+  STEP_EDIT,
   UNLINKED,
   WORDING,
   apply,
@@ -857,6 +858,92 @@ test("impact refuses link records that are not lists of step ids, as the save it
       refused.out,
       /\[process-link-shape\] .*category "payments" has a realizes value that is not a list of step ids; fix the ADR index before a change approval/,
     );
+  });
+});
+
+test("the summary judges links as the index draft saves them, and its text names every ADR the approval binds", () => {
+  withTmp((dir) => {
+    repo(dir, ACCEPTED, UNLINKED);
+    draft(dir, ACCEPTED.replace(STEP_EDIT[0], STEP_EDIT[1]));
+    // The index leaves the changed payment step unrealized; the draft links the payment feature to it.
+    assert.deepEqual(impact(dir).unrealizedSystemSteps, ["payment.request-payment"]);
+    write(dir, "mapping.next.json", JSON.stringify(MAPPING, null, 2));
+    const args = ["--mapping", "mapping.next.json"];
+    const summary = impact(dir, args);
+    assert.deepEqual(summary.unrealizedSystemSteps, []);
+    assert.deepEqual(summary.directlyAffectedCategories, ["payments"]);
+    assert.deepEqual(summary.categoriesOfProposedProcesses, ["payments"]);
+    assert.deepEqual(summary.relinkedCategories, ["payments"]);
+    assert.deepEqual(summary.affectedAdrs, ["docs/adr/payments/0001-b.md"]);
+    const text = exits(dir, ["impact", "--draft", "draft", ...args], 0).out;
+    assert.match(text, /^system steps without a realizing feature: none$/m);
+    assert.match(text, /^features whose index links change: payments$/m);
+    assert.match(text, /^affected ADRs: docs\/adr\/payments\/0001-b\.md$/m);
+    // The save checks the summary it binds against the same index.
+    const saved = apply(dir, summary.baseHash, args);
+    assert.equal(saved.code, 0, saved.out);
+    assert.deepEqual(JSON.parse(read(dir, "docs/adr/.mapping.json")), MAPPING);
+    // A relink alone binds the relinked feature's ADR, and the text names it as well.
+    draft(dir);
+    const relinked = structuredClone(MAPPING);
+    relinked.categories.payments.realizes = ["payment.request-payment", "payment.capture-payment"];
+    write(dir, "mapping.next.json", JSON.stringify(relinked, null, 2));
+    const relink = exits(dir, ["impact", "--draft", "draft", ...args], 0).out;
+    assert.match(relink, /^semantic change: none$/m);
+    assert.match(relink, /^directly affected features: none$/m);
+    assert.match(relink, /^features whose index links change: payments$/m);
+    assert.match(relink, /^affected ADRs: docs\/adr\/payments\/0001-b\.md$/m);
+  });
+});
+
+test("impact refuses an index draft the model it saves cannot resolve, as the save would", () => {
+  withTmp((dir) => {
+    repo(dir);
+    const next = structuredClone(MAPPING);
+    const linking = (realizes) => {
+      next.categories.payments.realizes = realizes;
+      write(dir, "mapping.next.json", JSON.stringify(next, null, 2));
+      return cli(dir, ["impact", "--draft", "draft", "--mapping", "mapping.next.json"]);
+    };
+    draft(dir, ACCEPTED.replace(STEP_EDIT[0], STEP_EDIT[1]));
+    const dangling = linking(["payment.request-payment", "payment.refund-payment"]);
+    assert.equal(dangling.code, 1, dangling.out);
+    assert.ok(
+      dangling.out.includes(
+        '[process-link-dangling] mapping.next.json: category "payments" realizes "payment.refund-payment", which is not a step of the process model; fix the index draft before a change approval',
+      ),
+      dangling.out,
+    );
+    assert.doesNotMatch(dangling.out, /base hash/);
+    // A link to a step of a process the draft retires.
+    draft(dir, paymentIn("Deprecated (2020-01-30)"));
+    const retired = linking(["payment.request-payment"]);
+    assert.equal(retired.code, 1, retired.out);
+    assert.match(
+      retired.out,
+      /\[process-link-retired\] mapping\.next\.json: category "payments" realizes step "payment\.request-payment" of the retired process "payment\.take-payment"; .*fix the index draft before a change approval/,
+    );
+    // A step only the draft adds is one the index draft may link.
+    draft(
+      dir,
+      `${ACCEPTED}
+m:payment.record-payment a pm:Step ;
+    rdfs:label "Record the payment" ;
+    pm:definition "The store records the collected money against its order." ;
+    pm:stepKind "system" ;
+    pm:uses m:payment.payment ;
+    pm:inContext m:payment .
+
+m:payment.capture-payment pm:flowsTo m:payment.record-payment .
+m:payment.take-payment pm:hasStep m:payment.record-payment .
+m:order-system pm:performs m:payment.record-payment .
+`,
+    );
+    const added = linking(["payment.request-payment", "payment.record-payment"]);
+    assert.equal(added.code, 0, added.out);
+    const hash = /^base hash: (\S+)$/m.exec(added.out)[1];
+    const saved = apply(dir, hash, ["--mapping", "mapping.next.json"]);
+    assert.equal(saved.code, 0, saved.out);
   });
 });
 

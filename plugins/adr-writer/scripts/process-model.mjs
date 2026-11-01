@@ -778,9 +778,20 @@ function impact(opts) {
     check.index?.typeOf(elementIri(opts.process)) !== "Process"
   )
     return fail(`no process "${opts.process}" in either model`);
+  // apply refuses an index draft that does not resolve against the model it saves, so the
+  // summary says so first.
+  const unresolved =
+    draftIndex && check.index
+      ? checkRealizes(draftIndex, check.index, opts.mappingFile).filter((f) => f.level === "error")
+      : [];
+  if (unresolved.length)
+    return fail(
+      `${unresolved.map((f) => `[${f.code}] ${f.where}: ${f.msg}`).join("; ")}; fix the index draft before a change approval`,
+    );
+  // The summary judges links as the index will be after the save: the draft when there is one.
   const over = check.index
     ? summaryOverBases(opts, before, check.index, {
-        mapping,
+        mapping: draftIndex ?? mapping,
         glossary: readText(path.join(opts.adrDir, "glossary.md")),
         scope: opts.process,
       })
@@ -832,7 +843,8 @@ function impact(opts) {
       say(
         `features of processes that become Proposed: ${list(summary.categoriesOfProposedProcesses)}`,
       );
-      say(`affected ADRs: ${list(summary.affectedAdrs)}`);
+      say(`features whose index links change: ${list(out.relinkedCategories)}`);
+      say(`affected ADRs: ${list(out.affectedAdrs)}`);
       say(
         `index links to remove or move: ${list(summary.linkChanges.map((l) => `${l.category} → ${l.step} (${l.reason})`))}`,
       );
@@ -1106,7 +1118,7 @@ function apply(opts) {
     ]);
   const currentGlossary = readText(path.join(opts.adrDir, "glossary.md"));
   const over = summaryOverBases(opts, before, check.index, {
-    mapping: currentMapping,
+    mapping,
     glossary: currentGlossary,
     scope: direct ? opts.process : null,
   });
@@ -1957,8 +1969,17 @@ function view(opts) {
 }
 
 const opts = parseArgs(process.argv.slice(2));
-process.exit(
-  { validate, format, diff, query, impact, changes, apply, transition, align, lifecycle, view }[
-    opts.command
-  ](opts),
-);
+// The exit code, not an exit: a pipe still receiving the output would be cut off.
+process.exitCode = {
+  validate,
+  format,
+  diff,
+  query,
+  impact,
+  changes,
+  apply,
+  transition,
+  align,
+  lifecycle,
+  view,
+}[opts.command](opts);

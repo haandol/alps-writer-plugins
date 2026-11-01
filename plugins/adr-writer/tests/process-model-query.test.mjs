@@ -239,6 +239,31 @@ test("results contain only connected elements and are deterministic", () => {
   assert.equal(renderContext(r), renderContext(run({ kind: "category", id: "fulfilment" })));
 });
 
+test("the text names each step's realizing features and lists their ADRs once", () => {
+  const text = renderContext(run({ kind: "process", id: "ordering.place-order" }));
+  assert.match(
+    text,
+    /^Step ordering\.submit-order "Submit the order" — ordering\.place-order "Place an order" \[Proposed\]; realized by: ordering$/m,
+  );
+  for (const adr of [
+    "docs/adr/fulfilment/0001-pack.md",
+    "docs/adr/ordering/0001-confirm.md",
+    "docs/adr/payments/0001-pay.md",
+  ])
+    assert.equal(text.split(adr).length, 2, `${adr} is listed once:\n${text}`);
+  assert.ok(
+    text.includes(
+      "ADRs of the realizing features named above:\n  fulfilment: docs/adr/fulfilment/0001-pack.md [Accepted (2020-01-01)]\n  ordering: docs/adr/ordering/0001-confirm.md [Proposed]\n  payments: docs/adr/payments/0001-pay.md [Accepted (2020-01-01)]\n",
+    ),
+    text,
+  );
+  // The stated absence of open scope reads as that, not as a kind and its placeholder.
+  assert.match(
+    renderContext(run({ kind: "process", id: "shipping.ship-order" })),
+    /^  open scope: no open scope$/m,
+  );
+});
+
 test("retired processes appear only on request, marked retired", () => {
   const retired = SHIPPING.replace(
     'pm:status "Accepted (2020-01-01)"',
@@ -1044,7 +1069,11 @@ test("a feature whose ADR body Status differs from its index record leaves its s
     const text = cli(dir, ["query", "--category", "ordering"]).out;
     assert.match(
       text,
-      /ordering \(docs\/adr\/ordering\/0001-confirm\.md Proposed\) — its index records do not match its ADR files; realization unknown until the reported ADR index error is fixed/,
+      /^Step ordering\.submit-order [^\n]*; realized by: ordering; realization unknown until the reported ADR index error is fixed$/m,
+    );
+    assert.match(
+      text,
+      /^  ordering: docs\/adr\/ordering\/0001-confirm\.md \[Proposed\] — its index records do not match its ADR files$/m,
     );
   });
   // A scope that shows no step of that feature is not affected.

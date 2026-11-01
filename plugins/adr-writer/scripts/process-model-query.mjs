@@ -521,17 +521,14 @@ function scopeChanges(changes, ids, accepted = new Map()) {
 // ── text rendering for agents ────────────────────────────────────────────
 
 const q = (s) => (s == null ? "" : ` "${s}"`);
+const adrList = (adrs) => adrs.map((a) => `${a.path} [${a.status ?? "?"}]`).join(", ") || "none";
+/** One step; its realizing features by name only, since their ADRs are listed once per result. */
 const stepLine = (s) => {
   const proc = s.process
     ? ` — ${s.process.id}${q(s.process.label)} [${s.process.status ?? "no Status"}${s.process.retired ? ", retired" : ""}]`
     : " — (no single process)";
   const by = s.realizedBy.length
-    ? s.realizedBy
-        .map(
-          (r) =>
-            `${r.category} (${r.adrs.map((a) => `${a.path} ${a.status ?? "?"}`).join("; ") || "no ADR"})${r.untrusted ? " — its index records do not match its ADR files" : ""}`,
-        )
-        .join(", ")
+    ? s.realizedBy.map((r) => r.category).join(", ")
     : s.realizationUnknown
       ? "unknown"
       : "not realized by any feature";
@@ -540,12 +537,19 @@ const stepLine = (s) => {
     : "";
   return `${s.id}${q(s.label)}${proc}; realized by: ${by}${unknown}`;
 };
-const scopeItems = (items) => items.map((i) => `${i.kind}: ${i.text}`).join(" | ");
+const scopeItems = (items) =>
+  items.map((i) => (i.kind === "none" ? "no open scope" : `${i.kind}: ${i.text}`)).join(" | ");
 
 /** Render a query result as compact text: target, errors and change flags first, then connections. */
 export function renderContext(r) {
   const lines = [];
   const say = (depth, s) => lines.push(`${"  ".repeat(depth)}${s}`);
+  // Every feature a step line names, so that its ADRs are listed once at the end.
+  const features = new Map();
+  const stepText = (s) => {
+    for (const f of s.realizedBy) features.set(f.category, f);
+    return stepLine(s);
+  };
   say(0, `Business context — ${r.kind} "${r.id}"`);
   if (r.found === false) {
     say(0, `NOT FOUND: ${r.note}`);
@@ -608,14 +612,14 @@ export function renderContext(r) {
   }
   if (r.note) say(0, `Note: ${r.note}`);
   const stepBlock = (ctx, depth) => {
-    say(depth, `Step ${stepLine(ctx.step)}`);
+    say(depth, `Step ${stepText(ctx.step)}`);
     if (ctx.performers)
       say(
         depth + 1,
         `performed by: ${ctx.performers.map((a) => `${a.id}${q(a.label)}`).join(", ") || "—"}; context: ${ctx.context?.id ?? "—"}`,
       );
-    say(depth + 1, `previous: ${ctx.previous.map(stepLine).join(" ; ") || "—"}`);
-    say(depth + 1, `next: ${ctx.next.map(stepLine).join(" ; ") || "—"}`);
+    say(depth + 1, `previous: ${ctx.previous.map(stepText).join(" ; ") || "—"}`);
+    say(depth + 1, `next: ${ctx.next.map(stepText).join(" ; ") || "—"}`);
     for (const u of ctx.startedBy) {
       say(
         depth + 1,
@@ -624,7 +628,7 @@ export function renderContext(r) {
       for (const e of u.events)
         say(
           depth + 2,
-          `on event ${e.id}${q(e.label)} emitted by: ${e.emittedBy.map(stepLine).join(" ; ") || "—"}`,
+          `on event ${e.id}${q(e.label)} emitted by: ${e.emittedBy.map(stepText).join(" ; ") || "—"}`,
         );
     }
     for (const e of ctx.emits) {
@@ -635,17 +639,17 @@ export function renderContext(r) {
       for (const p of e.reactions)
         say(
           depth + 2,
-          `→ policy ${p.policy.id}${q(p.policy.label)} when: ${p.policy.reactionCondition ?? "—"} starts: ${p.starts.map(stepLine).join(" ; ") || "—"}`,
+          `→ policy ${p.policy.id}${q(p.policy.label)} when: ${p.policy.reactionCondition ?? "—"} starts: ${p.starts.map(stepText).join(" ; ") || "—"}`,
         );
     }
     for (const c of ctx.concepts) {
       say(depth + 1, `uses concept ${c.id}${q(c.label)} (${c.context?.id ?? "no context"})`);
       if (c.usedBySteps.length)
-        say(depth + 2, `also used by steps: ${c.usedBySteps.map(stepLine).join(" ; ")}`);
+        say(depth + 2, `also used by steps: ${c.usedBySteps.map(stepText).join(" ; ")}`);
       for (const p of c.usedByPolicies)
         say(
           depth + 2,
-          `used by policy ${p.policy.id}${q(p.policy.label)} which starts: ${p.starts.map(stepLine).join(" ; ") || "—"}`,
+          `used by policy ${p.policy.id}${q(p.policy.label)} which starts: ${p.starts.map(stepText).join(" ; ") || "—"}`,
         );
     }
     for (const rule of ctx.rules)
@@ -660,7 +664,7 @@ export function renderContext(r) {
       );
   };
   if (r.kind === "category") {
-    say(0, `ADRs: ${r.adrs.map((a) => `${a.path} [${a.status ?? "?"}]`).join(", ") || "none"}`);
+    say(0, `ADRs: ${adrList(r.adrs)}`);
     say(0, `Link: ${r.link}`);
     if (r.retiredLinks)
       say(0, `Links to retired processes (excluded): ${r.retiredLinks.join(", ")}`);
@@ -687,11 +691,11 @@ export function renderContext(r) {
     for (const [rel, list] of Object.entries(r.related))
       if (list.length)
         say(1, `${rel}: ${list.map((c) => `${c.id} (${c.context?.id ?? "—"})`).join(", ")}`);
-    say(1, `used by steps: ${r.usedBySteps.map(stepLine).join(" ; ") || "—"}`);
+    say(1, `used by steps: ${r.usedBySteps.map(stepText).join(" ; ") || "—"}`);
     for (const p of r.usedByPolicies)
       say(
         1,
-        `used by policy ${p.policy.id}${q(p.policy.label)} which starts: ${p.starts.map(stepLine).join(" ; ") || "—"}`,
+        `used by policy ${p.policy.id}${q(p.policy.label)} which starts: ${p.starts.map(stepText).join(" ; ") || "—"}`,
       );
     for (const rule of r.rules)
       say(
@@ -703,16 +707,24 @@ export function renderContext(r) {
       0,
       `Event ${r.event.id}${q(r.event.label)} (${r.event.context?.id ?? "no context"}): ${r.definition}`,
     );
-    say(1, `emitted by: ${r.emittedBy.map(stepLine).join(" ; ") || "—"}`);
+    say(1, `emitted by: ${r.emittedBy.map(stepText).join(" ; ") || "—"}`);
     for (const p of r.reactions)
       say(
         1,
-        `→ policy ${p.policy.id}${q(p.policy.label)} when: ${p.policy.reactionCondition ?? "—"} starts: ${p.starts.map(stepLine).join(" ; ") || "—"}`,
+        `→ policy ${p.policy.id}${q(p.policy.label)} when: ${p.policy.reactionCondition ?? "—"} starts: ${p.starts.map(stepText).join(" ; ") || "—"}`,
       );
     for (const c of r.criteria)
       say(
         1,
         `criterion ${c.id}${q(c.label)} of ${c.process?.id ?? "—"}${c.process?.retired ? " (retired)" : ""}`,
+      );
+  }
+  if (features.size) {
+    say(0, "ADRs of the realizing features named above:");
+    for (const f of [...features.values()].sort((a, b) => byId(a.category, b.category)))
+      say(
+        1,
+        `${f.category}: ${adrList(f.adrs)}${f.untrusted ? " — its index records do not match its ADR files" : ""}`,
       );
   }
   say(

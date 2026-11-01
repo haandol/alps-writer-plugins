@@ -759,3 +759,20 @@ test(
     });
   },
 );
+
+test("output larger than a pipe buffer reaches the reader whole", () => {
+  withTmp((dir) => {
+    // Two thousand elements of unknown types: a report far larger than a pipe buffer.
+    const unknown = Array.from({ length: 2000 }, (_, i) => `m:x${i} a pm:Unknown${i} .\n`);
+    write(
+      dir,
+      "docs/process/model.ttl",
+      `@prefix m: <urn:adr-writer:model:> .\n@prefix pm: <urn:adr-writer:process:> .\n\n${unknown.join("")}`,
+    );
+    const run = cli(dir, ["validate", "--json"]);
+    assert.equal(run.code, 1);
+    assert.ok(run.out.length > 65536, `${run.out.length} bytes`);
+    const report = JSON.parse(run.out);
+    assert.ok(report.findings.some((f) => f.element === "x1999"));
+  });
+});

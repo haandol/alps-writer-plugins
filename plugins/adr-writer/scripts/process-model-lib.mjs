@@ -2102,7 +2102,7 @@ export function majorChangeCandidates(beforeTriples, afterTriples, { sameMeaning
       out.push({
         id: e.id,
         type: e.type,
-        change: "changed",
+        change: e.change === "added" || e.change === "removed" ? e.change : "changed",
         properties: props.map((p) => p.property),
       });
   }
