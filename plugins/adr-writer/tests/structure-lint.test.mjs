@@ -1016,3 +1016,20 @@ test("CLI: the shipped template pair passes both layout checks", () => {
     assert.equal(r.warnings.filter((w) => w.rule === DUPED).length, 0);
   });
 });
+
+test("a report larger than a pipe buffer reaches the reader whole", () => {
+  withTmp((dir) => {
+    // A thousand index records of missing files: a report far larger than a pipe buffer.
+    const adrs = Array.from({ length: 1000 }, (_, i) => ({
+      path: `docs/adr/billing/${String(i + 1).padStart(4, "0")}-missing.md`,
+      status: "Proposed",
+      summary: "s",
+    }));
+    write(dir, "docs/adr/.mapping.json", JSON.stringify({ categories: { billing: { adrs } } }));
+    const { code, stdout } = runStructureLint(dir, ["--no-invariants"]);
+    assert.equal(code, 1);
+    assert.ok(stdout.length > 65536, `${stdout.length} bytes`);
+    const report = JSON.parse(stdout);
+    assert.equal(report.errors.filter((e) => e.rule === "mapping-dangling-adr").length, 1000);
+  });
+});

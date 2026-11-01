@@ -682,7 +682,8 @@ function finish(rep, opts, note) {
       lines.push(`\n✓ no errors${rep.warns.length ? ` (${rep.warns.length} warning(s))` : ""}`);
     process.stdout.write(lines.join("\n") + "\n");
   }
-  process.exit(failed ? 1 : 0);
+  // The exit code, not an exit: a pipe still receiving the report would be cut off.
+  process.exitCode = failed ? 1 : 0;
 }
 
 main();

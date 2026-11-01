@@ -1472,6 +1472,34 @@ test("review artifact validator requires internally consistent review metrics", 
   });
 });
 
+test("review artifact validator stops at missing artifacts", () => {
+  withArtifacts((dir) => {
+    const result = validate(dir);
+    assert.equal(result.status, 1);
+    assert.equal(result.stderr, "missing findings.json\nmissing implementation-review.md\n");
+  });
+});
+
+test("review artifact validator delivers an error list larger than a pipe buffer whole", () => {
+  withArtifacts((dir) => {
+    writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+    writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+    const findings = validFindings(dir);
+    // Two thousand unknown contract rows: an error list far larger than a pipe buffer.
+    findings.findings[0].contractIds = Array.from({ length: 2000 }, (_, i) => `R${i + 100}`);
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+
+    const result = validate(dir);
+    assert.equal(result.status, 1);
+    assert.ok(result.stderr.length > 65536, `${result.stderr.length} bytes`);
+    assert.match(
+      result.stderr,
+      /findings\[0\]\.contractIds references unknown contract row: R2099$/m,
+    );
+    assert.ok(result.stderr.endsWith("\n"));
+  });
+});
+
 test("review artifact validator requires report language and valid finding contract links", () => {
   withArtifacts((dir) => {
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());

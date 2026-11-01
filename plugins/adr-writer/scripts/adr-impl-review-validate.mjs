@@ -1235,9 +1235,11 @@ function main() {
 
   if (!existsSync(findingsPath)) errors.push("missing findings.json");
   if (!existsSync(expectedReport)) errors.push("missing implementation-review.md");
+  // The exit code, not an exit: a pipe still receiving the errors would be cut off.
   if (errors.length) {
     process.stderr.write(`${errors.join("\n")}\n`);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   const data = readJson(findingsPath, errors);
@@ -1328,7 +1330,8 @@ function main() {
 
   if (errors.length) {
     process.stderr.write(`${errors.map((error) => `- ${error}`).join("\n")}\n`);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   process.stdout.write("ADR implementation review artifacts are valid\n");
