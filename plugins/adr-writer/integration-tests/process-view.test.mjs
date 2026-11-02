@@ -44,6 +44,16 @@ const large = validateModel([
   { doc: "docs/process/many.ttl", text: manyProcesses(70) },
 ]);
 const largeFile = path.join(dir, "large-view.html");
+/** Abort and record every request that would leave the machine: the view opens offline. */
+async function offline(p) {
+  await p.setRequestInterception(true);
+  p.on("request", (request) => {
+    if (/^https?:/.test(request.url())) {
+      requests.push(request.url());
+      request.abort();
+    } else request.continue();
+  });
+}
 before(async () => {
   writeFileSync(file, HTML);
   writeFileSync(
@@ -56,13 +66,7 @@ before(async () => {
     args: process.env.CI ? ["--no-sandbox"] : [],
   });
   page = await browser.newPage();
-  await page.setRequestInterception(true);
-  page.on("request", (request) => {
-    if (/^https?:/.test(request.url())) {
-      requests.push(request.url());
-      request.abort();
-    } else request.continue();
-  });
+  await offline(page);
   await page.goto(pathToFileURL(file).href, { waitUntil: "load" });
   results = await page.evaluate(drawAll);
   await page.waitForFunction(() =>
@@ -73,13 +77,7 @@ before(async () => {
   wide = await browser.newPage();
   await wide.setViewport({ width: 1440, height: 900 });
   await wide.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
-  await wide.setRequestInterception(true);
-  wide.on("request", (request) => {
-    if (/^https?:/.test(request.url())) {
-      requests.push(request.url());
-      request.abort();
-    } else request.continue();
-  });
+  await offline(wide);
   await wide.goto(pathToFileURL(file).href, { waitUntil: "load" });
   await wide.evaluate(drawAll);
 });
@@ -139,18 +137,23 @@ const leave = (on = page) =>
   });
 const reached = (id) => ({ hash: `#${id}`, focused: id, target: id });
 
-async function select(node, how) {
-  // Input reaches only the page in front; a page behind never renders what a click waits for.
-  await page.bringToFront();
-  await leave();
+/** Follow a diagram node by mouse or by keyboard on the page that shows it. */
+async function follow(node, how, on = page) {
   if (how === "mouse") {
     await settle(node);
     await node.click();
   } else {
     // Puppeteer's focus() accepts HTML elements only; an SVG node is focused by the page itself.
     await node.evaluate((g) => g.focus());
-    await page.keyboard.press("Enter");
+    await on.keyboard.press("Enter");
   }
+}
+
+async function select(node, how) {
+  // Input reaches only the page in front; a page behind never renders what a click waits for.
+  await page.bringToFront();
+  await leave();
+  await follow(node, how);
   return position();
 }
 
@@ -350,14 +353,7 @@ test("a node of a zoomed-in diagram still opens its target by mouse and by keybo
   for (const how of ["mouse", "keyboard"]) {
     await fresh();
     await wide.click(`${ORDERING_FLOW} .diagram-zoom button[data-zoom="in"]`);
-    const node = await nodeIn(ORDERING_FLOW, "Submit the order", wide);
-    if (how === "mouse") {
-      await settle(node);
-      await node.click();
-    } else {
-      await node.evaluate((g) => g.focus());
-      await wide.keyboard.press("Enter");
-    }
+    await follow(await nodeIn(ORDERING_FLOW, "Submit the order", wide), how, wide);
     assert.deepEqual(await position(wide), reached("el-ordering_2e_submit-order"), how);
   }
 });

@@ -28,7 +28,7 @@ import {
   anchorOf,
   viewData,
   treeGroups,
-  documentOf,
+  assertNoUnrealizedStep,
   manyProcesses,
 } from "./process-model-view-helpers.mjs";
 
@@ -845,14 +845,7 @@ test("a realization the index cannot be trusted for is shown as undeterminable, 
     /outside the system — not realized by a feature/,
   );
   // No step anywhere on the page is shown as having no realizing feature.
-  assert.doesNotMatch(documentOf(unreadable), /no realizing feature/);
-  assert.doesNotMatch(
-    treeGroups(unreadable)
-      .map((g) => g.chunk)
-      .join(""),
-    /state-unrealized/,
-  );
-  assert.ok(viewData(unreadable).elements.every((e) => e.s !== "unrealized"));
+  assertNoUnrealizedStep(unreadable);
 });
 
 test("the flow heading carries the process's change mark, and unknown edits are marked apart from changes", () => {
@@ -1000,7 +993,7 @@ test("the explorer finds every element by name and identifier and lists it under
 });
 
 test("element details list every relation with its name and direction, each leading to the other element's details (R19)", () => {
-  const html = withoutEngine(HTML);
+  const html = PAGE;
   for (const iri of [...v.index.subjects.keys()].filter((x) => v.index.typeOf(x))) {
     const id = elementId(iri);
     const listed = [...articleOf(html, id).matchAll(/<li>(\w+) (to|from) <a href="#([^"]+)">/g)];
@@ -1145,13 +1138,7 @@ test("the city leaves retired processes out unless asked, and marks incomplete, 
   });
   assert.equal(towersOf(all).get("payment.take-payment") & 1, 1);
   // A process validation errors reach is incomplete in the city as in its flow.
-  const broken = validateModel([
-    { doc: "docs/process/a.ttl", text: EXAMPLE },
-    { doc: "docs/process/b.ttl", text: `${HEAD}m:ordering.submit-order pm:emits m:ghost .\n` },
-  ]);
-  const html = withoutEngine(
-    renderView({ index: broken.index, mapping: MAPPING, findings: broken.findings }),
-  );
+  const { html } = view("danglingEmit");
   const marks = towersOf(html);
   for (const s of sections(html))
     assert.equal(

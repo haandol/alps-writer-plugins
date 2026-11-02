@@ -478,6 +478,8 @@
     const span = Math.max(bounds[1] - bounds[0], bounds[3] - bounds[2], 10);
     for (const d of districts) {
       d.centre = { x: d.x + d.w / 2, y: 0, z: d.z + d.h / 2 };
+      // What pointing at the district picks: one object, so moving over it is no change.
+      d.hit = { kind: "district", el: d.e };
       // Where a district's name may stand: the middle of each edge, just outside it.
       d.edges = [
         [d.x + d.w / 2, d.z + d.h + 0.7],
@@ -836,7 +838,7 @@
         g.lineWidth = dpr;
         g.stroke();
         g.setLineDash([]);
-        if (f.n[1] && d.e >= 0) hits.push({ item: { kind: "district", el: d.e }, poly: f.p });
+        if (f.n[1] && d.e >= 0) hits.push({ item: d.hit, poly: f.p });
       }
     }
 

@@ -1,4 +1,5 @@
 // Fixtures that process-model-view.test.mjs and process-model-view.integration.test.mjs share.
+import assert from "node:assert/strict";
 import { MODEL, PM, RDFS, validateModel } from "../scripts/process-model-lib.mjs";
 import { EXAMPLE } from "./process-model-helpers.mjs";
 
@@ -108,6 +109,18 @@ export const treeGroups = (html) =>
 /** The document part of a page: banners, landscape, flows and details. */
 export const documentOf = (html) =>
   html.slice(html.indexOf('<main class="document"'), html.indexOf("</main>"));
+
+/** No step anywhere on a page, in its document, the explorer's tree or the city's data, is shown as having no realizing feature. */
+export function assertNoUnrealizedStep(html) {
+  assert.doesNotMatch(documentOf(html), /no realizing feature/);
+  assert.doesNotMatch(
+    treeGroups(html)
+      .map((g) => g.chunk)
+      .join(""),
+    /state-unrealized/,
+  );
+  assert.ok(viewData(html).elements.every((e) => e.s !== "unrealized"));
+}
 
 /** `count` processes of one step each in the ordering context: a landscape of more nodes than that. */
 export const manyProcesses = (count) =>
