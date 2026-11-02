@@ -53,7 +53,7 @@ before(async () => {
     } else request.continue();
   });
   await page.goto(pathToFileURL(file).href, { waitUntil: "load" });
-  results = await page.evaluate(() => window.reportDiagramsReady);
+  results = await page.evaluate(drawAll);
   await page.waitForFunction(() =>
     document.querySelector('figure[data-targets] g.node[role="link"]'),
   );
@@ -70,8 +70,26 @@ before(async () => {
     } else request.continue();
   });
   await wide.goto(pathToFileURL(file).href, { waitUntil: "load" });
-  await wide.evaluate(() => window.reportDiagramsReady);
+  await wide.evaluate(drawAll);
 });
+
+/** Every figure drawn, as a reader scrolling through the page would have them; each figure's state. */
+async function drawAll() {
+  await window.reportDiagramsReady;
+  const figures = [...document.querySelectorAll("figure[data-mermaid]")];
+  await Promise.all(figures.map((figure) => window.reportDiagramRender(figure)));
+  return figures.map((figure) => ({
+    type: figure.dataset.diagramType,
+    rendered: figure.dataset.renderState === "rendered",
+  }));
+}
+/** Bring an element into view and let the page settle: sections are laid out as they come near. */
+const settle = async (handle) => {
+  await handle.evaluate((element) => element.scrollIntoView({ block: "center" }));
+  await handle.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  );
+};
 after(async () => {
   await browser?.close();
   rmSync(dir, { recursive: true, force: true });
@@ -114,8 +132,10 @@ async function select(node, how) {
   // Input reaches only the page in front; a page behind never renders what a click waits for.
   await page.bringToFront();
   await leave();
-  if (how === "mouse") await node.click();
-  else {
+  if (how === "mouse") {
+    await settle(node);
+    await node.click();
+  } else {
     // Puppeteer's focus() accepts HTML elements only; an SVG node is focused by the page itself.
     await node.evaluate((g) => g.focus());
     await page.keyboard.press("Enter");
@@ -231,8 +251,10 @@ for (const how of ["mouse", "keyboard"])
   test(`a relation in an element's details opens the other element by ${how} (R19)`, async () => {
     await fresh();
     const relation = '#el-ordering_2e_submit-order li a[href="#el-ordering_2e_confirm-order"]';
-    if (how === "mouse") await wide.click(relation);
-    else {
+    if (how === "mouse") {
+      await settle(await wide.$(relation));
+      await wide.click(relation);
+    } else {
       await wide.focus(relation);
       await wide.keyboard.press("Enter");
     }
@@ -309,11 +331,46 @@ test("a node of a zoomed-in diagram still opens its target by mouse and by keybo
     await fresh();
     await wide.click(`${ORDERING_FLOW} .diagram-zoom button[data-zoom="in"]`);
     const node = await nodeIn(ORDERING_FLOW, "Submit the order", wide);
-    if (how === "mouse") await node.click();
-    else {
+    if (how === "mouse") {
+      await settle(node);
+      await node.click();
+    } else {
       await node.evaluate((g) => g.focus());
       await wide.keyboard.press("Enter");
     }
     assert.deepEqual(await position(wide), reached("el-ordering_2e_submit-order"), how);
   }
+});
+
+test("a diagram is drawn only once it comes near view, so the page opens without drawing them all", async () => {
+  const fresh = await browser.newPage();
+  await fresh.setViewport({ width: 800, height: 600 });
+  await fresh.goto(pathToFileURL(file).href, { waitUntil: "load" });
+  await fresh.evaluate(() => window.reportDiagramsReady);
+  const states = () =>
+    fresh.$$eval("figure[data-mermaid]", (figures) => figures.map((f) => f.dataset.renderState));
+  const opened = await states();
+  assert.ok(opened.includes("pending"), opened.join());
+  await fresh.evaluate(() =>
+    [...document.querySelectorAll("figure[data-mermaid]")].at(-1).scrollIntoView(),
+  );
+  await fresh.waitForFunction(
+    () =>
+      [...document.querySelectorAll("figure[data-mermaid]")].at(-1).dataset.renderState ===
+      "rendered",
+  );
+  await fresh.close();
+});
+
+test("with motion on, the city stops drawing once the reader has been away, and a pointer over it wakes it", async () => {
+  const idle = await browser.newPage();
+  await idle.setViewport({ width: 1440, height: 900 });
+  await idle.goto(pathToFileURL(file).href, { waitUntil: "load" });
+  assert.equal(await idle.evaluate(() => window.processViewCity.moving()), true);
+  await new Promise((resolve) => setTimeout(resolve, 12500));
+  assert.equal(await idle.evaluate(() => window.processViewCity.moving()), false);
+  const box = await (await idle.$("#city-canvas")).boundingBox();
+  await idle.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  assert.equal(await idle.evaluate(() => window.processViewCity.moving()), true);
+  await idle.close();
 });

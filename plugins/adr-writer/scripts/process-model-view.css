@@ -509,6 +509,19 @@ body.city-wide .document {
   }
 }
 
+/* Off-screen details and flows are laid out and painted only when they come near view. */
+.document article.element,
+.document section.process {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 480px;
+}
+/* Mermaid lays each diagram out in a scratch element on the page: out of the page's grid. */
+body.app > div[id^="dmermaid-"] {
+  position: absolute;
+  top: 0;
+  left: -100000px;
+}
+
 /* Document: the landscape, the flows and the element details. */
 .document h2 {
   margin-top: 2rem;

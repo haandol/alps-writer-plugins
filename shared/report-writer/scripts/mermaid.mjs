@@ -114,6 +114,12 @@ export function renderMermaid(source, ui = {}) {
 
 /** Inline the pinned browser engine once per report, including all diagram modules.
  * Source is read as text. Strict mode disables authored callbacks and HTML execution.
+ * Figures are drawn one at a time and each announces itself with a bubbling
+ * `report-diagram-rendered` event. By default every figure is drawn and
+ * `reportDiagramsReady` settles with all of them. With `ui.lazy` a figure is drawn only
+ * when it comes near view (`ui.lazy.root` names the scrolling element, when it scrolls) or
+ * is asked for through `reportDiagramRender(figure)`; `reportDiagramsReady` then settles
+ * with the figures near view at load.
  */
 export function mermaidRuntime(ui = {}) {
   const engine = readFileSync(new URL("./vendor/mermaid.min.js", import.meta.url), "utf8").replace(
@@ -124,12 +130,18 @@ export function mermaidRuntime(ui = {}) {
     /</g,
     "\\u003c",
   );
+  const lazy = JSON.stringify(ui.lazy ? { root: ui.lazy.root ?? null } : null).replace(
+    /</g,
+    "\\u003c",
+  );
   return `<script data-mermaid-engine>${engine}</script><script data-mermaid-runtime>
 window.reportDiagramsReady = (async () => {
   mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"default",flowchart:{htmlLabels:false},suppressErrorRendering:true});
   const figures = [...document.querySelectorAll('figure[data-mermaid]')];
   const results = [];
-  for (const [index, figure] of figures.entries()) {
+  const drawing = new Map();
+  let queue = Promise.resolve();
+  async function render(figure, index) {
     const source = figure.querySelector('.diagram-source code').textContent;
     const status = figure.querySelector('.diagram-status');
     try {
@@ -150,7 +162,40 @@ window.reportDiagramsReady = (async () => {
       status.textContent = ${failure} + ': ' + String(error.message || error);
       results.push({type:figure.dataset.diagramType,rendered:false,error:String(error.message || error)});
     }
+    figure.dispatchEvent(new CustomEvent('report-diagram-rendered', {bubbles: true}));
   }
+  // One figure at a time: Mermaid keeps page-wide state while it lays a diagram out.
+  const draw = (figure) => {
+    if (!drawing.has(figure)) {
+      queue = queue.then(() => render(figure, figures.indexOf(figure)));
+      drawing.set(figure, queue);
+    }
+    return drawing.get(figure);
+  };
+  const lazy = ${lazy};
+  if (!lazy) {
+    for (const figure of figures) await draw(figure);
+    return results;
+  }
+  window.reportDiagramRender = draw;
+  const scroller = lazy.root && document.querySelector(lazy.root);
+  const root = scroller && /auto|scroll/.test(getComputedStyle(scroller).overflowY) ? scroller : null;
+  const near = await new Promise((resolve) => {
+    if (!figures.length) return resolve([]);
+    const probe = new IntersectionObserver((entries) => {
+      probe.disconnect();
+      resolve(entries.filter((entry) => entry.isIntersecting).map((entry) => entry.target));
+    }, {root, rootMargin: '600px 0px'});
+    for (const figure of figures) probe.observe(figure);
+  });
+  const watch = new IntersectionObserver((entries) => {
+    for (const entry of entries) if (entry.isIntersecting) {
+      watch.unobserve(entry.target);
+      draw(entry.target);
+    }
+  }, {root, rootMargin: '600px 0px'});
+  for (const figure of figures) watch.observe(figure);
+  await Promise.all(near.map(draw));
   return results;
 })();
 </script>`;

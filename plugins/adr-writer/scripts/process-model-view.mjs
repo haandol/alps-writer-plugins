@@ -1188,12 +1188,15 @@ ${flowSections}
   return page(t, lang, body, true, { explorer, city, data });
 }
 
-// Diagram nodes become links once Mermaid has drawn them. Mermaid gives each
-// flowchart node the DOM id `flowchart-<node id>-<counter>`; the browser
-// navigation test pins that format.
+// Diagram nodes become links once Mermaid has drawn them, figure by figure, as each
+// announces itself. Mermaid gives each flowchart node the DOM id
+// `flowchart-<node id>-<counter>`; the browser navigation test pins that format.
 const NAVIGATION = `<script data-view-navigation>
-(window.reportDiagramsReady || Promise.resolve()).then(() => {
-  for (const figure of document.querySelectorAll('figure[data-targets]')) {
+(() => {
+  const linked = new WeakSet();
+  const link = (figure) => {
+    if (!figure.matches?.('figure[data-targets]') || linked.has(figure)) return;
+    linked.add(figure);
     const targets = JSON.parse(figure.dataset.targets);
     for (const g of figure.querySelectorAll('g.node')) {
       const match = /flowchart-(n\\d+)-/.exec(g.id || '');
@@ -1206,8 +1209,10 @@ const NAVIGATION = `<script data-view-navigation>
       g.addEventListener('click', go);
       g.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); go(); } });
     }
-  }
-});
+  };
+  document.addEventListener('report-diagram-rendered', (event) => link(event.target));
+  for (const figure of document.querySelectorAll('figure[data-targets][data-render-state="rendered"]')) link(figure);
+})();
 </script>`;
 
 // The page's style and the explorer and city script ship beside this module and are inlined,
@@ -1220,12 +1225,11 @@ if (/<\/(?:script|style)/i.test(CSS + CLIENT))
 function page(t, lang, body, diagrams, app = null) {
   const head = `<!doctype html>
 <html lang="${esc(lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(t.title)}</title><style>${CSS}</style></head>`;
-  const runtime = diagrams ? mermaidRuntime({ diagramFallback: t.fallback }) + NAVIGATION : "";
   if (!app)
     return `${head}
 <body class="plain"><header><h1>${esc(t.title)}</h1><p>${esc(t.intro)}</p></header>
 <main>${body}</main>
-${runtime}
+${diagrams ? NAVIGATION + mermaidRuntime({ diagramFallback: t.fallback }) : ""}
 </body></html>
 `;
   // "<" is escaped, so no model text can end the data element.
@@ -1236,8 +1240,8 @@ ${runtime}
 ${app.city}
 <main class="document" id="document">${body}</main></div>
 <script type="application/json" id="view-data">${data}</script>
-${runtime}
 <script data-view-explorer>${CLIENT}</script>
+${diagrams ? NAVIGATION + mermaidRuntime({ diagramFallback: t.fallback, lazy: { root: ".document" } }) : ""}
 </body></html>
 `;
 }

@@ -168,8 +168,13 @@ test("the view is one standalone file with no external resources and no editing 
     [...markup.matchAll(/<input\b[^>]*>/gi)].map((m) => /type="search"/.test(m[0])),
     [true],
   );
-  const own = HTML.slice(HTML.indexOf("<script data-view-navigation>"));
+  // The page's own scripts: all but the vendored engine and the data they read.
+  const own = [...HTML.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)]
+    .filter(([, attrs]) => !/data-mermaid-engine|application\/json/.test(attrs))
+    .map(([, attrs, code]) => `<script${attrs}>${code}`)
+    .join("\n");
   assert.match(own, /<script data-view-explorer>/);
+  assert.match(own, /<script data-view-navigation>/);
   assert.doesNotMatch(own, /createElement\("(?:input|textarea|select|form)"|contentEditable\s*=/);
   assert.doesNotMatch(
     own,

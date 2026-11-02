@@ -152,13 +152,12 @@
   // stays sharp and the nodes stay the links the navigation script made of them.
   const rendered = (figure) =>
     figure.dataset.renderState === "rendered" && figure.querySelector(".diagram__viewport svg");
-  const watch = new MutationObserver((records) => {
-    for (const r of records) if (rendered(r.target)) zoomable(r.target);
+  document.addEventListener("report-diagram-rendered", (event) => {
+    if (event.target.matches?.("figure[data-targets]") && rendered(event.target))
+      zoomable(event.target);
   });
-  for (const figure of document.querySelectorAll("figure[data-targets][data-mermaid]")) {
+  for (const figure of document.querySelectorAll("figure[data-targets][data-mermaid]"))
     if (rendered(figure)) zoomable(figure);
-    else watch.observe(figure, { attributes: true, attributeFilter: ["data-render-state"] });
-  }
 
   function zoomable(figure) {
     if (figure.classList.contains("zoomable")) return;
@@ -186,10 +185,16 @@
       y = limit(y, Y0 - h * 0.8, Y0 + BH - h * 0.2);
       svg.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
     }
-    /** The whole diagram, centred: at its own size when it fits, smaller when it does not. */
+    /**
+     * The whole diagram, centred: at its own size when it fits, smaller when it does not. A
+     * diagram drawn while its section is still out of view has no size yet; it fits once it has.
+     */
+    let fitted = false;
     function fit() {
       const expanded = figure.classList.contains("expanded");
-      const vw = viewport.clientWidth || 1;
+      const vw = viewport.clientWidth;
+      if (!vw) return;
+      fitted = true;
       if (!expanded) {
         fitScale = Math.min(1, vw / BW, (innerHeight * 0.72) / BH);
         viewport.style.height = `${Math.round(Math.max(BH * fitScale, 120))}px`;
@@ -325,7 +330,8 @@
       else return;
       event.preventDefault();
     });
-    if (typeof ResizeObserver === "function") new ResizeObserver(apply).observe(viewport);
+    if (typeof ResizeObserver === "function")
+      new ResizeObserver(() => (fitted ? apply() : fit())).observe(viewport);
     fit();
   }
 
@@ -1003,7 +1009,8 @@
         lerp(P[i][3], P[i + 1][3], v),
       ];
     }
-    function drawArc(arc, now) {
+    function drawArc(arc) {
+      arc.P = null;
       const P = arc.pts.map(([x, y, z]) => project(x, y, z));
       if (P.some((p) => !p)) return;
       const lit = !focusSet || (focusSet.has(arc.e) && focusSet.has(arc.p));
@@ -1041,11 +1048,16 @@
       g.lineTo(hx + Math.cos(angle - 2.5) * size, hy + Math.sin(angle - 2.5) * size);
       g.closePath();
       g.fill();
-      if (motion && !broken && lit && (focusSet || arc.kind === 1)) {
+      if (!broken && lit && (focusSet || arc.kind === 1)) arc.P = P;
+    }
+    /** The hand-offs' moving lights, over the scene: along each arc toward its policy. */
+    function sparks(now) {
+      for (const arc of arcs) {
+        if (!arc.P) continue;
         const n = focusSet ? 3 : 1;
         for (let k = 0; k < n; k++) {
           const u = (now / 4500 + arc.phase + k / n) % 1;
-          const [x, y, s] = along(P, u);
+          const [x, y, s] = along(arc.P, u);
           glow(mix(EMBER, VIOLET, u), x, y, Math.max(3 * dpr, s * 0.22), focusSet ? 0.95 : 0.6);
         }
       }
@@ -1143,7 +1155,7 @@
           if (f) segment(f, o, o.kind === "event" ? EMBER : VIOLET, alpha);
         }
       }
-      for (const arc of arcs) drawArc(arc, now);
+      for (const arc of arcs) drawArc(arc);
       const sel = selected >= 0 ? positionOf(selected) : null;
       if (sel) {
         const base = project(sel.x, 0, sel.z);
@@ -1264,6 +1276,44 @@
     let dragging = null;
     const pointers = new Map();
     const touch = () => (lastInput = performance.now());
+    // The scene is drawn again only when something in it changes: the camera, the selection,
+    // what the pointer is over, the layers or the size. The moving lights are drawn over it.
+    const screen = g;
+    const sceneCanvas = document.createElement("canvas");
+    const sceneContext = sceneCanvas.getContext("2d");
+    let dirty = true;
+    let sparkling = false;
+    let lastPaint = 0;
+    let cost = 0;
+    let maxDpr = 2;
+    const REST = 12000;
+    const invalidate = () => {
+      dirty = true;
+      schedule();
+    };
+    function paint(now, full) {
+      if (full || sceneCanvas.width !== canvas.width || sceneCanvas.height !== canvas.height) {
+        if (sceneCanvas.width !== canvas.width) sceneCanvas.width = canvas.width;
+        if (sceneCanvas.height !== canvas.height) sceneCanvas.height = canvas.height;
+        const started = performance.now();
+        g = sceneContext;
+        draw(now);
+        g = screen;
+        // A device that cannot keep up draws fewer pixels.
+        cost = cost * 0.8 + (performance.now() - started) * 0.2;
+        if (cost > 22 && maxDpr > 1 && dpr > 1) {
+          maxDpr = Math.max(1, dpr - 0.5);
+          cost = 0;
+          setTimeout(resize, 0);
+        }
+      }
+      screen.setTransform(1, 0, 0, 1, 0, 0);
+      screen.globalAlpha = 1;
+      screen.globalCompositeOperation = "copy";
+      screen.drawImage(sceneCanvas, 0, 0);
+      screen.globalCompositeOperation = "source-over";
+      if (sparkling) sparks(now);
+    }
 
     // Motion: the opening flight, slow turning while idle and the hand-offs' moving lights.
     // It pauses on request and never starts when the reader prefers reduced motion.
@@ -1274,7 +1324,8 @@
       motion = on;
       if (motionButton) motionButton.textContent = on ? T.pause : T.play;
       if (!on) tween = tween && { ...tween, ms: 0 };
-      schedule();
+      touch();
+      invalidate();
     }
     motionButton?.addEventListener("click", () => setMotion(!motion));
     reduced.addEventListener?.("change", (event) => setMotion(!event.matches));
@@ -1283,25 +1334,33 @@
     function schedule() {
       if (!raf && visible) raf = requestAnimationFrame(frame);
     }
+    // Ambient motion, the turning and the moving lights, lasts until the reader has been away
+    // for REST milliseconds and runs at about 30 frames a second; what answers the reader runs
+    // at full rate. At rest the city draws nothing.
     function frame(now) {
       raf = 0;
+      const awake = motion && !dragging && now - lastInput < REST;
+      const turning = awake && !tween && selected < 0 && now - lastInput > 3500;
+      const lights = awake && arcs.length > 0;
+      const urgent = dirty || tween !== null;
+      if (!urgent && (turning || lights) && now - lastPaint < 31) {
+        schedule();
+        return;
+      }
       const dt = last ? Math.min(now - last, 64) : 16;
       last = now;
-      let again = false;
       if (tween) {
         const u = tween.ms > 0 ? Math.min((now - tween.start) / tween.ms, 1) : 1;
         const k = ease(u);
         for (const key of Object.keys(tween.to)) cam[key] = lerp(tween.from[key], tween.to[key], k);
         if (u >= 1) tween = null;
-        else again = true;
       }
-      if (motion && !dragging && !tween && selected < 0 && now - lastInput > 3500) {
-        cam.yaw += dt * 0.00004;
-        again = true;
-      }
-      if (motion && arcs.length) again = true;
-      draw(now);
-      if (again) schedule();
+      if (turning) cam.yaw += dt * 0.00004;
+      sparkling = lights;
+      paint(now, urgent || turning);
+      dirty = false;
+      lastPaint = now;
+      if (tween || turning || lights) schedule();
       else last = 0;
     }
     function flyTo(to, ms = 900) {
@@ -1323,15 +1382,16 @@
           tz: p.z,
           dist: Math.min(Math.max(cam.dist, 8), close),
         });
-      } else schedule();
+      } else invalidate();
     }
     addEventListener("hashchange", () => {
       // Choosing an element brings its details back.
       if (document.body.classList.contains("city-wide")) setWide(false);
       const i = at.get(fragment());
+      touch();
       if (i === undefined) {
         selected = -1;
-        schedule();
+        invalidate();
       } else focusOn(i);
     });
     const wideButton = document.getElementById("city-wide");
@@ -1353,7 +1413,7 @@
         if (on) layers.add(button.dataset.layer);
         else layers.delete(button.dataset.layer);
         button.setAttribute("aria-pressed", String(on));
-        schedule();
+        invalidate();
       });
 
     // Pointing, turning, moving and zooming.
@@ -1389,11 +1449,13 @@
       if (!dragging) {
         const [x, y] = deviceOf(event);
         const item = pick(x, y);
+        // A pointer over the city wakes it.
+        touch();
         if (item !== hovered) {
           hovered = item;
           canvas.classList.toggle("pointing", Boolean(item));
-          schedule();
-        }
+          invalidate();
+        } else schedule();
         showTip(item, event.clientX, event.clientY);
         return;
       }
@@ -1420,7 +1482,7 @@
       tween = null;
       showTip(null);
       touch();
-      schedule();
+      invalidate();
     });
     const release = (event) => {
       pointers.delete(event.pointerId);
@@ -1440,7 +1502,7 @@
       if (dragging) return;
       hovered = null;
       showTip(null);
-      schedule();
+      invalidate();
     });
     canvas.addEventListener("contextmenu", (event) => event.preventDefault());
     canvas.addEventListener(
@@ -1450,7 +1512,7 @@
         cam.dist = clamp(cam.dist * Math.exp(event.deltaY * 0.0012), MIN, MAX);
         tween = null;
         touch();
-        schedule();
+        invalidate();
       },
       { passive: false },
     );
@@ -1471,11 +1533,11 @@
       event.preventDefault();
       tween = null;
       touch();
-      schedule();
+      invalidate();
     });
 
     function resize() {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
       const r = canvas.getBoundingClientRect();
       canvas.width = Math.max(1, Math.round(r.width * dpr));
       canvas.height = Math.max(1, Math.round(r.height * dpr));
@@ -1490,14 +1552,14 @@
         }
         home.dist = fit;
       }
-      schedule();
+      invalidate();
     }
     if (typeof ResizeObserver === "function") new ResizeObserver(resize).observe(canvas);
     else addEventListener("resize", resize);
     if (typeof IntersectionObserver === "function")
       new IntersectionObserver(([entry]) => {
         visible = entry.isIntersecting;
-        schedule();
+        invalidate();
       }).observe(canvas);
     resize();
     Object.assign(cam, home);
@@ -1524,7 +1586,7 @@
           Object.assign(cam, tween.to);
           tween = null;
         }
-        draw(performance.now());
+        paint(performance.now(), true);
         const r = canvas.getBoundingClientRect();
         // A point of one of its shapes that nothing nearer covers.
         for (const h of hits) {
