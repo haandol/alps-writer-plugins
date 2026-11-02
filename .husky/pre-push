@@ -10,8 +10,8 @@
 # checking it again here is what catches a commit made with --no-verify.
 #
 # Mirrors .github/workflows/ci.yaml:
-#   test/runtime → pnpm test (workspace suites + dependency-free ADR suite); this
-#                  hook runs its generated-asset checks and unit tests
+#   test/runtime → pnpm test (workspace suites + dependency-free ADR and ontology
+#                  suites); this hook runs its generated-asset checks and unit tests
 #   build job    → pnpm lint, pnpm format:check, pnpm bump:check, pnpm build +
 #                  the committed-bundle drift check
 #   runtime job  → the bundle answers MCP initialize, and the hook starts, both
@@ -46,8 +46,12 @@ fail() {
 # while they run. Each one's output is kept and shown after the suite, in this
 # order, and the first failure is reported exactly as when they ran in turn.
 # The rebuild below rewrites generated files the tests check, so it waits.
+# The ALPS Writer tests are one of them: they read only the ALPS Writer package,
+# so they run beside the other unit tests instead of before them.
 CHECKS="$(mktemp -d "${TMPDIR:-/tmp}/pre-push.XXXXXX")"
 trap 'rm -rf "$CHECKS"' EXIT
+
+check_alps() { pnpm test:alps; }
 
 # lint + formatting (CI build job)
 check_lint() { pnpm lint; }
@@ -80,7 +84,9 @@ check_hook() {
   done
 }
 
-for check in lint format bump bundle hook; do
+checks="lint format bump bundle hook"
+[ "${SKIP_TESTS:-}" = "1" ] || checks="alps $checks"
+for check in $checks; do
   (
     if "check_$check" >"$CHECKS/$check.log" 2>&1; then status=0; else status=1; fi
     echo "$status" >"$CHECKS/$check.status"
@@ -96,7 +102,7 @@ if [ "${SKIP_TESTS:-}" = "1" ]; then
   fi
   echo "[pre-push] ⚠ SKIP_TESTS=1 — skipping the unit tests."
 else
-  { pnpm test:checks && pnpm test:unit; } || suite=1
+  { pnpm test:checks && pnpm test:unit:mjs; } || suite=1
 fi
 wait
 [ "$suite" = 0 ] ||
@@ -107,6 +113,10 @@ passed() {
   cat "$CHECKS/$1.log"
   [ "$(cat "$CHECKS/$1.status" 2>/dev/null)" = 0 ]
 }
+if [ "${SKIP_TESTS:-}" != "1" ]; then
+  passed alps ||
+    fail "the ALPS Writer tests failed." "Push a known-red WIP branch with: SKIP_TESTS=1 git push …"
+fi
 passed lint ||
   fail "ESLint reported problems." "Auto-fix what it can: pnpm --filter alps-writer lint:fix"
 passed format ||

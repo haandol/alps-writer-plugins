@@ -193,13 +193,18 @@ so independent files overlap within a single CPU-based concurrency limit. Test
 files keep process isolation and their own temporary fixtures. Run one with
 `pnpm test:alps`, `pnpm test:adr`, `pnpm test:ontology`, `pnpm test:deepeval`, or
 `pnpm test:report-rendering`. `pnpm test:workspace` runs the installed-dependency
-suites and shared asset/guidance checks; CI pairs it with the full ADR and ontology
-suites in `runtime`, so the tests run once across those two required jobs.
+suites and shared asset/guidance checks; CI runs the dependency-free ADR and ontology
+suites with no install — the ADR unit tests in `build` before its install, the rest
+in `runtime` — so every test runs once across the required jobs.
 
-`format:check` uses Prettier's content cache under `node_modules/.cache/prettier`.
-Changes to file content, formatting options or the Prettier version invalidate
-entries. Delete that disposable cache or run `pnpm exec prettier --check .` for
-a full scan. CI still checks every file on a fresh checkout.
+Prettier keeps a content cache under `node_modules/.cache/prettier`, and
+`format:check` skips the files it holds as formatted. Prettier fills the cache only
+when it writes, so `pnpm format` and the pre-commit formatter run with `--cache`; a
+check adds nothing to it, and a run without `--cache` deletes it. Run `pnpm format`
+once after a fresh install to fill it. Changes to file content, formatting options
+or the Prettier version invalidate entries. Delete that disposable cache or run
+`pnpm exec prettier --check .` for a full scan. CI still checks every file on a
+fresh checkout.
 
 The Node test scripts also enable Node's compile cache in temporary storage and
 share its path with child CLI processes. Source or runtime changes invalidate
@@ -222,7 +227,8 @@ Automated in these places, so you rarely have to remember:
   typechecks only when the commit changes the package configuration or the
   dependencies — the only other inputs of that typecheck.
 - **`.husky/pre-push`** runs the fast part locally and blocks the push on any
-  failure: the generated-asset checks, `pnpm test:unit`, `lint`, `format:check`,
+  failure: the generated-asset checks, the unit tests of `pnpm test:unit` (the ALPS
+  Writer ones beside the rest), `lint`, `format:check`,
   `bump:check`, a boot check on the committed MCP bundle and the adr-writer hook,
   and a rebuild (with the typecheck) that fails if `plugins/alps-writer/dist/` is
   stale. Integration tests are left to CI, whose required jobs run them on every
@@ -231,11 +237,12 @@ Automated in these places, so you rarely have to remember:
   run while the unit tests run and report after them, in order; the rebuild waits
   for the tests. For a WIP branch you know is red: `SKIP_TESTS=1 git push …` —
   that skips only the unit tests, nothing else.
-- **`.github/workflows/ci.yaml`** splits `pnpm test` between `test` and `runtime`,
-  and runs `lint`, `format:check`, version checks and a rebuild that fails if the
+- **`.github/workflows/ci.yaml`** splits `pnpm test` between `test`, `runtime` and
+  the start of `build`, and runs `lint`, `format:check`, version checks and a rebuild that fails if the
   committed `plugins/alps-writer/dist/` is stale. The `runtime` job checks what a
   marketplace install actually executes with **no install step** — the
-  dependency-free adr-writer and ontology-writer suites in one runner, an MCP
+  dependency-free adr-writer integration and ontology-writer suites in one runner
+  (`build` runs adr-writer's unit tests the same way, before its install), an MCP
   `initialize` round-trip against the committed bundle, and the hooks — since a
   consumer has no `node_modules` and the pnpm-based jobs always do. Everything is
   on Node 24 (`engines.node >= 24`); Hooks can be skipped with `--no-verify`, CI
@@ -247,6 +254,10 @@ Automated in these places, so you rarely have to remember:
   that commit's version has no tag yet, it tags the commit and publishes the
   GitHub release, with the merged pull request's `## Release notes` section as its
   notes (GitHub's generated notes without one); otherwise it does nothing.
+- **`.github/workflows/cache.yaml`** keeps main's dependency cache. A pull request
+  run restores caches only from its own branch and main, and CI on main skips the
+  jobs that would save one, so on every push to main this restores the cache for
+  the current lockfile, and installs and saves it when it is missing.
 
 Behaviour evals (`plugins/adr-writer/evals/`) are **not** part of `pnpm test` —
 they call a real model, cost money, and are non-deterministic. Run them by hand
