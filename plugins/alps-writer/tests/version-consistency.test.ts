@@ -39,6 +39,8 @@ test("every plugin manifest declares the same version", () => {
     "plugins/adr-writer/.codex-plugin/plugin.json",
     "plugins/alps-writer/.claude-plugin/plugin.json",
     "plugins/alps-writer/.codex-plugin/plugin.json",
+    "plugins/ontology-writer/.claude-plugin/plugin.json",
+    "plugins/ontology-writer/.codex-plugin/plugin.json",
   ];
 
   for (const manifest of manifests) {
@@ -46,7 +48,7 @@ test("every plugin manifest declares the same version", () => {
   }
 });
 
-test("the marketplace metadata and both plugin entries declare the same version", () => {
+test("the marketplace metadata and every plugin entry declare the same version", () => {
   const marketplace = readJson(".claude-plugin/marketplace.json");
   const metadata = marketplace.metadata as { version?: string };
   assert.equal(metadata.version, EXPECTED, "marketplace.json metadata.version drifted");

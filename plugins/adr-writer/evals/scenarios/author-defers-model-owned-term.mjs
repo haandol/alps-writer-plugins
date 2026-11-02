@@ -1,7 +1,7 @@
 import { seedMapping, seedRuleDocs, skillText, TAIL_SPEC, write } from "../lib/harness.mjs";
 
-const MODEL = `@prefix m: <urn:adr-writer:model:> .
-@prefix pm: <urn:adr-writer:process:> .
+const MODEL = `@prefix m: <urn:ontology-writer:model:> .
+@prefix pm: <urn:ontology-writer:process:> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 m:ordering a pm:BoundedContext ;
@@ -34,7 +34,7 @@ export const obligations = [
   },
   {
     id: "pending",
-    text: "Contract rows whose meaning depends on 부분 환불 요청 are marked pending (미정) on that model proposal, name the awaited business change in business language, and are not presented as approved contracts. Model file paths or element identifiers such as urn:adr-writer:model: in the ADR row are a failure.",
+    text: "Contract rows whose meaning depends on 부분 환불 요청 are marked pending (미정) on that model proposal, name the awaited business change in business language, and are not presented as approved contracts. Model file paths or element identifiers such as urn:ontology-writer:model: in the ADR row are a failure.",
   },
   {
     id: "value",

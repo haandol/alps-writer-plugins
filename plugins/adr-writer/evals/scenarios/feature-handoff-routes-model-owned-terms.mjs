@@ -1,7 +1,7 @@
 import { alpsSkillText, seedMapping, seedRuleDocs, TAIL_SPEC, write } from "../lib/harness.mjs";
 
-const MODEL = `@prefix m: <urn:adr-writer:model:> .
-@prefix pm: <urn:adr-writer:process:> .
+const MODEL = `@prefix m: <urn:ontology-writer:model:> .
+@prefix pm: <urn:ontology-writer:process:> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 m:ordering a pm:BoundedContext ;

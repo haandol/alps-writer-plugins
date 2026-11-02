@@ -5,7 +5,7 @@
     "url": "https://github.com/haandol"
   },
   "metadata": {
-    "description": "ALPS (PRD) authoring + ADR-driven development for Claude Code, as two independent plugins.",
+    "description": "ALPS (PRD) authoring, a business process model above ADRs, and ADR-driven development for Claude Code, as three independent plugins.",
     "version": "0.11.0"
   },
   "plugins": [
@@ -35,6 +35,20 @@
       "license": "MIT",
       "category": "development",
       "tags": ["adr", "spec-driven", "drift-detection", "hooks"],
+      "strict": false
+    },
+    {
+      "name": "ontology-writer",
+      "source": "./plugins/ontology-writer",
+      "description": "Business process model above ADRs as a closed RDFS-lite ontology in Turtle: build it from documents with /process-build, change it through one approval summary with /process-edit, align realizing ADRs with /process-align, and open a read-only 3D view with /process-view. Pairs with adr-writer for changes that reach ADRs.",
+      "version": "0.11.0",
+      "author": {
+        "name": "haandol"
+      },
+      "homepage": "https://github.com/haandol/alps-writer-plugins",
+      "license": "MIT",
+      "category": "development",
+      "tags": ["ontology", "business-process", "rdfs", "adr"],
       "strict": false
     }
   ]

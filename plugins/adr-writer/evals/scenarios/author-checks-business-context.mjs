@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
-  PLUGIN_ROOT,
+  ONTOLOGY_PLUGIN_ROOT,
   seedIndexedAdrs,
   seedMapping,
   seedRuleDocs,
@@ -9,10 +9,16 @@ import {
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { validateModel } from "../../scripts/process-model-lib.mjs";
-import { queryContext, renderContext } from "../../scripts/process-model-query.mjs";
+import { validateModel } from "../../../ontology-writer/scripts/process-model-lib.mjs";
+import {
+  queryContext,
+  renderContext,
+} from "../../../ontology-writer/scripts/process-model-query.mjs";
 
-const MODEL = readFileSync(path.join(PLUGIN_ROOT, "templates", "process", "example.ttl"), "utf8");
+const MODEL = readFileSync(
+  path.join(ONTOLOGY_PLUGIN_ROOT, "templates", "process", "example.ttl"),
+  "utf8",
+);
 const MAPPING = {
   categories: {
     checkout: {
@@ -50,7 +56,7 @@ export const obligations = [
   },
   {
     id: "identifiers",
-    text: "The proposed ADR body contains no docs/process path and no model element identifiers such as m:ordering.order-placed or urn:adr-writer:model:.",
+    text: "The proposed ADR body contains no docs/process path and no model element identifiers such as m:ordering.order-placed or urn:ontology-writer:model:.",
   },
 ].map((o) => ({ ...o, label: `business context: ${o.id}` }));
 

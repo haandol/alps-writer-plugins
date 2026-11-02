@@ -44,7 +44,7 @@ When that level defines a business term (a business concept or a bounded
 context's term), reuse its definition and do not define the term again in the
 glossary. Show a new definition or a changed meaning in the ADR approval summary
 as that level's change proposal; it is decided only through that level's own
-approval path (for ADR Writer's business process model, `/process-edit`).
+approval path (for the business process model, ontology-writer's `/process-edit`).
 Approving the ADR does not approve the proposal. While the proposal is unapproved or rejected, do not finalize ADR content
 that depends on the meaning:
 

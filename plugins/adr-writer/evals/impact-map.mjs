@@ -36,14 +36,14 @@ export const IMPACT_RULES = [
   {
     pathPrefixes: [
       "plugins/adr-writer/references/business-context.md",
-      "plugins/adr-writer/references/process-model.md",
-      "plugins/adr-writer/scripts/process-model",
-      "plugins/adr-writer/templates/process/",
+      "plugins/ontology-writer/references/process-model.md",
+      "plugins/ontology-writer/scripts/process-model",
+      "plugins/ontology-writer/templates/process/",
     ],
     scenarioPrefixes: ["author-checks-business-", "impl-reports-business-", "process-"],
   },
   {
-    pathPrefixes: ["plugins/adr-writer/skills/process-"],
+    pathPrefixes: ["plugins/ontology-writer/skills/process-"],
     scenarioPrefixes: ["process-"],
   },
   {

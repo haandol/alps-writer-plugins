@@ -14,6 +14,7 @@ import { STAMPED_RULE_DOCS } from "../../scripts/adr-lint-lib.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PLUGIN_ROOT = path.resolve(HERE, "..", "..");
 export const ALPS_PLUGIN_ROOT = path.resolve(PLUGIN_ROOT, "..", "alps-writer");
+export const ONTOLOGY_PLUGIN_ROOT = path.resolve(PLUGIN_ROOT, "..", "ontology-writer");
 export const TEMPLATES = path.join(PLUGIN_ROOT, "templates", "adr");
 export const STRUCTURE_LINT = path.join(PLUGIN_ROOT, "scripts", "adr-structure-lint.mjs");
 export const ADR_HOOK = path.join(PLUGIN_ROOT, "hooks", "surface-adr-context.mjs");
@@ -79,6 +80,14 @@ export function seedIndexedAdrs(dir, mapping, supplied = {}) {
 // (the frontmatter is client registration metadata, not instructions).
 export function skillText(name, options = {}) {
   return promptText(path.join(PLUGIN_ROOT, "skills", name, "SKILL.md"), PLUGIN_ROOT, options);
+}
+
+export function ontologySkillText(name, options = {}) {
+  return promptText(
+    path.join(ONTOLOGY_PLUGIN_ROOT, "skills", name, "SKILL.md"),
+    ONTOLOGY_PLUGIN_ROOT,
+    options,
+  );
 }
 
 export function alpsSkillText(name, options = {}) {

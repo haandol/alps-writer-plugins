@@ -92,8 +92,9 @@ business rules or actor responsibilities, the model is the reference and the ADR
 changes unless the user approves a process change. ADR edits, category moves and
 code refactors never change the model. In such a repository the model owns
 business-term definitions, so the glossary keeps only other terms. Without model
-documents nothing in this section applies. The vocabulary and validation rules
-are in `${CLAUDE_PLUGIN_ROOT}/references/process-model.md`.
+documents nothing in this section applies. The model is kept with the separate
+ontology-writer plugin, whose `references/process-model.md` holds the vocabulary
+and validation rules; ADR Writer never reads the model.
 
 ### Named applications of the same test
 

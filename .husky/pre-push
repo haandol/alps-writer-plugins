@@ -53,7 +53,7 @@ trap 'rm -rf "$CHECKS"' EXIT
 check_lint() { pnpm lint; }
 check_format() { pnpm format:check; }
 
-# Release version across all 13 sites. Only 8 are covered by a test; the five
+# Release version across all 16 sites. Only 11 are covered by a test; the five
 # rules-version stamps in templates/adr/ are checked nowhere else, and a stamp
 # left behind makes the plugin report its own templates as stale to every
 # consumer at once.
@@ -74,8 +74,10 @@ check_bundle() {
     grep -q '"name":"alps-writer"'
 }
 check_hook() {
-  echo '{"hook_event_name":"SessionStart","source":"startup"}' |
-    node plugins/adr-writer/hooks/surface-adr-context.mjs >/dev/null
+  for hook in plugins/adr-writer/hooks/surface-adr-context.mjs \
+    plugins/ontology-writer/hooks/surface-business-context.mjs; do
+    echo '{"hook_event_name":"SessionStart","source":"startup"}' | node "$hook" >/dev/null || return 1
+  done
 }
 
 for check in lint format bump bundle hook; do
@@ -114,7 +116,7 @@ passed bump ||
 passed bundle ||
   fail "the committed MCP bundle did not answer initialize." "Try it by hand: node plugins/alps-writer/dist/index.js"
 passed hook ||
-  fail "the adr-writer SessionStart hook failed to run." "It seeds ADR context when a session starts or is restored, so this breaks the plugin immediately."
+  fail "a SessionStart hook failed to run." "The hooks seed ADR and business context when a session starts or is restored, so this breaks the plugin immediately."
 
 # ── the committed bundle matches src (CI build job) ────────────────────────
 # plugins/alps-writer/dist/ is committed and a marketplace install runs it

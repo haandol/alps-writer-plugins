@@ -50,8 +50,9 @@ Load:
 - `docs/adr/.mapping.json` when it exists
 - the optional trailing Glossary Appendix and any supplied term explanations needed
   by the selected Features; read `docs/adr/glossary.md` if it exists
-- whether a current reference level above ADRs exists: ADR Writer's business
-  process model is one or more Turtle documents in `docs/process/`. The PRD being
+- whether a current reference level above ADRs exists: the business process
+  model, which the ontology-writer plugin keeps, is
+  one or more Turtle documents in `docs/process/`. The PRD being
   transferred is never a current reference level.
 
 Parse the dependency graph before processing features:

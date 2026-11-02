@@ -221,7 +221,7 @@
         {
           "path": "docs/adr/process-modeling/0001-introduce-business-process-model-level.md",
           "status": "Proposed",
-          "summary": "ADR 위에 전체 흐름과 기능 사이 관계만 담는 Turtle 업무 프로세스 모델을 두고 구현 권위는 ADR이 가지며 기능 연결은 ADR 색인에만 기록한다"
+          "summary": "ADR 위에 전체 흐름과 기능 사이 관계만 담는 Turtle 업무 프로세스 모델을 두어 별도 플러그인 Ontology Writer가 맡고 구현 권위는 ADR이 가지며 기능 연결은 ADR 색인에만 기록한다"
         },
         {
           "path": "docs/adr/process-modeling/0002-retrieve-business-context-for-agents.md",

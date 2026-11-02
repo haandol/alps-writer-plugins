@@ -1,19 +1,22 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
-  PLUGIN_ROOT,
+  ONTOLOGY_PLUGIN_ROOT,
+  ontologySkillText,
   ruleText,
   seedIndexedAdrs,
   seedMapping,
   seedRuleDocs,
-  skillText,
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { indexGraph, parseTurtle } from "../../scripts/process-model-lib.mjs";
-import { alignmentPlan } from "../../scripts/process-model-align.mjs";
+import { indexGraph, parseTurtle } from "../../../ontology-writer/scripts/process-model-lib.mjs";
+import { alignmentPlan } from "../../../ontology-writer/scripts/process-model-align.mjs";
 
-const MODEL = readFileSync(path.join(PLUGIN_ROOT, "templates", "process", "example.ttl"), "utf8");
+const MODEL = readFileSync(
+  path.join(ONTOLOGY_PLUGIN_ROOT, "templates", "process", "example.ttl"),
+  "utf8",
+);
 const MAPPING = {
   categories: {
     checkout: {
@@ -90,7 +93,7 @@ export default {
       processId: "ordering.place-order",
     });
     return [
-      skillText("process-align", { references: ["references/process-model.md"] }),
+      ontologySkillText("process-align", { references: ["references/process-model.md"] }),
       ruleText("concepts.md"),
       `\n---\n\n# This run`,
       "/process-align ordering.place-order",

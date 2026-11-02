@@ -171,9 +171,11 @@ export function selectImpacted(cases, paths) {
             )
           : paths.some(
               (p) =>
-                /plugins\/adr-writer\/(references|templates|scripts)\/|evals\/(regression|deepeval)\//.test(
+                /plugins\/(adr|ontology)-writer\/(references|templates|scripts)\/|evals\/(regression|deepeval)\//.test(
                   p,
-                ) || p.startsWith(`plugins/adr-writer/skills/${c.skill}/`),
+                ) ||
+                (/^plugins\/(adr|ontology)-writer\/skills\//.test(p) &&
+                  p.split("/")[3] === c.skill),
             )),
   );
 }

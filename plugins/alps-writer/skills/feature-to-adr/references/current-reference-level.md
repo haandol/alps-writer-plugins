@@ -18,8 +18,8 @@ features, so the same fact never has two current owners.
   that keep those relationships to the owning ADRs. A value never moves into a
   proposal.
 - A repeated handoff with the same meaning creates no proposal.
-- A proposal is approved only through that level's own approval path — for ADR
-  Writer's business process model, `/process-edit` — never by approving the ADR
+- A proposal is approved only through that level's own approval path — for the
+  business process model, ontology-writer's `/process-edit` — never by approving the ADR
   contracts shown beside it.
 - A proposal awaiting this handoff's approval summary does not block drafting.
   Until it is approved, or after it is rejected, the items that depend on its
@@ -27,7 +27,7 @@ features, so the same fact never has two current owners.
   Features that do not depend on it continue.
 - Tell `/adr-new` which contract rows depend on an unapproved proposal; its
   glossary rules keep those rows pending and the ADR `Proposed`.
-- For ADR Writer's business process model, `/adr-new` queries each owner's
+- For the business process model, `/adr-new` queries each owner's
   business context and judges a Feature that realizes no step. Pass it the
   proposals already routed so it does not ask again.
 - After approval the owning ADR body keeps the short explanation its contract

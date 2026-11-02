@@ -1,8 +1,8 @@
 import {
+  ontologySkillText,
   ruleText,
   seedMapping,
   seedRuleDocs,
-  skillText,
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
@@ -53,7 +53,7 @@ export default {
     write(dir, "docs/source/refund-policy.md", POLICY);
     write(dir, "docs/source/2027-plan.md", MEMO);
     return [
-      skillText("process-build", { references: ["references/process-model.md"] }),
+      ontologySkillText("process-build", { references: ["references/process-model.md"] }),
       ruleText("concepts.md"),
       `\n---\n\n# This run`,
       "/process-build docs/source",

@@ -8,6 +8,14 @@ The current Purpose, all still-valid Decision Drivers, adopted choice, rationale
 and requirement contract remain together in the ADR body. Reading this log is
 optional for understanding the current decision.
 
+## 2026-11-02 — 업무 프로세스 모델 레벨을 별도 플러그인 Ontology Writer로 나눔
+
+- **Current ADR**: [introduce-business-process-model-level](./0001-introduce-business-process-model-level.md), [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md), [govern-process-model-lifecycle-and-cascade](./0003-govern-process-model-lifecycle-and-cascade.md), [build-process-model-from-documents](./0004-build-process-model-from-documents.md), [render-read-only-process-views](./0005-render-read-only-process-views.md)
+- **Change type**: architecture
+- **What**: ADR Writer가 업무 프로세스 모델 레벨까지 맡던 결정 → 별도 플러그인 Ontology Writer가 어휘, 모델의 작성·검증·저장, 업무 맥락 조회와 그 세션 지침, 변경 승인과 하위 전파, 문서에서 모델 구축과 화면을 맡고, ADR Writer는 ADR과 ADR 색인(실현 기능 기록의 형식 포함)을 맡는다. 모델 변경과 색인 연결은 Ontology Writer가 같은 변경 단위로 쓰고, 영향 ADR이 있는 변경에는 두 플러그인이 함께 있어야 한다. 모델 문서가 있으면 ADR Writer의 세션 지침은 업무 맥락을 Ontology Writer로 확인하고 확인하지 못했으면 그 사실을 밝히라는 한 줄을 더하며, ADR 작업을 막지 않는다.
+- **Why**: 모델을 쓰지 않는 사용자도 세션마다 프로세스 모델 스킬 다섯 개의 설명을 싣고 있었고, 그 분량은 나머지 ADR 스킬 설명을 모두 합친 것과 비슷했다. 사용자가 PRD, 업무 모델과 ADR 계층마다 플러그인을 나누기로 정했다(사용자 결정, 2026-11-02).
+- **What is now void**: ADR Writer만으로 모델을 작성하고 검증한다는 기준, 소유 플러그인으로 ADR Writer를 채택한 판단.
+
 ## 2026-11-01 — 프로세스 화면에 요소 찾기, 관계 이동과 3차원 전경을 더함
 
 - **Current ADR**: [render-read-only-process-views](./0005-render-read-only-process-views.md)

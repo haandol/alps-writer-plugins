@@ -130,11 +130,6 @@ codex plugin add adr-writer@alps-writer
 | `/adr-review [category]`         | Review saved ADRs as documents, including the recommended exact-target follow-up after `/adr-new`; honor explicit skip/defer and reuse an unchanged completed review. Code-free and report-only; no arg reviews every ADR. Document PASS leaves a new ADR Proposed.                                                                                                                                                                               |
 | `/adr-sync [category] [--quick]` | Detect/repair drift between code and ADR, lead with semantic changes, and visualize complex decision, dependency, or unresolved contradiction flows                                                                                                                                                                                                                                                                                               |
 | `/adr-rollup [category]`         | Consolidate ADR groups whose evolution history of one logical decision is split (no arg → all categories)                                                                                                                                                                                                                                                                                                                                         |
-| `/process-edit [change]`         | Change the optional business process model (`docs/process/*.ttl`) from a request: one approval summary with the semantic diff, affected features, link changes, processes that become `Proposed` and each affected ADR's semantic diff, then cascade to ADRs, `/adr-impl` and an alignment review                                                                                                                                                 |
-| `/process-sync [process]`        | Confirm direct Turtle edits like a save, mark changed `Accepted` processes `Proposed`, and propose the downstream propagation without overwriting the edit                                                                                                                                                                                                                                                                                        |
-| `/process-align [process]`       | Make a process current only when its realizing features are implemented, compliance contracts are in place, nothing contradicts the model and every observation criterion passed by executing the features' real entry points                                                                                                                                                                                                                     |
-| `/process-build [documents]`     | Build model candidates from documents (AgentStorm maps included) with sources and verdicts; save only what the user confirms                                                                                                                                                                                                                                                                                                                      |
-| `/process-view`                  | Open a read-only standalone view of the model: a 3D business city, an explorer that finds every element by bounded context, the landscape, flows and details, with realization status from the ADR index                                                                                                                                                                                                                                          |
 
 The shared authoring rules and procedures (category-split, Status transitions, finding the code an ADR governs) live in `docs/adr/` (`concepts.md` — the principle, dependency model, and Status transitions; `authoring-rules.md`; `structure.md`; plus `README.md` as the index) — seeded from this plugin's `templates/adr/` on first run. Every command reads them as the single source of truth.
 
@@ -202,23 +197,23 @@ pass checks the generated output as well as the author's source.
 ## Business process model (optional)
 
 A repository may keep a business process model above its ADRs: Turtle documents
-in `docs/process/` using the closed vocabulary in `templates/process/vocabulary.ttl`.
-It owns business flows, event hand-offs, policies, cross-step rules and business
-terms; ADRs stay the only implementation authority and keep values, state
-machines and detailed conditions. A category's `realizes` list in `.mapping.json`
-is the only link between a feature and the steps it realizes. Without model
-documents nothing changes. The rules are in `references/process-model.md`; the
-deterministic commands are `node scripts/process-model.mjs <command>` with
-`validate`, `format`, `diff`, `query`, `impact`, `apply`, `transition`, `align`,
-`lifecycle`, `changes` and `view`, documented at the top of the script.
+in `docs/process/`, maintained with the separate [`ontology-writer`](../ontology-writer)
+plugin. It owns business flows, event hand-offs, policies, cross-step rules and
+business terms; ADRs stay the only implementation authority and keep values,
+state machines and detailed conditions. A category's `realizes` list in
+`.mapping.json` is the only link between a feature and the steps it realizes.
+This plugin never reads the model: `adr-structure-lint` checks only the shape of
+`realizes`, ADR work moves those links when categories split or merge, and the
+business-context checks of ADR work run through ontology-writer's query. Without
+model documents nothing changes.
 
 ## Hook
 
 One hook supports the main session — **no external LLM calls**; the main model classifies text and decides.
 
-| Hook           | When it fires                          | Role                                                                                                                                                                                                                                               |
-| -------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SessionStart` | Startup, resume, clear, and compaction | Inject a compact ADR admission directive; admitted work reads `docs/adr/.mapping.json` before code changes. With a business process model, two more lines ask for the business-context query before ADR changes and before code of linked features |
+| Hook           | When it fires                          | Role                                                                                                                                                                                                                                                              |
+| -------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SessionStart` | Startup, resume, clear, and compaction | Inject a compact ADR admission directive; admitted work reads `docs/adr/.mapping.json` before code changes. With a business process model, one more line says that business context is checked through ontology-writer, and that work states when it could not be |
 
 The directive first applies the ADR admission gate. Requirement contracts, durable boundaries, provider/model choices, key designs, algorithms, and fallback policies enter the cycle and trigger an on-demand read of the full mapping and plausible ADR bodies; replaceable SDKs, libraries, frameworks, and credential/auth adapters stay in code. The hook never blocks an edit, injects mapping contents, or dictates private reasoning or agent topology. Running at session start, resume, clear, and compaction recovery keeps the directive available without executing on every user message.
 

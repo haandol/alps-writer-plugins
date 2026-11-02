@@ -172,28 +172,29 @@ pnpm format:check                  # Check formatting; reuse unchanged content r
 ```bash
 pnpm test:unit         # unit tests: no git, browser or other external tool (seconds)
 pnpm test:integration  # integration tests: git, a browser or another external tool
-pnpm test              # asset/guidance checks, ALPS, then every ADR, DeepEval and browser test
-pnpm bump:check        # every release-version site agrees (13 of them)
+pnpm test              # asset/guidance checks, ALPS, then every ADR, ontology, DeepEval and browser test
+pnpm bump:check        # every release-version site agrees (16 of them)
 ```
 
 Tests come in two kinds, and behaviour evals are a third thing (below). A unit
 test needs no external tool: it runs in its own process, or starts only this
 repository's Node scripts, which start none either. An integration test needs
 git, a browser or another external tool; its file is named
-`*.integration.test.mjs`, or lives in `plugins/adr-writer/integration-tests/`.
+`*.integration.test.mjs`, or lives in an `integration-tests/` directory
+(`plugins/adr-writer/` or `plugins/ontology-writer/`).
 Put a new test in the unit file when it needs no external tool and in the
 matching `*.integration.test.mjs` file when it does. `pnpm test:unit` runs the
-ALPS tests and the ADR and DeepEval unit tests; `pnpm test:integration` runs the
+ALPS tests and the ADR, ontology and DeepEval unit tests; `pnpm test:integration` runs the
 rest. Keep special cases of git or the file system to one representative test
 per kind.
 
-In `pnpm test`, the ALPS tests run first, then the ADR, DeepEval and browser test files share one Node worker pool,
+In `pnpm test`, the ALPS tests run first, then the ADR, ontology, DeepEval and browser test files share one Node worker pool,
 so independent files overlap within a single CPU-based concurrency limit. Test
 files keep process isolation and their own temporary fixtures. Run one with
-`pnpm test:alps`, `pnpm test:adr`, `pnpm test:deepeval`, or
+`pnpm test:alps`, `pnpm test:adr`, `pnpm test:ontology`, `pnpm test:deepeval`, or
 `pnpm test:report-rendering`. `pnpm test:workspace` runs the installed-dependency
-suites and shared asset/guidance checks; CI pairs it with the full ADR suite in
-`runtime`, so the tests run once across those two required jobs.
+suites and shared asset/guidance checks; CI pairs it with the full ADR and ontology
+suites in `runtime`, so the tests run once across those two required jobs.
 
 `format:check` uses Prettier's content cache under `node_modules/.cache/prettier`.
 Changes to file content, formatting options or the Prettier version invalidate
@@ -333,8 +334,15 @@ and verifies that fixture work leaves the outer checkout unchanged.
 
 ### Shared report-writing changes
 
-Edit `shared/report-writer/`, not the generated adr-writer copy. Run
-`pnpm report-skill:sync` and `pnpm report-skill:check`. The dependency-free Mermaid
+Edit `shared/report-writer/`, not the generated adr-writer and ontology-writer
+copies. Run `pnpm report-skill:sync` and `pnpm report-skill:check`.
+
+### Scripts ontology-writer shares with adr-writer
+
+ontology-writer runs copies of `adr-lint-lib.mjs`, `adr-status-transition.mjs` and
+`adr-impl-review-open.mjs`. Edit the adr-writer originals, then run
+`pnpm shared-scripts:sync`; `pnpm shared-scripts:check`, part of
+`pnpm test:checks`, rejects a stale copy. The dependency-free Mermaid
 implementation remains in the ADR scripts; the sync step distributes it with the
 standalone skill. Global installation is an explicit
 `node scripts/sync-report-skill.mjs --global`, never a build side effect.

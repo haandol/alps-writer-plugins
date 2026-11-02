@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
-  PLUGIN_ROOT,
+  ONTOLOGY_PLUGIN_ROOT,
   seedIndexedAdrs,
   seedMapping,
   seedRuleDocs,
@@ -9,10 +9,16 @@ import {
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { validateModel } from "../../scripts/process-model-lib.mjs";
-import { queryContext, renderContext } from "../../scripts/process-model-query.mjs";
+import { validateModel } from "../../../ontology-writer/scripts/process-model-lib.mjs";
+import {
+  queryContext,
+  renderContext,
+} from "../../../ontology-writer/scripts/process-model-query.mjs";
 
-const MODEL = readFileSync(path.join(PLUGIN_ROOT, "templates", "process", "example.ttl"), "utf8");
+const MODEL = readFileSync(
+  path.join(ONTOLOGY_PLUGIN_ROOT, "templates", "process", "example.ttl"),
+  "utf8",
+);
 const MAPPING = {
   categories: {
     payments: {

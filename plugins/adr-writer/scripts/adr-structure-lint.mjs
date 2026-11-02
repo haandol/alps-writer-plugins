@@ -18,11 +18,9 @@
 // It shells out to adr-invariants.sh (unless --no-invariants) so a single run
 // covers reverse references too, folding that exit code into the aggregate.
 //
-// When the repository has a business process model (Turtle documents in the
-// ADR directory's sibling `process/`, docs/process by default) or
-// `realizes` links in the index, it also runs the closed-world model checks and
-// the index-link checks of scripts/process-model-fs.mjs. Without either, the
-// report is exactly what it was before that level existed.
+// A category's `realizes` entries name business process model steps. This lint
+// checks only their shape; Ontology Writer's `process-model validate` checks them
+// against the model, which this plugin does not read.
 //
 // Usage:
 //   node adr-structure-lint.mjs [--adr-dir docs/adr] [category] [--json]
@@ -64,7 +62,6 @@ import {
   rulesVersion,
   compareVersions,
 } from "./adr-lint-lib.mjs";
-import { processLevelFindings } from "./process-model-fs.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
@@ -392,47 +389,6 @@ function main() {
             `adrs path for category "${key}" does not exist on disk: ${a}`,
           );
       }
-    }
-  }
-
-  // ── business process model (optional level above ADRs) ────────────────
-  // Silent unless the repository has model documents or realizes links. Model
-  // checks are global; index-link and realizing-ADR checks follow the category
-  // filter.
-  {
-    const { findings } = processLevelFindings({
-      processDir: path.join(path.dirname(adrRoot), "process"),
-      adrRoot,
-      mapping,
-      mappingPath,
-      rel: relFromRepo,
-      inScope: (key) =>
-        !opts.category || key === opts.category || key.startsWith(opts.category + "/"),
-    });
-    // The mapping-shape check above reports a realizes value that is not a list of ids.
-    // A realizing feature's record finding is left out only where a check above
-    // reported the same record or file; what only the process level sees — a file of
-    // the feature that another category records, a record naming another folder's
-    // ADR — is reported here.
-    const lintErrors = rep.errors;
-    const coveredBy = {
-      "process-adr-status-mismatch": (f, e) =>
-        e.rule === "status-index-mismatch" && e.where === f.where,
-      "process-adr-missing": (f, e) =>
-        (e.rule === "mapping-dangling-adr" && e.msg.endsWith(`: ${f.where}`)) ||
-        (e.rule === "read" && e.where === f.where),
-      "process-adr-unindexed": (f, e) => e.rule === "index-orphan-mapping" && e.where === f.where,
-      "process-adr-record-invalid": (f, e) =>
-        (f.where === f.category &&
-          /^map-adrs-/.test(e.rule) &&
-          e.msg.includes(`category "${f.category}"`)) ||
-        (e.rule === "mapping-dangling-adr" && e.msg.endsWith(`: ${f.where}`)) ||
-        (e.rule === "map-adr-double-indexed" && e.msg.includes(`ADR "${f.where}"`)),
-    };
-    for (const f of findings) {
-      if (f.code === "process-link-shape") continue;
-      if (coveredBy[f.code] && lintErrors.some((e) => coveredBy[f.code](f, e))) continue;
-      rep.add(f.level === "error" ? "error" : "warn", f.code, f.where, f.msg);
     }
   }
 

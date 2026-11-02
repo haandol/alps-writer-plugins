@@ -4,8 +4,9 @@ Read this module when the repository has a business process model — one or mor
 Turtle documents in `docs/process/` — and the current workflow creates or
 changes an ADR decision or contract, or changes code of a feature linked to a
 process step. Without model documents, skip it entirely: add no output,
-question, link judgment or index change. Vocabulary and validation are in
-[process model](process-model.md).
+question, link judgment or index change. The model, its vocabulary, its
+validation and the query belong to the separate ontology-writer plugin; this
+plugin never reads the model.
 
 ## When to check
 
@@ -29,9 +30,15 @@ They only move `realizes` links in `docs/adr/.mapping.json`:
 Automatic lifecycle transitions — `/adr-impl` promoting to `Accepted`,
 `/adr-sync` returning an ADR to `Proposed` — never wait for a query.
 
+Run ontology-writer's query, the command its session directive names:
+
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/process-model.mjs query --category <key>
+node <ontology-writer>/scripts/process-model.mjs query --category <key>
 ```
+
+When ontology-writer is not available, state in the approval summary or report
+that the business context was not checked, and continue; the missing query never
+blocks the work.
 
 The query also takes `--process`, `--concept` or `--event`, and
 `--include-retired`. It returns only connected elements: the feature's steps and
@@ -60,7 +67,7 @@ again.
 - **Propose, do not absorb.** When no such choice exists, or the change needs a
   different flow, event, policy, cross-feature rule, or a business concept or
   term the model defines, raise a process change proposal through
-  `/process-edit`. Until it is approved, or while it is rejected, do not finalize
+  ontology-writer's `/process-edit`. Until it is approved, or while it is rejected, do not finalize
   ADR content that depends on it: save that contract row with a visible pending
   marker and the awaited business change in business language, without the
   model's file location or element ids. A pending row is not implemented, keeps

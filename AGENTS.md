@@ -1,6 +1,6 @@
 # AGENTS.md
 
-`alps-writer-plugins` — a Codex and Claude Code marketplace shipping two independent plugins: **alps-writer** (ALPS/PRD authoring via an MCP server) and **adr-writer** (ADR-driven development cycle). Both install from the marketplace alone — no npm. The alps-writer MCP server is bundled with esbuild (dependencies inlined) and the bundle is committed at `plugins/alps-writer/dist/`, so the plugin runs straight from a marketplace install.
+`alps-writer-plugins` — a Codex and Claude Code marketplace shipping three independent plugins: **alps-writer** (ALPS/PRD authoring via an MCP server), **ontology-writer** (an optional business process model above ADRs) and **adr-writer** (ADR-driven development cycle). Each installs from the marketplace alone — no npm. The alps-writer MCP server is bundled with esbuild (dependencies inlined) and the bundle is committed at `plugins/alps-writer/dist/`, so the plugin runs straight from a marketplace install.
 
 **Tech Stack**: TypeScript 5.9+, Node.js >= 24, pnpm workspace, MCP SDK (`@modelcontextprotocol/sdk`), Zod
 
@@ -10,12 +10,12 @@ Everything in this repo serves one idea, so weigh changes against it.
 
 **PRD, ADR, and code are not three documents about three topics. They are the same system at three resolutions** — the way a C4 diagram shows one architecture at context, container, and component zoom. What gives a level its value is what it **refuses to show**: a context diagram that also drew every class would answer no question better than the code already does.
 
-| Level                     | Artifact                                      | The one question it answers                                                 | Owner           |
-| ------------------------- | --------------------------------------------- | --------------------------------------------------------------------------- | --------------- |
-| **Zoom out**              | ALPS PRD (`*.alps.xml`)                       | WHAT / WHY — the user's problem                                             | **alps-writer** |
-| **Above ADRs (optional)** | Business process model (`docs/process/*.ttl`) | HOW the business flows across features — events, policies, cross-step rules | **adr-writer**  |
-| **Middle**                | ADR (`docs/adr/`)                             | HOW (architecture) — the decision, its rationale, the requirement contract  | **adr-writer**  |
-| **Zoom in**               | Code / AGENTS.md / README                     | HOW (detail) — structure, names, signatures, tuning values                  | the user's repo |
+| Level                     | Artifact                                      | The one question it answers                                                 | Owner               |
+| ------------------------- | --------------------------------------------- | --------------------------------------------------------------------------- | ------------------- |
+| **Zoom out**              | ALPS PRD (`*.alps.xml`)                       | WHAT / WHY — the user's problem                                             | **alps-writer**     |
+| **Above ADRs (optional)** | Business process model (`docs/process/*.ttl`) | HOW the business flows across features — events, policies, cross-step rules | **ontology-writer** |
+| **Middle**                | ADR (`docs/adr/`)                             | HOW (architecture) — the decision, its rationale, the requirement contract  | **adr-writer**      |
+| **Zoom in**               | Code / AGENTS.md / README                     | HOW (detail) — structure, names, signatures, tuning values                  | the user's repo     |
 
 Full ALPS applies the C4 analogy literally in Section 4 with both a Mermaid
 `C4Context` and `C4Container` diagram. Lite ALPS keeps only one product-level
@@ -118,15 +118,15 @@ not needed. Default to a patch increment; increase minor or major only when
 explicitly requested, including an exact version. Honor narrower instructions
 such as bump-only or no-push. The personal `deploy-release` skill covers this workflow.
 
-The release version lives in **13 sites** that must agree, in four groups: the four plugin manifests (`.claude-plugin/` + `.codex-plugin/` for both plugins), the three `marketplace.json` versions (metadata + one per plugin entry), the `serverInfo` literal in `plugins/alps-writer/src/index.ts`, and the five `adr-writer:rules-version` stamps in `plugins/adr-writer/templates/adr/`. The `serverInfo` literal is what an MCP client reports, and `tsconfig`'s `rootDir: "src"` prevents importing the version from `package.json`. The stamps are what `adr-structure-lint` compares a consumer's seeded docs against, so a stamp left behind makes the plugin report its own templates as stale to everyone at once. Always bump with `pnpm bump <version>`, then `pnpm build` so the committed `dist/` carries the new `serverInfo`; bumping by hand has drifted twice (0.3.0 and 0.4.20 both shipped with a stale server version).
+The release version lives in **16 sites** that must agree, in four groups: the six plugin manifests (`.claude-plugin/` + `.codex-plugin/` for each of the three plugins), the four `marketplace.json` versions (metadata + one per plugin entry), the `serverInfo` literal in `plugins/alps-writer/src/index.ts`, and the five `adr-writer:rules-version` stamps in `plugins/adr-writer/templates/adr/`. The `serverInfo` literal is what an MCP client reports, and `tsconfig`'s `rootDir: "src"` prevents importing the version from `package.json`. The stamps are what `adr-structure-lint` compares a consumer's seeded docs against, so a stamp left behind makes the plugin report its own templates as stale to everyone at once. Always bump with `pnpm bump <version>`, then `pnpm build` so the committed `dist/` carries the new `serverInfo`; bumping by hand has drifted twice (0.3.0 and 0.4.20 both shipped with a stale server version).
 
-`version-consistency.test.ts` covers the first eight sites; the five stamps are covered only by `pnpm bump:check`, which is why pre-push and CI both run it.
+`version-consistency.test.ts` covers the first eleven sites; the five stamps are covered only by `pnpm bump:check`, which is why pre-push and CI both run it.
 
 Both `package.json` files are **deliberately pinned to `0.0.0`** and are not part of the release version — they are `private: true`, so their version reaches no consumer. Don't "resync" them; `version-consistency.test.ts` asserts the pin.
 
 Build (inside `plugins/alps-writer/`) runs `tsc --noEmit` (typecheck), then esbuild bundles `src/index.ts` → `dist/index.js` with deps inlined (ESM, node24 target), then copies static assets `cp -r src/templates dist/ && cp -r src/guides dist/`. The asset copy is required because the server reads XML templates / MD guides at runtime via `fs.readFileSync` (`import.meta.url`-relative). **`dist/` is committed** — regenerate and commit it whenever `src/` changes.
 
-Tests use Node's built-in test runner. ALPS TypeScript tests run through `tsx`; ADR tests are dependency-free `.mjs` tests. A unit test needs no external tool (it runs in process or starts only this repository's Node scripts, which start none either); an integration test needs git, a browser or another external tool, and its file is named `*.integration.test.mjs` or lives in `plugins/adr-writer/integration-tests/`. `pnpm test:unit` runs ALPS and the ADR and DeepEval unit tests; `pnpm test:integration` runs the rest. Keep git and file-system special cases to one representative test per kind. `pnpm test` checks generated assets and synchronized guidance, runs ALPS, then schedules ADR, DeepEval and browser test files together in one Node worker pool. This overlaps independent tests without multiplying the CPU-based worker limit across separate runners. `pnpm test:workspace` runs the same checks and installed-dependency suites; CI pairs it with the complete ADR suite in the no-install `runtime` job. Each test file retains process isolation and every suite failure blocks success.
+Tests use Node's built-in test runner. ALPS TypeScript tests run through `tsx`; ADR tests are dependency-free `.mjs` tests. A unit test needs no external tool (it runs in process or starts only this repository's Node scripts, which start none either); an integration test needs git, a browser or another external tool, and its file is named `*.integration.test.mjs` or lives in a plugin's `integration-tests/`. `pnpm test:unit` runs ALPS and the ADR, ontology and DeepEval unit tests; `pnpm test:integration` runs the rest. Keep git and file-system special cases to one representative test per kind. `pnpm test` checks generated assets and synchronized guidance, runs ALPS, then schedules ADR, DeepEval and browser test files together in one Node worker pool. This overlaps independent tests without multiplying the CPU-based worker limit across separate runners. `pnpm test:workspace` runs the same checks and installed-dependency suites; CI pairs it with the complete ADR suite in the no-install `runtime` job. Each test file retains process isolation and every suite failure blocks success.
 
 **Behaviour evals** (`plugins/adr-writer/evals/`) are separate and NOT in `pnpm test`. `pnpm test` proves a prompt _says_ something; the evals check whether an agent given that prompt _does_ it, by running real scenarios against a live model and reporting per-check hit rates. They cost money, take minutes, and are non-deterministic, so they never gate CI — their job is reproducing a reported defect (`node evals/run.mjs --live --only <name> --runs 10`) and telling you whether it happens 3/10 or 10/10, which decides the fix. Use `node evals/run.mjs --changed <base> --list` to preview the disposable impact-map selection for a branch without invoking a model. The harness itself _is_ covered by `pnpm test` via a stub agent, because an eval whose scorer cannot tell a bad reply from a good one reports green and is worse than no eval. See `plugins/adr-writer/evals/README.md`.
 
@@ -159,7 +159,7 @@ AI drafts until human review, and their agreement is not human-ground-truth accu
 
 ```
 .claude-plugin/
-└── marketplace.json      # Marketplace manifest — registers both plugins
+└── marketplace.json      # Marketplace manifest — registers the three plugins
 .agents/plugins/
 └── marketplace.json      # Codex marketplace manifest
 package.json              # Private workspace root (prettier/husky/lint-staged); version pinned 0.0.0
@@ -167,7 +167,7 @@ pnpm-workspace.yaml       # packages: plugins/alps-writer
 .github/workflows/
 └── ci.yaml               # Node 24 test/build/runtime jobs + dist-drift gate
 scripts/
-└── bump-version.mjs      # Set/verify the release version across all 13 sites
+└── bump-version.mjs      # Set/verify the release version across all 16 sites
 .adr-invariants-code-ignore # Self-hosting exclusions for code→ADR example scanning
 
 plugins/alps-writer/      # PRD plugin (bundles + commits its own MCP server)
@@ -194,8 +194,7 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 ├── .claude-plugin/plugin.json   # Claude metadata; hooks/ is auto-discovered
 ├── .codex-plugin/plugin.json    # Codex metadata; registers skills + hooks
 ├── README.md
-├── skills/               # adr-import, adr-new, adr-impl, adr-impl-refactor, adr-impl-review, adr-sync, adr-rollup,
-│                         # process-edit, process-sync, process-align, process-build, process-view (business process model)
+├── skills/               # adr-import, adr-new, adr-impl, adr-impl-refactor, adr-impl-review, adr-sync, adr-rollup, report-writer
 ├── agents/               # ADR authoring reviewer + isolated refactor/impl explainer/review/report roles
 ├── evals/                # behaviour evals (real model; NOT in pnpm test)
 │   ├── run.mjs           # runner — N runs per scenario, hit rates, shareable report
@@ -205,9 +204,6 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 │   ├── adr-invariants.sh          # one-way dependency oracle (code→ADR, ADR→PRD, rollup)
 │   ├── adr-structure-lint.mjs     # per-ADR + mapping structure CLI; shells out to the above
 │   ├── adr-lint-lib.mjs           # pure checkers + the shared vocabularies the CLI and tests read
-│   ├── process-model-lib.mjs      # process model vocabulary, Turtle subset, closed-world checks, canonical form, diff
-│   ├── process-model-fs.mjs       # model documents + index-link findings shared by the lint and the CLI
-│   ├── process-model.mjs          # process model CLI: validate, format, diff
 │   ├── adr-impl-review-categories.mjs  # finding-category table shared by the validator + renderer
 │   ├── adr-impl-review-materialize.mjs # derives repeated Markdown sections from findings.json
 │   ├── adr-impl-review-validate.mjs    # /adr-impl-review artifact validator
@@ -216,18 +212,33 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 ├── hooks/
 │   ├── hooks.json        # SessionStart registration
 │   └── surface-adr-context.mjs  # SessionStart — inject a compact ADR admission directive
-├── references/process-model.md   # business process model level: ownership, vocabulary, validation
-├── templates/process/
-│   ├── vocabulary.ttl    # RDFS vocabulary of the business process model (never copied into docs/process)
-│   └── example.ttl       # canonical example model
+├── references/business-context.md # how ADR work uses a business process model's context (never reads the model)
 └── templates/adr/
     ├── README.md         # ADR concepts (copied into docs/adr/ on /adr-new)
     ├── authoring-rules.md, structure.md
     ├── decision-log.template.md  # Seed for a category's decision-log.md
     └── mapping.schema.json   # Schema for docs/adr/.mapping.json
+
+plugins/ontology-writer/  # Business process model plugin (optional level above ADRs)
+├── .claude-plugin/plugin.json   # Claude metadata; hooks/ is auto-discovered
+├── .codex-plugin/plugin.json    # Codex metadata; registers skills + hooks
+├── README.md
+├── skills/               # process-edit, process-sync, process-align, process-build, process-view, report-writer
+├── scripts/              # deterministic tools (Node built-ins only)
+│   ├── process-model-lib.mjs      # vocabulary, Turtle subset, closed-world checks, canonical form, diff
+│   ├── process-model-fs.mjs       # model documents + ADR index-link findings
+│   ├── process-model.mjs          # CLI: validate, format, diff, query, impact, apply, transition, align, view …
+│   └── adr-lint-lib.mjs, adr-status-transition.mjs, adr-impl-review-open.mjs  # adr-writer copies (sync-shared-scripts.mjs)
+├── hooks/
+│   ├── hooks.json        # SessionStart registration
+│   └── surface-business-context.mjs  # SessionStart — ask for the business-context query when an index and a model exist
+├── references/process-model.md   # ownership, vocabulary, validation
+└── templates/process/
+    ├── vocabulary.ttl    # RDFS vocabulary of the business process model (never copied into docs/process)
+    └── example.ttl       # canonical example model
 ```
 
-The two plugins are split so adr-writer never references ALPS. The only coupling is one-way: alps-writer's `/feature-to-adr` transfers each implementable Feature's complete contract into one or several ADRs and delegates each new decision owner to adr-writer's `/adr-new`. Normal implementation then reads only ADRs; explicit PRD re-import remains an alps-writer-side semantic comparison.
+The plugins are split so adr-writer never references ALPS or reads the business process model. The couplings run one way, from the upper level down: alps-writer's `/feature-to-adr` transfers each implementable Feature's complete contract into one or several ADRs and delegates each new decision owner to adr-writer's `/adr-new`; ontology-writer writes the ADR index's `realizes` links in the same change unit as the model and hands a model change's ADR revisions to adr-writer's `/adr-new` draft rules and `/adr-impl`. Normal implementation then reads only ADRs; explicit PRD re-import remains an alps-writer-side semantic comparison. adr-writer knows the model only as the shape of `realizes` and, when model documents exist, one session-directive line saying that business context is checked through ontology-writer. ontology-writer runs copies of three adr-writer scripts (reading the ADR index and Status, recording a Status transition, opening a report), refreshed by `scripts/sync-shared-scripts.mjs` and checked in `pnpm test:checks`.
 
 Shared authoring guidance is owned by `plugins/adr-writer/references/`:
 `requirement-delegation.md`, `comprehension-load.md`, `feature-boundaries.md`, and
@@ -354,7 +365,8 @@ rules, and Node-only report helper. Mermaid syntax is checked with a vendored of
 HTML embeds the official browser engine and reports pending, rendered or failed
 status honestly. The parser needs no runtime package installation, and the embedded engine loads
 without network access. `scripts/sync-report-skill.mjs` copies the skill into
-adr-writer only; the ADR diagram module uses that same implementation.
+adr-writer and ontology-writer; the ADR diagram module and the process view use that same
+implementation.
 Edit the canonical source, then synchronize. `report-skill:check` rejects drift.
 The responsive article layout lives in `scripts/report.css` within the skill;
 code evidence rendering uses vendored diff2html and stays static in the delivered
@@ -379,9 +391,10 @@ setup so review-only runs do not modify tracked configuration. Existing runs
 remain available until the user chooses to remove them.
 
 Only adr-writer includes report-writer and advertises it through SessionStart
-independently of the ADR mapping. ALPS Writer has no report skill, report hook, or
-report-writer dependency; installing both plugins exposes the report skill and
-directive once per session event. Select a report for explicit report requests or
+independently of the ADR mapping. ontology-writer carries a copy of the report-writer
+skill for its own reports but registers no report hook, and ALPS Writer has no report
+skill, report hook, or report-writer dependency; so the report directive still
+appears once per session event. Select a report for explicit report requests or
 when complex explanations and review findings need structured depth to be understood.
 Answer short, simple requests in chat without report files, browser opening or quizzes.
 If report usefulness is unclear, ask once before generating it, reuse the user's

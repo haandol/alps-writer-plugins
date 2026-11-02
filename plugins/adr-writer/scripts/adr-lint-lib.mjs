@@ -12,7 +12,21 @@
 // gray-zone fidelity, R14 strawman nuance, R3, and R18's requirement-vs-tuning
 // call) stay with the reviewer — see agents/adr-reviewer.md.
 
-import { isValidElementId } from "./process-model-lib.mjs";
+// ── process step identifiers ─────────────────────────────────────────────
+// A category's `realizes` entries name business process model steps by the local
+// part of their identifier: a Turtle local name without escapes or ":". Ontology
+// Writer reads model identifiers with this same rule, from its copy of this file.
+const PN_CHARS_BASE =
+  "A-Za-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D" +
+  "\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD\\u{10000}-\\u{EFFFF}";
+const PN_CHARS_U = `${PN_CHARS_BASE}_`;
+const PN_CHARS = `${PN_CHARS_U}\\-0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040`;
+const LOCAL_ID_RE = new RegExp(`^[${PN_CHARS_U}0-9](?:[${PN_CHARS}.]*[${PN_CHARS}])?$`, "u");
+
+/** Whether `id` is a process model element identifier: the local part after the model namespace. */
+export function isValidElementId(id) {
+  return typeof id === "string" && LOCAL_ID_RE.test(id);
+}
 
 // ── category-key shape ───────────────────────────────────────────────────
 // ≤2 lowercase-kebab segments (context or context/feature). Stricter than a
@@ -561,9 +575,9 @@ export function validateMappingShape(mapping) {
     }
     if ("tableDocs" in entry && !Array.isArray(entry.tableDocs))
       err("tabledocs-not-array", `category "${key}": "tableDocs" is not an array`);
-    // realizes: the business process model steps this category realizes. Its
-    // targets are checked against the model by process-model-fs.mjs; here only
-    // the shape. An empty list is a confirmed "realizes no step" record.
+    // realizes: the business process model steps this category realizes. Ontology
+    // Writer checks its targets against the model; here only the shape. An empty
+    // list is a confirmed "realizes no step" record.
     if ("realizes" in entry) {
       if (!Array.isArray(entry.realizes))
         err("realizes-not-array", `category "${key}": "realizes" is not an array`);

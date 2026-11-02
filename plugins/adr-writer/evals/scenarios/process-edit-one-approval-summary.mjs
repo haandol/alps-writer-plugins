@@ -1,20 +1,24 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
-  PLUGIN_ROOT,
+  ONTOLOGY_PLUGIN_ROOT,
+  ontologySkillText,
   ruleText,
   seedIndexedAdrs,
   seedMapping,
   seedRuleDocs,
-  skillText,
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { indexGraph, parseTurtle, validateModel } from "../../scripts/process-model-lib.mjs";
-import { impactSummary } from "../../scripts/process-model-align.mjs";
+import {
+  indexGraph,
+  parseTurtle,
+  validateModel,
+} from "../../../ontology-writer/scripts/process-model-lib.mjs";
+import { impactSummary } from "../../../ontology-writer/scripts/process-model-align.mjs";
 
 const MODEL = readFileSync(
-  path.join(PLUGIN_ROOT, "templates", "process", "example.ttl"),
+  path.join(ONTOLOGY_PLUGIN_ROOT, "templates", "process", "example.ttl"),
   "utf8",
 ).replaceAll('pm:status "Proposed"', 'pm:status "Accepted (2026-10-01)"');
 const DRAFT = MODEL.replace(
@@ -102,7 +106,7 @@ export default {
       glossary: null,
     });
     return [
-      skillText("process-edit", { references: ["references/process-model.md"] }),
+      ontologySkillText("process-edit", { references: ["references/process-model.md"] }),
       ruleText("concepts.md"),
       `\n---\n\n# This run`,
       "/process-edit 스토어 적립금으로 전액 결제되는 주문은 결제 요청 없이 진행하도록 바꿔 줘.",

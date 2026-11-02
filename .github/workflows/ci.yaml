@@ -60,7 +60,7 @@ jobs:
 
   # What a CONSUMER actually runs. A marketplace install ships no node_modules:
   # the MCP server is an esbuild bundle with its dependencies inlined, and the
-  # adr-writer scripts, hook, and tests are Node built-ins only. So all of it must
+  # adr-writer and ontology-writer scripts, hooks, and tests are Node built-ins only. So all of it must
   # work under a bare `node` with no install step — something the pnpm-based jobs
   # cannot tell us, since they always have a populated node_modules.
   runtime:
@@ -91,6 +91,11 @@ jobs:
           NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
         run: node --test "plugins/adr-writer/tests/**/*.test.mjs"
 
+      - name: ontology-writer suite (no install)
+        env:
+          NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
+        run: node --test "plugins/ontology-writer/tests/**/*.test.mjs"
+
       # The committed bundle is what a marketplace install executes. Boot it over
       # stdio and require a well-formed MCP initialize result — a bundle that
       # merely parses is not evidence it runs on this Node.
@@ -112,6 +117,9 @@ jobs:
       # cannot start on breaks the plugin when that session begins.
       - name: adr-writer hook runs
         run: echo '{"hook_event_name":"SessionStart","source":"startup"}' | node plugins/adr-writer/hooks/surface-adr-context.mjs
+
+      - name: ontology-writer hook runs
+        run: echo '{"hook_event_name":"SessionStart","source":"startup"}' | node plugins/ontology-writer/hooks/surface-business-context.mjs
 
   build:
     runs-on: ubuntu-latest

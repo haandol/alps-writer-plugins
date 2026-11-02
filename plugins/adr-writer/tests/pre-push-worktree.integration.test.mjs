@@ -36,7 +36,12 @@ test("pre-push fixture Git commands cannot change a linked worktree's commits, i
   git(base, ["init", "--bare", "-q", remote]);
   git(work, ["remote", "add", "origin", remote]);
 
-  for (const target of [".test-hooks", "plugins/alps-writer/dist", "plugins/adr-writer/hooks"]) {
+  for (const target of [
+    ".test-hooks",
+    "plugins/alps-writer/dist",
+    "plugins/adr-writer/hooks",
+    "plugins/ontology-writer/hooks",
+  ]) {
     mkdirSync(path.join(work, target), { recursive: true });
   }
   const hook = path.join(work, ".test-hooks/pre-push");
@@ -51,6 +56,10 @@ test("pre-push fixture Git commands cannot change a linked worktree's commits, i
     'console.log(JSON.stringify({result:{serverInfo:{name:"alps-writer"}}}));\n',
   );
   writeFileSync(path.join(work, "plugins/adr-writer/hooks/surface-adr-context.mjs"), "\n");
+  writeFileSync(
+    path.join(work, "plugins/ontology-writer/hooks/surface-business-context.mjs"),
+    "\n",
+  );
   git(work, ["add", "."]);
   git(work, ["commit", "-qm", "release"]);
   const head = git(work, ["rev-parse", "HEAD"]);
