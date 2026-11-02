@@ -395,12 +395,33 @@
       unknown: [56, 62, 78],
     };
     const LIGHT = { implemented: GOLD, notImplemented: AMBER, unrealized: SIGNAL, unknown: STEEL };
+    const RETIRED_LIGHT = [96, 102, 118];
+    const RETIRED_BODY = [64, 70, 86];
     const LIGHT_DIR = norm([0.55, 0.9, 0.35]);
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
     const lerp = (a, b, u) => a + (b - a) * u;
     const ease = (u) => 1 - (1 - u) ** 3;
-    const rgba = (c, a) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${clamp(a, 0, 1).toFixed(3)})`;
+    // A canvas parses every colour string it is given, so each colour and alpha step is
+    // written once. Alpha runs in steps of 1/40.
+    const colours = new Map();
+    function css(r, gr, b, a) {
+      const [ri, gi, bi] = [r | 0, gr | 0, b | 0];
+      const q = Math.round(clamp(a, 0, 1) * 40);
+      const key = ((ri * 256 + gi) * 256 + bi) * 64 + q;
+      let text = colours.get(key);
+      if (text === undefined) {
+        text = `rgba(${ri},${gi},${bi},${q / 40})`;
+        colours.set(key, text);
+      }
+      return text;
+    }
+    const rgba = (c, a) => css(c[0], c[1], c[2], a);
     const mix = (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)];
+    /** A floor's colour from afar, where its windows are too small to tell apart. */
+    const FAR = Object.fromEntries(
+      Object.entries(BODY).map(([state, body]) => [state, mix(body, LIGHT[state], 0.5)]),
+    );
+    const RETIRED_FAR = mix(RETIRED_BODY, RETIRED_LIGHT, 0.5);
     function norm(v) {
       const l = Math.hypot(v[0], v[1], v[2]) || 1;
       return [v[0] / l, v[1] / l, v[2] / l];
@@ -455,6 +476,16 @@
       d.z -= oz;
     }
     const span = Math.max(bounds[1] - bounds[0], bounds[3] - bounds[2], 10);
+    for (const d of districts) {
+      d.centre = { x: d.x + d.w / 2, y: 0, z: d.z + d.h / 2 };
+      // Where a district's name may stand: the middle of each edge, just outside it.
+      d.edges = [
+        [d.x + d.w / 2, d.z + d.h + 0.7],
+        [d.x + d.w + 0.7, d.z + d.h / 2],
+        [d.x + d.w / 2, d.z - 0.7],
+        [d.x - 0.7, d.z + d.h / 2],
+      ];
+    }
 
     const floorOf = new Map();
     const towerOf = new Map();
@@ -475,6 +506,13 @@
         tw.roof.y1 = tw.top + ROOF;
         tw.roof.y = tw.top + ROOF / 2;
         towerOf.set(tw.i, tw);
+        // How brightly the tower glows from afar: its implemented floors and, by half, the
+        // floors whose features are not implemented yet. A retired process does not glow.
+        const states = tw.f.map((el) => els[el].s);
+        const implemented = states.filter((st) => st === "implemented").length;
+        const pending = states.filter((st) => st === "notImplemented").length;
+        tw.lit = (els[tw.i].m ?? 0) & 1 ? 0 : implemented + pending / 2;
+        tw.litColour = implemented >= pending ? GOLD : AMBER;
         tallest = Math.max(tallest, tw.roof.y1);
         d.top = Math.max(d.top, tw.roof.y1);
       });
@@ -688,7 +726,7 @@
     // Sprites: soft round glows, drawn once per colour.
     const sprites = new Map();
     function sprite(c) {
-      const key = c.map((v) => v | 0).join(",");
+      const key = ((c[0] | 0) * 256 + (c[1] | 0)) * 256 + (c[2] | 0);
       let s = sprites.get(key);
       if (!s) {
         s = document.createElement("canvas");
@@ -719,65 +757,37 @@
     }
 
     // Faces of an axis-aligned box that face the eye. A side runs bottom-left, bottom-right,
-    // top-right, top-left as seen from outside, so windows can be laid on it.
+    // top-right, top-left as seen from outside, so windows can be laid on it. Corner k has
+    // x, y and z at the high end where bits 1, 2 and 4 of CORNER[k] are set.
+    const CORNER = [0, 1, 5, 4, 2, 3, 7, 6];
+    const FACES = [
+      { n: [0, 1, 0], side: false, c: [4, 5, 6, 7] },
+      { n: [1, 0, 0], side: true, c: [2, 1, 5, 6] },
+      { n: [-1, 0, 0], side: true, c: [0, 3, 7, 4] },
+      { n: [0, 0, 1], side: true, c: [3, 2, 6, 7] },
+      { n: [0, 0, -1], side: true, c: [1, 0, 4, 5] },
+    ];
     function boxFaces(x0, y0, z0, x1, y1, z1) {
+      const seen = [];
+      if (eye[1] > y1) seen.push(FACES[0]);
+      if (eye[0] > x1) seen.push(FACES[1]);
+      else if (eye[0] < x0) seen.push(FACES[2]);
+      if (eye[2] > z1) seen.push(FACES[3]);
+      else if (eye[2] < z0) seen.push(FACES[4]);
+      const at = new Array(8);
+      const corner = (k) => {
+        if (at[k] === undefined) {
+          const bits = CORNER[k];
+          at[k] = project(bits & 1 ? x1 : x0, bits & 2 ? y1 : y0, bits & 4 ? z1 : z0);
+        }
+        return at[k];
+      };
       const faces = [];
-      if (eye[1] > y1)
-        faces.push({
-          n: [0, 1, 0],
-          c: [
-            [x0, y1, z0],
-            [x1, y1, z0],
-            [x1, y1, z1],
-            [x0, y1, z1],
-          ],
-        });
-      if (eye[0] > x1)
-        faces.push({
-          n: [1, 0, 0],
-          side: true,
-          c: [
-            [x1, y0, z1],
-            [x1, y0, z0],
-            [x1, y1, z0],
-            [x1, y1, z1],
-          ],
-        });
-      if (eye[0] < x0)
-        faces.push({
-          n: [-1, 0, 0],
-          side: true,
-          c: [
-            [x0, y0, z0],
-            [x0, y0, z1],
-            [x0, y1, z1],
-            [x0, y1, z0],
-          ],
-        });
-      if (eye[2] > z1)
-        faces.push({
-          n: [0, 0, 1],
-          side: true,
-          c: [
-            [x0, y0, z1],
-            [x1, y0, z1],
-            [x1, y1, z1],
-            [x0, y1, z1],
-          ],
-        });
-      if (eye[2] < z0)
-        faces.push({
-          n: [0, 0, -1],
-          side: true,
-          c: [
-            [x1, y0, z0],
-            [x0, y0, z0],
-            [x0, y1, z0],
-            [x1, y1, z0],
-          ],
-        });
-      for (const f of faces) f.p = f.c.map(([x, y, z]) => project(x, y, z));
-      return faces.filter((f) => f.p.every(Boolean));
+      for (const face of seen) {
+        const p = [corner(face.c[0]), corner(face.c[1]), corner(face.c[2]), corner(face.c[3])];
+        if (p[0] && p[1] && p[2] && p[3]) faces.push({ n: face.n, side: face.side, p });
+      }
+      return faces;
     }
     const shade = (n) =>
       0.48 + 0.52 * Math.max(0, n[0] * LIGHT_DIR[0] + n[1] * LIGHT_DIR[1] + n[2] * LIGHT_DIR[2]);
@@ -803,21 +813,23 @@
     }
     const HAZE = [24, 42, 82];
     const NIGHT = [9, 16, 32];
-    /** A colour seen at `p` with light `k`: far shapes fade into the haze, dimmed ones darken. */
-    const tone = (c, k, p, el) =>
-      mix(mix(c, HAZE, 1 - fog(p)), NIGHT, focusSet && !focusSet.has(el) ? 0.62 : 0).map(
-        (v) => v * k,
-      );
+    /** How clear a shape at `p` is, in sixteen steps: far shapes fade into the haze. */
+    const clearness = (p) => Math.round(fog(p) * 16) / 16;
+    /** A colour seen with light `k` and clearness `f`: dimmed shapes also darken. */
+    function tone(c, k, f, dim) {
+      const d = dim ? 0.62 : 0;
+      const at = (i) => (lerp(c[i], HAZE[i], 1 - f) * (1 - d) + NIGHT[i] * d) * k;
+      return css(at(0), at(1), at(2), 1);
+    }
 
+    const TILE_TOP = mix([18, 32, 62], [40, 66, 112], 0.35);
+    const TILE_SIDE = [18, 32, 62];
     function drawTile(d) {
       const faces = boxFaces(d.x, 0, d.z, d.x + d.w, TILE, d.z + d.h);
       const lit = d.e >= 0 && d.e === selected;
       for (const f of faces) {
         poly(f.p);
-        g.fillStyle = rgba(
-          mix([18, 32, 62], [40, 66, 112], f.n[1] ? 0.35 : 0).map((v) => v * shade(f.n)),
-          0.95,
-        );
+        g.fillStyle = tone(f.n[1] ? TILE_TOP : TILE_SIDE, shade(f.n), 1, false);
         g.fill();
         g.setLineDash(d.e < 0 ? [5 * dpr, 4 * dpr] : []);
         g.strokeStyle = rgba(lit ? CYAN : [120, 170, 255], lit ? 0.8 : 0.32);
@@ -830,35 +842,40 @@
 
     function drawFloor(f) {
       const e = els[f.el];
-      const alpha = alphaOf(f.el) * fog(f);
-      const lightAlpha = focusSet && !focusSet.has(f.el) ? 0.3 : fog(f);
+      const clear = clearness(f);
+      const dim = Boolean(focusSet && !focusSet.has(f.el));
+      const alpha = (dim ? 0.26 : 1) * clear;
+      const lightAlpha = dim ? 0.3 : clear;
       const retired = ((e.m ?? 0) | (els[f.tower.i].m ?? 0)) & 1;
       const state = e.s;
       const hl = hovered === f || selected === f.el;
       const faces = boxFaces(f.x - W / 2, f.y0, f.z - W / 2, f.x + W / 2, f.y1, f.z + W / 2);
       const near = faces.length && faces[0].p[0][3] * W > 16 * dpr;
+      const glass = state === "outside" && !retired;
+      // Far away the windows are too small to read, so the face carries their colour.
+      const base = retired
+        ? near
+          ? RETIRED_BODY
+          : RETIRED_FAR
+        : near
+          ? (BODY[state] ?? BODY.unknown)
+          : (FAR[state] ?? FAR.unknown);
+      g.lineWidth = (hl ? 1.6 : 0.8) * dpr;
       for (const face of faces) {
         poly(face.p);
-        if (state === "outside" && !retired) {
+        if (glass) {
           g.fillStyle = rgba(GLASS, 0.09 * alpha);
-          g.fill();
           g.strokeStyle = rgba(GLASS, (hl ? 0.95 : 0.55) * alpha);
         } else {
-          const light = retired ? [96, 102, 118] : (LIGHT[state] ?? STEEL);
-          const body = retired ? [64, 70, 86] : (BODY[state] ?? BODY.unknown);
-          // Far away the windows are too small to read, so the face carries their colour.
-          const base = near ? body : mix(body, light, 0.5);
-          g.fillStyle = rgba(tone(base, shade(face.n), f, f.el), 1);
-          g.fill();
+          g.fillStyle = tone(base, shade(face.n), clear, dim);
           g.strokeStyle = rgba(hl ? CYAN : FROST, (hl ? 0.9 : 0.14) * alpha);
-          if (near && face.side && !retired) lights(face.p, state, lightAlpha);
         }
-        g.lineWidth = (hl ? 1.6 : 0.8) * dpr;
-        poly(face.p);
+        g.fill();
         g.stroke();
+        if (!glass && near && face.side && !retired) lights(face.p, state, lightAlpha);
         hits.push({ item: f, poly: face.p });
       }
-      if (faces.length && !retired && (state === "implemented" || state === "notImplemented")) {
+      if (near && !retired && (state === "implemented" || state === "notImplemented")) {
         const q = project(f.x, f.y, f.z);
         if (q)
           glow(
@@ -911,17 +928,24 @@
       }
     }
 
+    const ROOF_COLOUR = {
+      retired: [100, 106, 122],
+      accepted: [214, 226, 250],
+      proposed: [116, 134, 180],
+    };
     function drawRoof(r) {
       const e = els[r.el];
       const marks = e.m ?? 0;
-      const alpha = alphaOf(r.el) * fog(r);
+      const clear = clearness(r);
+      const dim = Boolean(focusSet && !focusSet.has(r.el));
+      const alpha = (dim ? 0.26 : 1) * clear;
       const hl = hovered === r || selected === r.el;
       const color =
         marks & 1
-          ? [100, 106, 122]
+          ? ROOF_COLOUR.retired
           : /^Accepted/.test(e.st ?? "")
-            ? [214, 226, 250]
-            : [116, 134, 180];
+            ? ROOF_COLOUR.accepted
+            : ROOF_COLOUR.proposed;
       const faces = boxFaces(
         r.x - W / 2 - 0.12,
         r.y0,
@@ -930,9 +954,23 @@
         r.y1,
         r.z + W / 2 + 0.12,
       );
+      // Seen from afar a tower glows once, by how many of its floors are lit; up close each lit
+      // floor glows of its own.
+      const tw = r.tower;
+      if (tw.lit && faces.length && faces[0].p[0][3] * W <= 16 * dpr) {
+        const q = project(tw.x, (TILE + tw.top) / 2, tw.z);
+        if (q)
+          glow(
+            tw.litColour,
+            q[0],
+            q[1],
+            q[3] * (W * 1.4 + (tw.top - TILE) * 0.45),
+            Math.min(0.55, 0.06 + 0.08 * tw.lit) * (dim ? 0.3 : clear),
+          );
+      }
       for (const face of faces) {
         poly(face.p);
-        g.fillStyle = rgba(tone(color, shade(face.n), r, r.el), 1);
+        g.fillStyle = tone(color, shade(face.n), clear, dim);
         g.fill();
         const rim = marks & 8 ? SIGNAL : marks & 18 ? CYAN : hl ? CYAN : FROST;
         g.setLineDash(marks & 16 ? [4 * dpr, 3 * dpr] : []);
@@ -956,22 +994,27 @@
       }
     }
 
+    const ORB = {
+      event: EMBER,
+      policy: VIOLET,
+      BusinessConcept: TEAL,
+      BusinessRule: ROSE,
+      Actor: SUN,
+      ObservationCriterion: STEEL,
+    };
+    const whiter = (u) =>
+      Object.fromEntries(Object.entries(ORB).map(([k, c]) => [k, mix(c, [255, 255, 255], u)]));
+    const ORB_CORE = whiter(0.15);
+    const ORB_LIT = whiter(0.45);
     function drawOrb(o) {
       const q = project(o.x, o.y, o.z);
       if (!q) return;
       const alpha = alphaOf(o.el) * fog(o);
       const hl = hovered === o || selected === o.el;
       const r = clamp(q[3] * 0.2, 2.6 * dpr, 8 * dpr);
-      const color = {
-        event: EMBER,
-        policy: VIOLET,
-        BusinessConcept: TEAL,
-        BusinessRule: ROSE,
-        Actor: SUN,
-        ObservationCriterion: STEEL,
-      }[o.kind];
+      const color = ORB[o.kind];
       glow(color, q[0], q[1], r * 2.6, (hl ? 0.9 : 0.5) * alpha);
-      g.fillStyle = rgba(mix(color, [255, 255, 255], hl ? 0.45 : 0.15), alpha);
+      g.fillStyle = rgba(hl ? ORB_LIT[o.kind] : ORB_CORE[o.kind], alpha);
       g.beginPath();
       if (o.kind === "event" || o.kind === "Actor") g.arc(q[0], q[1], r, 0, TAU);
       else if (o.kind === "policy") {
@@ -1023,47 +1066,76 @@
         lerp(P[i][3], P[i + 1][3], v),
       ];
     }
-    function drawArc(arc) {
-      arc.P = null;
-      const P = arc.pts.map(([x, y, z]) => project(x, y, z));
-      if (P.some((p) => !p)) return;
-      const lit = !focusSet || (focusSet.has(arc.e) && focusSet.has(arc.p));
-      const alpha = lit ? 1 : 0.1;
-      const broken = arc.kind === 2;
-      g.beginPath();
-      g.moveTo(P[0][0], P[0][1]);
-      for (let s = 1; s < P.length; s++) g.lineTo(P[s][0], P[s][1]);
-      if (broken) {
-        g.strokeStyle = rgba(SIGNAL, 0.85 * alpha);
-        g.setLineDash([5 * dpr, 4 * dpr]);
-      } else {
-        // Hand-offs between processes stand out; triggers inside one process stay faint.
-        const strong = focusSet ? 0.9 : arc.kind === 1 ? 0.42 : 0.14;
-        const gr = g.createLinearGradient(P[0][0], P[0][1], P.at(-1)[0], P.at(-1)[1]);
-        gr.addColorStop(0, rgba(EMBER, strong * alpha));
-        gr.addColorStop(1, rgba(VIOLET, strong * alpha));
-        g.strokeStyle = gr;
+    /**
+     * Every trigger arc, in a few strokes: each arc's first half in ember and its second half
+     * in violet, so the colour still runs from the event to the policy. Arcs are batched by
+     * kind and by whether they belong to the selection; broken ones are dashed red.
+     */
+    function drawArcs() {
+      const batches = new Map();
+      const batch = (key) => {
+        let b = batches.get(key);
+        if (!b) batches.set(key, (b = { first: [], second: [], heads: [] }));
+        return b;
+      };
+      for (const arc of arcs) {
+        arc.P = null;
+        const P = arc.pts.map(([x, y, z]) => project(x, y, z));
+        if (P.some((p) => !p)) continue;
+        const lit = !focusSet || (focusSet.has(arc.e) && focusSet.has(arc.p));
+        const b = batch(`${arc.kind}${lit ? "+" : "-"}`);
+        const middle = P.length >> 1;
+        b.first.push(P.slice(0, middle + 1));
+        b.second.push(P.slice(middle));
+        b.heads.push(P);
+        if (arc.kind !== 2 && lit && (focusSet || arc.kind === 1)) arc.P = P;
       }
-      g.lineWidth = (arc.kind === 1 ? 2.2 : 1.2) * dpr;
-      g.stroke();
-      g.setLineDash([]);
-      // The direction: an arrowhead three quarters of the way, toward the policy.
-      const [hx, hy] = along(P, 0.78);
-      const [bx, by] = along(P, 0.74);
-      const angle = Math.atan2(hy - by, hx - bx);
-      const size = (arc.kind === 1 ? 7 : 5) * dpr;
-      g.fillStyle = rgba(
-        broken ? SIGNAL : VIOLET,
-        (focusSet || arc.kind !== 0 ? 0.9 : 0.25) * alpha,
-      );
-      g.beginPath();
-      g.moveTo(hx + Math.cos(angle) * size, hy + Math.sin(angle) * size);
-      g.lineTo(hx + Math.cos(angle + 2.5) * size, hy + Math.sin(angle + 2.5) * size);
-      g.lineTo(hx + Math.cos(angle - 2.5) * size, hy + Math.sin(angle - 2.5) * size);
-      g.closePath();
-      g.fill();
-      if (!broken && lit && (focusSet || arc.kind === 1)) arc.P = P;
+      const stroke = (lines, colour, width, dash) => {
+        if (!lines.length) return;
+        g.beginPath();
+        for (const line of lines) {
+          g.moveTo(line[0][0], line[0][1]);
+          for (let k = 1; k < line.length; k++) g.lineTo(line[k][0], line[k][1]);
+        }
+        g.strokeStyle = colour;
+        g.lineWidth = width * dpr;
+        g.setLineDash(dash);
+        g.stroke();
+        g.setLineDash([]);
+      };
+      for (const [key, b] of batches) {
+        const kind = Number(key[0]);
+        const lit = key[1] === "+";
+        const alpha = lit ? 1 : 0.1;
+        const width = kind === 1 ? 2.2 : 1.2;
+        if (kind === 2) {
+          stroke([...b.first, ...b.second], rgba(SIGNAL, 0.85 * alpha), width, [5 * dpr, 4 * dpr]);
+        } else {
+          // Hand-offs between processes stand out; triggers inside one process stay faint.
+          const strong = (focusSet ? 0.9 : kind === 1 ? 0.42 : 0.14) * alpha;
+          stroke(b.first, rgba(EMBER, strong), width, []);
+          stroke(b.second, rgba(VIOLET, strong), width, []);
+        }
+        // The direction: an arrowhead three quarters of the way, toward the policy.
+        const size = (kind === 1 ? 7 : 5) * dpr;
+        g.beginPath();
+        for (const P of b.heads) {
+          const [hx, hy] = along(P, 0.78);
+          const [bx, by] = along(P, 0.74);
+          const angle = Math.atan2(hy - by, hx - bx);
+          g.moveTo(hx + Math.cos(angle) * size, hy + Math.sin(angle) * size);
+          g.lineTo(hx + Math.cos(angle + 2.5) * size, hy + Math.sin(angle + 2.5) * size);
+          g.lineTo(hx + Math.cos(angle - 2.5) * size, hy + Math.sin(angle - 2.5) * size);
+          g.closePath();
+        }
+        g.fillStyle = rgba(
+          kind === 2 ? SIGNAL : VIOLET,
+          (focusSet || kind !== 0 ? 0.9 : 0.25) * alpha,
+        );
+        g.fill();
+      }
     }
+    const SPARK = Array.from({ length: 8 }, (_, k) => mix(EMBER, VIOLET, (k + 0.5) / 8));
     /** The hand-offs' moving lights, over the scene: along each arc toward its policy. */
     function sparks(now) {
       for (const arc of arcs) {
@@ -1072,30 +1144,36 @@
         for (let k = 0; k < n; k++) {
           const u = (now / 4500 + arc.phase + k / n) % 1;
           const [x, y, s] = along(arc.P, u);
-          glow(mix(EMBER, VIOLET, u), x, y, Math.max(3 * dpr, s * 0.22), focusSet ? 0.95 : 0.6);
+          const r = Math.max(3 * dpr, s * 0.22);
+          glow(SPARK[Math.min(7, (u * 8) | 0)], x, y, r, focusSet ? 0.95 : 0.6);
         }
       }
     }
 
+    const INK = [7, 14, 30];
     function label(text, x, y, size, alpha, strong = false) {
       g.font = `${strong ? 700 : 600} ${Math.round(size)}px ${FONT}`;
       g.textAlign = "center";
       g.textBaseline = "middle";
-      const w = g.measureText(text).width;
       if (strong) {
-        g.fillStyle = rgba([7, 14, 30], 0.82 * alpha);
+        const w = g.measureText(text).width;
+        g.fillStyle = rgba(INK, 0.82 * alpha);
         const pad = size * 0.4;
         g.beginPath();
         g.roundRect(x - w / 2 - pad, y - size * 0.75, w + pad * 2, size * 1.5, size * 0.4);
         g.fill();
+      } else {
+        // A dark outline keeps the name legible over lit towers.
+        g.strokeStyle = rgba(INK, 0.85 * alpha);
+        g.lineWidth = 3 * dpr;
+        g.lineJoin = "round";
+        g.strokeText(text, x, y);
       }
-      g.shadowColor = "rgba(0,0,0,0.85)";
-      g.shadowBlur = strong ? 0 : 6 * dpr;
       g.fillStyle = rgba(FROST, alpha);
       g.fillText(text, x, y);
-      g.shadowBlur = 0;
     }
 
+    let sky = null;
     function draw(now) {
       const w = canvas.width;
       const h = canvas.height;
@@ -1107,11 +1185,14 @@
       g.globalCompositeOperation = "source-over";
       g.globalAlpha = 1;
       // The night sky, with stars that drift as the city turns.
-      const sky = g.createLinearGradient(0, 0, 0, h);
-      sky.addColorStop(0, "#050b18");
-      sky.addColorStop(0.62, "#12244a");
-      sky.addColorStop(1, "#1b3160");
-      g.fillStyle = sky;
+      if (!sky || sky.h !== h || sky.g !== g) {
+        const gradient = g.createLinearGradient(0, 0, 0, h);
+        gradient.addColorStop(0, "#050b18");
+        gradient.addColorStop(0.62, "#12244a");
+        gradient.addColorStop(1, "#1b3160");
+        sky = { h, g, gradient };
+      }
+      g.fillStyle = sky.gradient;
       g.fillRect(0, 0, w, h);
       for (const [u, v, a] of stars) {
         const x = ((((u + cam.yaw * 0.05) % 1) + 1) % 1) * w;
@@ -1122,31 +1203,21 @@
       g.strokeStyle = rgba([110, 150, 230], 0.08);
       g.lineWidth = dpr;
       const reach = span * 0.75 + 12;
+      g.beginPath();
+      const line = (ax, az, bx, bz) => {
+        const p = project(ax, 0, az);
+        const q = project(bx, 0, bz);
+        if (!p || !q) return;
+        g.moveTo(p[0], p[1]);
+        g.lineTo(q[0], q[1]);
+      };
       for (let k = -reach; k <= reach; k += 4) {
-        for (const [a, b] of [
-          [
-            [k, -reach],
-            [k, reach],
-          ],
-          [
-            [-reach, k],
-            [reach, k],
-          ],
-        ]) {
-          const p = project(a[0], 0, a[1]);
-          const q = project(b[0], 0, b[1]);
-          if (!p || !q) continue;
-          g.beginPath();
-          g.moveTo(p[0], p[1]);
-          g.lineTo(q[0], q[1]);
-          g.stroke();
-        }
+        line(k, -reach, k, reach);
+        line(-reach, k, reach, k);
       }
-      const tiles = [...districts].sort(
-        (a, b) =>
-          distance2({ x: b.x + b.w / 2, y: 0, z: b.z + b.h / 2 }) -
-          distance2({ x: a.x + a.w / 2, y: 0, z: a.z + a.h / 2 }),
-      );
+      g.stroke();
+      for (const d of districts) d.depth = distance2(d.centre);
+      const tiles = [...districts].sort((a, b) => b.depth - a.depth);
       for (const d of tiles) drawTile(d);
       // Buildings and orbs from the farthest to the nearest.
       const items = [];
@@ -1161,15 +1232,32 @@
         else drawOrb(it);
       // Light: who emits and starts what, the triggers, and the selection.
       g.globalCompositeOperation = "lighter";
+      const faint = new Map();
       for (const o of orbs) {
         if (o.kind !== "event" && o.kind !== "policy") continue;
         const alpha = focusSet ? (focusSet.has(o.el) ? 0.5 : 0.02) : 0.1;
+        const colour = rgba(o.kind === "event" ? EMBER : VIOLET, alpha);
+        const q = project(o.x, o.y, o.z);
+        if (!q) continue;
         for (const s of o.ends) {
           const f = floorOf.get(s);
-          if (f) segment(f, o, o.kind === "event" ? EMBER : VIOLET, alpha);
+          const p = f && project(f.x, f.y, f.z);
+          if (!p) continue;
+          if (!faint.has(colour)) faint.set(colour, []);
+          faint.get(colour).push(p[0], p[1], q[0], q[1]);
         }
       }
-      for (const arc of arcs) drawArc(arc);
+      g.lineWidth = dpr;
+      for (const [colour, xy] of faint) {
+        g.beginPath();
+        for (let k = 0; k < xy.length; k += 4) {
+          g.moveTo(xy[k], xy[k + 1]);
+          g.lineTo(xy[k + 2], xy[k + 3]);
+        }
+        g.strokeStyle = colour;
+        g.stroke();
+      }
+      drawArcs();
       const sel = selected >= 0 ? positionOf(selected) : null;
       if (sel) {
         const base = project(sel.x, 0, sel.z);
@@ -1194,18 +1282,12 @@
       g.globalCompositeOperation = "source-over";
       // Names: every district at its near edge, and the towers in view up close.
       for (const d of districts) {
-        const edges = [
-          [d.x + d.w / 2, d.z + d.h + 0.7],
-          [d.x + d.w + 0.7, d.z + d.h / 2],
-          [d.x + d.w / 2, d.z - 0.7],
-          [d.x - 0.7, d.z + d.h / 2],
-        ];
-        const [ex, ez] = edges.sort(
-          (a, b) =>
-            (a[0] - eye[0]) ** 2 +
-            (a[1] - eye[2]) ** 2 -
-            ((b[0] - eye[0]) ** 2 + (b[1] - eye[2]) ** 2),
-        )[0];
+        let [ex, ez] = d.edges[0];
+        let best = Infinity;
+        for (const [x, z] of d.edges) {
+          const far = (x - eye[0]) ** 2 + (z - eye[2]) ** 2;
+          if (far < best) [best, ex, ez] = [far, x, z];
+        }
         const q = project(ex, TILE, ez);
         if (q)
           label(
@@ -1292,9 +1374,15 @@
     const touch = () => (lastInput = performance.now());
     // The scene is drawn again only when something in it changes: the camera, the selection,
     // what the pointer is over, the layers or the size. The moving lights are drawn over it.
+    // The moving lights have a layer of their own over the scene, so the scene stays on its
+    // canvas until something in it changes; each frame clears the layer in one call.
     const screen = g;
-    const sceneCanvas = document.createElement("canvas");
-    const sceneContext = sceneCanvas.getContext("2d");
+    const overlay = document.createElement("canvas");
+    overlay.className = "city-sparks";
+    overlay.setAttribute("aria-hidden", "true");
+    canvas.after(overlay);
+    const sparkContext = overlay.getContext("2d");
+    let sparked = false;
     let dirty = true;
     let sparkling = false;
     let lastPaint = 0;
@@ -1306,13 +1394,9 @@
       schedule();
     };
     function paint(now, full) {
-      if (full || sceneCanvas.width !== canvas.width || sceneCanvas.height !== canvas.height) {
-        if (sceneCanvas.width !== canvas.width) sceneCanvas.width = canvas.width;
-        if (sceneCanvas.height !== canvas.height) sceneCanvas.height = canvas.height;
+      if (full) {
         const started = performance.now();
-        g = sceneContext;
         draw(now);
-        g = screen;
         // A device that cannot keep up draws fewer pixels.
         cost = cost * 0.8 + (performance.now() - started) * 0.2;
         if (cost > 22 && maxDpr > 1 && dpr > 1) {
@@ -1321,12 +1405,15 @@
           setTimeout(resize, 0);
         }
       }
-      screen.setTransform(1, 0, 0, 1, 0, 0);
-      screen.globalAlpha = 1;
-      screen.globalCompositeOperation = "copy";
-      screen.drawImage(sceneCanvas, 0, 0);
-      screen.globalCompositeOperation = "source-over";
-      if (sparkling) sparks(now);
+      if (!sparked && !sparkling) return;
+      sparkContext.setTransform(1, 0, 0, 1, 0, 0);
+      sparkContext.clearRect(0, 0, overlay.width, overlay.height);
+      sparked = sparkling;
+      if (sparkling) {
+        g = sparkContext;
+        sparks(now);
+        g = screen;
+      }
     }
 
     // Motion: the opening flight, slow turning while idle and the hand-offs' moving lights.
@@ -1358,7 +1445,7 @@
       const lights = awake && arcs.length > 0;
       const urgent = dirty || tween !== null;
       if (!urgent && (turning || lights) && now - lastPaint < 31) {
-        schedule();
+        later(31 - (now - lastPaint));
         return;
       }
       const dt = last ? Math.min(now - last, 64) : 16;
@@ -1374,8 +1461,19 @@
       paint(now, urgent || turning);
       dirty = false;
       lastPaint = now;
-      if (tween || turning || lights) schedule();
+      // An animation frame makes the browser update the whole page, so ambient motion waits
+      // for its next frame instead of asking for every display refresh.
+      if (tween) schedule();
+      else if (turning || lights) later(31);
       else last = 0;
+    }
+    let timer = 0;
+    function later(ms) {
+      if (!timer)
+        timer = setTimeout(() => {
+          timer = 0;
+          schedule();
+        }, ms);
     }
     function flyTo(to, ms = 900) {
       const target = { ...cam, ...to };
@@ -1553,8 +1651,9 @@
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
       const r = canvas.getBoundingClientRect();
-      canvas.width = Math.max(1, Math.round(r.width * dpr));
-      canvas.height = Math.max(1, Math.round(r.height * dpr));
+      canvas.width = overlay.width = Math.max(1, Math.round(r.width * dpr));
+      canvas.height = overlay.height = Math.max(1, Math.round(r.height * dpr));
+      sparked = false;
       if (r.width && r.height) {
         // When the stage changes shape the camera moves in or out with it, keeping the framing.
         const fit = fitDistance(r.width / r.height);
@@ -1615,7 +1714,7 @@
         }
         return null;
       },
-      moving: () => raf !== 0 || tween !== null,
+      moving: () => raf !== 0 || timer !== 0 || tween !== null,
     };
     function centroid(pts) {
       let x = 0;

@@ -1200,3 +1200,25 @@ test("a large landscape is drawn on request with its source closed, while a smal
   assert.ok(sections(html).length > 70);
   for (const s of sections(html)) assert.doesNotMatch(s.body, /data-draw=/, s.id);
 });
+
+test("element details sit in groups of at most 40, so the browser follows few of them to skip their layout", () => {
+  const model = validateModel([
+    { doc: "docs/process/a.ttl", text: EXAMPLE },
+    { doc: "docs/process/b.ttl", text: manyProcesses(30) },
+  ]);
+  const html = withoutEngine(
+    renderView({ index: model.index, mapping: MAPPING, findings: model.findings }),
+  );
+  const elements = html.slice(html.indexOf('<section id="elements">'));
+  const groups = elements.split('<div class="element-group">').slice(1);
+  const counts = groups.map((g) => (g.match(/<article class="element" /g) ?? []).length);
+  assert.ok(groups.length > 1, `${groups.length} groups`);
+  assert.ok(
+    counts.every((n) => n > 0 && n <= 40),
+    counts.join(),
+  );
+  assert.equal(
+    counts.reduce((a, b) => a + b, 0),
+    (elements.match(/<article class="element" /g) ?? []).length,
+  );
+});

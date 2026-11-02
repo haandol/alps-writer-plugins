@@ -812,62 +812,61 @@ ${f.incomplete ? notice(t.incomplete, f.errors.map(errorItem)) : ""}${f.source ?
       (r.key === "flowsTo" && flowCrossesProcesses(index, s, o));
     return `<li>${head} ${link(x)}${retiredMember(x) ? badge("retired", t.retired) : ""}${wrong ? badge("broken", t.errorMark) : ""}</li>`;
   };
-  const details = shownElements
-    .map((iri) => {
-      const type = typeOf(iri);
-      const key = keyOf(iri);
-      const id = elementId(iri);
-      const own = errorsOf.get(key) ?? [];
-      const value = (attr) => {
-        const values = index.literal(iri, attr.key ?? attr.iri);
-        if (attr.value === "openScope")
-          return openScopeOf(index, iri)
-            .items.map((i) => `${i.kind}: ${i.text}`)
-            .join(" | ");
-        if (attr.value === "iri")
-          return index
-            .out(iri, attr.key)
-            .map((x) => keyOf(x))
-            .join(", ");
-        return values.map((v) => v.value).join(" | ");
-      };
-      const rows = (kind) =>
-        ATTRIBUTES.filter((a) => a.kind === kind && a.on.includes(type))
-          .map(
-            (a) =>
-              `<tr><th scope="row">${esc(lang === "ko" ? a.ko : (a.key ?? a.iri.split("#").pop()))}</th><td>${esc(value(a) || t.none)}</td></tr>`,
-          )
-          .join("");
-      const relations = RELATIONS.flatMap((r) => [
-        ...index
-          .out(iri, r.key)
-          .map((x) => relationItem(r, t.to, x, r.to, r.from.includes(type), [iri, x])),
-        ...index
-          .into(iri, r.key)
-          .map((x) => relationItem(r, t.from, x, r.from, r.to.includes(type), [x, iri])),
-      ]).join("");
-      const rules =
-        type === "Step"
-          ? index.ofType("BusinessRule").filter((r) => ruleReach(index, r).includes(iri))
-          : index.into(iri, "constrains").filter((r) => typeOf(r) === "BusinessRule");
-      let realization = "";
-      if (type === "Step") {
-        const r = realizationOf(index, mapping, iri, realizers, { untrusted });
-        realization = `<h4>${esc(t.realization)}</h4><p class="state-${r.state}">${stateText(r.state)}</p>${r.features.length ? `<ul>${r.features.map((f) => `<li><code>${esc(f.category)}</code> — ${esc(f.implemented ? t.implemented : t.notImplemented)}<ul>${f.adrs.map((a) => `<li><code>${esc(a.path)}</code> ${esc(a.status ?? "?")}</li>`).join("")}</ul></li>`).join("")}</ul>` : ""}`;
-      }
-      const marks = [
-        retiredMember(iri) ? badge("retired", t.retired) : "",
-        changedIds.has(key) ? badge("changed", t.changedMark) : "",
-        unknownIds.has(key) ? badge("uncertain", t.unknownMark) : "",
-        own.length ? badge("broken", t.errors) : "",
-      ].join("");
-      const identifier = id !== null && isValidElementId(id) ? `m:${id}` : `<${iri}>`;
-      return `<article class="element" id="${anchor(key)}" tabindex="-1"><h3>${esc(typeName.get(type))}: ${esc(name(iri))}${marks}</h3>
+  const details = shownElements.map((iri) => {
+    const type = typeOf(iri);
+    const key = keyOf(iri);
+    const id = elementId(iri);
+    const own = errorsOf.get(key) ?? [];
+    const value = (attr) => {
+      const values = index.literal(iri, attr.key ?? attr.iri);
+      if (attr.value === "openScope")
+        return openScopeOf(index, iri)
+          .items.map((i) => `${i.kind}: ${i.text}`)
+          .join(" | ");
+      if (attr.value === "iri")
+        return index
+          .out(iri, attr.key)
+          .map((x) => keyOf(x))
+          .join(", ");
+      return values.map((v) => v.value).join(" | ");
+    };
+    const rows = (kind) =>
+      ATTRIBUTES.filter((a) => a.kind === kind && a.on.includes(type))
+        .map(
+          (a) =>
+            `<tr><th scope="row">${esc(lang === "ko" ? a.ko : (a.key ?? a.iri.split("#").pop()))}</th><td>${esc(value(a) || t.none)}</td></tr>`,
+        )
+        .join("");
+    const relations = RELATIONS.flatMap((r) => [
+      ...index
+        .out(iri, r.key)
+        .map((x) => relationItem(r, t.to, x, r.to, r.from.includes(type), [iri, x])),
+      ...index
+        .into(iri, r.key)
+        .map((x) => relationItem(r, t.from, x, r.from, r.to.includes(type), [x, iri])),
+    ]).join("");
+    const rules =
+      type === "Step"
+        ? index.ofType("BusinessRule").filter((r) => ruleReach(index, r).includes(iri))
+        : index.into(iri, "constrains").filter((r) => typeOf(r) === "BusinessRule");
+    let realization = "";
+    if (type === "Step") {
+      const r = realizationOf(index, mapping, iri, realizers, { untrusted });
+      realization = `<h4>${esc(t.realization)}</h4><p class="state-${r.state}">${stateText(r.state)}</p>${r.features.length ? `<ul>${r.features.map((f) => `<li><code>${esc(f.category)}</code> — ${esc(f.implemented ? t.implemented : t.notImplemented)}<ul>${f.adrs.map((a) => `<li><code>${esc(a.path)}</code> ${esc(a.status ?? "?")}</li>`).join("")}</ul></li>`).join("")}</ul>` : ""}`;
+    }
+    const marks = [
+      retiredMember(iri) ? badge("retired", t.retired) : "",
+      changedIds.has(key) ? badge("changed", t.changedMark) : "",
+      unknownIds.has(key) ? badge("uncertain", t.unknownMark) : "",
+      own.length ? badge("broken", t.errors) : "",
+    ].join("");
+    const identifier = id !== null && isValidElementId(id) ? `m:${id}` : `<${iri}>`;
+    return `<article class="element" id="${anchor(key)}" tabindex="-1"><h3>${esc(typeName.get(type))}: ${esc(name(iri))}${marks}</h3>
 <p><span>${esc(t.id)}</span> <code>${esc(identifier)}</code> · <span>${esc(t.document)}</span> ${documentsOf(
-        index.subjects.get(iri),
-      )
-        .map((d) => `<code>${esc(d)}</code>`)
-        .join(", ")}</p>
+      index.subjects.get(iri),
+    )
+      .map((d) => `<code>${esc(d)}</code>`)
+      .join(", ")}</p>
 ${own.length ? `<h4>${esc(t.errors)}</h4><ul>${own.map((e) => errorText(e)).join("")}</ul>` : ""}
 <h4>${esc(t.facts)}</h4><table>${rows("fact")}</table>
 ${rows("description") ? `<h4>${esc(t.descriptions)}</h4><table class="description">${rows("description")}</table>` : ""}
@@ -882,8 +881,12 @@ ${
     : ""
 }
 ${realization}</article>`;
-    })
-    .join("\n");
+  });
+  // Details in groups: the browser tracks each group, not each detail, to skip laying it out.
+  const GROUP = 40;
+  const detailGroups = [];
+  for (let k = 0; k < details.length; k += GROUP)
+    detailGroups.push(`<div class="element-group">${details.slice(k, k + GROUP).join("\n")}</div>`);
 
   // Uncommitted edits and unsynced direct edits of Accepted processes, or why
   // they could not be determined.
@@ -953,7 +956,7 @@ ${realization}</article>`;
   const body = `${banner(errors.map(errorItem))}${unavailableBanner}${changeBanner}<nav aria-label="${esc(t.processes)}"><a href="#landscape">${esc(t.landscape)}</a> · <a href="#elements">${esc(t.elements)}</a></nav>
 ${landscapeSection}
 ${flowSections}
-<section id="elements"><h2>${esc(t.elements)}</h2>${details}</section>`;
+<section id="elements"><h2>${esc(t.elements)}</h2>${detailGroups.join("\n")}</section>`;
 
   // The explorer, which finds every element and lists it by bounded context, and the 3D
   // business city of the landscape. Both are built from the structures the document above is

@@ -197,6 +197,12 @@ window.reportDiagramsReady = (async () => {
     }
   }, {root, rootMargin: '600px 0px'});
   for (const figure of viewed) watch.observe(figure);
+  // A page recomputes every observed figure on each frame it draws: drawn ones are let go.
+  let soon = null;
+  document.addEventListener('report-diagram-rendered', (event) => {
+    watch.unobserve(event.target);
+    soon?.unobserve(event.target);
+  });
   if (lazy.ahead) {
     // Figures a little further away are drawn one at a time while the page has nothing else to do.
     const idle = window.requestIdleCallback || ((next) => setTimeout(next, 120));
@@ -213,7 +219,7 @@ window.reportDiagramsReady = (async () => {
         idle(next);
       });
     };
-    const soon = new IntersectionObserver((entries) => {
+    soon = new IntersectionObserver((entries) => {
       for (const entry of entries) if (entry.isIntersecting) {
         soon.unobserve(entry.target);
         waiting.push(entry.target);

@@ -433,3 +433,24 @@ test("a large landscape waits for its button, and only the flows just ahead of t
   assert.equal(await page.$eval("#landscape .diagram-status", (s) => s.hidden), true);
   await page.close();
 });
+
+test("moving on its own, the city asks the browser for about 30 frames a second, not one per display refresh", async () => {
+  const paced = await browser.newPage();
+  await paced.setViewport({ width: 1440, height: 900 });
+  // Every frame the page asks for, counted.
+  await paced.evaluateOnNewDocument(() => {
+    const ask = window.requestAnimationFrame.bind(window);
+    window.framesAsked = 0;
+    window.requestAnimationFrame = (callback) => {
+      window.framesAsked += 1;
+      return ask(callback);
+    };
+  });
+  await paced.goto(pathToFileURL(file).href, { waitUntil: "load" });
+  await new Promise((resolve) => setTimeout(resolve, 3000)); // past the opening flight
+  const before = await paced.evaluate(() => window.framesAsked);
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  const asked = (await paced.evaluate(() => window.framesAsked)) - before;
+  assert.ok(asked >= 20 && asked <= 80, `${asked} frames in 2 s`);
+  await paced.close();
+});
