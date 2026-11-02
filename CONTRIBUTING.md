@@ -215,8 +215,12 @@ temporary directory holding only a link to the git it finds first on `PATH`
 for the run, and remove it at the end. It is the same git binary, so results
 do not change; elsewhere, or with another git first on `PATH`, nothing changes.
 
-Automated in two places, so you rarely have to remember:
+Automated in these places, so you rarely have to remember:
 
+- **`.husky/pre-commit`** formats the staged files, rebuilds and stages
+  `plugins/alps-writer/dist/` when the MCP server source is staged, and otherwise
+  typechecks only when the commit changes the package configuration or the
+  dependencies — the only other inputs of that typecheck.
 - **`.husky/pre-push`** runs the fast part locally and blocks the push on any
   failure: the generated-asset checks, `pnpm test:unit`, `lint`, `format:check`,
   `bump:check`, a boot check on the committed MCP bundle and the adr-writer hook,
