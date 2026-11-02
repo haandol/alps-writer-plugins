@@ -183,7 +183,7 @@ pnpm-workspace.yaml       # packages: plugins/alps-writer
 .github/workflows/
 ├── ci.yaml               # Node 24 test/build/runtime jobs + dist-drift gate; a main push reuses its PR's pass
 ├── release.yaml          # After CI passes on main, tags a new version and publishes its release
-└── cache.yaml            # Keeps main's dependency cache, which PR runs restore
+└── cache.yaml            # Keeps main's record of pnpm's lockfile verification for PR runs
 scripts/
 ├── bump-version.mjs      # Set/verify the release version across all 16 sites
 └── publish-release.mjs   # The Release workflow's tag-and-publish step

@@ -87,20 +87,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/setup@v3
         with:
-          # No version here on purpose — the action reads packageManager from
-          # package.json. Pinning both makes it fail with a version mismatch.
-          run_install: false
+          # The version comes from packageManager in package.json. Only pnpm here:
+          # setup-node sets up Node.js and the install is a step of its own. This action
+          # keeps the record of pnpm's lockfile verification, so an install skips checking
+          # an unchanged lockfile against the registry. The package store is not cached:
+          # restoring it took longer than downloading the packages.
+          install: false
+          node-version-file: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "24"
-          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -122,10 +125,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "24"
 
@@ -179,18 +182,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/setup@v3
         with:
-          run_install: false
+          # The version comes from packageManager in package.json. Only pnpm here:
+          # setup-node sets up Node.js and the install is a step of its own. This action
+          # keeps the record of pnpm's lockfile verification, so an install skips checking
+          # an unchanged lockfile against the registry. The package store is not cached:
+          # restoring it took longer than downloading the packages.
+          install: false
+          node-version-file: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "24"
-          cache: "pnpm"
 
       # adr-writer's dependency-free unit tests, before anything is installed, as a
       # contributor without pnpm runs them; runtime runs the rest. This job has the time.

@@ -254,10 +254,13 @@ Automated in these places, so you rarely have to remember:
   that commit's version has no tag yet, it tags the commit and publishes the
   GitHub release, with the merged pull request's `## Release notes` section as its
   notes (GitHub's generated notes without one); otherwise it does nothing.
-- **`.github/workflows/cache.yaml`** keeps main's dependency cache. A pull request
-  run restores caches only from its own branch and main, and CI on main skips the
-  jobs that would save one, so on every push to main this restores the cache for
-  the current lockfile, and installs and saves it when it is missing.
+- **`.github/workflows/cache.yaml`** keeps main's record of pnpm's lockfile
+  verification. pnpm 11 checks every lockfile entry against the registry before it
+  installs, and `pnpm/setup` caches that verdict, so an install of an unchanged
+  lockfile skips the check. A pull request run restores caches only from its own
+  branch and main, and CI on main skips the jobs that install, so this installs on
+  every push to main to keep the record there. The CI jobs cache no package store:
+  restoring it took longer than downloading the packages.
 
 Behaviour evals (`plugins/adr-writer/evals/`) are **not** part of `pnpm test` —
 they call a real model, cost money, and are non-deterministic. Run them by hand
