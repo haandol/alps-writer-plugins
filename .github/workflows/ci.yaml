@@ -93,8 +93,10 @@ jobs:
         uses: pnpm/setup@v3
         with:
           # The version comes from packageManager in package.json. Only pnpm here:
-          # setup-node sets up Node.js and the store cache, and the install is a step
-          # of its own.
+          # setup-node sets up Node.js and the install is a step of its own. This action
+          # keeps the record of pnpm's lockfile verification, so an install skips checking
+          # an unchanged lockfile against the registry. The package store is not cached:
+          # restoring it took longer than downloading the packages.
           install: false
           node-version-file: false
 
@@ -102,7 +104,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "24"
-          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -187,8 +188,10 @@ jobs:
         uses: pnpm/setup@v3
         with:
           # The version comes from packageManager in package.json. Only pnpm here:
-          # setup-node sets up Node.js and the store cache, and the install is a step
-          # of its own.
+          # setup-node sets up Node.js and the install is a step of its own. This action
+          # keeps the record of pnpm's lockfile verification, so an install skips checking
+          # an unchanged lockfile against the registry. The package store is not cached:
+          # restoring it took longer than downloading the packages.
           install: false
           node-version-file: false
 
@@ -196,7 +199,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "24"
-          cache: "pnpm"
 
       # adr-writer's dependency-free unit tests, before anything is installed, as a
       # contributor without pnpm runs them; runtime runs the rest. This job has the time.

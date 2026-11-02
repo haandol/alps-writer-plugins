@@ -1,10 +1,11 @@
 name: Cache
 
-# main 범위의 의존성 캐시를 유지한다. pull request 실행은 자기 브랜치와 main 의 캐시만 읽는데,
-# CI 는 main 에서 pull request 가 이미 통과한 job 을 건너뛰므로 main 범위의 캐시를 만들지 않는다.
-# 그래서 main 에 push 될 때마다 같은 lockfile 의 캐시를 복원해 두고(그러면 지워지지도 않는다),
-# 없으면(의존성이 바뀌었거나 오래 쓰지 않아 지워졌으면) 설치해서 저장한다. CI 와 따로 돌아서
-# 릴리스를 늦추지 않는다.
+# main 범위에 pnpm 의 lockfile 검증 기록을 남긴다. pnpm 11 은 설치 전에 lockfile 의 모든 항목을
+# 레지스트리와 대조하는데, pnpm/setup 이 그 판정을 캐시에 두면 같은 lockfile 의 다음 설치는 그
+# 대조를 건너뛴다. pull request 실행은 자기 브랜치와 main 의 캐시만 읽고, CI 는 main 에서 pull
+# request 가 이미 통과한 job 을 건너뛰므로, main 에 push 될 때마다 여기서 설치해 그 기록을 main
+# 범위에 저장한다. 같은 lockfile 의 기록이 이미 있으면 복원해서 쓴다. CI 와 따로 돌아서 릴리스를
+# 늦추지 않는다.
 on:
   push:
     branches:
@@ -14,29 +15,21 @@ permissions:
   contents: read
 
 jobs:
-  dependencies:
+  lockfile-verification:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install pnpm
-        uses: pnpm/setup@v3
-        with:
-          # The version comes from packageManager in package.json. Only pnpm here:
-          # setup-node sets up Node.js and the store cache, and the install is a step
-          # of its own.
-          install: false
-          node-version-file: false
-
-      - name: Restore the dependency cache
-        id: node
+      - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
           node-version: "24"
-          cache: "pnpm"
 
-      # setup-node saves the store after the job when its cache was missing.
-      - name: Fill the store a missing cache saves
-        if: steps.node.outputs.cache-hit != 'true'
-        run: pnpm install --frozen-lockfile
+      # Installs pnpm from packageManager and runs `pnpm install --frozen-lockfile`, which
+      # saves the verification record once the install finishes.
+      - name: Install pnpm and the dependencies
+        uses: pnpm/setup@v3
+        with:
+          node-version-file: false
+          require-lockfile: true
