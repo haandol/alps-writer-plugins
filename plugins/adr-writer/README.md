@@ -194,10 +194,10 @@ identical explanation field is shown once within that Hill; distinct actors,
 conditions, units, code evidence, and other Hills are retained. The final writing
 pass checks the generated output as well as the author's source.
 
-## Business process model (optional)
+## Business ontology (optional)
 
-A repository may keep a business process model above its ADRs: Turtle documents
-in `docs/process/`, maintained with the separate [`ontology-writer`](../ontology-writer)
+A repository may keep a business ontology above its ADRs: Turtle documents
+in `docs/ontology/`, maintained with the separate [`ontology-writer`](../ontology-writer)
 plugin. It owns business flows, event hand-offs, policies, cross-step rules and
 business terms; ADRs stay the only implementation authority and keep values,
 state machines and detailed conditions. A category's `realizes` list in
@@ -211,9 +211,9 @@ model documents nothing changes.
 
 One hook supports the main session — **no external LLM calls**; the main model classifies text and decides.
 
-| Hook           | When it fires                          | Role                                                                                                                                                                                                                                                              |
-| -------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SessionStart` | Startup, resume, clear, and compaction | Inject a compact ADR admission directive; admitted work reads `docs/adr/.mapping.json` before code changes. With a business process model, one more line says that business context is checked through ontology-writer, and that work states when it could not be |
+| Hook           | When it fires                          | Role                                                                                                                                                                                                                                                         |
+| -------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SessionStart` | Startup, resume, clear, and compaction | Inject a compact ADR admission directive; admitted work reads `docs/adr/.mapping.json` before code changes. With a business ontology, one more line says that business context is checked through ontology-writer, and that work states when it could not be |
 
 The directive first applies the ADR admission gate. Requirement contracts, durable boundaries, provider/model choices, key designs, algorithms, and fallback policies enter the cycle and trigger an on-demand read of the full mapping and plausible ADR bodies; replaceable SDKs, libraries, frameworks, and credential/auth adapters stay in code. The hook never blocks an edit, injects mapping contents, or dictates private reasoning or agent topology. Running at session start, resume, clear, and compaction recovery keeps the directive available without executing on every user message.
 

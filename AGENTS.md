@@ -1,6 +1,6 @@
 # AGENTS.md
 
-`alps-writer-plugins` — a Codex and Claude Code marketplace shipping three independent plugins: **alps-writer** (ALPS/PRD authoring via an MCP server), **ontology-writer** (an optional business process model above ADRs) and **adr-writer** (ADR-driven development cycle). Each installs from the marketplace alone — no npm. The alps-writer MCP server is bundled with esbuild (dependencies inlined) and the bundle is committed at `plugins/alps-writer/dist/`, so the plugin runs straight from a marketplace install.
+`alps-writer-plugins` — a Codex and Claude Code marketplace shipping three independent plugins: **alps-writer** (ALPS/PRD authoring via an MCP server), **ontology-writer** (an optional business ontology above ADRs) and **adr-writer** (ADR-driven development cycle). Each installs from the marketplace alone — no npm. The alps-writer MCP server is bundled with esbuild (dependencies inlined) and the bundle is committed at `plugins/alps-writer/dist/`, so the plugin runs straight from a marketplace install.
 
 **Tech Stack**: TypeScript 5.9+, Node.js >= 24, pnpm workspace, MCP SDK (`@modelcontextprotocol/sdk`), Zod
 
@@ -10,12 +10,12 @@ Everything in this repo serves one idea, so weigh changes against it.
 
 **PRD, ADR, and code are not three documents about three topics. They are the same system at three resolutions** — the way a C4 diagram shows one architecture at context, container, and component zoom. What gives a level its value is what it **refuses to show**: a context diagram that also drew every class would answer no question better than the code already does.
 
-| Level                     | Artifact                                      | The one question it answers                                                 | Owner               |
-| ------------------------- | --------------------------------------------- | --------------------------------------------------------------------------- | ------------------- |
-| **Zoom out**              | ALPS PRD (`*.alps.xml`)                       | WHAT / WHY — the user's problem                                             | **alps-writer**     |
-| **Above ADRs (optional)** | Business process model (`docs/process/*.ttl`) | HOW the business flows across features — events, policies, cross-step rules | **ontology-writer** |
-| **Middle**                | ADR (`docs/adr/`)                             | HOW (architecture) — the decision, its rationale, the requirement contract  | **adr-writer**      |
-| **Zoom in**               | Code / AGENTS.md / README                     | HOW (detail) — structure, names, signatures, tuning values                  | the user's repo     |
+| Level                     | Artifact                                  | The one question it answers                                                 | Owner               |
+| ------------------------- | ----------------------------------------- | --------------------------------------------------------------------------- | ------------------- |
+| **Zoom out**              | ALPS PRD (`*.alps.xml`)                   | WHAT / WHY — the user's problem                                             | **alps-writer**     |
+| **Above ADRs (optional)** | Business ontology (`docs/ontology/*.ttl`) | HOW the business flows across features — events, policies, cross-step rules | **ontology-writer** |
+| **Middle**                | ADR (`docs/adr/`)                         | HOW (architecture) — the decision, its rationale, the requirement contract  | **adr-writer**      |
+| **Zoom in**               | Code / AGENTS.md / README                 | HOW (detail) — structure, names, signatures, tuning values                  | the user's repo     |
 
 Full ALPS applies the C4 analogy literally in Section 4 with both a Mermaid
 `C4Context` and `C4Container` diagram. Lite ALPS keeps only one product-level
@@ -212,33 +212,33 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 ├── hooks/
 │   ├── hooks.json        # SessionStart registration
 │   └── surface-adr-context.mjs  # SessionStart — inject a compact ADR admission directive
-├── references/business-context.md # how ADR work uses a business process model's context (never reads the model)
+├── references/business-context.md # how ADR work uses a business ontology's context (never reads the model)
 └── templates/adr/
     ├── README.md         # ADR concepts (copied into docs/adr/ on /adr-new)
     ├── authoring-rules.md, structure.md
     ├── decision-log.template.md  # Seed for a category's decision-log.md
     └── mapping.schema.json   # Schema for docs/adr/.mapping.json
 
-plugins/ontology-writer/  # Business process model plugin (optional level above ADRs)
+plugins/ontology-writer/  # Business ontology plugin (optional level above ADRs)
 ├── .claude-plugin/plugin.json   # Claude metadata; hooks/ is auto-discovered
 ├── .codex-plugin/plugin.json    # Codex metadata; registers skills + hooks
 ├── README.md
-├── skills/               # process-edit, process-sync, process-align, process-build, process-view, report-writer
+├── skills/               # ontology-edit, ontology-sync, ontology-align, ontology-build, ontology-view, report-writer
 ├── scripts/              # deterministic tools (Node built-ins only)
-│   ├── process-model-lib.mjs      # vocabulary, Turtle subset, closed-world checks, canonical form, diff
-│   ├── process-model-fs.mjs       # model documents + ADR index-link findings
-│   ├── process-model.mjs          # CLI: validate, format, diff, query, impact, apply, transition, align, view …
+│   ├── ontology-lib.mjs      # vocabulary, Turtle subset, closed-world checks, canonical form, diff
+│   ├── ontology-fs.mjs       # model documents + ADR index-link findings
+│   ├── ontology.mjs          # CLI: validate, format, diff, query, impact, apply, transition, align, view …
 │   └── adr-lint-lib.mjs, adr-status-transition.mjs, adr-impl-review-open.mjs  # adr-writer copies (sync-shared-scripts.mjs)
 ├── hooks/
 │   ├── hooks.json        # SessionStart registration
 │   └── surface-business-context.mjs  # SessionStart — ask for the business-context query when an index and a model exist
-├── references/process-model.md   # ownership, vocabulary, validation
-└── templates/process/
-    ├── vocabulary.ttl    # RDFS vocabulary of the business process model (never copied into docs/process)
+├── references/ontology.md   # ownership, vocabulary, validation
+└── templates/ontology/
+    ├── vocabulary.ttl    # RDFS vocabulary of the business ontology (never copied into docs/ontology)
     └── example.ttl       # canonical example model
 ```
 
-The plugins are split so adr-writer never references ALPS or reads the business process model. The couplings run one way, from the upper level down: alps-writer's `/feature-to-adr` transfers each implementable Feature's complete contract into one or several ADRs and delegates each new decision owner to adr-writer's `/adr-new`; ontology-writer writes the ADR index's `realizes` links in the same change unit as the model and hands a model change's ADR revisions to adr-writer's `/adr-new` draft rules and `/adr-impl`. Normal implementation then reads only ADRs; explicit PRD re-import remains an alps-writer-side semantic comparison. adr-writer knows the model only as the shape of `realizes` and, when model documents exist, one session-directive line saying that business context is checked through ontology-writer. ontology-writer runs copies of three adr-writer scripts (reading the ADR index and Status, recording a Status transition, opening a report), refreshed by `scripts/sync-shared-scripts.mjs` and checked in `pnpm test:checks`.
+The plugins are split so adr-writer never references ALPS or reads the business ontology. The couplings run one way, from the upper level down: alps-writer's `/feature-to-adr` transfers each implementable Feature's complete contract into one or several ADRs and delegates each new decision owner to adr-writer's `/adr-new`; ontology-writer writes the ADR index's `realizes` links in the same change unit as the model and hands a model change's ADR revisions to adr-writer's `/adr-new` draft rules and `/adr-impl`. Normal implementation then reads only ADRs; explicit PRD re-import remains an alps-writer-side semantic comparison. adr-writer knows the model only as the shape of `realizes` and, when model documents exist, one session-directive line saying that business context is checked through ontology-writer. ontology-writer runs copies of three adr-writer scripts (reading the ADR index and Status, recording a Status transition, opening a report), refreshed by `scripts/sync-shared-scripts.mjs` and checked in `pnpm test:checks`.
 
 Shared authoring guidance is owned by `plugins/adr-writer/references/`:
 `requirement-delegation.md`, `comprehension-load.md`, `feature-boundaries.md`, and
@@ -315,7 +315,7 @@ explicitly selected document. The optional XML glossary follows all Sections, su
 saves and reloads, and exports last. Never pre-seed a dictionary or add a separate DDD exercise for glossary maintenance.
 
 `/feature-to-adr` transfers needed definitions to `docs/adr/glossary.md` unless a
-current reference level such as the business process model owns the term, in
+current reference level such as the business ontology owns the term, in
 which case it routes a change proposal to that level; ADR authoring creates or
 updates the glossary under the existing approval when needed.
 Equivalent meanings are no-ops, unrelated entries are preserved, and conflicting

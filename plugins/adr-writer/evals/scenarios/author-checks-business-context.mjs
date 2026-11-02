@@ -9,14 +9,11 @@ import {
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { validateModel } from "../../../ontology-writer/scripts/process-model-lib.mjs";
-import {
-  queryContext,
-  renderContext,
-} from "../../../ontology-writer/scripts/process-model-query.mjs";
+import { validateModel } from "../../../ontology-writer/scripts/ontology-lib.mjs";
+import { queryContext, renderContext } from "../../../ontology-writer/scripts/ontology-query.mjs";
 
 const MODEL = readFileSync(
-  path.join(ONTOLOGY_PLUGIN_ROOT, "templates", "process", "example.ttl"),
+  path.join(ONTOLOGY_PLUGIN_ROOT, "templates", "ontology", "example.ttl"),
   "utf8",
 );
 const MAPPING = {
@@ -44,7 +41,7 @@ export const obligations = [
   },
   {
     id: "judgment",
-    text: "Because gift-wrap realizes no step, the response judges one of three outcomes with a reason: it realizes an existing step, the model needs a new step (presented as a process change proposal through /process-edit), or it is unrelated to the business flow. Choosing silently or skipping the judgment fails.",
+    text: "Because gift-wrap realizes no step, the response judges one of three outcomes with a reason: it realizes an existing step, the model needs a new step (presented as an ontology change proposal through /ontology-edit), or it is unrelated to the business flow. Choosing silently or skipping the judgment fails.",
   },
   {
     id: "pending",
@@ -56,20 +53,20 @@ export const obligations = [
   },
   {
     id: "identifiers",
-    text: "The proposed ADR body contains no docs/process path and no model element identifiers such as m:ordering.order-placed or urn:ontology-writer:model:.",
+    text: "The proposed ADR body contains no docs/ontology path and no model element identifiers such as m:ordering.order-placed or urn:ontology-writer:model:.",
   },
 ].map((o) => ({ ...o, label: `business context: ${o.id}` }));
 
 export default {
   name: "author-checks-business-context",
   description:
-    "ADR authoring in a repository with a business process model must check the feature's business context first, judge an unlinked feature three ways, keep values in the ADR and model identifiers out of its body.",
+    "ADR authoring in a repository with a business ontology must check the feature's business context first, judge an unlinked feature three ways, keep values in the ADR and model identifiers out of its body.",
   build(dir) {
     seedRuleDocs(dir);
     seedMapping(dir, MAPPING);
     seedIndexedAdrs(dir, MAPPING);
-    write(dir, "docs/process/ordering.ttl", MODEL);
-    const v = validateModel([{ doc: "docs/process/ordering.ttl", text: MODEL }]);
+    write(dir, "docs/ontology/ordering.ttl", MODEL);
+    const v = validateModel([{ doc: "docs/ontology/ordering.ttl", text: MODEL }]);
     const context = renderContext(
       queryContext({
         index: v.index,
@@ -85,7 +82,7 @@ export default {
       "",
       "선물 포장 기능을 결정하려 한다. 주문이 접수되면 포장 요청을 만들고, 포장이 끝나야 배송을 시작한다. 포장비는 3,000원이다 (가격 정책).",
       "",
-      "The repository contains docs/process/ordering.ttl. The business-context query for the event the feature reacts to returned:",
+      "The repository contains docs/ontology/ordering.ttl. The business-context query for the event the feature reacts to returned:",
       "```text",
       context,
       "```",

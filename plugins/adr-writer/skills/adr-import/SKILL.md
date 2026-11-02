@@ -39,12 +39,12 @@ Read the full `docs/adr/.mapping.json` when present and relevant ADR bodies
 before allocating names or numbers. Also inspect existing numbered documents
 when the index is absent or incomplete. Use repository authoring rules when
 present, otherwise the plugin templates. Read an existing glossary only when
-needed; where `docs/process/` holds Turtle documents, apply
+needed; where `docs/ontology/` holds Turtle documents, apply
 `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` to the business terms adopted ADRs
 rely on. A corrupt index is a reported repair question, not permission to replace
 it; independent source discovery may continue.
 
-When `docs/process/` holds Turtle documents, read
+When `docs/ontology/` holds Turtle documents, read
 `${CLAUDE_PLUGIN_ROOT}/references/business-context.md` before confirming each
 adopted ADR's contract. Without them, skip it.
 

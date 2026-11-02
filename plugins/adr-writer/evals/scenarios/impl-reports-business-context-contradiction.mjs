@@ -9,14 +9,11 @@ import {
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { validateModel } from "../../../ontology-writer/scripts/process-model-lib.mjs";
-import {
-  queryContext,
-  renderContext,
-} from "../../../ontology-writer/scripts/process-model-query.mjs";
+import { validateModel } from "../../../ontology-writer/scripts/ontology-lib.mjs";
+import { queryContext, renderContext } from "../../../ontology-writer/scripts/ontology-query.mjs";
 
 const MODEL = readFileSync(
-  path.join(ONTOLOGY_PLUGIN_ROOT, "templates", "process", "example.ttl"),
+  path.join(ONTOLOGY_PLUGIN_ROOT, "templates", "ontology", "example.ttl"),
   "utf8",
 );
 const MAPPING = {
@@ -93,7 +90,7 @@ export const obligations = [
   },
   {
     id: "route",
-    text: "It reports the contradiction as an alignment issue or a process change proposal and routes it to an ADR-first decision (fix the ADR, or approve a process change); it does not silently implement the contradiction or silently rewrite the model.",
+    text: "It reports the contradiction as an alignment issue or an ontology change proposal and routes it to an ADR-first decision (fix the ADR, or approve an ontology change); it does not silently implement the contradiction or silently rewrite the model.",
   },
   {
     id: "authority",
@@ -108,13 +105,13 @@ export const obligations = [
 export default {
   name: "impl-reports-business-context-contradiction",
   description:
-    "/adr-impl in a repository with a business process model must notice an ADR choice that breaks a hand-off another feature relies on, report it as an alignment issue or process change proposal, and keep completion judged by ADR rows.",
+    "/adr-impl in a repository with a business ontology must notice an ADR choice that breaks a hand-off another feature relies on, report it as an alignment issue or ontology change proposal, and keep completion judged by ADR rows.",
   build(dir) {
     seedRuleDocs(dir);
     seedMapping(dir, MAPPING);
-    write(dir, "docs/process/ordering.ttl", MODEL);
+    write(dir, "docs/ontology/ordering.ttl", MODEL);
     seedIndexedAdrs(dir, MAPPING, { "docs/adr/payments/0001-card-capture.md": ADR });
-    const v = validateModel([{ doc: "docs/process/ordering.ttl", text: MODEL }]);
+    const v = validateModel([{ doc: "docs/ontology/ordering.ttl", text: MODEL }]);
     const context = renderContext(
       queryContext({
         index: v.index,

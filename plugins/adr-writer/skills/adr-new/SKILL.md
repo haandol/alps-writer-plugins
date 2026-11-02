@@ -14,14 +14,14 @@ topology, then use bounded contexts and vertical user stories by default.
 
 Author an ADR directly. Works without an ALPS PRD — this is the plugin's canonical ADR authoring path, while `/feature-to-adr` is "the helper that auto-converts an ALPS Section 7 feature when one already exists."
 
-When qualifying jargon or an unclear acronym appears — or, where `docs/process/`
+When qualifying jargon or an unclear acronym appears — or, where `docs/ontology/`
 holds Turtle documents, a business term the ADR defines or relies on — read
 `${CLAUDE_PLUGIN_ROOT}/references/glossary.md`. Require a clear user meaning,
 reuse supplied definitions, and create or update `docs/adr/glossary.md` only when
 needed under the current ADR approval. Keep the decision and requirement contract
 self-contained in the ADR; glossary work adds no separate classification interview.
 
-When `docs/process/` holds Turtle documents, read
+When `docs/ontology/` holds Turtle documents, read
 `${CLAUDE_PLUGIN_ROOT}/references/business-context.md` before eliciting or
 drafting: query the feature's business context, judge an unlinked feature, and
 name what you checked in the approval summary. Without them, skip it.

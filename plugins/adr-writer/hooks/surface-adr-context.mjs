@@ -4,7 +4,7 @@
 // startup/resume/clear/compact cover the points where session context is created
 // or replaced without adding noise to every user prompt. The model reads the ADR
 // index only after a request passes the admission gate. When the repository also
-// has a business process model, one line says that its business context is checked
+// has a business ontology, one line says that its business context is checked
 // through Ontology Writer; this plugin never reads the model, and neither the model
 // nor the index content is rendered.
 
@@ -32,7 +32,7 @@ function loadJSON(p) {
 }
 
 /**
- * Whether `dir` holds a business process model document: a `.ttl` file at any depth,
+ * Whether `dir` holds a business ontology document: a `.ttl` file at any depth,
  * outside hidden entries, the way Ontology Writer finds model documents.
  */
 function hasModelDocument(dir, seen = new Set()) {
@@ -104,11 +104,11 @@ function main() {
     "Use /adr-sync for proven drift, broad refactors, manual ADR edits, or audits; else use targeted checks and risk-selected review.",
     "Constrain artifacts and actions, not private reasoning. Choose orchestration from current capability; persist none.",
   ];
-  // The business process model sits above ADRs. Ontology Writer owns it and its
+  // The business ontology sits above ADRs. Ontology Writer owns it and its
   // query; without that plugin the context goes unchecked, and the work says so.
-  if (hasModelDocument(path.join(path.dirname(path.dirname(mappingFile)), "process")))
+  if (hasModelDocument(path.join(path.dirname(path.dirname(mappingFile)), "ontology")))
     directive.push(
-      "Business process model present: check business context through the Ontology Writer plugin before an ADR decision or contract changes; if it is unavailable, state that the business context was not checked.",
+      "Business ontology present: check business context through the Ontology Writer plugin before an ADR decision or contract changes; if it is unavailable, state that the business context was not checked.",
     );
 
   const out = {

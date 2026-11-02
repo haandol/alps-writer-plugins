@@ -8,9 +8,9 @@ Three plugins for Codex and Claude Code: write product requirements, keep a mode
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `alps-writer`     | Write product requirements documents (PRDs) in Full or Lite ALPS format through conversation. Transfer Full ALPS features to ADRs.                    |
 | `adr-writer`      | Create architecture decision records (ADRs), adopt them in existing projects, implement decisions, review results, and reconcile documents with code. |
-| `ontology-writer` | Keep an optional business process model above ADRs — flows, events, policies and cross-step rules in Turtle — and align the ADRs that realize it.     |
+| `ontology-writer` | Keep an optional business ontology above ADRs — flows, events, policies and cross-step rules in Turtle — and align the ADRs that realize it.          |
 
-Install any plugin independently. The Full ALPS → ADR workflow needs alps-writer and adr-writer; a business process model that reaches ADRs needs ontology-writer and adr-writer.
+Install any plugin independently. The Full ALPS → ADR workflow needs alps-writer and adr-writer; a business ontology that reaches ADRs needs ontology-writer and adr-writer.
 
 ## Quick Start
 
@@ -22,7 +22,7 @@ Requires Node.js 24 or later. Marketplace installs include the bundled server an
 codex plugin marketplace add haandol/alps-writer-plugins
 codex plugin add alps-writer@alps-writer
 codex plugin add adr-writer@alps-writer
-codex plugin add ontology-writer@alps-writer   # only for a business process model
+codex plugin add ontology-writer@alps-writer   # only for a business ontology
 ```
 
 Invoke a skill with `$skill-name`, such as `$alps-init` or `$adr-new`, or ask for a workflow in natural language.
@@ -35,7 +35,7 @@ When prompted, review and trust ADR Writer's `SessionStart` hook. It restores th
 /plugin marketplace add haandol/alps-writer-plugins
 /plugin install alps-writer@alps-writer
 /plugin install adr-writer@alps-writer
-/plugin install ontology-writer@alps-writer   # only for a business process model
+/plugin install ontology-writer@alps-writer   # only for a business ontology
 ```
 
 Use `/skill-name` instead of `$skill-name`. The examples below use Claude Code notation.
@@ -44,13 +44,13 @@ For Codex on Amazon Bedrock, see [ADR Writer troubleshooting](./plugins/adr-writ
 
 ## Choose a workflow
 
-| Starting point                               | Commands                                             |
-| -------------------------------------------- | ---------------------------------------------------- |
-| Define a proof of concept (PoC)              | `/lite-alps-init`                                    |
-| Plan a product, then implement it            | `/alps-init` → `/feature-to-adr` → `/adr-impl`       |
-| Make an architecture or requirement decision | `/adr-new` → `/adr-impl`                             |
-| Document decisions in an existing codebase   | `/adr-import [project-path-or-feature-scope]`        |
-| Model how the business flows across features | `/process-build` → `/process-edit` → `/process-view` |
+| Starting point                               | Commands                                                |
+| -------------------------------------------- | ------------------------------------------------------- |
+| Define a proof of concept (PoC)              | `/lite-alps-init`                                       |
+| Plan a product, then implement it            | `/alps-init` → `/feature-to-adr` → `/adr-impl`          |
+| Make an architecture or requirement decision | `/adr-new` → `/adr-impl`                                |
+| Document decisions in an existing codebase   | `/adr-import [project-path-or-feature-scope]`           |
+| Model how the business flows across features | `/ontology-build` → `/ontology-edit` → `/ontology-view` |
 
 ### Write a product spec
 
@@ -168,7 +168,7 @@ Omit `--global` for a project-local installation. See the [report skill](./plugi
 | [Usage](./docs/usage.md)                               | Walkthroughs, all commands, hooks, and the ADR index                                                        |
 | [ADR process](./docs/adr-process.md)                   | Lifecycle, critical command paths, routing, and efficiency review as diagrams (Korean)                      |
 | [ADR templates](./plugins/adr-writer/templates/adr/)   | Authoring rules, directory structure, and index schema                                                      |
-| [Ontology Writer](./plugins/ontology-writer/README.md) | Business process model commands, its session directive, and how it works with adr-writer                    |
+| [Ontology Writer](./plugins/ontology-writer/README.md) | Business ontology commands, its session directive, and how it works with adr-writer                         |
 | [MCP server](./docs/mcp-server.md)                     | Use the ALPS server in other Model Context Protocol (MCP) clients; environment variables and tool reference |
 
 When calling ALPS document tools directly, pass `doc_path` on every request. Initialization or loading does not select a default for later calls; missing or invalid targets return an error without changing another document.

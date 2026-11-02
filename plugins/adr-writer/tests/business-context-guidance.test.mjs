@@ -1,4 +1,4 @@
-// How ADR Writer's own paths use a business process model that the separate
+// How ADR Writer's own paths use a business ontology that the separate
 // ontology-writer plugin keeps: the session notice, the business-context module and
 // its callers, the seeded rule docs, and a lint that checks only the shape of the
 // index's `realizes` links and never reads the model.
@@ -11,32 +11,28 @@ import { has, parseLint, PLUGIN_ROOT, runHook, seedRuleDocs, withTmp, write } fr
 const read = (rel) => readFileSync(path.join(PLUGIN_ROOT, rel), "utf8");
 const CONTEXT = read("references/business-context.md");
 const MODEL = `@prefix m: <urn:ontology-writer:model:> .
-@prefix pm: <urn:ontology-writer:process:> .
+@prefix onto: <urn:ontology-writer:vocabulary:> .
 
-m:ordering a pm:BoundedContext .
+m:ordering a onto:BoundedContext .
 `;
 
-test("the session directive notes a business process model without reading it", () => {
+test("the session directive notes a business ontology without reading it", () => {
   withTmp((dir) => {
     write(dir, "docs/adr/.mapping.json", JSON.stringify({ categories: {} }));
     const plain = runHook(dir);
-    assert.doesNotMatch(plain, /business context|process model/i, "an index alone adds nothing");
-    write(dir, "docs/process/notes.md", "# notes\n");
-    write(dir, "docs/process/.hidden/old.ttl", MODEL);
+    assert.doesNotMatch(plain, /business context|ontology/i, "an index alone adds nothing");
+    write(dir, "docs/ontology/notes.md", "# notes\n");
+    write(dir, "docs/ontology/.hidden/old.ttl", MODEL);
     assert.equal(runHook(dir), plain, "a non-Turtle or hidden document is not a model");
 
-    write(dir, "docs/process/flows/ordering.ttl", MODEL);
+    write(dir, "docs/ontology/flows/ordering.ttl", MODEL);
     const lines = runHook(dir).split("\n");
     assert.deepEqual(lines.slice(0, -1), plain.split("\n"), "the ADR directive is unchanged");
     assert.equal(
       lines.at(-1),
-      "Business process model present: check business context through the Ontology Writer plugin before an ADR decision or contract changes; if it is unavailable, state that the business context was not checked.",
+      "Business ontology present: check business context through the Ontology Writer plugin before an ADR decision or contract changes; if it is unavailable, state that the business context was not checked.",
     );
-    assert.doesNotMatch(
-      lines.at(-1),
-      /ordering|process-model\.mjs/,
-      "no model content or query path",
-    );
+    assert.doesNotMatch(lines.at(-1), /ordering|ontology\.mjs/, "no model content or query path");
   });
 });
 
@@ -87,7 +83,7 @@ test("the lint checks only the shape of realizes and never reads the model", () 
     fixture(dir, ["ordering.cancel-order"]);
     write(
       dir,
-      "docs/process/ordering.ttl",
+      "docs/ontology/ordering.ttl",
       "@prefix m: <urn:ontology-writer:model:> .\nm:x a [ ] .\n",
     );
     const report = parseLint(dir);
@@ -103,7 +99,7 @@ test("every path that changes ADR decisions or contracts checks the business con
   for (const skill of ["adr-new", "adr-impl", "adr-sync", "adr-import"])
     has(
       read(`skills/${skill}/SKILL.md`),
-      "When `docs/process/` holds Turtle documents, read",
+      "When `docs/ontology/` holds Turtle documents, read",
       "`${CLAUDE_PLUGIN_ROOT}/references/business-context.md`",
     );
   has(
@@ -157,7 +153,7 @@ test("every path that changes ADR decisions or contracts checks the business con
 test("unlinked features get a three-way judgment and a confirmed empty record is not asked again", () => {
   has(
     CONTEXT,
-    "When the target feature realizes no step, judge one of three outcomes and show it with its reason in the approval summary or report: it realizes an existing step (name the candidate), the model needs a new step (a process change proposal), or it is unrelated to the business flow.",
+    "When the target feature realizes no step, judge one of three outcomes and show it with its reason in the approval summary or report: it realizes an existing step (name the candidate), the model needs a new step (an ontology change proposal), or it is unrelated to the business flow.",
   );
   has(CONTEXT, "Skip the judgment for a deprecation without a replacement.");
   has(
@@ -173,7 +169,7 @@ test("the business context bounds choices and raises proposals but never becomes
   );
   has(
     CONTEXT,
-    "When no such choice exists, or the change needs a different flow, event, policy, cross-feature rule, or a business concept or term the model defines, raise a process change proposal through ontology-writer's `/process-edit`.",
+    "When no such choice exists, or the change needs a different flow, event, policy, cross-feature rule, or a business concept or term the model defines, raise an ontology change proposal through ontology-writer's `/ontology-edit`.",
   );
   has(
     CONTEXT,
@@ -181,7 +177,7 @@ test("the business context bounds choices and raises proposals but never becomes
   );
   has(
     CONTEXT,
-    "A pending row is not implemented, keeps the ADR `Proposed`, and is reported as pending by implementation review and process sync.",
+    "A pending row is not implemented, keeps the ADR `Proposed`, and is reported as pending by implementation review and ontology sync.",
   );
   has(
     CONTEXT,
@@ -199,11 +195,11 @@ test("the business context bounds choices and raises proposals but never becomes
   );
   has(
     CONTEXT,
-    "`/adr-sync` never adds a compliance contract itself; it reports the gap as an alignment issue for `/process-sync`.",
+    "`/adr-sync` never adds a compliance contract itself; it reports the gap as an alignment issue for `/ontology-sync`.",
   );
   has(
     CONTEXT,
-    "An ADR or code change that learns of a contradiction with the context reports it in its completion report — as an alignment issue (the model and the realizing ADR contract differ) or as a process change proposal.",
+    "An ADR or code change that learns of a contradiction with the context reports it in its completion report — as an alignment issue (the model and the realizing ADR contract differ) or as an ontology change proposal.",
   );
   has(CONTEXT, "Completion is still judged by ADR contract rows only.");
   has(
@@ -212,11 +208,11 @@ test("the business context bounds choices and raises proposals but never becomes
   );
   has(
     CONTEXT,
-    "When the change flags are unavailable or unknown for part of the scope, say so and treat the `Accepted` processes there as possibly edited directly until the history is available and `/process-sync` has checked them with it.",
+    "When the change flags are unavailable or unknown for part of the scope, say so and treat the `Accepted` processes there as possibly edited directly until the history is available and `/ontology-sync` has checked them with it.",
   );
   has(
     CONTEXT,
-    "Propose compliance contracts for it only after presenting `/process-sync` and its approval.",
+    "Propose compliance contracts for it only after presenting `/ontology-sync` and its approval.",
   );
   has(CONTEXT, "Absence from the model is not absence from the business.");
   has(
@@ -235,18 +231,18 @@ test("the business context bounds choices and raises proposals but never becomes
   has(CONTEXT, "Never persist a result; it is not a record or a second authority.");
   has(
     read("agents/adr-impl-sufficiency-reviewer.md"),
-    "Business context from a process model is never an obligation by itself",
+    "Business context from an ontology is never an obligation by itself",
   );
 });
 
 test("/adr-impl reuses an approval of the exact revision from any approval path and hands over to the alignment review", () => {
   has(
     read("skills/adr-impl/references/planning.md"),
-    "If `/adr-new`, `/feature-to-adr`, `/process-edit` or `/process-sync` already obtained approval for this exact ADR content and the ADR has not changed, reuse that approved baseline, publish the implementation plan as a progress update, and proceed without another approval.",
+    "If `/adr-new`, `/feature-to-adr`, `/ontology-edit` or `/ontology-sync` already obtained approval for this exact ADR content and the ADR has not changed, reuse that approved baseline, publish the implementation plan as a progress update, and proceed without another approval.",
   );
   has(
     read("skills/adr-impl/references/completion.md"),
-    "When `docs/process/` holds Turtle documents and this category realizes steps of a `Proposed` process whose realizing features now all have an `Accepted` ADR and no `Proposed` one, run ontology-writer's `/process-align <process>` as part of the same cascade; it needs no new approval. Without ontology-writer, report that the process waits for that alignment review.",
+    "When `docs/ontology/` holds Turtle documents and this category realizes steps of a `Proposed` process whose realizing features now all have an `Accepted` ADR and no `Proposed` one, run ontology-writer's `/ontology-align <process>` as part of the same cascade; it needs no new approval. Without ontology-writer, report that the process waits for that alignment review.",
   );
 });
 
@@ -254,7 +250,7 @@ test("ADR bodies keep model locations and element ids out", () => {
   has(CONTEXT, "Keep model locations and element ids out of ADR bodies.");
 });
 
-test("the seeded rule docs place the business process model above ADRs without reading it", () => {
+test("the seeded rule docs place the business ontology above ADRs without reading it", () => {
   has(
     read("templates/adr/concepts.md"),
     "ADRs remain the only implementation authority.",

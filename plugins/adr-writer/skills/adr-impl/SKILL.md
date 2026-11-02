@@ -11,11 +11,11 @@ argument-hint: "[adr-path-or-category]"
 Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Its absence is normal; preserve it as supporting material, not an indexed ADR.
 When this workflow permits ADR writing and a definition needs creation or change,
-or ADR content relies on a business term where `docs/process/` holds Turtle
+or ADR content relies on a business term where `docs/ontology/` holds Turtle
 documents, apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing
 approval boundary. Review-only work reports unclear or conflicting meanings without editing.
 
-When `docs/process/` holds Turtle documents, read
+When `docs/ontology/` holds Turtle documents, read
 `${CLAUDE_PLUGIN_ROOT}/references/business-context.md` before planning an ADR
 change or code of a feature linked to a process step. Name the checked context in
 the plan; completion is judged by ADR rows only. Without them, skip it.

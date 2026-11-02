@@ -18,8 +18,8 @@
 // It shells out to adr-invariants.sh (unless --no-invariants) so a single run
 // covers reverse references too, folding that exit code into the aggregate.
 //
-// A category's `realizes` entries name business process model steps. This lint
-// checks only their shape; Ontology Writer's `process-model validate` checks them
+// A category's `realizes` entries name business ontology steps. This lint
+// checks only their shape; Ontology Writer's `ontology validate` checks them
 // against the model, which this plugin does not read.
 //
 // Usage:

@@ -1,7 +1,7 @@
 # Business context before ADR and code changes
 
-Read this module when the repository has a business process model — one or more
-Turtle documents in `docs/process/` — and the current workflow creates or
+Read this module when the repository has a business ontology — one or more
+Turtle documents in `docs/ontology/` — and the current workflow creates or
 changes an ADR decision or contract, or changes code of a feature linked to a
 process step. Without model documents, skip it entirely: add no output,
 question, link judgment or index change. The model, its vocabulary, its
@@ -33,7 +33,7 @@ Automatic lifecycle transitions — `/adr-impl` promoting to `Accepted`,
 Run ontology-writer's query, the command its session directive names:
 
 ```bash
-node <ontology-writer>/scripts/process-model.mjs query --category <key>
+node <ontology-writer>/scripts/ontology.mjs query --category <key>
 ```
 
 When ontology-writer is not available, state in the approval summary or report
@@ -53,7 +53,7 @@ a record or a second authority.
 
 When the target feature realizes no step, judge one of three outcomes and show
 it with its reason in the approval summary or report: it realizes an existing
-step (name the candidate), the model needs a new step (a process change
+step (name the candidate), the model needs a new step (an ontology change
 proposal), or it is unrelated to the business flow. Skip the judgment for a
 deprecation without a replacement. When the user confirms the feature stays
 unlinked, record `"realizes": []` for its category; never store a link candidate
@@ -66,13 +66,13 @@ again.
   contradict the model's flow, events, policies, cross-feature rules or terms.
 - **Propose, do not absorb.** When no such choice exists, or the change needs a
   different flow, event, policy, cross-feature rule, or a business concept or
-  term the model defines, raise a process change proposal through
-  ontology-writer's `/process-edit`. Until it is approved, or while it is rejected, do not finalize
+  term the model defines, raise an ontology change proposal through
+  ontology-writer's `/ontology-edit`. Until it is approved, or while it is rejected, do not finalize
   ADR content that depends on it: save that contract row with a visible pending
   marker and the awaited business change in business language, without the
   model's file location or element ids. A pending row is not implemented, keeps
   the ADR `Proposed`, and is reported as pending by implementation review and
-  process sync. After a rejection, rewrite the row with the model's current
+  ontology sync. After a rejection, rewrite the row with the model's current
   meaning or keep it pending until the user decides. A PRD handoff leaves that
   Feature unresolved.
 - **Compliance contracts.** When an approval-bound authoring path — new ADR,
@@ -86,18 +86,18 @@ again.
   reflects yet, and fold the compliance contracts it needs into that process's
   change approval summary so they are asked once. `/adr-sync` never adds a
   compliance contract itself; it reports the gap as an alignment issue for
-  `/process-sync`.
+  `/ontology-sync`.
 - **Report contradictions.** An ADR or code change that learns of a
   contradiction with the context reports it in its completion report — as an
-  alignment issue (the model and the realizing ADR contract differ) or as a
-  process change proposal. Completion is still judged by ADR contract rows only.
+  alignment issue (the model and the realizing ADR contract differ) or as an
+  ontology change proposal. Completion is still judged by ADR contract rows only.
 - **Not settled.** When the context shows validation errors, uncommitted model
   edits, unsynced direct edits or a lifecycle edit of an `Accepted` process,
   report that and do not treat that part as a settled reference. Propose
-  compliance contracts for it only after presenting `/process-sync` and its
+  compliance contracts for it only after presenting `/ontology-sync` and its
   approval. When the change flags are unavailable or unknown for part of the
   scope, say so and treat the `Accepted` processes there as possibly edited
-  directly until the history is available and `/process-sync` has checked them
+  directly until the history is available and `/ontology-sync` has checked them
   with it.
 - **State what you checked.** Name the business context you checked in the ADR
   approval summary and in the implementation plan. Keep model locations and

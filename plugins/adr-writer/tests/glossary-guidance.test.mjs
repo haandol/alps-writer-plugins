@@ -70,7 +70,7 @@ test("a current reference level owns business terms while dependent ADR rows sta
   const guide = read("../references/glossary.md");
   assert.match(guide, /A business term's meaning has one current owner/);
   assert.match(guide, /stays current after handoff and that ADRs follow/);
-  assert.match(guide, /`docs\/process\/`/);
+  assert.match(guide, /`docs\/ontology\/`/);
   assert.match(guide, /A PRD\s+is planning input, not a current reference level/);
   assert.match(guide, /reuse its definition and do not define the term again/);
   assert.match(guide, /ADR approval summary\s+as that level's change proposal/);
@@ -107,7 +107,7 @@ test("a current reference level owns business terms while dependent ADR rows sta
 
 test("handoff routes current-reference-level terms as proposals and completes per Feature", () => {
   const handoff = read("../../alps-writer/skills/feature-to-adr/SKILL.md");
-  assert.match(handoff, /one or more Turtle documents in `docs\/process\/`/);
+  assert.match(handoff, /one or more Turtle documents in `docs\/ontology\/`/);
   assert.match(handoff, /PRD being\s+transferred is never a current reference level/);
   assert.match(handoff, /\[current reference level\]\(references\/current-reference-level\.md\)/);
   assert.match(

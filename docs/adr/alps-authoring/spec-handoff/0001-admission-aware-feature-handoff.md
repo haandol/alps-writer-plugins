@@ -67,8 +67,8 @@ ADR 루트의 `glossary.md`로 함께 이전한다. 필요한 정의가 없으�
 재사용하며 관련 없는 기존 항목은 보존한다. 뜻이 충돌하거나 불명확하면 사용자에게 확인하기 전
 해당 의미에 의존하는 인계를 완료하지 않는다. 정의는 기존 계약 승인에 포함한다.
 
-현재 기준 레벨은 인계 뒤에도 현재 기준으로 남아 ADR이 따르는 상위 레벨(예: 업무 프로세스
-모델)이며, 인계 대상인 PRD는 포함하지 않는다. 그런 레벨이 업무 용어의 정의를 소유하는
+현재 기준 레벨은 인계 뒤에도 현재 기준으로 남아 ADR이 따르는 상위 레벨(예: 업무
+온톨로지)이며, 인계 대상인 PRD는 포함하지 않는다. 그런 레벨이 업무 용어의 정의를 소유하는
 저장소에서는 같은 사실의 기준이 두 레벨에 생기지 않도록 인계가 그 용어를 용어집으로 옮기지
 않는다. 그 레벨에 같은 뜻이 있으면 재사용하고, 새 정의나 의미 변경과 인계가 확인한 기능 사이
 관계만 그 레벨의 변경 제안으로 인계 승인 요약에 함께 보이며, 그 관계를 지키는 기능 해상도의 값·조건·준수
@@ -198,4 +198,4 @@ flowchart LR
 ## Related
 
 - [ADR admission gate](../../adr-authoring/decision-boundary/0001-admit-only-architectural-decisions.md)
-- [업무 프로세스 모델을 ADR 위의 RDFS-lite 레벨로 도입](../../process-modeling/0001-introduce-business-process-model-level.md)
+- [업무 온톨로지를 ADR 위의 RDFS-lite 레벨로 도입](../../ontology/0001-introduce-business-ontology-level.md)

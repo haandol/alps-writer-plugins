@@ -13,7 +13,7 @@
 // call) stay with the reviewer — see agents/adr-reviewer.md.
 
 // ── process step identifiers ─────────────────────────────────────────────
-// A category's `realizes` entries name business process model steps by the local
+// A category's `realizes` entries name business ontology steps by the local
 // part of their identifier: a Turtle local name without escapes or ":". Ontology
 // Writer reads model identifiers with this same rule, from its copy of this file.
 const PN_CHARS_BASE =
@@ -23,7 +23,7 @@ const PN_CHARS_U = `${PN_CHARS_BASE}_`;
 const PN_CHARS = `${PN_CHARS_U}\\-0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040`;
 const LOCAL_ID_RE = new RegExp(`^[${PN_CHARS_U}0-9](?:[${PN_CHARS}.]*[${PN_CHARS}])?$`, "u");
 
-/** Whether `id` is a process model element identifier: the local part after the model namespace. */
+/** Whether `id` is an ontology element identifier: the local part after the model namespace. */
 export function isValidElementId(id) {
   return typeof id === "string" && LOCAL_ID_RE.test(id);
 }
@@ -301,7 +301,7 @@ export const isAdrFile = (name) => /^[0-9]{4}-.*\.md$/.test(name);
 
 /**
  * An ADR body's `## Status`: whether the section exists, and its first non-empty
- * line (null when it has none). The structure lint and the process level read the
+ * line (null when it has none). The structure lint and Ontology Writer read the
  * Status the same way.
  */
 export function bodyStatus(body) {
@@ -575,7 +575,7 @@ export function validateMappingShape(mapping) {
     }
     if ("tableDocs" in entry && !Array.isArray(entry.tableDocs))
       err("tabledocs-not-array", `category "${key}": "tableDocs" is not an array`);
-    // realizes: the business process model steps this category realizes. Ontology
+    // realizes: the business ontology steps this category realizes. Ontology
     // Writer checks its targets against the model; here only the shape. An empty
     // list is a confirmed "realizes no step" record.
     if ("realizes" in entry) {

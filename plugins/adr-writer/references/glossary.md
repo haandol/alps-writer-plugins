@@ -37,14 +37,14 @@ contract-change approval; editing the glossary alone cannot change that contract
 
 A business term's meaning has one current owner. A current reference level is an
 upper level that stays current after handoff and that ADRs follow, such as the
-business process model in `docs/process/` (one or more Turtle documents). A PRD
+business ontology in `docs/ontology/` (one or more Turtle documents). A PRD
 is planning input, not a current reference level.
 
 When that level defines a business term (a business concept or a bounded
 context's term), reuse its definition and do not define the term again in the
 glossary. Show a new definition or a changed meaning in the ADR approval summary
 as that level's change proposal; it is decided only through that level's own
-approval path (for the business process model, ontology-writer's `/process-edit`).
+approval path (for the business ontology, ontology-writer's `/ontology-edit`).
 Approving the ADR does not approve the proposal. While the proposal is unapproved or rejected, do not finalize ADR content
 that depends on the meaning:
 

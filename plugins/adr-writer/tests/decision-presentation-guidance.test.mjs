@@ -52,7 +52,7 @@ test("an unknown contract stays unresolved and blocks its approval instead of be
 test("business terms reach the current-reference-level rules from every ADR-writing path", () => {
   has(
     NEW,
-    "or, where `docs/process/` holds Turtle documents, a business term the ADR defines or relies on",
+    "or, where `docs/ontology/` holds Turtle documents, a business term the ADR defines or relies on",
   );
   has(
     GLOSSARY,
@@ -61,11 +61,11 @@ test("business terms reach the current-reference-level rules from every ADR-writ
   for (const skill of ["adr-impl", "adr-sync"])
     has(
       read(`skills/${skill}/SKILL.md`),
-      "or ADR content relies on a business term where `docs/process/` holds Turtle documents",
+      "or ADR content relies on a business term where `docs/ontology/` holds Turtle documents",
     );
   has(
     read("skills/adr-rollup/SKILL.md"),
-    "business terms the merged ADR relies on where `docs/process/` holds Turtle documents",
+    "business terms the merged ADR relies on where `docs/ontology/` holds Turtle documents",
   );
   has(read("skills/adr-import/SKILL.md"), "to the business terms adopted ADRs rely on");
   has(

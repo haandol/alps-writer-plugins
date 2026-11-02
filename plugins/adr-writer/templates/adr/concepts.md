@@ -74,11 +74,11 @@ state, permission, ordering rule, failure guarantee and success condition. A
 glossary edit cannot silently change those contracts. Do not store upstream
 document paths or approval records in the glossary.
 
-### Optional business process level above ADRs
+### Optional business ontology level above ADRs
 
-A repository may keep a **business process model** above its ADRs: one or more
-Turtle documents in `docs/process/`. Then the levels with a current authority
-depend in this order — business process model, ADR, code — and a PRD stays
+A repository may keep a **business ontology** above its ADRs: one or more
+Turtle documents in `docs/ontology/`. Then the levels with a current authority
+depend in this order — business ontology, ADR, code — and a PRD stays
 planning input. The model answers how the business flows across features: flows,
 event hand-offs and the policies that react to them, actor responsibilities,
 business rules across steps, business concepts and terms, and business-level
@@ -89,11 +89,11 @@ ADRs remain the only implementation authority. A model relation reaches code onl
 through a compliance contract in a realizing ADR, written at feature resolution.
 When a realizing ADR contradicts the model's flow, event hand-offs, policies,
 business rules or actor responsibilities, the model is the reference and the ADR
-changes unless the user approves a process change. ADR edits, category moves and
+changes unless the user approves an ontology change. ADR edits, category moves and
 code refactors never change the model. In such a repository the model owns
 business-term definitions, so the glossary keeps only other terms. Without model
 documents nothing in this section applies. The model is kept with the separate
-ontology-writer plugin, whose `references/process-model.md` holds the vocabulary
+ontology-writer plugin, whose `references/ontology.md` holds the vocabulary
 and validation rules; ADR Writer never reads the model.
 
 ### Named applications of the same test
@@ -232,7 +232,7 @@ References are **written directly on neither edge (PRD↔ADR, ADR↔code).** PRD
 - **No ADR → PRD references**: never write an ALPS file path, section number, or feature ID in the ADR body (Purpose and Related included). An ADR _absorbs_ the PRD's motivation but never _points at_ it — because after handoff the ADR must stand alone even when the legacy PRD is stale, moved, or absent. Never copy the PRD's user stories or acceptance-criteria prose into an ADR either; transfer independently reviewable obligations at ADR resolution.
 - **No PRD → ADR references**: an ALPS document never writes a specific ADR ID or path in its body. Handoff evidence is ephemeral, and the legacy PRD does not track downstream artifacts.
 - **When an ADR decision changes, the code changes. A PRD edit alone changes nothing after handoff.** Only an explicit re-import may propose an ADR contract change, and the existing ADR remains authoritative until that change is approved. The reverse (a code change dragging the ADR, or an ADR change dragging the legacy PRD) must never happen.
-- **A business process model, when present, sits above ADRs with the same one-way rule**: the model never records ADR paths, numbers or category keys, and a realizing ADR body never records the model's file location or element identifiers. The only link is the category's `realizes` list in `.mapping.json` — the lower level knows the upper level's step identifiers — so category renames, splits and rollups never touch the model.
+- **A business ontology, when present, sits above ADRs with the same one-way rule**: the model never records ADR paths, numbers or category keys, and a realizing ADR body never records the model's file location or element identifiers. The only link is the category's `realizes` list in `.mapping.json` — the lower level knows the upper level's step identifiers — so category renames, splits and rollups never touch the model.
 - **Keep the linkage in the external mapping layer**: [`docs/adr/.mapping.json`](./structure.md#the-adr-registry-mappingjson) records the ADR index (categories → adrs, each with path, status, summary) and the `dependsOn` between categories in one place. **PRD references are not stored in the mapping** — adr-writer does not reference ALPS. ADR↔code is likewise not pointed at from the body (the code is searched for as needed), and this mapping is the only coupling point joining categories, ADRs, and dependencies.
 - **Verifying the stability gradient**: change frequency must follow `Code >> ADR >> PRD` while the PRD is active planning input. After handoff, the live dependency is `Code >> ADR`; a legacy PRD revision enters it only through explicit re-import. If a volatile-layer change drags a stable layer, an arrow is drawn wrong — usually because the ADR holds code detail, the code holds an ADR ID, or the ADR holds an ALPS path.
 

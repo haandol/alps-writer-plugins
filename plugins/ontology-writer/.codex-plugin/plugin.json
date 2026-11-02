@@ -1,7 +1,7 @@
 {
   "name": "ontology-writer",
   "version": "0.11.0",
-  "description": "Keep a business process model above ADRs as a closed RDFS-lite ontology in Turtle: build it from documents, change it through one approval summary, align realizing ADRs, query business context and view it in 3D.",
+  "description": "Keep a business ontology above ADRs as a closed RDFS-lite graph in Turtle: build it from documents, change it through one approval summary, align realizing ADRs, query business context and view it in 3D.",
   "author": {
     "name": "haandol",
     "url": "https://github.com/haandol"
@@ -21,11 +21,11 @@
     "capabilities": ["Interactive", "Read", "Write"],
     "websiteURL": "https://github.com/haandol/alps-writer-plugins/tree/main/plugins/ontology-writer",
     "defaultPrompt": [
-      "Build a business process model from these documents.",
-      "Change the business process model: orders fully paid with store credit skip the payment request.",
-      "Check my direct edits to the business process model and propose the downstream changes.",
+      "Build a business ontology from these documents.",
+      "Change the business ontology: orders fully paid with store credit skip the payment request.",
+      "Check my direct edits to the business ontology and propose the downstream changes.",
       "Make this process current once its realizing features are implemented.",
-      "Open the business process view."
+      "Open the business ontology view."
     ],
     "brandColor": "#0E7490",
     "screenshots": []

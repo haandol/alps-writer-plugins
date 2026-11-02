@@ -2,7 +2,7 @@
 
 Read this module only when step 1 found a current reference level: an upper
 level that stays current after handoff and that ADRs follow. ADR Writer's
-business process model in `docs/process/` is one. The PRD being transferred is
+business ontology in `docs/ontology/` is one. The PRD being transferred is
 never a current reference level.
 
 That level owns business-term definitions and the relationships between
@@ -19,7 +19,7 @@ features, so the same fact never has two current owners.
   proposal.
 - A repeated handoff with the same meaning creates no proposal.
 - A proposal is approved only through that level's own approval path — for the
-  business process model, ontology-writer's `/process-edit` — never by approving the ADR
+  business ontology, ontology-writer's `/ontology-edit` — never by approving the ADR
   contracts shown beside it.
 - A proposal awaiting this handoff's approval summary does not block drafting.
   Until it is approved, or after it is rejected, the items that depend on its
@@ -27,7 +27,7 @@ features, so the same fact never has two current owners.
   Features that do not depend on it continue.
 - Tell `/adr-new` which contract rows depend on an unapproved proposal; its
   glossary rules keep those rows pending and the ADR `Proposed`.
-- For the business process model, `/adr-new` queries each owner's
+- For the business ontology, `/adr-new` queries each owner's
   business context and judges a Feature that realizes no step. Pass it the
   proposals already routed so it does not ask again.
 - After approval the owning ADR body keeps the short explanation its contract

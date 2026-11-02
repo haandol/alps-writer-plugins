@@ -1,17 +1,17 @@
 import { alpsSkillText, seedMapping, seedRuleDocs, TAIL_SPEC, write } from "../lib/harness.mjs";
 
 const MODEL = `@prefix m: <urn:ontology-writer:model:> .
-@prefix pm: <urn:ontology-writer:process:> .
+@prefix onto: <urn:ontology-writer:vocabulary:> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-m:ordering a pm:BoundedContext ;
+m:ordering a onto:BoundedContext ;
   rdfs:label "주문" ;
-  pm:definition "고객 주문을 받아 확정하는 업무 경계" .
+  onto:definition "고객 주문을 받아 확정하는 업무 경계" .
 
-m:ordering.order a pm:BusinessConcept ;
+m:ordering.order a onto:BusinessConcept ;
   rdfs:label "주문" ;
-  pm:definition "고객이 상품 구매를 확정한 요청" ;
-  pm:inContext m:ordering .
+  onto:definition "고객이 상품 구매를 확정한 요청" ;
+  onto:inContext m:ordering .
 `;
 
 const BRIEF = `
@@ -31,11 +31,11 @@ F3: 주문 내역 내보내기
 export const obligations = [
   {
     id: "reuse",
-    text: "F1 reuses the business process model's existing meaning of 주문 and does not transfer 주문 into docs/adr/glossary.md.",
+    text: "F1 reuses the business ontology's existing meaning of 주문 and does not transfer 주문 into docs/adr/glossary.md.",
   },
   {
     id: "proposal",
-    text: "F2's new term 선물 주문 and the relationship 'a confirmed 선물 주문 starts the 포장 step' are shown as business process model change proposals in the same handoff approval summary, not as glossary entries.",
+    text: "F2's new term 선물 주문 and the relationship 'a confirmed 선물 주문 starts the 포장 step' are shown as business ontology change proposals in the same handoff approval summary, not as glossary entries.",
   },
   {
     id: "value",
@@ -54,18 +54,18 @@ export const obligations = [
 export default {
   name: "feature-handoff-routes-model-owned-terms",
   description:
-    "/feature-to-adr in a repository with a business process model must reuse model-owned terms, route new terms and feature relationships as model proposals, keep values in ADRs, and complete handoff per Feature.",
+    "/feature-to-adr in a repository with a business ontology must reuse model-owned terms, route new terms and feature relationships as model proposals, keep values in ADRs, and complete handoff per Feature.",
 
   build(dir) {
     seedRuleDocs(dir);
     seedMapping(dir);
-    write(dir, "docs/process/ordering.ttl", MODEL);
+    write(dir, "docs/ontology/ordering.ttl", MODEL);
     return [
       alpsSkillText("feature-to-adr", {
         references: ["skills/feature-to-adr/references/current-reference-level.md"],
       }),
       `\n---\n\n# This run`,
-      `The repository contains docs/process/ordering.ttl:`,
+      `The repository contains docs/ontology/ordering.ttl:`,
       "```turtle",
       MODEL,
       "```",

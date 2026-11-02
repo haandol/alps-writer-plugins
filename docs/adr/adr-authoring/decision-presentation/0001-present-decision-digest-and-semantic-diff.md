@@ -150,7 +150,7 @@ eval, 사람이 관찰하는 demo 또는 검토 중 해당 의무를 판정할 �
 - 필요한 정의가 생길 때만 ADR 루트의 `glossary.md`를 생성하거나 갱신한다. 항목은 용어와
   이 문서 집합에서의 의미를 기록하며 일반 사전이나 도메인 분류 체계를 요구하지 않는다.
 - 업무 용어의 뜻은 한 레벨만 현재 기준으로 소유해야 한다. 현재 기준 레벨은 인계 뒤에도
-  현재 기준으로 남아 ADR이 따르는 상위 레벨(예: 업무 프로세스 모델)이며, 기획 입력인 PRD는
+  현재 기준으로 남아 ADR이 따르는 상위 레벨(예: 업무 온톨로지)이며, 기획 입력인 PRD는
   포함하지 않는다. 현재 기준 레벨이 업무 용어(업무 개념과 바운디드 컨텍스트의 용어)의 정의를
   소유하는 저장소에서 작성자는 그 정의를 재사용하고 용어집에 다시 적지 않는다.
 - 그런 업무 용어의 새 정의나 의미 변경은 ADR 승인 요약에 현재 기준 레벨의 변경 제안으로 함께
@@ -304,4 +304,4 @@ eval, 사람이 관찰하는 demo 또는 검토 중 해당 의무를 판정할 �
 ## Related
 
 - [현재 상태 ADR 작성](../current-state/0001-record-only-the-final-decision-state.md)
-- [업무 프로세스 모델을 ADR 위의 RDFS-lite 레벨로 도입](../../process-modeling/0001-introduce-business-process-model-level.md)
+- [업무 온톨로지를 ADR 위의 RDFS-lite 레벨로 도입](../../ontology/0001-introduce-business-ontology-level.md)

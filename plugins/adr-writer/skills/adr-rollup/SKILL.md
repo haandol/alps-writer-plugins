@@ -11,12 +11,12 @@ disable-model-invocation: true
 
 Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Preserve this optional supporting file. For permitted definition edits, and for
-business terms the merged ADR relies on where `docs/process/` holds Turtle
+business terms the merged ADR relies on where `docs/ontology/` holds Turtle
 documents, apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under existing
 approval.
 Review-only work reports unclear or conflicting meanings without editing.
 
-When `docs/process/` holds Turtle documents, a rollup keeps each category's
+When `docs/ontology/` holds Turtle documents, a rollup keeps each category's
 `realizes` links and empty record unchanged and does not query business context
 (`${CLAUDE_PLUGIN_ROOT}/references/business-context.md`).
 

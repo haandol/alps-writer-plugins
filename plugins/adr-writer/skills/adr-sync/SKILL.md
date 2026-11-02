@@ -11,11 +11,11 @@ argument-hint: "[category?] [--quick]"
 Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Its absence is normal; preserve it as supporting material, not an indexed ADR.
 When this workflow permits ADR writing and a definition needs creation or change,
-or ADR content relies on a business term where `docs/process/` holds Turtle
+or ADR content relies on a business term where `docs/ontology/` holds Turtle
 documents, apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing
 approval boundary. Review-only work reports unclear or conflicting meanings without editing.
 
-When `docs/process/` holds Turtle documents, read
+When `docs/ontology/` holds Turtle documents, read
 `${CLAUDE_PLUGIN_ROOT}/references/business-context.md` before changing an ADR
 body or realigning categories. Report a missing compliance contract as an
 alignment issue instead of adding it; returning an ADR to `Proposed` does not

@@ -1,17 +1,17 @@
 import { seedMapping, seedRuleDocs, skillText, TAIL_SPEC, write } from "../lib/harness.mjs";
 
 const MODEL = `@prefix m: <urn:ontology-writer:model:> .
-@prefix pm: <urn:ontology-writer:process:> .
+@prefix onto: <urn:ontology-writer:vocabulary:> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-m:ordering a pm:BoundedContext ;
+m:ordering a onto:BoundedContext ;
   rdfs:label "주문" ;
-  pm:definition "고객 주문을 받아 결제와 환불까지 관리하는 업무 경계" .
+  onto:definition "고객 주문을 받아 결제와 환불까지 관리하는 업무 경계" .
 
-m:ordering.refund-request a pm:BusinessConcept ;
+m:ordering.refund-request a onto:BusinessConcept ;
   rdfs:label "환불 요청" ;
-  pm:definition "결제를 마친 고객이 결제 금액 전체의 반환을 요청한 것" ;
-  pm:inContext m:ordering .
+  onto:definition "결제를 마친 고객이 결제 금액 전체의 반환을 요청한 것" ;
+  onto:inContext m:ordering .
 `;
 
 const REQUEST = `
@@ -26,11 +26,11 @@ const REQUEST = `
 export const obligations = [
   {
     id: "reuse",
-    text: "The visible response reuses the business process model's existing meaning of 환불 요청 and does not propose adding 환불 요청 to docs/adr/glossary.md.",
+    text: "The visible response reuses the business ontology's existing meaning of 환불 요청 and does not propose adding 환불 요청 to docs/adr/glossary.md.",
   },
   {
     id: "proposal",
-    text: "The visible response presents the new term 부분 환불 요청 as a change proposal to the business process model inside the ADR approval summary. Proposing it only as a glossary entry is a failure.",
+    text: "The visible response presents the new term 부분 환불 요청 as a change proposal to the business ontology inside the ADR approval summary. Proposing it only as a glossary entry is a failure.",
   },
   {
     id: "pending",
@@ -49,12 +49,12 @@ export const obligations = [
 export default {
   name: "author-defers-model-owned-term",
   description:
-    "ADR authoring in a repository with a business process model must reuse the model's business terms, propose a new term as a model change in the same approval summary, and keep dependent contract rows pending without model identifiers.",
+    "ADR authoring in a repository with a business ontology must reuse the model's business terms, propose a new term as a model change in the same approval summary, and keep dependent contract rows pending without model identifiers.",
 
   build(dir) {
     seedRuleDocs(dir);
     seedMapping(dir);
-    write(dir, "docs/process/ordering.ttl", MODEL);
+    write(dir, "docs/ontology/ordering.ttl", MODEL);
     write(
       dir,
       "docs/adr/glossary.md",
@@ -65,7 +65,7 @@ export default {
         references: ["references/glossary.md", "skills/adr-new/references/approval-and-save.md"],
       }),
       `\n---\n\n# This run`,
-      `The repository contains docs/process/ordering.ttl:`,
+      `The repository contains docs/ontology/ordering.ttl:`,
       "```turtle",
       MODEL,
       "```",

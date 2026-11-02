@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// SessionStart — when the repository has both an ADR index and a business process
-// model, ask for the business-context query before ADR decisions or contracts change
+// SessionStart — when the repository has both an ADR index and a business ontology,
+// ask for the business-context query before ADR decisions or contracts change
 // and before code of a feature linked to a process step changes.
 //
 // startup/resume/clear/compact cover the points where session context is created
@@ -10,13 +10,13 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
-import { hasModel } from "../scripts/process-model-fs.mjs";
+import { hasModel } from "../scripts/ontology-fs.mjs";
 
 const QUERY_CLI = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
   "scripts",
-  "process-model.mjs",
+  "ontology.mjs",
 );
 
 // The same setting ADR Writer's hook reads, so both find the same index.
@@ -51,12 +51,12 @@ function main() {
     quiet();
   }
   // The model lives beside the index found here, wherever that index lives.
-  if (!hasModel(path.join(path.dirname(path.dirname(mappingFile)), "process"))) quiet();
+  if (!hasModel(path.join(path.dirname(path.dirname(mappingFile)), "ontology"))) quiet();
   const adrDir = path.dirname(MAPPING_PATH);
   const where =
     path.normalize(adrDir) === path.normalize("docs/adr") ? "" : ` --adr-dir "${adrDir}"`;
   const directive = [
-    `[Business-context directive] Business process model present: before creating or changing an ADR decision or contract, first check the feature's business context (node "${QUERY_CLI}" query --category <key>${where}).`,
+    `[Business-context directive] Business ontology present: before creating or changing an ADR decision or contract, first check the feature's business context (node "${QUERY_CLI}" query --category <key>${where}).`,
     "Before changing code of a feature linked to a process step, query its business context; use it to catch contradictions, never as new obligations.",
   ];
   process.stdout.write(
