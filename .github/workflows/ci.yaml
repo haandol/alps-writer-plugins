@@ -139,12 +139,10 @@ jobs:
 
       # The dependency-free suites, run the way a contributor without pnpm would. One runner
       # schedules both plugins' files on its workers, so neither suite waits for the other.
-      # A test file spends much of its time waiting on the git and CLI processes it starts,
-      # so the runner gives each core a file instead of leaving one free.
       - name: adr-writer and ontology-writer suites (no install)
         env:
           NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
-        run: node --test --test-concurrency="$(nproc)" "plugins/adr-writer/tests/**/*.test.mjs" "plugins/ontology-writer/tests/**/*.test.mjs"
+        run: node --test "plugins/adr-writer/tests/**/*.test.mjs" "plugins/ontology-writer/tests/**/*.test.mjs"
 
       # The committed bundle is what a marketplace install executes. Boot it over
       # stdio and require a well-formed MCP initialize result — a bundle that
