@@ -1,11 +1,16 @@
 # If the alps-writer MCP server source is staged, the committed bundle must be
 # regenerated and staged alongside it — the plugin ships dist/ directly, so a
 # stale bundle would mean the marketplace install runs old code.
-if git diff --cached --name-only | grep -q '^plugins/alps-writer/src/'; then
+# Otherwise typecheck only when the commit changes what the typecheck reads: the
+# package's configuration or the installed dependencies. A commit that touches
+# neither cannot change its result, and pre-push and CI typecheck every push.
+staged="$(git diff --cached --name-only)"
+if printf '%s\n' "$staged" | grep -q '^plugins/alps-writer/src/'; then
   echo "[pre-commit] alps-writer/src changed → rebuilding bundle (dist/)"
   pnpm --filter alps-writer build || exit 1
   git add plugins/alps-writer/dist
-else
+elif printf '%s\n' "$staged" |
+  grep -q -E '^(plugins/alps-writer/(package\.json|tsconfig\.json)|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml)$'; then
   pnpm --filter alps-writer exec tsc --noEmit || exit 1
 fi
 

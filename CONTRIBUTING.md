@@ -215,8 +215,12 @@ temporary directory holding only a link to the git it finds first on `PATH`
 for the run, and remove it at the end. It is the same git binary, so results
 do not change; elsewhere, or with another git first on `PATH`, nothing changes.
 
-Automated in two places, so you rarely have to remember:
+Automated in these places, so you rarely have to remember:
 
+- **`.husky/pre-commit`** formats the staged files, rebuilds and stages
+  `plugins/alps-writer/dist/` when the MCP server source is staged, and otherwise
+  typechecks only when the commit changes the package configuration or the
+  dependencies — the only other inputs of that typecheck.
 - **`.husky/pre-push`** runs the fast part locally and blocks the push on any
   failure: the generated-asset checks, `pnpm test:unit`, `lint`, `format:check`,
   `bump:check`, a boot check on the committed MCP bundle and the adr-writer hook,
@@ -231,10 +235,18 @@ Automated in two places, so you rarely have to remember:
   and runs `lint`, `format:check`, version checks and a rebuild that fails if the
   committed `plugins/alps-writer/dist/` is stale. The `runtime` job checks what a
   marketplace install actually executes with **no install step** — the
-  dependency-free adr-writer suite, an MCP `initialize` round-trip against the
-  committed bundle, and the hook — since a consumer has no `node_modules` and the
-  pnpm-based jobs always do. Everything is on Node 24 (`engines.node >= 24`);
-  Hooks can be skipped with `--no-verify`, CI cannot.
+  dependency-free adr-writer and ontology-writer suites in one runner, an MCP
+  `initialize` round-trip against the committed bundle, and the hooks — since a
+  consumer has no `node_modules` and the pnpm-based jobs always do. Everything is
+  on Node 24 (`engines.node >= 24`); Hooks can be skipped with `--no-verify`, CI
+  cannot. On a push to main, its `verified` job looks for the merged pull request:
+  when the workflow passed on that head and the pushed commit carries its tree,
+  the three jobs skip instead of repeating the same checks, and otherwise they
+  all run.
+- **`.github/workflows/release.yaml`** runs after CI passes on a main commit. When
+  that commit's version has no tag yet, it tags the commit and publishes the
+  GitHub release, with the merged pull request's `## Release notes` section as its
+  notes (GitHub's generated notes without one); otherwise it does nothing.
 
 Behaviour evals (`plugins/adr-writer/evals/`) are **not** part of `pnpm test` —
 they call a real model, cost money, and are non-deterministic. Run them by hand

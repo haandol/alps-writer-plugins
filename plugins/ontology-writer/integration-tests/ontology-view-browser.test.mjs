@@ -80,6 +80,23 @@ async function offline(p) {
     } else request.continue();
   });
 }
+/**
+ * Run a page's clock `FAST` times faster from its start: timer delays, `performance.now` and
+ * the times animation frames receive, which are all the city measures. The city keeps its own
+ * durations, and a test waits through its idle periods without spending them.
+ */
+const FAST = 6;
+const fastClock = (p) =>
+  p.evaluateOnNewDocument((k) => {
+    const now = performance.now.bind(performance);
+    performance.now = () => now() * k;
+    const frame = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (callback) => frame((time) => callback(time * k));
+    const timeout = window.setTimeout.bind(window);
+    window.setTimeout = (callback, ms = 0, ...args) => timeout(callback, ms / k, ...args);
+  }, FAST);
+/** Wait `ms` of a fast page's time. */
+const waitFast = (ms) => new Promise((resolve) => setTimeout(resolve, ms / FAST));
 before(async () => {
   writeFileSync(file, HTML);
   writeFileSync(
@@ -415,9 +432,11 @@ test("a diagram is drawn only once it comes near view, so the page opens without
 test("with motion on, the city stops drawing once the reader has been away, and a pointer over it wakes it", async () => {
   const idle = await browser.newPage();
   await idle.setViewport({ width: 1440, height: 900 });
+  await fastClock(idle);
   await idle.goto(pathToFileURL(file).href, { waitUntil: "load" });
   assert.equal(await idle.evaluate(() => window.ontologyViewCity.moving()), true);
-  await new Promise((resolve) => setTimeout(resolve, 12500));
+  // Past the city's 12 s rest.
+  await waitFast(14000);
   assert.equal(await idle.evaluate(() => window.ontologyViewCity.moving()), false);
   const box = await (await idle.$("#city-canvas")).boundingBox();
   await idle.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -428,6 +447,7 @@ test("with motion on, the city stops drawing once the reader has been away, and 
 test("with motion on, a city without hand-offs also turns once the reader has been idle a while, then rests", async () => {
   const idle = await browser.newPage();
   await idle.setViewport({ width: 1440, height: 900 });
+  await fastClock(idle);
   await idle.goto(pathToFileURL(plainFile).href, { waitUntil: "load" });
   // Locating a shape ends the opening flight, so only turning can change the canvas after it.
   assert.ok(await idle.evaluate(() => window.ontologyViewCity.locate("process-el-sales_2e_sell")));
@@ -436,9 +456,10 @@ test("with motion on, a city without hand-offs also turns once the reader has be
       .update(await idle.$eval("#city-canvas", (c) => c.toDataURL()))
       .digest("hex");
   const still = await canvas();
-  await new Promise((resolve) => setTimeout(resolve, 4500));
+  // Past the 3.5 s the reader is idle before the city turns, then past its 12 s rest.
+  await waitFast(4500);
   assert.notEqual(await canvas(), still, "the city turns");
-  await new Promise((resolve) => setTimeout(resolve, 8000));
+  await waitFast(9500);
   assert.equal(await idle.evaluate(() => window.ontologyViewCity.moving()), false);
   await idle.close();
 });

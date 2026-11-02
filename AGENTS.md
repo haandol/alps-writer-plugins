@@ -112,11 +112,27 @@ pnpm --filter alps-writer start   # Run built bundle (node dist/index.js)
 ### Versioning
 
 When the maintainer asks to raise the version, complete the release through
-validation, commit, branch push, required PR/CI and merge, then publish the version
-tag and GitHub release on the verified merged commit. Routine confirmation is
+validation, commit, branch push, required PR/CI and merge. Routine confirmation is
 not needed. Default to a patch increment; increase minor or major only when
 explicitly requested, including an exact version. Honor narrower instructions
 such as bump-only or no-push. The personal `deploy-release` skill covers this workflow.
+
+Publication follows the merge on its own. Give the release pull request a
+`## Release notes` section before merging it: once CI passes on the merged main
+commit, the Release workflow (`.github/workflows/release.yaml`) tags that commit
+`v<version>` and publishes the GitHub release titled after the marketplace's
+plugins, with that section as its notes, or GitHub's generated notes without it.
+A merge whose version already has a tag publishes nothing. Verify the published
+release and its tag instead of creating them; only when the workflow cannot run,
+`node scripts/publish-release.mjs <merge-sha>` publishes the same release by hand.
+
+The pre-push hook is the local gate before a push, and CI runs the integration
+tests on every pull request. Locally, run the integration test files a change
+touches (git history reading, a CLI or a browser view) rather than the whole
+`pnpm test` again.
+On a push to main, CI skips its jobs when it already passed on the merged pull
+request's head and the pushed commit carries that head's tree, which the
+ruleset's up-to-date requirement guarantees for every merge method.
 
 The release version lives in **16 sites** that must agree, in four groups: the six plugin manifests (`.claude-plugin/` + `.codex-plugin/` for each of the three plugins), the four `marketplace.json` versions (metadata + one per plugin entry), the `serverInfo` literal in `plugins/alps-writer/src/index.ts`, and the five `adr-writer:rules-version` stamps in `plugins/adr-writer/templates/adr/`. The `serverInfo` literal is what an MCP client reports, and `tsconfig`'s `rootDir: "src"` prevents importing the version from `package.json`. The stamps are what `adr-structure-lint` compares a consumer's seeded docs against, so a stamp left behind makes the plugin report its own templates as stale to everyone at once. Always bump with `pnpm bump <version>`, then `pnpm build` so the committed `dist/` carries the new `serverInfo`; bumping by hand has drifted twice (0.3.0 and 0.4.20 both shipped with a stale server version).
 
@@ -165,9 +181,11 @@ AI drafts until human review, and their agreement is not human-ground-truth accu
 package.json              # Private workspace root (prettier/husky/lint-staged); version pinned 0.0.0
 pnpm-workspace.yaml       # packages: plugins/alps-writer
 .github/workflows/
-└── ci.yaml               # Node 24 test/build/runtime jobs + dist-drift gate
+├── ci.yaml               # Node 24 test/build/runtime jobs + dist-drift gate; a main push reuses its PR's pass
+└── release.yaml          # After CI passes on main, tags a new version and publishes its release
 scripts/
-└── bump-version.mjs      # Set/verify the release version across all 16 sites
+├── bump-version.mjs      # Set/verify the release version across all 16 sites
+└── publish-release.mjs   # The Release workflow's tag-and-publish step
 .adr-invariants-code-ignore # Self-hosting exclusions for code→ADR example scanning
 
 plugins/alps-writer/      # PRD plugin (bundles + commits its own MCP server)
