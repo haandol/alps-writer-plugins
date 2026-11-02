@@ -21,9 +21,13 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/setup@v3
         with:
-          run_install: false
+          # The version comes from packageManager in package.json. Only pnpm here:
+          # setup-node sets up Node.js and the store cache, and the install is a step
+          # of its own.
+          install: false
+          node-version-file: false
 
       - name: Restore the dependency cache
         id: node
