@@ -514,6 +514,8 @@ body.city-wide .document {
 .document section.process {
   content-visibility: auto;
   contain-intrinsic-size: auto 480px;
+  /* An element reached by its link starts below the document's sticky bar. */
+  scroll-margin-top: 3rem;
 }
 /* Mermaid lays each diagram out in a scratch element on the page: out of the page's grid. */
 body.app > div[id^="dmermaid-"] {
@@ -694,6 +696,9 @@ td {
   padding: 0.15rem 0.75rem 0.15rem 0;
   text-align: left;
   vertical-align: top;
+}
+.document th[scope="row"] {
+  white-space: nowrap;
 }
 table.description td {
   color: #475569;

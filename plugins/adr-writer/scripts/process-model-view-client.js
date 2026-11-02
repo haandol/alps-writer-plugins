@@ -11,6 +11,8 @@
   const els = data.elements;
   const typeName = new Map(data.types);
   const at = new Map(els.map((e, i) => [e.h, i]));
+  // A process is reached at its flow and at its details alike.
+  els.forEach((e, i) => e.t === "Process" && at.set(e.h.replace(/^process-/, ""), i));
   const say = (template, values) => template.replace(/\{(\w+)\}/g, (_, k) => String(values[k]));
   const fragment = () => {
     try {
@@ -135,9 +137,10 @@
     for (const a of tree.querySelectorAll("a[aria-current]")) a.removeAttribute("aria-current");
     const id = fragment();
     if (!at.has(id)) return;
+    const shown = `#${els[at.get(id)].h}`;
     let first = null;
     for (const a of tree.querySelectorAll("a[href]")) {
-      if (a.getAttribute("href") !== `#${id}`) continue;
+      if (a.getAttribute("href") !== shown) continue;
       a.setAttribute("aria-current", "location");
       for (let d = a.closest("details"); d; d = d.parentElement?.closest("details")) d.open = true;
       first ??= a;

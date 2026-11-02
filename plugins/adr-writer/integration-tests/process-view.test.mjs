@@ -245,6 +245,15 @@ test("a context in the tree opens its details by mouse and by keyboard, and the 
     await wide.$eval('nav.tree a[href="#el-ordering"]', (a) => a.getAttribute("aria-current")),
     "location",
   );
+  // A process reached at its details is marked like one reached at its flow.
+  await fresh();
+  await wide.evaluate(() => (location.hash = "el-ordering_2e_place-order"));
+  await wide.waitForFunction(
+    () =>
+      document
+        .querySelector('nav.tree a[href="#process-el-ordering_2e_place-order"]')
+        ?.getAttribute("aria-current") === "location",
+  );
 });
 
 for (const how of ["mouse", "keyboard"])
