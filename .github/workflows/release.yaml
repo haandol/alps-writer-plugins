@@ -1,0 +1,43 @@
+name: Release
+
+# 버전을 올린 커밋이 main 에서 CI 를 통과하면 그 커밋에 태그를 붙이고 GitHub 릴리스를
+# 게시한다. 노트는 그 커밋을 병합한 pull request 본문의 `## Release notes` 절이고, 절이 없으면
+# GitHub 이 만든 노트를 쓴다. 이미 태그가 있는 버전이면 아무것도 하지 않으므로, 버전을 올리지
+# 않은 병합은 여기서 끝난다. 판단과 게시는 scripts/publish-release.mjs 가 한다.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # Only a push to main in this repository, never a pull request's run.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Checkout the commit CI passed on
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Publish the release this commit's version needs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: node scripts/publish-release.mjs "${{ github.event.workflow_run.head_sha }}"

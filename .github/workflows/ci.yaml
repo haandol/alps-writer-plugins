@@ -16,6 +16,11 @@ name: CI
 #   runtime    — 소비자가 실제로 실행하는 것(번들·스크립트·훅)을 install 없이 검증한다.
 #                마켓플레이스 설치본에는 node_modules 가 없으므로, 위 두 job 이 통과해도
 #                이쪽이 깨질 수 있다. ADR 전체 테스트는 이 job에서 한 번만 실행한다.
+#
+# main 에 push 되면 verified 가 먼저 돈다. ruleset 이 최신 브랜치를 요구하므로 squash·merge·
+# rebase 어느 쪽이든 main 에는 병합한 pull request head 의 트리가 남는다. 이 workflow 가 그
+# head 에서 이미 통과했으면 세 job 은 같은 검증을 되풀이하지 않고 건너뛴다. 확인하지 못하면
+# 세 job 은 모두 돈다. Release workflow 는 이 실행의 성공을 기다려 게시한다.
 on:
   workflow_dispatch:
   pull_request:
@@ -24,13 +29,58 @@ on:
       - main
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # A newer push replaces a pull request's run; each main commit keeps a run of its own,
+  # since its release waits for that run.
+  group: ci-${{ github.event_name == 'push' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 jobs:
+  # The pull request head this push to main merged, when this workflow already passed on that
+  # head and its tree is the pushed commit's tree. Anything else leaves the output empty.
+  verified:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    outputs:
+      head: ${{ steps.find.outputs.head }}
+    steps:
+      - name: Find the merged pull request head this workflow passed on
+        id: find
+        # A failed lookup leaves the output empty, so every job runs and the run still
+        # concludes on their results.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          head=$(gh api "repos/$REPO/commits/$SHA/pulls" \
+            --jq "map(select(.merge_commit_sha == \"$SHA\"))[0].head.sha // empty")
+          if [ -z "$head" ]; then
+            echo "No merged pull request ends at $SHA; every job runs."
+            exit 0
+          fi
+          tree() { gh api "repos/$REPO/git/commits/$1" --jq .tree.sha; }
+          if [ "$(tree "$SHA")" != "$(tree "$head")" ]; then
+            echo "$SHA does not carry the tree of pull request head $head; every job runs."
+            exit 0
+          fi
+          passed=$(gh api "repos/$REPO/actions/workflows/ci.yaml/runs?event=pull_request&status=success&head_sha=$head" --jq .total_count)
+          if [ "$passed" -eq 0 ]; then
+            echo "This workflow has not passed on pull request head $head; every job runs."
+            exit 0
+          fi
+          echo "head=$head" >> "$GITHUB_OUTPUT"
+          echo "This workflow passed on pull request head $head, whose tree $SHA carries; the jobs skip."
+
   # Together with runtime, this covers every check in local `pnpm test`.
   # Keep the required job names test/build/runtime stable for branch protection.
   test:
+    needs: verified
+    if: ${{ !cancelled() && !needs.verified.outputs.head }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -64,6 +114,8 @@ jobs:
   # work under a bare `node` with no install step — something the pnpm-based jobs
   # cannot tell us, since they always have a populated node_modules.
   runtime:
+    needs: verified
+    if: ${{ !cancelled() && !needs.verified.outputs.head }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -85,16 +137,12 @@ jobs:
             console.log(`node ${process.versions.node} satisfies engines.node ${engines.node}`);
           '
 
-      # The dependency-free suite, run the way a contributor without pnpm would.
-      - name: adr-writer suite (no install)
+      # The dependency-free suites, run the way a contributor without pnpm would. One runner
+      # schedules both plugins' files on its workers, so neither suite waits for the other.
+      - name: adr-writer and ontology-writer suites (no install)
         env:
           NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
-        run: node --test "plugins/adr-writer/tests/**/*.test.mjs"
-
-      - name: ontology-writer suite (no install)
-        env:
-          NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
-        run: node --test "plugins/ontology-writer/tests/**/*.test.mjs"
+        run: node --test "plugins/adr-writer/tests/**/*.test.mjs" "plugins/ontology-writer/tests/**/*.test.mjs"
 
       # The committed bundle is what a marketplace install executes. Boot it over
       # stdio and require a well-formed MCP initialize result — a bundle that
@@ -122,6 +170,8 @@ jobs:
         run: echo '{"hook_event_name":"SessionStart","source":"startup"}' | node plugins/ontology-writer/hooks/surface-business-context.mjs
 
   build:
+    needs: verified
+    if: ${{ !cancelled() && !needs.verified.outputs.head }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
