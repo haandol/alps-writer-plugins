@@ -138,6 +138,10 @@ const UI = {
     enlarge: "Enlarge",
     close: "Close",
     zoomHint: "Ctrl- or ⌘-scroll zooms, dragging moves",
+    onRequest:
+      "This landscape is large, so it is drawn when you ask. The 3D city and the lists below show the same facts.",
+    drawLandscape: "Draw the landscape",
+    drawing: "Drawing…",
   },
   ko: {
     title: "업무 프로세스 모델",
@@ -237,6 +241,10 @@ const UI = {
     enlarge: "크게 보기",
     close: "닫기",
     zoomHint: "Ctrl이나 ⌘를 누른 채 스크롤하면 확대하고, 드래그하면 옮깁니다",
+    onRequest:
+      "이 전경 도면은 커서 요청할 때 그립니다. 같은 사실은 3차원 도시와 아래 목록에 있습니다.",
+    drawLandscape: "전경 도면 그리기",
+    drawing: "그리는 중…",
   },
 };
 
@@ -474,6 +482,7 @@ export function renderView({
       invalid,
       broken,
       has: (key) => declared.has(key),
+      size: () => declared.size,
       node(key, shape, text, classes, target, indent = "  ") {
         declared.add(key);
         const id = nodeId(key);
@@ -698,17 +707,36 @@ export function renderView({
       targets: d.targets,
       placed: [...placed.values()],
       lost: [...lost.values()],
+      nodes: d.size(),
       incomplete,
     };
   })();
 
-  const figure = (f, key) =>
-    renderMermaid(f.source, {
+  /**
+   * A diagram figure. One drawn only on request says so and offers to draw it, with its
+   * source closed: the city and the lists beside it carry the same facts meanwhile.
+   */
+  const figure = (f, key, onRequest = false) => {
+    const html = renderMermaid(f.source, {
       idPrefix: key,
       diagramFallback: t.fallback,
       diagramPending: t.pending,
       diagramSource: t.source,
-    }).replace("<figure ", `<figure data-targets="${esc(JSON.stringify(f.targets))}" `);
+    }).replace(
+      "<figure ",
+      `<figure data-targets="${esc(JSON.stringify(f.targets))}"${onRequest ? ' data-draw="on-request"' : ""} `,
+    );
+    if (!onRequest) return html;
+    return html
+      .replace(
+        /(<figcaption class="diagram-status" role="status">)[\s\S]*?(<\/figcaption>)/,
+        (_, open, close) =>
+          `${open}${esc(t.onRequest)} <button type="button" class="diagram-draw">${esc(t.drawLandscape)}</button>${close}`,
+      )
+      .replace('<details class="diagram-source" open>', '<details class="diagram-source">');
+  };
+  // A landscape this large takes long to draw, so it is drawn when the reader asks for it.
+  const LARGE = 60;
   const refLink = (ref) => linkKey(ref.id, ref.label ?? ref.id ?? "?");
   /** A linked element of a list with the error mark its diagram node carries. */
   const markedLink = (ref) =>
@@ -734,7 +762,7 @@ export function renderView({
     );
     return `<li>${refLink(c.event)} → ${refLink(c.policy)}: ${steps.map(refLink).join(", ")} ${esc(t.noSingleProcess)}</li>`;
   });
-  const landscapeSection = `<section id="landscape"><h2>${esc(t.landscape)}</h2>${landscape.incomplete ? notice(t.landscapeIncomplete, lostItems.length ? [`<li>${esc(t.lost)}<ul>${lostItems.join("")}</ul></li>`] : []) : ""}${figure(landscape, "landscape")}
+  const landscapeSection = `<section id="landscape"><h2>${esc(t.landscape)}</h2>${landscape.incomplete ? notice(t.landscapeIncomplete, lostItems.length ? [`<li>${esc(t.lost)}<ul>${lostItems.join("")}</ul></li>`] : []) : ""}${figure(landscape, "landscape", landscape.nodes > LARGE)}
 <h3>${esc(t.processes)}</h3><ul class="nav-list">${processes.map((p) => `<li><a href="#process-${anchor(keyOf(p))}">${esc(name(p))}</a> <span class="badge">${esc(statusBadge(p))}</span>${flows.get(p).incomplete ? badge("broken", t.incompleteMark) : ""}</li>`).join("")}</ul>
 <h3>${esc(t.connections)}</h3>${landscape.placed.length ? `<ul>${landscape.placed.map((c) => `<li>${link(elementIri(c.from))} → ${markedLink(c.event)} → ${markedLink(c.policy)} → ${link(elementIri(c.to))}</li>`).join("")}</ul>` : `<p>${esc(t.noConnections)}</p>`}
 <h3>${esc(t.contexts)}</h3><ul>${index
@@ -1139,6 +1167,7 @@ ${flowSections}
       enlarge: t.enlarge,
       close: t.close,
       zoomHint: t.zoomHint,
+      drawing: t.drawing,
     },
     types: CLASSES.map((c) => [c.key, typeName.get(c.key)]),
     elements,
@@ -1241,7 +1270,7 @@ ${app.city}
 <main class="document" id="document">${body}</main></div>
 <script type="application/json" id="view-data">${data}</script>
 <script data-view-explorer>${CLIENT}</script>
-${diagrams ? NAVIGATION + mermaidRuntime({ diagramFallback: t.fallback, lazy: { root: ".document" } }) : ""}
+${diagrams ? NAVIGATION + mermaidRuntime({ diagramFallback: t.fallback, lazy: { root: ".document", ahead: "2400px" } }) : ""}
 </body></html>
 `;
 }

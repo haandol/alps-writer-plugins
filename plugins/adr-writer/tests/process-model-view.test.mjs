@@ -29,6 +29,7 @@ import {
   viewData,
   treeGroups,
   documentOf,
+  manyProcesses,
 } from "./process-model-view-helpers.mjs";
 
 const HEAD = `@prefix m: <${MODEL}> .\n@prefix pm: <${PM}> .\n@prefix rdfs: <${RDFS}> .\n\n`;
@@ -1178,4 +1179,24 @@ test("model text cannot end the page's data or scripts, and the same model rende
   assert.ok(!html.includes("<script>alert(1)"));
   assert.equal(viewData(html).elements.find((e) => e.k === "ordering.place-order").n, sly);
   assert.equal(renderView({ index: v.index, mapping: MAPPING, findings: v.findings }), HTML);
+});
+
+test("a large landscape is drawn on request with its source closed, while a small one and the flows are drawn as they come near", () => {
+  assert.doesNotMatch(landscapeOf(PAGE), /data-draw=/);
+  const model = validateModel([
+    { doc: "docs/process/a.ttl", text: EXAMPLE },
+    { doc: "docs/process/b.ttl", text: manyProcesses(70) },
+  ]);
+  const html = withoutEngine(
+    renderView({ index: model.index, mapping: MAPPING, findings: model.findings }),
+  );
+  const landscape = landscapeOf(html);
+  assert.match(landscape, /<figure data-targets="[^"]*" data-draw="on-request" /);
+  assert.match(
+    landscape,
+    /<figcaption class="diagram-status" role="status">This landscape is large[^<]*<button type="button" class="diagram-draw">Draw the landscape<\/button><\/figcaption>/,
+  );
+  assert.match(landscape, /<details class="diagram-source">/);
+  assert.ok(sections(html).length > 70);
+  for (const s of sections(html)) assert.doesNotMatch(s.body, /data-draw=/, s.id);
 });

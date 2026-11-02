@@ -509,12 +509,16 @@ body.city-wide .document {
   }
 }
 
-/* Off-screen details and flows are laid out and painted only when they come near view. */
-.document article.element,
-.document section.process {
+/* Off-screen element details are laid out and painted only when they come near view. The
+   flows are not: a diagram inside a skipped section has no position, so it could not be
+   drawn ahead of the reader. */
+.document article.element {
   content-visibility: auto;
   contain-intrinsic-size: auto 480px;
-  /* An element reached by its link starts below the document's sticky bar. */
+}
+/* An element reached by its link starts below the document's sticky bar. */
+.document article.element,
+.document section.process {
   scroll-margin-top: 3rem;
 }
 /* Mermaid lays each diagram out in a scratch element on the page: out of the page's grid. */
@@ -547,6 +551,21 @@ figure.diagram {
 }
 .diagram-source pre {
   white-space: pre-wrap;
+}
+.diagram-draw {
+  margin-left: 0.4rem;
+  padding: 0.2rem 0.7rem;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: #4338ca;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.diagram-draw:disabled {
+  background: #94a3b8;
+  cursor: progress;
 }
 /* A zoomable diagram: its controls above, the diagram in a window that pans and zooms. */
 figure.diagram.zoomable {

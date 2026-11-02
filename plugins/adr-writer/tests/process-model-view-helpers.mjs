@@ -1,5 +1,5 @@
 // Fixtures that process-model-view.test.mjs and process-model-view.integration.test.mjs share.
-import { validateModel } from "../scripts/process-model-lib.mjs";
+import { MODEL, PM, RDFS, validateModel } from "../scripts/process-model-lib.mjs";
 import { EXAMPLE } from "./process-model-helpers.mjs";
 
 export const MAPPING = {
@@ -108,6 +108,21 @@ export const treeGroups = (html) =>
 /** The document part of a page: banners, landscape, flows and details. */
 export const documentOf = (html) =>
   html.slice(html.indexOf('<main class="document"'), html.indexOf("</main>"));
+
+/** `count` processes of one step each in the ordering context: a landscape of more nodes than that. */
+export const manyProcesses = (count) =>
+  `@prefix m: <${MODEL}> .\n@prefix pm: <${PM}> .\n@prefix rdfs: <${RDFS}> .\n\n` +
+  Array.from(
+    { length: count },
+    (_, k) => `m:ordering.many-${k} a pm:Process ; rdfs:label "Many ${k}" ;
+    pm:definition "A process of the test." ; pm:startCondition "It starts." ;
+    pm:businessOutcome "It ends." ; pm:openScope "none"^^pm:NoOpenScope ; pm:status "Proposed" ;
+    pm:hasStep m:ordering.many-step-${k} .
+m:ordering.many-step-${k} a pm:Step ; rdfs:label "Step ${k}" ; pm:definition "A step of the test." ;
+    pm:stepKind "outside-system" ; pm:inContext m:ordering .
+m:customer pm:performs m:ordering.many-step-${k} .
+`,
+  ).join("");
 
 export const UNKNOWN =
   /<a href="#errors">cannot be determined until the ADR index error is fixed<\/a>/;

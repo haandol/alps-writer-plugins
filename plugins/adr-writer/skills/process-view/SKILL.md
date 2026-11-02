@@ -42,7 +42,9 @@ tower with one floor per step, from the bottom in flow order, lit by the step's
 realization; events and policies float beside the floors that emit them or that
 they start, with an arc for each trigger. A roof opens the process flow and a
 floor, orb or diamond opens the details. Everything the city shows is also in
-the lists, diagrams and details. Its motion pauses on request and never starts
+the lists, diagrams and details. Diagrams are drawn as they come near view; a
+large landscape diagram is drawn when the reader asks for it, while the city
+and the lists show the same facts. Its motion pauses on request and never starts
 when the reader prefers reduced motion.
 
 To change what the view shows, use `/process-edit` with a natural-language

@@ -119,7 +119,9 @@ export function renderMermaid(source, ui = {}) {
  * `reportDiagramsReady` settles with all of them. With `ui.lazy` a figure is drawn only
  * when it comes near view (`ui.lazy.root` names the scrolling element, when it scrolls) or
  * is asked for through `reportDiagramRender(figure)`; `reportDiagramsReady` then settles
- * with the figures near view at load.
+ * with the figures near view at load. `ui.lazy.ahead`, a CSS length, also draws the
+ * figures that close to view one at a time while the page is idle. A figure marked
+ * `data-draw="on-request"` is drawn only when asked for.
  */
 export function mermaidRuntime(ui = {}) {
   const engine = readFileSync(new URL("./vendor/mermaid.min.js", import.meta.url), "utf8").replace(
@@ -130,10 +132,9 @@ export function mermaidRuntime(ui = {}) {
     /</g,
     "\\u003c",
   );
-  const lazy = JSON.stringify(ui.lazy ? { root: ui.lazy.root ?? null } : null).replace(
-    /</g,
-    "\\u003c",
-  );
+  const lazy = JSON.stringify(
+    ui.lazy ? { root: ui.lazy.root ?? null, ahead: ui.lazy.ahead ?? null } : null,
+  ).replace(/</g, "\\u003c");
   return `<script data-mermaid-engine>${engine}</script><script data-mermaid-runtime>
 window.reportDiagramsReady = (async () => {
   mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"default",flowchart:{htmlLabels:false},suppressErrorRendering:true});
@@ -180,13 +181,14 @@ window.reportDiagramsReady = (async () => {
   window.reportDiagramRender = draw;
   const scroller = lazy.root && document.querySelector(lazy.root);
   const root = scroller && /auto|scroll/.test(getComputedStyle(scroller).overflowY) ? scroller : null;
+  const viewed = figures.filter((figure) => figure.dataset.draw !== 'on-request');
   const near = await new Promise((resolve) => {
-    if (!figures.length) return resolve([]);
+    if (!viewed.length) return resolve([]);
     const probe = new IntersectionObserver((entries) => {
       probe.disconnect();
       resolve(entries.filter((entry) => entry.isIntersecting).map((entry) => entry.target));
     }, {root, rootMargin: '600px 0px'});
-    for (const figure of figures) probe.observe(figure);
+    for (const figure of viewed) probe.observe(figure);
   });
   const watch = new IntersectionObserver((entries) => {
     for (const entry of entries) if (entry.isIntersecting) {
@@ -194,7 +196,32 @@ window.reportDiagramsReady = (async () => {
       draw(entry.target);
     }
   }, {root, rootMargin: '600px 0px'});
-  for (const figure of figures) watch.observe(figure);
+  for (const figure of viewed) watch.observe(figure);
+  if (lazy.ahead) {
+    // Figures a little further away are drawn one at a time while the page has nothing else to do.
+    const idle = window.requestIdleCallback || ((next) => setTimeout(next, 120));
+    const waiting = [];
+    let pumping = false;
+    const pump = () => {
+      if (pumping) return;
+      pumping = true;
+      idle(async function next() {
+        let figure = waiting.shift();
+        while (figure && drawing.has(figure)) figure = waiting.shift();
+        if (!figure) return void (pumping = false);
+        await draw(figure);
+        idle(next);
+      });
+    };
+    const soon = new IntersectionObserver((entries) => {
+      for (const entry of entries) if (entry.isIntersecting) {
+        soon.unobserve(entry.target);
+        waiting.push(entry.target);
+      }
+      if (waiting.length) pump();
+    }, {root, rootMargin: lazy.ahead + ' 0px'});
+    for (const figure of viewed) soon.observe(figure);
+  }
   await Promise.all(near.map(draw));
   return results;
 })();

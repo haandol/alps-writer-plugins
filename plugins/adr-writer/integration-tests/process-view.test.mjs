@@ -14,6 +14,7 @@ import { pathToFileURL } from "node:url";
 import { browserPath } from "../evals/deepeval/coverage-render.mjs";
 import { validateModel } from "../scripts/process-model-lib.mjs";
 import { renderView } from "../scripts/process-model-view.mjs";
+import { manyProcesses } from "../tests/process-model-view-helpers.mjs";
 
 const require = createRequire(import.meta.url);
 const cliRequire = createRequire(require.resolve("@mermaid-js/mermaid-cli"));
@@ -37,8 +38,18 @@ const requests = [];
 // The view is opened from a file, as the default browser opens it.
 const dir = mkdtempSync(path.join(tmpdir(), "process-view-browser-"));
 const file = path.join(dir, "process-view.html");
+// A model with a landscape too large to draw unasked, and many flows.
+const large = validateModel([
+  { doc: "docs/process/example.ttl", text: EXAMPLE },
+  { doc: "docs/process/many.ttl", text: manyProcesses(70) },
+]);
+const largeFile = path.join(dir, "large-view.html");
 before(async () => {
   writeFileSync(file, HTML);
+  writeFileSync(
+    largeFile,
+    renderView({ index: large.index, mapping: { categories: {} }, findings: large.findings }),
+  );
   browser = await puppeteer.launch({
     headless: true,
     executablePath: browserPath(),
@@ -354,19 +365,22 @@ test("a node of a zoomed-in diagram still opens its target by mouse and by keybo
 test("a diagram is drawn only once it comes near view, so the page opens without drawing them all", async () => {
   const fresh = await browser.newPage();
   await fresh.setViewport({ width: 800, height: 600 });
-  await fresh.goto(pathToFileURL(file).href, { waitUntil: "load" });
+  await fresh.goto(pathToFileURL(largeFile).href, { waitUntil: "load" });
   await fresh.evaluate(() => window.reportDiagramsReady);
-  const states = () =>
-    fresh.$$eval("figure[data-mermaid]", (figures) => figures.map((f) => f.dataset.renderState));
-  const opened = await states();
-  assert.ok(opened.includes("pending"), opened.join());
+  const last = () =>
+    fresh.evaluate(
+      () =>
+        [...document.querySelectorAll("section.process figure[data-mermaid]")].at(-1).dataset
+          .renderState,
+    );
+  assert.equal(await last(), "pending");
   await fresh.evaluate(() =>
-    [...document.querySelectorAll("figure[data-mermaid]")].at(-1).scrollIntoView(),
+    [...document.querySelectorAll("section.process figure[data-mermaid]")].at(-1).scrollIntoView(),
   );
   await fresh.waitForFunction(
     () =>
-      [...document.querySelectorAll("figure[data-mermaid]")].at(-1).dataset.renderState ===
-      "rendered",
+      [...document.querySelectorAll("section.process figure[data-mermaid]")].at(-1).dataset
+        .renderState === "rendered",
   );
   await fresh.close();
 });
@@ -382,4 +396,40 @@ test("with motion on, the city stops drawing once the reader has been away, and 
   await idle.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   assert.equal(await idle.evaluate(() => window.processViewCity.moving()), true);
   await idle.close();
+});
+
+test("a large landscape waits for its button, and only the flows just ahead of the reader are drawn while the page is idle", async () => {
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1440, height: 900 });
+  // With motion reduced the city keeps still, so the page is idle.
+  await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
+  await page.goto(pathToFileURL(largeFile).href, { waitUntil: "load" });
+  await page.evaluate(() => window.reportDiagramsReady);
+  const landscape = () => page.$eval("#landscape figure", (f) => f.dataset.renderState);
+  assert.equal(await landscape(), "pending");
+  const flows = () =>
+    page.$$eval("section.process figure[data-mermaid]", (figures) =>
+      figures.map((f) => f.dataset.renderState),
+    );
+  // Further above the first flow than "near", but within "ahead".
+  await page.evaluate(() => {
+    const flow = document.querySelector("section.process");
+    document.querySelector(".document").scrollTop = flow.offsetTop - 2200;
+  });
+  await page.waitForFunction(
+    () => document.querySelector("section.process figure").dataset.renderState === "rendered",
+  );
+  // Left idle, the page draws only what lies ahead of the reader.
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+  const drawn = await flows();
+  assert.equal(drawn.at(-1), "pending", "a flow far below waits");
+  assert.ok(drawn.filter((s) => s === "rendered").length < 15, drawn.join());
+  await page.evaluate(() => (document.querySelector(".document").scrollTop = 0));
+  await page.click("#landscape .diagram-draw");
+  await page.waitForFunction(
+    () => document.querySelector("#landscape figure").dataset.renderState === "rendered",
+  );
+  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("role")), "link");
+  assert.equal(await page.$eval("#landscape .diagram-status", (s) => s.hidden), true);
+  await page.close();
 });

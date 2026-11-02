@@ -161,6 +161,17 @@
   });
   for (const figure of document.querySelectorAll("figure[data-targets][data-mermaid]"))
     if (rendered(figure)) zoomable(figure);
+  // A figure drawn on request: its button draws it, then the first node takes the focus.
+  for (const button of document.querySelectorAll("figure[data-draw='on-request'] .diagram-draw"))
+    button.addEventListener("click", () => {
+      const figure = button.closest("figure");
+      if (!window.reportDiagramRender || button.disabled) return;
+      button.disabled = true;
+      button.textContent = T.drawing;
+      window
+        .reportDiagramRender(figure)
+        .then(() => figure.querySelector('g.node[role="link"]')?.focus({ preventScroll: true }));
+    });
 
   function zoomable(figure) {
     if (figure.classList.contains("zoomable")) return;
