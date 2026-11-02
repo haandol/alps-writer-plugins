@@ -507,6 +507,9 @@
         tw.roof = { kind: "roof", el: tw.i, tower: tw, x: tw.x, z: tw.z, y0: tw.top };
         tw.roof.y1 = tw.top + ROOF;
         tw.roof.y = tw.top + ROOF / 2;
+        // The flags on its roof, and how far from its axis its glow can reach.
+        tw.flags = [];
+        tw.reach = Math.max(W * 1.6, W * 1.4 + (tw.top - TILE) * 0.45);
         towerOf.set(tw.i, tw);
         // How brightly the tower glows from afar: its implemented floors and, by half, the
         // floors whose features are not implemented yet. A retired process does not glow.
@@ -520,6 +523,7 @@
       });
 
     // Events and policies beside their floors; those without one float over their district.
+    // An orb aloft is above every tower it floats over.
     const orbs = [];
     const orbOf = new Map();
     const slots = new Map();
@@ -542,6 +546,7 @@
         x: dd.x + dd.w / 2 + Math.cos(angle) * r,
         y: dd.top + 1.4 + (k % 3) * 0.5,
         z: dd.z + dd.h / 2 + Math.sin(angle) * r,
+        aloft: true,
       };
     }
     function addOrb(o) {
@@ -571,6 +576,7 @@
           x: dd.x + dd.w / 2 + Math.cos(angle) * r,
           y: dd.top + 2.6,
           z: dd.z + dd.h / 2 + Math.sin(angle) * r,
+          aloft: true,
         });
       });
     }
@@ -578,26 +584,34 @@
       const angle = k * 2.39996;
       const r = span * 0.2 * Math.sqrt((k + 0.5) / C.rules.length);
       const y = tallest + 4.2 + (k % 4) * 0.35;
-      addOrb({ kind: "BusinessRule", el: i, x: Math.cos(angle) * r, y, z: Math.sin(angle) * r });
+      addOrb({
+        kind: "BusinessRule",
+        el: i,
+        x: Math.cos(angle) * r,
+        y,
+        z: Math.sin(angle) * r,
+        aloft: true,
+      });
     });
     C.actors.forEach((i, k) => {
       const angle = (k / Math.max(C.actors.length, 1)) * TAU + 0.3;
       const r = span * 0.62 + 2;
       addOrb({ kind: "Actor", el: i, x: Math.cos(angle) * r, y: 0.7, z: Math.sin(angle) * r });
     });
-    const flags = new Map();
     C.criteria.forEach((c, k) => {
       const tw = towers[c.p];
       if (tw) {
-        const n = flags.get(tw) ?? 0;
-        flags.set(tw, n + 1);
-        addOrb({
+        // A flag stands over its roof, so it is drawn with its tower.
+        const flag = {
           kind: "ObservationCriterion",
           el: c.i,
+          atop: tw,
           x: tw.x + 0.45,
-          y: tw.roof.y1 + 0.55 + n * 0.5,
+          y: tw.roof.y1 + 0.55 + tw.flags.length * 0.5,
           z: tw.z + 0.45,
-        });
+        };
+        tw.flags.push(flag);
+        addOrb(flag);
       } else {
         const angle = k * 2.39996 + 1;
         const r = span * 0.12;
@@ -607,6 +621,7 @@
           x: Math.cos(angle) * r,
           y: tallest + 2.6,
           z: Math.sin(angle) * r,
+          aloft: true,
         });
       }
     });
@@ -707,6 +722,33 @@
       focal = h / 2 / Math.tan((50 * Math.PI) / 360);
       cx = w / 2;
       cy = h / 2;
+    }
+    /**
+     * Whether anything within `r` of the upright line at (x, z) from height y0 to y1 may show
+     * on the canvas: it may unless it lies wholly beyond one of the planes that bound the view.
+     */
+    function inView(x, y0, z, y1, r) {
+      const dx = x - eye[0];
+      const dz = z - eye[2];
+      const b0 = y0 - eye[1];
+      const b1 = y1 - eye[1];
+      // In the eye's frame: how far across, the same all along the line since the right axis
+      // is level, and how far up and ahead each end is.
+      const across = Math.abs(dx * rt[0] + dz * rt[2]);
+      const h0 = dx * up[0] + b0 * up[1] + dz * up[2];
+      const h1 = dx * up[0] + b1 * up[1] + dz * up[2];
+      const a0 = dx * fw[0] + b0 * fw[1] + dz * fw[2];
+      const a1 = dx * fw[0] + b1 * fw[1] + dz * fw[2];
+      const ahead = Math.max(a0, a1);
+      const side = r * Math.hypot(focal, cx);
+      const edge = r * Math.hypot(focal, cy);
+      // Not wholly behind the near limit, nor beyond the left, right, top or bottom plane.
+      return (
+        ahead >= 0.4 - r &&
+        focal * across - cx * ahead <= side &&
+        Math.min(focal * h0 - cy * a0, focal * h1 - cy * a1) <= edge &&
+        Math.min(-focal * h0 - cy * a0, -focal * h1 - cy * a1) <= edge
+      );
     }
     /** Screen x, y, depth and pixels per world unit of a point, or null behind the camera. */
     function project(x, y, z) {
@@ -995,6 +1037,29 @@
         }
       }
     }
+    /** Whether an orb shows: its layer is on, or it is the selection. */
+    const shown = (o) => !LAYERED.has(o.kind) || layers.has(o.kind) || o.el === selected;
+    /** How far from an orb aloft a tower under it can stand: a roof's corner and the orb's glow. */
+    const HANG = (W / 2 + 0.12) * Math.SQRT2 + 0.52;
+    /**
+     * A tower and the flags on its roof. Seen from above, the usual case, from the ground floor
+     * up; from lower down, from the part farthest above or below the eye to the nearest.
+     */
+    function drawTower(tw) {
+      if (eye[1] >= tw.roof.y1) {
+        for (const floor of tw.floors) drawFloor(floor);
+        drawRoof(tw.roof);
+        for (const flag of tw.flags) if (shown(flag)) drawOrb(flag);
+        return;
+      }
+      const parts = [...tw.floors, tw.roof, ...tw.flags.filter(shown)];
+      for (const part of parts) part.depth = Math.abs(part.y - eye[1]);
+      parts.sort((a, b) => b.depth - a.depth);
+      for (const part of parts)
+        if (part.kind === "floor") drawFloor(part);
+        else if (part.kind === "roof") drawRoof(part);
+        else drawOrb(part);
+    }
 
     const ORB = {
       event: EMBER,
@@ -1011,11 +1076,14 @@
     function drawOrb(o) {
       const q = project(o.x, o.y, o.z);
       if (!q) return;
+      const r = clamp(q[3] * 0.2, 2.6 * dpr, 8 * dpr);
+      // The glow is the widest part of an orb: one wholly off the canvas is not drawn.
+      const reach = r * 2.6;
+      if (q[0] < -reach || q[0] > cx * 2 + reach || q[1] < -reach || q[1] > cy * 2 + reach) return;
       const alpha = alphaOf(o.el) * fog(o);
       const hl = hovered === o || selected === o.el;
-      const r = clamp(q[3] * 0.2, 2.6 * dpr, 8 * dpr);
       const color = ORB[o.kind];
-      glow(color, q[0], q[1], r * 2.6, (hl ? 0.9 : 0.5) * alpha);
+      glow(color, q[0], q[1], reach, (hl ? 0.9 : 0.5) * alpha);
       g.fillStyle = rgba(hl ? ORB_LIT[o.kind] : ORB_CORE[o.kind], alpha);
       g.beginPath();
       if (o.kind === "event" || o.kind === "Actor") g.arc(q[0], q[1], r, 0, TAU);
@@ -1220,17 +1288,22 @@
       g.stroke();
       for (const d of districts) d.depth = distance2(d.centre);
       const tiles = [...districts].sort((a, b) => b.depth - a.depth);
-      for (const d of tiles) drawTile(d);
-      // Buildings and orbs from the farthest to the nearest.
+      for (const d of tiles)
+        if (inView(d.centre.x, 0, d.centre.z, TILE, Math.hypot(d.w, d.h) / 2)) drawTile(d);
+      // Towers and orbs from the farthest to the nearest along the ground. Towers stand far
+      // enough apart that this is the order in which they can cover one another, so a tower is
+      // drawn whole; while the eye is above an orb aloft, it comes after the towers it may hang
+      // over. What lies wholly outside the view is left out.
       const items = [];
-      for (const tw of towers) items.push(...tw.floors, tw.roof);
-      for (const o of orbs)
-        if (!LAYERED.has(o.kind) || layers.has(o.kind) || o.el === selected) items.push(o);
-      for (const it of items) it.depth = distance2(it);
+      for (const tw of towers)
+        if (inView(tw.x, TILE, tw.z, tw.flags.at(-1)?.y ?? tw.roof.y1, tw.reach)) items.push(tw);
+      for (const o of orbs) if (!o.atop && shown(o)) items.push(o);
+      for (const it of items)
+        it.depth =
+          Math.hypot(it.x - eye[0], it.z - eye[2]) - (it.aloft && eye[1] > it.y ? HANG : 0);
       items.sort((a, b) => b.depth - a.depth);
       for (const it of items)
-        if (it.kind === "floor") drawFloor(it);
-        else if (it.kind === "roof") drawRoof(it);
+        if (it.floors) drawTower(it);
         else drawOrb(it);
       // Light: who emits and starts what, the triggers, and the selection.
       g.globalCompositeOperation = "lighter";
@@ -1657,9 +1730,14 @@
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
       const r = canvas.getBoundingClientRect();
-      canvas.width = overlay.width = Math.max(1, Math.round(r.width * dpr));
-      canvas.height = overlay.height = Math.max(1, Math.round(r.height * dpr));
-      sparked = false;
+      // Setting a canvas's size clears it, so it is set only when it changes.
+      const w = Math.max(1, Math.round(r.width * dpr));
+      const h = Math.max(1, Math.round(r.height * dpr));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = overlay.width = w;
+        canvas.height = overlay.height = h;
+        sparked = false;
+      }
       if (r.width && r.height) {
         // When the stage changes shape the camera moves in or out with it, keeping the framing.
         const fit = fitDistance(r.width / r.height);
@@ -1694,8 +1772,9 @@
     };
     begin();
 
-    // For the browser tests: where an element can be pointed at on the canvas, and whether
-    // anything still moves. Reading only; the city has no other entry point.
+    // For the browser tests: where an element can be pointed at on the canvas, how many shapes
+    // the last scene drew, and whether anything still moves. Reading only; the city has no
+    // other entry point.
     window.processViewCity = {
       locate(id) {
         const i = at.get(id);
@@ -1720,6 +1799,7 @@
         }
         return null;
       },
+      shapes: () => hits.length,
       moving: () => raf !== 0 || timer !== 0 || tween !== null,
     };
     function centroid(pts) {

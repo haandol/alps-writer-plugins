@@ -499,3 +499,27 @@ test("moving on its own, the city asks the browser for about 30 frames a second,
   assert.ok(asked >= 20 && asked <= 80, `${asked} frames in 2 s`);
   await paced.close();
 });
+
+test("zoomed in on one process, the city leaves out what lies outside the view", async () => {
+  const PLACE_ORDER = "process-el-ordering_2e_place-order";
+  /** The shapes the city draws, opened at `fragment`, and whether the process is among them. */
+  async function shapes(fragment) {
+    const still = await browser.newPage();
+    await still.setViewport({ width: 1440, height: 900 });
+    await still.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
+    await still.goto(pathToFileURL(largeFile).href + fragment, { waitUntil: "load" });
+    const drawn = await still.evaluate((id) => {
+      const point = window.processViewCity.locate(id);
+      return { point, shapes: window.processViewCity.shapes() };
+    }, PLACE_ORDER);
+    await still.close();
+    return drawn;
+  }
+  const whole = await shapes("");
+  const near = await shapes(`#${PLACE_ORDER}`);
+  assert.ok(whole.point && near.point, "the process is drawn both ways");
+  assert.ok(
+    near.shapes * 4 < whole.shapes,
+    `${near.shapes} shapes up close, ${whole.shapes} in all`,
+  );
+});
