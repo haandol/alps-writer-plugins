@@ -1467,7 +1467,11 @@
       // for its next frame instead of asking for every display refresh.
       if (tween) schedule();
       else if (turning || lights) later(31);
-      else last = 0;
+      else {
+        last = 0;
+        // With no lights to keep the frames coming, the city wakes up when turning begins.
+        if (awake && selected < 0) later(3500 - (now - lastInput));
+      }
     }
     let timer = 0;
     function later(ms) {

@@ -5,6 +5,7 @@
 // lists elements, a relation in the details leads to the other element, and the
 // 3D city leads from a roof to its flow and from a floor to its step.
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -12,7 +13,7 @@ import path from "node:path";
 import { after, before, test } from "node:test";
 import { pathToFileURL } from "node:url";
 import { browserPath } from "../evals/deepeval/coverage-render.mjs";
-import { validateModel } from "../scripts/process-model-lib.mjs";
+import { MODEL, PM, RDFS, validateModel } from "../scripts/process-model-lib.mjs";
 import { renderView } from "../scripts/process-model-view.mjs";
 import { manyProcesses } from "../tests/process-model-view-helpers.mjs";
 
@@ -44,6 +45,31 @@ const large = validateModel([
   { doc: "docs/process/many.ttl", text: manyProcesses(70) },
 ]);
 const largeFile = path.join(dir, "large-view.html");
+// A model with no hand-offs between processes, so no lights move in its city.
+const plain = validateModel([
+  {
+    doc: "docs/process/plain.ttl",
+    text: `@prefix m: <${MODEL}> .
+@prefix pm: <${PM}> .
+@prefix rdfs: <${RDFS}> .
+m:customer a pm:Actor ; rdfs:label "Customer" ; pm:definition "A buyer." ;
+    pm:performs m:sales.ask, m:sales.sell-it .
+m:sales a pm:BoundedContext ; rdfs:label "Sales" ; pm:definition "Selling." .
+m:sales.sell a pm:Process ; rdfs:label "Sell" ; pm:definition "Selling a thing." ;
+    pm:startCondition "A buyer asks." ; pm:businessOutcome "It is sold." ;
+    pm:openScope "none"^^pm:NoOpenScope ; pm:status "Proposed" ;
+    pm:hasStep m:sales.ask, m:sales.sell-it .
+m:sales.ask a pm:Step ; rdfs:label "Ask" ; pm:definition "The buyer asks." ;
+    pm:stepKind "system" ; pm:flowsTo m:sales.sell-it ; pm:inContext m:sales .
+m:sales.sell-it a pm:Step ; rdfs:label "Sell it" ; pm:definition "The store sells." ;
+    pm:stepKind "system" ; pm:inContext m:sales .
+m:sales.sell.done a pm:ObservationCriterion ; rdfs:label "A sale ends sold" ;
+    pm:startCondition "A buyer asks." ; pm:observedResult "The thing is sold." ;
+    pm:criterionOf m:sales.sell .
+`,
+  },
+]);
+const plainFile = path.join(dir, "plain-view.html");
 /** Abort and record every request that would leave the machine: the view opens offline. */
 async function offline(p) {
   await p.setRequestInterception(true);
@@ -59,6 +85,11 @@ before(async () => {
   writeFileSync(
     largeFile,
     renderView({ index: large.index, mapping: { categories: {} }, findings: large.findings }),
+  );
+  assert.deepEqual(plain.findings, []);
+  writeFileSync(
+    plainFile,
+    renderView({ index: plain.index, mapping: { categories: {} }, findings: plain.findings }),
   );
   browser = await puppeteer.launch({
     headless: true,
@@ -391,6 +422,24 @@ test("with motion on, the city stops drawing once the reader has been away, and 
   const box = await (await idle.$("#city-canvas")).boundingBox();
   await idle.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   assert.equal(await idle.evaluate(() => window.processViewCity.moving()), true);
+  await idle.close();
+});
+
+test("with motion on, a city without hand-offs also turns once the reader has been idle a while, then rests", async () => {
+  const idle = await browser.newPage();
+  await idle.setViewport({ width: 1440, height: 900 });
+  await idle.goto(pathToFileURL(plainFile).href, { waitUntil: "load" });
+  // Locating a shape ends the opening flight, so only turning can change the canvas after it.
+  assert.ok(await idle.evaluate(() => window.processViewCity.locate("process-el-sales_2e_sell")));
+  const canvas = async () =>
+    createHash("sha256")
+      .update(await idle.$eval("#city-canvas", (c) => c.toDataURL()))
+      .digest("hex");
+  const still = await canvas();
+  await new Promise((resolve) => setTimeout(resolve, 4500));
+  assert.notEqual(await canvas(), still, "the city turns");
+  await new Promise((resolve) => setTimeout(resolve, 8000));
+  assert.equal(await idle.evaluate(() => window.processViewCity.moving()), false);
   await idle.close();
 });
 
