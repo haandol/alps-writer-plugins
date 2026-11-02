@@ -1,6 +1,6 @@
 ---
 name: process-view
-description: Open a read-only standalone HTML view of the business process model — the business landscape (bounded contexts, processes and the events and policies between them), each process flow, and element details with realization status computed from the ADR index — so the user can find what to change and then ask for it in natural language or edit the Turtle directly. Use when the user asks to see, browse or visualize docs/process. Keywords - "/process-view", "프로세스 보기", "업무 흐름 시각화", "process model view".
+description: Open a read-only standalone HTML view of the business process model — a 3D business city of the landscape, an explorer that finds every element and lists it by bounded context, the business landscape (bounded contexts, processes and the events and policies between them), each process flow, and element details with realization status computed from the ADR index — so the user can find what to change and then ask for it in natural language or edit the Turtle directly. Use when the user asks to see, browse or visualize docs/process. Keywords - "/process-view", "프로세스 보기", "업무 흐름 시각화", "온톨로지 탐색", "3D", "process model view".
 argument-hint: "[--include-retired]"
 ---
 
@@ -33,6 +33,17 @@ feature has an `Accepted` ADR and no `Proposed` ADR; outside-system steps are no
 realized by features, and a system step without a realizing feature is marked
 unrealized. Realization is computed when the view is generated and is never
 stored.
+
+Beside the document, an explorer finds any element by name or identifier and
+lists every element under the bounded context it names, each process with its
+steps in flow order; elements that name no context are listed apart. A 3D
+business city shows each bounded context as a district and each process as a
+tower with one floor per step, from the bottom in flow order, lit by the step's
+realization; events and policies float beside the floors that emit them or that
+they start, with an arc for each trigger. A roof opens the process flow and a
+floor, orb or diamond opens the details. Everything the city shows is also in
+the lists, diagrams and details. Its motion pauses on request and never starts
+when the reader prefers reduced motion.
 
 To change what the view shows, use `/process-edit` with a natural-language
 request, or edit the Turtle document named in the element's details and run

@@ -90,5 +90,24 @@ export const diagrams = (html) =>
     ...parseFlowchart(unescapeHtml(m[2])),
   }));
 
+/** The data the explorer and the city read. */
+export const viewData = (html) =>
+  JSON.parse(html.match(/<script type="application\/json" id="view-data">([\s\S]*?)<\/script>/)[1]);
+
+/** The explorer's tree: each group's heading target (null for the group apart) and its links in order. */
+export const treeGroups = (html) =>
+  (html.match(/<nav class="tree"[\s\S]*?<\/nav>/)?.[0] ?? "")
+    .split('<li class="context">')
+    .slice(1)
+    .map((chunk) => ({
+      head: chunk.match(/^<details><summary><a href="#([^"]+)"/)?.[1] ?? null,
+      links: [...chunk.matchAll(/<a href="#([^"]+)"/g)].map((m) => m[1]),
+      chunk,
+    }));
+
+/** The document part of a page: banners, landscape, flows and details. */
+export const documentOf = (html) =>
+  html.slice(html.indexOf('<main class="document"'), html.indexOf("</main>"));
+
 export const UNKNOWN =
   /<a href="#errors">cannot be determined until the ADR index error is fixed<\/a>/;

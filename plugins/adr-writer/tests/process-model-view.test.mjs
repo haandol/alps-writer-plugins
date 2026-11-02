@@ -3,8 +3,16 @@
 // queries, with realization computed from the ADR index at generation time.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { MODEL, PM, RDFS, elementId, validateModel } from "../scripts/process-model-lib.mjs";
-import { queryContext } from "../scripts/process-model-query.mjs";
+import {
+  MODEL,
+  PM,
+  RDFS,
+  RELATIONS,
+  elementId,
+  elementIri,
+  validateModel,
+} from "../scripts/process-model-lib.mjs";
+import { inFlowOrder, queryContext } from "../scripts/process-model-query.mjs";
 import { realizationOf, renderView } from "../scripts/process-model-view.mjs";
 import { EXAMPLE } from "./process-model-helpers.mjs";
 import {
@@ -17,6 +25,10 @@ import {
   landscapeOf,
   diagrams,
   UNKNOWN,
+  anchorOf,
+  viewData,
+  treeGroups,
+  documentOf,
 } from "./process-model-view-helpers.mjs";
 
 const HEAD = `@prefix m: <${MODEL}> .\n@prefix pm: <${PM}> .\n@prefix rdfs: <${RDFS}> .\n\n`;
@@ -149,9 +161,20 @@ test("the view is one standalone file with no external resources and no editing 
     "no external resource",
   );
   assert.match(HTML, /<script data-mermaid-engine>/);
-  assert.ok(!/<form|contenteditable|<input|<textarea/i.test(PAGE), "no editing control");
+  const markup = PAGE.replace(/<script\b[\s\S]*?<\/script>/g, "");
+  assert.ok(!/<form|contenteditable|<textarea|<select/i.test(markup), "no editing control");
+  // The one input finds elements; it changes nothing.
+  assert.deepEqual(
+    [...markup.matchAll(/<input\b[^>]*>/gi)].map((m) => /type="search"/.test(m[0])),
+    [true],
+  );
   const own = HTML.slice(HTML.indexOf("<script data-view-navigation>"));
-  assert.doesNotMatch(own, /fetch\(|XMLHttpRequest|localStorage|indexedDB|showSaveFilePicker/);
+  assert.match(own, /<script data-view-explorer>/);
+  assert.doesNotMatch(own, /createElement\("(?:input|textarea|select|form)"|contentEditable\s*=/);
+  assert.doesNotMatch(
+    own,
+    /fetch\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|sessionStorage|indexedDB|showSaveFilePicker/,
+  );
   assert.equal(
     (HTML.match(/data-render-state="failed"/g) ?? []).length,
     0,
@@ -300,7 +323,7 @@ test("the view and the query read the model the same way", () => {
     );
     assert.deepEqual(
       drawn,
-      q.steps.map((x) => x.step.id),
+      inFlowOrder(q.steps).map((x) => x.step.id),
       id,
     );
   }
@@ -815,7 +838,15 @@ test("a realization the index cannot be trusted for is shown as undeterminable, 
     articleOf(unreadable, "payment.capture-payment"),
     /outside the system — not realized by a feature/,
   );
-  assert.doesNotMatch(unreadable, /no realizing feature/);
+  // No step anywhere on the page is shown as having no realizing feature.
+  assert.doesNotMatch(documentOf(unreadable), /no realizing feature/);
+  assert.doesNotMatch(
+    treeGroups(unreadable)
+      .map((g) => g.chunk)
+      .join(""),
+    /state-unrealized/,
+  );
+  assert.ok(viewData(unreadable).elements.every((e) => e.s !== "unrealized"));
 });
 
 test("the flow heading carries the process's change mark, and unknown edits are marked apart from changes", () => {
@@ -883,4 +914,263 @@ test("a lifecycle edit of a hidden retired process leaves no empty change sectio
     );
   assert.doesNotMatch(view(false), /<section class="changes" id="changes">/);
   assert.match(view(true), /<section class="changes" id="changes">[\s\S]*Deprecated is final/);
+});
+
+// ── The explorer (R18), relations in the details (R19) and the 3D business city (R20) ──
+
+/** A step of "Place an order" in the payment context, after submitting the order. */
+const CROSS_CONTEXT = `${HEAD}m:ordering.check-funds a pm:Step ;
+    rdfs:label "Check the funds" ;
+    pm:definition "The payment provider checks that the card has the funds." ;
+    pm:stepKind "outside-system" ;
+    pm:inContext m:payment .
+m:ordering.place-order pm:hasStep m:ordering.check-funds .
+m:ordering.submit-order pm:flowsTo m:ordering.check-funds .
+m:payment-provider pm:performs m:ordering.check-funds .
+`;
+
+test("the explorer finds every element by name and identifier and lists it under the bounded context it names, a process's steps in flow order (R18)", () => {
+  const model = validateModel([
+    { doc: "docs/process/a.ttl", text: EXAMPLE },
+    { doc: "docs/process/b.ttl", text: CROSS_CONTEXT },
+  ]);
+  const html = withoutEngine(
+    renderView({ index: model.index, mapping: MAPPING, findings: model.findings }),
+  );
+  const { elements } = viewData(html);
+  const targets = new Set(
+    [...html.matchAll(/<(?:article class="element"|section class="process") id="([^"]+)"/g)].map(
+      (m) => m[1],
+    ),
+  );
+  const shown = [...model.index.subjects.keys()].filter((iri) => model.index.typeOf(iri));
+  // Every element is found by its name and its identifier and leads to its details, or a
+  // process to its flow.
+  assert.deepEqual(elements.map((e) => e.k).sort(), shown.map(elementId).sort());
+  for (const e of elements) {
+    const label = model.index.literal(elementIri(e.k), `${RDFS}label`)[0]?.value;
+    assert.equal(e.n, label ?? e.k, e.k);
+    assert.ok(targets.has(e.h), `${e.k} leads to ${e.h}`);
+  }
+  const groups = treeGroups(html);
+  const under = (href) => groups.filter((g) => g.links.includes(href)).map((g) => g.head);
+  for (const iri of shown) {
+    const id = elementId(iri);
+    const type = model.index.typeOf(iri);
+    const contexts = model.index.out(iri, "inContext").map((c) => anchorOf(elementId(c)));
+    if (type === "BoundedContext") assert.deepEqual(under(anchorOf(id)), [anchorOf(id)], id);
+    else if (contexts.length)
+      for (const c of contexts) assert.ok(under(anchorOf(id)).includes(c), `${id} under ${c}`);
+    else if (type !== "Process") assert.deepEqual(under(anchorOf(id)), [null], `${id} apart`);
+  }
+  // A process stands under every context of its steps, each time with all its steps in flow
+  // order, and a step of another context names its own.
+  const flow = `process-${anchorOf("ordering.place-order")}`;
+  assert.deepEqual(under(flow), [anchorOf("ordering"), anchorOf("payment")]);
+  const q = queryContext({
+    index: model.index,
+    mapping: MAPPING,
+    findings: model.findings,
+    target: { kind: "process", id: "ordering.place-order" },
+  });
+  const order = inFlowOrder(q.steps).map((c) => anchorOf(c.step.id));
+  assert.deepEqual(
+    order,
+    ["ordering.submit-order", "ordering.check-funds", "ordering.confirm-order"].map(anchorOf),
+  );
+  for (const g of groups.filter((x) => x.links.includes(flow))) {
+    const rest = g.chunk.slice(g.chunk.indexOf(`href="#${flow}"`));
+    const steps = [...rest.slice(0, rest.indexOf("</ol>")).matchAll(/<a href="#([^"]+)"/g)];
+    assert.deepEqual(
+      steps.map((m) => m[1]),
+      order,
+      g.head,
+    );
+  }
+  assert.match(
+    groups.find((g) => g.head === anchorOf("ordering")).chunk,
+    /Check the funds<span class="sr"> — outside the system<\/span><\/a> <span class="where">Payment<\/span>/,
+  );
+});
+
+test("element details list every relation with its name and direction, each leading to the other element's details (R19)", () => {
+  const html = withoutEngine(HTML);
+  for (const iri of [...v.index.subjects.keys()].filter((x) => v.index.typeOf(x))) {
+    const id = elementId(iri);
+    const listed = [...articleOf(html, id).matchAll(/<li>(\w+) (to|from) <a href="#([^"]+)">/g)];
+    const expected = RELATIONS.flatMap((r) => [
+      ...v.index.out(iri, r.key).map((x) => `${r.key} to ${elementId(x)}`),
+      ...v.index.into(iri, r.key).map((x) => `${r.key} from ${elementId(x)}`),
+    ]);
+    assert.deepEqual(
+      listed.map((m) => `${m[1]} ${m[2]} ${decodeAnchor(m[3])}`).sort(),
+      expected.sort(),
+      id,
+    );
+    for (const m of listed) assert.ok(articleOf(html, decodeAnchor(m[3])), `${id} → ${m[3]}`);
+  }
+});
+
+/** A trigger inside "Place an order": a placed order goes on to its own confirmation. */
+const INNER_TRIGGER = `${HEAD}m:ordering.confirm-when-placed a pm:Policy ;
+    rdfs:label "Confirm when placed" ;
+    pm:definition "A placed order goes on to its confirmation." ;
+    pm:reactionCondition "The order is placed." ;
+    pm:basisKind "operating-policy" ;
+    pm:basis "Store policy." ;
+    pm:starts m:ordering.confirm-order ;
+    pm:inContext m:ordering .
+m:ordering.order-placed pm:triggers m:ordering.confirm-when-placed .
+`;
+
+test("the city holds every process with its steps in flow order and their realization, and every hand-off between processes (R20)", () => {
+  const { elements, city } = viewData(PAGE);
+  assert.deepEqual(
+    city.towers.map((t) => elements[t.i].h).sort(),
+    sections(PAGE)
+      .map((s) => s.id)
+      .sort(),
+  );
+  for (const t of city.towers) {
+    const id = elements[t.i].k;
+    const q = queryContext({
+      index: v.index,
+      mapping: MAPPING,
+      findings: v.findings,
+      target: { kind: "process", id },
+    });
+    assert.deepEqual(
+      t.f.map((i) => elements[i].k),
+      inFlowOrder(q.steps).map((c) => c.step.id),
+      id,
+    );
+    for (const i of t.f) {
+      const { k, s } = elements[i];
+      assert.equal(s, realizationOf(v.index, MAPPING, elementIri(k)).state, k);
+      assert.match(articleOf(PAGE, k), new RegExp(`<p class="state-${s}">`), k);
+    }
+  }
+  // Each connection between processes in the landscape is a hand-off: the event beside a
+  // floor of the emitting process, an arc to the policy, the policy beside a floor it starts.
+  const landscape = landscapeOf(PAGE);
+  const listed = landscape.slice(
+    landscape.indexOf("<h3>Connections between processes</h3>"),
+    landscape.indexOf("<h3>Bounded contexts</h3>"),
+  );
+  const placed = [...listed.matchAll(/<li>(.*?)<\/li>/g)].map((m) =>
+    [...m[1].matchAll(/href="#([^"]+)"/g)].map((x) => decodeAnchor(x[1])),
+  );
+  assert.equal(placed.length, 2);
+  const at = new Map(elements.map((e, i) => [e.k, i]));
+  const tower = (id) => city.towers.find((t) => elements[t.i].k === id);
+  for (const [from, event, policy, to] of placed) {
+    assert.ok(
+      city.links.some(([e, p, kind]) => e === at.get(event) && p === at.get(policy) && kind === 1),
+      `${event} → ${policy}`,
+    );
+    const e = city.events.find((x) => x.i === at.get(event));
+    const p = city.policies.find((x) => x.i === at.get(policy));
+    assert.ok(
+      e.from.some((s) => tower(from).f.includes(s)),
+      `${event} beside ${from}`,
+    );
+    assert.ok(
+      p.to.some((s) => tower(to).f.includes(s)),
+      `${policy} beside ${to}`,
+    );
+  }
+  // Every arc is a trigger the event's details list; only the landscape's connections cross.
+  for (const [e, p, kind] of city.links) {
+    assert.match(
+      articleOf(PAGE, elements[e].k),
+      new RegExp(`<li>triggers to <a href="#${anchorOf(elements[p].k)}">`),
+    );
+    const across = placed.some(([, ev, po]) => ev === elements[e].k && po === elements[p].k);
+    assert.equal(kind === 1, across, `${elements[e].k} → ${elements[p].k}`);
+  }
+  // A trigger inside one process is drawn, but not as a hand-off between processes.
+  const inner = validateModel([
+    { doc: "docs/process/a.ttl", text: EXAMPLE },
+    { doc: "docs/process/b.ttl", text: INNER_TRIGGER },
+  ]);
+  const d = viewData(
+    renderView({ index: inner.index, mapping: MAPPING, findings: inner.findings }),
+  );
+  const of = (id) => d.elements.findIndex((e) => e.k === id);
+  const kinds = (event) =>
+    Object.fromEntries(
+      d.city.links.filter(([e]) => e === of(event)).map(([, p, kind]) => [d.elements[p].k, kind]),
+    );
+  assert.deepEqual(kinds("ordering.order-placed"), {
+    "ordering.confirm-when-placed": 0,
+    "payment.request-on-order": 1,
+  });
+  // Who emits each event and what each policy starts, as the relations say.
+  const ids = (list) => list.map((i) => elements[i].k).sort();
+  for (const e of city.events)
+    assert.deepEqual(
+      ids(e.from),
+      v.index.into(elementIri(elements[e.i].k), "emits").map(elementId).sort(),
+    );
+  for (const p of city.policies)
+    assert.deepEqual(
+      ids(p.to),
+      v.index.out(elementIri(elements[p.i].k), "starts").map(elementId).sort(),
+    );
+});
+
+test("the city leaves retired processes out unless asked, and marks incomplete, changed and retired ones as the document does (R20)", () => {
+  const towersOf = (html) => {
+    const { elements, city } = viewData(html);
+    return new Map(city.towers.map((t) => [elements[t.i].k, elements[t.i].m ?? 0]));
+  };
+  const text = EXAMPLE.replace(
+    'pm:status "Proposed" ;\n    pm:hasStep m:payment',
+    'pm:status "Deprecated (2020-01-20)" ;\n    pm:hasStep m:payment',
+  );
+  const r = validateModel([{ doc: "d.ttl", text }]);
+  const plain = renderView({ index: r.index, mapping: MAPPING, findings: r.findings });
+  assert.deepEqual([...towersOf(plain).keys()], ["ordering.place-order"]);
+  const all = renderView({
+    index: r.index,
+    mapping: MAPPING,
+    findings: r.findings,
+    includeRetired: true,
+  });
+  assert.equal(towersOf(all).get("payment.take-payment") & 1, 1);
+  // A process validation errors reach is incomplete in the city as in its flow.
+  const broken = validateModel([
+    { doc: "docs/process/a.ttl", text: EXAMPLE },
+    { doc: "docs/process/b.ttl", text: `${HEAD}m:ordering.submit-order pm:emits m:ghost .\n` },
+  ]);
+  const html = withoutEngine(
+    renderView({ index: broken.index, mapping: MAPPING, findings: broken.findings }),
+  );
+  const marks = towersOf(html);
+  for (const s of sections(html))
+    assert.equal(
+      Boolean(marks.get(decodeAnchor(s.id)) & 8),
+      s.body.includes('class="incomplete"'),
+      s.id,
+    );
+  assert.ok(marks.get("ordering.place-order") & 8);
+  const changes = flagsWith({ uncommitted: new Set(["ordering.submit-order"]) });
+  const changed = viewData(
+    renderView({ index: v.index, mapping: MAPPING, findings: v.findings, changes }),
+  );
+  assert.equal(changed.elements.find((e) => e.k === "ordering.submit-order").m & 2, 2);
+});
+
+test("model text cannot end the page's data or scripts, and the same model renders the same page", () => {
+  const sly = "Place </script><script>alert(1)</script><!-- an order";
+  const r = validateModel([
+    {
+      doc: "docs/process/a.ttl",
+      text: EXAMPLE.replace('rdfs:label "Place an order"', `rdfs:label "${sly}"`),
+    },
+  ]);
+  const html = renderView({ index: r.index, mapping: MAPPING, findings: r.findings });
+  assert.ok(!html.includes("<script>alert(1)"));
+  assert.equal(viewData(html).elements.find((e) => e.k === "ordering.place-order").n, sly);
+  assert.equal(renderView({ index: v.index, mapping: MAPPING, findings: v.findings }), HTML);
 });

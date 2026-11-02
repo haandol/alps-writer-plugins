@@ -8,6 +8,14 @@ The current Purpose, all still-valid Decision Drivers, adopted choice, rationale
 and requirement contract remain together in the ADR body. Reading this log is
 optional for understanding the current decision.
 
+## 2026-11-01 — 프로세스 화면에 요소 찾기, 관계 이동과 3차원 전경을 더함
+
+- **Current ADR**: [render-read-only-process-views](./0005-render-read-only-process-views.md)
+- **Change type**: requirement rule change
+- **What**: 전경에서 흐름과 상세로 내려가기만 하던 화면 → 보이는 모든 요소를 이름이나 식별자로 찾고, 바운디드 컨텍스트별로 묶은 목록에서 프로세스의 단계를 흐름 순서로 보며, 요소 상세의 관계를 관계 이름·방향과 함께 따라간다. 전체 업무 전경은 회전·확대할 수 있는 3차원 공간으로도 보이고, 그 공간에는 그림·목록·상세에 없는 정보가 없다.
+- **Why**: 실제 프로젝트 문서로 만든 모델(요소 1,194개, 프로세스 78개)에서 프로세스를 따라 내려가는 화면만으로는 원하는 요소에 닿기 어려웠다. 사용자가 요소 탐색을 화면에 넣고 전경을 3차원 공간으로 보여 달라고 정했다(사용자 결정, 2026-11-01).
+- **What is now void**: 없음.
+
 ## 2026-10-31 — 읽을 수 없는 커밋이 이어진 구간에서 Status가 바뀌었을 수 있는 `Accepted` 프로세스는 미확인으로 보고하고 사용자 확인으로 정리
 
 - **Current ADR**: [govern-process-model-lifecycle-and-cascade](./0003-govern-process-model-lifecycle-and-cascade.md)

@@ -1,10 +1,12 @@
 // process-model-view.mjs — read-only standalone HTML view of the business
 // process model: the business landscape, each process flow, and element
 // details with realization status computed from the ADR index at generation
-// time. Flows and landscape connections are drawn from the business-context
-// query, so the picture and `query` read the model the same way; the page has
-// no editing or saving behavior.
+// time, beside an explorer that finds every element by bounded context and a
+// 3D business city of the landscape. Flows and landscape connections are drawn
+// from the business-context query, so the picture and `query` read the model
+// the same way; the page has no editing or saving behavior.
 
+import { readFileSync } from "node:fs";
 import {
   ATTRIBUTES,
   CLASSES,
@@ -24,6 +26,7 @@ import {
 } from "./process-model-lib.mjs";
 import {
   implementationState,
+  inFlowOrder,
   queryContext,
   realizationKnown,
   realizersByStep,
@@ -98,6 +101,36 @@ const UI = {
     fallback: "Diagram not rendered",
     pending: "Diagram rendering pending. The source is below.",
     source: "Mermaid source",
+    explorer: "Find elements",
+    find: "Find an element",
+    findHint: "Name or identifier",
+    found: "{n} found",
+    foundSome: "{n} found; the first {m} are listed",
+    noneFound: "No element has that name or identifier.",
+    types: "Element types",
+    tree: "Elements by bounded context",
+    noContext: "Not in a bounded context",
+    short: {
+      implemented: "implemented",
+      notImplemented: "not implemented",
+      unrealized: "no realizing feature",
+      outside: "outside the system",
+      unknown: "undeterminable",
+    },
+    city: "3D business city",
+    cityLabel:
+      "Business city: each bounded context is a district and each process a tower with one floor per step, from the bottom in flow order, lit by the step's realization. The same facts are in the lists, the landscape diagram and the details. With focus here, arrow keys turn the city and + and − zoom.",
+    cityHint:
+      "Drag to turn, scroll to zoom, Shift-drag to move. A roof opens its process flow; a floor, orb or diamond opens its details.",
+    pause: "Pause motion",
+    play: "Resume motion",
+    reset: "Whole city",
+    wide: "Fold the document away",
+    layers: "Also show",
+    legend: "Floor lights",
+    handoff: "An event triggers a policy",
+    noCanvas:
+      "This browser cannot draw the 3D city. The same facts are in the lists and the landscape diagram.",
   },
   ko: {
     title: "업무 프로세스 모델",
@@ -160,6 +193,36 @@ const UI = {
     fallback: "그림을 그리지 못함",
     pending: "그림을 그리는 중입니다. 원문은 아래에 있습니다.",
     source: "Mermaid 원문",
+    explorer: "요소 찾기",
+    find: "요소 찾기",
+    findHint: "이름이나 식별자",
+    found: "{n}개 찾음",
+    foundSome: "{n}개 찾음, 앞의 {m}개를 보여줍니다",
+    noneFound: "그 이름이나 식별자를 가진 요소가 없습니다.",
+    types: "요소 유형",
+    tree: "바운디드 컨텍스트별 요소",
+    noContext: "컨텍스트에 속하지 않는 요소",
+    short: {
+      implemented: "구현됨",
+      notImplemented: "구현 전",
+      unrealized: "실현 기능 없음",
+      outside: "시스템 밖",
+      unknown: "판정 불가",
+    },
+    city: "3차원 업무 도시",
+    cityLabel:
+      "업무 도시: 바운디드 컨텍스트는 구역이고, 프로세스는 아래부터 흐름 순서로 단계를 한 층씩 쌓은 탑이며, 층의 불빛은 그 단계의 실현 현황입니다. 같은 사실은 목록, 전경 도면, 상세에도 있습니다. 여기에 초점이 있으면 화살표 키로 돌리고 +와 −로 확대합니다.",
+    cityHint:
+      "드래그로 돌리고 스크롤로 확대하며, Shift를 누른 채 드래그하면 옮깁니다. 지붕은 그 프로세스의 흐름을, 층과 구슬, 마름모는 그 상세를 엽니다.",
+    pause: "움직임 멈추기",
+    play: "움직임 다시 켜기",
+    reset: "도시 전체 보기",
+    wide: "문서 접고 도시 넓게 보기",
+    layers: "함께 보기",
+    legend: "층의 불빛",
+    handoff: "사건이 정책을 촉발",
+    noCanvas:
+      "이 브라우저에서는 3차원 도시를 그릴 수 없습니다. 같은 사실은 목록과 전경 도면에 있습니다.",
   },
 };
 
@@ -523,7 +586,8 @@ export function renderView({
     return {
       source: d.source(),
       targets: d.targets,
-      steps: q.steps.map((c) => c.step),
+      // In flow order, as the query text lists them: the step list, the explorer and the city.
+      steps: inFlowOrder(q.steps).map((c) => c.step),
       errors: errors.filter((f) => affecting.has(f)),
       incomplete: !q.complete || affecting.size > 0 || d.invalid.size > 0,
     };
@@ -844,11 +908,263 @@ ${realization}</article>`;
       changeBanner = `<section class="changes" id="changes"><h2>${esc(t.changes)}</h2>${parts.join("")}</section>`;
   }
 
-  const body = `${banner(errors.map(errorItem))}${unavailableBanner}${changeBanner}<nav aria-label="${esc(t.processes)}"><a href="#landscape">${esc(t.landscape)}</a>${processes.map((p) => ` · <a href="#process-${anchor(keyOf(p))}">${esc(name(p))}</a>`).join("")} · <a href="#elements">${esc(t.elements)}</a></nav>
+  const body = `${banner(errors.map(errorItem))}${unavailableBanner}${changeBanner}<nav aria-label="${esc(t.processes)}"><a href="#landscape">${esc(t.landscape)}</a> · <a href="#elements">${esc(t.elements)}</a></nav>
 ${landscapeSection}
 ${flowSections}
 <section id="elements"><h2>${esc(t.elements)}</h2>${details}</section>`;
-  return page(t, lang, body, true);
+
+  // The explorer, which finds every element and lists it by bounded context, and the 3D
+  // business city of the landscape. Both are built from the structures the document above is
+  // drawn from, so the city shows no fact the diagrams, lists and details do not.
+  const hrefOf = (iri) =>
+    typeOf(iri) === "Process" ? `process-${anchor(keyOf(iri))}` : anchor(keyOf(iri));
+  /** The shown bounded contexts an element names, in identifier order. */
+  const contextsOf = (iri) =>
+    [
+      ...new Set(
+        index
+          .out(iri, "inContext")
+          .filter((c) => typeOf(c) === "BoundedContext" && shown(c))
+          .map(keyOf),
+      ),
+    ].sort(byId);
+  /** A process's steps that have details on the page, in flow order. */
+  const floorsOf = (p) =>
+    flows
+      .get(p)
+      .steps.map((s) => s.id)
+      .filter((id) => id !== null && detailKeys.has(id));
+  const collator = new Intl.Collator(lang);
+  const byName = (a, b) => collator.compare(name(a), name(b)) || byId(keyOf(a), keyOf(b));
+  const ofType = (type) => shownElements.filter((iri) => typeOf(iri) === type);
+
+  // Each element under the context it names, and a process under every context of its steps
+  // with all its steps in flow order. Elements that name no context are grouped apart.
+  const contexts = index.ofType("BoundedContext").filter(shown).sort(byName);
+  const groups = new Map(
+    [...contexts.map(keyOf), null].map((c) => [c, { processes: [], members: new Map() }]),
+  );
+  const inProcess = new Set();
+  for (const p of [...processes].sort(byName)) {
+    const where = new Set();
+    for (const s of floorsOf(p)) {
+      inProcess.add(s);
+      const own = contextsOf(iriOf(s));
+      for (const c of own.length ? own : [null]) where.add(c);
+    }
+    for (const c of where.size ? where : [null]) groups.get(c).processes.push(p);
+  }
+  const MEMBERS = [
+    "BusinessEvent",
+    "Policy",
+    "BusinessConcept",
+    "Step",
+    "BusinessRule",
+    "Actor",
+    "ObservationCriterion",
+  ];
+  const CONTEXTUAL = new Set(["Step", "Policy", "BusinessEvent", "BusinessConcept"]);
+  for (const iri of [...shownElements].sort(byName)) {
+    const type = typeOf(iri);
+    if (!MEMBERS.includes(type) || (type === "Step" && inProcess.has(keyOf(iri)))) continue;
+    const own = CONTEXTUAL.has(type) ? contextsOf(iri) : [];
+    for (const c of own.length ? own : [null]) {
+      const members = groups.get(c).members;
+      members.set(type, [...(members.get(type) ?? []), iri]);
+    }
+  }
+  const treeMarks = (iri) =>
+    [
+      retiredMember(iri) ? badge("retired", t.retired) : "",
+      changedIds.has(keyOf(iri)) ? badge("changed", t.changedMark) : "",
+      errorsOf.has(keyOf(iri)) ? badge("broken", t.errorMark) : "",
+    ].join("");
+  const treeItem = (iri) =>
+    `<li data-type="${typeOf(iri)}"><a href="#${hrefOf(iri)}">${esc(name(iri))}</a>${treeMarks(iri)}</li>`;
+  /** A step of a process listed under `ctx`; a step of another context names its own. */
+  const treeStep = (key, ctx) => {
+    const iri = iriOf(key);
+    const state = stateOf(iri);
+    const own = contextsOf(iri);
+    const here = ctx === null ? !own.length : own.includes(ctx);
+    const where = here
+      ? ""
+      : ` <span class="where">${esc(own.length ? own.map((c) => name(iriOf(c))).join(", ") : t.noContext)}</span>`;
+    return `<li data-type="Step"><a href="#${anchor(key)}"><span class="dot state-${state}" aria-hidden="true"></span>${esc(name(iri))}<span class="sr"> — ${esc(t.short[state])}</span></a>${where}${treeMarks(iri)}</li>`;
+  };
+  const treeProcess = (p, ctx) =>
+    `<li data-type="Process"><details><summary><a href="#${hrefOf(p)}">${esc(name(p))}</a> <span class="badge">${esc(statusBadge(p))}</span>${flows.get(p).incomplete ? badge("broken", t.incompleteMark) : ""}${changedIds.has(keyOf(p)) ? badge("changed", t.changedMark) : ""}</summary><ol>${floorsOf(
+      p,
+    )
+      .map((s) => treeStep(s, ctx))
+      .join("")}</ol></details></li>`;
+  const treeGroup = ([c, g]) => {
+    if (c === null && !g.processes.length && !g.members.size) return "";
+    const head =
+      c === null
+        ? `<span class="group-name">${esc(t.noContext)}</span>`
+        : `<a href="#${anchor(c)}">${esc(name(iriOf(c)))}</a>${treeMarks(iriOf(c))}`;
+    const kinds = MEMBERS.filter((type) => g.members.has(type))
+      .map(
+        (type) =>
+          `<li class="kind" data-kind="${type}"><details><summary>${esc(typeName.get(type))} <span class="count">${g.members.get(type).length}</span></summary><ul>${g.members
+            .get(type)
+            .map(treeItem)
+            .join("")}</ul></details></li>`,
+      )
+      .join("");
+    const count =
+      c === null
+        ? ""
+        : ` <span class="count" title="${esc(typeName.get("Process"))}">${g.processes.length}</span>`;
+    return `<li class="context"><details><summary>${head}${count}</summary><ul>${g.processes.map((p) => treeProcess(p, c)).join("")}${kinds}</ul></details></li>`;
+  };
+
+  // The city: a district per bounded context, a tower per process with one floor per step in
+  // flow order, events beside the floors that emit them and policies beside the floors they
+  // start, and every trigger between them. Indexes point into `elements`.
+  const at = new Map(shownElements.map((iri, i) => [keyOf(iri), i]));
+  const elements = shownElements.map((iri) => {
+    const key = keyOf(iri);
+    const type = typeOf(iri);
+    const e = { k: key, n: name(iri), t: type, h: hrefOf(iri) };
+    if (type === "Step") e.s = stateOf(iri);
+    if (type === "Process") e.st = statusBadge(iri);
+    const marks =
+      (retiredMember(iri) ? 1 : 0) |
+      (changedIds.has(key) ? 2 : 0) |
+      (errorsOf.has(key) ? 4 : 0) |
+      (type === "Process" && flows.get(iri).incomplete ? 8 : 0) |
+      (unknownIds.has(key) ? 16 : 0);
+    if (marks) e.m = marks;
+    return e;
+  });
+  const districtOf = new Map();
+  const districts = [];
+  const district = (c) => {
+    if (!districtOf.has(c)) {
+      districtOf.set(c, districts.length);
+      districts.push({
+        n: c === null ? t.noContext : name(iriOf(c)),
+        e: c === null ? -1 : at.get(c),
+      });
+    }
+    return districtOf.get(c);
+  };
+  for (const c of contexts) district(keyOf(c));
+  const towers = [...processes].sort(byName).map((p) => {
+    const steps = floorsOf(p);
+    const tally = new Map();
+    for (const s of steps)
+      for (const c of contextsOf(iriOf(s))) tally.set(c, (tally.get(c) ?? 0) + 1);
+    const home = [...tally].sort(([a, x], [b, y]) => y - x || byId(a, b))[0]?.[0] ?? null;
+    return { i: at.get(keyOf(p)), d: district(home), f: steps.map((s) => at.get(s)) };
+  });
+  const floorAt = new Map();
+  towers.forEach((tower, ti) =>
+    tower.f.forEach((s, level) => floorAt.has(s) || floorAt.set(s, [ti, level])),
+  );
+  /** The first floor among steps, by tower and then level, or -1. */
+  const firstFloor = (steps) =>
+    steps
+      .filter((s) => floorAt.has(s))
+      .sort(
+        (a, b) => floorAt.get(a)[0] - floorAt.get(b)[0] || floorAt.get(a)[1] - floorAt.get(b)[1],
+      )[0] ?? -1;
+  const positions = (iris) =>
+    [...new Set(iris.map((x) => at.get(keyOf(x))).filter((i) => i !== undefined))].sort(
+      (a, b) => a - b,
+    );
+  const homeOf = (iri) => district(contextsOf(iri)[0] ?? null);
+  const steps = (iris) => iris.filter((s) => typeOf(s) === "Step");
+  const events = ofType("BusinessEvent").map((e) => {
+    const from = positions(steps(index.into(e, "emits")));
+    return { i: at.get(keyOf(e)), at: firstFloor(from), from, d: homeOf(e) };
+  });
+  const policies = ofType("Policy").map((q) => {
+    const to = positions(steps(index.out(q, "starts")));
+    return { i: at.get(keyOf(q)), at: firstFloor(to), to, d: homeOf(q) };
+  });
+  // A trigger is drawn between processes when the landscape connects two processes through it,
+  // and broken where the landscape cannot place it or either end has an error.
+  const pair = (e, q) => `${e}\u0000${q}`;
+  const across = new Set(landscape.placed.map((c) => pair(c.event.id, c.policy.id)));
+  const lostPairs = new Set(landscape.lost.map((c) => pair(c.event.id, c.policy.id)));
+  const links = [];
+  for (const e of ofType("BusinessEvent"))
+    for (const q of index.out(e, "triggers")) {
+      if (typeOf(q) !== "Policy" || !shown(q)) continue;
+      const [ek, qk] = [keyOf(e), keyOf(q)];
+      const broken = errorsOf.has(ek) || errorsOf.has(qk) || lostPairs.has(pair(ek, qk));
+      links.push([at.get(ek), at.get(qk), broken ? 2 : across.has(pair(ek, qk)) ? 1 : 0]);
+    }
+  const towerOf = new Map(towers.map((tower, ti) => [tower.i, ti]));
+  const related = new Set();
+  for (const iri of shownElements)
+    for (const r of RELATIONS)
+      for (const x of index.out(iri, r.key)) {
+        const [a, b] = [at.get(keyOf(iri)), at.get(keyOf(x))];
+        if (b !== undefined && a !== b) related.add(`${a},${b}`);
+      }
+  const data = {
+    text: {
+      found: t.found,
+      foundSome: t.foundSome,
+      noneFound: t.noneFound,
+      pause: t.pause,
+      play: t.play,
+      short: t.short,
+      retired: t.retired,
+      changed: t.changedMark,
+      error: t.errorMark,
+      incomplete: t.incompleteMark,
+    },
+    types: CLASSES.map((c) => [c.key, typeName.get(c.key)]),
+    elements,
+    city: {
+      districts,
+      towers,
+      events,
+      policies,
+      links,
+      concepts: ofType("BusinessConcept").map((c) => ({ i: at.get(keyOf(c)), d: homeOf(c) })),
+      rules: ofType("BusinessRule").map((r) => at.get(keyOf(r))),
+      actors: ofType("Actor").map((a) => at.get(keyOf(a))),
+      criteria: ofType("ObservationCriterion").map((c) => {
+        const owner = index.out(c, "criterionOf").find((p) => towerOf.has(at.get(keyOf(p))));
+        return { i: at.get(keyOf(c)), p: owner ? towerOf.get(at.get(keyOf(owner))) : -1 };
+      }),
+    },
+    relations: [...related].map((s) => s.split(",").map(Number)),
+  };
+
+  const FILTERS = [
+    "Process",
+    "Step",
+    "BusinessEvent",
+    "Policy",
+    "BusinessConcept",
+    "BusinessRule",
+    "Actor",
+    "ObservationCriterion",
+  ];
+  const STATES = ["implemented", "notImplemented", "unrealized", "outside", "unknown"];
+  const LAYERS = ["BusinessConcept", "BusinessRule", "Actor", "ObservationCriterion"];
+  const explorer = `<aside class="explorer" aria-label="${esc(t.explorer)}">
+<div class="find" role="search"><label for="find">${esc(t.find)}</label><input type="search" id="find" placeholder="${esc(t.findHint)}" autocomplete="off" spellcheck="false" aria-controls="find-results" aria-describedby="find-status"><p class="find-status" id="find-status" aria-live="polite"></p></div>
+<div class="chips" role="group" aria-label="${esc(t.types)}">${FILTERS.map((type) => `<button type="button" data-type="${type}" aria-pressed="true"><span class="glyph t-${type}" aria-hidden="true"></span>${esc(typeName.get(type))} <span class="count">${ofType(type).length}</span></button>`).join("")}</div>
+<ol class="results" id="find-results" hidden></ol>
+<nav class="tree" id="tree" aria-label="${esc(t.tree)}"><ul>${[...groups].map(treeGroup).join("")}</ul></nav>
+</aside>`;
+  const city = `<section class="city" id="city" aria-label="${esc(t.city)}">
+<canvas id="city-canvas" tabindex="0" role="img" aria-label="${esc(t.cityLabel)}" aria-describedby="city-hint">${esc(t.noCanvas)}</canvas>
+<p class="city-hint" id="city-hint">${esc(t.cityHint)}</p>
+<div class="city-controls"><button type="button" id="city-motion">${esc(t.pause)}</button><button type="button" id="city-reset">${esc(t.reset)}</button><button type="button" id="city-wide" aria-pressed="false">${esc(t.wide)}</button></div>
+<div class="city-legend"><p>${esc(t.legend)}</p><ul>${STATES.map((s) => `<li><span class="swatch state-${s}" aria-hidden="true"></span>${esc(t.short[s])}</li>`).join("")}<li><span class="swatch t-BusinessEvent" aria-hidden="true"></span>${esc(typeName.get("BusinessEvent"))}</li><li><span class="swatch t-Policy" aria-hidden="true"></span>${esc(typeName.get("Policy"))}</li><li><span class="swatch handoff" aria-hidden="true"></span>${esc(t.handoff)}</li></ul>
+<p>${esc(t.layers)}</p><div class="layers">${LAYERS.map((type) => `<button type="button" data-layer="${type}" aria-pressed="false"><span class="glyph t-${type}" aria-hidden="true"></span>${esc(typeName.get(type))}</button>`).join("")}</div></div>
+<div class="city-tip" id="city-tip" hidden></div>
+</section>`;
+  return page(t, lang, body, true, { explorer, city, data });
 }
 
 // Diagram nodes become links once Mermaid has drawn them. Mermaid gives each
@@ -873,23 +1189,34 @@ const NAVIGATION = `<script data-view-navigation>
 });
 </script>`;
 
-const CSS = `body{font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;padding:0 1.5rem 3rem;color:#0f172a;background:#fff}
-header{padding:1.25rem 0 .5rem;border-bottom:1px solid #e2e8f0}h1{font-size:1.5rem;margin:0}h2{margin-top:2rem}nav{position:sticky;top:0;background:#fff;padding:.5rem 0;border-bottom:1px solid #e2e8f0;z-index:1}
-figure.diagram{overflow:auto;border:1px solid #e2e8f0;border-radius:8px;padding:.75rem;margin:1rem 0}.diagram-source pre{white-space:pre-wrap}
-.badge{display:inline-block;font-size:.8rem;padding:0 .4rem;border-radius:4px;background:#f1f5f9;color:#334155}.badge.changed{background:#fef3c7}.badge.uncertain{background:#fef3c7;font-style:italic}.badge.broken{background:#fee2e2;color:#991b1b}.badge.retired{background:#e5e7eb;color:#4b5563}
-.state-implemented{color:#047857}.state-notImplemented{color:#b45309}.state-unrealized{color:#b91c1c;font-weight:600}.state-unknown{color:#b45309;font-style:italic}.state-outside{color:#475569}
-.errors{border:2px solid #dc2626;border-radius:8px;padding:.5rem 1rem;background:#fef2f2}.changes{border:2px solid #d97706;border-radius:8px;padding:.5rem 1rem;background:#fffbeb}
-.incomplete{border-left:4px solid #dc2626;background:#fef2f2;padding:.25rem .75rem;margin:.75rem 0}.incomplete>p{color:#991b1b;font-weight:600;margin:.25rem 0}.removed{text-decoration:line-through}
-article.element{border-top:1px solid #e2e8f0;padding:.5rem 0}article.element:target{background:#f8fafc;outline:2px solid #4338ca}
-table{border-collapse:collapse}th,td{text-align:left;padding:.15rem .75rem .15rem 0;vertical-align:top}table.description td{color:#475569;font-style:italic}
-a:focus-visible,g.node:focus-visible{outline:3px solid #4338ca}`;
+// The page's style and the explorer and city script ship beside this module and are inlined,
+// so the view stays one file with no external resources.
+const CSS = readFileSync(new URL("./process-model-view.css", import.meta.url), "utf8");
+const CLIENT = readFileSync(new URL("./process-model-view-client.js", import.meta.url), "utf8");
+if (/<\/(?:script|style)/i.test(CSS + CLIENT))
+  throw new Error("the view's style and script must not close their own element");
 
-function page(t, lang, body, diagrams) {
-  return `<!doctype html>
-<html lang="${esc(lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(t.title)}</title><style>${CSS}</style></head>
-<body><header><h1>${esc(t.title)}</h1><p>${esc(t.intro)}</p></header>
+function page(t, lang, body, diagrams, app = null) {
+  const head = `<!doctype html>
+<html lang="${esc(lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(t.title)}</title><style>${CSS}</style></head>`;
+  const runtime = diagrams ? mermaidRuntime({ diagramFallback: t.fallback }) + NAVIGATION : "";
+  if (!app)
+    return `${head}
+<body class="plain"><header><h1>${esc(t.title)}</h1><p>${esc(t.intro)}</p></header>
 <main>${body}</main>
-${diagrams ? mermaidRuntime({ diagramFallback: t.fallback }) + NAVIGATION : ""}
+${runtime}
+</body></html>
+`;
+  // "<" is escaped, so no model text can end the data element.
+  const data = JSON.stringify(app.data).replace(/</g, "\\u003c");
+  return `${head}
+<body class="app"><header class="bar"><h1>${esc(t.title)}</h1><p>${esc(t.intro)}</p></header>
+<div class="shell">${app.explorer}
+${app.city}
+<main class="document" id="document">${body}</main></div>
+<script type="application/json" id="view-data">${data}</script>
+${runtime}
+<script data-view-explorer>${CLIENT}</script>
 </body></html>
 `;
 }

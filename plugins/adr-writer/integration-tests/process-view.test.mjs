@@ -1,7 +1,9 @@
 // The process view in a real browser: landscape nodes lead to process flows and
 // flow nodes lead to element details, by mouse and by keyboard. The page's
 // navigation script finds Mermaid's rendered nodes by their DOM ids, so a
-// Mermaid upgrade that changes that format fails here.
+// Mermaid upgrade that changes that format fails here. The explorer finds and
+// lists elements, a relation in the details leads to the other element, and the
+// 3D city leads from a roof to its flow and from a floor to its step.
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -29,6 +31,7 @@ const ORDERING_FLOW = "#process-el-ordering_2e_place-order figure[data-targets]"
 
 let browser;
 let page;
+let wide;
 let results;
 const requests = [];
 // The view is opened from a file, as the default browser opens it.
@@ -54,6 +57,20 @@ before(async () => {
   await page.waitForFunction(() =>
     document.querySelector('figure[data-targets] g.node[role="link"]'),
   );
+  // A wide window shows the explorer, the city and the document side by side; with motion
+  // reduced, nothing moves under the pointer.
+  wide = await browser.newPage();
+  await wide.setViewport({ width: 1440, height: 900 });
+  await wide.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
+  await wide.setRequestInterception(true);
+  wide.on("request", (request) => {
+    if (/^https?:/.test(request.url())) {
+      requests.push(request.url());
+      request.abort();
+    } else request.continue();
+  });
+  await wide.goto(pathToFileURL(file).href, { waitUntil: "load" });
+  await wide.evaluate(() => window.reportDiagramsReady);
 });
 after(async () => {
   await browser?.close();
@@ -79,21 +96,23 @@ async function nodeIn(figure, label) {
   return node;
 }
 
-/** Where the page is after an action: the URL fragment, the focused element and the :target element. */
-const position = () =>
-  page.evaluate(() => ({
+/** Where a page is after an action: the URL fragment, the focused element and the :target element. */
+const position = (on = page) =>
+  on.evaluate(() => ({
     hash: location.hash,
     focused: document.activeElement?.id ?? "",
     target: document.querySelector(":target")?.id ?? "",
   }));
-const leave = () =>
-  page.evaluate(() => {
+const leave = (on = page) =>
+  on.evaluate(() => {
     location.hash = "start";
     document.activeElement?.blur?.();
   });
 const reached = (id) => ({ hash: `#${id}`, focused: id, target: id });
 
 async function select(node, how) {
+  // Input reaches only the page in front; a page behind never renders what a click waits for.
+  await page.bringToFront();
   await leave();
   if (how === "mouse") await node.click();
   else {
@@ -143,6 +162,7 @@ for (const how of ["mouse", "keyboard"]) {
 }
 
 test("the Tab key moves from the navigation bar into the landscape diagram, and Enter follows the node", async () => {
+  await page.bringToFront();
   await leave();
   await page.focus('nav a[href="#elements"]');
   await page.keyboard.press("Tab");
@@ -161,4 +181,82 @@ test("the Tab key moves from the navigation bar into the landscape diagram, and 
   assert.ok(focused.target);
   await page.keyboard.press("Enter");
   assert.deepEqual(await position(), reached(focused.target));
+});
+
+/** The wide page in front, at its start, with the search box empty and the city over the whole model. */
+async function fresh() {
+  await wide.bringToFront();
+  await leave(wide);
+  await wide.$eval("#find", (input) => {
+    input.value = "";
+    input.dispatchEvent(new Event("input"));
+  });
+  await wide.click("#city-reset");
+}
+
+test("the search finds an element by name or identifier, and Enter opens its details (R18)", async () => {
+  for (const [term, id] of [
+    ["Submit the order", "el-ordering_2e_submit-order"],
+    ["payment.capture", "el-payment_2e_capture-payment"],
+  ]) {
+    await fresh();
+    await wide.focus("#find");
+    await wide.keyboard.type(term);
+    const found = await wide.$$eval("#find-results a", (as) =>
+      as.map((a) => a.getAttribute("href")),
+    );
+    assert.equal(found[0], `#${id}`, term);
+    await wide.keyboard.press("Enter");
+    assert.deepEqual(await position(wide), reached(id), term);
+  }
+  await fresh();
+  assert.equal(await wide.$eval("#tree", (t) => t.hidden), false);
+});
+
+test("a context in the tree opens its details by mouse and by keyboard, and the tree marks what is shown (R18)", async () => {
+  await fresh();
+  await wide.click('nav.tree a[href="#el-payment"]');
+  assert.deepEqual(await position(wide), reached("el-payment"));
+  await fresh();
+  await wide.focus('nav.tree a[href="#el-ordering"]');
+  await wide.keyboard.press("Enter");
+  assert.deepEqual(await position(wide), reached("el-ordering"));
+  assert.equal(
+    await wide.$eval('nav.tree a[href="#el-ordering"]', (a) => a.getAttribute("aria-current")),
+    "location",
+  );
+});
+
+for (const how of ["mouse", "keyboard"])
+  test(`a relation in an element's details opens the other element by ${how} (R19)`, async () => {
+    await fresh();
+    const relation = '#el-ordering_2e_submit-order li a[href="#el-ordering_2e_confirm-order"]';
+    if (how === "mouse") await wide.click(relation);
+    else {
+      await wide.focus(relation);
+      await wide.keyboard.press("Enter");
+    }
+    assert.deepEqual(await position(wide), reached("el-ordering_2e_confirm-order"));
+  });
+
+test("pointing at a roof in the city opens its flow and at a floor its step, and the tree opens to it (R20)", async () => {
+  for (const id of ["process-el-ordering_2e_place-order", "el-payment_2e_request-payment"]) {
+    await fresh();
+    const point = await wide.evaluate((target) => window.processViewCity.locate(target), id);
+    assert.ok(point, `${id} is drawn in the city`);
+    await wide.mouse.click(point.x, point.y);
+    assert.deepEqual(await position(wide), reached(id));
+    const marked = await wide.$$eval(`nav.tree a[href="#${id}"]`, (as) =>
+      as.map((a) => a.getAttribute("aria-current") === "location" && a.checkVisibility()),
+    );
+    assert.ok(marked.length && marked.every(Boolean), id);
+  }
+});
+
+test("with motion reduced the city stays still, offers to resume motion and requests nothing", async () => {
+  await fresh();
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  assert.equal(await wide.evaluate(() => window.processViewCity.moving()), false);
+  assert.equal(await wide.$eval("#city-motion", (b) => b.textContent), "Resume motion");
+  assert.deepEqual(requests, []);
 });

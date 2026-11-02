@@ -553,7 +553,7 @@ const stepLine = (s) => {
 };
 
 /** Step contexts in flow order: each after the steps flowing into it; ties and loops by id. */
-function inFlowOrder(contexts) {
+export function inFlowOrder(contexts) {
   const contextOf = new Map(contexts.map((c) => [c.step.id, c]));
   const waiting = new Map(contexts.map((c) => [c.step.id, 0]));
   for (const c of contexts)

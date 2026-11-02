@@ -23,6 +23,9 @@ import {
   landscapeOf,
   diagrams,
   UNKNOWN,
+  documentOf,
+  treeGroups,
+  viewData,
 } from "./process-model-view-helpers.mjs";
 
 function cli(dir, args, env = {}) {
@@ -221,7 +224,14 @@ test("index-link errors belong to their category and an unreadable index is show
       );
     }
     assert.match(landscapeOf(page), /class="incomplete"/);
-    assert.doesNotMatch(page, /no realizing feature/);
+    assert.doesNotMatch(documentOf(page), /no realizing feature/);
+    assert.doesNotMatch(
+      treeGroups(page)
+        .map((g) => g.chunk)
+        .join(""),
+      /state-unrealized/,
+    );
+    assert.ok(viewData(page).elements.every((e) => e.s !== "unrealized"));
     // A system step's details lead to the index error; an outside step keeps its label.
     assert.match(
       articleOf(page, "ordering.submit-order"),
