@@ -6,7 +6,8 @@ const window = new Window({
   settings: {
     disableJavaScriptEvaluation: true,
     disableJavaScriptFileLoading: true,
-    disableCSSFileLoading: true,
+    enableCSSFileLoading: false,
+    enableIframePageLoading: false,
     enableFileSystemHttpRequests: false,
   },
 });

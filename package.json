@@ -68,11 +68,11 @@
     "deepeval": "0.9.16",
     "diff2html": "3.4.56",
     "esbuild": "0.28.1",
-    "happy-dom": "20.14.6",
+    "happy-dom": "21.0.4",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.5",
     "mermaid": "11.17.2",
     "prettier": "^3.8.3",
-    "zod": "4.3.6"
+    "zod": "4.6.7"
   }
 }

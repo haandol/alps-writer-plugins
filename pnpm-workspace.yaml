@@ -12,12 +12,28 @@ allowBuilds:
 # Each selector applies only to the affected range, so a parent dependency can
 # adopt a newer compatible release without changing this file.
 overrides:
-  "brace-expansion@>=4.0.0 <5.0.9": "5.0.9"
-  "fast-uri@>=3.0.0 <3.1.6": "3.1.6"
-  "hono@<4.13.5": "4.13.5"
-  "ip-address@>=10.1.1 <10.3.1": "10.3.1"
-  "@hono/node-server@<2.0.5": ">=2.0.5"
-  "qs@>=2.2.5 <6.16.0": "6.16.0"
+  "brace-expansion@>=4.0.0 <5.0.12": "5.0.12"
+  "fast-uri@>=3.0.0 <3.1.9": "3.1.9"
+  "hono@<4.13.11": "4.13.11"
+  "ip-address@>=10.1.1 <10.7.4": "10.7.4"
+  "@hono/node-server@<2.1.3": "^2.1.3"
+  "qs@>=2.2.5 <6.16.1": "6.16.1"
+  "body-parser@>=2.0.0 <2.4.0": "2.4.0"
+  "proxy-addr@>=1.1.0 <2.0.8": "2.0.8"
+  "dompurify@>=3.0.0 <3.4.17": "3.4.17"
+  "follow-redirects@>=1.16.0 <1.16.2": "1.16.2"
+  # Mermaid 11 and its CLI ask for KaTeX 0.16, which has no patched release.
+  # They use only renderToString and the stylesheet, which 0.18 keeps in both
+  # module formats.
+  "katex@>=0.11.0 <0.18.2": "0.18.2"
+  # ESLint and typescript-eslint ask for minimatch 10, which has no patched
+  # release. They use only Minimatch#match and minimatch(), which 11 keeps in
+  # both module formats.
+  "minimatch@>=10.0.0 <11.0.1": "11.0.3"
+  "zod@>=4.0.0 <4.6.6": "4.6.7"
+  # Puppeteer before 25.13 runs chromium-bidi 17, which asks for zod 3, and
+  # zod 3 has no patched release. Mermaid CLI accepts puppeteer 25.16.
+  "puppeteer@>=25.0.0 <25.13.0": "25.16.0"
   "protobufjs@>=8.0.0 <8.6.6": "8.6.6"
   "@opentelemetry/core@>=2.0.0 <2.8.0": "2.8.0"
   # DeepEval requires CommonJS; uuid 11 retains it while fixing the bounds check.
