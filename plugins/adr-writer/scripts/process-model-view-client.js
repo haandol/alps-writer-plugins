@@ -147,6 +147,188 @@
   addEventListener("hashchange", reveal);
   reveal();
 
+  // ── Diagrams: zoom and pan the landscape and the flows in the document ──
+  // Each figure shows its SVG through a window whose viewBox moves and scales, so the text
+  // stays sharp and the nodes stay the links the navigation script made of them.
+  const rendered = (figure) =>
+    figure.dataset.renderState === "rendered" && figure.querySelector(".diagram__viewport svg");
+  const watch = new MutationObserver((records) => {
+    for (const r of records) if (rendered(r.target)) zoomable(r.target);
+  });
+  for (const figure of document.querySelectorAll("figure[data-targets][data-mermaid]")) {
+    if (rendered(figure)) zoomable(figure);
+    else watch.observe(figure, { attributes: true, attributeFilter: ["data-render-state"] });
+  }
+
+  function zoomable(figure) {
+    if (figure.classList.contains("zoomable")) return;
+    const viewport = figure.querySelector(".diagram__viewport");
+    const svg = viewport.querySelector("svg");
+    const box = svg.viewBox.baseVal;
+    if (!box || !box.width || !box.height) return;
+    const [X0, Y0, BW, BH] = [box.x, box.y, box.width, box.height];
+    const limit = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    figure.classList.add("zoomable");
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.maxWidth = "none";
+    let scale = 1;
+    let fitScale = 1;
+    let x = X0;
+    let y = Y0;
+    const size = () => [viewport.clientWidth || 1, viewport.clientHeight || 1];
+    function apply() {
+      const [vw, vh] = size();
+      const w = vw / scale;
+      const h = vh / scale;
+      // Part of the diagram always stays in the window.
+      x = limit(x, X0 - w * 0.8, X0 + BW - w * 0.2);
+      y = limit(y, Y0 - h * 0.8, Y0 + BH - h * 0.2);
+      svg.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
+    }
+    /** The whole diagram, centred: at its own size when it fits, smaller when it does not. */
+    function fit() {
+      const expanded = figure.classList.contains("expanded");
+      const vw = viewport.clientWidth || 1;
+      if (!expanded) {
+        fitScale = Math.min(1, vw / BW, (innerHeight * 0.72) / BH);
+        viewport.style.height = `${Math.round(Math.max(BH * fitScale, 120))}px`;
+      }
+      const vh = viewport.clientHeight || 1;
+      if (expanded) fitScale = Math.min(1, vw / BW, vh / BH);
+      scale = fitScale;
+      x = X0 - (vw / scale - BW) / 2;
+      y = Y0 - (vh / scale - BH) / 2;
+      apply();
+    }
+    function zoomAt(k, clientX, clientY) {
+      const r = viewport.getBoundingClientRect();
+      const [px, py] = [clientX - r.left, clientY - r.top];
+      const [dx, dy] = [x + px / scale, y + py / scale];
+      scale = limit(scale * k, fitScale * 0.5, Math.max(4, fitScale * 2));
+      x = dx - px / scale;
+      y = dy - py / scale;
+      apply();
+    }
+    const zoomCentre = (k) => {
+      const r = viewport.getBoundingClientRect();
+      zoomAt(k, r.left + r.width / 2, r.top + r.height / 2);
+    };
+
+    // The controls come after the diagram, so Tab reaches its nodes first.
+    const bar = document.createElement("div");
+    bar.className = "diagram-zoom";
+    bar.setAttribute("role", "group");
+    bar.setAttribute("aria-label", T.zoom);
+    const hint = document.createElement("span");
+    hint.className = "zoom-hint";
+    hint.textContent = T.zoomHint;
+    const button = (text, label, action) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = text;
+      if (label) b.setAttribute("aria-label", label);
+      b.title = label ?? text;
+      b.addEventListener("click", action);
+      return b;
+    };
+    const enlarge = button(T.enlarge, null, () =>
+      setExpanded(!figure.classList.contains("expanded")),
+    );
+    enlarge.dataset.zoom = "enlarge";
+    enlarge.setAttribute("aria-pressed", "false");
+    const controls = [
+      button("−", T.zoomOut, () => zoomCentre(1 / 1.4)),
+      button(T.fit, null, fit),
+      button("+", T.zoomIn, () => zoomCentre(1.4)),
+    ];
+    ["out", "fit", "in"].forEach((name, k) => (controls[k].dataset.zoom = name));
+    bar.append(hint, ...controls, enlarge);
+    viewport.after(bar);
+    function setExpanded(on) {
+      figure.classList.toggle("expanded", on);
+      enlarge.textContent = on ? T.close : T.enlarge;
+      enlarge.title = enlarge.textContent;
+      enlarge.setAttribute("aria-pressed", String(on));
+      if (!on) viewport.style.height = "";
+      fit();
+      enlarge.focus();
+    }
+
+    viewport.addEventListener(
+      "wheel",
+      (event) => {
+        // A plain scroll moves the document; with Ctrl or ⌘, or a pinch, it zooms.
+        if (!event.ctrlKey && !event.metaKey && !figure.classList.contains("expanded")) return;
+        event.preventDefault();
+        zoomAt(Math.exp(-event.deltaY * 0.002), event.clientX, event.clientY);
+      },
+      { passive: false },
+    );
+    let drag = null;
+    let dragged = false;
+    viewport.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      drag = { id: event.pointerId, cx: event.clientX, cy: event.clientY, x, y, moved: false };
+    });
+    viewport.addEventListener("pointermove", (event) => {
+      if (!drag || event.pointerId !== drag.id) return;
+      const dx = event.clientX - drag.cx;
+      const dy = event.clientY - drag.cy;
+      if (!drag.moved) {
+        if (Math.hypot(dx, dy) < 5) return;
+        drag.moved = true;
+        viewport.setPointerCapture?.(drag.id);
+        viewport.classList.add("panning");
+      }
+      x = drag.x - dx / scale;
+      y = drag.y - dy / scale;
+      apply();
+    });
+    const release = () => {
+      if (drag?.moved) {
+        dragged = true;
+        setTimeout(() => (dragged = false), 0);
+      }
+      drag = null;
+      viewport.classList.remove("panning");
+    };
+    viewport.addEventListener("pointerup", release);
+    viewport.addEventListener("pointercancel", release);
+    // A drag never follows the node it started on.
+    viewport.addEventListener(
+      "click",
+      (event) => {
+        if (!dragged) return;
+        event.preventDefault();
+        event.stopPropagation();
+      },
+      true,
+    );
+    // A node reached by keyboard comes into the window.
+    viewport.addEventListener("focusin", (event) => {
+      const r = viewport.getBoundingClientRect();
+      const b = event.target.getBoundingClientRect?.();
+      viewport.scrollLeft = viewport.scrollTop = 0;
+      if (!b || (b.left >= r.left && b.right <= r.right && b.top >= r.top && b.bottom <= r.bottom))
+        return;
+      x += ((b.left + b.right) / 2 - r.left - r.width / 2) / scale;
+      y += ((b.top + b.bottom) / 2 - r.top - r.height / 2) / scale;
+      apply();
+    });
+    figure.addEventListener("keydown", (event) => {
+      const key = event.key;
+      if (key === "+" || key === "=") zoomCentre(1.4);
+      else if (key === "-" || key === "_") zoomCentre(1 / 1.4);
+      else if (key === "0") fit();
+      else if (key === "Escape" && figure.classList.contains("expanded")) setExpanded(false);
+      else return;
+      event.preventDefault();
+    });
+    if (typeof ResizeObserver === "function") new ResizeObserver(apply).observe(viewport);
+    fit();
+  }
+
   const stage = document.getElementById("city");
   const canvas = document.getElementById("city-canvas");
   const context = canvas?.getContext?.("2d") ?? null;

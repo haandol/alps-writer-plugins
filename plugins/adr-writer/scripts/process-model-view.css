@@ -533,6 +533,71 @@ figure.diagram {
 .diagram-source pre {
   white-space: pre-wrap;
 }
+/* A zoomable diagram: its controls above, the diagram in a window that pans and zooms. */
+figure.diagram.zoomable {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+.diagram-zoom {
+  order: -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+.diagram-zoom .zoom-hint {
+  margin-right: auto;
+  color: #64748b;
+  font-size: 0.74rem;
+}
+.diagram-zoom button {
+  min-width: 2rem;
+  padding: 0.1rem 0.55rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.diagram-zoom button[aria-pressed="true"] {
+  background: #e0e7ff;
+}
+figure.zoomable .diagram__viewport {
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-x pan-y;
+  border-radius: 6px;
+  background: #fff;
+}
+figure.zoomable .diagram__viewport.panning {
+  cursor: grabbing;
+}
+figure.zoomable .diagram__viewport svg {
+  display: block;
+}
+/* Enlarged, the diagram covers the page until it is closed. */
+figure.diagram.expanded {
+  position: fixed;
+  inset: 3vh 3vw;
+  z-index: 30;
+  margin: 0;
+  background: #fff;
+  box-shadow: 0 0 0 100vmax rgb(7 14 30 / 62%);
+}
+figure.diagram.expanded .diagram__viewport {
+  flex: 1;
+  min-height: 0;
+  touch-action: none;
+}
+figure.diagram.expanded .diagram-source {
+  display: none;
+}
 .badge {
   display: inline-block;
   padding: 0 0.4rem;

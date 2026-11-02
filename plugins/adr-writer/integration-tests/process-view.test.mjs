@@ -78,8 +78,8 @@ after(async () => {
 });
 
 /** The diagram node of a figure whose visible label starts with `label`; labels may wrap. */
-async function nodeIn(figure, label) {
-  const handle = await page.evaluateHandle(
+async function nodeIn(figure, label, on = page) {
+  const handle = await on.evaluateHandle(
     (selector, wanted) => {
       const squash = (s) => s.replace(/\s+/g, "");
       return (
@@ -259,4 +259,61 @@ test("with motion reduced the city stays still, offers to resume motion and requ
   assert.equal(await wide.evaluate(() => window.processViewCity.moving()), false);
   assert.equal(await wide.$eval("#city-motion", (b) => b.textContent), "Resume motion");
   assert.deepEqual(requests, []);
+});
+
+test("a diagram zooms by its buttons, Ctrl-scroll and keys, pans by dragging without following a node, fits back and enlarges until Escape", async () => {
+  await fresh();
+  const figure = LANDSCAPE;
+  const view = () =>
+    wide.$eval(`${figure} svg`, (svg) => {
+      const b = svg.viewBox.baseVal;
+      return { x: b.x, y: b.y, width: b.width };
+    });
+  const press = (name) => wide.click(`${figure} .diagram-zoom button[data-zoom="${name}"]`);
+  const fitted = await view();
+  await press("in");
+  const zoomed = await view();
+  assert.ok(zoomed.width < fitted.width * 0.8, "the zoom button zooms in");
+  const area = await (await wide.$(`${figure} .diagram__viewport`)).boundingBox();
+  const [cx, cy] = [area.x + area.width / 2, area.y + area.height / 2];
+  await wide.mouse.move(cx, cy);
+  await wide.mouse.wheel({ deltaY: -200 });
+  assert.equal((await view()).width, zoomed.width, "a plain scroll leaves the zoom");
+  await wide.keyboard.down("Control");
+  await wide.mouse.wheel({ deltaY: -200 });
+  await wide.keyboard.up("Control");
+  const closer = await view();
+  assert.ok(closer.width < zoomed.width, "Ctrl-scroll zooms in");
+  await wide.mouse.down();
+  await wide.mouse.move(cx - 90, cy - 40, { steps: 6 });
+  await wide.mouse.up();
+  const moved = await view();
+  assert.ok(moved.x > closer.x && moved.y > closer.y, "dragging pans");
+  assert.equal(await wide.evaluate(() => location.hash), "#start", "a drag follows no node");
+  await press("fit");
+  assert.deepEqual(await view(), fitted);
+  await wide.focus(`${figure} .diagram-zoom button[data-zoom="fit"]`);
+  await wide.keyboard.press("+");
+  assert.ok((await view()).width < fitted.width, "+ zooms in");
+  await wide.keyboard.press("0");
+  assert.deepEqual(await view(), fitted, "0 fits");
+  await press("enlarge");
+  assert.equal(await wide.$eval(figure, (f) => f.classList.contains("expanded")), true);
+  await wide.keyboard.press("Escape");
+  assert.equal(await wide.$eval(figure, (f) => f.classList.contains("expanded")), false);
+  assert.deepEqual(await view(), fitted);
+});
+
+test("a node of a zoomed-in diagram still opens its target by mouse and by keyboard", async () => {
+  for (const how of ["mouse", "keyboard"]) {
+    await fresh();
+    await wide.click(`${ORDERING_FLOW} .diagram-zoom button[data-zoom="in"]`);
+    const node = await nodeIn(ORDERING_FLOW, "Submit the order", wide);
+    if (how === "mouse") await node.click();
+    else {
+      await node.evaluate((g) => g.focus());
+      await wide.keyboard.press("Enter");
+    }
+    assert.deepEqual(await position(wide), reached("el-ordering_2e_submit-order"), how);
+  }
 });

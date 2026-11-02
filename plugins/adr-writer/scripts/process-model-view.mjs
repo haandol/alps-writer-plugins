@@ -131,6 +131,13 @@ const UI = {
     handoff: "An event triggers a policy",
     noCanvas:
       "This browser cannot draw the 3D city. The same facts are in the lists and the landscape diagram.",
+    zoom: "Diagram zoom",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    fit: "Fit",
+    enlarge: "Enlarge",
+    close: "Close",
+    zoomHint: "Ctrl- or ⌘-scroll zooms, dragging moves",
   },
   ko: {
     title: "업무 프로세스 모델",
@@ -223,6 +230,13 @@ const UI = {
     handoff: "사건이 정책을 촉발",
     noCanvas:
       "이 브라우저에서는 3차원 도시를 그릴 수 없습니다. 같은 사실은 목록과 전경 도면에 있습니다.",
+    zoom: "그림 확대와 축소",
+    zoomIn: "확대",
+    zoomOut: "축소",
+    fit: "맞춤",
+    enlarge: "크게 보기",
+    close: "닫기",
+    zoomHint: "Ctrl이나 ⌘를 누른 채 스크롤하면 확대하고, 드래그하면 옮깁니다",
   },
 };
 
@@ -1118,6 +1132,13 @@ ${flowSections}
       changed: t.changedMark,
       error: t.errorMark,
       incomplete: t.incompleteMark,
+      zoom: t.zoom,
+      zoomIn: t.zoomIn,
+      zoomOut: t.zoomOut,
+      fit: t.fit,
+      enlarge: t.enlarge,
+      close: t.close,
+      zoomHint: t.zoomHint,
     },
     types: CLASSES.map((c) => [c.key, typeName.get(c.key)]),
     elements,
