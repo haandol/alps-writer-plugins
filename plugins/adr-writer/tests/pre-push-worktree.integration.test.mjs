@@ -69,7 +69,7 @@ test("pre-push fixture Git commands cannot change a linked worktree's commits, i
     pnpm,
     `#!/bin/sh
 set -e
-if [ "$1" = "test:unit" ]; then
+if [ "$1" = "test:unit:mjs" ]; then
   git -C "$RELEASE_HOOK_FIXTURE" init -q
   git -C "$RELEASE_HOOK_FIXTURE" config user.email fixture@example.test
   git -C "$RELEASE_HOOK_FIXTURE" config user.name Fixture

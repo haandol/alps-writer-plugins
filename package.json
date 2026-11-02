@@ -18,7 +18,7 @@
     "eval:golden": "node plugins/adr-writer/evals/deepeval/golden-report.mjs",
     "eval:calibration": "node plugins/adr-writer/evals/deepeval/calibrate.mjs",
     "eval:custom": "node plugins/adr-writer/evals/regression/run.mjs",
-    "format": "prettier --write .",
+    "format": "prettier --write . --cache --cache-strategy content",
     "format:check": "prettier --check . --cache --cache-strategy content",
     "bump": "node scripts/bump-version.mjs",
     "bump:check": "node scripts/bump-version.mjs --check",
@@ -36,7 +36,8 @@
     "test:alps": "pnpm --filter alps-writer test",
     "test:adr": "node --import ./scripts/test-git.mjs --import ./scripts/test-compile-cache.mjs --test \"plugins/adr-writer/tests/**/*.test.mjs\"",
     "test:ontology": "node --import ./scripts/test-git.mjs --import ./scripts/test-compile-cache.mjs --test \"plugins/ontology-writer/tests/**/*.test.mjs\" \"plugins/ontology-writer/integration-tests/*.test.mjs\"",
-    "test:unit": "pnpm test:alps && node --import ./scripts/test-compile-cache.mjs --test \"plugins/adr-writer/tests/!(*.integration).test.mjs\" \"plugins/adr-writer/evals/deepeval/!(*.integration).test.mjs\" \"plugins/ontology-writer/tests/!(*.integration).test.mjs\"",
+    "test:unit": "pnpm test:alps && pnpm test:unit:mjs",
+    "test:unit:mjs": "node --import ./scripts/test-compile-cache.mjs --test \"plugins/adr-writer/tests/!(*.integration).test.mjs\" \"plugins/adr-writer/evals/deepeval/!(*.integration).test.mjs\" \"plugins/ontology-writer/tests/!(*.integration).test.mjs\"",
     "test:integration": "node --import ./scripts/test-git.mjs --import ./scripts/test-compile-cache.mjs --test \"plugins/adr-writer/tests/*.integration.test.mjs\" \"plugins/adr-writer/evals/deepeval/*.integration.test.mjs\" \"plugins/adr-writer/integration-tests/*.test.mjs\" \"plugins/ontology-writer/tests/*.integration.test.mjs\" \"plugins/ontology-writer/integration-tests/*.test.mjs\"",
     "test:workspace": "pnpm test:checks && pnpm test:alps && node --import ./scripts/test-git.mjs --import ./scripts/test-compile-cache.mjs --test \"plugins/adr-writer/evals/deepeval/*.test.mjs\" \"plugins/adr-writer/integration-tests/*.test.mjs\" \"plugins/ontology-writer/integration-tests/*.test.mjs\""
   },
@@ -60,8 +61,8 @@
     "node": ">=24"
   },
   "lint-staged": {
-    "*.{ts,js,json,md,yaml}": [
-      "prettier --write"
+    "*.{ts,js,mjs,json,md,yaml,css}": [
+      "prettier --write --cache --cache-strategy content"
     ]
   },
   "devDependencies": {

@@ -17,8 +17,11 @@
 //   node scripts/bump-version.mjs minor|major
 //   node scripts/bump-version.mjs --check    verify every site agrees (exit 1 if not)
 //
-// Exit: 0 = done / in sync, 1 = drift found (--check), 2 = usage error.
+// A bump then runs `pnpm build`, so the committed bundle carries the new serverInfo.
+//
+// Exit: 0 = done / in sync, 1 = drift found (--check) or the rebuild failed, 2 = usage error.
 
+import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -163,8 +166,16 @@ function main() {
     process.stdout.write(`  ${rel} — ${found}\n`);
   }
   process.stdout.write(
-    `\n${current} → ${version}\nRebuild the bundle so dist/ carries the new serverInfo: pnpm build\n`,
+    `\n${current} → ${version}\nRebuilding dist/ with the new serverInfo: pnpm build\n`,
   );
+  // The committed bundle carries the serverInfo literal, so the bump rebuilds it instead of
+  // leaving a step to remember.
+  const build = spawnSync("pnpm", ["build"], { cwd: REPO, stdio: "inherit" });
+  if (build.status !== 0)
+    die(
+      `pnpm build ${build.error ? `could not start (${build.error.code})` : "failed"}; run it before committing the bump`,
+      1,
+    );
 }
 
 main();
