@@ -12,10 +12,12 @@ name: CI
 #
 # job 세 개:
 #   test       — 워크스페이스 검증·ALPS·DeepEval·브라우저 테스트를 실행한다.
-#   build      — lint·포맷·버전·빌드와 커밋된 번들의 일치를 검증한다.
+#   build      — 설치 전에 adr-writer 유닛 테스트를 돌리고, lint·포맷·버전·빌드와 커밋된
+#                번들의 일치를 검증한다.
 #   runtime    — 소비자가 실제로 실행하는 것(번들·스크립트·훅)을 install 없이 검증한다.
 #                마켓플레이스 설치본에는 node_modules 가 없으므로, 위 두 job 이 통과해도
-#                이쪽이 깨질 수 있다. ADR 전체 테스트는 이 job에서 한 번만 실행한다.
+#                이쪽이 깨질 수 있다. 의존성 없는 테스트는 build 의 설치 전 단계와 이 job 에
+#                나눠 한 번씩만 실행한다.
 #
 # main 에 push 되면 verified 가 먼저 돈다. ruleset 이 최신 브랜치를 요구하므로 squash·merge·
 # rebase 어느 쪽이든 main 에는 병합한 pull request head 의 트리가 남는다. 이 workflow 가 그
@@ -76,7 +78,8 @@ jobs:
           echo "head=$head" >> "$GITHUB_OUTPUT"
           echo "This workflow passed on pull request head $head, whose tree $SHA carries; the jobs skip."
 
-  # Together with runtime, this covers every check in local `pnpm test`.
+  # Together with runtime and build's no-install tests, this covers every check in local
+  # `pnpm test`.
   # Keep the required job names test/build/runtime stable for branch protection.
   test:
     needs: verified
@@ -137,12 +140,13 @@ jobs:
             console.log(`node ${process.versions.node} satisfies engines.node ${engines.node}`);
           '
 
-      # The dependency-free suites, run the way a contributor without pnpm would. One runner
-      # schedules both plugins' files on its workers, so neither suite waits for the other.
-      - name: adr-writer and ontology-writer suites (no install)
+      # The rest of the dependency-free suites — adr-writer's integration tests and every
+      # ontology-writer test — run the way a contributor without pnpm would, in one runner so
+      # their files share its workers. build runs adr-writer's unit tests the same way.
+      - name: adr-writer integration and ontology-writer suites (no install)
         env:
           NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
-        run: node --test "plugins/adr-writer/tests/**/*.test.mjs" "plugins/ontology-writer/tests/**/*.test.mjs"
+        run: node --test "plugins/adr-writer/tests/*.integration.test.mjs" "plugins/ontology-writer/tests/**/*.test.mjs"
 
       # The committed bundle is what a marketplace install executes. Boot it over
       # stdio and require a well-formed MCP initialize result — a bundle that
@@ -188,6 +192,13 @@ jobs:
           node-version: "24"
           cache: "pnpm"
 
+      # adr-writer's dependency-free unit tests, before anything is installed, as a
+      # contributor without pnpm runs them; runtime runs the rest. This job has the time.
+      - name: adr-writer unit tests (no install)
+        env:
+          NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
+        run: node --test "plugins/adr-writer/tests/!(*.integration).test.mjs"
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -197,7 +208,7 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
-      # The release version lives in 13 sites; the five rules-version stamps in
+      # The release version lives in 16 sites; the five rules-version stamps in
       # templates/adr/ are covered by no test. A stamp left behind makes the
       # plugin report its own templates as stale to every consumer at once.
       - name: Check version consistency
