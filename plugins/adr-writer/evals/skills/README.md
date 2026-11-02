@@ -181,7 +181,7 @@ pnpm eval:skills --live --suite execution --only rollup-encbird-current- --model
 
 Rollup has separate planning and local execution-evidence checks.
 `rollup-targeted-discovery` evaluates a proposed scope without executing reads.
-`tests/rollup-execution-evidence.test.mjs` uses real fixture-tool results and
+`tests/rollup-execution-evidence.integration.test.mjs` uses real fixture-tool results and
 phase snapshots to check retrieved content, bounded exploration, evidence reuse
 and changes between preparation and resume. Repeated/reordered reads and complete
 search evidence are accepted; filenames or partial snippets cannot replace a

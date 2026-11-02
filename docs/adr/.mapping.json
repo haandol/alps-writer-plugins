@@ -27,7 +27,7 @@
       "adrs": [
         {
           "path": "docs/adr/adr-authoring/decision-presentation/0001-present-decision-digest-and-semantic-diff.md",
-          "status": "Accepted (2026-09-30)",
+          "status": "Accepted (2026-10-30)",
           "summary": "ADR의 의도와 계약을 먼저 설명하고 sync·rollup·import의 남은 의도·충돌 질문을 리포트로 모아 답변 후 자동 반영한다"
         }
       ],
@@ -71,8 +71,8 @@
       "adrs": [
         {
           "path": "docs/adr/alps-authoring/spec-handoff/0001-admission-aware-feature-handoff.md",
-          "status": "Accepted (2026-09-21)",
-          "summary": "PRD handoff는 완전한 계약과 필요한 용어 정의를 ADR 수준으로 이전하고 명시적 재import와 의미 동일 입력의 무변경을 보장한다"
+          "status": "Accepted (2026-10-30)",
+          "summary": "PRD handoff는 완전한 계약을 ADR로 이전하고, 필요한 용어 정의는 용어집으로 옮기거나 현재 기준 레벨이 소유하면 그 레벨의 변경 제안으로 넘기며, 명시적 재import와 의미 동일 입력의 무변경을 보장한다"
         }
       ],
       "dependsOn": ["adr-authoring/decision-boundary"]
@@ -214,6 +214,43 @@
         }
       ],
       "dependsOn": ["alps-authoring/authoring-interaction", "alps-authoring/document-selection"]
+    },
+    "ontology": {
+      "feature": "Business ontology level",
+      "adrs": [
+        {
+          "path": "docs/adr/ontology/0001-introduce-business-ontology-level.md",
+          "status": "Accepted (2026-11-02)",
+          "summary": "ADR 위에 전체 흐름과 기능 사이 관계만 담는 Turtle 업무 온톨로지를 두어 별도 플러그인 Ontology Writer가 맡고 구현 권위는 ADR이 가지며 기능 연결은 ADR 색인에만 기록한다"
+        },
+        {
+          "path": "docs/adr/ontology/0002-retrieve-business-context-for-agents.md",
+          "status": "Accepted (2026-11-02)",
+          "summary": "ADR이나 코드를 바꾸기 전에 상위 업무 모델을 먼저 확인하고 다른 프로세스의 반응 단계까지 담은 업무 맥락을 결정적 조회로 얻어 모순 확인과 준수 계약 제안에 쓰되 구현 판정에는 쓰지 않는다"
+        },
+        {
+          "path": "docs/adr/ontology/0003-govern-ontology-lifecycle-and-cascade.md",
+          "status": "Accepted (2026-11-02)",
+          "summary": "프로세스 의미 변경은 승인 요약 하나로 ADR revision까지 승인해 위에서 아래로 전파하고 실행 증거를 포함한 정렬 검토로 현행 업무 여부를 판정한다"
+        },
+        {
+          "path": "docs/adr/ontology/0004-build-ontology-from-documents.md",
+          "status": "Accepted (2026-11-02)",
+          "summary": "문서 묶음에서 출처와 출처 판정을 붙인 모델 후보를 질문과 함께 제시하고 사용자가 확인한 사실만 저장한다"
+        },
+        {
+          "path": "docs/adr/ontology/0005-render-read-only-ontology-views.md",
+          "status": "Accepted (2026-11-02)",
+          "summary": "온톨로지는 요청 시 실현 현황을 겹친 읽기 전용 독립 HTML 탐색 화면으로 시각화하고 화면 파일은 커밋하지 않는다"
+        }
+      ],
+      "dependsOn": [
+        "adr-authoring/decision-boundary",
+        "document-authoring/domain-organization",
+        "adr-authoring/decision-presentation",
+        "delivery/development-flow",
+        "reporting/domain-navigation"
+      ]
     }
   }
 }

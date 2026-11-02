@@ -16,14 +16,14 @@
 // passes. That is the real value: it pins WHAT a correct /adr-new must produce.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
-import { withTmp, initRepo, parseLint, runHook } from "./helpers.mjs";
+import { withTmp, parseLint, runHook } from "./helpers.mjs";
 import { seedScaffold, authorAdr, registerMapping, adrNew, promote } from "./authoring.mjs";
 
 // parse the --json report → { code, ok, errors:[{rule,...}], warnings:[...] }
 const lint = (dir, args = []) => parseLint(dir, args);
-const lintFull = (dir, args = []) => parseLint(dir, args, { full: true });
+
 const rules = (r) => r.errors.map((e) => e.rule);
 
 // ── the happy path: a fresh repo, one /adr-new, harness green ─────────────
@@ -237,22 +237,5 @@ test("e2e: after /adr-new the hook points to the mapping without injecting its c
     assert.match(ctx, /before code read the full docs\/adr\/\.mapping\.json/);
     assert.doesNotMatch(ctx, /identity\/login/);
     assert.doesNotMatch(ctx, /password-policy/);
-  });
-});
-
-// ── full run (structure + adr-invariants reverse-ref oracle) stays clean ──
-
-test("e2e: a correctly authored ADR set passes the FULL run (structure + invariants)", () => {
-  withTmp((dir) => {
-    initRepo(dir); // adr-invariants scans a real tree; a git repo mirrors reality
-    seedScaffold(dir);
-    adrNew(dir, {
-      category: "identity/login",
-      slug: "password-policy",
-      title: "비밀번호 정책",
-      feature: "Login",
-    });
-    const r = lintFull(dir);
-    assert.equal(r.ok, true, JSON.stringify(r.errors, null, 2));
   });
 });

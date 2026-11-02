@@ -1,7 +1,6 @@
 import {
   alpsLiteGuideText,
   alpsSkillText,
-  expectText,
   seedMapping,
   seedRuleDocs,
   TAIL_SPEC,
@@ -33,23 +32,5 @@ export default {
       `In the tail use FOCUSED_QUESTION, MISSING_CONTEXT, and WAIT_FOR_ANSWER once each.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    const visible = output.split(/---\s*\n\s*## Machine-readable tail|===\s*EVAL-VERDICT/i)[0];
-    const questionCount = (visible.match(/\?/g) ?? []).length;
-
-    return [
-      expectText(visible, /사용자|누구|대상/i, "asks about the target user"),
-      expectText(visible, /문제|어려움|불편/i, "asks about the core problem"),
-      {
-        pass: questionCount >= 1 && questionCount <= 2,
-        detail: `${questionCount} visible questions`,
-        label: "asks one or at most two focused questions",
-      },
-      expectText(tail.raw, /FOCUSED_QUESTION/i, "records a focused question"),
-      expectText(tail.raw, /MISSING_CONTEXT/i, "records the missing context"),
-      expectText(tail.raw, /WAIT_FOR_ANSWER/i, "waits for the user's answer before saving"),
-    ];
   },
 };

@@ -313,7 +313,6 @@ export default {
   artifactPaths: [REPORT],
   obligations,
   deterministicScore,
-  score: deterministicScore,
   build(dir) {
     for (const [file, body] of Object.entries(fixtureFiles)) write(dir, file, body);
     seedRuleDocs(dir);

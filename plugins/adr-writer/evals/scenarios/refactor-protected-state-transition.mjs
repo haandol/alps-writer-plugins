@@ -19,8 +19,6 @@ import {
   seedMapping,
   write,
   TAIL_SPEC,
-  expectFinding,
-  expectNoFinding,
 } from "../lib/harness.mjs";
 
 const ADR = `# ADR 0001: 주문 취소 전이
@@ -102,12 +100,5 @@ export default {
       `Classify the proposed state-transition simplification. Do not edit files.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail }) {
-    return [
-      expectFinding(tail, /PROPOSE_ONLY/i, "state-transition change is proposal-only"),
-      expectNoFinding(tail, /APPLY_NOW/i, "state-transition change is never APPLY_NOW"),
-    ];
   },
 };

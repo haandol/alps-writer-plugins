@@ -2,7 +2,13 @@ import { semanticCases, semanticDefinition } from "./semantic-cases.mjs";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { cases } from "../regression/cases.mjs";
-import { createWorkspace, makeTools, snapshot, sha } from "../regression/workspace.mjs";
+import {
+  createWorkspace,
+  makeTools,
+  snapshot,
+  sha,
+  writeWorkspace,
+} from "../regression/workspace.mjs";
 
 // Authored reference actions and controlled counterexamples. These are not
 // live agent transcripts or human-reviewed labels. Labels stay out of GEval.
@@ -72,9 +78,11 @@ function replaceOnce(text, before, after) {
 export function buildCalibrationEvidence(entry, directory, pluginRoot) {
   const { item } = calibrationDefinition(entry);
   const root = path.join(directory, "workspace");
-  createWorkspace(root, item.build(), pluginRoot);
-  const before = snapshot(root);
   const semantic = semanticDefinition(entry);
+  // A semantic entry only reads its source and runs no check, so its fixture needs no Git index.
+  if (semantic) writeWorkspace(root, item.build(), pluginRoot);
+  else createWorkspace(root, item.build(), pluginRoot);
+  const before = snapshot(root);
   if (semantic) {
     const logPath = path.join(directory, "events.jsonl");
     const tools = makeTools({ root, pluginRoot, logPath, turn: 1 });

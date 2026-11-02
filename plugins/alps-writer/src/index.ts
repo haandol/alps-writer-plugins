@@ -22,7 +22,7 @@ const server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.10.15" },
+  { name: "alps-writer", version: "0.11.0" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
@@ -92,10 +92,7 @@ Every document-specific tool requires doc_path. Use the source path returned by 
 );
 
 const tc = new TemplateController(new TemplateService());
-const liteTc = new TemplateController(
-  new TemplateService(LITE_ALPS_PROFILE),
-  "get_lite_alps_section_guide",
-);
+const liteTc = new TemplateController(new TemplateService(LITE_ALPS_PROFILE));
 const dc = new DocumentController(new DocumentService());
 const documentPath = z
   .string()

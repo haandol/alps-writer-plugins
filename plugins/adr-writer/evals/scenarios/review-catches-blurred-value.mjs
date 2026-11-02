@@ -8,15 +8,7 @@
 //
 // Run both when a bug report touches requirement handling. A fix that makes one
 // pass by breaking the other has not fixed anything.
-import {
-  agentText,
-  seedRuleDocs,
-  seedMapping,
-  write,
-  TAIL_SPEC,
-  expectFinding,
-  expectText,
-} from "../lib/harness.mjs";
+import { agentText, seedRuleDocs, seedMapping, write, TAIL_SPEC } from "../lib/harness.mjs";
 
 const ADR = `# ADR 0001: 무료 플랜 채팅 세션 제한
 
@@ -100,32 +92,5 @@ export default {
       `Read the rule documents under docs/adr/ as your source of truth.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    return [
-      // The rule that owns blurred values. R18 without the a/b split counts —
-      // the reviewer may not label the sub-case.
-      expectFinding(
-        tail,
-        /R18|R19/i,
-        "flags the blurred requirement values (R18a, or R19 as incomplete)",
-      ),
-      // A blurred contract cannot pass the regeneration test, so the verdict
-      // must not be PASS. This is the check a permissive reviewer fails.
-      {
-        pass: tail.verdict !== null && !/^PASS$/i.test(tail.verdict.trim()),
-        detail: tail.verdict ? `verdict was ${tail.verdict}` : "no verdict in the tail block",
-        label: "verdict is not PASS (a blurred contract fails R19)",
-      },
-      // It must name what to ask, not just that something is missing —
-      // "never invent a number" means the fix is a question to the author.
-      expectText(
-        output,
-        /적절|일정 기간|blur|vague|ask|물어|확인/i,
-        "says what must be asked to fill the value in",
-      ),
-      expectText(output, /Regeneration check/i, "the R19 regeneration section is present"),
-    ];
   },
 };

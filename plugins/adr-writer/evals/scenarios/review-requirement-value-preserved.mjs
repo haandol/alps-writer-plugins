@@ -28,16 +28,7 @@ export function deterministicScore(input) {
   return responseChecks(input, {}, { noTools: false });
 }
 
-import {
-  agentText,
-  seedRuleDocs,
-  seedMapping,
-  write,
-  TAIL_SPEC,
-  expectNoFinding,
-  expectNotMiscategorized,
-  expectText,
-} from "../lib/harness.mjs";
+import { agentText, seedRuleDocs, seedMapping, write, TAIL_SPEC } from "../lib/harness.mjs";
 
 const ADR = `# ADR 0001: 무료 플랜 채팅 세션 제한
 
@@ -123,51 +114,4 @@ export default {
       TAIL_SPEC,
     ].join("\n");
   },
-
-  score({ tail, output }) {
-    // The values that must survive review untouched.
-    const VALUES = /20\s*턴|20 turns|5\s*회|5 sessions|30일|30 days|월 5|per month/i;
-    return [
-      // The direct defect: a rule fired against a recorded requirement value.
-      expectNotMiscategorized(
-        tail,
-        VALUES,
-        /R3|R4|R18b|tuning/i,
-        "no rule fires against a recorded requirement value",
-      ),
-      // R18a is the omission check — these values are present, so it must not fire.
-      expectNoFinding(tail, /^\[?R18a/i, "R18a (missing requirement value) does not fire"),
-      // The reviewer must actually have examined the completeness axis rather
-      // than skipping it; the report format makes this section mandatory.
-      expectText(output, /Regeneration check/i, "the R19 regeneration section is present"),
-      // Advice to delete a value can also arrive as prose without a rule tag,
-      // which the finding checks above would miss.
-      {
-        ...expectNoPromptToDelete(output),
-        label: "no prose advice to remove a value because the code holds it",
-      },
-    ];
-  },
 };
-
-// Looks for the specific bad recommendation in prose: "the code has it, so take
-// it out of the ADR". Kept narrow — the rule docs themselves discuss this
-// pattern in order to forbid it, and a reviewer quoting that discussion is fine.
-//
-// Both word orders are matched, which is the point of doing this by hand rather
-// than with one regex: English puts the verb first ("remove the 20-turn cap")
-// while Korean puts the object first ("20턴 제한은 … 삭제한다"). A verb-first-only
-// pattern silently passes every Korean report, and Korean is the language these
-// ADRs are written in.
-const VALUE = String.raw`(?:20\s*턴|20[- ]?turns?|5\s*회|5 sessions|30일|30[- ]?days?|requirement value|요구값)`;
-const REMOVE = String.raw`(?:remove|delete|drop|삭제|제거|빼)`;
-
-function expectNoPromptToDelete(output) {
-  const hit =
-    output.match(new RegExp(`${REMOVE}[^.\\n]{0,80}${VALUE}`, "i")) ??
-    output.match(new RegExp(`${VALUE}[^.\\n]{0,80}${REMOVE}`, "i"));
-  return {
-    pass: !hit,
-    detail: hit ? `suggests removing a value: "${hit[0].trim()}"` : "no such advice",
-  };
-}

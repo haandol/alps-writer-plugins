@@ -30,7 +30,6 @@ export function batchDecisionScenario(resume = false) {
           : "A requires no question. Gather B and C in one domain-grouped report with evidence, recommended meaning and exact questions. C's newer code is a candidate, not authority. Do not invent B's historical reason, ask one-by-one, or claim files changed.",
       },
     ],
-    score,
     deterministicScore(input) {
       return [...responseChecks(input, {}), ...score(input)];
     },

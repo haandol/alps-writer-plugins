@@ -1,0 +1,732 @@
+/* ontology-view.css — the ontology view: the explorer and the 3D business city at night,
+   beside the document of the landscape, the flows and the details on a light sheet. */
+:root {
+  --night: #0d1830;
+  --dusk: #15284a;
+  --rim: #27416d;
+  --frost: #e6edf9;
+  --mist: #a3b4d3;
+  --paper: #f8fafd;
+  --ink: #12203a;
+  --gold: #ffcf6e;
+  --amber: #ff9f43;
+  --signal: #ff6b6b;
+  --glass: #8fd3ff;
+  --ember: #ff8a3d;
+  --violet: #a78bfa;
+  --teal: #4fd1c5;
+  --rose: #fb7185;
+  --sun: #facc15;
+  --steel: #aab4c8;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font:
+    15px/1.55 "Pretendard",
+    "Apple SD Gothic Neo",
+    "Noto Sans KR",
+    "Malgun Gothic",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  color: var(--ink);
+}
+code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.86em;
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+canvas:focus-visible,
+g.node:focus-visible {
+  outline: 3px solid #4338ca;
+  outline-offset: 2px;
+}
+
+/* A model that could not be parsed: only the errors, on a plain page. */
+body.plain {
+  padding: 0 1.5rem 3rem;
+  background: #fff;
+}
+body.plain > header {
+  padding: 1.25rem 0 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+body.plain h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+/* The app: a bar, then the explorer, the city and the document side by side. */
+body.app {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100vh;
+  background: var(--night);
+}
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1.25rem;
+  padding: 0.6rem 1.25rem;
+  color: var(--frost);
+  border-bottom: 1px solid var(--rim);
+}
+.bar h1 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.bar p {
+  margin: 0;
+  max-width: 78ch;
+  color: var(--mist);
+  font-size: 0.84rem;
+}
+.shell {
+  display: grid;
+  grid-template-columns: 18rem minmax(0, 1fr) minmax(24rem, 36%);
+  min-height: 0;
+}
+.explorer {
+  /* Positioned, so the visually hidden labels inside stay within its scrolling. */
+  position: relative;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.9rem 0.85rem 2.5rem;
+  color: var(--frost);
+  border-right: 1px solid var(--rim);
+}
+.city {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: linear-gradient(#070e1e, #12244a 70%, #1b3160);
+}
+.document {
+  position: relative;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 1.5rem 3rem;
+  background: var(--paper);
+  box-shadow: -14px 0 36px rgb(0 0 0 / 40%);
+}
+@media (max-width: 1100px) {
+  body.app {
+    display: block;
+    height: auto;
+  }
+  .shell {
+    display: block;
+  }
+  .explorer {
+    max-height: 46vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--rim);
+  }
+  .city {
+    height: 64vh;
+  }
+  .document {
+    overflow: visible;
+    box-shadow: none;
+  }
+}
+
+/* Explorer: finding, type filters and the tree. */
+.find label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-weight: 650;
+  font-size: 0.92rem;
+}
+.find input {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  color: var(--frost);
+  background: var(--dusk);
+  border: 1px solid var(--rim);
+  border-radius: 7px;
+}
+.find input::placeholder {
+  color: var(--mist);
+}
+.find-status {
+  min-height: 1.2em;
+  margin: 0.35rem 0 0;
+  color: var(--mist);
+  font-size: 0.82rem;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.4rem 0 0.8rem;
+}
+.chips button,
+.layers button,
+.city-controls button {
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--frost);
+  background: transparent;
+  border: 1px solid var(--rim);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  cursor: pointer;
+}
+.chips button[aria-pressed="false"],
+.layers button[aria-pressed="false"] {
+  color: var(--mist);
+  border-style: dashed;
+  opacity: 0.7;
+}
+.layers button[aria-pressed="true"] {
+  background: var(--dusk);
+}
+.count {
+  color: var(--mist);
+  font-size: 0.78em;
+  font-variant-numeric: tabular-nums;
+}
+.glyph,
+.swatch {
+  display: inline-block;
+  width: 0.62rem;
+  height: 0.62rem;
+  margin-right: 0.35rem;
+  vertical-align: 0.02em;
+  border-radius: 2px;
+}
+.t-Process {
+  background: #dbe6ff;
+}
+.t-Step {
+  background: var(--gold);
+}
+.t-BusinessEvent {
+  background: var(--ember);
+  border-radius: 50%;
+}
+.t-Policy {
+  background: var(--violet);
+  transform: rotate(45deg) scale(0.85);
+}
+.t-BusinessConcept {
+  background: var(--teal);
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+.t-BusinessRule {
+  background: var(--rose);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.t-Actor {
+  background: var(--sun);
+  border-radius: 50% 50% 2px 2px;
+}
+.t-ObservationCriterion {
+  background: var(--steel);
+  clip-path: polygon(0 0, 100% 30%, 0 60%);
+}
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.results a {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.1rem;
+  padding: 0.3rem 0.45rem;
+  color: var(--frost);
+  text-decoration: none;
+  border-radius: 6px;
+}
+.results a:hover,
+.results a:focus-visible {
+  background: var(--dusk);
+}
+.results .glyph {
+  grid-row: span 2;
+  margin-top: 0.42rem;
+}
+.results .kind {
+  grid-column: 2;
+  color: var(--mist);
+  font-size: 0.76rem;
+}
+.results code {
+  grid-column: 2;
+  color: var(--mist);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+.tree ul,
+.tree ol {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.85rem;
+}
+.tree > ul {
+  padding: 0;
+}
+.tree summary {
+  cursor: pointer;
+  padding: 0.12rem 0;
+  color: var(--mist);
+}
+.tree summary::marker {
+  color: var(--rim);
+}
+.tree .context > details > summary {
+  padding: 0.3rem 0;
+  font-weight: 650;
+}
+.tree a {
+  color: var(--frost);
+  text-decoration: none;
+  border-radius: 4px;
+}
+.tree a:hover {
+  text-decoration: underline;
+}
+.tree a[aria-current] {
+  background: var(--gold);
+  color: var(--night);
+  padding: 0 0.2rem;
+}
+.tree li {
+  padding: 0.08rem 0;
+  font-size: 0.88rem;
+}
+.tree .group-name {
+  color: var(--frost);
+}
+.tree .where {
+  color: var(--mist);
+  font-size: 0.76rem;
+}
+.tree .dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.35rem;
+  border-radius: 1px;
+  vertical-align: 0.05em;
+}
+.dot.state-implemented,
+.swatch.state-implemented {
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--gold);
+}
+.dot.state-notImplemented,
+.swatch.state-notImplemented {
+  background: linear-gradient(90deg, var(--amber) 35%, #24314d 35% 65%, var(--amber) 65%);
+}
+.dot.state-unrealized,
+.swatch.state-unrealized {
+  background: linear-gradient(#3e1824 40%, var(--signal) 40% 60%, #3e1824 60%);
+}
+.dot.state-outside,
+.swatch.state-outside {
+  background: rgb(143 211 255 / 15%);
+  outline: 1px solid var(--glass);
+}
+.dot.state-unknown,
+.swatch.state-unknown {
+  background: repeating-linear-gradient(45deg, #3a4256 0 2px, var(--steel) 2px 3px);
+}
+.swatch.handoff {
+  width: 1.2rem;
+  height: 0.18rem;
+  border-radius: 1px;
+  background: linear-gradient(90deg, var(--ember), var(--violet));
+}
+.explorer .badge,
+.city .badge {
+  margin-left: 0.3rem;
+  font-size: 0.7rem;
+}
+.tree.hide-Process [data-type="Process"],
+.tree.hide-Step [data-type="Step"],
+.tree.hide-BusinessEvent [data-kind="BusinessEvent"],
+.tree.hide-Policy [data-kind="Policy"],
+.tree.hide-BusinessConcept [data-kind="BusinessConcept"],
+.tree.hide-Step [data-kind="Step"],
+.tree.hide-BusinessRule [data-kind="BusinessRule"],
+.tree.hide-Actor [data-kind="Actor"],
+.tree.hide-ObservationCriterion [data-kind="ObservationCriterion"] {
+  display: none;
+}
+
+/* City: the canvas fills the stage; the hint, controls and legend sit on its corners. */
+.city canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+.city canvas.city-sparks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+.city canvas.dragging {
+  cursor: grabbing;
+}
+.city canvas.pointing {
+  cursor: pointer;
+}
+body.city-wide .shell {
+  grid-template-columns: 18rem minmax(0, 1fr) 0;
+}
+body.city-wide .document {
+  visibility: hidden;
+}
+.city-hint {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.9rem;
+  max-width: min(36rem, calc(100% - 1.8rem));
+  margin: 0;
+  color: var(--mist);
+  font-size: 0.78rem;
+  pointer-events: none;
+  text-shadow: 0 1px 3px #000;
+}
+.city-controls {
+  position: absolute;
+  right: 0.8rem;
+  bottom: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+.city-controls button[aria-pressed="true"] {
+  background: var(--dusk);
+}
+.city-controls button {
+  background: rgb(13 24 48 / 75%);
+}
+.city-legend {
+  position: absolute;
+  bottom: 0.8rem;
+  left: 0.8rem;
+  max-width: calc(100% - 13rem);
+  padding: 0.45rem 0.65rem 0.5rem;
+  color: var(--frost);
+  font-size: 0.74rem;
+  background: rgb(13 24 48 / 78%);
+  border: 1px solid var(--rim);
+  border-radius: 8px;
+}
+.city-legend p {
+  margin: 0 0 0.2rem;
+  color: var(--mist);
+}
+.city-legend ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.8rem;
+  margin: 0 0 0.45rem;
+  padding: 0;
+  list-style: none;
+}
+.layers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.city-tip {
+  position: absolute;
+  z-index: 2;
+  max-width: 18rem;
+  padding: 0.35rem 0.55rem;
+  color: var(--frost);
+  font-size: 0.8rem;
+  background: rgb(7 14 30 / 92%);
+  border: 1px solid var(--rim);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.city-tip .kind {
+  display: block;
+  color: var(--mist);
+  font-size: 0.72rem;
+}
+.city.no-canvas .city-hint,
+.city.no-canvas .city-controls,
+.city.no-canvas .city-legend {
+  display: none;
+}
+.city.no-canvas canvas {
+  padding: 1rem;
+  color: var(--frost);
+}
+
+/* On paper only the document is printed, in black on white. */
+@media print {
+  body.app {
+    display: block;
+    height: auto;
+    background: #fff;
+  }
+  .bar {
+    color: #000;
+    border-color: #ccc;
+  }
+  .bar p {
+    color: #333;
+  }
+  .shell {
+    display: block;
+  }
+  .explorer,
+  .city {
+    display: none;
+  }
+  .document {
+    overflow: visible;
+    box-shadow: none;
+  }
+}
+
+/* Off-screen element details are laid out and painted only when they come near view, a group
+   of them at a time: the browser rechecks every such element on each frame the city draws.
+   The flows are not skipped: a diagram inside a skipped section has no position, so it could
+   not be drawn ahead of the reader. */
+.document .element-group {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 16000px;
+}
+/* An element reached by its link starts below the document's sticky bar. */
+.document article.element,
+.document section.process {
+  scroll-margin-top: 3rem;
+}
+/* Mermaid lays each diagram out in a scratch element on the page: out of the page's grid. */
+body.app > div[id^="dmermaid-"] {
+  position: absolute;
+  top: 0;
+  left: -100000px;
+}
+
+/* Document: the landscape, the flows and the element details. */
+.document h2 {
+  margin-top: 2rem;
+}
+.document > nav {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.5rem 0;
+  font-size: 0.86rem;
+  background: var(--paper);
+  border-bottom: 1px solid #e2e8f0;
+}
+figure.diagram {
+  overflow: auto;
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.diagram-source pre {
+  white-space: pre-wrap;
+}
+.diagram-draw {
+  margin-left: 0.4rem;
+  padding: 0.2rem 0.7rem;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: #4338ca;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.diagram-draw:disabled {
+  background: #94a3b8;
+  cursor: progress;
+}
+/* A zoomable diagram: its controls above, the diagram in a window that pans and zooms. */
+figure.diagram.zoomable {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+.diagram-zoom {
+  order: -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+.diagram-zoom .zoom-hint {
+  margin-right: auto;
+  color: #64748b;
+  font-size: 0.74rem;
+}
+.diagram-zoom button {
+  min-width: 2rem;
+  padding: 0.1rem 0.55rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.diagram-zoom button[aria-pressed="true"] {
+  background: #e0e7ff;
+}
+figure.zoomable .diagram__viewport {
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-x pan-y;
+  border-radius: 6px;
+  background: #fff;
+}
+figure.zoomable .diagram__viewport.panning {
+  cursor: grabbing;
+}
+figure.zoomable .diagram__viewport svg {
+  display: block;
+}
+/* Enlarged, the diagram covers the page until it is closed. */
+figure.diagram.expanded {
+  position: fixed;
+  inset: 3vh 3vw;
+  z-index: 30;
+  margin: 0;
+  background: #fff;
+  box-shadow: 0 0 0 100vmax rgb(7 14 30 / 62%);
+}
+figure.diagram.expanded .diagram__viewport {
+  flex: 1;
+  min-height: 0;
+  touch-action: none;
+}
+figure.diagram.expanded .diagram-source {
+  display: none;
+}
+.badge {
+  display: inline-block;
+  padding: 0 0.4rem;
+  font-size: 0.8rem;
+  color: #334155;
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+.badge.changed {
+  background: #fef3c7;
+}
+.badge.uncertain {
+  background: #fef3c7;
+  font-style: italic;
+}
+.badge.broken {
+  color: #991b1b;
+  background: #fee2e2;
+}
+.badge.retired {
+  color: #4b5563;
+  background: #e5e7eb;
+}
+.state-implemented {
+  color: #047857;
+}
+.state-notImplemented {
+  color: #b45309;
+}
+.state-unrealized {
+  color: #b91c1c;
+  font-weight: 600;
+}
+.state-unknown {
+  color: #b45309;
+  font-style: italic;
+}
+.state-outside {
+  color: #475569;
+}
+.errors {
+  padding: 0.5rem 1rem;
+  background: #fef2f2;
+  border: 2px solid #dc2626;
+  border-radius: 8px;
+}
+.changes {
+  padding: 0.5rem 1rem;
+  background: #fffbeb;
+  border: 2px solid #d97706;
+  border-radius: 8px;
+}
+.incomplete {
+  margin: 0.75rem 0;
+  padding: 0.25rem 0.75rem;
+  background: #fef2f2;
+  border-left: 4px solid #dc2626;
+}
+.incomplete > p {
+  margin: 0.25rem 0;
+  color: #991b1b;
+  font-weight: 600;
+}
+.removed {
+  text-decoration: line-through;
+}
+article.element {
+  padding: 0.5rem 0;
+  border-top: 1px solid #e2e8f0;
+}
+article.element:target,
+section.process:target {
+  background: #eef3fc;
+  outline: 2px solid #4338ca;
+}
+table {
+  border-collapse: collapse;
+}
+th,
+td {
+  padding: 0.15rem 0.75rem 0.15rem 0;
+  text-align: left;
+  vertical-align: top;
+}
+.document th[scope="row"] {
+  white-space: nowrap;
+}
+table.description td {
+  color: #475569;
+  font-style: italic;
+}

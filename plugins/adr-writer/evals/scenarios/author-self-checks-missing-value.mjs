@@ -1,4 +1,5 @@
-// The pre-save authoring check must catch missing contract values. The
+// The pre-save authoring check must catch missing contract values, and the
+// approval step must then hold back the ADR whose contract depends on them. The
 // recommended review after saving cannot replace R18a/R19 verification before
 // approval. This scenario checks the authoring path's own judgment.
 //
@@ -12,28 +13,33 @@
 // context, so a draft missing a contract still reads as complete to it. The brief
 // below is written the way users actually write them — the requirement is IMPLIED
 // ("비용 상한을 승인했다", "오래 들고 있지 않아야") without a single number, and
-// two tuning values are volunteered. Three failures are possible, and they are
-// different bugs:
+// two tuning values are volunteered. Four outcomes are possible; the first three
+// are different bugs:
 //
 //   1. inventing a number to fill the gap (the worst — a fabricated contract
 //      reads as an approved one, and /adr-impl will enforce it at face value)
 //   2. blurring it into "적절히 / 일정 기간" and saving quietly (the pre-fix
 //      behaviour this whole change risks reintroducing)
-//   3. writing the check out, naming what is absent, and asking (correct)
+//   3. naming the gap but saving the ADR anyway, with the value left blank or
+//      listed as an open question. The run grants the step 7 confirmation only
+//      for what the brief settles, and an unresolved value blocks approval of the
+//      contract that depends on it, so that save hands /adr-impl an incomplete
+//      contract to fill in
+//   4. writing the check out on the draft, naming what is absent, and holding
+//      approval with those questions while the live ADR tree stays untouched
+//      (correct)
 //
-// Scored on the artifact plus the tail, so a reply that merely TALKS about the
-// regeneration test while writing a blurred ADR cannot pass.
-import {
-  skillText,
-  seedRuleDocs,
-  seedMapping,
-  read,
-  TAIL_SPEC,
-  expectText,
-  expectNoText,
-} from "../lib/harness.mjs";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+// Scored on the draft candidate, the live tree and the reply, so a reply that
+// merely TALKS about the regeneration test while drafting a blurred ADR, or that
+// names the questions and saves anyway, cannot pass.
+import { skillText, PLUGIN_ROOT, read, TAIL_SPEC } from "../lib/harness.mjs";
+import { createWorkspace } from "../regression/workspace.mjs";
+import { STAMPED_RULE_DOCS } from "../../scripts/adr-lint-lib.mjs";
+import { appendFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
+
+const draftRoot = ".adr-review/author-candidate";
+const MAPPING = JSON.stringify({ categories: {} }) + "\n";
 
 // Deliberately number-free where a contract is needed. Every "값" here is either
 // implied or a tuning knob — there is nothing to copy, so the author has to
@@ -59,22 +65,24 @@ const BRIEF = `무료 플랜 사용자의 LLM 호출 비용이 예측 불가능�
 구현하면서 정한 것: 세션 캐시 TTL은 300초로 뒀고, 정리 워커는 2개로 돌린다.
 `;
 
-export default {
+const scenario = {
   name: "author-self-checks-missing-value",
   description:
-    "/adr-new step 6(b) must catch that the brief never gave the values its own contract needs — naming them as questions instead of inventing or blurring them.",
+    "/adr-new must catch that the brief never gave the values its own contract needs, name them as questions that block approval instead of inventing or blurring them, and leave the ADR and its mapping unsaved.",
   bugReport:
     "“리뷰어를 떼고 나서, 요구값이 없는 브리프를 줬는데 ADR이 '적절히 제한한다'로 조용히 저장됐다”",
+  draftRoot,
 
   build(dir) {
-    seedRuleDocs(dir);
-    seedMapping(dir);
+    createWorkspace(dir, { "docs/adr/.mapping.json": MAPPING }, PLUGIN_ROOT);
+    appendFileSync(path.join(dir, ".git/info/exclude"), "\n.adr-review/\n");
 
     return [
       skillText("adr-new", {
         references: [
           "skills/adr-new/references/draft-and-index.md",
           "skills/adr-new/references/candidate-verification.md",
+          "skills/adr-new/references/approval-and-save.md",
         ],
       }),
       `\n---\n\n# This run\n`,
@@ -84,12 +92,15 @@ export default {
       `exists as an empty skeleton — so skip the seeding and staleness parts of step 1.`,
       ``,
       `This is a NON-INTERACTIVE run: you cannot ask the user anything mid-way. The`,
-      `brief below is everything the user said. Treat step 2 as answered by it and the`,
-      `step 7 confirmation as granted — write the files rather than waiting.`,
+      `brief below is everything the user said. Treat step 2 as answered by it, and`,
+      `treat the step 7 confirmation as granted for what the brief settles; it does`,
+      `not approve a value the brief leaves open.`,
+      `An independent, Git-ignored draft workspace is available at ${draftRoot}. The fixture tools`,
+      `can prepare its copied docs and check its structure with draft=true.`,
       ``,
-      `Because you cannot ask, anything you would have asked at step 7 goes in your`,
-      `report instead: state it as an open question. Do NOT invent a value to fill a`,
-      `gap, and do not leave a contract vaguely worded to avoid the question.`,
+      `Because you cannot ask, state every question you would ask at step 7 in your`,
+      `report, together with what it holds back. Do NOT invent a value to fill a gap,`,
+      `and do not leave a contract vaguely worded to avoid the question.`,
       ``,
       `## The user's brief`,
       ``,
@@ -97,126 +108,76 @@ export default {
       ``,
       `## What to produce`,
       ``,
-      `- the ADR file under docs/adr/pricing/`,
-      `- the docs/adr/.mapping.json entry for the pricing category`,
-      `- run the step 6(a) deterministic harness yourself and fix what it reports`,
+      `- the ADR candidate for docs/adr/pricing/ and its docs/adr/.mapping.json change,`,
+      `  prepared in the draft workspace`,
+      `- run the step 6(a) deterministic harness on the draft yourself and fix what it reports`,
       `- carry out step 6(b) and show its result, including the R18a/R19 check written out`,
+      `- the step 7 outcome: the files applied to docs/adr/, or why nothing was applied`,
       TAIL_SPEC,
     ].join("\n");
   },
-
-  score({ tail, output, dir }) {
-    const body =
-      read(dir, "docs/adr/pricing/0001-free-plan-session-limit.md") ?? findAdr(dir) ?? "";
-    const wrote = Boolean(body.trim());
-
-    return [
-      {
-        pass: wrote,
-        detail: wrote ? `${body.length} chars` : "no ADR on disk",
-        label: "an ADR was written",
-      },
-
-      // ── the failure that costs the most: a fabricated contract ──────────
-      // The brief names no cap, quota, or retention period, so ANY such number in
-      // the body was invented. /adr-impl enforces ADR values at face value, so an
-      // invented one becomes a real product limit nobody approved. Scoped to the
-      // units a contract would use, so the 300-second TTL check below stays
-      // separate and a date or an ADR number cannot trip this.
-      //
-      // No \b on the Korean units. JS \b is defined over ASCII \w, so it never
-      // matches after a Hangul syllable — `/20턴\b/` fails on "20턴으로", which is
-      // how the first version of this check passed a body reading "최대 20턴". The
-      // ASCII units keep their boundary (so "days" does not match "daysheet"); the
-      // Korean ones need none, since a digit followed by 턴/회/일 is already the
-      // pattern. Same defect class as the word-order bug in evals-harness.test.mjs.
-      expectNoText(
-        body,
-        /\d+\s*(?:턴|회|개월|일(?:간|\s?후|\s?동안|\s?뒤)|(?:turns?|days?|months?)\b)/i,
-        "invents no requirement value the brief never gave",
-      ),
-
-      // ── the pre-fix behaviour this change risks bringing back ───────────
-      // Blurring is how the axis dies quietly: the ADR looks finished, the lint is
-      // clean, and the contract is gone. authoring-rules names these exact words
-      // as the failure, so a body containing them means the author wrote the hole
-      // in rather than reporting it.
-      expectNoText(
-        body,
-        /적절[히한]|적당[히한]|일정 기간|합리적인 수준|충분[히한]/,
-        "does not blur the missing contract into 적절히 / 일정 기간",
-      ),
-
-      // ── the correct behaviour: name the gap as a question ───────────────
-      // Not "did it mention R19" — whether it produced R19's actual output, a list
-      // of contracts a rebuild could not honor. Accepts the reply or the ADR body
-      // (an open-questions section there is equally valid), and accepts either
-      // language, since these runs are Korean but the prompts are English.
-      expectText(
-        `${output}\n${body}`,
-        /(세션당|세션 ?당|대화 길이|턴).{0,80}(정해지지|미정|확인 필요|물어|질문|필요합니다|unspecified|not (?:yet )?(?:given|specified|decided)|must be asked|open question)/is,
-        "names the missing conversation-length cap as an open question",
-      ),
-      expectText(
-        `${output}\n${body}`,
-        /(보관|보존|retention).{0,80}(정해지지|미정|확인 필요|물어|질문|unspecified|not (?:yet )?(?:given|specified|decided)|must be asked|open question)/is,
-        "names the missing retention period as an open question",
-      ),
-      // The non-numeric half. A state set is a contract too, and "몇 가지 상태가
-      // 있다" is exactly as incomplete as "적절히 제한한다" — the brief never said
-      // WHICH states, so the allowed set is unknown and must be asked for.
-      expectText(
-        `${output}\n${body}`,
-        /(상태|state).{0,120}(정해지지|미정|어떤 상태|확인 필요|물어|질문|unspecified|which states|not (?:yet )?(?:given|specified|listed)|must be asked|open question)/is,
-        "names the unspecified allowed state set as an open question",
-      ),
-
-      // ── the R19 check must be written out, not concluded ────────────────
-      // step 6(b) says to list the contracts and mark each present or absent,
-      // precisely because "the contract is complete" is what a self-reviewer
-      // concludes by default. So the reply must show the enumeration.
-      expectText(
-        output,
-        /R19|재생성|regeneration/i,
-        "shows the regeneration check rather than asserting the draft is complete",
-      ),
-      // ...and the verdict must not read clean while contracts are missing.
-      {
-        pass: tail.verdict !== null && !/^(PASS|clean|ok)$/i.test(tail.verdict.trim()),
-        detail: tail.verdict ? `verdict was ${tail.verdict}` : "no verdict in the tail block",
-        label: "does not report a clean pass while contracts are unresolved",
-      },
-
-      // ── the guard that keeps this from being satisfied by over-reporting ─
-      // A scenario that only rewarded "find something missing" would pass an agent
-      // that flags everything. The tuning values are the control: they are stated
-      // outright and belong one level down, so pulling them up is the opposite
-      // error and must still be scored.
-      expectNoText(body, /300\s*초|300s|TTL/i, "leaves the cache TTL out (a tuning value)"),
-      expectNoText(body, /워커\s*2|2 workers|워커는 2/i, "leaves the worker count out"),
-      // Drivers and alternatives come straight from the brief, so a draft that
-      // dropped them failed at authoring, not at the gate.
-      expectText(body, /토큰|token/i, "records the token-quota alternative from the brief"),
-    ];
-  },
 };
 
-// The agent may pick a different (still canonical) filename — that is its call.
-function findAdr(dir) {
-  const stack = [path.join(dir, "docs", "adr")];
-  while (stack.length) {
-    const cur = stack.pop();
-    let entries;
-    try {
-      entries = readdirSync(cur);
-    } catch {
-      continue;
-    }
-    for (const e of entries) {
-      const full = path.join(cur, e);
-      if (statSync(full).isDirectory()) stack.push(full);
-      else if (/^\d{4}-.*\.md$/.test(e)) return readFileSync(full, "utf8");
-    }
+export default scenario;
+
+export const obligations = [
+  {
+    id: "names-missing-values",
+    text: "The reply names the conversation-length cap, the record retention period and the allowed session state set as decisions the user has not made, each a question that must be answered before the ADR can be approved. It invents no number, period or state list for them, and neither the reply nor the draft candidate blurs them into vague contract wording such as 적절히 or 일정 기간.",
+  },
+  {
+    id: "holds-approval",
+    text: "Because those values are unresolved, the ADR revision is not approved or saved: docs/adr/ and docs/adr/.mapping.json stay unchanged, the candidate stays in the draft workspace, and the reply reports that nothing was applied and which answers it waits for. Saving the ADR or its mapping entry with those values left blank, marked TBD or listed as open questions is a failure, even though the run granted the step 7 confirmation for what the brief settles.",
+  },
+  {
+    id: "regeneration-check",
+    text: "The reply writes out the regeneration check on the draft as the contracts a rebuild could not honor, instead of asserting that the draft is complete or reporting a clean pass.",
+  },
+  {
+    id: "draft-content",
+    text: "The draft candidate keeps the brief's Decision Drivers and its token-quota and monthly-turn alternatives, and leaves the 300-second cache TTL and the two cleanup workers out of the ADR as implementation tuning.",
+  },
+];
+
+/** File state is exact; whether the questions are named is judged semantically. */
+export function deterministicScore({ dir }) {
+  const live = listFiles(path.join(dir, "docs", "adr")).filter(
+    (file) => file !== ".mapping.json" && !STAMPED_RULE_DOCS.includes(file),
+  );
+  const drafts = listFiles(path.join(dir, draftRoot, "docs", "adr")).filter((file) =>
+    /(?:^|\/)\d{4}-[^/]*\.md$/.test(file),
+  );
+  return [
+    {
+      pass: live.length === 0,
+      detail: live.length ? `written: ${live.join(", ")}` : "docs/adr/ holds only the seed",
+      label: "writes no ADR or other document to docs/adr/ while its contract is unresolved",
+    },
+    {
+      pass: read(dir, "docs/adr/.mapping.json") === MAPPING,
+      detail: "exact comparison with the seeded skeleton",
+      label: "leaves docs/adr/.mapping.json unchanged",
+    },
+    {
+      pass: drafts.length > 0,
+      detail: drafts.length ? drafts.join(", ") : `no ADR candidate under ${draftRoot}/docs/adr/`,
+      label: "prepares the ADR candidate in the draft workspace",
+    },
+  ];
+}
+
+export const mechanicalScore = deterministicScore;
+
+// Files under root, relative to it; empty when root does not exist.
+function listFiles(root, prefix = "") {
+  let entries;
+  try {
+    entries = readdirSync(path.join(root, prefix));
+  } catch {
+    return [];
   }
-  return null;
+  return entries.flatMap((entry) => {
+    const rel = prefix ? `${prefix}/${entry}` : entry;
+    return statSync(path.join(root, rel)).isDirectory() ? listFiles(root, rel) : [rel];
+  });
 }

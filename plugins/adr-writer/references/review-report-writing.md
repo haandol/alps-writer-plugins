@@ -26,12 +26,30 @@ Keep the most important finding visible. Never lose exact values, allowed
 states, permissions, ordering, units, test results, or an unverified axis when
 summarizing. Review-only work stays review-only.
 
+Leave out praise, scene-setting, a restatement of the request, unsupported
+generalities, future speculation, repeated conclusions, findings or evidence, and
+empty headings. Do not let repeated contrast templates, one-off ornamental
+English labels, forced first/second/third structure or filler bridges (`the key
+is`/`핵심은`, `what matters is`/`중요한 것은`, `ultimately`/`결국`) stand in for
+logical structure, and do not restate adjacent prose in a table, diagram,
+blockquote or bold sentence. These are rewrite signals, not banned words.
+
 ## Select the owning explanation contract
 
 - **Document review and sync:** explain the decision, contract, rationale and
   missing or conflicting evidence. Keep document-only limits explicit; sync
-  retains its semantic diff and repository/local-execution boundary. Use the
-  common diagram guidance when relationships need explanation.
+  retains its semantic diff and repository/local-execution boundary. Include the
+  smallest grounded Mermaid when the result has three or more participants,
+  steps, states or ADR relationships; a system boundary, a dependency or a
+  conflict between ADRs; a state transition, failure, retry, rollback or
+  fallback; or a before/after meaning the reader would otherwise reassemble from
+  prose. Prefer `sequenceDiagram` for request and event flow, `stateDiagram-v2`
+  for states, `flowchart` for branches, dependencies and conflicts, and
+  `erDiagram` for data relations. Follow each diagram with one `Notice:`
+  sentence naming what the reader should verify. A single-ADR PASS that one or
+  two sentences explain gets no diagram. Never add a participant or relation the
+  evidence does not establish; name the unverified axis in text instead. The
+  prose must remain reviewable when Mermaid does not render.
 - **Rollup:** clear chains may use contract tables and summaries. Expand into
   candidate-local views only when ownership, partial replacement, cycles or
   reference changes need them. Do not add whole-system discovery for a report.
@@ -55,6 +73,7 @@ structured omission reason when none helps. Similar filenames or technologies
 are not a basis for comparison.
 
 General diagram selection, source fidelity, print styling, quiz disclosure and
-requested-versus-default verification live in the common report modules. Only
-the implementation-review native format requires `Notice:` and its associated
-diagram IDs; do not impose that adapter syntax on every kind of report.
+requested-versus-default verification live in the common report modules. The
+document review and sync templates use one `Notice:` line as the takeaway after
+their diagram; only the implementation-review native format pairs `Notice:` with
+diagram IDs. Do not impose that adapter syntax on other kinds of report.

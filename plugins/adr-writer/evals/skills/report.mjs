@@ -36,16 +36,21 @@ const groups = [
     "제품 계약",
     "계약 이전",
     "업무 경계와 승인",
-    ["feature-handoff-preserves-", "feature-handoff-delegation-"],
+    ["feature-handoff-preserves-", "feature-handoff-delegation-", "feature-handoff-routes-model-"],
   ],
   ["결정 관리", "작성", "요구사항", ["author-keeps-", "author-rejects-", "author-self-"]],
   [
     "결정 관리",
     "작성",
     "소유권과 승인",
-    ["author-delegation-", "author-routes-", "author-review-"],
+    ["author-delegation-", "author-routes-", "author-review-", "author-defers-model-"],
   ],
-  ["결정 관리", "작성", "업무 경계", ["author-groups-", "author-discovers-"]],
+  [
+    "결정 관리",
+    "작성",
+    "업무 경계",
+    ["author-groups-", "author-discovers-", "author-checks-business-"],
+  ],
   ["결정 관리", "작성", "기존 프로젝트", ["import-"]],
   ["결정 관리", "문서 검토", "요구사항 보존", ["review-catches-", "review-requirement-"]],
   [
@@ -63,6 +68,7 @@ const groups = [
   ["결정 관리", "동기화와 통합", "표현과 검증", ["sync-rewrites-", "sync-stays-"]],
   ["결정 관리", "동기화와 통합", "통합 범위", ["rollup-"]],
   ["결정 관리", "동기화와 통합", "세션 분류", ["hook-"]],
+  ["결정 관리", "업무 온톨로지", ["ontology-"]],
   ["구현 보장", "의존성과 계획", "선행 상태와 계획", ["impl-blocks-", "impl-plans-"]],
   ["구현 보장", "의존성과 계획", "의도와 기본값 판단", ["impl-resolves-", "impl-uses-intent-"]],
   [
@@ -71,7 +77,7 @@ const groups = [
     "사전 검증과 완료",
     ["impl-completes-", "impl-requires-", "impl-provability"],
   ],
-  ["구현 보장", "완료와 검증", "평가와 증거", ["impl-distinguishes-"]],
+  ["구현 보장", "완료와 검증", "평가와 증거", ["impl-distinguishes-", "impl-reports-business-"]],
   ["구현 보장", "규모와 전달", ["impl-high-", "impl-offers-"]],
   ["구현 보장", "실행 수단", ["refactor-", "bedrock-"]],
   [

@@ -39,7 +39,6 @@ export function featureBoundaryScenario(product = false) {
         text: "A is monorepo plus microservices, B is a single-repository monolith, but both retain ordering and billing contexts and vertical user stories. Do not group by frontend/backend/database or make each service a context. C has no invented UI. D is partial evidence, never a claim of complete multirepo inspection. Preserve the caller's document resolution and ask no already-resolved domain classification question. In handoff, E reuses confirmed ownership, F proposes a grounded missing grouping, and G retains the ownership conflict pending user judgment.",
       },
     ],
-    score,
     deterministicScore(input) {
       return [...responseChecks(input, {}), ...score(input)];
     },

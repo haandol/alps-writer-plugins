@@ -7,7 +7,7 @@
 // Proposed→Accepted Status flip in BOTH the body and the index — are all
 // deterministic, and scripts/adr-structure-lint.mjs is the oracle for "were
 // they emitted correctly?". These helpers reproduce those artifacts step by
-// step so lifecycle.test.mjs can drive the full author→implement flow and
+// step so the lifecycle tests can drive the full author→implement flow and
 // assert the harness stays green, then prove each step is load-bearing (skip
 // one → the harness goes red).
 //

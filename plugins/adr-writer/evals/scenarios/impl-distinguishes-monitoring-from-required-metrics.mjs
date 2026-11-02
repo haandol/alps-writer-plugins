@@ -44,7 +44,6 @@ export default {
     "Optional tension signals never become blanket gates, while required violations and manipulated comparisons cannot pass.",
   obligations,
   deterministicScore,
-  score: deterministicScore,
   build() {
     return [
       skillText("adr-impl", {

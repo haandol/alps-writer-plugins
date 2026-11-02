@@ -18,6 +18,10 @@
 // It shells out to adr-invariants.sh (unless --no-invariants) so a single run
 // covers reverse references too, folding that exit code into the aggregate.
 //
+// A category's `realizes` entries name business ontology steps. This lint
+// checks only their shape; Ontology Writer's `ontology validate` checks them
+// against the model, which this plugin does not read.
+//
 // Usage:
 //   node adr-structure-lint.mjs [--adr-dir docs/adr] [category] [--json]
 //                               [--no-invariants | --documents-only] [--warn-as-error]
@@ -52,7 +56,8 @@ import {
   codeRefHits,
   constantAssignmentHits,
   validateMappingShape,
-  sectionRange,
+  bodyStatus,
+  isAdrFile,
   numberingGaps,
   rulesVersion,
   compareVersions,
@@ -151,9 +156,6 @@ function findFiles(root, matches) {
   return out.sort();
 }
 
-// docs/adr/**/NNNN-*.md — the ADRs themselves.
-const isAdrFile = (name) => /^[0-9]{4}-.*\.md$/.test(name);
-
 // The per-category decision-log.md. Matched separately from an ADR so the log is
 // never treated as one (it stays out of the index, numbering, orphan and per-ADR
 // section checks) — the only thing checked is that its ADR pointers still
@@ -223,7 +225,7 @@ function main() {
   const mappedStatusByPath = new Map();
   if (mapping?.categories) {
     for (const entry of Object.values(mapping.categories))
-      for (const rec of entry?.adrs || []) {
+      for (const rec of Array.isArray(entry?.adrs) ? entry.adrs : []) {
         const p = rec && typeof rec === "object" ? rec.path : rec;
         if (typeof p === "string" && p) {
           mappedAdrs.add(p);
@@ -299,10 +301,10 @@ function main() {
     // status is the single ADR-status index (README has none), so it must
     // mirror the body's ## Status line — adr-impl/adr-sync update both in
     // lockstep. A mismatch means the index went stale.
-    const statusSec = sectionRange(body, (h) => h.text.trim() === "Status");
-    if (!statusSec) rep.error("status-missing", where, "no ## Status section");
+    const status = bodyStatus(body);
+    if (!status.present) rep.error("status-missing", where, "no ## Status section");
     else {
-      const val = firstNonEmpty(statusSec.lines, statusSec.start + 1, statusSec.end);
+      const val = status.value;
       const st = classifyStatus(val);
       if (!st.ok)
         rep.error("status-enum", where, `Status "${val ?? ""}" — ${statusReason(st.reason)}`);
@@ -375,7 +377,7 @@ function main() {
   // ── mapping→disk: every adrs[] path exists ────────────────────────────
   if (mapping?.categories) {
     for (const [key, entry] of Object.entries(mapping.categories)) {
-      for (const rec of entry?.adrs || []) {
+      for (const rec of Array.isArray(entry?.adrs) ? entry.adrs : []) {
         const a = rec && typeof rec === "object" ? rec.path : rec;
         if (typeof a !== "string" || !a) continue; // shape errors already reported
         if (opts.category && !(key === opts.category || key.startsWith(opts.category + "/")))
@@ -583,14 +585,6 @@ function escapeRe(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function firstNonEmpty(lines, start, end) {
-  for (let i = start; i < end; i++) {
-    const t = lines[i].trim();
-    if (t) return t;
-  }
-  return null;
-}
-
 function filenameMsg(fn) {
   const map = {
     "stale-fN-prefix":
@@ -644,7 +638,8 @@ function finish(rep, opts, note) {
       lines.push(`\n✓ no errors${rep.warns.length ? ` (${rep.warns.length} warning(s))` : ""}`);
     process.stdout.write(lines.join("\n") + "\n");
   }
-  process.exit(failed ? 1 : 0);
+  // The exit code, not an exit: a pipe still receiving the report would be cut off.
+  process.exitCode = failed ? 1 : 0;
 }
 
 main();

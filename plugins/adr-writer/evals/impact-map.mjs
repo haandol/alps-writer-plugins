@@ -34,6 +34,23 @@ export const IMPACT_RULES = [
     scenarioPrefixes: ["author-", "alps-", "lite-alps-", "feature-handoff-", "import-"],
   },
   {
+    pathPrefixes: [
+      "plugins/adr-writer/references/business-context.md",
+      "plugins/ontology-writer/references/ontology.md",
+      "plugins/ontology-writer/scripts/ontology",
+      "plugins/ontology-writer/templates/ontology/",
+    ],
+    scenarioPrefixes: ["author-checks-business-", "impl-reports-business-", "ontology-"],
+  },
+  {
+    pathPrefixes: ["plugins/ontology-writer/skills/ontology-"],
+    scenarioPrefixes: ["ontology-"],
+  },
+  {
+    pathPrefixes: ["plugins/adr-writer/references/glossary.md"],
+    scenarioPrefixes: ["author-defers-model-owned-", "feature-handoff-routes-model-owned-"],
+  },
+  {
     pathPrefixes: ["plugins/adr-writer/references/decision-questions.md"],
     scenarioPrefixes: ["sync-", "rollup-", "import-"],
   },
@@ -66,6 +83,7 @@ export const IMPACT_RULES = [
       "plugins/adr-writer/templates/adr/",
       "plugins/adr-writer/evals/lib/",
       "plugins/adr-writer/evals/run.mjs",
+      "plugins/adr-writer/evals/regression/tool-config.mjs",
       "plugins/adr-writer/evals/impact-map.mjs",
       "plugins/adr-writer/scripts/adr-lint-lib.mjs",
     ],

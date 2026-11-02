@@ -3,10 +3,13 @@
 //
 // startup/resume/clear/compact cover the points where session context is created
 // or replaced without adding noise to every user prompt. The model reads the ADR
-// index only after a request passes the admission gate.
+// index only after a request passes the admission gate. When the repository also
+// has a business ontology, one line says that its business context is checked
+// through Ontology Writer; this plugin never reads the model, and neither the model
+// nor the index content is rendered.
 
 import path from "node:path";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, realpathSync, statSync } from "node:fs";
 
 const MAPPING_PATH = process.env.ALPS_ADR_MAPPING || "docs/adr/.mapping.json";
 
@@ -26,6 +29,40 @@ function loadJSON(p) {
   } catch {
     return null;
   }
+}
+
+/**
+ * Whether `dir` holds a business ontology document: a `.ttl` file at any depth,
+ * outside hidden entries, the way Ontology Writer finds model documents.
+ */
+function hasModelDocument(dir, seen = new Set()) {
+  try {
+    const real = realpathSync(dir);
+    if (seen.has(real)) return false;
+    seen.add(real);
+  } catch {
+    return false;
+  }
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return false;
+  }
+  for (const e of entries) {
+    if (e.name.startsWith(".")) continue;
+    const full = path.join(dir, e.name);
+    let isDir = e.isDirectory();
+    if (e.isSymbolicLink()) {
+      try {
+        isDir = statSync(full).isDirectory();
+      } catch {
+        isDir = false;
+      }
+    }
+    if (isDir ? hasModelDocument(full, seen) : e.name.endsWith(".ttl")) return true;
+  }
+  return false;
 }
 
 function main() {
@@ -66,12 +103,18 @@ function main() {
     "Confirm a new or changed ADR contract once before implementation. Use risk-proportional review and auto-repair evidence-backed code/test findings. Escalate changed contracts, contradictions, unverified material risk or destructive scope.",
     "Use /adr-sync for proven drift, broad refactors, manual ADR edits, or audits; else use targeted checks and risk-selected review.",
     "Constrain artifacts and actions, not private reasoning. Choose orchestration from current capability; persist none.",
-  ].join("\n");
+  ];
+  // The business ontology sits above ADRs. Ontology Writer owns it and its
+  // query; without that plugin the context goes unchecked, and the work says so.
+  if (hasModelDocument(path.join(path.dirname(path.dirname(mappingFile)), "ontology")))
+    directive.push(
+      "Business ontology present: check business context through the Ontology Writer plugin before an ADR decision or contract changes; if it is unavailable, state that the business context was not checked.",
+    );
 
   const out = {
     hookSpecificOutput: {
       hookEventName: "SessionStart",
-      additionalContext: directive,
+      additionalContext: directive.join("\n"),
     },
   };
   process.stdout.write(JSON.stringify(out) + "\n");

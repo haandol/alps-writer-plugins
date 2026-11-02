@@ -36,6 +36,8 @@ const MANIFESTS = [
   "plugins/adr-writer/.codex-plugin/plugin.json",
   "plugins/alps-writer/.claude-plugin/plugin.json",
   "plugins/alps-writer/.codex-plugin/plugin.json",
+  "plugins/ontology-writer/.claude-plugin/plugin.json",
+  "plugins/ontology-writer/.codex-plugin/plugin.json",
 ];
 
 // The marketplace catalog: metadata.version plus one version per plugin entry.

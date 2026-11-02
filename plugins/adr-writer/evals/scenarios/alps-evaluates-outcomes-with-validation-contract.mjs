@@ -27,7 +27,6 @@ export default {
     "Evaluation rubrics preserve exact rules and evidence while separating code checks from uncertain semantic judgments.",
   obligations,
   deterministicScore,
-  score: deterministicScore,
   build() {
     return [
       alpsSkillText("alps-init", { references: ["references/outcome-evaluation.md"] }),

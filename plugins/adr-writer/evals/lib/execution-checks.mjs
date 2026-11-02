@@ -4,13 +4,26 @@ import { confined, createWorkspace, snapshot, makeTools } from "../regression/wo
 import { writableCapture } from "../skills/mechanical-checks.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 
-function restore(root, files) {
+/** Restore only recorded bytes inside a fresh check workspace; never execute captured commands. */
+export function restore(root, files) {
   for (const [file, bytes] of Object.entries(files)) {
     if (typeof bytes !== "string") throw new Error("Captured file content must be text");
     const target = confined(root, file);
     mkdirSync(path.dirname(target), { recursive: true });
     writeFileSync(target, bytes);
   }
+}
+
+/** Run the mandatory final verifiers on an execution workspace; live capture and rejudge share them. */
+export function finalChecks(tools) {
+  return ["policy-tests", "structure"].map((kind) => {
+    const result = tools.call("run_check", { kind });
+    return {
+      label: `final ${kind}`,
+      pass: result.exitCode === 0,
+      detail: result.stdout + result.stderr,
+    };
+  });
 }
 
 /** Re-run trusted current execution verifiers on captured documents, never captured executable code. */
@@ -41,14 +54,7 @@ export function executionChecks(root, item, currentCase, evidence, pluginRoot) {
     turn: evidence.turns.length,
     artifactPaths: item.artifactPaths,
   });
-  const checks = ["policy-tests", "structure"].map((kind) => {
-    const result = tools.call("run_check", { kind });
-    return {
-      label: `final ${kind}`,
-      pass: result.exitCode === 0,
-      detail: result.stdout + result.stderr,
-    };
-  });
+  const checks = finalChecks(tools);
   if (currentCase.verifyEvidence) checks.push(...currentCase.verifyEvidence(evidence));
   return checks;
 }

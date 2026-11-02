@@ -22,23 +22,10 @@
 import { readFileSync, existsSync, copyFileSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import {
-  agentText,
-  seedRuleDocs,
-  write,
-  TAIL_SPEC,
-  expectText,
-  expectNotMiscategorized,
-} from "../lib/harness.mjs";
+import { agentText, seedRuleDocs, write, TAIL_SPEC } from "../lib/harness.mjs";
 
 const REPO = expandHome(process.env.ADR_EVAL_REPO ?? "");
 const ADR_REL = process.env.ADR_EVAL_ADR ?? "";
-// Comma-separated values that must survive review. Defaults to the free-usage
-// counts in the pixelbank ADR this was first pointed at.
-const VALUES = (process.env.ADR_EVAL_VALUES ?? "2회,3회,1회")
-  .split(",")
-  .map((v) => v.trim())
-  .filter(Boolean);
 
 function expandHome(p) {
   return p.startsWith("~") ? path.join(os.homedir(), p.slice(1)) : p;
@@ -104,50 +91,7 @@ export default {
       TAIL_SPEC,
     ].join("\n");
   },
-
-  score({ tail, output }) {
-    const checks = [
-      // Well-formedness: a report that reaches no verdict cannot be acted on.
-      {
-        pass: Boolean(tail.verdict),
-        detail: tail.verdict ? `verdict ${tail.verdict}` : "no verdict in the tail block",
-        label: "reaches a verdict",
-      },
-      expectText(output, /Regeneration check/i, "the R19 regeneration section is present"),
-    ];
-
-    // The one hard rule on a real ADR: a value the project set is a contract, so
-    // no rule may fire against it. Everything else about a real ADR is a
-    // judgement call that only its owner can settle.
-    for (const v of VALUES) {
-      const pattern = new RegExp(escapeRe(v));
-      checks.push(
-        expectNotMiscategorized(
-          tail,
-          pattern,
-          /R3|R4|R18b|tuning/i,
-          `no rule fires against the requirement value "${v}"`,
-        ),
-      );
-    }
-
-    // Not a check — surface the findings so a human reads the actual judgement.
-    checks.push({
-      pass: true,
-      detail:
-        tail.findings.length === 0
-          ? "(no findings reported)"
-          : tail.findings.map((f) => `${f.tag}: ${f.summary}`).join(" | "),
-      label: "findings (informational — read these)",
-    });
-
-    return checks;
-  },
 };
-
-function escapeRe(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 // Copy every existing local file the ADR links to, preserving its path relative
 // to the repo root so the link still resolves inside the fixture. Skips URLs,

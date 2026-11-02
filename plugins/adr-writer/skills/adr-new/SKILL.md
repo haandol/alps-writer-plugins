@@ -14,11 +14,17 @@ topology, then use bounded contexts and vertical user stories by default.
 
 Author an ADR directly. Works without an ALPS PRD — this is the plugin's canonical ADR authoring path, while `/feature-to-adr` is "the helper that auto-converts an ALPS Section 7 feature when one already exists."
 
-When qualifying jargon or an unclear acronym appears, read
+When qualifying jargon or an unclear acronym appears — or, where `docs/ontology/`
+holds Turtle documents, a business term the ADR defines or relies on — read
 `${CLAUDE_PLUGIN_ROOT}/references/glossary.md`. Require a clear user meaning,
 reuse supplied definitions, and create or update `docs/adr/glossary.md` only when
 needed under the current ADR approval. Keep the decision and requirement contract
 self-contained in the ADR; glossary work adds no separate classification interview.
+
+When `docs/ontology/` holds Turtle documents, read
+`${CLAUDE_PLUGIN_ROOT}/references/business-context.md` before eliciting or
+drafting: query the feature's business context, judge an unlinked feature, and
+name what you checked in the approval summary. Without them, skip it.
 
 > When to use: whenever a decision passes the **ADR admission gate** and must be recorded before changing code — a requirement contract, external boundary, data/key design, security trust boundary, adopted algorithm, fallback policy, or durable trade-off. A replaceable implementation means does not enter this skill. The ADR you write can go straight into `/adr-impl`.
 >
@@ -111,7 +117,7 @@ Establish the following from the request, supplied sources, and existing context
    **Optional:** `subdomainType` (core/supporting/generic) remains advisory; skip
    that metadata question when unknown, without skipping the context itself.
 
-If the user answers everything at once, take it as given; if they answer briefly, break it into one or two rounds. If they say they do not know, do not guess — agree on "shall we leave this blank, save as Proposed, and fill it in during /adr-impl?"
+If the user answers everything at once, take it as given; if they answer briefly, break it into one or two rounds. If they say they do not know, do not guess. A requirement value or rule, an acceptance criterion, or a contract-affecting assumption stays visibly unresolved in the draft and blocks approval of the contract that depends on it; never save it blank to fill in during `/adr-impl`. Only a row pending on an upper-level business change may remain in an approved revision. Other missing information, such as an alternative nobody recalls, may stay out with the user's agreement.
 
 ### 3–5. Draft the ADR and index
 

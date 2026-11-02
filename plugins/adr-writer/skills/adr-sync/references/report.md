@@ -36,6 +36,7 @@ Notice: <the decision, dependency, or unresolved branch the reader should verify
   - Requirement contract: <Changed: exact values/rules | Unchanged | Unverified>
   - Decision Drivers: <Changed: old pressure → current pressure | Unchanged | Unverified>
   - Consequences: <Changed: old risk/trade-off → current risk/trade-off | Unchanged | Unverified>
+  - Purpose intent: <Changed: old problem/outcome → current problem/outcome | Unverified; omit when unchanged>
 - [ADR <category>/NNNN: document cleanup] — removed evolution narration / rewrote in present tense: <what, and how>. Gray-zone decisions preserved: <rationale, alternatives>. (only for the ADRs affected)
 - [decision-log <category>] — major transitions harvested: <what>. (only when major narration was moved into the log)
 

@@ -12,22 +12,12 @@ import { evaluateEvidence, deepEvalInput } from "../deepeval/engine.mjs";
 import { catalog, PLUGIN } from "./catalog.mjs";
 import { capturedChecks } from "./mechanical-checks.mjs";
 import { confined, sha, listFiles } from "../regression/workspace.mjs";
-import { executionChecks } from "../lib/execution-checks.mjs";
+import { executionChecks, restore } from "../lib/execution-checks.mjs";
 import { saveSkillsReport } from "./report.mjs";
 
 const read = (file) => JSON.parse(readFileSync(file, "utf8"));
 const json = (root, file, data) =>
   writeFileSync(path.join(root, file), JSON.stringify(data, null, 2) + "\n");
-
-/** Restore only recorded bytes inside a fresh check workspace; never execute captured commands. */
-function restore(root, files) {
-  for (const [file, value] of Object.entries(files)) {
-    if (typeof value !== "string") throw new Error("Captured file content must be text");
-    const target = confined(root, file);
-    mkdirSync(path.dirname(target), { recursive: true });
-    writeFileSync(target, value);
-  }
-}
 
 /** Validate explicitly named native review artifacts without relying on natural-language success words. */
 export function nativeReviewChecks(root, item) {

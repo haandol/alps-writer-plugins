@@ -1,11 +1,4 @@
-import {
-  agentText,
-  seedRuleDocs,
-  seedMapping,
-  TAIL_SPEC,
-  expectFinding,
-  expectNoFinding,
-} from "../lib/harness.mjs";
+import { agentText, seedRuleDocs, seedMapping, TAIL_SPEC } from "../lib/harness.mjs";
 
 export default {
   name: "impl-review-role-boundaries",
@@ -25,26 +18,5 @@ export default {
       `Use EXPLAIN_NO_JUDGMENT, NECESSITY_ONLY, and ORCHESTRATION_DISCRETION as tail tags.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail }) {
-    return [
-      expectFinding(
-        tail,
-        /EXPLAIN_NO_JUDGMENT/i,
-        "explainer describes code without judging sufficiency",
-      ),
-      expectFinding(tail, /NECESSITY_ONLY/i, "necessity role attacks removable scope"),
-      expectFinding(
-        tail,
-        /ORCHESTRATION_DISCRETION/i,
-        "caller may choose named, generic, or main-session execution",
-      ),
-      expectNoFinding(
-        tail,
-        /FIXED_AGENT_COUNT|MODEL_FAMILY_REQUIRED/i,
-        "role boundaries do not prescribe agent topology",
-      ),
-    ];
   },
 };

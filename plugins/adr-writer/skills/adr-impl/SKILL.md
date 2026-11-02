@@ -11,8 +11,14 @@ argument-hint: "[adr-path-or-category]"
 Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Its absence is normal; preserve it as supporting material, not an indexed ADR.
 When this workflow permits ADR writing and a definition needs creation or change,
-apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
-boundary. Review-only work reports unclear or conflicting meanings without editing.
+or ADR content relies on a business term where `docs/ontology/` holds Turtle
+documents, apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing
+approval boundary. Review-only work reports unclear or conflicting meanings without editing.
+
+When `docs/ontology/` holds Turtle documents, read
+`${CLAUDE_PLUGIN_ROOT}/references/business-context.md` before planning an ADR
+change or code of a feature linked to a process step. Name the checked context in
+the plan; completion is judged by ADR rows only. Without them, skip it.
 
 Implements the specified ADR in code. Once implementation, tests, the verified refactor pass, and final implementation review pass, it automatically updates a `Proposed` target to `Accepted`; an existing `Accepted` target whose decision and requirement contract remain unchanged stays `Accepted` throughout. **If no ADR exists, apply the ADR admission gate first.** Write an ADR with `/adr-new <category>` only for a durable requirement or architectural decision; implement replaceable libraries, SDKs, frameworks, credential/auth wiring, and other code-level choices without creating one. If an ALPS Section 7 feature already exists, batch-convert with `/feature-to-adr`.
 
@@ -60,6 +66,7 @@ Implements the specified ADR in code. Once implementation, tests, the verified r
    - Use `references/implementation-hiking.md` to preserve each vertical Hill's cross-layer behavior and targeted ideal/edge evidence. Independent Hills may run in parallel or batches, or become the primary work unit while another verifies. Sequence actual prerequisites and shared-resource conflicts; never mark an unverified Hill complete.
    - Follow the behavior rules, state transitions, and integration methods stated in the ADR exactly. To implement something differently from the ADR, change the ADR first.
    - **Enforce the requirement values the ADR records, at face value** — do not arbitrarily change or "roughly approximate" limits, quotas, intervals, retention periods, ceilings, or targets; actually put in the code that enforces those values (ceiling checks, counters, expiry handling). **Non-numeric requirements are the same** — enforce exactly the allowed value sets, transition rules, mandatory-ness, permissions, visibility, ordering, uniqueness, and units that the ADR fixed (do not add a state that is not allowed, do not open a forbidden transition, and do not turn a required input into an optional one). Enum identifier names are at your discretion, but **the set and the transition rules are the contract**. If a reason arises to change a value, do not fix the code first — update the ADR first (a requirement value change is at minimum major, so also leave a one-line entry in `decision-log.md` — `authoring-rules.md` "What to log — minor vs major").
+   - **A contract row marked pending on an upper-level business change is not an approved contract** (`${CLAUDE_PLUGIN_ROOT}/references/glossary.md`). Do not implement it or count it as complete; implement the approved rows, report the pending row with the change it awaits, and keep the ADR `Proposed` until the row is resolved.
    - **Unspecified values below ADR resolution are implementation discretion** — after applying the requirement gate, choose connection pool size, backoff, cache TTL, worker count, and similar replaceable means to serve the recorded intent. Absence from the ADR alone does not make a product rule discretionary. Keep implementation values out of the ADR.
    - **Replaceable implementation means are implementation discretion too** — libraries, SDK clients, frameworks, middleware, module structure, credential provider chains, signers, and adapters remain in code when the same requirement contract, system/security boundaries, and trade-offs still hold. Choosing or replacing them does not create a new ADR and does not amend this one.
    - Material implementation choices are derived once from the final code by the sufficiency review and are never written into the ADR.

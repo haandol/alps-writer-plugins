@@ -12,6 +12,22 @@
 // gray-zone fidelity, R14 strawman nuance, R3, and R18's requirement-vs-tuning
 // call) stay with the reviewer — see agents/adr-reviewer.md.
 
+// ── process step identifiers ─────────────────────────────────────────────
+// A category's `realizes` entries name business ontology steps by the local
+// part of their identifier: a Turtle local name without escapes or ":". Ontology
+// Writer reads model identifiers with this same rule, from its copy of this file.
+const PN_CHARS_BASE =
+  "A-Za-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D" +
+  "\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD\\u{10000}-\\u{EFFFF}";
+const PN_CHARS_U = `${PN_CHARS_BASE}_`;
+const PN_CHARS = `${PN_CHARS_U}\\-0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040`;
+const LOCAL_ID_RE = new RegExp(`^[${PN_CHARS_U}0-9](?:[${PN_CHARS}.]*[${PN_CHARS}])?$`, "u");
+
+/** Whether `id` is an ontology element identifier: the local part after the model namespace. */
+export function isValidElementId(id) {
+  return typeof id === "string" && LOCAL_ID_RE.test(id);
+}
+
 // ── category-key shape ───────────────────────────────────────────────────
 // ≤2 lowercase-kebab segments (context or context/feature). Stricter than a
 // bare [a-z0-9-]+ : rejects leading/trailing hyphens and empty segments, and
@@ -49,6 +65,7 @@ export const KNOWN_ENTRY_FIELDS = new Set([
   "adrs",
   "dependsOn",
   "tableDocs",
+  "realizes",
 ]);
 
 // Recognized fields on an adrs[] index record (mapping.schema.json adrs.items).
@@ -279,6 +296,24 @@ export function sectionRange(body, pred) {
   return { start, end, lines, heading: heads[idx] };
 }
 
+/** An ADR file name: `NNNN-kebab-title.md`. */
+export const isAdrFile = (name) => /^[0-9]{4}-.*\.md$/.test(name);
+
+/**
+ * An ADR body's `## Status`: whether the section exists, and its first non-empty
+ * line (null when it has none). The structure lint and Ontology Writer read the
+ * Status the same way.
+ */
+export function bodyStatus(body) {
+  const section = sectionRange(body, (h) => h.text.trim() === "Status");
+  if (!section) return { present: false, value: null };
+  for (let i = section.start + 1; i < section.end; i++) {
+    const line = section.lines[i].trim();
+    if (line) return { present: true, value: line };
+  }
+  return { present: true, value: null };
+}
+
 // The alternatives heading, in either language. Harness prompts and rule docs
 // are English, but an ADR body follows the language the user writes in
 // (authoring-rules "Conventions"), so a Korean-authored ADR titles this section
@@ -357,8 +392,11 @@ const SRC_EXT = "tsx?|jsx?|go|py|java|rb|rs|c|cc|cpp|h|hpp|cs|kt|swift|php|scala
 export function codeRefHits(body) {
   const all = body.split(/\r?\n/);
   const hits = [];
-  const pathRe = new RegExp(`[\\w./-]+\\.(?:${SRC_EXT})\\b`);
-  const lineCiteRe = /[\w./-]+\.[a-z0-9]+:[0-9]+/;
+  // A match that starts inside a run of path characters also matches from the
+  // run's first character, so starting only there keeps every hit while each run
+  // is scanned once instead of once per character.
+  const pathRe = new RegExp(`(?<![\\w./-])[\\w./-]+\\.(?:${SRC_EXT})\\b`);
+  const lineCiteRe = /(?<![\w./-])[\w./-]+\.[a-z0-9]+:[0-9]+/;
   all.forEach((line, i) => {
     // Skip markdown-link targets pointing at .md (Related/table docs are allowed).
     const stripped = line.replace(/\([^)]*\.md[^)]*\)/g, "");
@@ -537,6 +575,23 @@ export function validateMappingShape(mapping) {
     }
     if ("tableDocs" in entry && !Array.isArray(entry.tableDocs))
       err("tabledocs-not-array", `category "${key}": "tableDocs" is not an array`);
+    // realizes: the business ontology steps this category realizes. Ontology
+    // Writer checks its targets against the model; here only the shape. An empty
+    // list is a confirmed "realizes no step" record.
+    if ("realizes" in entry) {
+      if (!Array.isArray(entry.realizes))
+        err("realizes-not-array", `category "${key}": "realizes" is not an array`);
+      else {
+        if (new Set(entry.realizes).size !== entry.realizes.length)
+          err("realizes-dup", `category "${key}": duplicate realizes entries`);
+        for (const id of entry.realizes)
+          if (!isValidElementId(id))
+            err(
+              "realizes-item",
+              `category "${key}": realizes item ${JSON.stringify(id)} is not a process step identifier`,
+            );
+      }
+    }
     for (const f of Object.keys(entry))
       if (!KNOWN_ENTRY_FIELDS.has(f))
         warn("unknown-field", `category "${key}": unknown field "${f}" (typo? silently ignored)`);

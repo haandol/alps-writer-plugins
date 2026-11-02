@@ -95,13 +95,27 @@ ADR_DIR="${ADR_DIR%/}"
 found=0
 CODE_IGNORE_FILE=".adr-invariants-code-ignore"
 
+# The ignore entries, read on the first lookup rather than once per hit: a
+# self-hosting repository reports hundreds of hits, and the lookups run in this
+# shell, so the list survives between them.
+CODE_IGNORE_ENTRIES=()
+CODE_IGNORE_LOADED=0
 code_path_ignored() { # $1=repo-relative file path
   local file="${1#./}" entry
-  [ -f "$CODE_IGNORE_FILE" ] || return 1
-  while IFS= read -r entry || [ -n "$entry" ]; do
-    entry="${entry#./}"
+  if [ "$CODE_IGNORE_LOADED" -eq 0 ]; then
+    CODE_IGNORE_LOADED=1
+    if [ -f "$CODE_IGNORE_FILE" ]; then
+      while IFS= read -r entry || [ -n "$entry" ]; do
+        entry="${entry#./}"
+        case "$entry" in
+          ""|\#*) continue ;;
+        esac
+        CODE_IGNORE_ENTRIES+=("$entry")
+      done < "$CODE_IGNORE_FILE"
+    fi
+  fi
+  for entry in ${CODE_IGNORE_ENTRIES[@]+"${CODE_IGNORE_ENTRIES[@]}"}; do
     case "$entry" in
-      ""|\#*) continue ;;
       */)
         case "$file" in
           "$entry"*) return 0 ;;
@@ -111,7 +125,7 @@ code_path_ignored() { # $1=repo-relative file path
         [ "$file" = "$entry" ] && return 0
         ;;
     esac
-  done < "$CODE_IGNORE_FILE"
+  done
   return 1
 }
 
@@ -288,7 +302,9 @@ if [ "$RUN_CODE" -eq 1 ]; then
   # `-vE "(^|/)${ADR_DIR}/"` also matched the pattern in the CONTENT field, so a
   # genuine code→ADR ref whose text merely contains "docs/adr/" (e.g. a comment
   # "see ../docs/adr/identity/login/0001.md") was silently dropped.
-  hits=""
+  # Kept hits are printed as they are found, after one header: appending them
+  # to a string first costs time quadratic in the number of hits.
+  header=0
   if [ -n "$raw" ]; then
     while IFS= read -r line; do
       file="${line%%:*}"
@@ -296,13 +312,13 @@ if [ "$RUN_CODE" -eq 1 ]; then
         "$ADR_DIR"/*|"./$ADR_DIR"/*) continue ;;
       esac
       code_path_ignored "$file" && continue
-      hits="${hits}${hits:+$'\n'}${line}"
+      if [ "$header" -eq 0 ]; then
+        echo "✗ (a) code → ADR reverse references (remove from code; link lives in .mapping.json):"
+        header=1
+        found=1
+      fi
+      printf '%s\n' "$line"
     done <<< "$raw"
-  fi
-  if [ -n "$hits" ]; then
-    echo "✗ (a) code → ADR reverse references (remove from code; link lives in .mapping.json):"
-    printf '%s\n' "$hits"
-    found=1
   fi
 fi
 

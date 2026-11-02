@@ -14,20 +14,10 @@ import { STAMPED_RULE_DOCS } from "../../scripts/adr-lint-lib.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PLUGIN_ROOT = path.resolve(HERE, "..", "..");
 export const ALPS_PLUGIN_ROOT = path.resolve(PLUGIN_ROOT, "..", "alps-writer");
+export const ONTOLOGY_PLUGIN_ROOT = path.resolve(PLUGIN_ROOT, "..", "ontology-writer");
 export const TEMPLATES = path.join(PLUGIN_ROOT, "templates", "adr");
 export const STRUCTURE_LINT = path.join(PLUGIN_ROOT, "scripts", "adr-structure-lint.mjs");
 export const ADR_HOOK = path.join(PLUGIN_ROOT, "hooks", "surface-adr-context.mjs");
-export const IMPL_REVIEW_VALIDATE = path.join(
-  PLUGIN_ROOT,
-  "scripts",
-  "adr-impl-review-validate.mjs",
-);
-export const IMPL_REVIEW_MATERIALIZE = path.join(
-  PLUGIN_ROOT,
-  "scripts",
-  "adr-impl-review-materialize.mjs",
-);
-export const IMPL_REVIEW_REPORT = path.join(PLUGIN_ROOT, "scripts", "adr-impl-review-report.mjs");
 
 // The seeded rule docs a real repo holds. Fixtures get the real files, not
 // stubs — several rules are only judgeable against them, and a scenario that
@@ -65,84 +55,39 @@ export function seedMapping(dir, mapping = { categories: {} }) {
   write(dir, "docs/adr/.mapping.json", JSON.stringify(mapping, null, 2) + "\n");
 }
 
-export function validateReviewArtifact(dir, report, findings) {
-  const artifactDir = path.join(dir, "review-artifact");
-  const reportPath = write(artifactDir, "implementation-review.md", report);
-  const explanationPath = write(
-    artifactDir,
-    "explanation.md",
-    `# Implementation explanation
-
-## Context
-The implementation must preserve the reviewed ADR decision and contract. The supplied scenario defines the surrounding conditions, contract baseline, scope, and verification limits.
-
-## The reviewed behavior reaches its observable result
-The verified path follows the supplied evidence and tests through the contract boundary.
-
-## Failure remains inside the decided boundary
-The scenario evidence identifies the relevant failure result without inventing another flow.
-`,
-  );
-  const atAGlance = {};
-  for (const field of ["impact", "action", "risk"]) {
-    const match = report.match(new RegExp(`^[-*]\\s+${field}:\\s*(.+)$`, "im"));
-    atAGlance[field] = match?.[1]?.trim() || "";
-  }
-  const findingsPath = write(
-    artifactDir,
-    "findings.json",
-    JSON.stringify(
-      {
-        ...findings,
-        atAGlance: findings.atAGlance ?? atAGlance,
-        report: reportPath,
-        explanation: explanationPath,
-      },
-      null,
-      2,
-    ) + "\n",
-  );
-  const materialized = spawnSync(process.execPath, [IMPL_REVIEW_MATERIALIZE, artifactDir], {
-    cwd: dir,
-    encoding: "utf8",
-  });
-  if (materialized.status !== 0) {
-    return {
-      pass: false,
-      detail: materialized.stderr.trim() || materialized.stdout.trim() || "materializer failed",
-    };
-  }
-  const validation = spawnSync(process.execPath, [IMPL_REVIEW_VALIDATE, artifactDir], {
-    cwd: dir,
-    encoding: "utf8",
-  });
-  if (validation.status !== 0) {
-    return {
-      pass: false,
-      detail: validation.stderr.trim() || validation.stdout.trim() || "validator failed",
-    };
-  }
-
-  const rendered = spawnSync(process.execPath, [IMPL_REVIEW_REPORT, findingsPath, "--stdout"], {
-    cwd: dir,
-    encoding: "utf8",
-    maxBuffer: 12 * 1024 * 1024,
-  });
-  return {
-    pass: rendered.status === 0,
-    detail:
-      rendered.status === 0
-        ? "artifact validator and HTML renderer passed"
-        : rendered.stderr.trim() || "HTML renderer failed",
-    html: rendered.stdout,
-    report: read(artifactDir, "implementation-review.md"),
-  };
+/**
+ * Write a minimal, lint-clean ADR for every indexed path a scenario does not
+ * supply itself, so a fixture's index never points at a missing file.
+ */
+export function seedIndexedAdrs(dir, mapping, supplied = {}) {
+  for (const entry of Object.values(mapping.categories ?? {}))
+    for (const rec of entry.adrs ?? []) {
+      if (supplied[rec.path]) {
+        write(dir, rec.path, supplied[rec.path]);
+        continue;
+      }
+      const number = path.basename(rec.path).slice(0, 4);
+      const title = rec.summary ?? "recorded decision";
+      write(
+        dir,
+        rec.path,
+        `# ADR ${number}: ${title}\n\nDate: 2026-10-01\n\n## Status\n\n${rec.status}\n\n## Purpose\n\nThe feature needs a recorded decision.\n\n## Decision Drivers\n\n- Customers see consistent results.\n- Support can explain each result.\n- The rule stays stable across releases.\n\n## Decision\n\n${title}.\n\n## Alternatives\n\n1. **Leave it undecided** — rejected; results would vary.\n\n## Consequences\n\n### Positive\n\n- Results are consistent.\n`,
+      );
+    }
 }
 
 // The instruction text of a real skill or agent, minus its YAML frontmatter
 // (the frontmatter is client registration metadata, not instructions).
 export function skillText(name, options = {}) {
   return promptText(path.join(PLUGIN_ROOT, "skills", name, "SKILL.md"), PLUGIN_ROOT, options);
+}
+
+export function ontologySkillText(name, options = {}) {
+  return promptText(
+    path.join(ONTOLOGY_PLUGIN_ROOT, "skills", name, "SKILL.md"),
+    ONTOLOGY_PLUGIN_ROOT,
+    options,
+  );
 }
 
 export function alpsSkillText(name, options = {}) {
@@ -355,48 +300,6 @@ export function parseTail(output) {
 // ── scoring helpers ───────────────────────────────────────────────────────
 // Each returns {pass, detail} so a failing check explains itself without the
 // reader opening the transcript.
-
-export function findingMatching(tail, tagPattern) {
-  return tail.findings.filter((f) => tagPattern.test(f.tag));
-}
-
-export function expectFinding(tail, tagPattern, label) {
-  const hits = findingMatching(tail, tagPattern);
-  return {
-    pass: hits.length > 0,
-    detail: hits.length
-      ? hits.map((h) => `${h.tag} | ${h.summary}`).join(" ; ")
-      : `no finding tagged ${tagPattern} (saw: ${tail.findings.map((f) => f.tag).join(", ") || "none"})`,
-    label,
-  };
-}
-
-export function expectNoFinding(tail, tagPattern, label) {
-  const hits = findingMatching(tail, tagPattern);
-  return {
-    pass: hits.length === 0,
-    detail: hits.length
-      ? `unexpected: ${hits.map((h) => `${h.tag} | ${h.summary}`).join(" ; ")}`
-      : "absent, as required",
-    label,
-  };
-}
-
-// The miscategorization check this plugin cares most about: the right subject
-// filed under the wrong category. Scored on the finding line that mentions the
-// subject, so an unrelated finding with that category does not trip it.
-export function expectNotMiscategorized(tail, subjectPattern, wrongTagPattern, label) {
-  const bad = tail.findings.filter(
-    (f) => subjectPattern.test(`${f.tag} ${f.summary}`) && wrongTagPattern.test(f.tag),
-  );
-  return {
-    pass: bad.length === 0,
-    detail: bad.length
-      ? `filed under the wrong category: ${bad.map((h) => `${h.tag} | ${h.summary}`).join(" ; ")}`
-      : "not miscategorized",
-    label,
-  };
-}
 
 export function expectText(haystack, pattern, label) {
   const ok = pattern.test(haystack ?? "");

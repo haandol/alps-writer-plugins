@@ -4,6 +4,13 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const cache = new Map();
+const CACHE_LIMIT = 128;
+const PARSER = fileURLToPath(new URL("./vendor/mermaid-parser.mjs", import.meta.url));
+/** Keep one parse result, dropping the oldest beyond the limit. */
+function remember(source, parsed) {
+  if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value);
+  cache.set(source, parsed);
+}
 const esc = (value) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -38,11 +45,12 @@ export function normalizeDiagramType(type) {
 export function parseMermaid(source) {
   source = String(source ?? "");
   if (cache.has(source)) return cache.get(source);
-  const result = spawnSync(
-    process.execPath,
-    [fileURLToPath(new URL("./vendor/mermaid-parser.mjs", import.meta.url))],
-    { input: source, encoding: "utf8", timeout: 20000, maxBuffer: 8 * 1024 * 1024 },
-  );
+  const result = spawnSync(process.execPath, [PARSER], {
+    input: source,
+    encoding: "utf8",
+    timeout: 20000,
+    maxBuffer: 8 * 1024 * 1024,
+  });
   let parsed;
   try {
     if (result.error || result.status !== 0)
@@ -55,9 +63,40 @@ export function parseMermaid(source) {
   } catch (error) {
     parsed = { error: String(error.message).slice(0, 2000) };
   }
-  if (cache.size >= 128) cache.delete(cache.keys().next().value);
-  cache.set(source, parsed);
+  remember(source, parsed);
   return parsed;
+}
+
+/** Validate several sources with one parser process, so `parseMermaid` answers them from its
+ * cache. Upstream resets its configuration for every diagram it parses. A batch that fails or
+ * answers in another shape caches nothing, and each source is then parsed on its own.
+ */
+export function parseMermaidAll(sources) {
+  const fresh = [...new Set(sources.map((s) => String(s ?? "")))]
+    .filter((s) => !cache.has(s))
+    .slice(0, CACHE_LIMIT);
+  if (fresh.length < 2) return;
+  const result = spawnSync(process.execPath, [PARSER, "--batch"], {
+    input: JSON.stringify(fresh),
+    encoding: "utf8",
+    timeout: 20000,
+    maxBuffer: 8 * 1024 * 1024,
+  });
+  if (result.error || result.status !== 0) return;
+  let answers;
+  try {
+    answers = JSON.parse(result.stdout);
+  } catch {
+    return;
+  }
+  if (!Array.isArray(answers) || answers.length !== fresh.length) return;
+  for (const [i, source] of fresh.entries()) {
+    const parsed = answers[i];
+    // Cache only what a parse of its own would keep from the same answer.
+    if (parsed?.type) parsed.type = normalizeDiagramType(parsed.type);
+    else if (!parsed?.error) continue;
+    remember(source, parsed);
+  }
 }
 
 /** Preserve source until the official browser renderer has produced the SVG. */
@@ -75,6 +114,14 @@ export function renderMermaid(source, ui = {}) {
 
 /** Inline the pinned browser engine once per report, including all diagram modules.
  * Source is read as text. Strict mode disables authored callbacks and HTML execution.
+ * Figures are drawn one at a time and each announces itself with a bubbling
+ * `report-diagram-rendered` event. By default every figure is drawn and
+ * `reportDiagramsReady` settles with all of them. With `ui.lazy` a figure is drawn only
+ * when it comes near view (`ui.lazy.root` names the scrolling element, when it scrolls) or
+ * is asked for through `reportDiagramRender(figure)`; `reportDiagramsReady` then settles
+ * with the figures near view at load. `ui.lazy.ahead`, a CSS length, also draws the
+ * figures that close to view one at a time while the page is idle. A figure marked
+ * `data-draw="on-request"` is drawn only when asked for.
  */
 export function mermaidRuntime(ui = {}) {
   const engine = readFileSync(new URL("./vendor/mermaid.min.js", import.meta.url), "utf8").replace(
@@ -85,12 +132,17 @@ export function mermaidRuntime(ui = {}) {
     /</g,
     "\\u003c",
   );
+  const lazy = JSON.stringify(
+    ui.lazy ? { root: ui.lazy.root ?? null, ahead: ui.lazy.ahead ?? null } : null,
+  ).replace(/</g, "\\u003c");
   return `<script data-mermaid-engine>${engine}</script><script data-mermaid-runtime>
 window.reportDiagramsReady = (async () => {
   mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"default",flowchart:{htmlLabels:false},suppressErrorRendering:true});
   const figures = [...document.querySelectorAll('figure[data-mermaid]')];
   const results = [];
-  for (const [index, figure] of figures.entries()) {
+  const drawing = new Map();
+  let queue = Promise.resolve();
+  async function render(figure, index) {
     const source = figure.querySelector('.diagram-source code').textContent;
     const status = figure.querySelector('.diagram-status');
     try {
@@ -111,7 +163,72 @@ window.reportDiagramsReady = (async () => {
       status.textContent = ${failure} + ': ' + String(error.message || error);
       results.push({type:figure.dataset.diagramType,rendered:false,error:String(error.message || error)});
     }
+    figure.dispatchEvent(new CustomEvent('report-diagram-rendered', {bubbles: true}));
   }
+  // One figure at a time: Mermaid keeps page-wide state while it lays a diagram out.
+  const draw = (figure) => {
+    if (!drawing.has(figure)) {
+      queue = queue.then(() => render(figure, figures.indexOf(figure)));
+      drawing.set(figure, queue);
+    }
+    return drawing.get(figure);
+  };
+  const lazy = ${lazy};
+  if (!lazy) {
+    for (const figure of figures) await draw(figure);
+    return results;
+  }
+  window.reportDiagramRender = draw;
+  const scroller = lazy.root && document.querySelector(lazy.root);
+  const root = scroller && /auto|scroll/.test(getComputedStyle(scroller).overflowY) ? scroller : null;
+  const viewed = figures.filter((figure) => figure.dataset.draw !== 'on-request');
+  const near = await new Promise((resolve) => {
+    if (!viewed.length) return resolve([]);
+    const probe = new IntersectionObserver((entries) => {
+      probe.disconnect();
+      resolve(entries.filter((entry) => entry.isIntersecting).map((entry) => entry.target));
+    }, {root, rootMargin: '600px 0px'});
+    for (const figure of viewed) probe.observe(figure);
+  });
+  const watch = new IntersectionObserver((entries) => {
+    for (const entry of entries) if (entry.isIntersecting) {
+      watch.unobserve(entry.target);
+      draw(entry.target);
+    }
+  }, {root, rootMargin: '600px 0px'});
+  for (const figure of viewed) watch.observe(figure);
+  // A page recomputes every observed figure on each frame it draws: drawn ones are let go.
+  let soon = null;
+  document.addEventListener('report-diagram-rendered', (event) => {
+    watch.unobserve(event.target);
+    soon?.unobserve(event.target);
+  });
+  if (lazy.ahead) {
+    // Figures a little further away are drawn one at a time while the page has nothing else to do.
+    const idle = window.requestIdleCallback || ((next) => setTimeout(next, 120));
+    const waiting = [];
+    let pumping = false;
+    const pump = () => {
+      if (pumping) return;
+      pumping = true;
+      idle(async function next() {
+        let figure = waiting.shift();
+        while (figure && drawing.has(figure)) figure = waiting.shift();
+        if (!figure) return void (pumping = false);
+        await draw(figure);
+        idle(next);
+      });
+    };
+    soon = new IntersectionObserver((entries) => {
+      for (const entry of entries) if (entry.isIntersecting) {
+        soon.unobserve(entry.target);
+        waiting.push(entry.target);
+      }
+      if (waiting.length) pump();
+    }, {root, rootMargin: lazy.ahead + ' 0px'});
+    for (const figure of viewed) soon.observe(figure);
+  }
+  await Promise.all(near.map(draw));
   return results;
 })();
 </script>`;

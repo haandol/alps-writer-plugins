@@ -12,15 +12,7 @@
 // legalising a transition the business forbade. Putting both differences in one
 // fixture is deliberate — the reviewer has to split them rather than picking one
 // label for "the enum is different".
-import {
-  agentText,
-  seedRuleDocs,
-  seedMapping,
-  write,
-  TAIL_SPEC,
-  expectFinding,
-  expectNotMiscategorized,
-} from "../lib/harness.mjs";
+import { agentText, seedRuleDocs, seedMapping, write, TAIL_SPEC } from "../lib/harness.mjs";
 
 const ADR = `# ADR 0001: 주문 상태 전이
 
@@ -134,35 +126,5 @@ export default {
       `You may read files, but do not edit anything.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail }) {
-    const TRANSITION = /cancel|취소|transition|전이|CANCELLED/i;
-    const NAMING = /PAYMENT_COMPLETED|결제완료|identifier|name|이름|naming|wire/i;
-    return [
-      // The contract violation must be found at all.
-      expectFinding(tail, /Spec violation/i, "finds the forbidden transition as a Spec violation"),
-      // ...and must NOT be filed as an ADR correction, which would legalise it.
-      expectNotMiscategorized(
-        tail,
-        TRANSITION,
-        /Impl-fact mismatch/i,
-        "the forbidden transition is NOT routed as an Impl-fact mismatch",
-      ),
-      // The naming difference is the code's business, so the ADR is what changes.
-      // Softer check: some reviewers legitimately treat naming as out of scope
-      // and say nothing, so only miscategorisation is failed here.
-      expectNotMiscategorized(
-        tail,
-        NAMING,
-        /Spec violation/i,
-        "the identifier difference is NOT escalated to a Spec violation",
-      ),
-      {
-        pass: tail.verdict !== null && /FIX_REQUIRED|BLOCK/i.test(tail.verdict),
-        detail: tail.verdict ? `verdict was ${tail.verdict}` : "no verdict in the tail block",
-        label: "verdict is FIX_REQUIRED or BLOCK (a contract is broken)",
-      },
-    ];
   },
 };

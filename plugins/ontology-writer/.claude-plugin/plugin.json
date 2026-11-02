@@ -1,0 +1,12 @@
+{
+  "name": "ontology-writer",
+  "description": "Keep a business ontology above ADRs as a closed RDFS-lite graph in Turtle: build it from documents, change it through one approval summary, align realizing ADRs, query business context and view it in 3D.",
+  "version": "0.11.0",
+  "author": {
+    "name": "haandol"
+  },
+  "homepage": "https://github.com/haandol/alps-writer-plugins",
+  "repository": "https://github.com/haandol/alps-writer-plugins",
+  "license": "MIT",
+  "keywords": ["ontology", "business-process", "rdfs", "turtle", "adr", "ai"]
+}

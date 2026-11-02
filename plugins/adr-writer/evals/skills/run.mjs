@@ -23,6 +23,8 @@ import { parseTail } from "../lib/harness.mjs";
 import { scenarioNamesForChangedPaths } from "../impact-map.mjs";
 import { BEDROCK_DEFAULTS } from "../deepeval/bedrock.mjs";
 import { validateReportEvaluation } from "./report-evaluation.mjs";
+import { finalChecks } from "../lib/execution-checks.mjs";
+import { toolServerConfig } from "../regression/tool-config.mjs";
 
 const HELP = `Skill evaluation — classification, routing, execution
 
@@ -154,7 +156,7 @@ export function selectImpacted(cases, paths) {
     cases.filter((c) => c.type === "classification").map((c) => ({ ...c, name: c.id })),
   );
   const shared = paths.some((p) =>
-    /^(shared\/report-writer\/|plugins\/adr-writer\/skills\/report-writer\/|plugins\/adr-writer\/evals\/(skills|lib|deepeval)\/|plugins\/adr-writer\/evals\/regression\/(judge|claude|workspace|tool-server)\.mjs$)/.test(
+    /^(shared\/report-writer\/|plugins\/adr-writer\/skills\/report-writer\/|plugins\/adr-writer\/evals\/(skills|lib|deepeval)\/|plugins\/adr-writer\/evals\/regression\/(judge|claude|workspace|tool-server|tool-config)\.mjs$)/.test(
       p,
     ),
   );
@@ -169,9 +171,11 @@ export function selectImpacted(cases, paths) {
             )
           : paths.some(
               (p) =>
-                /plugins\/adr-writer\/(references|templates|scripts)\/|evals\/(regression|deepeval)\//.test(
+                /plugins\/(adr|ontology)-writer\/(references|templates|scripts)\/|evals\/(regression|deepeval)\//.test(
                   p,
-                ) || p.startsWith(`plugins/adr-writer/skills/${c.skill}/`),
+                ) ||
+                (/^plugins\/(adr|ontology)-writer\/skills\//.test(p) &&
+                  p.split("/")[3] === c.skill),
             )),
   );
 }
@@ -204,24 +208,17 @@ function toolConfig(directory, root, pluginRoot, logPath, artifactPaths = [], dr
   const file = path.join(directory, "mcp.json");
   writeFileSync(
     file,
-    JSON.stringify({
-      mcpServers: {
-        fixture: {
-          command: process.execPath,
-          args: [
-            path.join(PLUGIN, "evals/regression/tool-server.mjs"),
-            root,
-            pluginRoot,
-            logPath,
-            "1",
-            "on",
-            pluginRoot,
-            JSON.stringify(artifactPaths),
-            ...(draftRoot ? [draftRoot] : []),
-          ],
-        },
-      },
-    }),
+    JSON.stringify(
+      toolServerConfig({
+        root,
+        pluginRoot,
+        logPath,
+        turn: 1,
+        checkerRoot: pluginRoot,
+        artifactPaths,
+        draftRoot,
+      }),
+    ),
   );
   return file;
 }
@@ -324,9 +321,10 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
   });
   const config = toolConfig(folder, root, pluginRoot, log, item.artifactPaths, item.draftRoot);
   const wrapped = `This is an isolated classification probe, not a native client routing test.\nUse only the local fixture MCP tools. Fixture root ${root}; use relative paths for fixture reads/writes. CLAUDE_PLUGIN_ROOT is plugin/. Resolve referenced skills and guidance through plugin/skills and plugin/references.\n${prompt}`;
-  json(folder, "input.json", { prompt: wrapped, files: snapshot(root, item) });
+  const initial = snapshot(root, item);
+  json(folder, "input.json", { prompt: wrapped, files: initial });
   record.promptHash = sha(prompt.split(root).join("<FIXTURE>"));
-  record.inputHash = sha({ prompt: record.promptHash, files: snapshot(root, item) });
+  record.inputHash = sha({ prompt: record.promptHash, files: initial });
   if (!options.live) return;
   let response;
   try {
@@ -377,26 +375,24 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
       throw new Error("Invalid mechanical artifact checks");
     record.checks.push(...additional);
   }
-  if (item.semanticObligations) {
-    const input = JSON.parse(readFileSync(path.join(folder, "input.json"), "utf8"));
-    await judgeEvidence(
-      { ...item, obligations: item.semanticObligations, turns: [prompt] },
-      {
-        before: input.files,
-        after: files,
-        events,
-        turns: [prompt],
-        replies: [response.text],
-        referenceDate: options.referenceDate,
-      },
-      record,
-      folder,
-      options,
-      dependencies,
-    );
-    if (record.verdict === "PASS" && record.checks?.some((c) => !c.pass))
-      record.verdict = "NOT_PROVEN";
-  }
+  const input = JSON.parse(readFileSync(path.join(folder, "input.json"), "utf8"));
+  await judgeEvidence(
+    { ...item, obligations: item.semanticObligations, turns: [prompt] },
+    {
+      before: input.files,
+      after: files,
+      events,
+      turns: [prompt],
+      replies: [response.text],
+      referenceDate: options.referenceDate,
+    },
+    record,
+    folder,
+    options,
+    dependencies,
+  );
+  if (record.verdict === "PASS" && record.checks?.some((c) => !c.pass))
+    record.verdict = "NOT_PROVEN";
 }
 
 /** Use one citation-validated DeepEval path for semantic probes and actual document operations. */
@@ -497,14 +493,7 @@ async function runExecution(
     turn: item.turns.length,
     artifactPaths: item.artifactPaths,
   });
-  record.checks = ["policy-tests", "structure"].map((kind) => {
-    const result = finalTools.call("run_check", { kind });
-    return {
-      label: `final ${kind}`,
-      pass: result.exitCode === 0,
-      detail: result.stdout + result.stderr,
-    };
-  });
+  record.checks = finalChecks(finalTools);
   if (item.verifyEvidence) {
     const checks = item.verifyEvidence(evidence);
     if (!Array.isArray(checks) || !checks.length || checks.some((c) => typeof c.pass !== "boolean"))
@@ -721,7 +710,8 @@ export async function main(args, injected = {}) {
           }
           record.elapsedMs = Date.now() - started;
           json(output, `${record.artifactDirectory}/result.json`, record);
-          save();
+          // A live run saves its progress; a preparation calls no model and saves once at the end.
+          if (options.live) save();
           process.stdout.write(
             `${item.type} ${item.id} ${variant.name} #${repeat}: ${record.verdict}${record.error ? ` — ${record.error}` : ""}\n`,
           );

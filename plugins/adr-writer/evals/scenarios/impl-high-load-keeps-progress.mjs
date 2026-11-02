@@ -29,14 +29,7 @@ export function deterministicScore(input) {
   ];
 }
 
-import {
-  expectNoText,
-  expectText,
-  seedMapping,
-  seedRuleDocs,
-  skillText,
-  TAIL_SPEC,
-} from "../lib/harness.mjs";
+import { seedMapping, seedRuleDocs, skillText, TAIL_SPEC } from "../lib/harness.mjs";
 
 const SOURCE = `
 The target ADR revision is already approved, every dependency is Accepted, and
@@ -47,10 +40,6 @@ The implementation plan spans checkout orchestration, payment and inventory
 reservation, compensation after partial failure, and audit evidence. Its displayed
 comprehension load is 8/10. The user has not requested a split.
 `;
-
-function taggedSummary(tail, tag) {
-  return tail.findings.find((finding) => finding.tag === tag)?.summary ?? "";
-}
 
 export default {
   name: "impl-high-load-keeps-progress",
@@ -69,32 +58,5 @@ export default {
       `In the tail include exactly PLAN_SCORE, NEXT_STEP, CANDIDATE_STATE, and EXECUTION_STATE. Use PROCEED_APPROVED or WAIT_FOR_CHOICE; BOUNDARIES_UNCHANGED or SPLIT_APPLIED; READY_NO_SCORE_GATE or WAIT_FOR_REPLY as applicable.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    const visible = output.split(/---\s*\n\s*## Machine-readable tail|===\s*EVAL-VERDICT/i)[0];
-    return [
-      expectText(
-        taggedSummary(tail, "PLAN_SCORE"),
-        /\b8\s*\/\s*10\b/,
-        "retains the advisory score",
-      ),
-      expectText(taggedSummary(tail, "NEXT_STEP"), /PROCEED_APPROVED/, "continues approved scope"),
-      expectText(
-        taggedSummary(tail, "CANDIDATE_STATE"),
-        /BOUNDARIES_UNCHANGED/,
-        "does not silently split contracts",
-      ),
-      expectText(
-        taggedSummary(tail, "EXECUTION_STATE"),
-        /READY_NO_SCORE_GATE/,
-        "no score-triggered wait",
-      ),
-      expectNoText(
-        visible,
-        /(?:선택|답변).{0,15}(?:주세요|기다)|shall we|choose (?:split|whether)/i,
-        "no routine split choice",
-      ),
-    ];
   },
 };

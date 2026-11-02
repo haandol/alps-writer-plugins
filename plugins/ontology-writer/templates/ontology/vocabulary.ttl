@@ -1,0 +1,218 @@
+@prefix onto: <urn:ontology-writer:vocabulary:> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# Ontology Writer business ontology vocabulary.
+#
+# The closed set of element types, relations and attributes a business ontology
+# in docs/ontology/ may use. RDFS domain and range are inference rules, not
+# constraints, so a relation declares them only when both of its ends accept a
+# single element type, and an attribute declares its domain only when it applies
+# to a single element type. Ontology Writer validates type combinations and
+# counts itself, under a closed world. Model documents never copy this file.
+
+onto: rdfs:label "Ontology Writer business ontology vocabulary"@en, "Ontology Writer 업무 온톨로지 어휘"@ko ;
+    rdfs:comment "Closed vocabulary of the business ontology level above ADRs."@en .
+
+# Element types
+
+onto:Actor a rdfs:Class ;
+    rdfs:label "Actor"@en, "행위자"@ko ;
+    rdfs:comment "A person's role, an operator, an outside organization or system, or a system role that performs automatic work."@en .
+
+onto:BoundedContext a rdfs:Class ;
+    rdfs:label "Bounded context"@en, "바운디드 컨텍스트"@ko ;
+    rdfs:comment "A business boundary inside which terms and rules keep one consistent meaning."@en .
+
+onto:BusinessConcept a rdfs:Class ;
+    rdfs:label "Business concept"@en, "업무 개념"@ko ;
+    rdfs:comment "A business noun defined inside one context."@en .
+
+onto:BusinessEvent a rdfs:Class ;
+    rdfs:label "Business event"@en, "업무 사건"@ko ;
+    rdfs:comment "A fact that already happened in the business, independent of how it is delivered technically."@en .
+
+onto:Process a rdfs:Class ;
+    rdfs:label "Process"@en, "프로세스"@ko ;
+    rdfs:comment "A flow from a start condition to a business outcome."@en .
+
+onto:Step a rdfs:Class ;
+    rdfs:label "Step"@en, "단계"@ko ;
+    rdfs:comment "A business activity an actor performs inside a process."@en .
+
+onto:Policy a rdfs:Class ;
+    rdfs:label "Policy"@en, "정책"@ko ;
+    rdfs:comment "A decision rule that reacts to a business event and starts a step when its condition holds."@en .
+
+onto:BusinessRule a rdfs:Class ;
+    rdfs:label "Business rule"@en, "업무 규칙"@ko ;
+    rdfs:comment "A condition that must always hold across two or more steps."@en .
+
+onto:ObservationCriterion a rdfs:Class ;
+    rdfs:label "Observation criterion"@en, "관찰 기준"@ko ;
+    rdfs:comment "A start condition of a process and the business result to observe."@en .
+
+# Relations
+
+onto:hasStep a rdf:Property ;
+    rdfs:label "contains"@en, "포함"@ko ;
+    rdfs:comment "A process contains a step."@en ;
+    rdfs:domain onto:Process ;
+    rdfs:range onto:Step .
+
+onto:flowsTo a rdf:Property ;
+    rdfs:label "flow"@en, "흐름"@ko ;
+    rdfs:comment "Order of progress between steps of the same process. Order only, never a cause; when several flows leave a step, all of them proceed."@en ;
+    rdfs:domain onto:Step ;
+    rdfs:range onto:Step .
+
+onto:performs a rdf:Property ;
+    rdfs:label "performs"@en, "수행"@ko ;
+    rdfs:comment "An actor performs a step. Several performers are alternatives: any of them may perform it."@en ;
+    rdfs:domain onto:Actor ;
+    rdfs:range onto:Step .
+
+onto:emits a rdf:Property ;
+    rdfs:label "emits"@en, "발생"@ko ;
+    rdfs:comment "An event happens as a result of a step."@en ;
+    rdfs:domain onto:Step ;
+    rdfs:range onto:BusinessEvent .
+
+onto:triggers a rdf:Property ;
+    rdfs:label "triggers"@en, "촉발"@ko ;
+    rdfs:comment "An event wakes a policy. A policy with several triggering events reacts each time one of them happens."@en ;
+    rdfs:domain onto:BusinessEvent ;
+    rdfs:range onto:Policy .
+
+onto:starts a rdf:Property ;
+    rdfs:label "starts"@en, "시작"@ko ;
+    rdfs:comment "A policy starts a step when its condition holds."@en ;
+    rdfs:domain onto:Policy ;
+    rdfs:range onto:Step .
+
+onto:uses a rdf:Property ;
+    rdfs:label "uses"@en, "사용"@ko ;
+    rdfs:comment "A step or a policy reads, changes or decides with a concept. Accepted sources: Step, Policy."@en .
+
+onto:constrains a rdf:Property ;
+    rdfs:label "constrains"@en, "제약"@ko ;
+    rdfs:comment "A business rule applies to its target. Accepted targets: Step, Policy, BusinessConcept, Process."@en .
+
+onto:hasPart a rdf:Property ;
+    rdfs:label "composition"@en, "구성"@ko ;
+    rdfs:comment "One concept has another concept as a part."@en ;
+    rdfs:domain onto:BusinessConcept ;
+    rdfs:range onto:BusinessConcept .
+
+onto:refersTo a rdf:Property ;
+    rdfs:label "reference"@en, "참조"@ko ;
+    rdfs:comment "One concept points at another concept."@en ;
+    rdfs:domain onto:BusinessConcept ;
+    rdfs:range onto:BusinessConcept .
+
+onto:correspondsTo a rdf:Property ;
+    rdfs:label "correspondence"@en, "대응"@ko ;
+    rdfs:comment "A concept that points at the same thing as a concept of another context."@en ;
+    rdfs:domain onto:BusinessConcept ;
+    rdfs:range onto:BusinessConcept .
+
+onto:inContext a rdf:Property ;
+    rdfs:label "context membership"@en, "컨텍스트 소속"@ko ;
+    rdfs:comment "The business boundary an element belongs to. Accepted sources: Step, Policy, BusinessConcept, BusinessEvent."@en .
+
+onto:criterionOf a rdf:Property ;
+    rdfs:label "criterion membership"@en, "기준 소속"@ko ;
+    rdfs:comment "The process an observation criterion checks."@en ;
+    rdfs:domain onto:ObservationCriterion ;
+    rdfs:range onto:Process .
+
+onto:passesThrough a rdf:Property ;
+    rdfs:label "passes through"@en, "경유"@ko ;
+    rdfs:comment "An event the criterion passes through between its start condition and its result."@en ;
+    rdfs:domain onto:ObservationCriterion ;
+    rdfs:range onto:BusinessEvent .
+
+# Fact attributes (the element name is rdfs:label)
+
+onto:definition a rdf:Property ;
+    rdfs:label "definition"@en, "정의"@ko ;
+    rdfs:comment "Fact attribute. What the element means in business language. Required on every element except observation criteria."@en ;
+    rdfs:range rdfs:Literal .
+
+onto:stepKind a rdf:Property ;
+    rdfs:label "step kind"@en, "단계 구분"@ko ;
+    rdfs:comment "Fact attribute. \"system\" for a step done in the system, \"outside-system\" for a step done outside it."@en ;
+    rdfs:domain onto:Step ;
+    rdfs:range rdfs:Literal .
+
+onto:reactionCondition a rdf:Property ;
+    rdfs:label "reaction condition"@en, "반응 조건"@ko ;
+    rdfs:comment "Fact attribute. The relation and meaning a policy checks before starting its step, without exact values."@en ;
+    rdfs:domain onto:Policy ;
+    rdfs:range rdfs:Literal .
+
+onto:basisKind a rdf:Property ;
+    rdfs:label "basis kind"@en, "근거 종류"@ko ;
+    rdfs:comment "Fact attribute of policies and business rules: \"regulation\", \"contract\", \"operating-policy\" or \"user-decision\"."@en ;
+    rdfs:range rdfs:Literal .
+
+onto:basis a rdf:Property ;
+    rdfs:label "basis"@en, "근거"@ko ;
+    rdfs:comment "Fact attribute of policies and business rules: the regulation, contract, policy or decision behind it."@en ;
+    rdfs:range rdfs:Literal .
+
+onto:startCondition a rdf:Property ;
+    rdfs:label "start condition"@en, "시작 조건"@ko ;
+    rdfs:comment "Fact attribute of processes and observation criteria."@en ;
+    rdfs:range rdfs:Literal .
+
+onto:businessOutcome a rdf:Property ;
+    rdfs:label "business outcome"@en, "업무 결과"@ko ;
+    rdfs:comment "Fact attribute. The business result a process reaches."@en ;
+    rdfs:domain onto:Process ;
+    rdfs:range rdfs:Literal .
+
+onto:observedResult a rdf:Property ;
+    rdfs:label "observed result"@en, "관찰 결과"@ko ;
+    rdfs:comment "Fact attribute. The business result an observation criterion checks."@en ;
+    rdfs:domain onto:ObservationCriterion ;
+    rdfs:range rdfs:Literal .
+
+onto:openScope a rdf:Property ;
+    rdfs:label "open scope"@en, "미정 범위"@ko ;
+    rdfs:comment "Fact attribute of processes (required) and steps. Each value is typed onto:OpenPath, onto:NotApplicable or onto:NoOpenScope."@en ;
+    rdfs:range rdfs:Literal .
+
+onto:OpenPath a rdfs:Datatype ;
+    rdfs:label "open path"@en, "미정 경로"@ko ;
+    rdfs:comment "A path the model does not cover yet, in business language."@en .
+
+onto:NotApplicable a rdfs:Datatype ;
+    rdfs:label "not applicable"@en, "해당 없음"@ko ;
+    rdfs:comment "A path, or one of the three coverage axes, the user confirmed the business does not have. Recorded on processes only."@en .
+
+onto:NoOpenScope a rdfs:Datatype ;
+    rdfs:label "no open scope"@en, "미정 범위 없음"@ko ;
+    rdfs:comment "States that a process has neither open paths nor not-applicable items. Used alone."@en .
+
+# Description attributes (the note is rdfs:comment)
+
+onto:summary a rdf:Property ;
+    rdfs:label "one-line summary"@en, "한 줄 요약"@ko ;
+    rdfs:comment "Description attribute of processes. Never used to decide anything."@en ;
+    rdfs:domain onto:Process ;
+    rdfs:range rdfs:Literal .
+
+# Lifecycle attributes
+
+onto:status a rdf:Property ;
+    rdfs:label "Status"@en, "Status"@ko ;
+    rdfs:comment "Lifecycle attribute of processes. Changed only by Ontology Writer lifecycle transitions."@en ;
+    rdfs:domain onto:Process ;
+    rdfs:range rdfs:Literal .
+
+onto:replacedBy a rdf:Property ;
+    rdfs:label "replaced by"@en, "대체 대상"@ko ;
+    rdfs:comment "Lifecycle attribute of processes: the process that replaces this one."@en ;
+    rdfs:domain onto:Process ;
+    rdfs:range onto:Process .

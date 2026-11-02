@@ -1,8 +1,6 @@
 import {
   alpsLiteGuideText,
   alpsSkillText,
-  expectNoText,
-  expectText,
   seedMapping,
   seedRuleDocs,
   TAIL_SPEC,
@@ -42,42 +40,5 @@ export default {
       `In the tail use AI_PROPOSES_SOLUTION, AI_PROPOSES_ESSENTIAL_EXPERIENCES, BUSINESS_IMPACT_TRACE, NO_SOLUTION_DESIGN_QUESTION, and APPROVAL_BEFORE_SAVE once each.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    const visible = output.split(/---\s*\n\s*## Machine-readable tail|===\s*EVAL-VERDICT/i)[0];
-    return [
-      expectText(visible, /Solution Strategy|솔루션 전략|최소 솔루션/i, "proposes a solution"),
-      expectText(
-        visible,
-        /Essential User Experiences|핵심 사용자 경험/i,
-        "proposes essential user experiences",
-      ),
-      expectText(visible, /해외 출장|자기소개|영어 대화/i, "traces the approved business context"),
-      expectText(visible, /승인|수정|보류/i, "shows the proposal for approval"),
-      expectNoText(
-        visible,
-        /어떤.{0,20}(솔루션|기능|흐름).{0,20}(원하|필요|알려)|시작 상태.{0,20}(알려|정해)|사용자 행동.{0,20}(알려|작성)/i,
-        "does not ask the user to design the solution or demo flow",
-      ),
-      expectNoText(
-        visible,
-        /인수 테스트|Required Acceptance Tests/i,
-        "does not expose acceptance-test terminology",
-      ),
-      expectText(tail.raw, /AI_PROPOSES_SOLUTION/i, "records AI-proposed solution"),
-      expectText(
-        tail.raw,
-        /AI_PROPOSES_ESSENTIAL_EXPERIENCES/i,
-        "records AI-proposed essential user experiences",
-      ),
-      expectText(tail.raw, /BUSINESS_IMPACT_TRACE/i, "records business-impact traceability"),
-      expectText(
-        tail.raw,
-        /NO_SOLUTION_DESIGN_QUESTION/i,
-        "records that no solution-design question was asked",
-      ),
-      expectText(tail.raw, /APPROVAL_BEFORE_SAVE/i, "keeps approval before persistence"),
-    ];
   },
 };

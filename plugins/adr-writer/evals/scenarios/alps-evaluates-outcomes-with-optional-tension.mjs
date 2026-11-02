@@ -27,7 +27,6 @@ export default {
   description:
     "Full and Lite connect intent to acceptance while proposing useful tension signals without metric quotas.",
   obligations,
-  score: deterministicScore,
   deterministicScore,
   build() {
     return [

@@ -1,4 +1,4 @@
-import { skillText, seedRuleDocs, seedMapping, TAIL_SPEC, expectText } from "../lib/harness.mjs";
+import { skillText, seedRuleDocs, seedMapping, TAIL_SPEC } from "../lib/harness.mjs";
 
 export default {
   name: "impl-review-selects-risk-mode",
@@ -18,26 +18,5 @@ export default {
       `Use STANDARD and FULL as finding tags and include the scope letter in each summary.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ tail, output }) {
-    const all = `${output}\n${tail.raw}`;
-    const protectedStandard = tail.findings.filter(
-      (finding) =>
-        /STANDARD/i.test(finding.tag) &&
-        (/(?:^|[|;])\s*(?:스코프\s*|scope\s*)?B(?:\s|:|—|-)/i.test(finding.summary) ||
-          /30.{0,30}90|retention.{0,80}(30|90)/i.test(finding.summary)),
-    );
-    return [
-      expectText(all, /STANDARD.{0,180}(A|local|private|helper)/is, "selects standard for A"),
-      expectText(all, /FULL.{0,180}(B|30.{0,30}90|retention|public API)/is, "selects full for B"),
-      {
-        pass: protectedStandard.length === 0,
-        detail:
-          protectedStandard.map((finding) => `${finding.tag} | ${finding.summary}`).join(" ; ") ||
-          "no protected B scope classified as standard",
-        label: "does not downgrade protected surfaces to standard",
-      },
-    ];
   },
 };

@@ -3,7 +3,11 @@ import { reviewCodeGroups } from "./adr-impl-review-prose.mjs";
 
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
-import { CATEGORY_NAMES, VERDICT_NAMES } from "./adr-impl-review-categories.mjs";
+import {
+  CATEGORY_NAMES,
+  COVERAGE_STATUS_LABELS,
+  VERDICT_NAMES,
+} from "./adr-impl-review-categories.mjs";
 import {
   mermaidBlocks,
   parseMermaid,
@@ -26,20 +30,6 @@ const COMPONENT_FIELDS = ["name", "responsibility", "implementation", "verificat
 const CODE_EVIDENCE_FIELDS = ["kind", "location", "content", "explanation", "tests"];
 const ALLOWED_DIAGNOSTIC_STATUSES = new Set(["CLEAR", "ISSUE", "UNVERIFIED"]);
 const DIAGNOSTIC_FIELDS = ["contractCompleteness", "testSufficiency", "necessity"];
-const COVERAGE_STATUS_LABELS = {
-  en: {
-    PROVEN: "Met",
-    VIOLATED: "Fix required",
-    UNVERIFIED: "Verification required",
-    CONTRADICTED: "Conflicting evidence",
-  },
-  ko: {
-    PROVEN: "충족됨",
-    VIOLATED: "수정 필요",
-    UNVERIFIED: "검증 필요",
-    CONTRADICTED: "근거 충돌",
-  },
-};
 const REQUIRED_REPORT_TEXT = [
   "# ADR implementation review",
   "## At a glance",
@@ -289,11 +279,12 @@ function validateRelatedAdrComparisons(data, artifactDir, errors) {
       errors.push(`${label} must be an object`);
       continue;
     }
-    for (const field of ["adr", "title", "similarity", "difference", "reviewImpact", "evidence"]) {
-      if (typeof comparison[field] !== "string" || !comparison[field].trim()) {
-        errors.push(`${label}.${field} must be a non-empty string`);
-      }
-    }
+    validateNonEmptyStringFields(
+      comparison,
+      ["adr", "title", "similarity", "difference", "reviewImpact", "evidence"],
+      label,
+      errors,
+    );
     const candidatePath = resolveAdrPath(artifactDir, comparison.adr);
     if (!candidatePath || !existsSync(candidatePath) || !statSync(candidatePath).isFile()) {
       errors.push(`${label}.adr does not resolve to an existing file`);
@@ -317,20 +308,12 @@ function validateFinding(finding, index, errors) {
     return;
   }
 
-  for (const field of [
-    "category",
-    "perspective",
-    "summary",
-    "confidence",
-    "code",
-    "evidence",
-    "test",
-    "testResult",
-  ]) {
-    if (typeof finding[field] !== "string" || !finding[field].trim()) {
-      errors.push(`${label}.${field} must be a non-empty string`);
-    }
-  }
+  validateNonEmptyStringFields(
+    finding,
+    ["category", "perspective", "summary", "confidence", "code", "evidence", "test", "testResult"],
+    label,
+    errors,
+  );
 
   if (finding.category && !ALLOWED_CATEGORIES.has(finding.category)) {
     errors.push(`${label}.category is not recognized: ${finding.category}`);
@@ -358,11 +341,12 @@ function validateAtAGlance(atAGlance, errors) {
     return;
   }
 
-  for (const field of ["impact", "action", "risk"]) {
-    if (typeof atAGlance[field] !== "string" || !atAGlance[field].trim()) {
-      errors.push(`findings.json atAGlance.${field} must be a non-empty string`);
-    }
-  }
+  validateNonEmptyStringFields(
+    atAGlance,
+    ["impact", "action", "risk"],
+    "findings.json atAGlance",
+    errors,
+  );
 }
 
 /** Check question-level diagrams and exact per-Hill allocation before prose is read. */
@@ -387,10 +371,12 @@ function validateDiagramContract(data, errors) {
     if (requirements.has(requirement.id))
       errors.push(`diagramRequirements contains duplicate id: ${requirement.id}`);
     requirements.set(requirement.id, requirement);
-    for (const field of ["question", "section", "reason", "evidence"]) {
-      if (typeof requirement[field] !== "string" || !requirement[field].trim())
-        errors.push(`${label}.${field} must be a non-empty string`);
-    }
+    validateNonEmptyStringFields(
+      requirement,
+      ["question", "section", "reason", "evidence"],
+      label,
+      errors,
+    );
     if (!sections.has(requirement.section))
       errors.push(`${label}.section must name Context or a reviewHike Hill`);
     if (typeof requirement.diagramType !== "string" || !requirement.diagramType.trim())
@@ -465,11 +451,12 @@ function validateImplementationChoice(choice, index, errors) {
     return;
   }
 
-  for (const field of ["choice", "evidence", "intentFit", "whyItMatters"]) {
-    if (typeof choice[field] !== "string" || !choice[field].trim()) {
-      errors.push(`${label}.${field} must be a non-empty string`);
-    }
-  }
+  validateNonEmptyStringFields(
+    choice,
+    ["choice", "evidence", "intentFit", "whyItMatters"],
+    label,
+    errors,
+  );
 }
 
 function validateContractCoverage(row, index, errors) {
@@ -479,19 +466,12 @@ function validateContractCoverage(row, index, errors) {
     return;
   }
 
-  for (const field of [
-    "contractId",
-    "requirement",
-    "status",
-    "adrBasis",
-    "implementation",
-    "evidence",
-    "tests",
-  ]) {
-    if (typeof row[field] !== "string" || !row[field].trim()) {
-      errors.push(`${label}.${field} must be a non-empty string`);
-    }
-  }
+  validateNonEmptyStringFields(
+    row,
+    ["contractId", "requirement", "status", "adrBasis", "implementation", "evidence", "tests"],
+    label,
+    errors,
+  );
 
   if (row.status && !ALLOWED_COVERAGE_STATUSES.has(row.status)) {
     errors.push(`${label}.status must be PROVEN, VIOLATED, UNVERIFIED, or CONTRADICTED`);
@@ -554,14 +534,17 @@ function validateReviewHike(reviewHike, coverageRows, changeScope, errors, mode)
 
     const expectedId = `H${index + 1}`;
     if (hill.id !== expectedId) errors.push(`${label}.id must be ${expectedId}`);
-    for (const field of [
-      "title",
-      ...["sliceName", "reviewQuestion"].filter((field) => !standard || Object.hasOwn(hill, field)),
-    ]) {
-      if (typeof hill[field] !== "string" || !hill[field].trim()) {
-        errors.push(`${label}.${field} must be a non-empty string`);
-      }
-    }
+    validateNonEmptyStringFields(
+      hill,
+      [
+        "title",
+        ...["sliceName", "reviewQuestion"].filter(
+          (field) => !standard || Object.hasOwn(hill, field),
+        ),
+      ],
+      label,
+      errors,
+    );
     validateNonEmptyStringFields(
       hill,
       standard
@@ -706,11 +689,7 @@ function validateReviewDiagnostics(diagnostics, errors) {
     if (!ALLOWED_DIAGNOSTIC_STATUSES.has(item.status)) {
       errors.push(`${label}.status must be CLEAR, ISSUE, or UNVERIFIED`);
     }
-    for (const valueField of ["assessment", "evidence"]) {
-      if (typeof item[valueField] !== "string" || !item[valueField].trim()) {
-        errors.push(`${label}.${valueField} must be a non-empty string`);
-      }
-    }
+    validateNonEmptyStringFields(item, ["assessment", "evidence"], label, errors);
   }
 }
 
@@ -741,11 +720,12 @@ function validateComprehensionCheck(check, errors) {
       errors.push(`${label} must be an object`);
       continue;
     }
-    for (const field of ["id", "question", "correctOptionId", "explanation", "evidence"]) {
-      if (typeof question[field] !== "string" || !question[field].trim()) {
-        errors.push(`${label}.${field} must be a non-empty string`);
-      }
-    }
+    validateNonEmptyStringFields(
+      question,
+      ["id", "question", "correctOptionId", "explanation", "evidence"],
+      label,
+      errors,
+    );
     if (typeof question.revisit !== "boolean") {
       errors.push(`${label}.revisit must be a boolean`);
     } else if (question.revisit) {
@@ -766,11 +746,7 @@ function validateComprehensionCheck(check, errors) {
         if (option.id !== expectedOptionId) {
           errors.push(`${optionLabel}.id must be ${expectedOptionId}`);
         }
-        for (const field of ["text", "feedback"]) {
-          if (typeof option[field] !== "string" || !option[field].trim()) {
-            errors.push(`${optionLabel}.${field} must be a non-empty string`);
-          }
-        }
+        validateNonEmptyStringFields(option, ["text", "feedback"], optionLabel, errors);
         if (optionIds.has(option.id))
           errors.push(`${label} contains duplicate option id: ${option.id}`);
         if (optionTexts.has(option.text)) {
@@ -1259,9 +1235,11 @@ function main() {
 
   if (!existsSync(findingsPath)) errors.push("missing findings.json");
   if (!existsSync(expectedReport)) errors.push("missing implementation-review.md");
+  // The exit code, not an exit: a pipe still receiving the errors would be cut off.
   if (errors.length) {
     process.stderr.write(`${errors.join("\n")}\n`);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   const data = readJson(findingsPath, errors);
@@ -1352,7 +1330,8 @@ function main() {
 
   if (errors.length) {
     process.stderr.write(`${errors.map((error) => `- ${error}`).join("\n")}\n`);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   process.stdout.write("ADR implementation review artifacts are valid\n");

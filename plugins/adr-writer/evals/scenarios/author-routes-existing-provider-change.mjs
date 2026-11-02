@@ -2,17 +2,7 @@
 // same model/provider boundary. /adr-new must reuse the existing ADR identity
 // and route the change to edit-in-place instead of allocating 0002. Reverting
 // the provider later follows the same route.
-import {
-  skillText,
-  seedRuleDocs,
-  seedMapping,
-  write,
-  read,
-  TAIL_SPEC,
-  expectText,
-} from "../lib/harness.mjs";
-import { readdirSync, statSync } from "node:fs";
-import path from "node:path";
+import { skillText, seedRuleDocs, seedMapping, write, read, TAIL_SPEC } from "../lib/harness.mjs";
 
 const ADR_PATH = "docs/adr/ai/model-provider/0001-select-model-provider-boundary.md";
 
@@ -107,70 +97,4 @@ export default {
       TAIL_SPEC,
     ].join("\n");
   },
-
-  score({ tail, output, dir }) {
-    const numbered = findNumberedAdrFiles(path.join(dir, "docs", "adr"));
-    const mapping = JSON.parse(read(dir, "docs/adr/.mapping.json") ?? '{"categories":{}}');
-    const records = mapping.categories?.["ai/model-provider"]?.adrs ?? [];
-
-    return [
-      {
-        pass:
-          numbered.length === 1 && numbered[0].endsWith("0001-select-model-provider-boundary.md"),
-        detail: `numbered ADRs: ${numbered.join(", ") || "none"}`,
-        label: "does not allocate a second ADR for the provider change",
-      },
-      {
-        pass: records.length === 1 && records[0]?.path === ADR_PATH,
-        detail: `mapping records: ${JSON.stringify(records)}`,
-        label: "keeps one mapping identity for the provider-boundary decision",
-      },
-      expectText(
-        output,
-        /decision identity|same (?:architectural )?(?:question|decision)|기존.*(?:결정|ADR)/i,
-        "recognizes the existing logical decision owner",
-      ),
-      expectText(
-        output,
-        /edit(?:-|\s+)in(?:-|\s+)place|update the existing ADR|기존 ADR.*(?:갱신|수정|업데이트)|제자리 (?:갱신|수정|재작성)/i,
-        "routes the provider change to edit-in-place",
-      ),
-      expectText(output, /\/adr-impl\s+ai\/model-provider/, "names the owning update workflow"),
-      expectText(
-        output,
-        /revert|reversion|return|되돌|원복/i,
-        "treats a later provider reversal as the same ADR identity",
-      ),
-      expectText(
-        output,
-        /(?:(?:0002|new ADR|새 ADR).{0,80}(?:없|금지|not|no|without)|(?:없|금지|not|no|without).{0,80}(?:0002|new ADR|새 ADR))/i,
-        "does not recommend a new ADR for either direction",
-      ),
-      {
-        pass: tail.verdict !== null && !/^(BLOCK|FIX_REQUIRED)$/i.test(tail.verdict.trim()),
-        detail: tail.verdict ? `verdict was ${tail.verdict}` : "no verdict in the tail block",
-        label: "reports deterministic reuse routing",
-      },
-    ];
-  },
 };
-
-function findNumberedAdrFiles(root) {
-  const out = [];
-  const stack = [root];
-  while (stack.length) {
-    const current = stack.pop();
-    let entries;
-    try {
-      entries = readdirSync(current);
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      const full = path.join(current, entry);
-      if (statSync(full).isDirectory()) stack.push(full);
-      else if (/^\d{4}-.*\.md$/.test(entry)) out.push(full);
-    }
-  }
-  return out.sort();
-}

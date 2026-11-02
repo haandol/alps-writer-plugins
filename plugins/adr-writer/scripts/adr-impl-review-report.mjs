@@ -185,7 +185,12 @@ import {
   quizLabels,
   quizScript,
 } from "../skills/report-writer/scripts/comprehension.mjs";
-import { CATEGORIES, AUTHORITY, USER_DECISION_CATEGORIES } from "./adr-impl-review-categories.mjs";
+import {
+  CATEGORIES,
+  AUTHORITY,
+  COVERAGE_STATUS_LABELS,
+  USER_DECISION_CATEGORIES,
+} from "./adr-impl-review-categories.mjs";
 import {
   relatedAdrComparisonProse,
   hillNarrativeParagraphs,
@@ -318,10 +323,10 @@ const UI = {
     category: "Category",
     confidence: "Confidence",
     reviewResult: "Review result",
-    statusProven: "Met",
-    statusViolated: "Fix required",
-    statusUnverified: "Verification required",
-    statusContradicted: "Conflicting evidence",
+    statusProven: COVERAGE_STATUS_LABELS.en.PROVEN,
+    statusViolated: COVERAGE_STATUS_LABELS.en.VIOLATED,
+    statusUnverified: COVERAGE_STATUS_LABELS.en.UNVERIFIED,
+    statusContradicted: COVERAGE_STATUS_LABELS.en.CONTRADICTED,
     choices: "Notable implementation choices",
     comprehension: "Comprehension check",
     residualNotes: "Review notes",
@@ -452,10 +457,10 @@ const UI = {
     category: "분류",
     confidence: "근거 수준",
     reviewResult: "검토 결과",
-    statusProven: "충족됨",
-    statusViolated: "수정 필요",
-    statusUnverified: "검증 필요",
-    statusContradicted: "근거 충돌",
+    statusProven: COVERAGE_STATUS_LABELS.ko.PROVEN,
+    statusViolated: COVERAGE_STATUS_LABELS.ko.VIOLATED,
+    statusUnverified: COVERAGE_STATUS_LABELS.ko.UNVERIFIED,
+    statusContradicted: COVERAGE_STATUS_LABELS.ko.CONTRADICTED,
     choices: "주요 구현 선택",
     comprehension: "이해도 확인",
     residualNotes: "리뷰 메모",
@@ -972,19 +977,25 @@ function stripGeneratedHillContent(body) {
     .trim();
 }
 
+/** The reader-language label of a coverage status; any other value reads as unverified. */
+function coverageStatusLabel(status, ui) {
+  return (
+    {
+      PROVEN: ui.statusProven,
+      VIOLATED: ui.statusViolated,
+      UNVERIFIED: ui.statusUnverified,
+      CONTRADICTED: ui.statusContradicted,
+    }[status] || ui.statusUnverified
+  );
+}
+
 function contractCoverageCard(row, index, total, ui) {
   const idx = String(index + 1).padStart(2, "0");
   const status = String(row.status || "UNVERIFIED").toUpperCase();
   const statusClass = ["PROVEN", "VIOLATED", "UNVERIFIED", "CONTRADICTED"].includes(status)
     ? status.toLowerCase()
     : "unverified";
-  const statusLabel =
-    {
-      PROVEN: ui.statusProven,
-      VIOLATED: ui.statusViolated,
-      UNVERIFIED: ui.statusUnverified,
-      CONTRADICTED: ui.statusContradicted,
-    }[status] || ui.statusUnverified;
+  const statusLabel = coverageStatusLabel(status, ui);
 
   const open = status === "PROVEN" ? "" : " open";
   return `
@@ -1094,13 +1105,7 @@ function hillResult(rows, ui) {
     rows.some((row) => String(row.status || "").toUpperCase() === candidate),
   );
   const normalizedStatus = status || "UNVERIFIED";
-  const label =
-    {
-      PROVEN: ui.statusProven,
-      VIOLATED: ui.statusViolated,
-      UNVERIFIED: ui.statusUnverified,
-      CONTRADICTED: ui.statusContradicted,
-    }[normalizedStatus] || ui.statusUnverified;
+  const label = coverageStatusLabel(normalizedStatus, ui);
   return {
     statusClass: normalizedStatus.toLowerCase(),
     label,
@@ -1155,13 +1160,7 @@ function coverageIndex(rows, hillByContract, ui) {
   return `<ul class="coverage-index">${rows
     .map((row) => {
       const hill = hillByContract.get(row.contractId);
-      const status =
-        {
-          PROVEN: ui.statusProven,
-          VIOLATED: ui.statusViolated,
-          UNVERIFIED: ui.statusUnverified,
-          CONTRADICTED: ui.statusContradicted,
-        }[row.status] || ui.statusUnverified;
+      const status = coverageStatusLabel(row.status, ui);
       return `<li><a href="#contract-${esc(row.contractId)}">${esc(row.contractId)}</a><span>${esc(
         status,
       )}</span><a href="#hill-${esc((hill?.id || "").toLowerCase())}">${esc(

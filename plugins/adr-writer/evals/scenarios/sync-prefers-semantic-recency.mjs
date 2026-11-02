@@ -41,7 +41,6 @@ export default {
       text: "Group only C and D as remaining intent/chronology questions, continue independent cases, and do not claim edits or tests. Preserve all unrelated requirements. Outcomes in prose must agree with the records.",
     },
   ],
-  score,
   deterministicScore,
   build() {
     return [

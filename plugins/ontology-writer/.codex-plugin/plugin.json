@@ -1,0 +1,33 @@
+{
+  "name": "ontology-writer",
+  "version": "0.11.0",
+  "description": "Keep a business ontology above ADRs as a closed RDFS-lite graph in Turtle: build it from documents, change it through one approval summary, align realizing ADRs, query business context and view it in 3D.",
+  "author": {
+    "name": "haandol",
+    "url": "https://github.com/haandol"
+  },
+  "homepage": "https://github.com/haandol/alps-writer-plugins/tree/main/plugins/ontology-writer",
+  "repository": "https://github.com/haandol/alps-writer-plugins",
+  "license": "MIT",
+  "keywords": ["ontology", "business-process", "rdfs", "turtle", "adr", "codex"],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Ontology Writer",
+    "shortDescription": "Keep business flows above ADRs",
+    "longDescription": "Model how the business flows across features — processes, steps, events, policies, cross-step rules, concepts and actors — as a validated Turtle graph above your ADRs. Build it from documents, change it through one approval summary that carries the affected ADRs, align realizing features, give agents the business context of a feature before they change it, and open a read-only view with a 3D business city.",
+    "developerName": "haandol",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/haandol/alps-writer-plugins/tree/main/plugins/ontology-writer",
+    "defaultPrompt": [
+      "Build a business ontology from these documents.",
+      "Change the business ontology: orders fully paid with store credit skip the payment request.",
+      "Check my direct edits to the business ontology and propose the downstream changes.",
+      "Make this process current once its realizing features are implemented.",
+      "Open the business ontology view."
+    ],
+    "brandColor": "#0E7490",
+    "screenshots": []
+  }
+}

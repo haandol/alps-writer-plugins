@@ -10,7 +10,10 @@ if (process.argv.slice(2).some((arg) => !["--check", "--global"].includes(arg)))
   throw new Error("Usage: sync-report-skill.mjs [--check] [--global]");
 const check = process.argv.includes("--check");
 const global = process.argv.includes("--global");
-const targets = [path.join(ROOT, "plugins/adr-writer/skills/report-writer")];
+const targets = [
+  path.join(ROOT, "plugins/adr-writer/skills/report-writer"),
+  path.join(ROOT, "plugins/ontology-writer/skills/report-writer"),
+];
 if (global) targets.push(path.join(os.homedir(), ".agents/skills/report-writer"));
 function files(folder, prefix = "") {
   return readdirSync(path.join(folder, prefix), { withFileTypes: true }).flatMap((entry) => {

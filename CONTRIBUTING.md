@@ -170,17 +170,31 @@ pnpm format:check                  # Check formatting; reuse unchanged content r
 ### Tests
 
 ```bash
-pnpm test        # Asset/guidance checks, ALPS, then pooled ADR + DeepEval + browser tests
-pnpm bump:check  # every release-version site agrees (13 of them)
+pnpm test:unit         # unit tests: no git, browser or other external tool (seconds)
+pnpm test:integration  # integration tests: git, a browser or another external tool
+pnpm test              # asset/guidance checks, ALPS, then every ADR, ontology, DeepEval and browser test
+pnpm bump:check        # every release-version site agrees (16 of them)
 ```
 
-After ALPS, ADR, DeepEval and browser test files share one Node worker pool,
+Tests come in two kinds, and behaviour evals are a third thing (below). A unit
+test needs no external tool: it runs in its own process, or starts only this
+repository's Node scripts, which start none either. An integration test needs
+git, a browser or another external tool; its file is named
+`*.integration.test.mjs`, or lives in an `integration-tests/` directory
+(`plugins/adr-writer/` or `plugins/ontology-writer/`).
+Put a new test in the unit file when it needs no external tool and in the
+matching `*.integration.test.mjs` file when it does. `pnpm test:unit` runs the
+ALPS tests and the ADR, ontology and DeepEval unit tests; `pnpm test:integration` runs the
+rest. Keep special cases of git or the file system to one representative test
+per kind.
+
+In `pnpm test`, the ALPS tests run first, then the ADR, ontology, DeepEval and browser test files share one Node worker pool,
 so independent files overlap within a single CPU-based concurrency limit. Test
 files keep process isolation and their own temporary fixtures. Run one with
-`pnpm test:alps`, `pnpm test:adr`, `pnpm test:deepeval`, or
+`pnpm test:alps`, `pnpm test:adr`, `pnpm test:ontology`, `pnpm test:deepeval`, or
 `pnpm test:report-rendering`. `pnpm test:workspace` runs the installed-dependency
-suites and shared asset/guidance checks; CI pairs it with the full ADR suite in
-`runtime`, so the tests run once across those two required jobs.
+suites and shared asset/guidance checks; CI pairs it with the full ADR and ontology
+suites in `runtime`, so the tests run once across those two required jobs.
 
 `format:check` uses Prettier's content cache under `node_modules/.cache/prettier`.
 Changes to file content, formatting options or the Prettier version invalidate
@@ -194,14 +208,25 @@ temporary storage and does not upload the cache between runs. An unavailable
 cache falls back to normal execution. Set `NODE_DISABLE_COMPILE_CACHE=1` to
 disable it, or `NODE_COMPILE_CACHE` to choose a different directory.
 
+On macOS, `/usr/bin/git` is a shim that looks the developer tools up through
+`xcrun` before every run, and the tests start thousands of git processes. When
+that shim is the first `git` on `PATH`, the Node test scripts put a private
+temporary directory holding only a link to the git it finds first on `PATH`
+for the run, and remove it at the end. It is the same git binary, so results
+do not change; elsewhere, or with another git first on `PATH`, nothing changes.
+
 Automated in two places, so you rarely have to remember:
 
-- **`.husky/pre-push`** runs the whole CI set locally and blocks the push on
-  any failure: typecheck (once, inside build), `pnpm test`, `lint`, `format:check`, `bump:check`, a boot
-  check on the committed MCP bundle and the adr-writer hook, and a rebuild that
-  fails if `plugins/alps-writer/dist/` is stale. If CI would fail on it, this fails
-  on it first. For a WIP branch you know is red: `SKIP_TESTS=1 git push …` — that
-  skips only the test suite, nothing else.
+- **`.husky/pre-push`** runs the fast part locally and blocks the push on any
+  failure: the generated-asset checks, `pnpm test:unit`, `lint`, `format:check`,
+  `bump:check`, a boot check on the committed MCP bundle and the adr-writer hook,
+  and a rebuild (with the typecheck) that fails if `plugins/alps-writer/dist/` is
+  stale. Integration tests are left to CI, whose required jobs run them on every
+  pull request; run `pnpm test:integration` locally when a change touches git
+  history reading, a CLI or a browser view. The checks that only read the tree
+  run while the unit tests run and report after them, in order; the rebuild waits
+  for the tests. For a WIP branch you know is red: `SKIP_TESTS=1 git push …` —
+  that skips only the unit tests, nothing else.
 - **`.github/workflows/ci.yaml`** splits `pnpm test` between `test` and `runtime`,
   and runs `lint`, `format:check`, version checks and a rebuild that fails if the
   committed `plugins/alps-writer/dist/` is stale. The `runtime` job checks what a
@@ -309,8 +334,15 @@ and verifies that fixture work leaves the outer checkout unchanged.
 
 ### Shared report-writing changes
 
-Edit `shared/report-writer/`, not the generated adr-writer copy. Run
-`pnpm report-skill:sync` and `pnpm report-skill:check`. The dependency-free Mermaid
+Edit `shared/report-writer/`, not the generated adr-writer and ontology-writer
+copies. Run `pnpm report-skill:sync` and `pnpm report-skill:check`.
+
+### Scripts ontology-writer shares with adr-writer
+
+ontology-writer runs copies of `adr-lint-lib.mjs`, `adr-status-transition.mjs` and
+`adr-impl-review-open.mjs`. Edit the adr-writer originals, then run
+`pnpm shared-scripts:sync`; `pnpm shared-scripts:check`, part of
+`pnpm test:checks`, rejects a stale copy. The dependency-free Mermaid
 implementation remains in the ADR scripts; the sync step distributes it with the
 standalone skill. Global installation is an explicit
 `node scripts/sync-report-skill.mjs --global`, never a build side effect.

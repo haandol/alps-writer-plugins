@@ -173,6 +173,24 @@ export const VERDICTS = {
 
 export const VERDICT_NAMES = new Set(Object.keys(VERDICTS));
 
+// Coverage status labels in the reader's language. The materializer writes them
+// into the Markdown coverage table, the validator checks that table against them,
+// and the compact Korean article prints the same words.
+export const COVERAGE_STATUS_LABELS = {
+  en: {
+    PROVEN: "Met",
+    VIOLATED: "Fix required",
+    UNVERIFIED: "Verification required",
+    CONTRADICTED: "Conflicting evidence",
+  },
+  ko: {
+    PROVEN: "충족됨",
+    VIOLATED: "수정 필요",
+    UNVERIFIED: "검증 필요",
+    CONTRADICTED: "근거 충돌",
+  },
+};
+
 // Keep user-decision controls consistent in both report delivery routes.
 export const USER_DECISION_CATEGORIES = new Set(
   Object.entries(CATEGORIES)
