@@ -67,6 +67,11 @@ a model document. Edit only the draft; never write `docs/ontology/`,
 
 ## 3. Validate and review before showing anything
 
+Apply `${CLAUDE_PLUGIN_ROOT}/references/workflow-readiness.md` to the changed
+workflow and its affected hand-offs. For additional source material use
+`/ontology-build` and its EventStorming map comparison; a focused correction
+need not rediscover unrelated workflows.
+
 Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs impact --draft <draft> --json`.
 Repair the draft until it reports no error. Then review every changed process
 yourself:

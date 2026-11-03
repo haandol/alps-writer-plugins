@@ -8,6 +8,25 @@ The current Purpose, all still-valid Decision Drivers, adopted choice, rationale
 and requirement contract remain together in the ADR body. Reading this log is
 optional for understanding the current decision.
 
+## 2026-11-03 — 실제 업무의 캡처와 개발·검증 연결
+
+업무 지도를 처음 보는 사람도 수행 주체·대상·시작 계기·결과를 읽을 수 있도록 표시 계약을 보강했다. 사용 대상과
+선택을 상태 변화처럼 보이게 하던 모호함을 없애고, 다른 컨텍스트의 시작 조건을 집중 보기에서도 설명하도록 정했다.
+
+기본 시점의 강제 기울임을 없애고 이벤트 인계 방향을 움직이는 신호로 설명하도록 정했다. 카메라와 업무 판정은
+효과로 바꾸지 않고, 일시 정지·모션 감소·숨김 처리를 둔다.
+
+3D 이벤트 맵은 컨텍스트 구역과 경계를 넘는 사건을 탐색하는 표현으로 구체화했다. 단순 카드 입체화보다 책임 경계와
+인계를 먼저 이해하게 하고, 기본 드래그 이동과 평면 상세를 제공하며 이동 상태는 저장하지 않는다.
+
+이벤트 스토밍의 3D 이벤트 맵을 첫 화면으로 두고 기존 업무 계층 모델은 탭으로 전환하도록 정했다. 실제 업무의
+인과 흐름을 먼저 읽고, 필요한 때 책임·프로세스 구조를 살펴보게 하려는 결정이다.
+
+온톨로지 자체의 완벽함이나 추론 능력보다 실제 업무의 흐름·판단 근거·예외를 정확하고 풍부하게 캡처하고 그 로직을
+ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축 계약은 근거 기반 이벤트 맵에서 컨텍스트·서브도메인을
+식별하도록, 활용 계약은 구현 리뷰까지 업무 시나리오를 연결하도록 바꿨다. 프로세스 완전성·ADR 준비·실행 증거를
+구별하는 검토와 엔티티 변화 전후를 근거로 표시하는 이벤트 스토밍 보드·후속 작업 안내를 계약에 추가했으며, 구현·검증을 마치지 않은 네 결정은 Proposed로 둔다.
+
 ## 2026-11-02 — 레벨 이름을 업무 온톨로지로 바꾸고 모델 문서를 `docs/ontology/`에 둠
 
 - **Current ADR**: [introduce-business-ontology-level](./0001-introduce-business-ontology-level.md)
@@ -97,3 +116,7 @@ optional for understanding the current decision.
 - **What is now void**: 모델이 업무 상태와 허용 전이를 소유하던 규칙.
 
 <!-- adr-writer:rules-version 0.10.15 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+
+- 2026-11-03: 사건 흐름을 기본 보기로 삼고 3D 컨텍스트 지도를 분리한다. 사건·정책·관련 규칙·범위가 명시된 미정 질문을 함께 읽으며, 원문에 없는 인과나 업무 보장을 만들지 않는다.
+
+- 2026-11-03: 사건 흐름과 업무 구조 두 보기로 정리하고 중복 컨텍스트 지도를 제거한다. 사건의 읽기 순서를 유지한 입체감과 은은한 인과 신호를 제공하며 사건 상세는 업무 구조의 동일 단계로 연결한다.

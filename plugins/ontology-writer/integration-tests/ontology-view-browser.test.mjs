@@ -14,6 +14,7 @@ import {
   follow,
   fresh,
   launch,
+  showStructure,
   leave,
   nodeIn,
   offline,
@@ -39,6 +40,7 @@ before(async () => {
   page = await browser.newPage();
   await offline(page, requests);
   await page.goto(pathToFileURL(views.example).href, { waitUntil: "load" });
+  await showStructure(page);
   results = await page.evaluate(drawAll);
   await page.waitForFunction(() =>
     document.querySelector('figure[data-targets] g.node[role="link"]'),
@@ -192,14 +194,57 @@ test("a diagram zooms by its buttons, Ctrl-scroll and keys, pans by dragging wit
   await press("in");
   const zoomed = await view();
   assert.ok(zoomed.width < fitted.width * 0.8, "the zoom button zooms in");
-  const area = await (await wide.$(`${figure} .diagram__viewport`)).boundingBox();
-  const [cx, cy] = [area.x + area.width / 2, area.y + area.height / 2];
-  await wide.mouse.move(cx, cy);
-  await wide.mouse.wheel({ deltaY: -200 });
+  const pointAtDiagram = async () => {
+    const viewport = await wide.$(`${figure} .diagram__viewport`);
+    await settle(viewport);
+    const area = await viewport.boundingBox();
+    const point = [area.x + area.width / 2, area.y + area.height / 2];
+    await wide.mouse.move(...point);
+    assert.ok(
+      await wide.evaluate(
+        (selector, x, y) => Boolean(document.elementFromPoint(x, y)?.closest(selector)),
+        `${figure} .diagram__viewport`,
+        ...point,
+      ),
+      "wheel input points inside the diagram viewport",
+    );
+    return point;
+  };
+  const wheel = async () => {
+    const selector = `${figure} .diagram__viewport`;
+    await wide.$eval(selector, (viewport) => {
+      viewport.testWheelObserved = false;
+      viewport.addEventListener(
+        "wheel",
+        () => requestAnimationFrame(() => (viewport.testWheelObserved = true)),
+        { once: true },
+      );
+    });
+    await wide.mouse.wheel({ deltaY: -200 });
+    await wide.waitForFunction(
+      (selector) => document.querySelector(selector).testWheelObserved,
+      {},
+      selector,
+    );
+  };
+  let [cx, cy] = await pointAtDiagram();
+  await wheel();
   assert.equal((await view()).width, zoomed.width, "a plain scroll leaves the zoom");
+  // Wheel scrolling moves the diagram underneath the pointer asynchronously.
+  // Re-aim after that movement and wait for the observable zoom result.
+  [cx, cy] = await pointAtDiagram();
   await wide.keyboard.down("Control");
-  await wide.mouse.wheel({ deltaY: -200 });
-  await wide.keyboard.up("Control");
+  try {
+    await wheel();
+    await wide.waitForFunction(
+      (selector, width) => document.querySelector(`${selector} svg`).viewBox.baseVal.width < width,
+      {},
+      figure,
+      zoomed.width,
+    );
+  } finally {
+    await wide.keyboard.up("Control");
+  }
   const closer = await view();
   assert.ok(closer.width < zoomed.width, "Ctrl-scroll zooms in");
   await wide.mouse.down();
@@ -235,6 +280,7 @@ test("a diagram is drawn only once it comes near view, so the page opens without
   const fresh = await browser.newPage();
   await fresh.setViewport({ width: 800, height: 600 });
   await fresh.goto(pathToFileURL(views.large).href, { waitUntil: "load" });
+  await showStructure(fresh);
   await fresh.evaluate(() => window.reportDiagramsReady);
   const last = () =>
     fresh.evaluate(
@@ -260,6 +306,7 @@ test("a large landscape waits for its button, and only the flows just ahead of t
   // With motion reduced the city keeps still, so the page is idle.
   await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
   await page.goto(pathToFileURL(views.large).href, { waitUntil: "load" });
+  await showStructure(page);
   await page.evaluate(() => window.reportDiagramsReady);
   const landscape = () => page.$eval("#landscape figure", (f) => f.dataset.renderState);
   assert.equal(await landscape(), "pending");

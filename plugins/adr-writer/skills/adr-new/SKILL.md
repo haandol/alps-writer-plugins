@@ -24,7 +24,9 @@ self-contained in the ADR; glossary work adds no separate classification intervi
 When `docs/ontology/` holds Turtle documents, read
 `${CLAUDE_PLUGIN_ROOT}/references/business-context.md` before eliciting or
 drafting: query the feature's business context, judge an unlinked feature, and
-name what you checked in the approval summary. Without them, skip it.
+connect workflow outcomes and relevant exceptions/hand-offs to feature-level
+contracts and observation criteria, and name what you checked in the approval
+summary. Without them, skip it.
 
 > When to use: whenever a decision passes the **ADR admission gate** and must be recorded before changing code — a requirement contract, external boundary, data/key design, security trust boundary, adopted algorithm, fallback policy, or durable trade-off. A replaceable implementation means does not enter this skill. The ADR you write can go straight into `/adr-impl`.
 >

@@ -11,6 +11,7 @@ import {
   fastClock,
   fresh,
   launch,
+  showStructure,
   openWide,
   position,
   reached,
@@ -59,6 +60,7 @@ test("with motion on, the city stops drawing once the reader has been away, and 
   await idle.setViewport({ width: 1440, height: 900 });
   await fastClock(idle);
   await idle.goto(pathToFileURL(views.example).href, { waitUntil: "load" });
+  await showStructure(idle);
   assert.equal(await idle.evaluate(() => window.ontologyViewCity.moving()), true);
   // Past the city's 12 s rest.
   await waitFast(14000);
@@ -74,6 +76,7 @@ test("with motion on, a city without hand-offs also turns once the reader has be
   await idle.setViewport({ width: 1440, height: 900 });
   await fastClock(idle);
   await idle.goto(pathToFileURL(views.plain).href, { waitUntil: "load" });
+  await showStructure(idle);
   // Locating a shape ends the opening flight, so only turning can change the canvas after it.
   assert.ok(await idle.evaluate(() => window.ontologyViewCity.locate("process-el-sales_2e_sell")));
   const canvas = async () =>
@@ -102,6 +105,7 @@ test("moving on its own, the city asks the browser for about 30 frames a second,
     };
   });
   await paced.goto(pathToFileURL(views.example).href, { waitUntil: "load" });
+  await showStructure(paced);
   // Locating a shape ends the opening flight, so what follows is the city moving on its own:
   // the hand-offs' lights.
   assert.ok(
@@ -124,6 +128,7 @@ test("zoomed in on one process, the city leaves out what lies outside the view",
     await still.setViewport({ width: 1440, height: 900 });
     await still.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
     await still.goto(pathToFileURL(views.large).href + fragment, { waitUntil: "load" });
+    await showStructure(still);
     const drawn = await still.evaluate((id) => {
       const point = window.ontologyViewCity.locate(id);
       return { point, shapes: window.ontologyViewCity.shapes() };

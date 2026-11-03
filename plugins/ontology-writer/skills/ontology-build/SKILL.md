@@ -1,6 +1,6 @@
 ---
 name: ontology-build
-description: Build business ontology candidates from a set of documents or folders (including AgentStorm published maps) — each candidate element and relation with its source location and source verdict (stated, inferred, conflicting, unconfirmed), current vs. planned business marked, a four-axis sufficiency review, the semantic diff against an existing model and feature-to-step link candidates — presented as one report grouped by bounded context; then save only what the user confirmed through the ontology's approval path. Use when the user asks to create or extend docs/ontology from documents. Keywords - "/ontology-build", "온톨로지 구축", "문서에서 업무 모델", "build ontology from documents".
+description: Capture actual business workflows through evidence-based EventStorming from documents, user explanations and local evidence (including AgentStorm published maps); map events, identify bounded contexts and subdomains, then build business ontology candidates — each candidate element and relation with its source location and source verdict (stated, inferred, conflicting, unconfirmed), current vs. planned business marked, a four-axis sufficiency review, the semantic diff against an existing model and feature-to-step link candidates — presented as one report grouped by bounded context; then save only what the user confirmed through the ontology's approval path. Use when the user asks to create or extend docs/ontology from documents. Keywords - "/ontology-build", "온톨로지 구축", "문서에서 업무 모델", "build ontology from documents".
 argument-hint: "[documents-or-folders] [scope?]"
 ---
 
@@ -20,7 +20,9 @@ something changes nothing.
 
 ## 1. Fix the input and the scope
 
-- Read the documents and folders the user named. Report every document or part
+- Read the documents and folders the user named. Include the supplied user
+  explanations and accessible local business evidence; distinguish observed
+  implementation behavior from confirmed business intent. Report every document or part
   you could not read, with the reason; never report it as examined.
 - With a business scope (purpose, start, end), anchor the candidates' start
   conditions and outcomes to it and turn a differing document statement into a
@@ -28,6 +30,12 @@ something changes nothing.
   scope in the report. Content outside the scope is reported as out of scope,
   never as a candidate.
 - An AgentStorm published version is read with [AgentStorm input](references/agentstorm.md).
+
+Before building candidates, apply
+`${CLAUDE_PLUGIN_ROOT}/references/eventstorming.md`: present the evidence-based
+whole-scope event map, then bounded-context and subdomain candidates with their
+reasons, before the saved-model proposal. Capture actual workflow decisions,
+exceptions and hand-offs; formal ontology completeness is not the goal.
 
 ## 2. Build candidates with their sources
 
@@ -63,6 +71,10 @@ Work in a disposable run directory under `.adr-review/` following
 
 ## 3. Review sufficiency before reporting
 
+Apply `${CLAUDE_PLUGIN_ROOT}/references/workflow-readiness.md` to the proposed
+scope. Separate business-model sufficiency, ADR contract readiness and execution
+evidence; this build does not establish execution success.
+
 - Judge four axes — start, end and normal flow; performers and rules;
   exceptions, rejections and hand-offs; evidence conflicts — as sufficient,
   insufficient or unconfirmed, with reasons. The first three are the coverage a
@@ -93,7 +105,13 @@ feature-to-step link candidates with reasons, including features with an empty
 independently, present one report grouped by bounded context: candidates with
 sources and verdicts, the four axes' verdicts with their reasons, conflicts,
 not-held content, the diff, link candidates and questions, each with an
-identifier the user can answer by.
+identifier the user can answer by. Open that report with the whole-scope event
+map and its evidence limits, then boundary and subdomain candidates with reasons,
+before the context-level model details. Render the event map with
+`${CLAUDE_PLUGIN_ROOT}/references/eventstorming-board.md`: show entity changes
+as EventStorming cards, with sources and unknown before/after conditions, and
+link that disposable board from the report. A Mermaid diagram does not replace
+the EventStorming result.
 
 ## 5. Save only what the user confirmed
 

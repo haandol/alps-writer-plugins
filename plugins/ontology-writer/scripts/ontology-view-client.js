@@ -1443,7 +1443,8 @@
     let raf = 0;
     let last = 0;
     let lastInput = 0;
-    let visible = true;
+    let visible = !document.getElementById("city").hidden;
+    let hiddenAt = visible ? null : performance.now();
     let dragging = null;
     const pointers = new Map();
     const touch = () => (lastInput = performance.now());
@@ -1515,6 +1516,7 @@
     // at full rate. At rest the city draws nothing.
     function frame(now) {
       raf = 0;
+      if (!visible) return;
       const awake = motion && !dragging && now - lastInput < REST;
       const turning = awake && !tween && selected < 0 && now - lastInput > 3500;
       const lights = awake && arcs.length > 0;
@@ -1631,7 +1633,7 @@
         x: event.clientX,
         y: event.clientY,
         moved: false,
-        pan: event.shiftKey || event.button === 2,
+        pan: !event.shiftKey && event.button !== 2,
         spread: pointers.size === 2 ? spread() : 0,
       };
       touch();
@@ -1753,11 +1755,32 @@
     }
     if (typeof ResizeObserver === "function") new ResizeObserver(resize).observe(canvas);
     else addEventListener("resize", resize);
-    if (typeof IntersectionObserver === "function")
-      new IntersectionObserver(([entry]) => {
-        visible = entry.isIntersecting;
+    function setVisible(on) {
+      const now = performance.now();
+      if (!on) {
+        if (hiddenAt === null) hiddenAt = now;
+        if (raf) cancelAnimationFrame(raf);
+        if (timer) clearTimeout(timer);
+        raf = 0;
+        timer = 0;
+      } else if (hiddenAt !== null) {
+        if (tween) tween.start += now - hiddenAt;
+        lastInput += now - hiddenAt;
+        hiddenAt = null;
+      }
+      visible = on;
+      if (on) {
+        resize();
         invalidate();
-      }).observe(canvas);
+      }
+    }
+    document.addEventListener("ontology-view-change", () =>
+      setVisible(!document.getElementById("city").hidden),
+    );
+    if (typeof IntersectionObserver === "function")
+      new IntersectionObserver(([entry]) =>
+        setVisible(entry.isIntersecting && !document.getElementById("city").hidden),
+      ).observe(canvas);
     resize();
     Object.assign(cam, home);
 
@@ -1800,7 +1823,8 @@
         return null;
       },
       shapes: () => hits.length,
-      moving: () => raf !== 0 || timer !== 0 || tween !== null,
+      moving: () => visible && (raf !== 0 || timer !== 0 || tween !== null),
+      camera: () => ({ ...cam }),
     };
     function centroid(pts) {
       let x = 0;

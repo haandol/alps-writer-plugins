@@ -225,23 +225,23 @@
         },
         {
           "path": "docs/adr/ontology/0002-retrieve-business-context-for-agents.md",
-          "status": "Accepted (2026-11-02)",
-          "summary": "ADR이나 코드를 바꾸기 전에 상위 업무 모델을 먼저 확인하고 다른 프로세스의 반응 단계까지 담은 업무 맥락을 결정적 조회로 얻어 모순 확인과 준수 계약 제안에 쓰되 구현 판정에는 쓰지 않는다"
+          "status": "Proposed",
+          "summary": "업무 맥락을 ADR 작성·구현·리뷰의 계약·시나리오·증거로 연결하고 업무 정렬 결과와 ADR 구현 판정을 구별한다"
         },
         {
           "path": "docs/adr/ontology/0003-govern-ontology-lifecycle-and-cascade.md",
-          "status": "Accepted (2026-11-02)",
-          "summary": "프로세스 의미 변경은 승인 요약 하나로 ADR revision까지 승인해 위에서 아래로 전파하고 실행 증거를 포함한 정렬 검토로 현행 업무 여부를 판정한다"
+          "status": "Proposed",
+          "summary": "승인된 업무 변경을 ADR·코드로 전파하고 읽기 전용 완전성·준비 상태 점검과 실제 실행 정렬 검토를 구별한다"
         },
         {
           "path": "docs/adr/ontology/0004-build-ontology-from-documents.md",
-          "status": "Accepted (2026-11-02)",
-          "summary": "문서 묶음에서 출처와 출처 판정을 붙인 모델 후보를 질문과 함께 제시하고 사용자가 확인한 사실만 저장한다"
+          "status": "Proposed",
+          "summary": "근거 기반 이벤트 스토밍으로 전체 업무 이벤트 맵과 컨텍스트·서브도메인을 식별하고 확인된 모델 후보만 저장한다"
         },
         {
           "path": "docs/adr/ontology/0005-render-read-only-ontology-views.md",
-          "status": "Accepted (2026-11-02)",
-          "summary": "온톨로지는 요청 시 실현 현황을 겹친 읽기 전용 독립 HTML 탐색 화면으로 시각화하고 화면 파일은 커밋하지 않는다"
+          "status": "Accepted (2026-11-03)",
+          "summary": "사건 흐름과 3D 업무 구조 두 보기로 업무 인과와 책임 경계를 탐색하며 중복 컨텍스트 지도 없이 같은 단계·근거로 이동한다"
         }
       ],
       "dependsOn": [

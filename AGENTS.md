@@ -257,6 +257,17 @@ plugins/ontology-writer/  # Business ontology plugin (optional level above ADRs)
     └── example.ttl       # canonical example model
 ```
 
+The ontology's purpose is to capture actual business workflows accurately and
+richly so their business logic reaches ADR contracts, code and tests. A perfect
+ontology or inference capability is not the objective. Build from evidence-based
+EventStorming: a whole-scope event map first, then bounded contexts and subdomains,
+then confirmed model facts and feature-level ADR contracts. Capture relevant
+exceptions, decisions and their reasons, manual/external hand-offs and unknown
+scope. Preserve exact requirements at their owning level; abstraction never
+justifies losing a business obligation. Judge completeness by the context needed
+to implement and verify the workflow. Keep model sufficiency, ADR contract
+readiness and actual execution evidence separate.
+
 The plugins are split so adr-writer never references ALPS or reads the business ontology. The couplings run one way, from the upper level down: alps-writer's `/feature-to-adr` transfers each implementable Feature's complete contract into one or several ADRs and delegates each new decision owner to adr-writer's `/adr-new`; ontology-writer writes the ADR index's `realizes` links in the same change unit as the model and hands a model change's ADR revisions to adr-writer's `/adr-new` draft rules and `/adr-impl`. Normal implementation then reads only ADRs; explicit PRD re-import remains an alps-writer-side semantic comparison. adr-writer knows the model only as the shape of `realizes` and, when model documents exist, one session-directive line saying that business context is checked through ontology-writer. ontology-writer runs copies of three adr-writer scripts (reading the ADR index and Status, recording a Status transition, opening a report), refreshed by `scripts/sync-shared-scripts.mjs` and checked in `pnpm test:checks`.
 
 Shared authoring guidance is owned by `plugins/adr-writer/references/`:
