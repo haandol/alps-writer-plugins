@@ -9,6 +9,16 @@ a whole-scope event map, bounded contexts and subdomains grounded in that map,
 then confirmed model facts. Additional sources use the same comparison and
 approval path. These agent workflows are distinct from the deterministic CLI.
 
+## Guides and examples
+
+| Guide                                                            | What it explains                                                                                                        |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [How the ontology is created and used](./docs/workflow.md)       | Evidence, EventStorming, model approval, ADR/code use and readiness checks (Korean)                                     |
+| [Order and payment walkthrough](./docs/order-payment-example.md) | A fictional source document, a runnable candidate board and Turtle model, and the contracts/tests still needed (Korean) |
+
+The [example files](./examples/order-payment/) ship with this plugin. They are
+learning material, separate from a project's actual ontology and ADR index.
+
 ## Install
 
 **Codex**
@@ -52,19 +62,33 @@ and conditions. Related business rules and recorded open paths appear beside the
 flow, preserving their scope and evidence. Branches and returning links remain
 visible; position does not establish time or an unrecorded causal relation.
 
-The model has two tabs: Event flow and Business structure. The latter already
-shows context districts, process towers, steps and event/policy hand-offs in 3D,
-so there is no separate context map. The event inspector can open the same step
+The model has two top-level tabs: Event flow and Business structure. Inside
+Event flow, switch between individual events and Business areas: sourced domain,
+subdomain and context groupings with cross-context hand-offs. Shared contexts
+appear once with explicit memberships; unknown membership stays separate.
+Business structure shows context districts, process towers, steps and hand-offs in 3D.
+The event inspector can open the same step
 in Business structure. Both views keep their navigation in the open page;
 reopening resets it. Read actual context ownership from the model details,
 not a process tower's physical placement.
 
+The event flow places emitted events on a continuous trace with solid arrows;
+action-only stages remain labeled intermediate actions. Connection labels open
+the original policy, action, condition and evidence, while event selection
+highlights upstream/downstream paths. Reaction paths and recorded action order
+remain distinct, and no link is inferred from visual adjacency.
+
 The event flow uses a readable front-facing canvas with restrained depth and
-subtle directional strokes. Motion can be paused, respects reduced motion and
+subtle directional strokes with a visible trail and playback/pause reasons.
+Each set reads from performer/action through an evidenced object change to its
+event, with sourced input/result views. Automated or external activity need not
+have a human or UI. Motion can be paused, respects reduced motion and
 stops while hidden or out of view. It illustrates recorded event reactions, not
 live traffic or sequence-only relations. Candidate boards can show source-backed
-changes before a model exists, using only the event flow and complete source
-cards; see `references/eventstorming-board.md`. Unknown changes and unperformed
+changes, business areas and views before a model exists, alongside complete source
+cards; see `references/eventstorming-board.md`. The saved vocabulary has no Domain,
+Subdomain or View types, so a model-only reconstruction leaves them unconfirmed.
+Unknown changes and unperformed
 reviews remain explicit.
 
 ## Business ontology

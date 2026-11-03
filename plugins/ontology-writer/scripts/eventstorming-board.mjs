@@ -7,10 +7,13 @@ import { renderEventTimeline } from "./eventstorming-timeline.mjs";
 
 export const BOARD_CSS =
   readFileSync(new URL("./eventstorming-board.css", import.meta.url), "utf8") +
-  readFileSync(new URL("./eventstorming-timeline.css", import.meta.url), "utf8");
+  readFileSync(new URL("./eventstorming-timeline.css", import.meta.url), "utf8") +
+  readFileSync(new URL("./eventstorming-landscape.css", import.meta.url), "utf8");
 export const BOARD_CLIENT =
   readFileSync(new URL("./eventstorming-board-client.js", import.meta.url), "utf8") +
-  readFileSync(new URL("./eventstorming-timeline.js", import.meta.url), "utf8");
+  readFileSync(new URL("./eventstorming-motion.js", import.meta.url), "utf8") +
+  readFileSync(new URL("./eventstorming-timeline.js", import.meta.url), "utf8") +
+  readFileSync(new URL("./eventstorming-landscape.js", import.meta.url), "utf8");
 const esc = (s) =>
   String(s ?? "").replace(
     /[&<>"']/g,
@@ -125,6 +128,28 @@ export function validateEventBoard(board) {
   if (!["candidate", "model"].includes(board.origin)) fail("origin", "expected candidate or model");
   const ids = new Set();
   const contextNames = new Map();
+  if (board.domain !== undefined) {
+    text(board.domain?.name, "domain.name");
+    if (board.domain?.description !== undefined)
+      text(board.domain.description, "domain.description");
+    claim(board.domain, "domain");
+  }
+  if (board.contexts !== undefined) {
+    if (!Array.isArray(board.contexts)) fail("contexts", "expected array");
+    else
+      board.contexts.forEach((c, i) => {
+        const p = `contexts[${i}]`;
+        if (!c || typeof c !== "object") return fail(p, "expected context");
+        text(c.id, p + ".id");
+        text(c.name, p + ".name");
+        if (contextNames.has(c.id)) fail(p, "duplicate context id");
+        contextNames.set(c.id, c.name);
+        if (c.description !== undefined) text(c.description, p + ".description");
+        if (c.external !== undefined && typeof c.external !== "boolean")
+          fail(p + ".external", "expected boolean");
+        claim(c, p);
+      });
+  }
   if (!Array.isArray(board.stages)) fail("stages", "expected array");
   else
     board.stages.forEach((s, i) => {
@@ -152,6 +177,19 @@ export function validateEventBoard(board) {
       if (s.retired !== undefined && typeof s.retired !== "boolean")
         fail(p + ".retired", "expected boolean");
       if (s.actor !== undefined && s.actor !== null) text(s.actor, p + ".actor");
+      if (s.views !== undefined) {
+        if (!Array.isArray(s.views)) fail(p + ".views", "expected array");
+        else
+          s.views.forEach((v, j) => {
+            const q = p + `.views[${j}]`;
+            if (!v || typeof v !== "object") return fail(q, "expected view");
+            text(v.name, q + ".name");
+            if (!["input", "result"].includes(v.role))
+              fail(q + ".role", "expected input or result");
+            if (v.description !== undefined) text(v.description, q + ".description");
+            claim(v, q);
+          });
+      }
       if (!Array.isArray(s.entities)) fail(p + ".entities", "expected array");
       else
         s.entities.forEach((e, j) => {
@@ -202,12 +240,37 @@ export function validateEventBoard(board) {
     });
   if (board.subdomains !== undefined) {
     if (!Array.isArray(board.subdomains)) fail("subdomains", "expected array");
-    else
+    else {
+      const subdomainIds = new Set();
       board.subdomains.forEach((s, i) => {
+        const p = `subdomains[${i}]`;
+        if (!s || typeof s !== "object") return fail(p, "expected subdomain");
+        if (s.id !== undefined) {
+          text(s.id, p + ".id");
+          if (subdomainIds.has(s.id)) fail(p, "duplicate subdomain id");
+          subdomainIds.add(s.id);
+        }
         text(s.name, `subdomains[${i}].name`);
         text(s.responsibility, `subdomains[${i}].responsibility`);
         claim(s, `subdomains[${i}]`);
+        if (
+          s.classification !== undefined &&
+          !["core", "supporting", "generic", "unconfirmed"].includes(s.classification)
+        )
+          fail(p + ".classification", "expected core, supporting, generic or unconfirmed");
+        if (s.contextIds !== undefined) {
+          if (!Array.isArray(s.contextIds)) fail(p + ".contextIds", "expected array");
+          else {
+            const members = new Set();
+            for (const id of s.contextIds) {
+              if (!contextNames.has(id)) fail(p + ".contextIds", "unknown context id");
+              if (members.has(id)) fail(p + ".contextIds", "duplicate context membership");
+              members.add(id);
+            }
+          }
+        }
       });
+    }
   }
   if (board.questions !== undefined) {
     if (!Array.isArray(board.questions)) fail("questions", "expected array");
@@ -306,7 +369,7 @@ export function modelEventBoard({
           action: s.step.label ?? s.step.id,
           modelId: s.step.id,
           process: elementId(p),
-          context: s.context?.label ?? t.context,
+          context: s.context?.label || s.context?.id || t.context,
           contextId: s.context?.id ?? null,
           contextDescription: s.context?.id
             ? literal(elementIri(s.context.id), "definition") || null
@@ -395,6 +458,22 @@ export function modelEventBoard({
         .map((s) => s.id),
     })),
     subdomains: [],
+    // Invalid model identities stay in the validation report, not a fabricated
+    // board identity. A bad optional label must not prevent that report opening.
+    contexts: index
+      .ofType("BoundedContext")
+      .filter((iri) => Boolean(elementId(iri)))
+      .map((iri) => ({
+        id: elementId(iri),
+        name: name(iri) || elementId(iri),
+        description: literal(iri, "definition") || undefined,
+        verdict: findings.some(
+          (f) => f.level === "error" && (f.element === iri || f.element === elementId(iri)),
+        )
+          ? "unconfirmed"
+          : "stated",
+        evidence: source(elementId(iri)),
+      })),
   };
 }
 
@@ -406,6 +485,8 @@ export function renderEventBoard(board, { lang = "en", modelLink = null } = {}) 
   const effective = (c) => (c.evidence.length ? c.verdict : "unconfirmed");
   const evidence = (c) =>
     `<details class="event-evidence"><summary>${esc(t.evidence)} · ${esc(t[effective(c)])}</summary>${c.evidence.length ? `<ul>${c.evidence.map((e) => `<li>${esc(e.source)}${e.detail ? " · " + esc(e.detail) : ""}</li>`).join("")}</ul>` : `<p>${esc(t.noEvidence)}</p>`}</details>`;
+  const views = (s) =>
+    `<div class="event-card event-views"><h4>${lang === "ko" ? "관련 뷰 · 화면과 조회 모델" : "Related views · screens and read models"}</h4>${s.views?.length ? s.views.map((v) => `<div data-view-role="${esc(v.role)}"><p><strong>${esc(v.name)}</strong> · ${lang === "ko" ? (v.role === "input" ? "행동에 참고" : "결과 확인") : v.role === "input" ? "Informs the action" : "Shows the result"}</p>${v.description ? `<p>${esc(v.description)}</p>` : ""}${evidence(v)}</div>`).join("") : `<p>${lang === "ko" ? "관련 뷰 미기록 · 자동·외부 활동에는 화면이 없을 수도 있습니다." : "Views unrecorded · automated or external activity may have no screen."}</p>`}</div>`;
   // Arrange known causal predecessors first; a cycle keeps the supplied order.
   // Position alone never asserts an unrecorded relation.
   const ordered = [];
@@ -445,7 +526,7 @@ export function renderEventBoard(board, { lang = "en", modelLink = null } = {}) 
             })
             .join("")
         : `<p>${esc(t.noEntity)}</p>`
-    }</div><div class="event-card domain-event"><h4>${esc(t.event)}</h4><p><strong>${esc(s.event?.name ?? t.noEvent)}</strong></p>${s.event?.description && s.event.description !== s.event.name ? `<p>${esc(s.event.description)}</p>` : ""}</div><div class="event-card policy"><h4>${esc(t.policy)}</h4>${s.policies.length ? `<ul data-event-policies>${s.policies.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : `<p>${esc(t.none)}</p>`}<h4>${esc(t.next)}</h4><ul>${
+    }</div><div class="event-card domain-event"><h4>${esc(t.event)}</h4><p><strong>${esc(s.event?.name ?? t.noEvent)}</strong></p>${s.event?.description && s.event.description !== s.event.name ? `<p>${esc(s.event.description)}</p>` : ""}</div>${views(s)}<div class="event-card policy"><h4>${esc(t.policy)}</h4>${s.policies.length ? `<ul data-event-policies>${s.policies.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : `<p>${esc(t.none)}</p>`}<h4>${esc(t.next)}</h4><ul>${
       board.links
         .filter((l) => l.from === s.id)
         .map(

@@ -163,13 +163,14 @@ Omit `--global` for a project-local installation. See the [report skill](./plugi
 
 ## Documentation
 
-| Guide                                                  | Contents                                                                                                    |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| [Usage](./docs/usage.md)                               | Walkthroughs, all commands, hooks, and the ADR index                                                        |
-| [ADR process](./docs/adr-process.md)                   | Lifecycle, critical command paths, routing, and efficiency review as diagrams (Korean)                      |
-| [ADR templates](./plugins/adr-writer/templates/adr/)   | Authoring rules, directory structure, and index schema                                                      |
-| [Ontology Writer](./plugins/ontology-writer/README.md) | Business ontology commands, its session directive, and how it works with adr-writer                         |
-| [MCP server](./docs/mcp-server.md)                     | Use the ALPS server in other Model Context Protocol (MCP) clients; environment variables and tool reference |
+| Guide                                                                                                                                | Contents                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| [Usage](./docs/usage.md)                                                                                                             | Walkthroughs, all commands, hooks, and the ADR index                                                              |
+| [ADR process](./docs/adr-process.md)                                                                                                 | Lifecycle, critical command paths, routing, and efficiency review as diagrams (Korean)                            |
+| [ADR templates](./plugins/adr-writer/templates/adr/)                                                                                 | Authoring rules, directory structure, and index schema                                                            |
+| [Ontology Writer](./plugins/ontology-writer/README.md)                                                                               | Business ontology commands, its session directive, and how it works with adr-writer                               |
+| [Ontology workflow](./plugins/ontology-writer/docs/workflow.md) · [example](./plugins/ontology-writer/docs/order-payment-example.md) | How business evidence becomes an ontology and reaches ADRs, code and tests; updates and readiness checks (Korean) |
+| [MCP server](./docs/mcp-server.md)                                                                                                   | Use the ALPS server in other Model Context Protocol (MCP) clients; environment variables and tool reference       |
 
 When calling ALPS document tools directly, pass `doc_path` on every request. Initialization or loading does not select a default for later calls; missing or invalid targets return an error without changing another document.
 

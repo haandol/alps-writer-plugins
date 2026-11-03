@@ -16,16 +16,18 @@ new ignored HTML file and opens it in the default browser. Use `--no-open` to
 honor no-open delivery, `--browser <name>` for a requested browser, and
 `--out <new.html>` for an explicit output path; it
 refuses to overwrite a file. Include the board in the build report's evidence
-and return its path. The board opens with an event-first canvas with restrained depth, complete
-source cards and native SVG connections. Candidates have no second map or
-fabricated structure tab; saved-model views pair the same flow with the
-existing 3D business structure. It uses no Mermaid. Camera changes
+and return its path. The board opens with an event trace with restrained depth,
+complete source cards and native SVG connections. Within Event flow, switch to
+Business areas to inspect sourced domain/subdomain/context groupings and back to
+an individual event. Saved-model views pair that workbench with the existing
+3D business structure. Candidates do not invent its process hierarchy or realization.
+It uses no Mermaid. Camera changes
 and selection are transient and never change business facts. Rendering never applies the proposal or promotes a process.
 
 ## Input
 
 The root holds `version: 1`, `origin: "candidate"`, `title`, `scope`, `stages`,
-`links`, and optional `subdomains` and `questions`. Keep the requested system scope and uncovered
+`links`, and optional `domain`, `contexts`, `subdomains` and `questions`. Keep the requested system scope and uncovered
 parts explicit in `scope`. Each stage is one observed or proposed business
 change, not an internal method call:
 
@@ -41,6 +43,11 @@ change, not an internal method call:
 - Optional `rules`: `{ name, description?, scope, verdict, evidence }` objects.
   Preserve the source's actual applicability in `scope`. A related concept's
   rule does not establish enforcement by a step or an aggregate boundary.
+- Optional `views`: `{ name, role, description?, verdict, evidence }` objects.
+  `role` is `input` (informs the action) or `result` (shows its result). Screens
+  and read models are optional; absent/empty means unrecorded. A system, timer or
+  external activity need not have a human or screen. Do not infer view updates,
+  their timing, or causation merely because a view is associated with an event.
 
 Every link has `from`, `to` (existing stage ids), `label` naming the reaction,
 `verdict`, and `evidence`. Optional `condition` preserves the source reaction
@@ -71,13 +78,27 @@ Independent nodes acquire no inferred links or timestamps. A stage without an
 emitted event stays visibly unrecorded. Events lead to their complete source cards. Saved-model activities can also
 lead to the same step in Business structure. Camera and selection remain transient.
 
+Optional `domain` contains `name`, optional `description`, `verdict` and `evidence`.
+Optional `contexts` contains `{ id, name, description?, external?, verdict, evidence }`;
+it can include a context with no recorded stages. IDs are unique and a stage using
+that `contextId` must use the same label. An external actor is not evidence of an
+external context; set the boolean `external` only from a sourced boundary claim.
+
 Optional subdomain candidates contain `name`, `responsibility`, `verdict` and
-`evidence`. Explain their business problem and relationship to contexts in
-`responsibility`; a context does not automatically prove a subdomain boundary.
+`evidence`, with optional `id`, `classification` (`core`, `supporting`, `generic`,
+`unconfirmed`) and `contextIds`. Membership IDs must name a stage's explicit
+`contextId` or a `contexts` entry. Never match membership by name. Different
+subdomains may reference the same context; it appears once in a shared area with
+explicit membership labels. Missing membership stays unassigned, and absent
+classification stays unconfirmed. Supplied claims retain their source verdicts.
+See `examples/order-payment/board.json` and its business notes for a complete example.
 
 The saved-model viewer reconstructs actions and causal connections from the
 model. It labels used concepts as related concepts with unknown changes, and
-labels that board as a reconstruction, distinct from the candidate board.
+labels that board as a reconstruction, distinct from the candidate board. It has
+no recorded Domain, Subdomain or View types; those facts stay unconfirmed until
+additional evidence is supplied to a working board. This optional presentation
+metadata does not extend the saved Turtle vocabulary.
 
 The saved-model business structure groups context districts by actual context
 identity, so equal labels do not merge distinct contexts. The event flow retains
@@ -85,3 +106,14 @@ context labels and descriptions; it never infers a step's ownership from a
 process tower's physical placement. Dragging changes only the view and is never
 persisted. Subtle signal strokes illustrate recorded event reactions, not live
 traffic; sequence-only or unrecorded-event inputs do not acquire signals.
+The signal tail stays visible at normal zoom and scales for legibility. A status
+message distinguishes playback, user pause, reduced motion, hidden/offscreen
+canvas and no eligible connections. Pause/play applies across both event perspectives.
+
+The primary event trace projects each supplied stage link to the destination's
+emitted event, or to an explicitly labeled intermediate action when that event
+is absent. It retains the original reaction/sequence kind: a solid visual trace
+is not a new event relation or proof of event arrival order. Connection labels
+open the original policy, condition, action, emitted event and evidence. Event
+selection highlights declared upstream/downstream paths without inventing links
+between independent or sibling branches. These are transient viewing states.

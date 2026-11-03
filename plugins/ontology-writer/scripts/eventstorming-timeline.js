@@ -5,7 +5,11 @@
     const viewport = host.querySelector(".story-viewport");
     const world = host.querySelector(".story-world");
     const svg = host.querySelector(".story-connections");
-    const flow = createSignals(host, viewport, svg);
+    const flow = createEventSignals(host.querySelector(".story-projection"), viewport, svg, {
+      selector: ".story-signal",
+      scale: () => camera.zoom,
+      owner: host,
+    });
     const inspector = host.querySelector(".story-inspector");
     const detail = host.querySelector(".story-inspector-body");
     const originals = new Map(
@@ -16,17 +20,49 @@
     const nodes = new Map(
       [...host.querySelectorAll("[data-story-node]")].map((s) => [s.dataset.storyNode, s]),
     );
+    const routes = [...host.querySelectorAll("[data-story-from]")].map((link, index) => ({
+      link,
+      index,
+      from: link.dataset.storyFrom,
+      to: link.dataset.storyTo,
+      sequence: link.dataset.storyRelation === "sequence",
+      sourceIndex: Number(link.dataset.storySourceIndex),
+    }));
+    const labels = host.querySelector(".story-trace-labels");
+    const clearTrace = host.querySelector(".story-trace-clear");
+    for (const route of routes) {
+      const label = document.createElement("button");
+      label.type = "button";
+      label.className = `story-trace-label${route.sequence ? " sequence" : ""}`;
+      label.dataset.storyTrace = String(route.index);
+      const uncertain =
+        route.link.querySelector(".story-verdict") ||
+        (!route.sequence && originals.get(route.from).dataset.eventKnown !== "true");
+      label.textContent =
+        (ko ? (route.sequence ? "순서" : "반응") : route.sequence ? "Sequence" : "Reaction") +
+        (uncertain ? " ?" : "");
+      label.title = route.link.textContent.trim();
+      label.setAttribute(
+        "aria-label",
+        `${label.textContent}: ${stageName(route.from, route.sequence)} → ${stageName(route.to, route.sequence)}`,
+      );
+      label.setAttribute("aria-pressed", "false");
+      labels.append(label);
+      route.label = label;
+    }
     const camera = { x: 0, y: 0, zoom: 1 };
     let initialized = false,
       drag = null,
       moved = false,
       selected = null,
+      selectedRoute = null,
       frame = 0;
     const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
     viewport.dataset.enhanced = "true";
     function paint() {
       world.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`;
       host.querySelector(".story-scale").textContent = `${Math.round(camera.zoom * 100)}%`;
+      flow.size();
     }
     function fit() {
       if (!viewport.checkVisibility()) return;
@@ -43,56 +79,130 @@
       camera.y = y - ((y - camera.y) * camera.zoom) / prior;
       paint();
     }
-    function point(element, side) {
+    function boxOf(element) {
       const b = element.getBoundingClientRect(),
         w = world.getBoundingClientRect();
       return {
-        x: ((side === "right" ? b.right : b.left) - w.left) / camera.zoom,
+        left: (b.left - w.left) / camera.zoom,
+        right: (b.right - w.left) / camera.zoom,
+        top: (b.top - w.top) / camera.zoom,
+        bottom: (b.bottom - w.top) / camera.zoom,
         y: (b.top + b.height / 2 - w.top) / camera.zoom,
       };
     }
-    // Draw only supplied links. Command-only sequence never becomes an event reaction.
+    // Project the same stage links onto their event cards. A checkpoint denotes a
+    // recorded action without an event; sequence edges retain their action-order meaning.
     function draw() {
       frame = 0;
       if (!viewport.checkVisibility()) return;
       if (!initialized) fit();
       svg.replaceChildren();
       svg.setAttribute("viewBox", `0 0 ${world.offsetWidth} ${world.offsetHeight}`);
-      for (const link of host.querySelectorAll("[data-story-from]")) {
-        const source = nodes.get(link.dataset.storyFrom);
-        const sequence = link.dataset.storyRelation === "sequence";
-        const a = point(source.querySelector(sequence ? ".story-action" : ".story-fact"), "right");
-        let b = point(link, "left");
-        const returning = b.x <= a.x;
-        if (returning) b = point(link, "right");
-        const bend = returning ? Math.max(a.x, b.x) + 48 : (a.x + b.x) / 2;
+      for (const route of routes) {
+        const { from, to, sequence, index } = route;
+        const source = nodes.get(from),
+          target = nodes.get(to);
+        const first = boxOf(source.querySelector(".story-fact"));
+        const last = boxOf(target.querySelector(".story-fact"));
+        const a = { x: first.right, y: first.y },
+          b = { x: last.left, y: last.y };
+        const peers = routes.filter((r) => r.from === from && r.to === to);
+        const lane = peers.indexOf(route) - (peers.length - 1) / 2;
+        const returning = Number(target.dataset.storyColumn) <= Number(source.dataset.storyColumn);
+        const skipping =
+          source.dataset.storyRow === target.dataset.storyRow &&
+          Number(target.dataset.storyColumn) > Number(source.dataset.storyColumn) + 1;
+        let d, control;
+        if (from === to) {
+          const offset = Math.min(22, (first.bottom - first.top) / 4);
+          a.y -= offset;
+          b.x = first.right;
+          b.y += offset;
+          control = { x: b.x + 46, y: b.y + 16 };
+          d = `M${a.x},${a.y} C${a.x + 46},${a.y - 16} ${control.x},${control.y} ${b.x},${b.y}`;
+        } else if (returning || skipping) {
+          if (returning) b.x = last.right;
+          const rail = Math.max(first.bottom, last.bottom) + 28 + lane * 14;
+          const near = b.x + (returning ? 28 : -28);
+          control = { x: b.x + (returning ? 14 : -14), y: b.y };
+          d = `M${a.x},${a.y} C${a.x + 16},${a.y} ${a.x + 16},${rail} ${a.x + 28},${rail} L${near},${rail} C${control.x},${rail} ${control.x},${control.y} ${b.x},${b.y}`;
+        } else {
+          const bend = (a.x + b.x) / 2;
+          control = { x: bend, y: b.y + lane * 32 };
+          d = `M${a.x},${a.y} C${bend},${a.y + lane * 32} ${control.x},${control.y} ${b.x},${b.y}`;
+        }
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("d", `M${a.x},${a.y} C${bend},${a.y} ${bend},${b.y} ${b.x},${b.y}`);
-        path.dataset.from = link.dataset.storyFrom;
-        path.dataset.to = link.dataset.storyTo;
-        path.dataset.relation = link.dataset.storyRelation;
+        path.setAttribute("d", d);
+        path.classList.add("story-route");
+        path.dataset.from = from;
+        path.dataset.to = to;
+        path.dataset.relation = sequence ? "sequence" : "causal";
+        path.dataset.storyTrace = String(index);
+        path.dataset.traceEndpoint =
+          originals.get(to).dataset.eventKnown === "true" ? "event" : "action";
         if (sequence) path.classList.add("sequence");
+        if (skipping) path.classList.add("story-route-skip");
         const arrow = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-        const tail = b.x + (returning ? 6 : -6);
-        arrow.setAttribute("points", `${b.x},${b.y} ${tail},${b.y - 3} ${tail},${b.y + 3}`);
+        const dx = b.x - control.x,
+          dy = b.y - control.y,
+          length = Math.hypot(dx, dy) || 1;
+        const ux = dx / length,
+          uy = dy / length,
+          tx = b.x - ux * 8,
+          ty = b.y - uy * 8;
+        arrow.setAttribute(
+          "points",
+          `${b.x},${b.y} ${tx - uy * 3.5},${ty + ux * 3.5} ${tx + uy * 3.5},${ty - ux * 3.5}`,
+        );
+        arrow.dataset.storyTrace = String(index);
         if (sequence) arrow.classList.add("sequence");
         svg.append(path, arrow);
+        const middle = path.getPointAtLength(path.getTotalLength() / 2);
+        route.label.style.left = `${middle.x}px`;
+        route.label.style.top = `${middle.y - 14}px`;
         if (!sequence && source.querySelector(".story-fact:not(.story-fact-missing)")) {
           const signal = path.cloneNode(false);
+          signal.classList.remove("story-route", "story-route-skip");
           signal.classList.add("story-signal");
           signal.setAttribute("pathLength", "1");
           svg.append(signal);
         }
       }
+      highlight();
       flow.refresh();
     }
     function schedule() {
       if (!frame && viewport.checkVisibility()) frame = requestAnimationFrame(draw);
     }
+    function perspective(mode) {
+      host.querySelector(".story-projection").hidden = mode !== "story";
+      host.querySelector(".event-landscape").hidden = mode !== "landscape";
+      host.querySelectorAll("[data-event-perspective]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.eventPerspective === mode));
+      });
+      host.dispatchEvent(new CustomEvent("eventstorming-perspective", { detail: { mode } }));
+    }
+    function reveal(id) {
+      if (!nodes.has(id)) return;
+      perspective("story");
+      if (!initialized) fit();
+      const rect = nodes.get(id).getBoundingClientRect(),
+        view = viewport.getBoundingClientRect();
+      camera.x += view.left + 28 - rect.left;
+      camera.y += view.top + 24 - rect.top;
+      paint();
+      select(id);
+    }
+    host
+      .querySelectorAll("[data-event-perspective]")
+      .forEach((button) =>
+        button.addEventListener("click", () => perspective(button.dataset.eventPerspective)),
+      );
     function select(id) {
       const original = originals.get(id);
       if (!original) return;
       selected = id;
+      selectedRoute = null;
       detail.replaceChildren();
       const structure = document.querySelector('[data-model-tab="structure"]');
       const destination = original.querySelector('.command a[href^="#"]');
@@ -115,13 +225,123 @@
       clone.querySelectorAll("[id]").forEach((e) => e.removeAttribute("id"));
       detail.append(clone);
       inspector.hidden = false;
+      highlight();
+      host.querySelector(".story-close").focus({ preventScroll: true });
+    }
+    function stageName(id, action = false) {
+      const source = originals.get(id);
+      return source
+        .querySelector(
+          !action && source.dataset.eventKnown === "true"
+            ? ".domain-event strong"
+            : ".command strong",
+        )
+        .textContent.trim();
+    }
+    /** Trace declared predecessors and successors independently, so sibling branches
+     * are not selected merely because they share an ancestor. Cycles visit once. */
+    function highlight() {
+      const activeNodes = new Set(),
+        activeRoutes = new Set();
+      const walk = (seed, reverse) => {
+        const visited = new Set(),
+          queue = [seed];
+        while (queue.length) {
+          const id = queue.pop();
+          if (visited.has(id)) continue;
+          visited.add(id);
+          activeNodes.add(id);
+          for (const route of routes)
+            if ((reverse ? route.to : route.from) === id) {
+              activeRoutes.add(route.index);
+              queue.push(reverse ? route.from : route.to);
+            }
+        }
+      };
+      if (selected !== null) {
+        walk(selected, true);
+        walk(selected, false);
+      }
+      if (selectedRoute !== null) {
+        const route = routes[selectedRoute];
+        walk(route.from, true);
+        walk(route.to, false);
+        activeRoutes.add(route.index);
+      }
+      const active = selected !== null || selectedRoute !== null;
+      clearTrace.disabled = !active;
+      for (const [id, node] of nodes)
+        node.classList.toggle("story-trace-muted", active && !activeNodes.has(id));
+      for (const el of host.querySelectorAll("[data-story-trace]")) {
+        el.classList.toggle(
+          "story-trace-muted",
+          active && !activeRoutes.has(Number(el.dataset.storyTrace)),
+        );
+        el.classList.toggle(
+          "story-trace-active",
+          active && activeRoutes.has(Number(el.dataset.storyTrace)),
+        );
+        if (el.tagName === "BUTTON")
+          el.setAttribute("aria-pressed", String(Number(el.dataset.storyTrace) === selectedRoute));
+      }
       for (const button of host.querySelectorAll("[data-story-select]"))
-        button.setAttribute("aria-pressed", String(button.dataset.storySelect === id));
+        button.setAttribute("aria-pressed", String(button.dataset.storySelect === selected));
+    }
+    function inspectRoute(index) {
+      const route = routes[index];
+      if (!route) return;
+      selected = null;
+      selectedRoute = index;
+      detail.replaceChildren();
+      const heading = document.createElement("h3");
+      heading.textContent = `${ko ? (route.sequence ? "업무 순서" : "반응 경로") : route.sequence ? "Action order" : "Reaction path"}: ${stageName(route.from, route.sequence)} → ${stageName(route.to, route.sequence)}`;
+      const explanation = document.createElement("p");
+      explanation.className = "story-trace-explanation";
+      const hasEvent = originals.get(route.to).dataset.eventKnown === "true";
+      explanation.textContent = ko
+        ? route.sequence
+          ? "이 연결은 원문에 기록된 행동의 진행 순서입니다. 사건의 인과나 도착 시간을 뜻하지 않습니다."
+          : hasEvent
+            ? "정책의 조건이 맞으면 후속 행동이 시작됩니다. 도착 사건은 그 행동이 만드는 사건이며 실제 실행 완료를 뜻하지 않습니다."
+            : "정책의 조건이 맞으면 후속 행동이 시작됩니다. 이 단계의 발생 사건은 기록되지 않아 중간 행동으로 표시합니다."
+        : route.sequence
+          ? "This is the recorded order of actions, not event causation or arrival time."
+          : hasEvent
+            ? "When the policy condition holds, the next action starts. Its emitted event is the destination; this does not report a completed execution."
+            : "When the policy condition holds, the next action starts. No emitted event is recorded for this step, so it is shown as an intermediate action.";
+      const relationship = route.link.cloneNode(true);
+      relationship.removeAttribute("data-story-from");
+      relationship.removeAttribute("data-story-to");
+      relationship.classList.add("story-trace-contract");
+      const target = originals.get(route.to),
+        action = document.createElement("p"),
+        event = document.createElement("p");
+      action.textContent = `${ko ? "도착 행동" : "Destination action"}: ${target.querySelector(".command strong").textContent}`;
+      event.textContent = `${ko ? "발생 사건" : "Emitted event"}: ${target.dataset.eventKnown === "true" ? target.querySelector(".domain-event strong").textContent : ko ? "미기록 · 중간 행동으로 표시" : "Unrecorded · shown as an intermediate action"}`;
+      const navigation = document.createElement("div");
+      navigation.className = "story-trace-navigation";
+      for (const [id, label] of [
+        [route.from, ko ? "출발 항목 보기" : "Inspect source"],
+        [route.to, ko ? "도착 항목 보기" : "Inspect destination"],
+      ]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.addEventListener("click", () => select(id));
+        navigation.append(button);
+      }
+      detail.append(heading, explanation, relationship, action, event, navigation);
+      inspector.hidden = false;
+      highlight();
       host.querySelector(".story-close").focus({ preventScroll: true });
     }
     function close() {
       inspector.hidden = true;
-      nodes.get(selected)?.querySelector(".story-fact")?.focus({ preventScroll: true });
+      const target =
+        selectedRoute !== null
+          ? routes[selectedRoute].label
+          : nodes.get(selected)?.querySelector(".story-fact");
+      target?.focus({ preventScroll: true });
     }
     host.addEventListener(
       "click",
@@ -136,6 +356,7 @@
         if (button) {
           const id = button.dataset.storySelect ?? button.dataset.storyReveal;
           if (button.dataset.storyReveal) {
+            perspective("story");
             const node = nodes.get(id),
               rect = node.getBoundingClientRect(),
               view = viewport.getBoundingClientRect();
@@ -144,6 +365,11 @@
             paint();
           }
           select(id);
+        }
+        const route = e.target.closest("[data-story-trace]");
+        if (route) {
+          e.preventDefault();
+          inspectRoute(Number(route.dataset.storyTrace));
         }
         const next = e.target.closest(".story-inspector .event-next");
         if (next) {
@@ -154,6 +380,13 @@
       true,
     );
     host.querySelector(".story-close").addEventListener("click", close);
+    clearTrace.addEventListener("click", () => {
+      selected = null;
+      selectedRoute = null;
+      inspector.hidden = true;
+      highlight();
+      viewport.focus({ preventScroll: true });
+    });
     host.querySelectorAll("[data-story-camera]").forEach((button) =>
       button.addEventListener("click", () => {
         if (button.dataset.storyCamera === "fit") fit();
@@ -237,80 +470,20 @@
     new ResizeObserver(schedule).observe(viewport);
     host.addEventListener("toggle", schedule, true);
     document.addEventListener("ontology-view-change", schedule);
-    host.timeline = { camera: () => ({ ...camera }), selected: () => selected, flow: flow.state };
-    schedule();
-  }
-
-  /** Animate only the signal stroke on recorded event paths, never the facts or camera. */
-  function createSignals(host, viewport, svg) {
-    const button = host.querySelector(".event-flow-toggle");
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-    let enabled = !reduced.matches,
-      inView = false,
-      raf = 0,
-      elapsed = 0,
-      last = null,
-      frames = 0;
-    let signals = [];
-    const visible = () => inView && !document.hidden && viewport.checkVisibility();
-    const running = () => enabled && visible() && signals.length > 0;
-    const progress = (i) => (elapsed / 5200 + i * 0.37) % 1;
-    function frame(now) {
-      raf = 0;
-      if (!running()) return;
-      if (last !== null) elapsed += Math.min(now - last, 80);
-      last = now;
-      signals.forEach((signal, i) => {
-        signal.style.strokeDashoffset = String(-progress(i));
-      });
-      frames++;
-      raf = requestAnimationFrame(frame);
-    }
-    function refresh() {
-      signals = [...svg.querySelectorAll(".story-signal")];
-      button.disabled = signals.length === 0;
-      button.setAttribute("aria-pressed", String(enabled));
-      button.textContent = ko
-        ? enabled
-          ? "흐름 효과 멈추기"
-          : "흐름 효과 켜기"
-        : enabled
-          ? "Pause flow"
-          : "Play flow";
-      signals.forEach((signal) => {
-        signal.style.visibility = running() ? "visible" : "hidden";
-      });
-      if (running()) {
-        if (!raf) raf = requestAnimationFrame(frame);
-      } else {
-        cancelAnimationFrame(raf);
-        raf = 0;
-        last = null;
-      }
-    }
-    button.addEventListener("click", () => {
-      enabled = !enabled;
-      refresh();
-    });
-    reduced.addEventListener("change", (event) => {
-      if (event.matches) enabled = false;
-      refresh();
-    });
-    document.addEventListener("visibilitychange", refresh);
-    document.addEventListener("ontology-view-change", refresh);
-    new IntersectionObserver(([entry]) => {
-      inView = entry.isIntersecting;
-      refresh();
-    }).observe(viewport);
-    return {
-      refresh,
-      state: () => ({
-        enabled,
-        running: running(),
-        elapsed,
-        frames,
-        paths: signals.map((p, i) => ({ from: p.dataset.from, to: p.dataset.to, t: progress(i) })),
-      }),
+    host.addEventListener("eventstorming-perspective", schedule);
+    host.timeline = {
+      camera: () => ({ ...camera }),
+      selected: () => selected,
+      selectedRoute: () => selectedRoute,
+      flow: flow.state,
+      reveal,
+      inspectLink: (index) => {
+        const route = routes.find((r) => r.sourceIndex === index);
+        if (!route) return;
+        perspective("story");
+        inspectRoute(route.index);
+      },
     };
+    schedule();
   }
 })();
