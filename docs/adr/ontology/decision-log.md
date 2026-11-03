@@ -8,6 +8,14 @@ The current Purpose, all still-valid Decision Drivers, adopted choice, rationale
 and requirement contract remain together in the ADR body. Reading this log is
 optional for understanding the current decision.
 
+## 2026-11-03 — 사건의 원인·결과 묶음과 업무 영역 탐색
+
+- **Current ADR**: [render-read-only-ontology-views](./0005-render-read-only-ontology-views.md)
+- **Change type**: requirement rule change
+- **What**: 사건 흐름에 전체 업무 영역 탐색과 주체·행동·변화·사건·뷰 묶음을 제공하고, 신호의 가시성과 정지 이유를 설명한다.
+- **Why**: 사건이 스스로 발생하는 것처럼 읽히고, 서브도메인과 컨텍스트 소속을 구별할 수 없으며, 움직임이 눈에 잘 보이지 않는 문제를 해결한다.
+- **What is now void**: 후보 보드의 표현을 개별 사건과 원본 카드로만 제한하던 규칙. 최상위 모델 탭은 사건 흐름·업무 구조 두 개로 유지한다.
+
 ## 2026-11-03 — 실제 업무의 캡처와 개발·검증 연결
 
 업무 지도를 처음 보는 사람도 수행 주체·대상·시작 계기·결과를 읽을 수 있도록 표시 계약을 보강했다. 사용 대상과
@@ -120,3 +128,5 @@ ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축
 - 2026-11-03: 사건 흐름을 기본 보기로 삼고 3D 컨텍스트 지도를 분리한다. 사건·정책·관련 규칙·범위가 명시된 미정 질문을 함께 읽으며, 원문에 없는 인과나 업무 보장을 만들지 않는다.
 
 - 2026-11-03: 사건 흐름과 업무 구조 두 보기로 정리하고 중복 컨텍스트 지도를 제거한다. 사건의 읽기 순서를 유지한 입체감과 은은한 인과 신호를 제공하며 사건 상세는 업무 구조의 동일 단계로 연결한다.
+
+- 2026-11-03: 사건 흐름의 주 연결을 후속 발생 사건까지 이어지는 추적 보기로 표현한다. 정책·행동·조건은 원문 관계로 확인하고, 사건 없는 단계와 단순 순서를 구별하며 상류·하류 경로를 강조한다.

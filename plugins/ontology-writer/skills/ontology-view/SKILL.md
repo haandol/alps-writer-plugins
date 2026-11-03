@@ -57,8 +57,19 @@ unverified. The context inspector should read as a business outline, with routes
 to upstream/downstream work and evidence.
 
 The first selected tab is **Event flow**, a flat, draggable EventStorming
-canvas. Events are the principal reading units, with their producing actions
-and performers, incoming policies and exact conditions. Read the whole business
+canvas. Its primary trace reaches the next emitted event, with explicit
+intermediate-action checkpoints where no event is recorded. Project only the
+supplied stage relationships through their producing actions; do not add links
+to make a story appear continuous. Connection labels retain reaction versus
+action-order meaning and open the original policy, condition, action and
+evidence. Selecting an event highlights its actual predecessors and successors,
+with sibling branches kept separate. The All paths control clears that focus.
+Events are the principal trace units. Read each set from its performer/action
+through an evidenced business-object change to its emitted event. Show sourced
+input and result views in their corresponding roles, with evidence; absent views
+stay unrecorded. Automated, timer and external activities need not involve a human
+or UI. View association does not establish direct causation or update timing.
+Retain incoming policies and exact conditions. Read the whole business
 story across contexts before opening the boundaries. Keep branches, merges,
 returning links and independent items; layout is not a timestamp or proof of an
 unrecorded causal relation. A command-only step must not acquire an invented event.
@@ -70,10 +81,13 @@ the flow, distinguishing process-wide questions from step-level questions. A
 process-wide unknown is not a confirmed failure branch at one event. Keep its
 source and verdict visible through disclosure.
 
-The model has only two projections: **Event flow** and **Business structure**.
+The model has two top-level tabs: **Event flow** and **Business structure**.
 The existing 3D business structure owns the context districts, process towers,
-step floors and event/policy hand-offs. Do not provide a duplicate context-map
-view. Selecting a source step from the event inspector leads to the same model
+step floors and event/policy hand-offs. Within Event flow, **Business areas** shows
+the domain scope, sourced subdomain memberships and bounded contexts; selecting
+a context opens its activities/evidence and selecting an event returns to the trace.
+Keep shared contexts once with explicit membership labels, and unknown membership
+apart. This is not a third top-level tab. Selecting a source step from the event inspector leads to the same model
 step and its details in Business structure. Context identities remain distinct
 even when their labels match; actual step ownership is read from model facts,
 not inferred from a process tower's physical placement.
@@ -82,12 +96,14 @@ The event flow keeps a readable, untilted order while using restrained depth and
 surface styling. Its subtle moving strokes follow recorded event reactions only,
 never sequence-only relations or steps with no recorded emitted event. They do
 not represent live traffic or execution. Provide pause/resume, honor reduced
-motion, and stop while hidden or outside the viewport.
+motion, and stop while hidden or outside the viewport. Use a readable moving
+trail and show the actual playback/pause reason, including reduced motion and
+no eligible reactions. Pause/play applies across both event perspectives.
 
 Both model views keep their camera, position and selection in the page; reopening
 starts fresh, without browser persistence. Candidate boards provide the event
-flow and complete source cards only. They do not invent a business structure
-or add a duplicate map. Preserve supplied context descriptions in the source
+trace, sourced business areas and complete source cards. They do not invent a
+model's process hierarchy or realization status. Preserve supplied context descriptions in the source
 cards even when no saved model exists.
 
 Per-process readiness and next-action requests distinguish model sufficiency,
@@ -96,14 +112,19 @@ evidence stay unknown; a `uses` relation is not a confirmed mutation. The view
 runs no commands and records no review result. Existing diagrams remain additional
 ways to inspect the same saved model.
 
-When the user specifically asks for entity/aggregate transitions, do not stop at
-the reconstruction's unknown changes. Read the relevant business-context query,
+When the user asks for entity/aggregate transitions, domain/subdomain boundaries
+or input/result views, do not stop at the reconstruction's missing metadata.
+Read the relevant business-context query,
 the realizing ADRs and supplied business evidence; assemble the sourced working
 board using `references/eventstorming-board.md`. Preserve exact states from
 their ADR owner without copying a state machine into the model. Mark unresolved
 or contradictory before/after conditions visibly; neither an ADR state name nor
 a `uses` edge alone proves a transition. Render and deliver that board. This is
 read-only evidence preparation, not approval of a model change.
+Preserve sourced domain/context identities, subdomain classifications and explicit
+memberships in that disposable board. Do not infer external contexts from actors
+or fill missing memberships by matching names. The saved model has no Domain,
+Subdomain or View types; do not silently extend its vocabulary for a visualization.
 
 For a request to inspect EventStorming discovery, use `/ontology-build` and
 `references/eventstorming.md` to show its event map, evidence and boundary

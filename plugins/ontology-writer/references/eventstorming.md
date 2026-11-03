@@ -20,6 +20,10 @@ Build a big-picture map of business events, named as things that happened.
 Connect each evidenced path from its starting condition to its business result:
 actors and actions, emitted events, reacting policies and subsequent steps,
 business information used, and relevant exceptions, rejections and hand-offs.
+Keep the cause/result set readable: performer and action, evidenced object
+change, then emitted event. Capture sourced screens/read models as input or
+result views. Automation, timers and external activity may have no human or UI;
+missing views stay unrecorded, and view association does not prove update timing.
 Show temporal order separately from causation; do not invent a cause from
 adjacency. Mark current vs. planned behavior, source locations and the existing
 stated/inferred/conflicting/unconfirmed verdicts on candidates and relations.
@@ -34,6 +38,11 @@ Core/supporting/generic classification needs business evidence and may remain
 unconfirmed. Do not force a one-to-one subdomain/context relationship or move
 existing ADR categories without authorization. Preserve confirmed boundaries;
 additional evidence proposes only the material changes it supports.
+When presenting the areas, record explicit context identities and subdomain
+memberships with their evidence. One context may span several subdomains; show
+it once with those memberships. An external performer alone never establishes
+an external bounded context. Domain name, classification and membership stay
+unconfirmed where evidence is missing.
 
 Present the whole event map before opening its context-level details. Explain
 each proposed boundary with the events, concepts and responsibility it owns,

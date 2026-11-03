@@ -1,3 +1,5 @@
+import { renderEventLandscape } from "./eventstorming-landscape.mjs";
+
 /**
  * Lay out a partial business order, not a clock or an execution trace. Independent
  * branches share a column without asserting simultaneity. Cycles keep all their
@@ -48,6 +50,14 @@ export function renderEventTimeline(board, { lang, esc, evidence, tabbed = false
   };
   const select = (s, className, content) =>
     `<button type="button" class="${className}" data-story-select="${esc(s.id)}" aria-pressed="false">${content}</button>`;
+  const views = (s, role) => {
+    const items = (s.views ?? []).filter((v) => v.role === role);
+    const heading = text(
+      role === "input" ? "행동에 참고하는 뷰" : "결과를 확인하는 뷰",
+      role === "input" ? "View informing the action" : "View showing the result",
+    );
+    return `<div class="story-views" data-story-view-role="${role}">${items.length ? items.map((v) => `<details class="story-view"><summary><span class="story-kind">${heading}</span><strong>${esc(v.name)}</strong><span class="story-view-verdict">${labels[verdict(v)]}</span></summary>${v.description ? `<p>${esc(v.description)}</p>` : ""}${evidence(v)}</details>`).join("") : `<span class="story-view-missing">${text(role === "input" ? "입력 뷰 미기록" : "결과 뷰 미기록", role === "input" ? "Input view unrecorded" : "Result view unrecorded")}</span>`}</div>`;
+  };
   const nodes = stages
     .map(({ stage: s, column, row }) => {
       const incoming = board.links.filter((l) => l.to === s.id);
@@ -55,7 +65,7 @@ export function renderEventTimeline(board, { lang, esc, evidence, tabbed = false
         .map((l) => {
           const from = byId.get(l.from);
           const sequence = l.relation === "sequence";
-          return `<div class="story-link ${sequence ? "story-sequence" : "story-policy"}" data-story-from="${esc(l.from)}" data-story-to="${esc(l.to)}" data-story-relation="${sequence ? "sequence" : "causal"}">
+          return `<div class="story-link ${sequence ? "story-sequence" : "story-policy"}" data-story-from="${esc(l.from)}" data-story-to="${esc(l.to)}" data-story-source-index="${board.links.indexOf(l)}" data-story-relation="${sequence ? "sequence" : "causal"}">
         <span class="story-kind">${text(sequence ? "진행 순서" : "반응 정책", sequence ? "Sequence" : "Reaction policy")}</span>
         <p class="story-source">${esc(sequence ? from.action : (from.event?.name ?? text("시작 사건 미기록", "Starting event unrecorded")))}</p>
         ${sequence ? "" : `<strong>${esc(l.label)}</strong><p class="story-condition">${esc(l.condition ?? text("조건 별도 기록 없음", "Condition not recorded separately"))}</p>`}
@@ -81,12 +91,15 @@ export function renderEventTimeline(board, { lang, esc, evidence, tabbed = false
             `<details class="story-rule"><summary>${esc(r.name)}</summary><p>${esc(r.description ?? "")}</p><p class="story-rule-scope">${esc(r.scope)}</p>${evidence(r)}</details>`,
         )
         .join("");
-      return `<article class="story-node" data-story-node="${esc(s.id)}" style="grid-column:${column + 1};grid-row:${row * 6 + 1} / span 6">
+      return `<article class="story-node" data-story-node="${esc(s.id)}" data-story-column="${column}" data-story-row="${row}" style="grid-column:${column + 1};grid-row:${row * 9 + 1} / span 9">
       <div class="story-context">${esc(s.context)}${s.retired ? ` · ${text("은퇴", "Retired")}` : ""}</div>
-      <div class="story-incoming">${causes || `<p class="story-entry">${text("시작 사건 별도 기록 없음", "No separate starting event recorded")}</p>`}</div>
-      ${select(s, `story-fact${s.event ? "" : " story-fact-missing"}`, `<span class="story-kind">${text(s.event ? "도메인 이벤트" : "사건 미기록", s.event ? "Domain event" : "Event unrecorded")}</span><strong>${esc(s.event?.name ?? text("발생 사건이 기록되지 않았습니다", "No emitted event is recorded"))}</strong>${s.event?.description && s.event.description !== s.event.name ? `<span class="story-fact-description">${esc(s.event.description)}</span>` : ""}<span class="story-verdict">${esc(labels[verdict(s)])}</span>`)}
-      ${select(s, "story-action", `<span class="story-kind">${text(s.event ? "이 사건을 만든 행동" : "기록된 업무 행동", s.event ? "Action producing this event" : "Recorded business action")}</span><strong>${esc(s.action)}</strong><span>${esc(s.actor ?? text("수행 주체 미확인", "Performer unconfirmed"))}</span>`)}
-      <div class="story-objects">${changes ? `<span class="story-kind">${text("업무 대상", "Business objects")}</span>${changes}` : ""}</div>
+      ${views(s, "input")}
+      ${select(s, "story-action", `<span class="story-performer"><span>${text("주체", "Performer")}</span><b>${esc(s.actor ?? text("수행 주체 미확인", "Performer unconfirmed"))}</b></span><span class="story-kind">${text(s.event ? "사건을 만드는 행동" : "기록된 업무 행동", s.event ? "Action producing this event" : "Recorded business action")}</span><strong>${esc(s.action)}</strong>`)}
+      <div class="story-objects"><span class="story-kind">${text("업무 대상과 변화", "Business object and change")}</span>${changes || `<p class="story-object">${text("변화하는 대상 미확인", "Changing object unconfirmed")}</p>`}</div>
+      ${select(s, `story-fact${s.event ? "" : " story-fact-missing"}`, `<span class="story-kind">${text(s.event ? "도메인 이벤트" : "중간 행동", s.event ? "Domain event" : "Intermediate action")}</span><strong>${esc(s.event?.name ?? s.action)}</strong>${s.event?.description && s.event.description !== s.event.name ? `<span class="story-fact-description">${esc(s.event.description)}</span>` : ""}${!s.event ? `<span class="story-fact-description">${text("발생 사건이 기록되지 않았습니다", "No emitted event is recorded")}</span>` : ""}<span class="story-verdict">${esc(labels[verdict(s)])}</span>`)}
+      <div class="story-trace-space" aria-hidden="true"></div>
+      ${views(s, "result")}
+      <div class="story-incoming"><span class="story-kind">${text("시작 계기와 조건", "Incoming triggers and conditions")}</span>${causes || `<p class="story-entry">${text("시작 사건 별도 기록 없음", "No separate starting event recorded")}</p>`}</div>
       <div class="story-rules">${rules ? `<span class="story-kind">${text("관련 업무 규칙", "Related business rules")}</span>${rules}` : ""}</div>
     </article>`;
     })
@@ -98,10 +111,11 @@ export function renderEventTimeline(board, { lang, esc, evidence, tabbed = false
     )
     .join("");
   return `<section class="event-timeline" id="event-story" ${tabbed ? 'role="tabpanel" aria-labelledby="view-events-tab"' : `aria-label="${text("사건 흐름", "Event flow")}"`}>
-    <div class="story-heading"><div><h3>${text("무슨 일이 일어나고, 다음 업무는 왜 시작될까요?", "What happens, and why does the next action start?")}</h3><p>${text("업무 검토용 지도입니다. 사건을 따라 읽고, 정책과 조건을 확인하세요. 사건을 선택하면 업무 대상·변화·근거를 자세히 볼 수 있습니다.", "A map for reviewing the business. Follow the events and their reaction conditions. Select an event to inspect its business objects, changes and evidence.")}</p></div></div>
-    <div class="story-toolbar"><div class="story-legend"><span class="fact">${text("일어난 사건", "Event")}</span><span class="action">${text("업무 행동", "Action")}</span><span class="policy">${text("정책·조건", "Policy / condition")}</span><span class="question">${text("미정 질문", "Open question")}</span></div><div class="story-camera"><button type="button" class="event-flow-toggle" aria-pressed="false">${text("흐름 효과 켜기", "Play flow")}</button><button type="button" data-story-camera="out" aria-label="${text("사건 흐름 축소", "Zoom out of event flow")}">−</button><output class="story-scale">100%</output><button type="button" data-story-camera="in" aria-label="${text("사건 흐름 확대", "Zoom into event flow")}">+</button><button type="button" data-story-camera="fit">${text("전체 흐름", "Fit flow")}</button></div></div>
-    <div class="story-surface"><div class="story-viewport" tabindex="0" role="region" aria-label="${text("사건 흐름 캔버스. 드래그로 이동, 스크롤로 확대. 화살표로 이동하고 더하기·빼기로 확대합니다.", "Event-flow canvas. Drag to pan, scroll to zoom. Arrow keys pan; plus and minus zoom.")}"><div class="story-world" style="--story-columns:${columns}"><svg class="story-connections" aria-hidden="true"></svg><div class="story-nodes">${nodes || `<p>${text("표시할 업무 사건이 없습니다.", "No business events are available.")}</p>`}</div></div></div><aside class="story-inspector" hidden><div class="story-inspector-header"><h3>${text("업무 상세와 근거", "Business detail and evidence")}</h3><button type="button" class="story-close">${text("닫기", "Close")}</button></div><div class="story-inspector-body"></div></aside></div>
-    <p class="event-flow-note">${text("은은한 신호는 기록된 사건의 연결 방향입니다. 실제 실행이나 통신 상태를 나타내지 않습니다.", "Subtle signals show recorded event directions, not live execution or network traffic.")}</p><p class="story-order-note">${text("실선은 사건에 대한 반응, 점선은 진행 순서입니다. 배치는 발생 시각을 뜻하지 않으며, 연결 없는 항목 사이의 순서는 미확인입니다.", "Solid lines show event reactions; dashed lines show sequence. Position is not a timestamp; order between unconnected items is unconfirmed.")}${cyclic ? ` ${text("되돌아오는 연결도 표시합니다.", "Returning links are preserved.")}` : ""}</p>
+    <div class="story-heading"><div><h3>${text("도메인 이벤트의 흐름", "Follow the domain events")}</h3><p>${text("업무 검토용 지도입니다. 세로로는 주체·행동 → 업무 변화 → 사건을 읽고, 가로 화살표로 다음 사건을 따라갑니다. 사건이나 선을 선택하면 관련 경로와 근거가 열립니다. 뷰는 행동에 참고하거나 결과를 확인하는 화면·조회 모델이며, 자동·외부 활동에는 없을 수 있습니다.", "A map for reviewing the business. Read each set downwards: performer/action → business change → event. Follow arrows across to the next event. Select events or links for related paths and evidence. Views inform an action or show its result; automated or external activity may have none.")}</p></div><div class="event-perspectives" role="group" aria-label="${text("사건 흐름의 표현", "Event flow perspective")}"><button type="button" data-event-perspective="story" aria-pressed="true">${text("개별 사건 흐름", "Event trace")}</button><button type="button" data-event-perspective="landscape" aria-pressed="false">${text("전체 업무 영역", "Business areas")}</button></div></div>
+    <div class="story-projection"><div class="story-toolbar"><div class="story-legend"><span class="action">${text("주체·행동", "Performer / action")}</span><span class="fact">${text("일어난 사건", "Event")}</span><span class="view">${text("뷰", "View")}</span><span class="policy">${text("정책·조건", "Policy / condition")}</span><span class="question">${text("미정 질문", "Open question")}</span></div><div class="story-camera"><button type="button" class="story-trace-clear" disabled>${text("전체 경로", "All paths")}</button><button type="button" class="event-flow-toggle" aria-pressed="false">${text("흐름 효과 켜기", "Play flow")}</button><button type="button" data-story-camera="out" aria-label="${text("사건 흐름 축소", "Zoom out of event flow")}">−</button><output class="story-scale">100%</output><button type="button" data-story-camera="in" aria-label="${text("사건 흐름 확대", "Zoom into event flow")}">+</button><button type="button" data-story-camera="fit">${text("전체 흐름", "Fit flow")}</button></div></div>
+    <div class="story-surface"><div class="story-viewport" tabindex="0" role="region" aria-label="${text("사건 흐름 캔버스. 드래그로 이동, 스크롤로 확대. 화살표로 이동하고 더하기·빼기로 확대합니다.", "Event-flow canvas. Drag to pan, scroll to zoom. Arrow keys pan; plus and minus zoom.")}"><div class="story-world" style="--story-columns:${columns}"><svg class="story-connections" aria-hidden="true"></svg><div class="story-trace-labels"></div><div class="story-nodes">${nodes || `<p>${text("표시할 업무 사건이 없습니다.", "No business events are available.")}</p>`}</div></div></div><aside class="story-inspector" hidden><div class="story-inspector-header"><h3>${text("업무 상세와 근거", "Business detail and evidence")}</h3><button type="button" class="story-close">${text("닫기", "Close")}</button></div><div class="story-inspector-body"></div></aside></div>
+    <p class="event-flow-status" role="status" aria-live="polite"></p><p class="event-flow-note">${text("은은한 신호는 기록된 사건의 연결 방향입니다. 실제 실행이나 통신 상태를 나타내지 않습니다.", "Subtle signals show recorded event directions, not live execution or network traffic.")}</p><p class="story-order-note">${text("반응 경로는 정책과 행동을 거쳐 다음 사건으로 이어집니다. 옅은 순서 선은 행동의 진행 순서입니다. 배치는 발생 시각을 뜻하지 않으며, 연결 없는 항목 사이의 순서는 미확인입니다.", "Reaction paths run through a policy and action to the next event. Lighter sequence lines show action order. Position is not a timestamp; order between unconnected items is unconfirmed.")}${cyclic ? ` ${text("되돌아오는 연결도 표시합니다.", "Returning links are preserved.")}` : ""}</p></div>
+    ${renderEventLandscape(board, { lang, esc, evidence })}
     ${questions ? `<aside class="story-questions" aria-label="${text("흐름에서 확인할 질문", "Questions about this flow")}">${questions}</aside>` : ""}
   </section>`;
 }

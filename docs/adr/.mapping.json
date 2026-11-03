@@ -241,7 +241,7 @@
         {
           "path": "docs/adr/ontology/0005-render-read-only-ontology-views.md",
           "status": "Accepted (2026-11-03)",
-          "summary": "사건 흐름과 3D 업무 구조 두 보기로 업무 인과와 책임 경계를 탐색하며 중복 컨텍스트 지도 없이 같은 단계·근거로 이동한다"
+          "summary": "사건의 원인·결과와 뷰를 한 묶음으로 읽고 근거 기반 도메인·서브도메인·컨텍스트 영역과 가시적인 흐름 효과를 탐색한다"
         }
       ],
       "dependsOn": [

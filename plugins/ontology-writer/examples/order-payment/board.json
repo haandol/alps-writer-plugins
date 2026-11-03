@@ -1,0 +1,414 @@
+{
+  "version": 1,
+  "origin": "candidate",
+  "title": "주문·결제 예제 · 사건과 업무 변화",
+  "scope": "가상의 상점 업무 자료로 작성한 학습용 후보입니다. 실제 프로젝트의 모델·ADR 승인이나 실행 검증을 뜻하지 않습니다.",
+  "stages": [
+    {
+      "id": "submit-order",
+      "context": "주문 관리",
+      "contextId": "ordering",
+      "contextDescription": "고객의 구매 요청을 접수하고 주문을 확정하는 책임 범위.",
+      "actor": "고객",
+      "action": "주문 접수",
+      "entities": [
+        {
+          "name": "주문",
+          "kind": "entity",
+          "before": "주문이 없음",
+          "after": "결제 대기",
+          "verdict": "stated",
+          "evidence": [
+            {
+              "source": "business-notes.md#normal-flow",
+              "detail": "학습용 업무 자료에 명시한 수행자·행동·전후 상태와 사건"
+            }
+          ]
+        }
+      ],
+      "event": {
+        "name": "주문 접수됨",
+        "description": "주문 접수됨"
+      },
+      "policies": ["주문 접수 후 결제 요청"],
+      "rules": [
+        {
+          "name": "주문 금액과 수납 금액의 일치",
+          "description": "수납한 금액은 해당 주문의 금액과 같아야 한다.",
+          "scope": "관련 업무 대상: 주문·결제 내역",
+          "verdict": "stated",
+          "evidence": [
+            {
+              "source": "business-notes.md#policies",
+              "detail": "사건에 반응하는 정책과 수납 금액 규칙"
+            }
+          ]
+        }
+      ],
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "business-notes.md#normal-flow",
+          "detail": "학습용 업무 자료에 명시한 수행자·행동·전후 상태와 사건"
+        }
+      ],
+      "businessStatus": "planned",
+      "views": [
+        {
+          "name": "주문서",
+          "role": "input",
+          "description": "고객이 구매 항목과 금액을 확인하고 주문 접수에 참고한다.",
+          "verdict": "stated",
+          "evidence": [
+            {
+              "source": "business-notes.md#views",
+              "detail": "가상의 상점 예제에 명시한 설명"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-payment",
+      "context": "결제 처리",
+      "contextId": "payment",
+      "contextDescription": "주문의 결제를 요청하고 수납 결과를 다루는 책임 범위.",
+      "actor": "고객",
+      "action": "결제 요청",
+      "entities": [
+        {
+          "name": "결제 내역",
+          "kind": "entity",
+          "before": "결제 요청이 없음",
+          "after": "결제 요청됨",
+          "verdict": "stated",
+          "evidence": [
+            {
+              "source": "business-notes.md#normal-flow",
+              "detail": "학습용 업무 자료에 명시한 수행자·행동·전후 상태와 사건"
+            }
+          ]
+        }
+      ],
+      "event": null,
+      "policies": [],
+      "rules": [
+        {
+          "name": "주문 금액과 수납 금액의 일치",
+          "description": "수납한 금액은 해당 주문의 금액과 같아야 한다.",
+          "scope": "관련 업무 대상: 주문·결제 내역",
+          "verdict": "stated",
+          "evidence": [
+            {
+              "source": "business-notes.md#policies",
+              "detail": "사건에 반응하는 정책과 수납 금액 규칙"
+            }
+          ]
+        }
+      ],
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "business-notes.md#normal-flow",
+          "detail": "학습용 업무 자료에 명시한 수행자·행동·전후 상태와 사건"
+        }
+      ],
+      "businessStatus": "planned",
+      "views": [
+        {
+          "name": "결제 선택 화면",
+          "role": "input",
+          "description": "고객이 해당 주문과 결제 수단을 확인해 결제를 요청한다.",
+          "verdict": "stated",
+          "evidence": [
+            {
+              "source": "business-notes.md#views",
+              "detail": "가상의 상점 예제에 명시한 설명"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "capture-payment",
+      "context": "결제 처리",
+      "contextId": "payment",
+      "contextDescription": "주문의 결제를 요청하고 수납 결과를 다루는 책임 범위.",
+      "actor": "외부 결제 제공자",
+      "action": "대금 결제",
+      "entities": [
+        {
+          "name": "결제 내역",
+          "kind": "entity",
+          "before": "결제 요청됨",
+          "after": "결제 완료",
+          "verdict": "stated",
+          "evidence": [
+            {
+              "source": "business-notes.md#normal-flow",
+              "detail": "학습용 업무 자료에 명시한 수행자·행동·전후 상태와 사건"
+            }
+          ]
+        }
+      ],
+      "event": {
+        "name": "결제 완료됨",
+        "description": "결제 완료됨"
+      },
+      "policies": ["결제 완료 후 주문 확정"],
+      "rules": [
+        {
+          "name": "주문 금액과 수납 금액의 일치",
+          "description": "수납한 금액은 해당 주문의 금액과 같아야 한다.",
+          "scope": "관련 업무 대상: 주문·결제 내역",
+          "verdict": "stated",
+          "evidence": [
+            {
+              "source": "business-notes.md#policies",
+              "detail": "사건에 반응하는 정책과 수납 금액 규칙"
+            }
+          ]
+        }
+      ],
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "business-notes.md#normal-flow",
+          "detail": "학습용 업무 자료에 명시한 수행자·행동·전후 상태와 사건"
+        }
+      ],
+      "businessStatus": "planned"
+    },
+    {
+      "id": "confirm-order",
+      "context": "주문 관리",
+      "contextId": "ordering",
+      "contextDescription": "고객의 구매 요청을 접수하고 주문을 확정하는 책임 범위.",
+      "actor": "주문 처리 시스템",
+      "action": "주문 확정",
+      "entities": [
+        {
+          "name": "주문",
+          "kind": "entity",
+          "before": "결제 대기",
+          "after": "주문 확정",
+          "verdict": "stated",
+          "evidence": [
+            {
+              "source": "business-notes.md#normal-flow",
+              "detail": "학습용 업무 자료에 명시한 수행자·행동·전후 상태와 사건"
+            }
+          ]
+        }
+      ],
+      "event": {
+        "name": "주문 확정됨",
+        "description": "주문 확정됨"
+      },
+      "policies": [],
+      "rules": [
+        {
+          "name": "주문 금액과 수납 금액의 일치",
+          "description": "수납한 금액은 해당 주문의 금액과 같아야 한다.",
+          "scope": "관련 업무 대상: 주문·결제 내역",
+          "verdict": "stated",
+          "evidence": [
+            {
+              "source": "business-notes.md#policies",
+              "detail": "사건에 반응하는 정책과 수납 금액 규칙"
+            }
+          ]
+        }
+      ],
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "business-notes.md#normal-flow",
+          "detail": "학습용 업무 자료에 명시한 수행자·행동·전후 상태와 사건"
+        }
+      ],
+      "businessStatus": "planned",
+      "views": [
+        {
+          "name": "주문 현황",
+          "role": "result",
+          "description": "고객이 주문 확정 결과를 확인한다. 자동 갱신 방식이나 시점은 정하지 않았다.",
+          "verdict": "stated",
+          "evidence": [
+            {
+              "source": "business-notes.md#views",
+              "detail": "가상의 상점 예제에 명시한 설명"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "from": "submit-order",
+      "to": "request-payment",
+      "relation": "causal",
+      "label": "주문 접수 후 결제 요청",
+      "condition": "해당 주문에 아직 결제가 없다.",
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "business-notes.md#policies",
+          "detail": "사건에 반응하는 정책과 수납 금액 규칙"
+        }
+      ]
+    },
+    {
+      "from": "request-payment",
+      "to": "capture-payment",
+      "relation": "sequence",
+      "label": "결제 요청 후 대금 결제의 진행 순서",
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "business-notes.md#policies",
+          "detail": "사건에 반응하는 정책과 수납 금액 규칙"
+        }
+      ]
+    },
+    {
+      "from": "capture-payment",
+      "to": "confirm-order",
+      "relation": "causal",
+      "label": "결제 완료 후 주문 확정",
+      "condition": "완료된 결제가 확정하려는 주문의 결제이다.",
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "business-notes.md#policies",
+          "detail": "사건에 반응하는 정책과 수납 금액 규칙"
+        }
+      ]
+    },
+    {
+      "from": "submit-order",
+      "to": "confirm-order",
+      "relation": "sequence",
+      "label": "주문 접수 후 주문 확정의 진행 순서",
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "business-notes.md#policies",
+          "detail": "사건에 반응하는 정책과 수납 금액 규칙"
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "payment-failure",
+      "text": "결제에 실패한 주문은 취소할까, 결제를 기다릴까?",
+      "scope": "주문 접수부터 확정까지",
+      "scopeType": "process",
+      "stages": ["submit-order", "confirm-order"],
+      "verdict": "unconfirmed",
+      "evidence": [
+        {
+          "source": "business-notes.md#open-questions",
+          "detail": "실패·재시도·중복 수신의 처리 방식을 아직 정하지 않음"
+        }
+      ]
+    },
+    {
+      "id": "payment-retry",
+      "text": "결제 거절 뒤 누가 어떤 방식으로 다시 결제할까?",
+      "scope": "주문 대금 결제",
+      "scopeType": "process",
+      "stages": ["request-payment", "capture-payment"],
+      "verdict": "unconfirmed",
+      "evidence": [
+        {
+          "source": "business-notes.md#open-questions",
+          "detail": "실패·재시도·중복 수신의 처리 방식을 아직 정하지 않음"
+        }
+      ]
+    },
+    {
+      "id": "duplicate-payment",
+      "text": "이미 처리한 결제 완료 사건을 다시 받으면 어떻게 응답할까?",
+      "scope": "주문 확정",
+      "scopeType": "step",
+      "stages": ["confirm-order"],
+      "verdict": "unconfirmed",
+      "evidence": [
+        {
+          "source": "business-notes.md#open-questions",
+          "detail": "실패·재시도·중복 수신의 처리 방식을 아직 정하지 않음"
+        }
+      ]
+    }
+  ],
+  "subdomains": [
+    {
+      "id": "order-operations",
+      "name": "주문 운영",
+      "responsibility": "구매 요청의 접수와 확정을 다루는 핵심 업무 문제 영역.",
+      "classification": "core",
+      "contextIds": ["ordering"],
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "business-notes.md#business-areas",
+          "detail": "가상의 상점 예제에 명시한 설명"
+        }
+      ]
+    },
+    {
+      "id": "settlement",
+      "name": "대금 결제",
+      "responsibility": "해당 주문의 결제 요청과 수납 결과를 다루는 지원 업무 문제 영역.",
+      "classification": "supporting",
+      "contextIds": ["payment"],
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "business-notes.md#business-areas",
+          "detail": "가상의 상점 예제에 명시한 설명"
+        }
+      ]
+    }
+  ],
+  "domain": {
+    "name": "온라인 상점",
+    "description": "구매 요청부터 대금 결제와 주문 확정까지의 업무 범위.",
+    "verdict": "stated",
+    "evidence": [
+      {
+        "source": "business-notes.md#business-areas",
+        "detail": "가상의 상점 예제에 명시한 설명"
+      }
+    ]
+  },
+  "contexts": [
+    {
+      "id": "ordering",
+      "name": "주문 관리",
+      "description": "고객의 구매 요청을 접수하고 주문을 확정하는 책임 범위.",
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "business-notes.md#scope",
+          "detail": "가상의 상점 예제에 명시한 설명"
+        }
+      ]
+    },
+    {
+      "id": "payment",
+      "name": "결제 처리",
+      "description": "주문의 결제를 요청하고 수납 결과를 다루는 책임 범위.",
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "business-notes.md#scope",
+          "detail": "가상의 상점 예제에 명시한 설명"
+        }
+      ]
+    }
+  ]
+}
