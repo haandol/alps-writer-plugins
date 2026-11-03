@@ -176,6 +176,7 @@ export async function follow(on, node, how) {
 /** A wide page in front, at its start, with the search box empty and the city over the whole model. */
 export async function fresh(wide) {
   await wide.bringToFront();
+  await showStructure(wide);
   await leave(wide);
   await wide.$eval("#find", (input) => {
     input.value = "";
@@ -194,5 +195,16 @@ export async function openWide(browser, file, requests) {
   await wide.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
   await offline(wide, requests);
   await wide.goto(pathToFileURL(file).href, { waitUntil: "load" });
+  await showStructure(wide);
   return wide;
+}
+
+/** Select the legacy business structure explicitly; the default is the event flow. */
+export async function showStructure(page) {
+  await page.click("#view-structure-tab");
+  await page.waitForFunction(
+    () =>
+      !document.getElementById("city").hidden &&
+      document.getElementById("city-canvas").getBoundingClientRect().width > 0,
+  );
 }

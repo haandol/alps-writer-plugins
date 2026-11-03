@@ -8,6 +8,13 @@
 
 import { readFileSync } from "node:fs";
 import {
+  BOARD_CSS,
+  BOARD_CLIENT,
+  modelEventBoard,
+  renderEventBoard,
+  renderWorkflowReadiness,
+} from "./eventstorming-board.mjs";
+import {
   ATTRIBUTES,
   CLASSES,
   RDF,
@@ -122,7 +129,7 @@ const UI = {
     cityLabel:
       "Business city: each bounded context is a district and each process a tower with one floor per step, from the bottom in flow order, lit by the step's realization. The same facts are in the lists, the landscape diagram and the details. With focus here, arrow keys turn the city and + and − zoom.",
     cityHint:
-      "Drag to turn, scroll to zoom, Shift-drag to move. A roof opens its process flow; a floor, orb or diamond opens its details.",
+      "Drag to move, scroll to zoom, Shift-drag to turn. A roof opens its process flow; a floor, orb or diamond opens its details.",
     pause: "Pause motion",
     play: "Resume motion",
     reset: "Whole city",
@@ -225,7 +232,7 @@ const UI = {
     cityLabel:
       "업무 도시: 바운디드 컨텍스트는 구역이고, 프로세스는 아래부터 흐름 순서로 단계를 한 층씩 쌓은 탑이며, 층의 불빛은 그 단계의 실현 현황입니다. 같은 사실은 목록, 전경 도면, 상세에도 있습니다. 여기에 초점이 있으면 화살표 키로 돌리고 +와 −로 확대합니다.",
     cityHint:
-      "드래그로 돌리고 스크롤로 확대하며, Shift를 누른 채 드래그하면 옮깁니다. 지붕은 그 프로세스의 흐름을, 층과 구슬, 마름모는 그 상세를 엽니다.",
+      "드래그로 옮기고 스크롤로 확대하며, Shift를 누른 채 드래그하면 돌립니다. 지붕은 그 프로세스의 흐름을, 층과 구슬, 마름모는 그 상세를 엽니다.",
     pause: "움직임 멈추기",
     play: "움직임 다시 켜기",
     reset: "도시 전체 보기",
@@ -954,7 +961,13 @@ ${realization}</article>`;
       changeBanner = `<section class="changes" id="changes"><h2>${esc(t.changes)}</h2>${parts.join("")}</section>`;
   }
 
-  const body = `${banner(errors.map(errorItem))}${unavailableBanner}${changeBanner}<nav aria-label="${esc(t.processes)}"><a href="#landscape">${esc(t.landscape)}</a> · <a href="#elements">${esc(t.elements)}</a></nav>
+  const workflowInput = { index, mapping, findings, includeRetired, lang, modelLink: linkKey };
+  const workbench = renderEventBoard(modelEventBoard(workflowInput), {
+    lang,
+    modelLink: linkKey,
+  });
+  const readiness = renderWorkflowReadiness(workflowInput);
+  const body = `${banner(errors.map(errorItem))}${unavailableBanner}${changeBanner}${workbench}${readiness}<nav aria-label="${esc(t.processes)}"><a href="#landscape">${esc(t.landscape)}</a> · <a href="#elements">${esc(t.elements)}</a></nav>
 ${landscapeSection}
 ${flowSections}
 <section id="elements"><h2>${esc(t.elements)}</h2>${detailGroups.join("\n")}</section>`;
@@ -1206,11 +1219,11 @@ ${flowSections}
   const LAYERS = ["BusinessConcept", "BusinessRule", "Actor", "ObservationCriterion"];
   const explorer = `<aside class="explorer" aria-label="${esc(t.explorer)}">
 <div class="find" role="search"><label for="find">${esc(t.find)}</label><input type="search" id="find" placeholder="${esc(t.findHint)}" autocomplete="off" spellcheck="false" aria-controls="find-results" aria-describedby="find-status"><p class="find-status" id="find-status" aria-live="polite"></p></div>
-<div class="chips" role="group" aria-label="${esc(t.types)}">${FILTERS.map((type) => `<button type="button" data-type="${type}" aria-pressed="true"><span class="glyph t-${type}" aria-hidden="true"></span>${esc(typeName.get(type))} <span class="count">${ofType(type).length}</span></button>`).join("")}</div>
+<div class="chips" role="group" aria-label="${esc(t.types)}">${FILTERS.map((type) => `<button type="button" data-type="${type}" aria-pressed="true"><span class="glyph t-${type}" aria-hidden="true"></span><span class="filter-label">${esc(typeName.get(type))}</span> <span class="count">${ofType(type).length}</span></button>`).join("")}</div>
 <ol class="results" id="find-results" hidden></ol>
 <nav class="tree" id="tree" aria-label="${esc(t.tree)}"><ul>${[...groups].map(treeGroup).join("")}</ul></nav>
 </aside>`;
-  const city = `<section class="city" id="city" aria-label="${esc(t.city)}">
+  const city = `<section class="city" id="city" role="tabpanel" aria-labelledby="view-structure-tab" aria-label="${esc(t.city)}" hidden>
 <canvas id="city-canvas" tabindex="0" role="img" aria-label="${esc(t.cityLabel)}" aria-describedby="city-hint">${esc(t.noCanvas)}</canvas>
 <p class="city-hint" id="city-hint">${esc(t.cityHint)}</p>
 <div class="city-controls"><button type="button" id="city-motion">${esc(t.pause)}</button><button type="button" id="city-reset">${esc(t.reset)}</button><button type="button" id="city-wide" aria-pressed="false">${esc(t.wide)}</button></div>
@@ -1250,8 +1263,11 @@ const NAVIGATION = `<script data-view-navigation>
 
 // The page's style and the explorer and city script ship beside this module and are inlined,
 // so the view stays one file with no external resources.
-const CSS = readFileSync(new URL("./ontology-view.css", import.meta.url), "utf8");
-const CLIENT = readFileSync(new URL("./ontology-view-client.js", import.meta.url), "utf8");
+const CSS = readFileSync(new URL("./ontology-view.css", import.meta.url), "utf8") + BOARD_CSS;
+const CLIENT =
+  readFileSync(new URL("./ontology-view-client.js", import.meta.url), "utf8") +
+  BOARD_CLIENT +
+  readFileSync(new URL("./ontology-view-tabs.js", import.meta.url), "utf8");
 if (/<\/(?:script|style)/i.test(CSS + CLIENT))
   throw new Error("the view's style and script must not close their own element");
 
@@ -1268,7 +1284,7 @@ ${diagrams ? NAVIGATION + mermaidRuntime({ diagramFallback: t.fallback }) : ""}
   // "<" is escaped, so no model text can end the data element.
   const data = JSON.stringify(app.data).replace(/</g, "\\u003c");
   return `${head}
-<body class="app"><header class="bar"><h1>${esc(t.title)}</h1><p>${esc(t.intro)}</p></header>
+<body class="app" data-model-view="events"><header class="bar"><div class="workspace-brand"><span class="workspace-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="15" y="15" width="6" height="6" rx="1.5"/><path d="M9 6h6a3 3 0 0 1 3 3v6M6 9v6a3 3 0 0 0 3 3h6"/></svg></span><h1>${esc(t.title)}</h1><span class="workspace-readonly">${lang === "ko" ? "읽기 전용" : "Read only"}</span></div><div class="model-tabs" role="tablist" aria-label="${lang === "ko" ? "업무 표현 방식" : "Business representation"}"><button type="button" role="tab" id="view-events-tab" data-model-tab="events" aria-controls="event-story" aria-selected="true" tabindex="0">${lang === "ko" ? "사건 흐름" : "Event flow"}</button><button type="button" role="tab" id="view-structure-tab" data-model-tab="structure" aria-controls="city" aria-selected="false" tabindex="-1">${lang === "ko" ? "업무 구조" : "Business structure"}</button></div><details class="workspace-info"><summary>${lang === "ko" ? "안내" : "About"}</summary><p>${esc(t.intro)}</p></details></header>
 <div class="shell">${app.explorer}
 ${app.city}
 <main class="document" id="document">${body}</main></div>

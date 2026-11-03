@@ -22,6 +22,11 @@ without another confirmation.
   (`/adr-impl` hands over to this skill then).
 - When the user asks.
 
+For a completeness/readiness-only request, use `/ontology-sync`'s read-only
+review path and `${CLAUDE_PLUGIN_ROOT}/references/workflow-readiness.md`;
+do not promote a process or execute scenarios under that request. This skill's
+alignment review establishes execution evidence, not whole-system completeness.
+
 ## 1. Mechanical gates and the plan
 
 ```bash

@@ -1,5 +1,14 @@
 # Business ontology
 
+The purpose is to capture actual business workflows accurately and richly so
+business logic reaches ADRs, code and tests. A perfect ontology or inference
+capability is not the goal. Preserve the evidenced flow, decision reasons,
+exceptions and manual/external hand-offs at business resolution; exact values
+and feature-level conditions retain their ADR owner rather than disappearing.
+For discovery, load `eventstorming.md`; for business completeness and readiness,
+load `workflow-readiness.md` only on those paths. Completeness means sufficient
+context for the requested business implementation and verification.
+
 Read this module when a repository has a business ontology — one or more
 Turtle documents in `docs/ontology/` — or when a workflow is about to create one.
 Without model documents and without `realizes` links in `docs/adr/.mapping.json`,

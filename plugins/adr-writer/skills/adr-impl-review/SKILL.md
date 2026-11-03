@@ -14,6 +14,13 @@ When this workflow permits ADR writing and a definition needs creation or change
 apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
 boundary. Review-only work reports unclear or conflicting meanings without editing.
 
+When `docs/ontology/` holds Turtle documents, apply
+`${CLAUDE_PLUGIN_ROOT}/references/business-context.md` for the selected feature:
+query its workflow and relevant observation criteria through ontology-writer,
+connect the business scenarios to ADR rows and execution evidence, and report
+model/ADR alignment gaps separately from the implementation verdict. Remain
+report-only; a model-only obligation is not a code violation or a new gate.
+
 Quiz generation is strongly recommended, not mandatory. When included, follow
 report-writer's [comprehension workflow](../report-writer/references/comprehension.md);
 preserve verdicts, native audit fields and PR-specific readiness.

@@ -14,6 +14,7 @@ import {
   follow,
   fresh,
   launch,
+  showStructure,
   leave,
   nodeIn,
   offline,
@@ -39,6 +40,7 @@ before(async () => {
   page = await browser.newPage();
   await offline(page, requests);
   await page.goto(pathToFileURL(views.example).href, { waitUntil: "load" });
+  await showStructure(page);
   results = await page.evaluate(drawAll);
   await page.waitForFunction(() =>
     document.querySelector('figure[data-targets] g.node[role="link"]'),
@@ -235,6 +237,7 @@ test("a diagram is drawn only once it comes near view, so the page opens without
   const fresh = await browser.newPage();
   await fresh.setViewport({ width: 800, height: 600 });
   await fresh.goto(pathToFileURL(views.large).href, { waitUntil: "load" });
+  await showStructure(fresh);
   await fresh.evaluate(() => window.reportDiagramsReady);
   const last = () =>
     fresh.evaluate(
@@ -260,6 +263,7 @@ test("a large landscape waits for its button, and only the flows just ahead of t
   // With motion reduced the city keeps still, so the page is idle.
   await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
   await page.goto(pathToFileURL(views.large).href, { waitUntil: "load" });
+  await showStructure(page);
   await page.evaluate(() => window.reportDiagramsReady);
   const landscape = () => page.$eval("#landscape figure", (f) => f.dataset.renderState);
   assert.equal(await landscape(), "pending");

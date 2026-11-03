@@ -1,6 +1,13 @@
 # ontology-writer
 
-Business ontology level above ADRs for Codex and Claude Code. A repository keeps one or more Turtle documents in `docs/ontology/` that describe how the business flows across features: processes and their steps, the events steps emit and the policies that react to them, actors, business rules that span steps, business concepts and terms, and observation criteria. The vocabulary is a closed RDFS-lite ontology, so a model built by an agent is checked mechanically and the same question gets the same answer. The model owns flows and relations; ADRs stay the only implementation authority and keep values, state machines and detailed conditions. Without model documents nothing here runs.
+Business ontology level above ADRs for Codex and Claude Code. A repository keeps one or more Turtle documents in `docs/ontology/` that describe how the business flows across features: processes and their steps, the events steps emit and the policies that react to them, actors, business rules that span steps, business concepts and terms, and observation criteria. The vocabulary is a closed RDFS-lite ontology, so a model built by an agent is checked mechanically and the same question gets the same answer. The model owns flows and relations; ADRs stay the only implementation authority and keep values, state machines and detailed conditions. Model-dependent checks stay inactive without model documents; an explicit build request can create the first model.
+
+The aim is to capture real business workflows accurately and richly, so domain
+logic reaches ADR contracts, code and tests. Ontology formalism and inference
+are means, not completion goals. Build starts with evidence-based EventStorming:
+a whole-scope event map, bounded contexts and subdomains grounded in that map,
+then confirmed model facts. Additional sources use the same comparison and
+approval path. These agent workflows are distinct from the deterministic CLI.
 
 ## Install
 
@@ -25,10 +32,40 @@ Install [`adr-writer`](../adr-writer) as well when the repository has ADRs. A mo
 | Command                       | Role                                                                                                                                                                                                                                                                                              |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/ontology-edit [change]`     | Change the business ontology (`docs/ontology/*.ttl`) from a request: one approval summary with the semantic diff, affected features, link changes, processes that become `Proposed` and each affected ADR's semantic diff, then cascade to ADRs, adr-writer's `/adr-impl` and an alignment review |
-| `/ontology-sync [process]`    | Confirm direct Turtle edits like a save, mark changed `Accepted` processes `Proposed`, and propose the downstream propagation without overwriting the edit                                                                                                                                        |
+| `/ontology-sync [process]`    | Review completeness/readiness without mutation when requested, or reconcile direct Turtle edits and propose downstream changes                                                                                                                                                                    |
 | `/ontology-align [process]`   | Make a process current only when its realizing features are implemented, compliance contracts are in place, nothing contradicts the model and every observation criterion passed by executing the features' real entry points                                                                     |
-| `/ontology-build [documents]` | Build model candidates from documents (AgentStorm maps included) with sources and verdicts; save only what the user confirms                                                                                                                                                                      |
-| `/ontology-view`              | Open a read-only standalone view of the model: a 3D business city, an explorer that finds every element by bounded context, the landscape, flows and details, with realization status from the ADR index                                                                                          |
+| `/ontology-build [documents]` | Capture workflows through an evidence-based event map, identify contexts/subdomains, then propose model facts with sources; save only confirmed scope                                                                                                                                             |
+| `/ontology-view`              | Open an event-first business flow with policies, rules and open questions; switch to its 3D business structure, and inspect source details and realization from the ADR index                                                                                                                     |
+
+## Completeness and the next workflow
+
+Ask `/ontology-sync` to review completeness/readiness when you want a read-only
+assessment of the actual business workflow. It reports business-model
+sufficiency, ADR contract readiness and actual execution evidence separately,
+including unknown scope. Use `/ontology-build` for additional information,
+`/ontology-edit` for a requested change, the reconciliation path of
+`/ontology-sync` for direct edits, and `/ontology-align` for execution evidence.
+The read-only review is an agent workflow using existing commands, not a new
+CLI flag. The viewer opens on an event-first EventStorming canvas: domain events
+lead the story across contexts, with their producing actions, incoming policies
+and conditions. Related business rules and recorded open paths appear beside the
+flow, preserving their scope and evidence. Branches and returning links remain
+visible; position does not establish time or an unrecorded causal relation.
+
+The model has two tabs: Event flow and Business structure. The latter already
+shows context districts, process towers, steps and event/policy hand-offs in 3D,
+so there is no separate context map. The event inspector can open the same step
+in Business structure. Both views keep their navigation in the open page;
+reopening resets it. Read actual context ownership from the model details,
+not a process tower's physical placement.
+
+The event flow uses a readable front-facing canvas with restrained depth and
+subtle directional strokes. Motion can be paused, respects reduced motion and
+stops while hidden or out of view. It illustrates recorded event reactions, not
+live traffic or sequence-only relations. Candidate boards can show source-backed
+changes before a model exists, using only the event flow and complete source
+cards; see `references/eventstorming-board.md`. Unknown changes and unperformed
+reviews remain explicit.
 
 ## Business ontology
 

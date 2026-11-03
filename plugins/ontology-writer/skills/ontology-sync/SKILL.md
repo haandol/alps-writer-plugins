@@ -1,7 +1,7 @@
 ---
 name: ontology-sync
-description: Bring direct edits of the business ontology back into the governed path — validate them, review them like a save, find their meaning against the last committed or last Accepted model, mark changed Accepted processes Proposed, report lifecycle edits, glossary coexistence and pending ADR rows, and propose the downstream propagation with one approval summary. Distinct from /adr-sync, which compares ADRs with code. Keywords - "/ontology-sync", "온톨로지 동기화", "모델 직접 편집", "ontology drift".
-argument-hint: "[process-id?]"
+description: Review process completeness and business/ADR/execution readiness read-only when requested, or bring direct edits of the business ontology back into the governed path — validate them, review them like a save, find their meaning against the last committed or last Accepted model, mark changed Accepted processes Proposed, report lifecycle edits, glossary coexistence and pending ADR rows, and propose the downstream propagation with one approval summary. Distinct from /adr-sync, which compares ADRs with code. Keywords - "/ontology-sync", "온톨로지 동기화", "모델 직접 편집", "ontology drift".
+argument-hint: "[process-id?] [completeness/readiness review request?]"
 ---
 
 # ontology-sync
@@ -12,6 +12,16 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/ontology.md` completely. A direct
 edit is a change the user wrote in the Turtle documents; this skill confirms it
 the same way `/ontology-edit` confirms a requested change, without overwriting
 it. Without `docs/ontology/*.ttl` there is nothing to sync; say so and stop.
+
+## Read-only completeness or readiness requests
+
+When the user asks to review completeness/readiness without reconciling changes,
+apply `${CLAUDE_PLUGIN_ROOT}/references/workflow-readiness.md` and report the
+three conclusions for the requested scope, including unchanged processes.
+Do not enter the transition, renewal, save or cascade steps below. There is no
+new CLI flag: use the existing read-only commands named in that reference.
+Additional information may support the review; saving it goes through
+`/ontology-build` or `/ontology-edit` only within an authorized change request.
 
 ## 1. Validate before reading meaning
 

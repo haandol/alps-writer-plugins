@@ -2,8 +2,7 @@
 
 Read this module when the repository has a business ontology — one or more
 Turtle documents in `docs/ontology/` — and the current workflow creates or
-changes an ADR decision or contract, or changes code of a feature linked to a
-process step. Without model documents, skip it entirely: add no output,
+changes an ADR decision or contract, or implements or reviews a feature linked to a process step. Without model documents, skip it entirely: add no output,
 question, link judgment or index change. The model, its vocabulary, its
 validation and the query belong to the separate ontology-writer plugin; this
 plugin never reads the model.
@@ -62,6 +61,23 @@ again.
 
 ## Using the context
 
+The purpose is to carry actual business logic into ADR contracts, code and tests.
+The model is useful when it captures the workflow accurately and richly; formal
+ontology completeness and inference capability are not implementation goals.
+
+- **Connect workflow to verification.** In authoring, identify the starting
+  condition, performer, event hand-offs, outcome and relevant observation
+  criteria; propose feature-level contracts for relevant normal, exception,
+  rejection and hand-off paths. In implementation, map approved contracts to
+  business scenarios and tests. In review, check those scenarios against the
+  contracts and actual evidence. If the category query omits criteria, query
+  the connected process through ontology-writer; never read the model here.
+  A model-only obligation missing from an ADR is an alignment issue, while
+  missing behavior or tests for an approved ADR row follows the existing
+  implementation-finding categories. Report business alignment separately from
+  the ADR implementation verdict; PASS is not whole-process execution proof.
+  Newly discovered business facts go through the owning approval path before
+  becoming model facts, ADR requirements or new test pass/fail conditions.
 - **Choose within the model.** Pick details the ADR leaves open so they do not
   contradict the model's flow, events, policies, cross-feature rules or terms.
 - **Propose, do not absorb.** When no such choice exists, or the change needs a
