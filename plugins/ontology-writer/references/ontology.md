@@ -9,6 +9,10 @@ For discovery, load `eventstorming.md`; for business completeness and readiness,
 load `workflow-readiness.md` only on those paths. Completeness means sufficient
 context for the requested business implementation and verification.
 
+Construct ontology knowledge in layers: author the small BC-only layer of
+responsibility, core business logic and collaborations, then each BC's internal
+workflow knowledge. For construction and scoped retrieval, read `knowledge-layers.md`.
+
 Read this module when a repository has a business ontology — one or more
 Turtle documents in `docs/ontology/` — or when a workflow is about to create one.
 Without model documents and without `realizes` links in `docs/adr/.mapping.json`,
@@ -40,7 +44,12 @@ Status change, a category rename, split or rollup, and a code refactor never
 change the model. Business changes flow down: model, then the ADR index link,
 then the ADR, then code.
 
-The model holds flow and relations only:
+The upper knowledge layer holds BC responsibility and `coreLogic` with explicit
+`collaboratesWith` connections. The lower layer holds internal business flow and
+relations, linked to BCs by `inContext`. The upper layer never duplicates every
+step or policy, and its collaborations assert neither sequence nor causation.
+
+The internal model holds flow and relations only:
 
 - A state dependency between features is an event that announces the change and
   a policy that reacts to it. A dependency that only assumes another feature's
@@ -121,22 +130,23 @@ in one definition.
 
 **Relations:**
 
-| Property             | Name                 | From                                         | To                                     | Meaning                                    |
-| -------------------- | -------------------- | -------------------------------------------- | -------------------------------------- | ------------------------------------------ |
-| `onto:hasStep`       | contains             | Process                                      | Step                                   | the process contains the step              |
-| `onto:flowsTo`       | flow                 | Step                                         | Step                                   | order of progress inside the same process  |
-| `onto:performs`      | performs             | Actor                                        | Step                                   | the actor performs the step                |
-| `onto:emits`         | emits                | Step                                         | BusinessEvent                          | the event happens as a result of the step  |
-| `onto:triggers`      | triggers             | BusinessEvent                                | Policy                                 | the event wakes the policy                 |
-| `onto:starts`        | starts               | Policy                                       | Step                                   | the policy starts the step when it holds   |
-| `onto:uses`          | uses                 | Step, Policy                                 | BusinessConcept                        | reads, changes or decides with the concept |
-| `onto:constrains`    | constrains           | BusinessRule                                 | Step, Policy, BusinessConcept, Process | the rule applies to the target             |
-| `onto:hasPart`       | composition          | BusinessConcept                              | BusinessConcept                        | one concept has the other as a part        |
-| `onto:refersTo`      | reference            | BusinessConcept                              | BusinessConcept                        | one concept points at the other            |
-| `onto:correspondsTo` | correspondence       | BusinessConcept                              | BusinessConcept                        | the same thing in another context          |
-| `onto:inContext`     | context membership   | Step, Policy, BusinessConcept, BusinessEvent | BoundedContext                         | the boundary the element belongs to        |
-| `onto:criterionOf`   | criterion membership | ObservationCriterion                         | Process                                | the process the criterion checks           |
-| `onto:passesThrough` | passes through       | ObservationCriterion                         | BusinessEvent                          | an event between the start and the result  |
+| Property                | Name                 | From                                         | To                                     | Meaning                                                                       |
+| ----------------------- | -------------------- | -------------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------- |
+| `onto:hasStep`          | contains             | Process                                      | Step                                   | the process contains the step                                                 |
+| `onto:flowsTo`          | flow                 | Step                                         | Step                                   | order of progress inside the same process                                     |
+| `onto:performs`         | performs             | Actor                                        | Step                                   | the actor performs the step                                                   |
+| `onto:emits`            | emits                | Step                                         | BusinessEvent                          | the event happens as a result of the step                                     |
+| `onto:triggers`         | triggers             | BusinessEvent                                | Policy                                 | the event wakes the policy                                                    |
+| `onto:starts`           | starts               | Policy                                       | Step                                   | the policy starts the step when it holds                                      |
+| `onto:uses`             | uses                 | Step, Policy                                 | BusinessConcept                        | reads, changes or decides with the concept                                    |
+| `onto:constrains`       | constrains           | BusinessRule                                 | Step, Policy, BusinessConcept, Process | the rule applies to the target                                                |
+| `onto:hasPart`          | composition          | BusinessConcept                              | BusinessConcept                        | one concept has the other as a part                                           |
+| `onto:refersTo`         | reference            | BusinessConcept                              | BusinessConcept                        | one concept points at the other                                               |
+| `onto:correspondsTo`    | correspondence       | BusinessConcept                              | BusinessConcept                        | the same thing in another context                                             |
+| `onto:inContext`        | context membership   | Step, Policy, BusinessConcept, BusinessEvent | BoundedContext                         | the boundary the element belongs to                                           |
+| `onto:criterionOf`      | criterion membership | ObservationCriterion                         | Process                                | the process the criterion checks                                              |
+| `onto:passesThrough`    | passes through       | ObservationCriterion                         | BusinessEvent                          | an event between the start and the result                                     |
+| `onto:collaboratesWith` | collaboration        | BoundedContext                               | BoundedContext                         | authored BC collaboration, read in both directions; not sequence or causation |
 
 Flow is order, never a cause. When several flows leave a step, all of them
 proceed. Choice branches, the cause that starts a step, and connections between
@@ -157,22 +167,23 @@ the process became `Accepted`, no lifecycle edit is pending and the alignment
 gates hold. A renewal is the comparison baseline once committed; on the day of
 the current `Accepted` date it cannot be recorded, and Ontology Writer says so.
 
-| Property                 | Family      | On                            | Value                                                                   |
-| ------------------------ | ----------- | ----------------------------- | ----------------------------------------------------------------------- |
-| `rdfs:label`             | fact        | every element                 | name, one text value                                                    |
-| `onto:definition`        | fact        | every element but criteria    | meaning in business language                                            |
-| `onto:stepKind`          | fact        | Step                          | `"system"` or `"outside-system"`                                        |
-| `onto:reactionCondition` | fact        | Policy                        | relation and meaning the policy checks, no exact values                 |
-| `onto:basisKind`         | fact        | Policy, BusinessRule          | `"regulation"`, `"contract"`, `"operating-policy"` or `"user-decision"` |
-| `onto:basis`             | fact        | Policy, BusinessRule          | the regulation, contract, policy or decision behind it                  |
-| `onto:startCondition`    | fact        | Process, ObservationCriterion | where the flow or observation starts                                    |
-| `onto:businessOutcome`   | fact        | Process                       | the business result the process reaches                                 |
-| `onto:observedResult`    | fact        | ObservationCriterion          | the business result to observe                                          |
-| `onto:openScope`         | fact        | Process (required), Step      | typed items, see below                                                  |
-| `onto:summary`           | description | Process                       | one-line summary                                                        |
-| `rdfs:comment`           | description | every element                 | notes, any number                                                       |
-| `onto:status`            | lifecycle   | Process                       | the process Status                                                      |
-| `onto:replacedBy`        | lifecycle   | Process                       | the process that replaces this one                                      |
+| Property                 | Family      | On                            | Value                                                                         |
+| ------------------------ | ----------- | ----------------------------- | ----------------------------------------------------------------------------- |
+| `rdfs:label`             | fact        | every element                 | name, one text value                                                          |
+| `onto:definition`        | fact        | every element but criteria    | meaning in business language                                                  |
+| `onto:coreLogic`         | fact        | BoundedContext                | one authored BC-scale explanation of inputs, principal decisions and outcomes |
+| `onto:stepKind`          | fact        | Step                          | `"system"` or `"outside-system"`                                              |
+| `onto:reactionCondition` | fact        | Policy                        | relation and meaning the policy checks, no exact values                       |
+| `onto:basisKind`         | fact        | Policy, BusinessRule          | `"regulation"`, `"contract"`, `"operating-policy"` or `"user-decision"`       |
+| `onto:basis`             | fact        | Policy, BusinessRule          | the regulation, contract, policy or decision behind it                        |
+| `onto:startCondition`    | fact        | Process, ObservationCriterion | where the flow or observation starts                                          |
+| `onto:businessOutcome`   | fact        | Process                       | the business result the process reaches                                       |
+| `onto:observedResult`    | fact        | ObservationCriterion          | the business result to observe                                                |
+| `onto:openScope`         | fact        | Process (required), Step      | typed items, see below                                                        |
+| `onto:summary`           | description | Process                       | one-line summary                                                              |
+| `rdfs:comment`           | description | every element                 | notes, any number                                                             |
+| `onto:status`            | lifecycle   | Process                       | the process Status                                                            |
+| `onto:replacedBy`        | lifecycle   | Process                       | the process that replaces this one                                            |
 
 Single-valued attributes take exactly one value; text values are non-empty plain
 or language-tagged literals.
@@ -208,36 +219,44 @@ business meaning its contract needs.
 
 ## Validation
 
-Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs validate`; adr-writer's
-`adr-structure-lint` checks only the shape of `realizes`, never the model. It
-judges the union graph under a closed world and fails when any document cannot be
+Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs validate`; use
+`--require-layers` for construction, with repeatable `--layer-context <id>` for
+a scoped extension. Missing core logic or a missing upper collaboration for an
+internal cross-BC relation is a legacy warning and a construction error. A new
+BC must pass those checks before save. Validation reports gaps without filling
+model facts.
+
+ADR Writer's `adr-structure-lint` checks only the shape of `realizes`, never the
+model. Ontology Writer judges the union graph under a closed world and fails when any document cannot be
 parsed — an out-of-range or lone-surrogate `\u`/`\U` escape and a document that is
 not valid UTF-8 included — reporting the document and position instead of passing
 on the part it could read.
 
-| Finding                                                                                                                             | What to do                                                                          |
-| ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `ontology-parse`, `ontology-blank-node`, `ontology-collection`, `ontology-base`, `ontology-relative-iri`, `ontology-unknown-prefix` | fix the reported position; give every element an `m:` identifier                    |
-| `ontology-unknown-term`, `ontology-owl`                                                                                             | use only vocabulary terms plus `rdf:type`, `rdfs:label`, `rdfs:comment`             |
-| `ontology-element-iri`, `ontology-type-missing`, `ontology-type-multiple`, `ontology-type-literal`                                  | one `m:` id, one element type given as a class, never a literal                     |
-| `ontology-relation-source`, `ontology-relation-target`, `ontology-relation-dangling`                                                | follow the relation table; point at existing elements                               |
-| `ontology-attribute-*`                                                                                                              | required attributes, one value, allowed values, attribute only on its types         |
-| `ontology-membership`, `ontology-policy`, `ontology-correspondence`                                                                 | memberships, performers, triggers and started steps, cross-context correspondence   |
-| `ontology-rule-reach`                                                                                                               | a rule reaches two or more steps; a rule inside one step belongs to the ADR         |
-| `ontology-flow-cross`                                                                                                               | connect processes with an event and a policy                                        |
-| `ontology-open-scope`                                                                                                               | typed open-scope items; `none` alone; steps hold open paths only                    |
-| `ontology-adr-reference`                                                                                                            | remove ADR paths, numbers and category keys from the model                          |
-| `ontology-link-dangling`                                                                                                            | fix or remove the `realizes` id                                                     |
-| `ontology-link-retired`                                                                                                             | remove or move the link to the step of a retired process                            |
-| `ontology-link-shape`                                                                                                               | write `realizes` as a list of step ids                                              |
-| `ontology-adr-status-mismatch`, `ontology-adr-missing`, `ontology-adr-unindexed`                                                    | bring the index and the ADR files back in lockstep (Status only through the script) |
-| `ontology-adr-record-invalid`                                                                                                       | give the realizing feature's records the paths of its own ADR files, as a list      |
-| `ontology-index-unreadable`                                                                                                         | fix `.mapping.json` so it parses before any change approval                         |
-| `ontology-adr-identifier`                                                                                                           | replace the model citation in the realizing ADR with business meaning               |
-| `ontology-comment` (warning)                                                                                                        | move notes to `rdfs:comment`; comments are dropped on rewrite                       |
-| `ontology-exact-value`, `ontology-technical-detail` (warnings)                                                                      | move values and technical detail to the realizing ADR or the code                   |
-| `ontology-glossary-overlap` (warning)                                                                                               | clean the glossary entry up through the model's change approval                     |
-| `ontology-glossary-mention` (warning)                                                                                               | ask whether the table cell defines the term; if it does, clean it up as an entry    |
+| Finding                                                                                                                             | What to do                                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `ontology-parse`, `ontology-blank-node`, `ontology-collection`, `ontology-base`, `ontology-relative-iri`, `ontology-unknown-prefix` | fix the reported position; give every element an `m:` identifier                                      |
+| `ontology-unknown-term`, `ontology-owl`                                                                                             | use only vocabulary terms plus `rdf:type`, `rdfs:label`, `rdfs:comment`                               |
+| `ontology-element-iri`, `ontology-type-missing`, `ontology-type-multiple`, `ontology-type-literal`                                  | one `m:` id, one element type given as a class, never a literal                                       |
+| `ontology-relation-source`, `ontology-relation-target`, `ontology-relation-dangling`                                                | follow the relation table; point at existing elements                                                 |
+| `ontology-attribute-*`                                                                                                              | required attributes, one value, allowed values, attribute only on its types                           |
+| `ontology-membership`, `ontology-policy`, `ontology-correspondence`                                                                 | memberships, performers, triggers and started steps, cross-context correspondence                     |
+| `ontology-rule-reach`                                                                                                               | a rule reaches two or more steps; a rule inside one step belongs to the ADR                           |
+| `ontology-flow-cross`                                                                                                               | connect processes with an event and a policy                                                          |
+| `ontology-layer-core-missing`, `ontology-layer-link-missing`, `ontology-layer-context-missing`                                      | author the missing BC knowledge through the approval path; legacy warnings become construction errors |
+| `ontology-context-collaboration`                                                                                                    | connect distinct BCs; collaboration is symmetric and is not an event flow                             |
+| `ontology-open-scope`                                                                                                               | typed open-scope items; `none` alone; steps hold open paths only                                      |
+| `ontology-adr-reference`                                                                                                            | remove ADR paths, numbers and category keys from the model                                            |
+| `ontology-link-dangling`                                                                                                            | fix or remove the `realizes` id                                                                       |
+| `ontology-link-retired`                                                                                                             | remove or move the link to the step of a retired process                                              |
+| `ontology-link-shape`                                                                                                               | write `realizes` as a list of step ids                                                                |
+| `ontology-adr-status-mismatch`, `ontology-adr-missing`, `ontology-adr-unindexed`                                                    | bring the index and the ADR files back in lockstep (Status only through the script)                   |
+| `ontology-adr-record-invalid`                                                                                                       | give the realizing feature's records the paths of its own ADR files, as a list                        |
+| `ontology-index-unreadable`                                                                                                         | fix `.mapping.json` so it parses before any change approval                                           |
+| `ontology-adr-identifier`                                                                                                           | replace the model citation in the realizing ADR with business meaning                                 |
+| `ontology-comment` (warning)                                                                                                        | move notes to `rdfs:comment`; comments are dropped on rewrite                                         |
+| `ontology-exact-value`, `ontology-technical-detail` (warnings)                                                                      | move values and technical detail to the realizing ADR or the code                                     |
+| `ontology-glossary-overlap` (warning)                                                                                               | clean the glossary entry up through the model's change approval                                       |
+| `ontology-glossary-mention` (warning)                                                                                               | ask whether the table cell defines the term; if it does, clean it up as an entry                      |
 
 `ontology.mjs format --check` lists documents that are not canonical
 (`--write` rewrites them without changing their graph), and

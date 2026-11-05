@@ -50,6 +50,11 @@ a model document. Edit only the draft; never write `docs/ontology/`,
 `docs/adr/.mapping.json` or the glossary before approval.
 
 - Record the current state only; no previous values or transition narration.
+- When constructing or expanding knowledge, apply `knowledge-layers.md` from
+  the plugin references: author the BC responsibility, core logic and collaboration
+  layer and connect the internal business knowledge. Use `--require-layers` on
+  `impact` and `apply`, with `--layer-context <id>` for the selected BCs. A focused
+  correction need not layer unrelated legacy contexts; report their gaps.
 - Keep flow and relations only. A state dependency between features is an event
   and a reacting policy, or a business rule that reaches both the step changing
   the state and the step relying on it. Rules and reaction conditions state

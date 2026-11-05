@@ -1774,12 +1774,13 @@
         invalidate();
       }
     }
-    document.addEventListener("ontology-view-change", () =>
-      setVisible(!document.getElementById("city").hidden),
-    );
+    const cityVisible = () =>
+      !document.getElementById("city").hidden &&
+      !document.getElementById("whole-workspace")?.hidden;
+    document.addEventListener("ontology-view-change", () => setVisible(cityVisible()));
     if (typeof IntersectionObserver === "function")
       new IntersectionObserver(([entry]) =>
-        setVisible(entry.isIntersecting && !document.getElementById("city").hidden),
+        setVisible(entry.isIntersecting && cityVisible()),
       ).observe(canvas);
     resize();
     Object.assign(cam, home);

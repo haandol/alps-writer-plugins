@@ -22,7 +22,7 @@ const PLAIN = `@prefix m: <${MODEL}> .
 @prefix rdfs: <${RDFS}> .
 m:customer a onto:Actor ; rdfs:label "Customer" ; onto:definition "A buyer." ;
     onto:performs m:sales.ask, m:sales.sell-it .
-m:sales a onto:BoundedContext ; rdfs:label "Sales" ; onto:definition "Selling." .
+m:sales a onto:BoundedContext ; rdfs:label "Sales" ; onto:definition "Selling." ; onto:coreLogic "A buyer asks for a thing and the store sells it." .
 m:sales.sell a onto:Process ; rdfs:label "Sell" ; onto:definition "Selling a thing." ;
     onto:startCondition "A buyer asks." ; onto:businessOutcome "It is sold." ;
     onto:openScope "none"^^onto:NoOpenScope ; onto:status "Proposed" ;
@@ -41,7 +41,12 @@ function render(documents) {
   const model = validateModel(documents);
   return {
     findings: model.findings,
-    html: renderView({ index: model.index, mapping: { categories: {} }, findings: model.findings }),
+    html: renderView({
+      index: model.index,
+      mapping: { categories: {} },
+      findings: model.findings,
+      initialView: "events",
+    }),
   };
 }
 
@@ -199,8 +204,9 @@ export async function openWide(browser, file, requests) {
   return wide;
 }
 
-/** Select the legacy business structure explicitly; the default is the event flow. */
+/** Select the whole-model structure explicitly, entering that workspace if needed. */
 export async function showStructure(page) {
+  if (await page.$eval("#whole-workspace", (e) => e.hidden)) await page.click("#kw-show-whole");
   await page.click("#view-structure-tab");
   await page.waitForFunction(
     () =>

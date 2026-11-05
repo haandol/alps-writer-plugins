@@ -6,7 +6,9 @@
 //   node ontology.mjs validate [--adr-dir DIR] [--json]
 //   node ontology.mjs format [--check | --write [--allow-comment-removal]]
 //   node ontology.mjs diff [--base REF] [--json]
-//   node ontology.mjs query (--category KEY | --process ID | --concept ID | --event ID)
+//   node ontology.mjs validate [--require-layers] [--layer-context ID]...
+//   node ontology.mjs query (--overview | --context ID) [--search TEXT] [--limit N] [--offset N]
+//   node ontology.mjs query (--category KEY | --process ID | --step ID | --concept ID | --event ID)
 //                                [--include-retired] [--adr-dir DIR] [--json]
 //   node ontology.mjs impact (--draft DIR | --base REF [--also-base REF]...) [--process ID]
 //                                [--same-meaning ID=PROPERTY]... [--mapping FILE] [--glossary FILE] [--json]
@@ -29,7 +31,8 @@
 //             only with --allow-comment-removal, after the approval showed the removal
 //   diff      semantic diff of the model against a git revision (default HEAD);
 //             formatting, ordering and comments never appear
-//   query     business context of one feature, process, concept or event: only the
+//   query     BC overview/internal navigation, or business context of one feature,
+//             process, step, concept or event: only the
 //             connected elements, with process and ADR Status, in-scope validation
 //             errors and uncommitted / unsynced-edit flags
 //   impact    what an ontology change approval shows for a draft model directory
@@ -74,6 +77,9 @@
 //
 // Exit: 0 = clean / no difference / complete context, 1 = findings, differences,
 //       a missing target or an incomplete context, 2 = usage error.
+// --overview returns the complete authored BC layer by default; --context uses
+// 20 rows per page. Optional --limit (1..100) and --offset page navigation only.
+// --require-layers and repeatable --layer-context also apply to impact/apply.
 
 import { createHash } from "node:crypto";
 import {
@@ -105,6 +111,7 @@ import {
   glossaryOverlap,
   indexGraph,
   isAccepted,
+  knowledgeLayerFindings,
   lifecycleFindings,
   parseDocument,
   parseTurtle,
@@ -135,6 +142,7 @@ import {
 import { openReviewReport } from "./adr-impl-review-open.mjs";
 import { renderView } from "./ontology-view.mjs";
 import { currentAdrPaths, queryContext, renderContext } from "./ontology-query.mjs";
+import { navigationOptions } from "./ontology-navigation.mjs";
 
 const rel = (p) => path.relative(process.cwd(), p).split(path.sep).join("/");
 // Text output keeps a list this long on one line; a longer one takes a line per item.
@@ -165,6 +173,11 @@ function parseArgs(argv) {
     base: "HEAD",
     target: null,
     includeRetired: false,
+    search: "",
+    limit: null,
+    offset: 0,
+    requireLayers: false,
+    layerContexts: [],
     draft: null,
     baseHash: null,
     mappingFile: null,
@@ -190,6 +203,10 @@ function parseArgs(argv) {
     else if (a === "--check") opts.write = false;
     else if (a === "--allow-comment-removal") opts.allowCommentRemoval = true;
     else if (a === "--include-retired") opts.includeRetired = true;
+    else if (a === "--require-layers" && ["validate", "impact", "apply"].includes(command))
+      opts.requireLayers = true;
+    else if (a === "--layer-context" && ["validate", "impact", "apply"].includes(command))
+      opts.layerContexts.push(value());
     else if (a === "--draft") opts.draft = value().replace(/\/+$/, "");
     else if (a === "--base-hash") opts.baseHash = value();
     else if (a === "--mapping") opts.mappingFile = value();
@@ -198,8 +215,17 @@ function parseArgs(argv) {
     else if (a === "--same-meaning") opts.sameMeaning.push(value());
     else if (a === "--unread-unchanged") opts.unreadUnchanged = true;
     else if (a === "--also-base") opts.alsoBase.push(value());
-    else if (
+    else if (a === "--overview" && command === "query") {
+      if (opts.target) usage("give exactly one query target");
+      opts.target = { kind: "overview" };
+    } else if (a === "--search" && command === "query") opts.search = value();
+    else if (["--limit", "--offset"].includes(a) && command === "query") {
+      const v = value();
+      if (!/^\d+$/.test(v)) usage(`${a} requires an integer`);
+      opts[a.slice(2)] = Number(v);
+    } else if (
       ["--category", "--concept", "--event"].includes(a) ||
+      (["--context", "--step"].includes(a) && command === "query") ||
       (a === "--process" && command === "query")
     ) {
       if (opts.target) usage("give exactly one query target");
@@ -228,8 +254,24 @@ function parseArgs(argv) {
   ];
   if (!commands.includes(command))
     usage(`expected a command: ${commands.join(", ")} (help shows the usage)`);
+  if (opts.layerContexts.length && !opts.requireLayers)
+    usage("--layer-context requires --require-layers");
   if (command === "query" && !opts.target)
-    usage("query needs --category, --process, --concept or --event");
+    usage("query needs --overview, --context, --category, --process, --step, --concept or --event");
+  if (command === "query") {
+    const navigation = ["overview", "context"].includes(opts.target.kind);
+    if (!navigation && rest.some((a) => ["--search", "--limit", "--offset"].includes(a)))
+      usage("--search, --limit and --offset apply only to --overview or --context");
+    if (navigation) {
+      try {
+        navigationOptions(opts);
+      } catch (e) {
+        usage(e.message);
+      }
+      if (rest.includes("--search") && !opts.search.trim())
+        usage("--search requires nonempty text");
+    }
+  }
   if (command === "apply" && !opts.draft && !argv.includes("--base"))
     usage("apply needs --draft DIR, or --base REF for an approved direct edit");
   if (command === "impact" && !opts.draft && !argv.includes("--base"))
@@ -306,7 +348,17 @@ function levelFindings(opts) {
 }
 
 function validate(opts) {
-  const { model, findings } = levelFindings(opts);
+  const { model, index, findings: originalFindings } = levelFindings(opts);
+  const findings =
+    opts.requireLayers && index
+      ? [
+          ...originalFindings.filter((f) => !f.code.startsWith("ontology-layer-")),
+          ...knowledgeLayerFindings(index, {
+            required: !opts.layerContexts.length,
+            requiredContexts: new Set(opts.layerContexts.map(elementIri)),
+          }),
+        ]
+      : originalFindings;
   const errors = findings.filter((f) => f.level === "error");
   if (opts.json)
     process.stdout.write(JSON.stringify({ ok: !errors.length, model, findings }, null, 2) + "\n");
@@ -459,6 +511,9 @@ function query(opts) {
       : null,
     target: opts.target,
     includeRetired: opts.includeRetired,
+    search: opts.search,
+    limit: opts.limit,
+    offset: opts.offset,
   });
   process.stdout.write(opts.json ? JSON.stringify(result, null, 2) + "\n" : renderContext(result));
   return result.found && result.complete ? 0 : 1;
@@ -495,6 +550,17 @@ function loadModel(dir) {
     index: check.index,
     findings: check.findings,
   };
+}
+
+/** The approval preview and save validate the same model and construction scope. */
+function validateModelChange(documents, before, mapping, opts) {
+  return validateModel(documents, {
+    categoryKeys: Object.keys(mapping?.categories ?? {}),
+    modelDir: rel(opts.draft ?? opts.ontologyDir),
+    requireKnowledgeLayers: opts.requireLayers && !opts.layerContexts.length,
+    requiredContexts: new Set(opts.layerContexts.map(elementIri)),
+    previousContexts: new Set(before.ofType("BoundedContext")),
+  });
 }
 
 /**
@@ -790,10 +856,7 @@ function impact(opts) {
       `${shapes.map((f) => `[${f.code}] ${f.where}: ${f.msg}`).join("; ")}; fix the ADR index before a change approval`,
     );
   const relink = relinked(mapping, draftIndex);
-  const check = validateModel(documents, {
-    categoryKeys: Object.keys(mapping?.categories ?? {}),
-    modelDir: rel(opts.draft ?? opts.ontologyDir),
-  });
+  const check = validateModelChange(documents, before, mapping, opts);
   if (
     opts.process &&
     before.typeOf(elementIri(opts.process)) !== "Process" &&
@@ -1164,10 +1227,7 @@ function apply(opts) {
       return refuse([`nothing was written: cannot read --glossary ${opts.glossaryFile}`]);
   }
 
-  const check = validateModel(documents, {
-    categoryKeys: Object.keys(mapping?.categories ?? {}),
-    modelDir: rel(opts.draft ?? opts.ontologyDir),
-  });
+  const check = validateModelChange(documents, before, mapping, opts);
   const modelErrors = check.findings.filter((f) => f.level === "error");
   if (modelErrors.length)
     return refuse([

@@ -1,0 +1,475 @@
+.knowledge-app[data-knowledge-presentation="space"] .kw-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 31%);
+  overflow: hidden;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-home,
+.knowledge-app[data-knowledge-presentation="space"] .kw-bc {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 25px 22px 30px;
+  background: #fafbfd;
+  border-left: 1px solid #dae3ef;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-introduction {
+  margin-bottom: 18px;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-introduction h2 {
+  font-size: 24px;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-count {
+  display: none;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-connections {
+  display: none;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-contexts {
+  grid-template-columns: 1fr;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-search {
+  display: grid;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-search input {
+  width: 100%;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-bc-card {
+  padding: 18px;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-card-heading {
+  gap: 5px;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-bc-heading {
+  display: block;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-bc {
+  display: block;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-bc-core {
+  margin-top: 14px;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-bc-layout {
+  display: block;
+  min-height: 0;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-list-pane {
+  border: 0;
+  padding: 15px;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-detail-pane {
+  display: none;
+  padding: 15px;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-bc[data-detail="true"] .kw-list-pane,
+.knowledge-app[data-knowledge-presentation="space"] .kw-bc[data-detail="true"] .kw-bc-heading,
+.knowledge-app[data-knowledge-presentation="space"] .kw-bc[data-detail="true"] .kw-neighbors {
+  display: none;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-bc[data-detail="true"] .kw-detail-pane {
+  display: block;
+}
+.knowledge-app[data-knowledge-presentation="space"] .kw-detail,
+.knowledge-app[data-knowledge-presentation="space"] .kw-results {
+  max-height: none;
+}
+.ks-space {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+  isolation: isolate;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 43% 35%, #fff 8%, #edf3fb 58%, #e2eaf5 100%);
+}
+.ks-heading {
+  position: absolute;
+  top: 30px;
+  left: 34px;
+  right: 26px;
+  z-index: 4;
+  pointer-events: none;
+}
+.ks-heading h2 {
+  margin: 12px 0 7px;
+  color: #283c5c;
+  font-size: 27px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+.ks-heading p {
+  margin: 0;
+  max-width: 520px;
+  color: #71839d;
+  font-size: 12px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.ks-level {
+  padding: 5px 10px;
+  border: 1px solid #ccdaec;
+  border-radius: 20px;
+  background: #f7faffc9;
+  color: #5077a7;
+  font-size: 10px;
+  letter-spacing: 0.035em;
+}
+.ks-viewport {
+  position: absolute;
+  inset: 0;
+  perspective: 1100px;
+  perspective-origin: 50% 50%;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+}
+.ks-viewport:active {
+  cursor: grabbing;
+}
+.ks-viewport:focus-visible {
+  outline: 2px solid #7399c9;
+  outline-offset: -4px;
+}
+.ks-world {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transform-origin: 0 0;
+  --ks-tilt: 18deg;
+  --ks-spin: 0deg;
+}
+.ks-world::before {
+  content: "";
+  position: absolute;
+  width: 3000px;
+  height: 2600px;
+  left: -1500px;
+  top: -1300px;
+  transform: translateZ(-40px);
+  background:
+    linear-gradient(#c2d2e740 1px, transparent 1px),
+    linear-gradient(90deg, #c2d2e740 1px, transparent 1px);
+  background-size: 90px 90px;
+  mask-image: radial-gradient(ellipse, #000 12%, transparent 70%);
+  pointer-events: none;
+}
+.ks-island {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  opacity: 1;
+}
+.ks-island.ks-away {
+  opacity: 0;
+  pointer-events: none;
+}
+.ks-plate {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 360px;
+  height: 250px;
+  transform: translate(-50%, -50%);
+  border-radius: 18px;
+  border: 1px solid #b8cce5;
+  background: linear-gradient(135deg, #e6effbf0, #ccddf2db);
+  box-shadow:
+    0 28px 0 -2px #a7bedccc,
+    0 31px 0 -1px #91abcabf,
+    24px 54px 48px #617b9b24;
+}
+.ks-expanded .ks-plate {
+  background: linear-gradient(145deg, #eaf2feef, #d5e3f3df);
+  border-color: #9cb9de;
+  box-shadow:
+    0 30px 0 -2px #b6cbe5bb,
+    0 32px 0 -1px #93accb99,
+    24px 70px 70px #708cb128;
+}
+.ks-inside {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+.ks-billboard {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate3d(var(--node-x, 0px), var(--node-y, 0px), var(--node-z, 70px))
+    rotateZ(calc(-1 * var(--ks-spin))) rotateX(calc(-1 * var(--ks-tilt))) translate(-50%, -50%);
+  transform-origin: 0 0;
+  backface-visibility: hidden;
+}
+.ks-context-node {
+  width: 275px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 21px 23px;
+  text-align: left;
+  font: inherit;
+  border: 1px solid #c1d1e8;
+  border-radius: 15px;
+  background: #fffffff5;
+  box-shadow:
+    0 10px 32px #5278ac1c,
+    0 2px 4px #54789f0b;
+  color: #273f61;
+  cursor: pointer;
+}
+.ks-context-node strong {
+  font-size: 23px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+.ks-island:not(.ks-expanded) .ks-context-node {
+  scale: var(--ks-label-scale, 1);
+}
+.ks-context-node:hover,
+.ks-context-node:focus-visible {
+  border-color: #6f9bcf;
+  background: #fff;
+  outline: 3px solid #82a7d32b;
+}
+.ks-identity {
+  color: #7a92b1;
+  font:
+    10px ui-monospace,
+    monospace;
+  overflow-wrap: anywhere;
+}
+.ks-node-summary {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: #71839e;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.ks-expanded .ks-context-node {
+  padding: 11px 20px;
+  width: 310px;
+  gap: 5px;
+}
+.ks-expanded .ks-context-node strong {
+  font-size: 22px;
+}
+.ks-expanded .ks-context-node .ks-node-summary {
+  display: none;
+}
+.ks-element-node {
+  width: 210px;
+  min-height: 106px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 15px 17px;
+  border: 1px solid #c9d6e7;
+  border-top: 3px solid var(--node-color);
+  border-radius: 10px;
+  background: #fffffff7;
+  box-shadow: 0 8px 25px #59759420;
+  color: #334c6c;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ks-element-node strong {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.ks-element-node[aria-current] {
+  border-color: #719fd6;
+  outline: 4px solid #adc9ed69;
+  box-shadow: 0 14px 45px #4d78b344;
+}
+.ks-element-node:hover,
+.ks-element-node:focus-visible {
+  background: #f6faff;
+  outline: 3px solid #97b6de52;
+}
+.ks-node-type {
+  color: var(--node-color);
+  font-size: 10px;
+  font-weight: 650;
+}
+.ks-ownership {
+  color: #8a789a;
+  font-size: 10px;
+}
+.ks-warning {
+  color: #976b38;
+  font-size: 10px;
+}
+.ks-empty {
+  width: 280px;
+  margin: 0;
+  color: #7487a2;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.ks-collaborations {
+  position: absolute;
+  transform: translateZ(2px);
+  pointer-events: none;
+  overflow: visible;
+}
+.ks-collaborations line {
+  stroke: #8caed9;
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+}
+.ks-navigation {
+  position: absolute;
+  bottom: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid #cad7e8;
+  border-radius: 11px;
+  background: #fffffff0;
+  box-shadow: 0 8px 25px #526f9420;
+  white-space: nowrap;
+}
+.ks-navigation button {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 8px 9px;
+  color: #617898;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.ks-navigation button:hover,
+.ks-navigation button[aria-pressed="true"] {
+  color: #315f97;
+  background: #eaf2fd;
+}
+.ks-navigation > span {
+  width: 1px;
+  height: 19px;
+  background: #e0e7f0;
+  margin: 0 2px;
+}
+.ks-caption {
+  position: absolute;
+  bottom: 19px;
+  left: 16px;
+  right: 16px;
+  z-index: 4;
+  pointer-events: none;
+  text-align: center;
+}
+.ks-caption p {
+  margin: 3px 0;
+  color: #8495ad;
+  font-size: 10px;
+  line-height: 1.5;
+}
+@media (max-width: 1000px) {
+  .knowledge-app[data-knowledge-presentation="space"] .kw-main {
+    grid-template-columns: minmax(0, 1fr) 330px;
+  }
+  .ks-navigation button {
+    padding: 7px 6px;
+    font-size: 10px;
+  }
+  .ks-heading {
+    left: 22px;
+    top: 23px;
+  }
+  .ks-heading h2 {
+    font-size: 23px;
+  }
+}
+@media (max-width: 700px) {
+  .knowledge-app[data-knowledge-presentation="space"] .kw-main {
+    display: flex;
+    flex-direction: column;
+  }
+  .ks-space {
+    flex: 0 0 38%;
+    min-height: 245px;
+    border-bottom: 1px solid #d3dfee;
+  }
+  .knowledge-app[data-knowledge-presentation="space"] .kw-home,
+  .knowledge-app[data-knowledge-presentation="space"] .kw-bc {
+    flex: 1;
+    padding: 16px;
+    border-left: 0;
+  }
+  .ks-heading {
+    top: 13px;
+    left: 17px;
+  }
+  .ks-heading h2 {
+    margin-top: 7px;
+    font-size: 19px;
+  }
+  .ks-heading p {
+    display: none;
+  }
+  .ks-navigation {
+    bottom: 12px;
+    padding: 4px;
+  }
+  .ks-navigation button {
+    padding: 6px;
+    font-size: 9px;
+  }
+  .ks-caption {
+    display: none;
+  }
+  .ks-viewport {
+    perspective: 900px;
+  }
+  .ks-island:not(.ks-expanded) .ks-context-node {
+    min-height: 135px;
+  }
+  .ks-island:not(.ks-expanded) .ks-context-node strong {
+    font-size: 30px;
+  }
+  .ks-island:not(.ks-expanded) .ks-node-summary {
+    display: none;
+  }
+}
+@media print {
+  .ks-space,
+  #kw-presentation {
+    display: none !important;
+  }
+  .knowledge-app[data-knowledge-presentation="space"] .kw-main {
+    display: block;
+    overflow: visible;
+  }
+  .knowledge-app[data-knowledge-presentation="space"] .kw-home,
+  .knowledge-app[data-knowledge-presentation="space"] .kw-bc {
+    overflow: visible;
+    border: 0;
+    padding: 0;
+  }
+}

@@ -5,6 +5,12 @@
 
 import { classifyStatus } from "./adr-lint-lib.mjs";
 import {
+  navigationOptions,
+  pageNavigation,
+  projectNavigation,
+  renderNavigation,
+} from "./ontology-navigation.mjs";
+import {
   ONTO,
   RDFS,
   elementId,
@@ -118,8 +124,11 @@ export function implementationState(adrs) {
  * @param {object|null} input.mapping Parsed .mapping.json.
  * @param {object[]} input.findings Validation findings of the same model reading.
  * @param {object|null} input.changes Change flags from the repository history.
- * @param {{kind: "category"|"process"|"concept"|"event", id: string}} input.target
+ * @param {{kind: "overview"|"context"|"category"|"process"|"step"|"concept"|"event", id?: string}} input.target
  * @param {boolean} [input.includeRetired] Include Deprecated and Superseded processes.
+ * @param {string} [input.search] Literal business text for navigation views only.
+ * @param {number} [input.limit] Maximum navigation rows per response.
+ * @param {number} [input.offset] Navigation row offset in the unchanged model.
  * @param {Set<string>} [input.scopeOut] Filled with the IRIs of the result's scope.
  */
 export function queryContext({
@@ -129,17 +138,25 @@ export function queryContext({
   changes = null,
   target,
   includeRetired = false,
+  search = "",
+  limit = null,
+  offset = 0,
   scopeOut = null,
 }) {
   const base = { kind: target.kind, id: target.id };
+  const navigation = target.kind === "overview" || target.kind === "context";
+  const pageOptions = navigation
+    ? { ...navigationOptions({ search, limit, offset }), includeRetired }
+    : null;
   if (!index) {
-    return {
+    const out = {
       ...base,
       found: null,
       complete: false,
       errors: findings.filter((f) => f.level === "error"),
       note: "the model could not be parsed, so the scope cannot be determined; fix the reported position first",
     };
+    return navigation ? pageNavigation(out, pageOptions) : out;
   }
 
   const scope = new Set();
@@ -251,8 +268,32 @@ export function queryContext({
   };
 
   const notFound = (why) => ({ ...base, found: false, note: why });
+  // Both detailed entry points collect the same actors and owning context.
+  const stepDetails = (s) => ({
+    ...stepContext(s),
+    performers: sorted(index.into(s, "performs"))
+      .filter((a) => typeOf(a) === "Actor")
+      .map((a) => ref(a)),
+    context: contextRef(s),
+  });
   let result;
-  if (target.kind === "category") {
+  if (navigation) {
+    const { scope: selected, ...projection } = projectNavigation(index, {
+      target,
+      includeRetired,
+      search,
+    });
+    for (const iri of selected) scope.add(iri);
+    if (
+      projection.found === false &&
+      findings.some(
+        (f) =>
+          f.level === "error" && (f.element === target.id || f.element === elementIri(target.id)),
+      )
+    )
+      projection.found = null;
+    return pageNavigation(finish({ ...base, ...projection }, scope), pageOptions);
+  } else if (target.kind === "category") {
     const entry = mapping?.categories?.[target.id];
     if (!entry && findings.some((f) => f.code === "ontology-index-unreadable"))
       return finish(
@@ -334,13 +375,23 @@ export function queryContext({
       openScope: openScopeOf(index, iri).items,
       steps: sorted(index.out(iri, "hasStep"))
         .filter((s) => typeOf(s) === "Step")
-        .map((s) => ({
-          ...stepContext(s),
-          performers: sorted(index.into(s, "performs"))
-            .filter((a) => typeOf(a) === "Actor")
-            .map((a) => ref(a)),
-          context: contextRef(s),
-        })),
+        .map(stepDetails),
+    };
+  } else if (target.kind === "step") {
+    const iri = elementIri(target.id);
+    if (typeOf(iri) !== "Step") return finish(absent(target.id, "Step"), scope);
+    if (!visible(iri))
+      return finish(
+        notFound(
+          `step "${target.id}" belongs to a retired process; request retired processes to include it`,
+        ),
+        scope,
+      );
+    result = {
+      ...base,
+      found: true,
+      definition: text(iri, "definition"),
+      steps: [stepDetails(iri)],
     };
   } else if (target.kind === "concept") {
     const iri = elementIri(target.id);
@@ -608,6 +659,7 @@ const scopeItems = (items) =>
 
 /** Render a query result as compact text: target, errors and change flags first, then connections. */
 export function renderContext(r) {
+  if (r.navigationOnly) return renderNavigation(r);
   const lines = [];
   const say = (depth, s) => lines.push(`${"  ".repeat(depth)}${s}`);
   // Every feature a step line names, so that its ADRs are listed once at the end.
@@ -769,6 +821,9 @@ export function renderContext(r) {
         `criterion ${c.id}${q(c.label)}: ${c.startCondition} → ${c.observedResult} (passes through ${c.passesThrough.map((e) => e.id).join(", ") || "—"})`,
       );
     for (const s of inFlowOrder(r.steps)) stepBlock(s, 0);
+  } else if (r.kind === "step") {
+    say(0, `Definition: ${r.definition ?? "—"}`);
+    for (const s of r.steps) stepBlock(s, 0);
   } else if (r.kind === "concept") {
     say(
       0,

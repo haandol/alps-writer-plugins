@@ -1,12 +1,13 @@
 // ontology-view.mjs — read-only standalone HTML view of the business
-// ontology: the business landscape, each process flow, and element
-// details with realization status computed from the ADR index at generation
+// ontology: authored BC knowledge, scoped internal search and element
+// detail, plus the explicit whole-workflow views. Realization comes from the ADR index at generation
 // time, beside an explorer that finds every element by bounded context and a
 // 3D business city of the landscape. Flows and landscape connections are drawn
 // from the business-context query, so the picture and `query` read the model
 // the same way; the page has no editing or saving behavior.
 
 import { readFileSync } from "node:fs";
+import { knowledgeViewData, renderKnowledgeShell } from "./ontology-knowledge-view.mjs";
 import {
   BOARD_CSS,
   BOARD_CLIENT,
@@ -359,6 +360,7 @@ export function renderView({
   changes = null,
   includeRetired = false,
   lang = "en",
+  initialView = "contexts",
 }) {
   const t = UI[lang] ?? UI.en;
   const errors = findings.filter((f) => f.level === "error");
@@ -1231,7 +1233,32 @@ ${flowSections}
 <p>${esc(t.layers)}</p><div class="layers">${LAYERS.map((type) => `<button type="button" data-layer="${type}" aria-pressed="false"><span class="glyph t-${type}" aria-hidden="true"></span>${esc(typeName.get(type))}</button>`).join("")}</div></div>
 <div class="city-tip" id="city-tip" hidden></div>
 </section>`;
-  return page(t, lang, body, true, { explorer, city, data });
+  const knowledge = knowledgeViewData({
+    index,
+    mapping,
+    findings,
+    includeRetired,
+    lang,
+    elements,
+    flowOrders: processes.map((p) => ({ id: keyOf(p), steps: floorsOf(p) })),
+    stateLabels: t.short,
+    displayErrors: errors.map((e) =>
+      e.element != null && hidden(keyOf(e.element))
+        ? { code: e.code, where: e.where, element: null, msg: t.hiddenRetired }
+        : e,
+    ),
+    changeSummary: {
+      changed: Boolean(
+        changes?.available &&
+        (changes.uncommitted.size || changes.unsynced.size || changes.lifecycleEdits.size),
+      ),
+      unverified: Boolean(
+        changes && (!changes.available || !changes.history?.available || changes.uncertain?.size),
+      ),
+    },
+  });
+  knowledge.initialView = initialView;
+  return page(t, lang, body, true, { explorer, city, data, knowledge });
 }
 
 // Diagram nodes become links once Mermaid has drawn them, figure by figure, as each
@@ -1241,7 +1268,7 @@ const NAVIGATION = `<script data-view-navigation>
 (() => {
   const linked = new WeakSet();
   const link = (figure) => {
-    if (!figure.matches?.('figure[data-targets]') || linked.has(figure)) return;
+    if (!figure.matches?.('figure[data-targets]') || !figure.closest('.document') || linked.has(figure)) return;
     linked.add(figure);
     const targets = JSON.parse(figure.dataset.targets);
     for (const g of figure.querySelectorAll('g.node')) {
@@ -1263,12 +1290,19 @@ const NAVIGATION = `<script data-view-navigation>
 
 // The page's style and the explorer and city script ship beside this module and are inlined,
 // so the view stays one file with no external resources.
-const CSS = readFileSync(new URL("./ontology-view.css", import.meta.url), "utf8") + BOARD_CSS;
+const CSS =
+  readFileSync(new URL("./ontology-view.css", import.meta.url), "utf8") +
+  BOARD_CSS +
+  readFileSync(new URL("./ontology-knowledge-view.css", import.meta.url), "utf8") +
+  readFileSync(new URL("./ontology-knowledge-space.css", import.meta.url), "utf8");
 const CLIENT =
   readFileSync(new URL("./ontology-view-client.js", import.meta.url), "utf8") +
   BOARD_CLIENT +
   readFileSync(new URL("./ontology-view-tabs.js", import.meta.url), "utf8");
-if (/<\/(?:script|style)/i.test(CSS + CLIENT))
+const KNOWLEDGE_CLIENT =
+  readFileSync(new URL("./ontology-knowledge-space.js", import.meta.url), "utf8") +
+  readFileSync(new URL("./ontology-knowledge-client.js", import.meta.url), "utf8");
+if (/<\/(?:script|style)/i.test(CSS + CLIENT + KNOWLEDGE_CLIENT))
   throw new Error("the view's style and script must not close their own element");
 
 function page(t, lang, body, diagrams, app = null) {
@@ -1283,14 +1317,26 @@ ${diagrams ? NAVIGATION + mermaidRuntime({ diagramFallback: t.fallback }) : ""}
 `;
   // "<" is escaped, so no model text can end the data element.
   const data = JSON.stringify(app.data).replace(/</g, "\\u003c");
+  const knowledge = JSON.stringify(app.knowledge).replace(/</g, "\\u003c");
   return `${head}
-<body class="app" data-model-view="events"><header class="bar"><div class="workspace-brand"><span class="workspace-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="15" y="15" width="6" height="6" rx="1.5"/><path d="M9 6h6a3 3 0 0 1 3 3v6M6 9v6a3 3 0 0 0 3 3h6"/></svg></span><h1>${esc(t.title)}</h1><span class="workspace-readonly">${lang === "ko" ? "읽기 전용" : "Read only"}</span></div><div class="model-tabs" role="tablist" aria-label="${lang === "ko" ? "업무 표현 방식" : "Business representation"}"><button type="button" role="tab" id="view-events-tab" data-model-tab="events" aria-controls="event-story" aria-selected="true" tabindex="0">${lang === "ko" ? "사건 흐름" : "Event flow"}</button><button type="button" role="tab" id="view-structure-tab" data-model-tab="structure" aria-controls="city" aria-selected="false" tabindex="-1">${lang === "ko" ? "업무 구조" : "Business structure"}</button></div><details class="workspace-info"><summary>${lang === "ko" ? "안내" : "About"}</summary><p>${esc(t.intro)}</p></details></header>
+<body class="app knowledge-app" data-model-view="events" data-knowledge-level="${app.knowledge.initialView === "events" ? "all" : "contexts"}">
+${renderKnowledgeShell(app.knowledge)}
+<section id="whole-workspace" ${app.knowledge.initialView === "events" ? "" : "hidden"}><header class="bar"><div class="workspace-brand"><span class="workspace-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="15" y="15" width="6" height="6" rx="1.5"/><path d="M9 6h6a3 3 0 0 1 3 3v6M6 9v6a3 3 0 0 0 3 3h6"/></svg></span><h1>${esc(t.title)}</h1><span class="workspace-readonly">${lang === "ko" ? "읽기 전용" : "Read only"}</span></div><div class="model-tabs" role="tablist" aria-label="${lang === "ko" ? "업무 표현 방식" : "Business representation"}"><button type="button" role="tab" id="view-events-tab" data-model-tab="events" aria-controls="event-story" aria-selected="true" tabindex="0">${lang === "ko" ? "사건 흐름" : "Event flow"}</button><button type="button" role="tab" id="view-structure-tab" data-model-tab="structure" aria-controls="city" aria-selected="false" tabindex="-1">${lang === "ko" ? "업무 구조" : "Business structure"}</button></div><details class="workspace-info"><summary>${lang === "ko" ? "안내" : "About"}</summary><p>${esc(t.intro)}</p></details></header>
 <div class="shell">${app.explorer}
 ${app.city}
-<main class="document" id="document">${body}</main></div>
+<div class="document" id="document">${body}</div></div></section>
 <script type="application/json" id="view-data">${data}</script>
-<script data-view-explorer>${CLIENT}</script>
+<script type="application/json" id="knowledge-data">${knowledge}</script>
+<script data-view-explorer>
+window.ontologyInitializeLegacy = (() => {
+  let initialized = false;
+  return () => { if (initialized) return; initialized = true;
+${CLIENT}
+  };
+})();
+</script>
 ${diagrams ? NAVIGATION + mermaidRuntime({ diagramFallback: t.fallback, lazy: { root: ".document", ahead: "2400px" } }) : ""}
+<script data-knowledge-navigation>${KNOWLEDGE_CLIENT}</script>
 </body></html>
 `;
 }

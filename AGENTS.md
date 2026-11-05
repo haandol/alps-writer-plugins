@@ -268,6 +268,22 @@ justifies losing a business obligation. Judge completeness by the context needed
 to implement and verify the workflow. Keep model sufficiency, ADR contract
 readiness and actual execution evidence separate.
 
+Construct ontology knowledge in layers, not merely its query presentation.
+The small upper layer contains BCs only: responsibilities, authored core business
+logic and declared collaborations. Internal workflows belong to the heavier BC
+knowledge layer and connect through context membership. Read the whole upper
+layer before selecting and searching a BC; known targets can be queried directly.
+`coreLogic` and `collaboratesWith` are model facts, not generated summaries.
+Construction uses `--require-layers` (and `--layer-context` for scoped work), while
+legacy gaps remain readable and explicitly incomplete. C4 and HNSW motivate this
+resolution and retrieval strategy; no approximate vector index is implied.
+The saved-model UI follows the same BC-first hierarchy through a 3D BC map,
+camera descent into the selected BC's current search page, and element detail.
+Spatial and list views share scope, paging and navigation state; transitions
+honor reduced motion and stop while hidden. Internal scenes are created on
+selection. Whole event flow and its 3D structure are opened explicitly; their
+renderers remain idle on the initial BC screen.
+
 The plugins are split so adr-writer never references ALPS or reads the business ontology. The couplings run one way, from the upper level down: alps-writer's `/feature-to-adr` transfers each implementable Feature's complete contract into one or several ADRs and delegates each new decision owner to adr-writer's `/adr-new`; ontology-writer writes the ADR index's `realizes` links in the same change unit as the model and hands a model change's ADR revisions to adr-writer's `/adr-new` draft rules and `/adr-impl`. Normal implementation then reads only ADRs; explicit PRD re-import remains an alps-writer-side semantic comparison. adr-writer knows the model only as the shape of `realizes` and, when model documents exist, one session-directive line saying that business context is checked through ontology-writer. ontology-writer runs copies of three adr-writer scripts (reading the ADR index and Status, recording a Status transition, opening a report), refreshed by `scripts/sync-shared-scripts.mjs` and checked in `pnpm test:checks`.
 
 Shared authoring guidance is owned by `plugins/adr-writer/references/`:

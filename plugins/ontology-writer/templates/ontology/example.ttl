@@ -19,11 +19,14 @@ m:payment-provider a onto:Actor ;
 
 m:ordering a onto:BoundedContext ;
     rdfs:label "Ordering" ;
-    onto:definition "Taking a customer's purchase request and confirming it." .
+    onto:definition "Taking a customer's purchase request and confirming it." ;
+    onto:coreLogic "An order asks for payment and is confirmed after the matching payment completes." ;
+    onto:collaboratesWith m:payment .
 
 m:payment a onto:BoundedContext ;
     rdfs:label "Payment" ;
-    onto:definition "Collecting the money for an order." .
+    onto:definition "Collecting the money for an order." ;
+    onto:coreLogic "A placed order requests collection of its amount; successful collection makes payment completion available to ordering." .
 
 m:ordering.buyer a onto:BusinessConcept ;
     rdfs:label "Buyer" ;

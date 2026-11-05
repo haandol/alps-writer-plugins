@@ -51,6 +51,12 @@ establish that the system's business process was discovered.
 
 ## From the working map to a saved model
 
+Construct ontology knowledge in layers using `knowledge-layers.md`: author the
+small BC-only layer of responsibilities, core business logic and collaborations,
+then connect each BC's internal workflow knowledge. Discovery evidence may be
+processed in selected scopes; do not feed the whole detailed model to the LLM
+just to recover the upper BC layer. A query-time projection alone is insufficient.
+
 Apply `ontology.md`'s closed vocabulary and resolution. The working map may
 contain candidate actions, information needs and questions; confirmed business
 actions map to steps and actors, information to business concepts and `uses`,

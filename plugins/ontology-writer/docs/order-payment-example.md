@@ -16,6 +16,19 @@
 
 주문 관리와 결제 처리가 사건을 주고받아 주문을 확정한다. 주문 관리는 구매 요청과 확정 결과를, 결제 처리는 결제 요청과 수납 결과를 책임진다. 이 구분은 예제의 업무 책임이며 서비스 배포 단위를 정한 것은 아니다.
 
+온톨로지 지식은 두 레이어로 구성했다. 상위에는 이 두 BC의 책임·핵심 업무와 협업만 기록하고, 내부에는 단계·사건·정책·규칙을 둔다. 상위의 `coreLogic`은 BC 관점의 업무 설명이고 `collaboratesWith`는 BC 사이 연결이다. 협업 관계 자체는 사건의 방향이나 발생 원인을 뜻하지 않는다.
+
+다음 명령으로 상위 BC 지식 전체를 읽고 주문 관리 내부의 결제 관련 지식을 검색한다. 내부 요소가 많아도 최상위에는 펼쳐지지 않으며, 검색 결과와 페이지 안내에서 필요한 상세로 내려간다.
+
+```bash
+node plugins/ontology-writer/scripts/ontology.mjs query --overview \
+  --adr-dir plugins/ontology-writer/examples/order-payment/docs/adr
+node plugins/ontology-writer/scripts/ontology.mjs query --context ordering --search 결제 \
+  --adr-dir plugins/ontology-writer/examples/order-payment/docs/adr
+node plugins/ontology-writer/scripts/ontology.mjs validate --require-layers \
+  --adr-dir plugins/ontology-writer/examples/order-payment/docs/adr
+```
+
 ### 입력 자료와 결과 파일
 
 | 파일                                                                                                                                         | 읽을 내용                                                                  |
@@ -92,7 +105,7 @@ node plugins/ontology-writer/scripts/ontology.mjs view \
   --adr-dir plugins/ontology-writer/examples/order-payment/docs/adr --lang ko
 ```
 
-검증은 요소·관계·필수 속성과 연결의 형식을 확인한다. 조회는 주문 프로세스와 연결된 결제 사건·정책·규칙·미정 범위를 돌려준다. 보기는 사건 흐름과 3D 업무 구조를 제공하지만 업무를 실행하거나 Status를 바꾸지는 않는다.
+검증은 요소·관계·필수 속성과 연결의 형식을 확인한다. 조회는 주문 프로세스와 연결된 결제 사건·정책·규칙·미정 범위를 돌려준다. 보기의 첫 화면은 두 BC의 책임·핵심 업무·협업이다. BC를 고르면 그 내부를 검색해 상세로 내려가며, 전체 사건 흐름과 3D 업무 구조는 별도로 연다. 이 탐색은 업무를 실행하거나 Status를 바꾸지 않는다.
 
 저장 모델의 결제 완료와 주문 확정 연결은 다음과 같다. 아래는 전체 모델에서 관계 부분만 발췌한 것이다.
 

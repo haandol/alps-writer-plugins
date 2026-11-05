@@ -132,11 +132,23 @@ onto:passesThrough a rdf:Property ;
     rdfs:domain onto:ObservationCriterion ;
     rdfs:range onto:BusinessEvent .
 
+onto:collaboratesWith a rdf:Property ;
+    rdfs:label "collaborates with"@en, "협업"@ko ;
+    rdfs:comment "Authored knowledge-layer relationship between different bounded contexts. Read in both directions; it implies neither sequence, causation nor an implementation prerequisite."@en ;
+    rdfs:domain onto:BoundedContext ;
+    rdfs:range onto:BoundedContext .
+
 # Fact attributes (the element name is rdfs:label)
 
 onto:definition a rdf:Property ;
     rdfs:label "definition"@en, "정의"@ko ;
     rdfs:comment "Fact attribute. What the element means in business language. Required on every element except observation criteria."@en ;
+    rdfs:range rdfs:Literal .
+
+onto:coreLogic a rdf:Property ;
+    rdfs:label "core business logic"@en, "BC 핵심 업무"@ko ;
+    rdfs:comment "Fact attribute. Authored inputs, principal business decisions and outcomes at BC resolution. Required when constructing a BC knowledge layer; absent legacy knowledge stays visibly incomplete."@en ;
+    rdfs:domain onto:BoundedContext ;
     rdfs:range rdfs:Literal .
 
 onto:stepKind a rdf:Property ;

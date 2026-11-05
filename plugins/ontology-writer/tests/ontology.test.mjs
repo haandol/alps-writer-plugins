@@ -44,7 +44,7 @@ const edit = (from, to) => {
   return EXAMPLE.replace(from, to);
 };
 
-test("the vocabulary publishes exactly the ADR's nine types, fourteen relations and attribute families", () => {
+test("the vocabulary publishes exactly the nine types, fifteen relations and attribute families", () => {
   const vocab = indexGraph(parseTurtle(VOCABULARY, "vocabulary.ttl").triples);
   const ofType = (type) =>
     [...vocab.subjects.values()]
@@ -85,12 +85,14 @@ test("the vocabulary publishes exactly the ADR's nine types, fourteen relations 
       "컨텍스트 소속",
       "기준 소속",
       "경유",
+      "협업",
     ],
   );
   const family = (kind) => ATTRIBUTES.filter((a) => a.kind === kind).map((a) => a.ko);
   assert.deepEqual(family("fact"), [
     "이름",
     "정의",
+    "BC 핵심 업무",
     "단계 구분",
     "반응 조건",
     "근거 종류",
@@ -1772,6 +1774,7 @@ const RELATION_ENDS = {
   },
   criterionOf: { from: ["ObservationCriterion"], to: ["Process"] },
   passesThrough: { from: ["ObservationCriterion"], to: ["BusinessEvent"] },
+  collaboratesWith: { from: ["BoundedContext"], to: ["BoundedContext"] },
 };
 const REQUIRED_ON = {
   name: ELEMENT_TYPES,

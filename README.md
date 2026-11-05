@@ -12,6 +12,11 @@ Three plugins for Codex and Claude Code: write product requirements, keep a mode
 
 Install any plugin independently. The Full ALPS → ADR workflow needs alps-writer and adr-writer; a business ontology that reaches ADRs needs ontology-writer and adr-writer.
 
+Ontology Writer constructs knowledge as a small BC layer of responsibilities,
+core business logic and collaborations, then heavier internal workflows per BC.
+Read the whole BC layer with `query --overview`, search within a selected BC with
+`query --context <id> --search <text>`, and follow the detailed work into its ADRs.
+
 ## Quick Start
 
 Requires Node.js 24 or later. Marketplace installs include the bundled server and dependencies; no npm install or build step is needed.

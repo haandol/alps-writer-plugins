@@ -1,6 +1,6 @@
 ---
 name: ontology-view
-description: Open a read-only standalone HTML view of the business ontology — an EventStorming board with entity changes and evidence, workflow-readiness guidance, a 3D business city of the landscape, an explorer that finds every element and lists it by bounded context, the business landscape (bounded contexts, processes and the events and policies between them), each process flow, and element details with realization status computed from the ADR index — so the user can find what to change and then ask for it in natural language or edit the Turtle directly. Use when the user asks to see, browse or visualize docs/ontology. Keywords - "/ontology-view", "온톨로지 보기", "업무 흐름 시각화", "온톨로지 탐색", "3D", "ontology view".
+description: Open a read-only standalone HTML view of the business ontology — authored BC knowledge first, scoped internal search and detail, plus an explicitly opened EventStorming board with entity changes and evidence, workflow-readiness guidance, a 3D business city of the landscape, an explorer that finds every element and lists it by bounded context, the business landscape (bounded contexts, processes and the events and policies between them), each process flow, and element details with realization status computed from the ADR index — so the user can find what to change and then ask for it in natural language or edit the Turtle directly. Use when the user asks to see, browse or visualize docs/ontology. Keywords - "/ontology-view", "온톨로지 보기", "업무 흐름 시각화", "온톨로지 탐색", "3D", "ontology view".
 argument-hint: "[--include-retired]"
 ---
 
@@ -9,6 +9,14 @@ argument-hint: "[--include-retired]"
 This view is a navigation screen, not a review, evaluation or analysis report:
 the report-writing contract does not apply, only its delivery rules. The view
 never edits the model, the ADR index or ADRs, and it has no saving behavior.
+
+The initial 3D space contains authored BC knowledge only. Selecting a BC expands
+its area and moves the camera to the current internal search page; selecting an
+element moves closer and opens its flat detail. Upward navigation restores the
+prior camera and reading state. The list view exposes the same knowledge without
+spatial effects. Pan, rotation, zoom and reset stay page-local; transitions honor
+reduced motion, can be disabled and stop while hidden. Spatial height, area and
+placement never add business order, importance or ownership facts.
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs view [--include-retired] [--lang en|ko] \
@@ -56,8 +64,17 @@ a generic Actor type. Missing conditions or transitions stay unrecorded or
 unverified. The context inspector should read as a business outline, with routes
 to upstream/downstream work and evidence.
 
-The first selected tab is **Event flow**, a flat, draggable EventStorming
-canvas. Its primary trace reaches the next emitted event, with explicit
+The saved model opens at the authored **BC knowledge layer**: names, responsibilities,
+core business logic and collaborations only. Select a BC to search and page its
+internal knowledge, inspect facts and process flows, and follow relations into
+other BCs or realizing ADRs. Keep shared work and unknown membership explicit.
+Do not render every internal diagram or start the whole-workflow canvases on
+the first BC screen. Preserve the current search, page and selection when
+returning, with keyboard and narrow-screen access. Missing upper knowledge stays
+missing; never generate it from a lower layer merely to fill the UI.
+
+The separate **Whole flow & structure** entry opens **Event flow**, a flat, draggable EventStorming
+canvas. Candidate boards also keep their event-first entry. Its primary trace reaches the next emitted event, with explicit
 intermediate-action checkpoints where no event is recorded. Project only the
 supplied stage relationships through their producing actions; do not add links
 to make a story appear continuous. Connection labels retain reaction versus
@@ -81,13 +98,14 @@ the flow, distinguishing process-wide questions from step-level questions. A
 process-wide unknown is not a confirmed failure branch at one event. Keep its
 source and verdict visible through disclosure.
 
-The model has two top-level tabs: **Event flow** and **Business structure**.
+Inside the explicitly opened whole-workflow view, the two tabs are **Event flow**
+and **Business structure**. They are below the BC-first navigation, not its initial view.
 The existing 3D business structure owns the context districts, process towers,
 step floors and event/policy hand-offs. Within Event flow, **Business areas** shows
 the domain scope, sourced subdomain memberships and bounded contexts; selecting
 a context opens its activities/evidence and selecting an event returns to the trace.
 Keep shared contexts once with explicit membership labels, and unknown membership
-apart. This is not a third top-level tab. Selecting a source step from the event inspector leads to the same model
+apart. Business areas remains a perspective inside the event view. Selecting a source step from the event inspector leads to the same model
 step and its details in Business structure. Context identities remain distinct
 even when their labels match; actual step ownership is read from model facts,
 not inferred from a process tower's physical placement.
