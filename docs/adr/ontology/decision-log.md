@@ -8,6 +8,30 @@ The current Purpose, all still-valid Decision Drivers, adopted choice, rationale
 and requirement contract remain together in the ADR body. Reading this log is
 optional for understanding the current decision.
 
+## 2026-11-05 — BC 지식 공간과 레이어 확대 이동
+
+- **Current ADR**: [render-read-only-ontology-views](./0005-render-read-only-ontology-views.md)
+- **Change type**: requirement rule change
+- **What**: BC 전체를 3차원 책임 영역으로 보고, 선택한 BC의 내부 지식과 상세로 확대 이동한다. 현재 검색 페이지와 실제 지식 범위만 펼치며 목록 보기, 복귀 상태와 동작 줄이기를 보존한다.
+- **Why**: 사용자는 지식 레이어가 BC의 확대·내부 펼침과 연결되는 3차원 탐색과 애니메이션을 요청했다.
+- **What is now void**: 없음. 기존 전체 사건 흐름·3차원 업무 구조는 별도의 전체 탐색으로 유지한다.
+
+## 2026-11-05 — 온톨로지 UI에도 지식 레이어 적용
+
+- **Current ADR**: [render-read-only-ontology-views](./0005-render-read-only-ontology-views.md)
+- **Change type**: requirement rule change
+- **What**: 기본 화면을 BC 책임·핵심 업무·협업으로 두고, 선택 BC의 업무 검색·목록과 상세로 내려간다. 전체 사건 흐름·3D 구조는 명시적으로 여는 전체 업무 탐색으로 유지한다.
+- **Why**: 작성된 지식 레이어와 에이전트 조회에 맞춰 사용자 UI에서도 작은 BC 조망을 먼저 읽고 필요한 내부 업무만 펼치려는 의도를 반영한다.
+- **What is now void**: 저장 모델의 첫 화면을 전체 사건 흐름으로 고정하던 규칙.
+
+## 2026-11-05 — BC 조망에서 내부 업무와 ADR로 내려가는 검색
+
+- **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Change type**: requirement rule change
+- **What**: 온톨로지 지식을 구성할 때부터 BC의 책임·핵심 업무·협업과 BC 내부 업무를 레이어로 나눈다. 최상위 BC 지식 전체를 가볍게 읽고 내부 업무는 검색·페이지 탐색으로 내려가며, 구체적 사건·순서·개념·규칙은 내부 레이어에 보존한다.
+- **Why**: 사용자는 C4 model과 HNSW에서 착안해, 큰 비즈니스 로직을 한 번에 LLM에 넣지 않고 전체 조망에서 관련 BC를 골라 업무 상세와 ADR로 내려가기를 원했다. 이 구체적 의도를 조회 계약과 도입·구축의 목적에 보완한다.
+- **What is now void**: 기능·프로세스·개념·사건의 식별자를 미리 알아야만 탐색할 수 있던 입력 범위. 기존 직접 조회와 ADR의 구현 권위는 유지한다.
+
 ## 2026-11-03 — 사건의 원인·결과 묶음과 업무 영역 탐색
 
 - **Current ADR**: [render-read-only-ontology-views](./0005-render-read-only-ontology-views.md)

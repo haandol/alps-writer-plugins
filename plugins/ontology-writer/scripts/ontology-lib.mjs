@@ -42,7 +42,7 @@ export const CLASSES = [
   { key: "ObservationCriterion", ko: "관찰 기준" },
 ];
 
-/** The fourteen relation types with their allowed source and target types. */
+/** The relation types with their allowed source and target types. */
 export const RELATIONS = [
   { key: "hasStep", ko: "포함", from: ["Process"], to: ["Step"] },
   { key: "flowsTo", ko: "흐름", from: ["Step"], to: ["Step"] },
@@ -68,6 +68,7 @@ export const RELATIONS = [
   },
   { key: "criterionOf", ko: "기준 소속", from: ["ObservationCriterion"], to: ["Process"] },
   { key: "passesThrough", ko: "경유", from: ["ObservationCriterion"], to: ["BusinessEvent"] },
+  { key: "collaboratesWith", ko: "협업", from: ["BoundedContext"], to: ["BoundedContext"] },
 ];
 
 const ALL_TYPES = CLASSES.map((c) => c.key);
@@ -97,6 +98,13 @@ export const ATTRIBUTES = [
     kind: "fact",
     on: NOT_CRITERION,
     required: NOT_CRITERION,
+    value: "text",
+  },
+  {
+    key: "coreLogic",
+    ko: "BC 핵심 업무",
+    kind: "fact",
+    on: ["BoundedContext"],
     value: "text",
   },
   {
@@ -592,6 +600,116 @@ export function openScopeOf(index, iri) {
   return { items, open: items.some((item) => item.kind === "open-path") };
 }
 
+/** Explicit BC collaboration is undirected; one stored edge is enough. */
+export function contextCollaborations(index) {
+  const pairs = new Map();
+  for (const from of index.ofType("BoundedContext"))
+    for (const to of index.out(from, "collaboratesWith")) {
+      if (from === to || index.typeOf(to) !== "BoundedContext") continue;
+      const pair = [from, to].sort();
+      pairs.set(JSON.stringify(pair), pair);
+    }
+  return [...pairs.entries()].sort(([a], [b]) => compareCodePoints(a, b)).map(([, pair]) => pair);
+}
+
+/**
+ * Check that the authored BC knowledge layer covers internal business links.
+ * Legacy gaps are warnings for reading, errors for a requested construction
+ * check or a newly added BC. This function reports gaps; it never synthesizes
+ * core business knowledge or collaboration facts from the lower layer.
+ */
+export function knowledgeLayerFindings(
+  index,
+  { required = false, requiredContexts = new Set() } = {},
+) {
+  const findings = [];
+  const contexts = index.ofType("BoundedContext");
+  const add = (context, code, msg) => {
+    const first = index.subjects.get(context)?.first;
+    findings.push({
+      level: required || requiredContexts.has(context) ? "error" : "warn",
+      code,
+      where: first ? `${first.doc}:${first.line}` : "ontology",
+      element: elementId(context),
+      msg,
+    });
+  };
+  if (!contexts.length)
+    findings.push({
+      level: required ? "error" : "warn",
+      code: "ontology-layer-context-missing",
+      where: "ontology",
+      element: null,
+      msg: "no bounded contexts are authored; knowledge-layer construction is incomplete",
+    });
+  for (const context of requiredContexts)
+    if (index.typeOf(context) !== "BoundedContext")
+      add(
+        context,
+        "ontology-layer-context-missing",
+        `no bounded context "${elementId(context)}" in the construction scope`,
+      );
+  for (const c of contexts)
+    if (!index.literal(c, "coreLogic").some((o) => o.type === "literal" && o.value.trim()))
+      add(
+        c,
+        "ontology-layer-core-missing",
+        `BC "${elementId(c)}" has no authored core business logic; its knowledge layer is incomplete`,
+      );
+
+  const declared = new Set(contextCollaborations(index).map((pair) => JSON.stringify(pair)));
+  const needed = new Map();
+  const connect = (a, b) => {
+    if (a === b || index.typeOf(a) !== "BoundedContext" || index.typeOf(b) !== "BoundedContext")
+      return;
+    const pair = [a, b].sort();
+    needed.set(JSON.stringify(pair), pair);
+  };
+  const owners = (iri) => index.out(iri, "inContext");
+  const boundaryRelations = new Set([
+    "flowsTo",
+    "emits",
+    "triggers",
+    "starts",
+    "uses",
+    "hasPart",
+    "refersTo",
+    "correspondsTo",
+  ]);
+  for (const t of index.triples) {
+    if (
+      t.o.type !== "iri" ||
+      !t.p.startsWith(ONTO) ||
+      !boundaryRelations.has(t.p.slice(ONTO.length))
+    )
+      continue;
+    if (inRetiredOnly(index, t.s) || inRetiredOnly(index, t.o.value)) continue;
+    for (const a of owners(t.s)) for (const b of owners(t.o.value)) connect(a, b);
+  }
+  for (const rule of index.ofType("BusinessRule")) {
+    const reached = [
+      ...new Set(
+        ruleReach(index, rule)
+          .filter((s) => !inRetiredOnly(index, s))
+          .flatMap(owners),
+      ),
+    ].sort();
+    for (let a = 0; a < reached.length; a++)
+      for (let b = a + 1; b < reached.length; b++) connect(reached[a], reached[b]);
+  }
+  for (const [key, pair] of [...needed].sort(([a], [b]) => compareCodePoints(a, b))) {
+    if (declared.has(key)) continue;
+    // Report at both ends so selecting either BC exposes the missing upper link.
+    for (const c of pair)
+      add(
+        c,
+        "ontology-layer-link-missing",
+        `BC collaboration between "${elementId(pair[0])}" and "${elementId(pair[1])}" is missing from the authored upper layer; internal business relations connect them`,
+      );
+  }
+  return findings;
+}
+
 // ── closed-world validation ──────────────────────────────────────────────
 
 const isText = (o) =>
@@ -601,8 +719,11 @@ const isText = (o) =>
  * Validate a parsed model as one union graph under the closed vocabulary.
  *
  * @param {{doc: string, text: string}[]} documents Model documents.
- * @param {{categoryKeys?: string[]}} [options] Category keys from the ADR index,
- *   used only to detect ADR references written into the model.
+ * @param {{categoryKeys?: string[], requireKnowledgeLayers?: boolean,
+ *   requiredContexts?: Set<string>, previousContexts?: Set<string>}} [options]
+ *   Category keys detect references written into the model. Construction can
+ *   require all or selected BC layers; a save also requires every newly added BC
+ *   by supplying the prior BC IRIs. Legacy reading reports layer gaps as warnings.
  * @returns {{ok: boolean, findings: object[], index: object|null, parsed: object[]}}
  *   Each finding is `{level, code, where, element, msg}`. Graph checks are
  *   skipped when any document fails to parse, so a partial model never passes.
@@ -956,6 +1077,14 @@ export function validateModel(documents, options = {}) {
           );
       }
     }
+    if (type === "BoundedContext" && index.out(iri, "collaboratesWith").includes(iri))
+      add(
+        "error",
+        "ontology-context-collaboration",
+        w,
+        id,
+        "a BC collaboration must connect two different bounded contexts",
+      );
     // A rule constrains something and reaches at least two steps.
     if (type === "BusinessRule") {
       if (!index.out(iri, "constrains").length)
@@ -1042,6 +1171,17 @@ export function validateModel(documents, options = {}) {
       );
   }
 
+  findings.push(
+    ...knowledgeLayerFindings(index, {
+      required: options.requireKnowledgeLayers ?? false,
+      requiredContexts: new Set([
+        ...(options.requiredContexts ?? []),
+        ...(options.previousContexts
+          ? index.ofType("BoundedContext").filter((c) => !options.previousContexts.has(c))
+          : []),
+      ]),
+    }),
+  );
   return { ok: !findings.some((f) => f.level === "error"), findings, index, parsed };
 }
 
@@ -1623,7 +1763,8 @@ const COMPOSITION_EXCLUDED = new Set([ONTO + "openScope"]);
  * criteria pass through, actors performing its steps, policies starting its
  * steps and their triggering events, events its steps emit, concepts its steps
  * and those policies use, rules reaching its steps, and the relations among
- * them. Open scope, description and lifecycle attributes are not part of it,
+ * them; each step's BC responsibility, core logic and collaboration knowledge.
+ * Open scope, description and lifecycle attributes are not part of it,
  * nor is a fact-attribute text the user confirmed keeps its meaning.
  *
  * @param {{sameMeaning?: Set<string>}} [options] `element\u0000property` keys of
@@ -1656,6 +1797,19 @@ export function businessComposition(index, processIri, { sameMeaning } = {}) {
     if (ruleReach(index, rule).some((s) => steps.includes(s))) elements.add(rule);
 
   const keys = new Set();
+  // Authored upper knowledge changes the business meaning of its BC's work.
+  // Preserve incoming as well as outgoing collaboration, since it is symmetric.
+  const contexts = new Set(steps.flatMap((s) => index.out(s, "inContext")));
+  for (const context of contexts) {
+    for (const property of ["definition", "coreLogic"])
+      if (!sameMeaning?.has(`${context}\u0000${ONTO}${property}`))
+        for (const t of index.subjects.get(context)?.props.get(`${ONTO}${property}`) ?? [])
+          keys.add(tripleKey(t));
+    for (const t of index.subjects.get(context)?.props.get(`${ONTO}collaboratesWith`) ?? [])
+      keys.add(tripleKey(t));
+    for (const t of index.incoming.get(context) ?? [])
+      if (t.p === `${ONTO}collaboratesWith`) keys.add(tripleKey(t));
+  }
   for (const iri of elements) {
     const node = index.subjects.get(iri);
     if (!node) continue;
@@ -2057,7 +2211,8 @@ export function processesToPropose(before, after, { sameMeaning } = {}) {
  * Major-change candidates for the change log: additions and removals
  * of steps, policies, rules, events and criteria; changes of the listed
  * relations; reaction-condition and rule-definition changes; definition changes
- * of events, concepts and actors. Whether a text change keeps the same meaning
+ * of events, concepts, actors and BC responsibilities; BC core logic and
+ * collaboration changes. Whether a text change keeps the same meaning
  * is a judgment for the caller; this list is only the candidates, without the
  * text changes already confirmed as same-meaning.
  */
@@ -2072,6 +2227,7 @@ export function majorChangeCandidates(beforeTriples, afterTriples, { sameMeaning
       "constrains",
       "performs",
       "passesThrough",
+      "collaboratesWith",
     ].map((k) => `onto:${k}`),
   );
   const LOGGED_TYPES = new Set([
@@ -2094,8 +2250,15 @@ export function majorChangeCandidates(beforeTriples, afterTriples, { sameMeaning
         !confirmed(p) &&
         (RELATED.has(p.property) ||
           p.property === "onto:reactionCondition" ||
+          (p.property === "onto:coreLogic" && e.type === "BoundedContext") ||
           (p.property === "onto:definition" &&
-            ["BusinessRule", "BusinessEvent", "BusinessConcept", "Actor"].includes(e.type))),
+            [
+              "BusinessRule",
+              "BusinessEvent",
+              "BusinessConcept",
+              "Actor",
+              "BoundedContext",
+            ].includes(e.type))),
     );
     if (props.length)
       out.push({

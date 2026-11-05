@@ -39,6 +39,13 @@ exceptions and hand-offs; formal ontology completeness is not the goal.
 
 ## 2. Build candidates with their sources
 
+Construct ontology knowledge in layers. Read
+`${CLAUDE_PLUGIN_ROOT}/references/knowledge-layers.md`: first author BC-only
+responsibility, core logic and collaboration knowledge, then the heavier
+internal workflows connected to each BC. The upper layer must stay small enough
+to read as a whole; internal knowledge is retrieved selectively. Preserve the
+existing evidence and approval boundaries for both layers.
+
 Work in a disposable run directory under `.adr-review/` following
 [review artifact storage](../report-writer/references/review-artifacts.md).
 
@@ -88,6 +95,10 @@ evidence; this build does not establish execution success.
   feature's state reaches the step changing it. Turn what documents cannot fill
   into candidates or questions in the same report, so a confirmed scope never
   fails validation for a missing item.
+- Run the construction layer check through `impact --require-layers`, scoped
+  with `--layer-context <id>` for a partial extension. Resolve missing upper
+  knowledge as candidates or questions; do not report the requested knowledge
+  layers complete while those gaps remain. Pass the same scope to `apply`.
 - Absence from the documents is never absence from the business; it stays a
   question or open scope.
 

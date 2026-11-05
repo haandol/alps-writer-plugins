@@ -44,6 +44,14 @@ function stepsTouchedBy(index, iri) {
   }
   if (type === "BusinessRule") steps.push(...ruleReach(index, iri));
   if (type === "Actor") steps.push(...index.out(iri, "performs"));
+  if (type === "BoundedContext") {
+    const contexts = [
+      iri,
+      ...index.out(iri, "collaboratesWith"),
+      ...index.into(iri, "collaboratesWith"),
+    ];
+    for (const context of contexts) steps.push(...index.into(context, "inContext"));
+  }
   if (type === "ObservationCriterion")
     for (const p of index.out(iri, "criterionOf")) steps.push(...index.out(p, "hasStep"));
   return steps.filter((s) => index.typeOf(s) === "Step");

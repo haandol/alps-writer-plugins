@@ -9,6 +9,39 @@ a whole-scope event map, bounded contexts and subdomains grounded in that map,
 then confirmed model facts. Additional sources use the same comparison and
 approval path. These agent workflows are distinct from the deterministic CLI.
 
+## Knowledge layers and retrieval
+
+Construct ontology knowledge in layers. The upper layer contains BCs only:
+their responsibilities, authored core business logic and declared collaborations.
+The heavier layer holds each BC's internal workflows, connected by context
+membership. Exact implementation contracts remain in ADRs.
+
+```bash
+node scripts/ontology.mjs query --overview
+node scripts/ontology.mjs query --context ordering --search payment
+node scripts/ontology.mjs query --context ordering --limit 20 --offset 20
+node scripts/ontology.mjs query --step ordering.confirm-order
+```
+
+`--overview` reads the whole small BC layer by default. It never expands internal
+events, steps, rules or ADRs; an optional `--limit` pages this layer too. Whole-model
+`--overview --search` returns BC candidates, then `--context --search` shows the
+internal matches. Context responses page elements, relationships and diagnostics
+together, with the exact continuation in `next`. Keep the model unchanged across
+pages, and retain a custom `--adr-dir` in follow-up commands.
+
+Record `coreLogic` and `collaboratesWith` in the model rather than generating an
+upper summary on each query. Use `validate --require-layers` for construction,
+or add `--layer-context <id>` for each BC in a scoped extension. The same flags
+work with `impact` and `apply`; new BCs require the upper knowledge on save.
+Legacy gaps stay readable and explicitly incomplete. Structural layer checks
+do not prove business completeness. See [knowledge layers](./references/knowledge-layers.md).
+
+This follows C4's knowledge resolutions and HNSW's idea of narrowing a search.
+Queries remain local and deterministic; no HNSW index or embedding service is
+required. Local graph parsing still reads the model, while the LLM receives
+only the selected knowledge.
+
 ## Guides and examples
 
 | Guide                                                            | What it explains                                                                                                        |
@@ -45,7 +78,7 @@ Install [`adr-writer`](../adr-writer) as well when the repository has ADRs. A mo
 | `/ontology-sync [process]`    | Review completeness/readiness without mutation when requested, or reconcile direct Turtle edits and propose downstream changes                                                                                                                                                                    |
 | `/ontology-align [process]`   | Make a process current only when its realizing features are implemented, compliance contracts are in place, nothing contradicts the model and every observation criterion passed by executing the features' real entry points                                                                     |
 | `/ontology-build [documents]` | Capture workflows through an evidence-based event map, identify contexts/subdomains, then propose model facts with sources; save only confirmed scope                                                                                                                                             |
-| `/ontology-view`              | Open an event-first business flow with policies, rules and open questions; switch to its 3D business structure, and inspect source details and realization from the ADR index                                                                                                                     |
+| `/ontology-view`              | Start with authored BC knowledge, search its internal work and inspect details/ADRs; open the whole event flow and 3D structure explicitly                                                                                                                                                        |
 
 ## Completeness and the next workflow
 
@@ -56,13 +89,21 @@ including unknown scope. Use `/ontology-build` for additional information,
 `/ontology-edit` for a requested change, the reconciliation path of
 `/ontology-sync` for direct edits, and `/ontology-align` for execution evidence.
 The read-only review is an agent workflow using existing commands, not a new
-CLI flag. The viewer opens on an event-first EventStorming canvas: domain events
+CLI flag. The viewer opens on a 3D map of authored BC knowledge. Selecting a BC
+moves the camera into its expanding area and unfolds the current internal search
+page. Selecting an element zooms to its facts, process flow and realizing ADRs;
+returning restores the prior camera, search and page. Boundary links lead to their
+actual BCs, and shared work remains identified as shared. Move, rotate, zoom and
+reset the spatial view, or switch to the equivalent list view. Transitions can be
+disabled and honor reduced motion. Internal scenes and diagrams are built on demand.
+
+The explicit whole-workflow entry opens the EventStorming canvas: domain events
 lead the story across contexts, with their producing actions, incoming policies
 and conditions. Related business rules and recorded open paths appear beside the
 flow, preserving their scope and evidence. Branches and returning links remain
 visible; position does not establish time or an unrecorded causal relation.
 
-The model has two top-level tabs: Event flow and Business structure. Inside
+The whole-workflow view has two tabs: Event flow and Business structure. Inside
 Event flow, switch between individual events and Business areas: sourced domain,
 subdomain and context groupings with cross-context hand-offs. Shared contexts
 appear once with explicit memberships; unknown membership stays separate.

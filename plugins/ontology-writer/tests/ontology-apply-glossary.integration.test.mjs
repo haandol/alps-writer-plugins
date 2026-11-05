@@ -127,7 +127,7 @@ test("a heading whose definition is a facet line, a facet sub-heading or prose g
     repo(dir);
     const refund = `${ACCEPTED}\nm:payment.refund a onto:BusinessConcept ;\n    rdfs:label "Refund" ;\n    onto:definition "Money given back to a buyer." ;\n    onto:inContext m:payment .\n`;
     // A context the change adds over the glossary's entry for it.
-    const fulfilment = `${ACCEPTED}\nm:fulfilment a onto:BoundedContext ;\n    rdfs:label "Fulfilment" ;\n    onto:definition "Getting a paid order to the customer." .\n`;
+    const fulfilment = `${ACCEPTED}\nm:fulfilment a onto:BoundedContext ;\n    rdfs:label "Fulfilment" ;\n    onto:definition "Getting a paid order to the customer." ;\n    onto:coreLogic "A paid order is prepared for delivery to its customer." .\n`;
     for (const [glossary, model, term] of [
       [
         "# Glossary\n\n## Refund\n\n### Definition\n\nMoney given back to a buyer.\n",

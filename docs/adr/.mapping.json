@@ -220,13 +220,13 @@
       "adrs": [
         {
           "path": "docs/adr/ontology/0001-introduce-business-ontology-level.md",
-          "status": "Accepted (2026-11-02)",
-          "summary": "ADR 위에 전체 흐름과 기능 사이 관계만 담는 Turtle 업무 온톨로지를 두어 별도 플러그인 Ontology Writer가 맡고 구현 권위는 ADR이 가지며 기능 연결은 ADR 색인에만 기록한다"
+          "status": "Accepted (2026-11-05)",
+          "summary": "온톨로지 지식을 BC 책임·핵심 업무·협업의 상위 레이어와 BC 내부 업무 레이어로 구성하고 정확한 구현 계약은 ADR이 소유한다"
         },
         {
           "path": "docs/adr/ontology/0002-retrieve-business-context-for-agents.md",
-          "status": "Proposed",
-          "summary": "업무 맥락을 ADR 작성·구현·리뷰의 계약·시나리오·증거로 연결하고 업무 정렬 결과와 ADR 구현 판정을 구별한다"
+          "status": "Accepted (2026-11-05)",
+          "summary": "가벼운 최상위 BC 지식 전체를 읽고 무거운 BC 내부를 검색·페이지 탐색하며 필요한 상세와 실현 ADR로 내려간다"
         },
         {
           "path": "docs/adr/ontology/0003-govern-ontology-lifecycle-and-cascade.md",
@@ -240,8 +240,8 @@
         },
         {
           "path": "docs/adr/ontology/0005-render-read-only-ontology-views.md",
-          "status": "Accepted (2026-11-03)",
-          "summary": "사건의 원인·결과와 뷰를 한 묶음으로 읽고 근거 기반 도메인·서브도메인·컨텍스트 영역과 가시적인 흐름 효과를 탐색한다"
+          "status": "Accepted (2026-11-05)",
+          "summary": "BC 지식을 3차원으로 조망하고 선택한 내부 업무·상세로 확대 이동하며 목록과 전체 업무 탐색을 함께 제공한다"
         }
       ],
       "dependsOn": [

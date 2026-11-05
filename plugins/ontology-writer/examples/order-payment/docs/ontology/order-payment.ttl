@@ -19,11 +19,14 @@ m:payment-provider a onto:Actor ;
 
 m:ordering a onto:BoundedContext ;
     rdfs:label "주문 관리" ;
-    onto:definition "고객의 구매 요청을 접수하고 주문을 확정하는 책임 범위." .
+    onto:definition "고객의 구매 요청을 접수하고 주문을 확정하는 책임 범위." ;
+    onto:coreLogic "접수된 주문의 결제를 요청하고, 그 주문에 해당하는 결제가 완료되면 주문을 확정한다." ;
+    onto:collaboratesWith m:payment .
 
 m:payment a onto:BoundedContext ;
     rdfs:label "결제 처리" ;
-    onto:definition "주문의 결제를 요청하고 수납 결과를 다루는 책임 범위." .
+    onto:definition "주문의 결제를 요청하고 수납 결과를 다루는 책임 범위." ;
+    onto:coreLogic "주문의 금액을 결제하도록 요청하고 외부 결제 제공자의 수납 결과를 받아 주문 관리에 결제 완료를 알린다." .
 
 m:ordering.order a onto:BusinessConcept ;
     rdfs:label "주문" ;

@@ -163,11 +163,15 @@ test("the view is one standalone file with no external resources and no editing 
   );
   assert.match(HTML, /<script data-mermaid-engine>/);
   const markup = PAGE.replace(/<script\b[\s\S]*?<\/script>/g, "");
-  assert.ok(!/<form|contenteditable|<textarea|<select/i.test(markup), "no editing control");
-  // The one input finds elements; it changes nothing.
+  assert.ok(!/<form|contenteditable|<textarea/i.test(markup), "no editing control");
+  // Search and the element-type filter change only the visible knowledge.
   assert.deepEqual(
     [...markup.matchAll(/<input\b[^>]*>/gi)].map((m) => /type="search"/.test(m[0])),
-    [true],
+    [true, true, true],
+  );
+  assert.deepEqual(
+    [...markup.matchAll(/<select\b[^>]*id="([^"]+)"/gi)].map((m) => m[1]),
+    ["kw-type"],
   );
   // The page's own scripts: all but the vendored engine and the data they read.
   const own = [...HTML.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)]
@@ -615,6 +619,8 @@ test("by default no member of a retired process is named or linked; on request e
     '    onto:definition "The payment provider approves the card charge and collects the money." ;\n',
     "",
   );
+  const retiredStepLine =
+    text.split("\n").findIndex((line) => line.startsWith("m:payment.capture-payment a ")) + 1;
   const r = validateModel([{ doc: "d.ttl", text }]);
   assert.deepEqual(
     r.findings.filter((f) => f.level === "error").map((f) => `${f.code} ${f.element}`),
@@ -640,7 +646,9 @@ test("by default no member of a retired process is named or linked; on request e
   for (const m of plain.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.has(m[1]), `#${m[1]}`);
   assert.match(
     plain,
-    /<section class="errors"[^>]*>[\s\S]*<li><code>ontology-attribute-missing<\/code> <code>d\.ttl:111<\/code> — in a retired process hidden by this view; include retired processes to see it<\/li>/,
+    new RegExp(
+      `<section class="errors"[^>]*>[\\s\\S]*<li><code>ontology-attribute-missing</code> <code>d\\.ttl:${retiredStepLine}</code> — in a retired process hidden by this view; include retired processes to see it</li>`,
+    ),
   );
 
   const all = page(true);
@@ -652,7 +660,9 @@ test("by default no member of a retired process is named or linked; on request e
     );
   assert.match(
     all,
-    /ontology-attribute-missing<\/code> <code>d\.ttl:111<\/code> <a href="#el-payment_2e_capture-payment">/,
+    new RegExp(
+      `ontology-attribute-missing</code> <code>d\\.ttl:${retiredStepLine}</code> <a href="#el-payment_2e_capture-payment">`,
+    ),
   );
   let drawn = 0;
   for (const d of diagrams(all))
@@ -717,6 +727,8 @@ test("element details name every model document holding the element's statements
     "    onto:emits m:ordering.order-placed ;\n",
   );
   assert.notEqual(main, EXAMPLE);
+  const stepLine =
+    main.split("\n").findIndex((line) => line.startsWith("m:ordering.submit-order a ")) + 1;
   const split = validateModel([
     {
       doc: "docs/ontology/a-shared.ttl",
@@ -731,7 +743,9 @@ test("element details name every model document holding the element's statements
   const html = renderView({ index: split.index, mapping: MAPPING, findings: split.findings });
   assert.match(
     articleOf(html, "ordering.submit-order"),
-    /<span>Model document<\/span> <code>docs\/ontology\/model\.ttl:102<\/code>, <code>docs\/ontology\/a-shared\.ttl:5<\/code><\/p>/,
+    new RegExp(
+      `<span>Model document</span> <code>docs/ontology/model\\.ttl:${stepLine}</code>, <code>docs/ontology/a-shared\\.ttl:5</code></p>`,
+    ),
   );
 });
 

@@ -156,7 +156,8 @@ test("two keyboard tabs preserve the story camera, selection and model; reopenin
     await page.evaluate(() => [JSON.stringify(localStorage), JSON.stringify(sessionStorage)]),
     storage,
   );
-  await page.reload({ waitUntil: "load" });
+  // Reopen the base view; a retained element fragment is an explicit deep link.
+  await page.goto(pathToFileURL(views.example).href, { waitUntil: "load" });
   await page.waitForSelector(".story-connections path:not(.story-signal)");
   assert.deepEqual(await state(), initial);
   await page.setViewport({ width: 390, height: 844 });
