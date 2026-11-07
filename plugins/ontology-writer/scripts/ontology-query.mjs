@@ -139,6 +139,7 @@ export function queryContext({
   target,
   includeRetired = false,
   search = "",
+  searchHits = null,
   limit = null,
   offset = 0,
   scopeOut = null,
@@ -282,6 +283,7 @@ export function queryContext({
       target,
       includeRetired,
       search,
+      searchHits,
     });
     for (const iri of selected) scope.add(iri);
     if (

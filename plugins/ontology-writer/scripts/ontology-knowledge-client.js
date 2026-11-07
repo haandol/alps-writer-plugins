@@ -7,6 +7,7 @@
   const data = JSON.parse(source.textContent);
   const T = data.text;
   const contexts = new Map(data.contexts.map((c) => [c.id, c]));
+  const contextPositions = new Map(data.contexts.map((c, i) => [c.id, i]));
   const elements = new Map(Object.entries(data.elements));
   const scopes = new Map(Object.entries(data.scopes));
   const types = new Map(data.types);
@@ -29,11 +30,34 @@
   const detailScrollHost = () =>
     document.body.dataset.knowledgePresentation === "space" ? bcPanel : detail;
   const PAGE = 20;
-  const fold = (value) =>
-    String(value ?? "")
-      .normalize("NFKC")
-      .toLowerCase();
-  const searchable = new Map([...elements].map(([key, e]) => [key, e.search.map(fold)]));
+  const searchable = [...elements].map(([key, e]) => ({
+    key,
+    unit: prepareSearchUnit(
+      e.searchUnit ?? {
+        id: key,
+        identifier: key,
+        title: e.n,
+        fields: e.search.map((value) => ({ name: "text", value })),
+      },
+    ),
+  }));
+  const keyByUnit = new Map(searchable.map(({ key, unit }) => [unit.id, key]));
+  function findMatches(query) {
+    try {
+      const terms = parseSearchQuery(query);
+      const hits = rankSearchUnits(
+        searchable.map(({ unit }) => unit),
+        terms,
+      );
+      return { hits: new Map(hits.map((hit) => [keyByUnit.get(hit.id), hit])), error: null };
+    } catch (error) {
+      if (!(error instanceof SearchInputError)) throw error;
+      return {
+        hits: new Map(),
+        error: T.invalidSearch ?? "Check the search text and its quotation marks.",
+      };
+    }
+  }
   const states = new Map();
   const rootMatches = new Map();
   const order = [
@@ -140,34 +164,59 @@
     else navigate(`#${e.h}`);
   }
   function rootSearch() {
-    const term = fold($("kw-context-search").value.trim());
+    const term = $("kw-context-search").value.trim();
+    const { hits, error } = findMatches(term);
     rootMatches.clear();
     for (const c of data.contexts) {
-      const own = [c.id, c.name, c.definition, c.coreLogic].some((s) => fold(s).includes(term));
-      const internal =
-        !own &&
-        scopes.get(c.id).members.some((key) => searchable.get(key)?.some((s) => s.includes(term)));
-      if (!term || own || internal) rootMatches.set(c.id, internal ? "internal" : "context");
+      const own = hits.has(c.id);
+      const internal = !own && scopes.get(c.id).members.some((key) => hits.has(key));
+      if (!error && (!term || own || internal))
+        rootMatches.set(c.id, internal ? "internal" : "context");
     }
-    for (const card of home.querySelectorAll("[data-knowledge-card]"))
+    const scores = new Map();
+    const scoreOf = (id) => {
+      if (!scores.has(id))
+        scores.set(
+          id,
+          [id, ...scopes.get(id).members]
+            .map((key) => hits.get(key))
+            .filter(Boolean)
+            .sort(compareSearchHits)[0],
+        );
+      return scores.get(id);
+    };
+    const cards = [...home.querySelectorAll("[data-knowledge-card]")];
+    cards.sort(
+      (a, b) =>
+        (term && !error
+          ? compareSearchHits(scoreOf(a.dataset.knowledgeCard), scoreOf(b.dataset.knowledgeCard))
+          : 0) ||
+        contextPositions.get(a.dataset.knowledgeCard) -
+          contextPositions.get(b.dataset.knowledgeCard),
+    );
+    for (const card of cards) {
       card.hidden = !rootMatches.has(card.dataset.knowledgeCard);
-    $("kw-context-status").textContent = term ? `${rootMatches.size} / ${contexts.size} BC` : "";
+      $("kw-contexts").append(card);
+    }
+    $("kw-context-status").textContent =
+      error ?? (term ? `${rootMatches.size} / ${contexts.size} BC` : "");
     space?.show({ level: "contexts", matches: [...rootMatches.keys()] });
   }
   function renderList() {
     const s = state(active),
-      term = fold(s.search.trim());
+      term = s.search.trim();
+    const { hits, error } = findMatches(term);
     const ids = scopes
       .get(active)
       .members.filter((key) => {
         const e = elements.get(key);
-        return (
-          e &&
-          (!s.type || e.t === s.type) &&
-          (!term || searchable.get(key).some((v) => v.includes(term)))
-        );
+        return e && (!s.type || e.t === s.type) && !error && (!term || hits.has(key));
       })
       .sort((a, b) => {
+        if (term) {
+          const relevance = compareSearchHits(hits.get(a), hits.get(b));
+          if (relevance) return relevance;
+        }
         const x = elements.get(a),
           y = elements.get(b);
         const typeOrder = order.indexOf(x.t) - order.indexOf(y.t);
@@ -198,6 +247,22 @@
       const line = node("span", undefined, "kw-result-top");
       line.append(node("span", types.get(e.t) ?? e.t, "kw-type"), node("strong", e.n));
       button.append(line, node("code", key));
+      if (term && hits.has(key)) {
+        const fields = [
+          ...new Set(
+            hits
+              .get(key)
+              .matches.map((match) => data.searchFieldLabels?.[match.field] ?? match.field),
+          ),
+        ];
+        button.append(
+          node(
+            "span",
+            (T.matchedFields ?? "Matched fields") + ": " + fields.join(", "),
+            "kw-result-marks",
+          ),
+        );
+      }
       const marks = node("span", undefined, "kw-result-marks");
       if (e.m & 4) marks.append(node("span", T.modelIssues, "kw-warning"));
       if (e.m & 2) marks.append(node("span", T.changed, "kw-warning"));
@@ -216,9 +281,14 @@
     }
     if (!ids.length)
       results.append(
-        node("li", !scopes.get(active).members.length ? T.emptyScope : T.noMatches, "kw-empty"),
+        node(
+          "li",
+          error ?? (!scopes.get(active).members.length ? T.emptyScope : T.noMatches),
+          "kw-empty",
+        ),
       );
     $("kw-list-status").textContent =
+      error ??
       `${ids.length} ${T.internal} · ${ids.length ? start + 1 : 0}–${Math.min(start + PAGE, ids.length)}`;
     $("kw-page").textContent = `${pages ? s.page + 1 : 0} / ${pages}`;
     $("kw-prev").disabled = s.page === 0;

@@ -48,9 +48,11 @@ import {
  * change log, notes) are not part of the model.
  *
  * @param {string} ontologyDir Model directory, usually docs/ontology.
+ * @param {(directory: string, error: Error) => void} [onUnreadable] Strict readers
+ * report inaccessible scopes rather than treating them as an empty model.
  * @returns {string[]} absolute paths; empty when the directory is absent.
  */
-export function findModelDocuments(ontologyDir) {
+export function findModelDocuments(ontologyDir, onUnreadable) {
   const out = [];
   const seen = new Set();
   const walk = (dir) => {
@@ -58,13 +60,15 @@ export function findModelDocuments(ontologyDir) {
       const real = realpathSync(dir);
       if (seen.has(real)) return;
       seen.add(real);
-    } catch {
+    } catch (error) {
+      if (error.code !== "ENOENT") onUnreadable?.(dir, error);
       return;
     }
     let entries;
     try {
       entries = readdirSync(dir, { withFileTypes: true });
-    } catch {
+    } catch (error) {
+      onUnreadable?.(dir, error);
       return;
     }
     for (const e of entries) {
@@ -167,8 +171,8 @@ function firstInvalidUtf8(bytes) {
  * @param {string} ontologyDir Model directory.
  * @param {(p: string) => string} rel Converts an absolute path to the label used in findings.
  */
-export function readModelDocuments(ontologyDir, rel) {
-  return findModelDocuments(ontologyDir).map((file) => ({
+export function readModelDocuments(ontologyDir, rel, onUnreadable) {
+  return findModelDocuments(ontologyDir, onUnreadable).map((file) => ({
     doc: rel(file),
     ...readDocument(file),
   }));
@@ -353,14 +357,27 @@ export function ontologyFindings({
   inScope = () => true,
   cwd = process.cwd(),
 }) {
-  const documents = readModelDocuments(ontologyDir, rel);
+  const directoryErrors = [];
+  const documents = readModelDocuments(ontologyDir, rel, (directory, error) =>
+    directoryErrors.push({
+      level: "error",
+      code: "ontology-directory-unreadable",
+      where: rel(directory),
+      element: null,
+      msg:
+        "cannot inspect this model directory (" +
+        (error.code ?? error.message) +
+        "); model scope is unknown",
+    }),
+  );
   const categories = mapping?.categories ?? {};
   const linked = Object.entries(categories).filter(
     ([, e]) => Array.isArray(e?.realizes) && e.realizes.length,
   );
-  if (!documents.length && !linked.length) return { model: false, findings: [], index: null };
+  if (!documents.length && !linked.length && !directoryErrors.length)
+    return { model: false, findings: [], index: null };
 
-  const findings = [];
+  const findings = [...directoryErrors];
   let index = null;
   if (documents.length) {
     const result = validateModel(documents, {
@@ -370,6 +387,8 @@ export function ontologyFindings({
     findings.push(...result.findings);
     index = result.index;
   }
+  // A partial directory listing cannot establish which relations are missing.
+  if (directoryErrors.length) index = null;
   // Index links are judged only against a model that parsed; a parse failure
   // already fails above and would turn every link into noise.
   if (!documents.length || index) {
@@ -435,7 +454,7 @@ export function ontologyFindings({
             },
       );
   }
-  return { model: documents.length > 0, findings, index };
+  return { model: documents.length > 0 || directoryErrors.length > 0, findings, index };
 }
 
 // ── repository history: uncommitted edits, unsynced Accepted processes and ──

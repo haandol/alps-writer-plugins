@@ -116,8 +116,8 @@ jobs:
 
   # What a CONSUMER actually runs. A marketplace install ships no node_modules:
   # the MCP server is an esbuild bundle with its dependencies inlined, and the
-  # adr-writer and ontology-writer scripts, hooks, and tests are Node built-ins only. So all of it must
-  # work under a bare `node` with no install step — something the pnpm-based jobs
+  # scripts and hooks use runtime built-ins; search uses Bun's SQLite. They must
+  # work under bare Node/Bun with no package install — something the pnpm-based jobs
   # cannot tell us, since they always have a populated node_modules.
   runtime:
     needs: verified
@@ -133,6 +133,7 @@ jobs:
           node-version: "24"
 
       - name: Assert this Node satisfies the declared engines range
+        # The server and hooks retain the Node compatibility floor.
         run: |
           node -e '
             const {engines} = require("./package.json");
@@ -143,12 +144,18 @@ jobs:
             console.log(`node ${process.versions.node} satisfies engines.node ${engines.node}`);
           '
 
+      - name: Set up Bun for shipped search commands
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2, Node 24 action
+        with:
+          bun-version: "1.4.2"
+
       # The rest of the dependency-free suites — adr-writer's integration tests and every
       # ontology-writer test — run the way a contributor without pnpm would, in one runner so
       # their files share its workers. build runs adr-writer's unit tests the same way.
       - name: adr-writer integration and ontology-writer suites (no install)
         env:
           NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
+          ONTOLOGY_TEST_RUNTIME: bun
         run: node --test "plugins/adr-writer/tests/*.integration.test.mjs" "plugins/ontology-writer/tests/**/*.test.mjs"
 
       # The committed bundle is what a marketplace install executes. Boot it over

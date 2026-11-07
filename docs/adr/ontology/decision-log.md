@@ -8,6 +8,14 @@ The current Purpose, all still-valid Decision Drivers, adopted choice, rationale
 and requirement contract remain together in the ADR body. Reading this log is
 optional for understanding the current decision.
 
+## 2026-11-07 — 로컬 색인의 다중어·한글 검색과 근거 반환
+
+- **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Change type**: requirement rule change
+- **What**: 연속 문구·식별자 순서 중심의 탐색을 다중어·인용 문구·짧은 한글과 관련도 검색으로 확장하고, BC 내부의 일치 필드·원문 위치와 원본 기반 캐시 재생성을 보장한다.
+- **Why**: 사용자는 서비스 운영 부담 없이 Bun과 로컬 SQLite를 사용해 ADR·ontology 검색을 개선하도록 요청했다.
+- **What is now void**: 검색어 전체의 연속 일치만으로 후보를 한정하고 관련도 없이 식별자 순서로만 보여주던 검색 의미. 필수 관계·진단·BC 해상도와 ADR의 구현 권위는 유지한다.
+
 ## 2026-11-05 — BC 지식 공간과 레이어 확대 이동
 
 - **Current ADR**: [render-read-only-ontology-views](./0005-render-read-only-ontology-views.md)

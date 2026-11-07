@@ -12,6 +12,7 @@ import {
   processOfStep,
 } from "./ontology-lib.mjs";
 import { projectNavigation } from "./ontology-navigation.mjs";
+import { ontologySearchUnit } from "./ontology-search.mjs";
 
 const esc = (value) =>
   String(value ?? "").replace(
@@ -72,6 +73,8 @@ const words = {
     unknownOwner: "컨텍스트 소속 미확인",
     noContext: "아직 BC 지식이 없습니다.",
     noMatches: "일치하는 항목이 없습니다. 검색어를 바꾸거나 연결된 BC를 확인하세요.",
+    invalidSearch: "검색 문구가 올바르지 않습니다. 비어 있거나 닫히지 않은 따옴표를 확인하세요.",
+    matchedFields: "일치한 필드",
     emptyScope: "이 BC의 내부 업무 지식은 아직 기록되지 않았습니다.",
     modelIssues: "모델 검증 오류",
     changed: "변경 확인 필요",
@@ -137,6 +140,8 @@ const words = {
     unknownOwner: "Context membership unconfirmed",
     noContext: "No BC knowledge is recorded yet.",
     noMatches: "No matching element. Try another term or inspect a connected BC.",
+    invalidSearch: "Check for empty or unclosed quotation marks in the search text.",
+    matchedFields: "Matched fields",
     emptyScope: "No internal business knowledge has been recorded for this BC yet.",
     modelIssues: "Model validation errors",
     changed: "Changes need checking",
@@ -249,6 +254,7 @@ export function knowledgeViewData({
           contexts: owners,
           shared: !explicit.length && owners.length > 1,
           search,
+          searchUnit: ontologySearchUnit(index, iri),
           adrs,
           ...(processKey
             ? { process: processKey, order: sequence.get(processKey)?.get(element.k) }
@@ -269,6 +275,16 @@ export function knowledgeViewData({
     errors: displayErrors,
     changeSummary,
     stateLabels,
+    searchFieldLabels: {
+      ...Object.fromEntries(
+        ATTRIBUTES.filter((field) => field.key).map((field) => [
+          field.key,
+          lang === "ko" ? field.ko : field.key,
+        ]),
+      ),
+      identifier: lang === "ko" ? "식별자" : "Identifier",
+      title: lang === "ko" ? "이름" : "Name",
+    },
   };
 }
 

@@ -1,27 +1,28 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // ontology.mjs — command line for the optional business ontology
-// level (docs/ontology/*.ttl). Dependency-free: Node built-ins and git only.
+// level (docs/ontology/*.ttl). Bun is the default CLI runtime; Node 24 remains compatible.
+// Text search uses the bundled SQLite index, with no package installation.
 //
 // Usage:
-//   node ontology.mjs validate [--adr-dir DIR] [--json]
-//   node ontology.mjs format [--check | --write [--allow-comment-removal]]
-//   node ontology.mjs diff [--base REF] [--json]
-//   node ontology.mjs validate [--require-layers] [--layer-context ID]...
-//   node ontology.mjs query (--overview | --context ID) [--search TEXT] [--limit N] [--offset N]
-//   node ontology.mjs query (--category KEY | --process ID | --step ID | --concept ID | --event ID)
+//   bun ontology.mjs validate [--adr-dir DIR] [--json]
+//   bun ontology.mjs format [--check | --write [--allow-comment-removal]]
+//   bun ontology.mjs diff [--base REF] [--json]
+//   bun ontology.mjs validate [--require-layers] [--layer-context ID]...
+//   bun ontology.mjs query (--overview | --context ID) [--search TEXT] [--limit N] [--offset N]
+//   bun ontology.mjs query (--category KEY | --process ID | --step ID | --concept ID | --event ID)
 //                                [--include-retired] [--adr-dir DIR] [--json]
-//   node ontology.mjs impact (--draft DIR | --base REF [--also-base REF]...) [--process ID]
+//   bun ontology.mjs impact (--draft DIR | --base REF [--also-base REF]...) [--process ID]
 //                                [--same-meaning ID=PROPERTY]... [--mapping FILE] [--glossary FILE] [--json]
-//   node ontology.mjs changes [--json]
-//   node ontology.mjs apply (--draft DIR | --base REF [--also-base REF]... [--process ID]) --base-hash HASH
+//   bun ontology.mjs changes [--json]
+//   bun ontology.mjs apply (--draft DIR | --base REF [--also-base REF]... [--process ID]) --base-hash HASH
 //                                [--same-meaning ID=PROPERTY]...
 //                                [--mapping FILE] [--glossary FILE]
 //                                [--log TEXT]... [--allow-comment-removal]
-//   node ontology.mjs transition --process ID --to Accepted|Proposed [--date YYYY-MM-DD]
+//   bun ontology.mjs transition --process ID --to Accepted|Proposed [--date YYYY-MM-DD]
 //                                [--same-meaning ID=PROPERTY]... [--unread-unchanged]
-//   node ontology.mjs align --process ID [--together ID,ID] [--json]
-//   node ontology.mjs lifecycle [--base REF] [--json]
-//   node ontology.mjs view [--include-retired] [--lang en|ko] [--no-open | --browser NAME]
+//   bun ontology.mjs align --process ID [--together ID,ID] [--json]
+//   bun ontology.mjs lifecycle [--base REF] [--json]
+//   bun ontology.mjs view [--include-retired] [--lang en|ko] [--no-open | --browser NAME]
 //
 //   validate  closed-world model checks plus the ADR index's `realizes` links;
 //             the model is the Turtle documents in the ADR directory's sibling
@@ -79,6 +80,7 @@
 //       a missing target or an incomplete context, 2 = usage error.
 // --overview returns the complete authored BC layer by default; --context uses
 // 20 rows per page. Optional --limit (1..100) and --offset page navigation only.
+// --cache-dir DIR selects the disposable query search cache.
 // --require-layers and repeatable --layer-context also apply to impact/apply.
 
 import { createHash } from "node:crypto";
@@ -143,6 +145,8 @@ import { openReviewReport } from "./adr-impl-review-open.mjs";
 import { renderView } from "./ontology-view.mjs";
 import { currentAdrPaths, queryContext, renderContext } from "./ontology-query.mjs";
 import { navigationOptions } from "./ontology-navigation.mjs";
+import { ontologySearchUnits } from "./ontology-search.mjs";
+import { searchWithSqlite } from "./search/search-index.mjs";
 
 const rel = (p) => path.relative(process.cwd(), p).split(path.sep).join("/");
 // Text output keeps a list this long on one line; a longer one takes a line per item.
@@ -176,6 +180,7 @@ function parseArgs(argv) {
     search: "",
     limit: null,
     offset: 0,
+    cacheDir: undefined,
     requireLayers: false,
     layerContexts: [],
     draft: null,
@@ -219,6 +224,7 @@ function parseArgs(argv) {
       if (opts.target) usage("give exactly one query target");
       opts.target = { kind: "overview" };
     } else if (a === "--search" && command === "query") opts.search = value();
+    else if (a === "--cache-dir" && command === "query") opts.cacheDir = value();
     else if (["--limit", "--offset"].includes(a) && command === "query") {
       const v = value();
       if (!/^\d+$/.test(v)) usage(`${a} requires an integer`);
@@ -490,7 +496,7 @@ function diff(opts) {
   return result.same ? 0 : 1;
 }
 
-function query(opts) {
+async function query(opts) {
   const { model, findings, index, mapping } = levelFindings(opts);
   if (!model) {
     const none = {
@@ -502,6 +508,22 @@ function query(opts) {
     process.stdout.write(opts.json ? JSON.stringify(none, null, 2) + "\n" : `${none.note}\n`);
     return 0;
   }
+  const searchHits =
+    index && opts.search
+      ? new Map(
+          (
+            await searchWithSqlite(
+              ontologySearchUnits(index, { includeRetired: opts.includeRetired }),
+              opts.search,
+              {
+                root: process.cwd(),
+                namespace: "business:" + path.resolve(opts.ontologyDir),
+                cacheDir: opts.cacheDir,
+              },
+            )
+          ).map((hit) => [hit.id, hit]),
+        )
+      : null;
   const result = queryContext({
     index,
     mapping,
@@ -512,6 +534,7 @@ function query(opts) {
     target: opts.target,
     includeRetired: opts.includeRetired,
     search: opts.search,
+    searchHits,
     limit: opts.limit,
     offset: opts.offset,
   });
@@ -2088,7 +2111,7 @@ function view(opts) {
 
 const opts = parseArgs(process.argv.slice(2));
 // The exit code, not an exit: a pipe still receiving the output would be cut off.
-process.exitCode = {
+process.exitCode = await {
   validate,
   format,
   diff,

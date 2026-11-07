@@ -47,7 +47,8 @@ window.createOntologyKnowledgeSpace = (options) => {
     drag = null,
     suppressClickUntil = 0,
     animation = null,
-    revision = 0;
+    revision = 0,
+    size = "";
   const columnCount = Math.max(1, Math.ceil(Math.sqrt(contexts.size)));
   const rowCount = Math.ceil(contexts.size / columnCount);
   let ordinal = 0;
@@ -270,6 +271,9 @@ window.createOntologyKnowledgeSpace = (options) => {
       }
     }
     move(cameras.get(key) ?? preset, changedLevel && !first);
+    // The first observer callback may arrive only after a resize. Remember
+    // the viewport that produced the initial camera so it is then invalidated.
+    if (!size) size = `${viewport.clientWidth}:${viewport.clientHeight}`;
     if (stage.dataset.transitioning === "true") {
       for (const [id, from] of dimensions) {
         const plate = islands.get(id).plate;
@@ -426,7 +430,6 @@ window.createOntologyKnowledgeSpace = (options) => {
   new IntersectionObserver(([entry]) => {
     if (!entry.isIntersecting) settle();
   }).observe(stage);
-  let size = "";
   new ResizeObserver(() => {
     if (!visible || !spatial || !route) return;
     const next = `${viewport.clientWidth}:${viewport.clientHeight}`;

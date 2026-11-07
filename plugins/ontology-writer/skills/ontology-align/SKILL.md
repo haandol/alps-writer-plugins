@@ -30,7 +30,7 @@ alignment review establishes execution evidence, not whole-system completeness.
 ## 1. Mechanical gates and the plan
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs align --process <id> --json \
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs align --process <id> --json \
   [--together <other-proposed-process>,...]
 ```
 

@@ -30,7 +30,7 @@ function cli(dir, args, env = {}) {
   try {
     return {
       code: 0,
-      out: execFileSync(process.execPath, [CLI, ...args], {
+      out: execFileSync(process.env.ONTOLOGY_TEST_RUNTIME ?? process.execPath, [CLI, ...args], {
         cwd: dir,
         encoding: "utf8",
         env: { ...process.env, ...env },

@@ -348,10 +348,70 @@ test("leaving the knowledge workspace or hiding its tab ends effects and preserv
   assert.equal(await page.$eval("#kw-space", (e) => e.dataset.scope), "contexts");
 });
 
+test("the first resize refits an existing camera even before the observer's initial notification", async () => {
+  const injected = await page.evaluateOnNewDocument(() => {
+    const Native = window.ResizeObserver;
+    const queued = new Map();
+    let released = false;
+    window.__queuedKnowledgeResize = false;
+    window.__releaseKnowledgeResize = () => {
+      released = true;
+      for (const callback of queued.values()) callback();
+      queued.clear();
+    };
+    window.ResizeObserver = class {
+      constructor(callback) {
+        this.inner = new Native((entries, observer) => {
+          if (!released && entries.some((entry) => entry.target.id === "ks-viewport")) {
+            queued.set(this, () => callback(entries, observer));
+            window.__queuedKnowledgeResize = true;
+          } else callback(entries, observer);
+        });
+      }
+      observe(...args) {
+        this.inner.observe(...args);
+      }
+      unobserve(...args) {
+        this.inner.unobserve(...args);
+      }
+      disconnect() {
+        this.inner.disconnect();
+      }
+    };
+  });
+  try {
+    await load(files.base, true);
+    await page.waitForFunction(() => window.__queuedKnowledgeResize);
+    await page.setViewport({ width: 390, height: 844 });
+    await page.waitForFunction(() => document.getElementById("ks-viewport").clientWidth === 390);
+    await page.evaluate(() => window.__releaseKnowledgeResize());
+    await page.waitForFunction(
+      () =>
+        [...document.querySelectorAll("[data-space-context]")].every((node) => {
+          const r = node.getBoundingClientRect();
+          return r.x >= 0 && r.right <= 390;
+        }),
+      { timeout: 3000 },
+    );
+    assert.equal(await page.$eval("#kw-space", (e) => e.dataset.scope), "contexts");
+  } finally {
+    await page.removeScriptToEvaluateOnNewDocument(injected.identifier);
+  }
+});
+
 test("narrow-screen spatial BC targets stay separated and keyboard navigation still reaches details", async () => {
   await load(files.base, true);
   await page.setViewport({ width: 390, height: 844 });
-  await page.waitForFunction(() => document.getElementById("ks-viewport").clientWidth === 390);
+  // CSS width can update before ResizeObserver refits the camera. Judge the
+  // rendered targets after that refit, while retaining the geometry assertions.
+  await page.waitForFunction(
+    () =>
+      document.getElementById("ks-viewport").clientWidth === 390 &&
+      [...document.querySelectorAll("[data-space-context]")].every((node) => {
+        const r = node.getBoundingClientRect();
+        return r.x >= 0 && r.right <= 390;
+      }),
+  );
   const boxes = await page.$$eval("[data-space-context]", (nodes) =>
     nodes.map((n) => {
       const r = n.getBoundingClientRect();

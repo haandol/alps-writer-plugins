@@ -423,7 +423,7 @@ test("help prints the usage, a missing command points to it, and format says whe
     for (const ask of ["help", "--help", "-h"]) {
       const help = cli(dir, [ask]);
       assert.equal(help.code, 0, help.out);
-      assert.match(help.out, /^Usage:\n {2}node ontology\.mjs validate/);
+      assert.match(help.out, /^Usage:\n {2}bun ontology\.mjs validate/);
       assert.match(help.out, /^Exit: 0 = clean/m);
     }
     const missing = cli(dir, []);

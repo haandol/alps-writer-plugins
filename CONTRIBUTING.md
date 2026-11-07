@@ -365,6 +365,12 @@ copies. Run `pnpm report-skill:sync` and `pnpm report-skill:check`.
 
 ### Scripts ontology-writer shares with adr-writer
 
+Local search is owned by `shared/search/`. Run `pnpm search:sync` after editing
+it and `pnpm search:check` to verify both plugin copies. Default CLI examples
+use Bun 1.4.2 or later; Node 24 remains a tested compatibility path. Keep query
+semantics and ranking in the pure shared module so saved-model HTML agrees
+with CLI search. Bun subprocess checks are integration tests.
+
 ontology-writer runs copies of `adr-lint-lib.mjs`, `adr-status-transition.mjs` and
 `adr-impl-review-open.mjs`. Edit the adr-writer originals, then run
 `pnpm shared-scripts:sync`; `pnpm shared-scripts:check`, part of

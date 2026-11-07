@@ -17,14 +17,28 @@ The heavier layer holds each BC's internal workflows, connected by context
 membership. Exact implementation contracts remain in ADRs.
 
 ```bash
-node scripts/ontology.mjs query --overview
-node scripts/ontology.mjs query --context ordering --search payment
-node scripts/ontology.mjs query --context ordering --limit 20 --offset 20
-node scripts/ontology.mjs query --step ordering.confirm-order
+bun scripts/ontology.mjs query --overview
+bun scripts/ontology.mjs query --context ordering --search payment
+bun scripts/ontology.mjs query --context ordering --limit 20 --offset 20
+bun scripts/ontology.mjs query --step ordering.confirm-order
 ```
 
 `--overview` reads the whole small BC layer by default. It never expands internal
 events, steps, rules or ADRs; an optional `--limit` pages this layer too. Whole-model
+Text search runs with Bun and a local SQLite FTS5 index. Words match in any
+order, quoted phrases require adjacency, and short Korean/substrings remain
+searchable. Matches are ranked by identifiers, names and text relevance; inside
+a BC they carry the matched fields and original source locations. The saved
+HTML uses the same query and ranking rules in memory, without a database or
+network request in the browser.
+
+The source Turtle files and ADR index remain authoritative. The search cache
+is updated from the current source snapshot and can be deleted safely; corrupt,
+busy or unwritable caches use an equivalent in-memory search. `--cache-dir` or
+`WRITER_SEARCH_CACHE_DIR` selects the cache location. Validation, change flags
+and mandatory detail relationships are still checked independently of ranking.
+Use Bun 1.4.2 or later; explicit Node 24 invocation remains compatible.
+
 `--overview --search` returns BC candidates, then `--context --search` shows the
 internal matches. Context responses page elements, relationships and diagnostics
 together, with the exact continuation in `next`. Keep the model unchanged across
@@ -134,7 +148,7 @@ reviews remain explicit.
 
 ## Business ontology
 
-Model documents use the closed vocabulary in `templates/ontology/vocabulary.ttl`; `templates/ontology/example.ttl` shows a small model. The model owns business flows, event hand-offs, policies, cross-step rules and business terms. The rules are in `references/ontology.md`; the deterministic commands are `node scripts/ontology.mjs <command>` with `validate`, `format`, `diff`, `query`, `impact`, `apply`, `transition`, `align`, `lifecycle`, `changes` and `view`, documented at the top of the script. `validate` also checks the ADR index's `realizes` links against the model.
+Model documents use the closed vocabulary in `templates/ontology/vocabulary.ttl`; `templates/ontology/example.ttl` shows a small model. The model owns business flows, event hand-offs, policies, cross-step rules and business terms. The rules are in `references/ontology.md`; the deterministic commands are `bun scripts/ontology.mjs <command>` with `validate`, `format`, `diff`, `query`, `impact`, `apply`, `transition`, `align`, `lifecycle`, `changes` and `view`, documented at the top of the script. `validate` also checks the ADR index's `realizes` links against the model.
 
 ## Working with adr-writer
 

@@ -43,7 +43,7 @@ test("the session directive asks for the business context only when the index an
     const ctx = runHook(dir);
     assert.match(
       ctx,
-      /before creating or changing an ADR decision or contract, first check the feature's business context \(node "\S+ontology\.mjs" query --category <key>\)/,
+      /before creating or changing an ADR decision or contract, first check the feature's business context \(bun "\S+ontology\.mjs" query --category <key>\)/,
     );
     assert.match(
       ctx,
@@ -381,7 +381,7 @@ test("ontology-sync confirms direct edits like a save and never overwrites them"
 test("ontology-sync checks a direct edit like a draft, compares it per process from history and loads the shared approval path", () => {
   has(
     SYNC,
-    "Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs impact --base HEAD --json` and judge structure by its model findings (`draftValid`, `findings`), the check a drafted change gets.",
+    "Run `bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs impact --base HEAD --json` and judge structure by its model findings (`draftValid`, `findings`), the check a drafted change gets.",
   );
   has(
     SYNC,
@@ -667,7 +667,7 @@ test("ontology-build reviews sufficiency against a full-model draft and reports 
   );
   has(
     BUILD,
-    "When a model exists, prepare its semantic diff in a draft (`node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs impact --draft <draft> --json`).",
+    "When a model exists, prepare its semantic diff in a draft (`bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs impact --draft <draft> --json`).",
   );
   has(
     BUILD,

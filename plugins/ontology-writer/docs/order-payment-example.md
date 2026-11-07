@@ -21,11 +21,11 @@
 다음 명령으로 상위 BC 지식 전체를 읽고 주문 관리 내부의 결제 관련 지식을 검색한다. 내부 요소가 많아도 최상위에는 펼쳐지지 않으며, 검색 결과와 페이지 안내에서 필요한 상세로 내려간다.
 
 ```bash
-node plugins/ontology-writer/scripts/ontology.mjs query --overview \
+bun plugins/ontology-writer/scripts/ontology.mjs query --overview \
   --adr-dir plugins/ontology-writer/examples/order-payment/docs/adr
-node plugins/ontology-writer/scripts/ontology.mjs query --context ordering --search 결제 \
+bun plugins/ontology-writer/scripts/ontology.mjs query --context ordering --search 결제 \
   --adr-dir plugins/ontology-writer/examples/order-payment/docs/adr
-node plugins/ontology-writer/scripts/ontology.mjs validate --require-layers \
+bun plugins/ontology-writer/scripts/ontology.mjs validate --require-layers \
   --adr-dir plugins/ontology-writer/examples/order-payment/docs/adr
 ```
 
@@ -94,14 +94,14 @@ node plugins/ontology-writer/scripts/eventstorming-view.mjs \
 다음 명령들도 저장소 루트에서 실행한다. `--adr-dir` 옆의 `ontology/`에 있는 예제 모델을 읽는다.
 
 ```bash
-node plugins/ontology-writer/scripts/ontology.mjs validate \
+bun plugins/ontology-writer/scripts/ontology.mjs validate \
   --adr-dir plugins/ontology-writer/examples/order-payment/docs/adr
 
-node plugins/ontology-writer/scripts/ontology.mjs query \
+bun plugins/ontology-writer/scripts/ontology.mjs query \
   --process ordering.place-order \
   --adr-dir plugins/ontology-writer/examples/order-payment/docs/adr
 
-node plugins/ontology-writer/scripts/ontology.mjs view \
+bun plugins/ontology-writer/scripts/ontology.mjs view \
   --adr-dir plugins/ontology-writer/examples/order-payment/docs/adr --lang ko
 ```
 
@@ -189,7 +189,7 @@ m:ordering.confirm-on-payment
 주문 프로세스의 계획을 확인하면서, 결제 프로세스도 함께 검토할 실행 범위에 포함하려면 다음과 같이 지정한다.
 
 ```bash
-node plugins/ontology-writer/scripts/ontology.mjs align \
+bun plugins/ontology-writer/scripts/ontology.mjs align \
   --process ordering.place-order --together payment.take-payment \
   --adr-dir plugins/ontology-writer/examples/order-payment/docs/adr --json
 ```

@@ -19,7 +19,14 @@ Read the whole BC layer with `query --overview`, search within a selected BC wit
 
 ## Quick Start
 
-Requires Node.js 24 or later. Marketplace installs include the bundled server and dependencies; no npm install or build step is needed.
+Requires Node.js 24 or later for the server and hooks, and Bun 1.4.2 or later for
+the default ADR/ontology search commands. Marketplace installs include the
+bundled server and local search modules; no npm install or build step is needed.
+
+Local search uses SQLite FTS5 as a disposable index over the current Markdown
+and Turtle files. It supports words in any order, quoted phrases and short
+Korean text, returns source locations and Status, and preserves the existing
+contract and business-relation checks. Use `/adr-search` to locate a decision.
 
 ### Codex
 

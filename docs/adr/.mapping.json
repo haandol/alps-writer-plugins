@@ -225,8 +225,8 @@
         },
         {
           "path": "docs/adr/ontology/0002-retrieve-business-context-for-agents.md",
-          "status": "Accepted (2026-11-05)",
-          "summary": "가벼운 최상위 BC 지식 전체를 읽고 무거운 BC 내부를 검색·페이지 탐색하며 필요한 상세와 실현 ADR로 내려간다"
+          "status": "Accepted (2026-11-07)",
+          "summary": "BC 조망과 상세 관계를 보존하면서 로컬 색인으로 다중어·한글 검색, 관련도와 원문 근거를 제공한다"
         },
         {
           "path": "docs/adr/ontology/0003-govern-ontology-lifecycle-and-cascade.md",
@@ -251,6 +251,17 @@
         "delivery/development-flow",
         "reporting/domain-navigation"
       ]
+    },
+    "adr-authoring/decision-search": {
+      "feature": "Local ADR decision search",
+      "adrs": [
+        {
+          "path": "docs/adr/adr-authoring/decision-search/0001-discover-adrs-with-local-search.md",
+          "status": "Accepted (2026-11-07)",
+          "summary": "로컬 검색은 다중어·짧은 한글과 본문 절에서 문서 후보를 찾고 원문 위치·상태로 이어지며 파생 색인을 현재 원본에서 재생성한다"
+        }
+      ],
+      "dependsOn": ["adr-authoring/current-state"]
     }
   }
 }

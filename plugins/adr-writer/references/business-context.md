@@ -32,7 +32,7 @@ Automatic lifecycle transitions — `/adr-impl` promoting to `Accepted`,
 Run ontology-writer's query, the command its session directive names:
 
 ```bash
-node <ontology-writer>/scripts/ontology.mjs query --category <key>
+bun <ontology-writer>/scripts/ontology.mjs query --category <key>
 ```
 
 When ontology-writer is not available, state in the approval summary or report

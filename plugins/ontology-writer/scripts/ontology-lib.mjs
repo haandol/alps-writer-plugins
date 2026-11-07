@@ -1381,7 +1381,14 @@ const OTHER_WORD =
 // The Korean words of those kinds a compound can end in (`표준용어`, `용어설명`), longest
 // first; single syllables (한, 영, 예 …) end too many other words to count.
 const KOREAN_ENDINGS = [TERM_WORD, NAME_WORD, LANGUAGE_WORD, AREA_WORD, DEFINITION_WORD, OTHER_WORD]
-  .flatMap((re) => re.source.match(/[가-힣]{2,}/g) ?? [])
+  // JavaScriptCore Unicode-escapes RegExp.source, while V8 retains these
+  // literals. Decode that representation before reading the same vocabulary.
+  .flatMap(
+    (re) =>
+      re.source
+        .replace(/\\u([0-9a-f]{4})/gi, (_, hex) => String.fromCharCode(Number.parseInt(hex, 16)))
+        .match(/[가-힣]{2,}/g) ?? [],
+  )
   .sort((a, b) => b.length - a.length);
 const known = (w) => TERM_WORD.test(w) || NAME_WORD.test(w) || LANGUAGE_WORD.test(w);
 /** A header word, with a Korean compound split into its stem and the word it ends in. */

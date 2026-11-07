@@ -2,7 +2,7 @@
 
 `alps-writer-plugins` — a Codex and Claude Code marketplace shipping three independent plugins: **alps-writer** (ALPS/PRD authoring via an MCP server), **ontology-writer** (an optional business ontology above ADRs) and **adr-writer** (ADR-driven development cycle). Each installs from the marketplace alone — no npm. The alps-writer MCP server is bundled with esbuild (dependencies inlined) and the bundle is committed at `plugins/alps-writer/dist/`, so the plugin runs straight from a marketplace install.
 
-**Tech Stack**: TypeScript 5.9+, Node.js >= 24, pnpm workspace, MCP SDK (`@modelcontextprotocol/sdk`), Zod
+**Tech Stack**: TypeScript 5.9+, Node.js >= 24, Bun >= 1.4.2 for default local search, pnpm workspace, MCP SDK (`@modelcontextprotocol/sdk`), Zod
 
 ## The design principle — an abstraction ladder, C4-style
 
@@ -100,6 +100,7 @@ pnpm test:integration # Integration tests: git, a browser or another external to
 pnpm test             # Asset/guidance checks, ALPS, then pooled ADR/DeepEval/browser tests
 pnpm build            # Bundle the alps-writer MCP server (pnpm --filter alps-writer build)
 pnpm lint             # ESLint the MCP server
+pnpm search:check     # Verify standalone plugins carry the current shared search
 pnpm format           # Prettier across the repo
 
 pnpm bump 0.4.24      # Set the release version (or: patch | minor | major)
@@ -607,6 +608,31 @@ built-ins only. It runs the dependency-free adr-writer suite, an MCP `initialize
 round-trip against the committed bundle, and the `SessionStart` hook, all
 under a bare `node`. The pnpm-based jobs cannot catch a break there, since they
 always have a populated `node_modules`.
+
+### Local decision and ontology search
+
+The default ADR search and ontology CLI commands run with Bun. Search uses its
+built-in SQLite FTS5; explicit Node 24 invocation remains compatible through
+`node:sqlite`. Canonical modules in `shared/search/` are copied into each plugin
+by `scripts/sync-search.mjs`. Build synchronizes them and `search:check` rejects
+drift, so neither plugin imports a sibling installation.
+
+The cache stores only derived posting data for the current source units, never
+approval, validation or response state. Worktree/document-root identity separates
+caches; source hashes update additions, edits, moves and deletions. A damaged,
+busy or unwritable cache uses an equivalent in-memory SQLite snapshot. Keep
+original ranges, current Status and source diagnostics outside cache authority.
+
+Unquoted terms all match one unit in any order; quoted phrases remain adjacent.
+Normalize compatibility forms, case and whitespace; preserve short Korean and
+substring matches. SQLite candidate retrieval and the saved-model browser use
+the same pure matching/ranking module. BM25 ranks body relevance below direct
+identifier/title matches. Search does not replace full mapping/ADR reads or
+the ontology's mandatory relationships, scope diagnostics and BC-only overview.
+
+New Bun command tests belong to integration tests; pure ranking and Node SQLite
+tests remain dependency-free unit tests. The runtime CI job installs Bun and
+checks the shipped scripts without npm dependencies.
 
 ### Shared vocabularies
 

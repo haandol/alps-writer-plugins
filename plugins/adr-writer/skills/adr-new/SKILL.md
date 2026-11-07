@@ -88,6 +88,7 @@ Apply `authoring-rules.md` "ADR admission gate" **before any filesystem write or
 After the request passes admission, apply `authoring-rules.md` **"Decision identity check — update before create" before any filesystem write, category creation, or ADR number allocation**:
 
 1. If `docs/adr/.mapping.json` exists, read every summary. Inspect the requested category first, then plausible matches elsewhere so a renamed or miscategorized owner is not missed.
+   Use `/adr-search` or `bun "${CLAUDE_PLUGIN_ROOT}/scripts/adr-search.mjs" --query "<text>" --json` to locate plausible bodies. Inspect its diagnostics and original source ranges; it does not replace this full-index read.
 2. Read the full body of each plausible match. Compare the architectural question and the requirement/system/data/security/external boundary it owns, not the current product name, provider, adopted alternative, or direction of change.
 3. If one existing ADR can express the requested result as a single current-state record, **stop the new-ADR path**. Do not create a category, allocate `NNNN`, or append an `adrs[]` record.
    - When code has not changed yet, route to `/adr-impl <existing-category>` so it rewrites that exact ADR in place, records a major transition when required, returns an implemented `Accepted` ADR to `Proposed`, and then implements.
