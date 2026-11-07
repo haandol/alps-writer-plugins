@@ -67,7 +67,7 @@ bun plugins/ontology-writer/scripts/ontology.mjs validate --require-layers \
 이 저장소의 루트에서 다음 명령을 실행한다. 설치된 플러그인을 사용할 때는 프로젝트 폴더를 작업 위치로 두고, `plugins/ontology-writer` 부분을 실제 플러그인 설치 경로로 바꾼다. Node.js 24 이상이 필요하다.
 
 ```bash
-node plugins/ontology-writer/scripts/eventstorming-view.mjs \
+bun plugins/ontology-writer/scripts/eventstorming-view.mjs \
   plugins/ontology-writer/examples/order-payment/board.json --lang ko
 ```
 

@@ -115,7 +115,7 @@ export function alpsLiteGuideText(section) {
 /**
  * Produces the real Lite resume response from the committed marketplace bundle
  * so behavior evals exercise the dependency-free consumer runtime rather than a
- * copied prompt or the contributor-only pnpm/tsx toolchain.
+ * copied prompt or the contributor-only development toolchain.
  */
 export function alpsLiteResumeText(dir) {
   const target = path.join(dir, "resume.lite.alps.xml");
@@ -332,7 +332,7 @@ export function hookContext(dir, mapping = { categories: {} }) {
 // Run the shipped deterministic harness over the fixture. Used by author-side
 // scenarios: an ADR the agent wrote must survive the same lint a real one does.
 export function lint(dir, args = ["--no-invariants", "--json"]) {
-  const r = spawnSync("node", [STRUCTURE_LINT, ...args], {
+  const r = spawnSync(process.execPath, [STRUCTURE_LINT, ...args], {
     cwd: dir,
     encoding: "utf8",
   });

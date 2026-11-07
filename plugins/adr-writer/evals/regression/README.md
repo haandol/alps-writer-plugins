@@ -1,7 +1,7 @@
 # 자체 판정기 기반 rollup / sync 평가 (이전 경로)
 
-현재 기본 `pnpm eval:regression`은 [DeepEval 경로](../deepeval/README.md)다.
-이 문서는 비교·디버깅용으로 보존한 `pnpm eval:custom` 경로를 설명한다.
+현재 기본 `bun run eval:regression`은 [DeepEval 경로](../deepeval/README.md)다.
+이 문서는 비교·디버깅용으로 보존한 `bun run eval:custom` 경로를 설명한다.
 
 스킬 프롬프트를 수정한 뒤에도 기능이 유지되는지, **고정 fixture에서 실제 스킬을 실행하고
 LLM이 산출물과 행동을 읽어 판정**한다. EncBird·Pixelbank의 ADR과 구현을 참고한 기본
@@ -13,28 +13,28 @@ LLM이 산출물과 행동을 읽어 판정**한다. EncBird·Pixelbank의 ADR�
 
 ## 시작하기
 
-저장소 루트에서 실행한다. Node.js 24 이상과 Git이 필요하다. 모델 실행에는 로그인된
+저장소 루트에서 실행한다. Bun 1.4.2 이상과 Git이 필요하다. 모델 실행에는 로그인된
 Claude Code CLI가 필요하며 기존 설정의 제공자와 인증을 사용한다. Bedrock 로그인도
 그대로 사용한다. OpenAI API 키나 새 평가 프레임워크는 필요하지 않다.
 
 ```bash
 # 무료: 사례 목록
-pnpm eval:custom --list
+bun run eval:custom --list
 
 # 무료: 11개 임시 저장소와 미실행 HTML 리포트 생성, 실제 로컬 테스트·ADR lint 확인
-pnpm eval:custom --prepare --out .codex/evals/adr-fixtures
+bun run eval:custom --prepare --out .codex/evals/adr-fixtures
 
 # 실제 LLM 호출: 한 사례로 실행 연결 확인
-pnpm eval:custom --live --only sync-encbird-turn-units --runs 1
+bun run eval:custom --live --only sync-encbird-turn-units --runs 1
 
 # 실제 LLM 호출: 전체 기본 세트
-pnpm eval:custom --live --runs 1
+bun run eval:custom --live --runs 1
 
 # 프롬프트 변경 후: HEAD의 스킬과 현재 작업 트리 스킬을 같은 사례에서 비교
-pnpm eval:custom --live --skill adr-rollup --baseline HEAD --runs 3
+bun run eval:custom --live --skill adr-rollup --baseline HEAD --runs 3
 
 # 기준 버전은 커밋·브랜치·태그를 지정할 수 있다
-pnpm eval:custom --live --skill adr-sync --baseline main --runs 3
+bun run eval:custom --live --skill adr-sync --baseline main --runs 3
 ```
 
 `--live`가 없으면 모델을 호출하지 않는다. 결과 경로를 지정하지 않으면
@@ -56,7 +56,7 @@ pnpm eval:custom --live --skill adr-sync --baseline main --runs 3
 두 버전은 실행 시작 때 각각 복사해 고정한다. fixture·기대 동작·판정 기준은 공유한다.
 
 기존 `evals/run.mjs --changed`는 이 별도 회귀 세트를 실행하지 않는다. 이번 경로는
-`pnpm eval:custom`으로 명시적으로 실행하며 `--skill` 또는 `--only`로 범위를 고른다.
+`bun run eval:custom`으로 명시적으로 실행하며 `--skill` 또는 `--only`로 범위를 고른다.
 
 ## 사례와 참고 범위
 
@@ -166,7 +166,7 @@ MCP 서버가 아래 동작만 제공한다.
 
 ## 검증 범위와 보관
 
-`pnpm test`는 fixture의 실제 테스트·lint, 경로 격리, 도구 사건 기록, 판정의 의무와 증거
+`bun run test`는 fixture의 실제 테스트·lint, 경로 격리, 도구 사건 기록, 판정의 의무와 증거
 검증, report escaping, MCP stdio 연결을 모델 없이 검사한다. 이 통과는 live 스킬
 성공률이나 LLM 판정기의 의미 정확도를 대신하지 않는다. 중요한 live 실패는 인용
 증거를 사람이 확인한다.

@@ -22,7 +22,7 @@ async function connectServer(context: TestContext) {
     args:
       process.env.ALPS_TEST_BUNDLE === "1"
         ? [path.join(PACKAGE_ROOT, "dist/index.js")]
-        : ["--import", "tsx", path.join(PACKAGE_ROOT, "src/index.ts")],
+        : [path.join(PACKAGE_ROOT, "src/index.ts")],
     cwd: PACKAGE_ROOT,
     env: { ...process.env, ALPS_OUTPUT_DIR: dir } as Record<string, string>,
     stderr: "pipe",

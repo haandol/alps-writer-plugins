@@ -196,8 +196,8 @@ Accepted ADR의 결정이 바뀌면 Status를 Proposed로 되돌린다는 `templ
 
 - `plugins/adr-writer/.claude-plugin/plugin.json`의 `version` 및 seed 문서 하단
   `<!-- adr-writer:rules-version X.Y.Z -->` 스탬프 갱신. **4절 작업으로 `templates/adr/`가 변경됐으므로
-  이번에는 `pnpm bump`로 스탬프까지 함께 올려야 한다** (신규 `concepts.md`도 스탬프 대상에 등록됨).
-- `pnpm test` 회귀 확인 — seed 문서 분리는 `skill-metadata.test.mjs`가 지킨다.
+  이번에는 `bun run bump`로 스탬프까지 함께 올려야 한다** (신규 `concepts.md`도 스탬프 대상에 등록됨).
+- `bun run test` 회귀 확인 — seed 문서 분리는 `skill-metadata.test.mjs`가 지킨다.
 - 축 A–K 표를 기준으로 재점검: 각 축이 세 스킬에서 **같은 이름**으로 불리는지.
 
 ---

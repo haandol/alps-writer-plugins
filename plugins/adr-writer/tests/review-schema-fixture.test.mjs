@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { PLUGIN_ROOT, withTmp, write } from "./helpers.mjs";
@@ -28,16 +29,21 @@ function runAdmissionTest(dir) {
     .join("\0");
   let execution = admissionRuns.get(key);
   if (!execution) {
-    const env = { ...process.env };
-    delete env.NODE_TEST_CONTEXT;
-    execution = spawnSync(process.execPath, ["--test", "test/admission.test.mjs"], {
-      cwd: dir,
-      encoding: "utf8",
-      env,
-    });
+    // bun test names only failing tests on a pipe, so its JUnit report records which ran.
+    const report = path.join(mkdtempSync(path.join(tmpdir(), "admission-")), "junit.xml");
+    execution = spawnSync(
+      process.execPath,
+      ["test", "--reporter=junit", `--reporter-outfile=${report}`, "./test/admission.test.mjs"],
+      { cwd: dir, encoding: "utf8", env: { ...process.env } },
+    );
+    execution.ran = existsSync(report) ? readFileSync(report, "utf8") : "";
+    rmSync(path.dirname(report), { recursive: true, force: true });
     admissionRuns.set(key, execution);
   }
-  assert.match(execution.stdout, /admit below the two-request limit, reject at and above it/);
+  assert.match(
+    execution.ran,
+    /<testcase name="admit below the two-request limit, reject at and above it"/,
+  );
   assert.doesNotMatch(execution.stderr, /recursively|skipping running files/);
   return execution;
 }

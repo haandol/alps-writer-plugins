@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 // Find registered decision documents, then follow their original contracts.
 // Usage: bun adr-search.mjs --query TEXT [--category KEY] [--root DIR]
-//        [--adr-dir DIR] [--limit N] [--offset N] [--cache-dir DIR] [--json]
+//        [--adr-dir DIR] [--limit N] [--offset N] [--json]
+// Every search reads the current registered documents; it keeps no index or cache.
 import { readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,8 +13,7 @@ import {
   parseHeadings,
   validateMappingShape,
 } from "./adr-lint-lib.mjs";
-import { searchWithSqlite } from "./search/search-index.mjs";
-import { parseSearchQuery, SearchInputError } from "./search/search-text.mjs";
+import { parseSearchQuery, SearchInputError, searchUnits } from "./search/search-text.mjs";
 
 const NOTE =
   "Navigation only: search hits are not a complete requirement contract. Read the full index and plausible decision documents before changing a decision. Relevance is not approval or implementation status.";
@@ -52,7 +52,7 @@ function sections(body) {
 
 /**
  * Read only registered files under the selected document root. Invalid source
- * state stays diagnostic evidence; a cache never makes it a valid decision.
+ * state stays diagnostic evidence; a search hit never makes it a valid decision.
  */
 function readCorpus({ root, adrDir, category }) {
   const indexPath = path.resolve(root, adrDir, ".mapping.json");
@@ -163,7 +163,7 @@ function readCorpus({ root, adrDir, category }) {
 }
 
 /** Return one representative section per document, with a bounded, stable continuation. */
-export async function searchAdrs(input) {
+export function searchAdrs(input) {
   const options = {
     root: process.cwd(),
     adrDir: "docs/adr",
@@ -181,12 +181,7 @@ export async function searchAdrs(input) {
     throw new SearchInputError("--offset must be a non-negative integer");
   const corpus = readCorpus(options);
   const byId = new Map(corpus.units.map((unit) => [unit.id, unit]));
-  const hits = await searchWithSqlite(corpus.units, options.query, {
-    root: options.root,
-    namespace:
-      "decisions:" + path.resolve(options.root, options.adrDir) + ":" + (options.category ?? ""),
-    cacheDir: options.cacheDir,
-  });
+  const hits = searchUnits(corpus.units, options.query);
   const documents = new Map();
   for (const hit of hits) {
     const unit = byId.get(hit.id);
@@ -285,8 +280,8 @@ export function renderAdrSearch(result) {
 }
 
 const USAGE =
-  "Usage: bun adr-search.mjs --query TEXT [--category KEY] [--root DIR] [--adr-dir DIR] [--limit N] [--offset N] [--cache-dir DIR] [--json]";
-async function main(args) {
+  "Usage: bun adr-search.mjs --query TEXT [--category KEY] [--root DIR] [--adr-dir DIR] [--limit N] [--offset N] [--json]";
+function main(args) {
   const options = {},
     names = {
       "--query": "query",
@@ -295,7 +290,6 @@ async function main(args) {
       "--adr-dir": "adrDir",
       "--limit": "limit",
       "--offset": "offset",
-      "--cache-dir": "cacheDir",
     };
   let json = false;
   for (let i = 0; i < args.length; i++) {
@@ -317,13 +311,13 @@ async function main(args) {
       options[name] = Number(value);
     } else options[name] = value;
   }
-  const result = await searchAdrs(options);
+  const result = searchAdrs(options);
   process.stdout.write(json ? JSON.stringify(result, null, 2) + "\n" : renderAdrSearch(result));
   return result.complete && result.found ? 0 : 1;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    process.exitCode = await main(process.argv.slice(2));
+    process.exitCode = main(process.argv.slice(2));
   } catch (error) {
     process.stderr.write(
       "adr-search: " +

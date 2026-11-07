@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -35,7 +35,7 @@ for (const [name, content] of files) {
   const destination = path.join(target, name);
   if (check) {
     if (!readFileSync(destination).equals(content))
-      throw new Error(`Report diff asset drift: ${name}; run pnpm report-assets:sync`);
+      throw new Error(`Report diff asset drift: ${name}; run bun run report-assets:sync`);
   } else writeFileSync(destination, content);
 }
 console.log(`${check ? "Verified" : "Vendored"} diff2html report assets and bundled licenses.`);

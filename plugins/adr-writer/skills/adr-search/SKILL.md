@@ -32,7 +32,6 @@ Search helps locate plausible bodies. It does not replace the full mapping read,
 prerequisite traversal, or reading plausible full ADRs on an admitted change.
 Do not change code or contracts merely from a search excerpt or score.
 
-The SQLite index is a disposable cache rebuilt from the current files. A missing,
-corrupt or unwritable cache uses the same search in memory. Source errors remain
-visible and incomplete. `--cache-dir` or `WRITER_SEARCH_CACHE_DIR` can select cache
-storage; never register it as a decision, approval record or model artifact.
+Each search reads the current registered files; there is no index or cache to
+refresh. Source errors remain visible and mark the search incomplete. Never record
+a search result as a decision, approval record or model artifact.

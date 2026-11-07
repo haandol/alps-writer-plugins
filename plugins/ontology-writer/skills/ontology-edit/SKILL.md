@@ -193,7 +193,7 @@ started from, keep the user's newer edit, rerun `impact`, and re-present only
 the changed range. For any other refusal, fix what it reports, rerun `impact`
 and re-present anything the fix changes. Then save the approved ADR revisions
 in place; each affected ADR is `Proposed` through
-`node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs`, this plugin's copy of
+`bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs`, this plugin's copy of
 adr-writer's transition.
 A renewed `Accepted` date becomes the comparison baseline once the saved unit is
 committed; ask the user to commit it before the next ontology sync. `apply`

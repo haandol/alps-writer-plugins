@@ -1,13 +1,21 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { execFileSync } from "node:child_process";
-import { readdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { commitAll, initRepo, mkTmp, write, writeAdrFiles } from "./helpers.mjs";
 import { EXAMPLE, CLI } from "./ontology-helpers.mjs";
 import { MAPPING } from "./ontology-query-helpers.mjs";
 
-test("Bun business search creates a local SQLite index, returns source evidence and retains diagnostics after edits", () => {
+// Files a search left in the private home, apart from Bun's own transpiler cache.
+const searchFiles = (home) =>
+  readdirSync(home, { recursive: true }).filter(
+    (p) =>
+      ![".cache", path.join(".cache", "bun")].includes(p) &&
+      !p.startsWith(path.join(".cache", "bun") + path.sep),
+  );
+
+test("Bun business search reads the current documents without search files, returns source evidence and retains diagnostics after edits", () => {
   const dir = mkTmp("bun-ontology-search-");
   try {
     const root = path.join(dir, "repo");
@@ -30,24 +38,16 @@ test("Bun business search creates a local SQLite index, returns source evidence 
     const file = write(root, "docs/ontology/model.ttl", text);
     initRepo(root);
     commitAll(root, "Search fixture");
-    const cache = path.join(dir, "cache");
+    // A private home and cache root: the query must leave both empty.
+    const home = path.join(dir, "home");
+    mkdirSync(home);
+    const env = { ...process.env, HOME: home, XDG_CACHE_HOME: path.join(home, ".cache") };
     const query = (term) =>
       JSON.parse(
         execFileSync(
           "bun",
-          [
-            "--no-install",
-            CLI,
-            "query",
-            "--context",
-            "ordering",
-            "--search",
-            term,
-            "--cache-dir",
-            cache,
-            "--json",
-          ],
-          { cwd: root, encoding: "utf8" },
+          ["--no-install", CLI, "query", "--context", "ordering", "--search", term, "--json"],
+          { cwd: root, encoding: "utf8", env },
         ),
       );
     const before = readFileSync(file);
@@ -55,9 +55,8 @@ test("Bun business search creates a local SQLite index, returns source evidence 
     assert.equal(r.complete, true);
     assert.ok(r.items.some((i) => i.id === "ordering.search-case" && i.searchMatch.matches.length));
     assert.deepEqual(readFileSync(file), before);
-    const db = readdirSync(cache).find((name) => name.endsWith(".sqlite"));
-    assert.ok(db);
-    assert.equal(readFileSync(path.join(cache, db)).subarray(0, 15).toString(), "SQLite format 3");
+    assert.deepEqual(searchFiles(home), []);
+    assert.equal(existsSync(path.join(root, ".cache")), false);
     write(
       root,
       "docs/ontology/model.ttl",

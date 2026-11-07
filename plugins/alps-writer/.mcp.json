@@ -2,7 +2,7 @@
   "mcpServers": {
     "alps-writer": {
       "cwd": ".",
-      "command": "node",
+      "command": "bun",
       "args": ["./dist/index.js"]
     }
   }

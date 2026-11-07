@@ -11,7 +11,7 @@
   "keywords": ["mcp", "alps", "prd", "product-requirements", "specification", "ai"],
   "mcpServers": {
     "alps-writer": {
-      "command": "node",
+      "command": "bun",
       "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.js"]
     }
   }

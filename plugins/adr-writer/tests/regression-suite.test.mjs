@@ -24,7 +24,7 @@ test("evaluation CLI disables installed skills as well as hooks, native tools an
   const executable = path.join(directory, "cli.mjs");
   writeFileSync(
     executable,
-    `#!/usr/bin/env node
+    `#!/usr/bin/env bun
 process.stdin.resume();
 process.stdin.on("end", () => process.stdout.write(JSON.stringify({result: JSON.stringify(process.argv.slice(2)), modelUsage: {"shim-model": {}}})));
 `,
@@ -48,7 +48,7 @@ test("explicit Bedrock credentials use only the chosen profile and do not mutate
   const executable = path.join(directory, "profile-cli.mjs");
   writeFileSync(
     executable,
-    `#!/usr/bin/env node
+    `#!/usr/bin/env bun
 process.stdin.resume();
 process.stdin.on("end", () => process.stdout.write(JSON.stringify({
   result: JSON.stringify({ args: process.argv.slice(2), profile: process.env.AWS_PROFILE,

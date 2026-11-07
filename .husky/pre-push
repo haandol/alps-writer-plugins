@@ -3,19 +3,19 @@
 #
 # Integration tests — the ones that need git, a browser or another external tool —
 # take minutes here and are left to CI, whose required jobs run them on every pull
-# request; `pnpm test:integration` runs them locally. Everything this hook does also
+# request; `bun run test:integration` runs them locally. Everything this hook does also
 # runs in CI, so a failure here is one CI would report too.
 #
 # Formatting still belongs to pre-commit as well (lint-staged fixes it in place);
 # checking it again here is what catches a commit made with --no-verify.
 #
 # Mirrors .github/workflows/ci.yaml:
-#   test/runtime → pnpm test (workspace suites + dependency-free ADR and ontology
+#   test/runtime → bun run test (workspace suites + dependency-free ADR and ontology
 #                  suites); this hook runs its generated-asset checks and unit tests
-#   build job    → pnpm lint, pnpm format:check, pnpm bump:check, pnpm build +
+#   build job    → bun run lint, bun run format:check, bun run bump:check, bun run build +
 #                  the committed-bundle drift check
 #   runtime job  → the bundle answers MCP initialize, and the hook starts, both
-#                  under a bare `node` with no node_modules in play
+#                  under a bare `bun` with no node_modules in play
 #
 # Bypass: SKIP_TESTS=1 git push … skips only the unit tests, for a WIP branch you
 # know is red. It is rejected for pushes that update main. Everything else always
@@ -51,36 +51,36 @@ fail() {
 CHECKS="$(mktemp -d "${TMPDIR:-/tmp}/pre-push.XXXXXX")"
 trap 'rm -rf "$CHECKS"' EXIT
 
-check_alps() { pnpm test:alps; }
+check_alps() { bun run test:alps; }
 
 # lint + formatting (CI build job)
-check_lint() { pnpm lint; }
-check_format() { pnpm format:check; }
+check_lint() { bun run lint; }
+check_format() { bun run format:check; }
 
 # Release version across all 16 sites. Only 11 are covered by a test; the five
 # rules-version stamps in templates/adr/ are checked nowhere else, and a stamp
 # left behind makes the plugin report its own templates as stale to every
 # consumer at once.
-check_bump() { pnpm bump:check; }
+check_bump() { bun run bump:check; }
 
 # What a consumer runs, with no node_modules (CI runtime job). A marketplace
 # install ships no dependencies: the MCP server is a bundle with them inlined,
-# and the adr-writer hook is Node built-ins only. Both are executed by `node`
-# directly, so `pnpm test` passing says nothing about them starting.
+# and the hooks use standard built-ins only. Users execute both with `bun`
+# directly, so `bun run test` passing says nothing about them starting.
 #
 # This runs BEFORE the rebuild below, on purpose: it must judge the bundle being
-# pushed, not one `pnpm build` just regenerated. Checking after the rebuild made
+# pushed, not one `bun run build` just regenerated. Checking after the rebuild made
 # this vacuous — a hand-edited or truncated dist/ passed, because the file under
 # test was no longer the file in the commit.
 INIT='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"pre-push","version":"0"}}}'
 check_bundle() {
-  printf '%s\n' "$INIT" | node plugins/alps-writer/dist/index.js 2>/dev/null | head -1 |
+  printf '%s\n' "$INIT" | bun plugins/alps-writer/dist/index.js 2>/dev/null | head -1 |
     grep -q '"name":"alps-writer"'
 }
 check_hook() {
   for hook in plugins/adr-writer/hooks/surface-adr-context.mjs \
     plugins/ontology-writer/hooks/surface-business-context.mjs; do
-    echo '{"hook_event_name":"SessionStart","source":"startup"}' | node "$hook" >/dev/null || return 1
+    echo '{"hook_event_name":"SessionStart","source":"startup"}' | bun "$hook" >/dev/null || return 1
   done
 }
 
@@ -102,7 +102,7 @@ if [ "${SKIP_TESTS:-}" = "1" ]; then
   fi
   echo "[pre-push] ⚠ SKIP_TESTS=1 — skipping the unit tests."
 else
-  { pnpm test:checks && pnpm test:unit:mjs; } || suite=1
+  { bun run test:checks && bun run test:unit:mjs; } || suite=1
 fi
 wait
 [ "$suite" = 0 ] ||
@@ -118,13 +118,13 @@ if [ "${SKIP_TESTS:-}" != "1" ]; then
     fail "the ALPS Writer tests failed." "Push a known-red WIP branch with: SKIP_TESTS=1 git push …"
 fi
 passed lint ||
-  fail "ESLint reported problems." "Auto-fix what it can: pnpm --filter alps-writer lint:fix"
+  fail "ESLint reported problems." "Auto-fix what it can: bun run --filter alps-writer lint:fix"
 passed format ||
-  fail "files are not Prettier-formatted." "Fix with: pnpm format"
+  fail "files are not Prettier-formatted." "Fix with: bun run format"
 passed bump ||
-  fail "the release version drifted between sites." "Fix with: pnpm bump <version>"
+  fail "the release version drifted between sites." "Fix with: bun run bump <version>"
 passed bundle ||
-  fail "the committed MCP bundle did not answer initialize." "Try it by hand: node plugins/alps-writer/dist/index.js"
+  fail "the committed MCP bundle did not answer initialize." "Try it by hand: bun plugins/alps-writer/dist/index.js"
 passed hook ||
   fail "a SessionStart hook failed to run." "The hooks seed ADR and business context when a session starts or is restored, so this breaks the plugin immediately."
 
@@ -133,7 +133,7 @@ passed hook ||
 # directly, so a stale bundle ships old code. pre-commit rebuilds it when src is
 # staged, but --no-verify defeats that; this is the backstop.
 # The build includes tsc --noEmit; do not typecheck the same tree twice.
-pnpm build ||
+bun run build ||
   fail "build failed."
 
 if ! git diff --quiet -- plugins/alps-writer/dist; then

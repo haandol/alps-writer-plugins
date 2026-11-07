@@ -5,7 +5,7 @@ Inside Codex or Claude Code, installing the alps-writer plugin wires up the MCP 
 ```bash
 git clone https://github.com/haandol/alps-writer-plugins.git
 cd alps-writer-plugins
-pnpm install && pnpm build      # produces plugins/alps-writer/dist/index.js
+bun install && bun run build      # produces plugins/alps-writer/dist/index.js
 ```
 
 Then register the absolute path:
@@ -14,14 +14,14 @@ Then register the absolute path:
 {
   "mcpServers": {
     "alps-writer": {
-      "command": "node",
+      "command": "bun",
       "args": ["/path/to/alps-writer-plugins/plugins/alps-writer/dist/index.js"]
     }
   }
 }
 ```
 
-The bundle inlines its dependencies, so it runs with a plain Node.js >= 24 — no `npm install` in the target location.
+The bundle inlines its dependencies, so it runs with a plain Bun >= 1.4.2 — no package install in the target location.
 
 ## Environment variables
 

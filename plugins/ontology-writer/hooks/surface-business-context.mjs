@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // SessionStart — when the repository has both an ADR index and a business ontology,
 // ask for the business-context query before ADR decisions or contracts change
 // and before code of a feature linked to a process step changes.

@@ -14,7 +14,7 @@ import {
   processStatus,
   ruleReach,
 } from "./ontology-lib.mjs";
-import { ontologySearchInMemory } from "./ontology-search.mjs";
+import { ontologySearch } from "./ontology-search.mjs";
 import { compareSearchHits, parseSearchQuery } from "./search/search-text.mjs";
 
 const compare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
@@ -48,18 +48,13 @@ export function navigationOptions({ limit = null, offset = 0, search = "" } = {}
  * The returned scope is independent of search/page, so hidden errors and edits
  * still prevent treating a navigation result as a settled reference.
  */
-export function projectNavigation(
-  index,
-  { target, includeRetired = false, search = "", searchHits = null },
-) {
+export function projectNavigation(index, { target, includeRetired = false, search = "" }) {
   const scope = new Set();
   const rows = new Map();
   const layerFindings = knowledgeLayerFindings(index);
   const incompleteContexts = new Set(layerFindings.map((f) => f.element));
   search = search.trim();
-  const hits = search
-    ? (searchHits ?? ontologySearchInMemory(index, search, { includeRetired }))
-    : new Map();
+  const hits = search ? ontologySearch(index, search, { includeRetired }) : new Map();
   const text = (iri, attr) => index.literal(iri, attr)[0]?.value ?? null;
   const visible = (iri) =>
     includeRetired ||

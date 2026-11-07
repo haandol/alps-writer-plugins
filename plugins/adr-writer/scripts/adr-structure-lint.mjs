@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // adr-structure-lint.mjs — deterministic self-test for ADR well-formedness.
 //
 // The companion to scripts/adr-invariants.sh. That script is the repo-wide
@@ -23,7 +23,7 @@
 // against the model, which this plugin does not read.
 //
 // Usage:
-//   node adr-structure-lint.mjs [--adr-dir docs/adr] [category] [--json]
+//   bun adr-structure-lint.mjs [--adr-dir docs/adr] [category] [--json]
 //                               [--no-invariants | --documents-only] [--warn-as-error]
 //
 //   [category]        limit to one category key (e.g. identity/login)
@@ -106,7 +106,7 @@ function usage(msg) {
 function printHelp() {
   process.stdout.write(
     `adr-structure-lint — deterministic ADR structure checker\n\n` +
-      `Usage: node adr-structure-lint.mjs [--adr-dir docs/adr] [category] [--json] [--no-invariants | --documents-only] [--warn-as-error]\n`,
+      `Usage: bun adr-structure-lint.mjs [--adr-dir docs/adr] [category] [--json] [--no-invariants | --documents-only] [--warn-as-error]\n`,
   );
 }
 

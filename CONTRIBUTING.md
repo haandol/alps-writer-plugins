@@ -157,65 +157,65 @@ git push -u origin feat/my-feature
 This project uses **ESLint** for linting and **Prettier** for code formatting.
 
 ```bash
-pnpm lint                          # Run ESLint on the MCP server (--filter alps-writer)
-pnpm --filter alps-writer lint:fix # Run ESLint with auto-fix
-pnpm format                        # Format all files with Prettier (repo-wide)
-pnpm format:check                  # Check formatting; reuse unchanged content results
+bun run lint                          # Run ESLint on the MCP server (--filter alps-writer)
+bun run --filter alps-writer lint:fix # Run ESLint with auto-fix
+bun run format                        # Format all files with Prettier (repo-wide)
+bun run format:check                  # Check formatting; reuse unchanged content results
 ```
 
-- Run `pnpm lint` and `pnpm format:check` before committing to ensure code quality
+- Run `bun run lint` and `bun run format:check` before committing to ensure code quality
 - ESLint config: `plugins/alps-writer/eslint.config.mjs` (flat config with typescript-eslint)
 - Prettier config: `.prettierrc` (repo root)
 
 ### Tests
 
 ```bash
-pnpm test:unit         # unit tests: no git, browser or other external tool (seconds)
-pnpm test:integration  # integration tests: git, a browser or another external tool
-pnpm test              # asset/guidance checks, ALPS, then every ADR, ontology, DeepEval and browser test
-pnpm bump:check        # every release-version site agrees (16 of them)
+bun run test:unit         # unit tests: no git, browser or other external tool (seconds)
+bun run test:integration  # integration tests: git, a browser or another external tool
+bun run test              # asset/guidance checks, ALPS, then every ADR, ontology, DeepEval and browser test
+bun run bump:check        # every release-version site agrees (16 of them)
 ```
 
 Tests come in two kinds, and behaviour evals are a third thing (below). A unit
 test needs no external tool: it runs in its own process, or starts only this
-repository's Node scripts, which start none either. An integration test needs
+repository's own scripts, which start none either. An integration test needs
 git, a browser or another external tool; its file is named
 `*.integration.test.mjs`, or lives in an `integration-tests/` directory
 (`plugins/adr-writer/` or `plugins/ontology-writer/`).
 Put a new test in the unit file when it needs no external tool and in the
-matching `*.integration.test.mjs` file when it does. `pnpm test:unit` runs the
-ALPS tests and the ADR, ontology and DeepEval unit tests; `pnpm test:integration` runs the
+matching `*.integration.test.mjs` file when it does. `bun run test:unit` runs the
+ALPS tests and the ADR, ontology and DeepEval unit tests; `bun run test:integration` runs the
 rest. Keep special cases of git or the file system to one representative test
 per kind.
 
-In `pnpm test`, the ALPS tests run first, then the ADR, ontology, DeepEval and browser test files share one Node worker pool,
-so independent files overlap within a single CPU-based concurrency limit. Test
-files keep process isolation and their own temporary fixtures. Run one with
-`pnpm test:alps`, `pnpm test:adr`, `pnpm test:ontology`, `pnpm test:deepeval`, or
-`pnpm test:report-rendering`. `pnpm test:workspace` runs the installed-dependency
+Tests run on Bun's test runner through `scripts/run-tests.mjs`, which splits a
+group's files across one `bun test` process per CPU (`TEST_SHARDS` overrides the
+count) and prints each shard's report, then a summary. Files in one shard share a
+process, so a test keeps its own temporary fixtures and restores any environment
+it changes. The files use the `node:test` API, which Bun implements; `bunfig.toml`
+preloads the git-shim and timezone setup for every `bun test`. Run one with
+`bun run test:alps`, `bun run test:adr`, `bun run test:ontology`, `bun run test:deepeval`, or
+`bun run test:report-rendering`. `bun run test:workspace` runs the installed-dependency
 suites and shared asset/guidance checks; CI runs the dependency-free ADR and ontology
 suites with no install — the ADR unit tests in `build` before its install, the rest
 in `runtime` — so every test runs once across the required jobs.
 
 Prettier keeps a content cache under `node_modules/.cache/prettier`, and
 `format:check` skips the files it holds as formatted. Prettier fills the cache only
-when it writes, so `pnpm format` and the pre-commit formatter run with `--cache`; a
-check adds nothing to it, and a run without `--cache` deletes it. Run `pnpm format`
+when it writes, so `bun run format` and the pre-commit formatter run with `--cache`; a
+check adds nothing to it, and a run without `--cache` deletes it. Run `bun run format`
 once after a fresh install to fill it. Changes to file content, formatting options
 or the Prettier version invalidate entries. Delete that disposable cache or run
-`pnpm exec prettier --check .` for a full scan. CI still checks every file on a
+`bunx prettier --check .` for a full scan. CI still checks every file on a
 fresh checkout.
 
-The Node test scripts also enable Node's compile cache in temporary storage and
-share its path with child CLI processes. Source or runtime changes invalidate
-compiled entries; test execution and assertions always run. CI uses runner
-temporary storage and does not upload the cache between runs. An unavailable
-cache falls back to normal execution. Set `NODE_DISABLE_COMPILE_CACHE=1` to
-disable it, or `NODE_COMPILE_CACHE` to choose a different directory.
+`bun test` runs its tests in UTC unless `TZ` is set, while a CLI a test starts
+would otherwise use the machine's zone. The timezone preload exports the zone the
+tests run in, so a date a test computes and a date its CLI records agree.
 
 On macOS, `/usr/bin/git` is a shim that looks the developer tools up through
 `xcrun` before every run, and the tests start thousands of git processes. When
-that shim is the first `git` on `PATH`, the Node test scripts put a private
+that shim is the first `git` on `PATH`, the test preload puts a private
 temporary directory holding only a link to the git it finds first on `PATH`
 for the run, and remove it at the end. It is the same git binary, so results
 do not change; elsewhere, or with another git first on `PATH`, nothing changes.
@@ -227,26 +227,26 @@ Automated in these places, so you rarely have to remember:
   typechecks only when the commit changes the package configuration or the
   dependencies — the only other inputs of that typecheck.
 - **`.husky/pre-push`** runs the fast part locally and blocks the push on any
-  failure: the generated-asset checks, the unit tests of `pnpm test:unit` (the ALPS
+  failure: the generated-asset checks, the unit tests of `bun run test:unit` (the ALPS
   Writer ones beside the rest), `lint`, `format:check`,
   `bump:check`, a boot check on the committed MCP bundle and the adr-writer hook,
   and a rebuild (with the typecheck) that fails if `plugins/alps-writer/dist/` is
   stale. Integration tests are left to CI, whose required jobs run them on every
-  pull request; run `pnpm test:integration` locally when a change touches git
+  pull request; run `bun run test:integration` locally when a change touches git
   history reading, a CLI or a browser view. The checks that only read the tree
   run while the unit tests run and report after them, in order; the rebuild waits
   for the tests. For a WIP branch you know is red: `SKIP_TESTS=1 git push …` —
   that skips only the unit tests, nothing else.
-- **`.github/workflows/ci.yaml`** splits `pnpm test` between `test`, `runtime` and
+- **`.github/workflows/ci.yaml`** splits `bun run test` between `test`, `runtime` and
   the start of `build`, and runs `lint`, `format:check`, version checks and a rebuild that fails if the
   committed `plugins/alps-writer/dist/` is stale. The `runtime` job checks what a
   marketplace install actually executes with **no install step** — the
   dependency-free adr-writer integration and ontology-writer suites in one runner
   (`build` runs adr-writer's unit tests the same way, before its install), an MCP
   `initialize` round-trip against the committed bundle, and the hooks — since a
-  consumer has no `node_modules` and the pnpm-based jobs always do. Everything is
-  on Node 24 (`engines.node >= 24`); Hooks can be skipped with `--no-verify`, CI
-  cannot. On a push to main, its `verified` job looks for the merged pull request:
+  consumer has no `node_modules` and the installed jobs always do. Every job sets
+  up only Bun, at the declared floor (`engines.bun >= 1.4.2`); no job installs
+  Node.js. Hooks can be skipped with `--no-verify`, CI cannot. On a push to main, its `verified` job looks for the merged pull request:
   when the workflow passed on that head and the pushed commit carries its tree,
   the three jobs skip instead of repeating the same checks, and otherwise they
   all run.
@@ -254,24 +254,17 @@ Automated in these places, so you rarely have to remember:
   that commit's version has no tag yet, it tags the commit and publishes the
   GitHub release, with the merged pull request's `## Release notes` section as its
   notes (GitHub's generated notes without one); otherwise it does nothing.
-- **`.github/workflows/cache.yaml`** keeps main's record of pnpm's lockfile
-  verification. pnpm 11 checks every lockfile entry against the registry before it
-  installs, and `pnpm/setup` caches that verdict, so an install of an unchanged
-  lockfile skips the check. A pull request run restores caches only from its own
-  branch and main, and CI on main skips the jobs that install, so this installs on
-  every push to main to keep the record there. The CI jobs cache no package store:
-  restoring it took longer than downloading the packages.
 
-Behaviour evals (`plugins/adr-writer/evals/`) are **not** part of `pnpm test` —
+Behaviour evals (`plugins/adr-writer/evals/`) are **not** part of `bun run test` —
 they call a real model, cost money, and are non-deterministic. Run them by hand
 when reproducing a reported LLM defect: `node evals/run.mjs --live --only <name> --runs 10`.
 
 The [rollup/sync regression suite](./plugins/adr-writer/evals/deepeval/README.md)
 adds actual fixture edits, DeepEval GEval judgments, and local HTML/JSON reports.
-Use `pnpm eval:regression --prepare` without model calls and explicitly add
-`--live` for execution. Its dependency-free harness tests and the workspace-only `test:deepeval` integration tests are part of `pnpm test`; live results
-remain outside the CI quality gate. `pnpm eval:golden` exports the dataset and
-coverage; `pnpm eval:calibration --live` evaluates the judge using authored controls
+Use `bun run eval:regression --prepare` without model calls and explicitly add
+`--live` for execution. Its dependency-free harness tests and the workspace-only `test:deepeval` integration tests are part of `bun run test`; live results
+remain outside the CI quality gate. `bun run eval:golden` exports the dataset and
+coverage; `bun run eval:calibration --live` evaluates the judge using authored controls
 whose draft labels are separate from human-reviewed ground truth.
 
 Do not delete or weaken a test to make it pass — fix the code instead.
@@ -294,7 +287,7 @@ Do not delete or weaken a test to make it pass — fix the code instead.
 
 ### Project Structure
 
-pnpm workspace. The MCP server (npm package `alps-writer`) lives in `plugins/alps-writer/`; the adr-writer plugin in `plugins/adr-writer/`. See [AGENTS.md](./AGENTS.md#repository-structure) for the full tree.
+bun run workspace. The MCP server (npm package `alps-writer`) lives in `plugins/alps-writer/`; the adr-writer plugin in `plugins/adr-writer/`. See [AGENTS.md](./AGENTS.md#repository-structure) for the full tree.
 
 ```
 plugins/alps-writer/src/
@@ -361,20 +354,20 @@ and verifies that fixture work leaves the outer checkout unchanged.
 ### Shared report-writing changes
 
 Edit `shared/report-writer/`, not the generated adr-writer and ontology-writer
-copies. Run `pnpm report-skill:sync` and `pnpm report-skill:check`.
+copies. Run `bun run report-skill:sync` and `bun run report-skill:check`.
 
 ### Scripts ontology-writer shares with adr-writer
 
-Local search is owned by `shared/search/`. Run `pnpm search:sync` after editing
-it and `pnpm search:check` to verify both plugin copies. Default CLI examples
-use Bun 1.4.2 or later; Node 24 remains a tested compatibility path. Keep query
+Local search is owned by `shared/search/`. Run `bun run search:sync` after editing
+it and `bun run search:check` to verify both plugin copies. Shipped CLIs, hooks and the
+MCP server run with Bun 1.4.2 or later, as do the tests that start them. Keep query
 semantics and ranking in the pure shared module so saved-model HTML agrees
 with CLI search. Bun subprocess checks are integration tests.
 
 ontology-writer runs copies of `adr-lint-lib.mjs`, `adr-status-transition.mjs` and
 `adr-impl-review-open.mjs`. Edit the adr-writer originals, then run
-`pnpm shared-scripts:sync`; `pnpm shared-scripts:check`, part of
-`pnpm test:checks`, rejects a stale copy. The dependency-free Mermaid
+`bun run shared-scripts:sync`; `bun run shared-scripts:check`, part of
+`bun run test:checks`, rejects a stale copy. The dependency-free Mermaid
 implementation remains in the ADR scripts; the sync step distributes it with the
 standalone skill. Global installation is an explicit
 `node scripts/sync-report-skill.mjs --global`, never a build side effect.
@@ -401,6 +394,6 @@ integration; actual model behavior requires an explicitly selected live evaluati
 ### Shared authoring guidance
 
 Edit `requirement-delegation.md` and `comprehension-load.md` under
-`plugins/adr-writer/references/`, then run `pnpm authoring-guidance:sync`.
-Commit the generated alps-writer copies too. `pnpm authoring-guidance:check`
+`plugins/adr-writer/references/`, then run `bun run authoring-guidance:sync`.
+Commit the generated alps-writer copies too. `bun run authoring-guidance:check`
 verifies that each independently installed plugin has its own matching guidance.

@@ -1,12 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { validateModel } from "../scripts/ontology-lib.mjs";
-import { ontologySearchUnits } from "../scripts/ontology-search.mjs";
 import { queryContext } from "../scripts/ontology-query.mjs";
-import { searchWithSqlite } from "../scripts/search/search-index.mjs";
 import { EXAMPLE } from "./ontology-helpers.mjs";
 import { MAPPING } from "./ontology-query-helpers.mjs";
 
@@ -38,30 +33,21 @@ test("business search matches reordered words and short Korean while preserving 
   assert.equal(invoke(model, '"quarantine parcel"').itemCount, 0);
 });
 
-test("SQLite and in-memory navigation return identical ranked pages and scope diagnostics", async () => {
-  const dir = mkdtempSync(path.join(tmpdir(), "ontology-search-"));
-  try {
-    const model = make();
-    for (const query of [
-      "확정 결제",
-      "parcel quarantine",
-      "operating-policy",
-      '"quarantine parcel"',
-    ]) {
-      const hits = await searchWithSqlite(ontologySearchUnits(model.index), query, {
-        root: dir,
-        namespace: "business",
-        cacheDir: path.join(dir, "cache"),
-      });
-      const searchHits = new Map(hits.map((hit) => [hit.id, hit]));
-      assert.deepEqual(
-        invoke(model, query, { searchHits, limit: 2 }),
-        invoke(model, query, { limit: 2 }),
-      );
-    }
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
+test("search is computed from the graph it is given: repeated pages agree and an edit shows at once", () => {
+  const model = make();
+  for (const query of [
+    "확정 결제",
+    "parcel quarantine",
+    "operating-policy",
+    '"quarantine parcel"',
+  ]) {
+    assert.deepEqual(invoke(model, query, { limit: 2 }), invoke(model, query, { limit: 2 }));
   }
+  const edited = make(
+    EXAMPLE + EXTRA.replace("결제가 완료되면 주문을 확정한다.", "환불을 확인한다."),
+  );
+  assert.ok(invoke(edited, "환불").items.some((i) => i.id === "ordering.search-case"));
+  assert.ok(!invoke(edited, "확정 결제").items.some((i) => i.id === "ordering.search-case"));
 });
 
 test("global text discovery returns BCs without internal identifiers or matched field excerpts", () => {
@@ -76,31 +62,17 @@ test("global text discovery returns BCs without internal identifiers or matched 
   assert.equal(r.items.find((i) => i.kind === "context").searchMatch.kind, "internal");
 });
 
-test("a nonmatching invalid element cannot disappear from the search scope diagnostics", async () => {
-  const dir = mkdtempSync(path.join(tmpdir(), "ontology-search-"));
-  try {
-    const model = make(
-      EXAMPLE +
-        EXTRA +
-        '\nm:ordering.broken a onto:Step ; rdfs:label "Broken" ; onto:definition "Unrelated work." ; onto:inContext m:ordering .\n',
-    );
-    const searchHits = new Map(
-      (
-        await searchWithSqlite(ontologySearchUnits(model.index), "확정", {
-          root: dir,
-          namespace: "business",
-          cacheDir: path.join(dir, "cache"),
-        })
-      ).map((hit) => [hit.id, hit]),
-    );
-    const r = invoke(model, "확정", { searchHits, limit: 1 });
-    assert.equal(r.complete, false);
-    assert.ok(r.errorCount > 0);
-    assert.equal(r.items[0].kind, "diagnostic");
-    assert.ok(r.next);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+test("a nonmatching invalid element cannot disappear from the search scope diagnostics", () => {
+  const model = make(
+    EXAMPLE +
+      EXTRA +
+      '\nm:ordering.broken a onto:Step ; rdfs:label "Broken" ; onto:definition "Unrelated work." ; onto:inContext m:ordering .\n',
+  );
+  const r = invoke(model, "확정", { limit: 1 });
+  assert.equal(r.complete, false);
+  assert.ok(r.errorCount > 0);
+  assert.equal(r.items[0].kind, "diagnostic");
+  assert.ok(r.next);
 });
 
 test("retired text stays opt-in and current model-only descriptions do not become searchable facts", () => {

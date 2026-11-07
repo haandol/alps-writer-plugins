@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // ontology.mjs — command line for the optional business ontology
 // level (docs/ontology/*.ttl). Bun is the default CLI runtime; Node 24 remains compatible.
-// Text search uses the bundled SQLite index, with no package installation.
+// Text search reads the current documents on every query; it keeps no index or cache.
 //
 // Usage:
 //   bun ontology.mjs validate [--adr-dir DIR] [--json]
@@ -80,7 +80,6 @@
 //       a missing target or an incomplete context, 2 = usage error.
 // --overview returns the complete authored BC layer by default; --context uses
 // 20 rows per page. Optional --limit (1..100) and --offset page navigation only.
-// --cache-dir DIR selects the disposable query search cache.
 // --require-layers and repeatable --layer-context also apply to impact/apply.
 
 import { createHash } from "node:crypto";
@@ -145,8 +144,6 @@ import { openReviewReport } from "./adr-impl-review-open.mjs";
 import { renderView } from "./ontology-view.mjs";
 import { currentAdrPaths, queryContext, renderContext } from "./ontology-query.mjs";
 import { navigationOptions } from "./ontology-navigation.mjs";
-import { ontologySearchUnits } from "./ontology-search.mjs";
-import { searchWithSqlite } from "./search/search-index.mjs";
 
 const rel = (p) => path.relative(process.cwd(), p).split(path.sep).join("/");
 // Text output keeps a list this long on one line; a longer one takes a line per item.
@@ -180,7 +177,6 @@ function parseArgs(argv) {
     search: "",
     limit: null,
     offset: 0,
-    cacheDir: undefined,
     requireLayers: false,
     layerContexts: [],
     draft: null,
@@ -224,7 +220,6 @@ function parseArgs(argv) {
       if (opts.target) usage("give exactly one query target");
       opts.target = { kind: "overview" };
     } else if (a === "--search" && command === "query") opts.search = value();
-    else if (a === "--cache-dir" && command === "query") opts.cacheDir = value();
     else if (["--limit", "--offset"].includes(a) && command === "query") {
       const v = value();
       if (!/^\d+$/.test(v)) usage(`${a} requires an integer`);
@@ -496,7 +491,7 @@ function diff(opts) {
   return result.same ? 0 : 1;
 }
 
-async function query(opts) {
+function query(opts) {
   const { model, findings, index, mapping } = levelFindings(opts);
   if (!model) {
     const none = {
@@ -508,22 +503,7 @@ async function query(opts) {
     process.stdout.write(opts.json ? JSON.stringify(none, null, 2) + "\n" : `${none.note}\n`);
     return 0;
   }
-  const searchHits =
-    index && opts.search
-      ? new Map(
-          (
-            await searchWithSqlite(
-              ontologySearchUnits(index, { includeRetired: opts.includeRetired }),
-              opts.search,
-              {
-                root: process.cwd(),
-                namespace: "business:" + path.resolve(opts.ontologyDir),
-                cacheDir: opts.cacheDir,
-              },
-            )
-          ).map((hit) => [hit.id, hit]),
-        )
-      : null;
+  // Search runs over the graph just parsed from the current documents; no index.
   const result = queryContext({
     index,
     mapping,
@@ -534,7 +514,6 @@ async function query(opts) {
     target: opts.target,
     includeRetired: opts.includeRetired,
     search: opts.search,
-    searchHits,
     limit: opts.limit,
     offset: opts.offset,
   });
@@ -2111,7 +2090,7 @@ function view(opts) {
 
 const opts = parseArgs(process.argv.slice(2));
 // The exit code, not an exit: a pipe still receiving the output would be cut off.
-process.exitCode = await {
+process.exitCode = {
   validate,
   format,
   diff,

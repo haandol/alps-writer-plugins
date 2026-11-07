@@ -336,7 +336,7 @@ test("ontology-edit shows every item in one summary and writes or cascades nothi
   );
   has(
     EDIT,
-    "Then save the approved ADR revisions in place; each affected ADR is `Proposed` through `node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs`, this plugin's copy of adr-writer's transition.",
+    "Then save the approved ADR revisions in place; each affected ADR is `Proposed` through `bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs`, this plugin's copy of adr-writer's transition.",
   );
   has(
     EDIT,

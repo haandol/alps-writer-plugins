@@ -1,14 +1,13 @@
 name: CI
 
 # 테스트·빌드·포맷 게이트. pre-push 훅이 같은 검사를 로컬에서 돌리지만, 훅은
-# `pnpm install`을 한 사람에게만 설치되고 `--no-verify`로 우회할 수 있다.
-# 여기서 한 번 더 막는다. 로컬 pnpm test의 전체 검증을 test와 runtime에 나누고,
+# `bun install`을 한 사람에게만 설치되고 `--no-verify`로 우회할 수 있다.
+# 여기서 한 번 더 막는다. 로컬 `bun run test`의 전체 검증을 test와 runtime에 나누고,
 # build / format:check / bump:check는 로컬과 같은 스크립트로 실행한다.
 #
-# Node 는 전부 24 로 통일한다(engines.node ">= 24"). 낮은 버전을 매트릭스로 돌려봤자
-# pnpm 11 은 node:sqlite 때문에 >= 22.13 을, `node --test` 의 glob 은 21+ 을 요구해서
-# 설치·실행 자체가 안 되기 때문이다 — 검증되지 않는 하한을 선언해 두는 대신 선언을
-# 실제에 맞췄다.
+# 런타임은 Bun 하나다(engines.bun ">= 1.4.2"). 사용자가 플러그인을 Bun으로 실행하므로
+# 테스트·빌드·배포 검증도 모두 같은 Bun으로 돌리고, Node 는 설치하지 않는다. setup-bun 은
+# 선언한 하한 버전을 설치해, 그 하한에서 실제로 동작하는지 확인한다.
 #
 # job 세 개:
 #   test       — 워크스페이스 검증·ALPS·DeepEval·브라우저 테스트를 실행한다.
@@ -79,7 +78,7 @@ jobs:
           echo "This workflow passed on pull request head $head, whose tree $SHA carries; the jobs skip."
 
   # Together with runtime and build's no-install tests, this covers every check in local
-  # `pnpm test`.
+  # `bun run test`.
   # Keep the required job names test/build/runtime stable for branch protection.
   test:
     needs: verified
@@ -89,36 +88,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install pnpm
-        uses: pnpm/setup@v3
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2, Node 24 action
         with:
-          # The version comes from packageManager in package.json. Only pnpm here:
-          # setup-node sets up Node.js and the install is a step of its own. This action
-          # keeps the record of pnpm's lockfile verification, so an install skips checking
-          # an unchanged lockfile against the registry. The package store is not cached:
-          # restoring it took longer than downloading the packages.
-          install: false
-          node-version-file: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "24"
+          bun-version: "1.4.2"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Workspace tests
-        env:
-          # Reuse compiled modules in child processes, never cached test results.
-          NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
-        run: pnpm test:workspace
+        run: bun run test:workspace
 
   # What a CONSUMER actually runs. A marketplace install ships no node_modules:
   # the MCP server is an esbuild bundle with its dependencies inlined, and the
-  # scripts and hooks use runtime built-ins; search uses Bun's SQLite. They must
-  # work under bare Node/Bun with no package install — something the pnpm-based jobs
-  # cannot tell us, since they always have a populated node_modules.
+  # scripts, hooks and search use built-ins only. Users run all of them with Bun,
+  # so they must work under a bare Bun with no package install — something the
+  # installed jobs cannot tell us, since they always have a populated node_modules.
   runtime:
     needs: verified
     if: ${{ !cancelled() && !needs.verified.outputs.head }}
@@ -127,45 +112,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "24"
-
-      - name: Assert this Node satisfies the declared engines range
-        # The server and hooks retain the Node compatibility floor.
-        run: |
-          node -e '
-            const {engines} = require("./package.json");
-            const min = engines.node.replace(/[^0-9.]/g, "").split(".").map(Number);
-            const cur = process.versions.node.split(".").map(Number);
-            const ok = cur[0] > min[0] || (cur[0] === min[0] && (cur[1] ?? 0) >= (min[1] ?? 0));
-            if (!ok) { console.error(`node ${process.versions.node} is below engines.node ${engines.node}`); process.exit(1); }
-            console.log(`node ${process.versions.node} satisfies engines.node ${engines.node}`);
-          '
-
-      - name: Set up Bun for shipped search commands
+      - name: Set up Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2, Node 24 action
         with:
           bun-version: "1.4.2"
 
       # The rest of the dependency-free suites — adr-writer's integration tests and every
-      # ontology-writer test — run the way a contributor without pnpm would, in one runner so
-      # their files share its workers. build runs adr-writer's unit tests the same way.
+      # ontology-writer test — run the way a contributor who installed nothing would.
+      # build runs adr-writer's unit tests the same way.
       - name: adr-writer integration and ontology-writer suites (no install)
-        env:
-          NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
-          ONTOLOGY_TEST_RUNTIME: bun
-        run: node --test "plugins/adr-writer/tests/*.integration.test.mjs" "plugins/ontology-writer/tests/**/*.test.mjs"
+        run: bun scripts/run-tests.mjs integration-adr-ontology
 
       # The committed bundle is what a marketplace install executes. Boot it over
       # stdio and require a well-formed MCP initialize result — a bundle that
-      # merely parses is not evidence it runs on this Node.
+      # merely parses is not evidence it runs on the users' Bun.
       - name: alps-writer MCP bundle boots and answers initialize
         run: |
           printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
-            | timeout 30 node plugins/alps-writer/dist/index.js > /tmp/init.json
-          node -e '
+            | timeout 30 bun plugins/alps-writer/dist/index.js > /tmp/init.json
+          bun -e '
             const fs = require("fs");
             const line = fs.readFileSync("/tmp/init.json", "utf8").split("\n").find(Boolean);
             if (!line) { console.error("the server produced no response"); process.exit(1); }
@@ -178,10 +143,13 @@ jobs:
       # The hook seeds each new or restored session context, so a runtime it
       # cannot start on breaks the plugin when that session begins.
       - name: adr-writer hook runs
-        run: echo '{"hook_event_name":"SessionStart","source":"startup"}' | node plugins/adr-writer/hooks/surface-adr-context.mjs
+        run: echo '{"hook_event_name":"SessionStart","source":"startup"}' | bun plugins/adr-writer/hooks/surface-adr-context.mjs
+
+      - name: report-writer hook runs
+        run: echo '{"hook_event_name":"SessionStart","source":"startup"}' | bun plugins/adr-writer/skills/report-writer/scripts/surface-report-context.mjs
 
       - name: ontology-writer hook runs
-        run: echo '{"hook_event_name":"SessionStart","source":"startup"}' | node plugins/ontology-writer/hooks/surface-business-context.mjs
+        run: echo '{"hook_event_name":"SessionStart","source":"startup"}' | bun plugins/ontology-writer/hooks/surface-business-context.mjs
 
   build:
     needs: verified
@@ -191,55 +159,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install pnpm
-        uses: pnpm/setup@v3
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2, Node 24 action
         with:
-          # The version comes from packageManager in package.json. Only pnpm here:
-          # setup-node sets up Node.js and the install is a step of its own. This action
-          # keeps the record of pnpm's lockfile verification, so an install skips checking
-          # an unchanged lockfile against the registry. The package store is not cached:
-          # restoring it took longer than downloading the packages.
-          install: false
-          node-version-file: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "24"
+          bun-version: "1.4.2"
 
       # adr-writer's dependency-free unit tests, before anything is installed, as a
-      # contributor without pnpm runs them; runtime runs the rest. This job has the time.
+      # contributor who installed nothing runs them; runtime runs the rest.
       - name: adr-writer unit tests (no install)
-        env:
-          NODE_COMPILE_CACHE: ${{ runner.temp }}/node-compile-cache
-        run: node --test "plugins/adr-writer/tests/!(*.integration).test.mjs"
+        run: bun scripts/run-tests.mjs unit-adr
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
+        run: bun run lint
 
       - name: Check formatting
-        run: pnpm format:check
+        run: bun run format:check
 
       # The release version lives in 16 sites; the five rules-version stamps in
       # templates/adr/ are covered by no test. A stamp left behind makes the
       # plugin report its own templates as stale to every consumer at once.
       - name: Check version consistency
-        run: pnpm bump:check
+        run: bun run bump:check
 
       # plugins/alps-writer/dist/ is committed — the marketplace installs run it
       # directly. Rebuild and fail if the result differs from what was pushed,
       # which is exactly the "src changed but dist/ wasn't rebuilt" case the
       # pre-commit hook handles locally and --no-verify defeats.
       - name: Build
-        run: pnpm build
+        run: bun run build
 
       - name: Verify the committed bundle is up to date
         run: |
           if ! git diff --quiet -- plugins/alps-writer/dist; then
-            echo "::error::plugins/alps-writer/dist/ is stale — run 'pnpm build' and commit the result."
+            echo "::error::plugins/alps-writer/dist/ is stale — run 'bun run build' and commit the result."
             git diff --stat -- plugins/alps-writer/dist
             exit 1
           fi

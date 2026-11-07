@@ -154,6 +154,17 @@
       ],
       "dependsOn": []
     },
+    "delivery/runtime": {
+      "feature": "Plugin runtime",
+      "adrs": [
+        {
+          "path": "docs/adr/delivery/runtime/0001-run-plugins-and-tooling-on-bun.md",
+          "status": "Accepted (2026-11-08)",
+          "summary": "플러그인 실행물과 저장소의 설치·테스트·빌드·릴리스 도구를 Bun 1.4.2 이상 하나로 실행하고 보안 고정과 테스트 범위를 유지한다"
+        }
+      ],
+      "dependsOn": ["delivery/repository-protection"]
+    },
     "reporting/domain-navigation": {
       "feature": "Domain-first report navigation",
       "adrs": [
@@ -226,7 +237,7 @@
         {
           "path": "docs/adr/ontology/0002-retrieve-business-context-for-agents.md",
           "status": "Accepted (2026-11-07)",
-          "summary": "BC 조망과 상세 관계를 보존하면서 로컬 색인으로 다중어·한글 검색, 관련도와 원문 근거를 제공한다"
+          "summary": "BC 조망과 상세 관계를 보존하면서 색인 없이 현재 원본에서 다중어·한글 검색, 관련도와 원문 근거를 제공한다"
         },
         {
           "path": "docs/adr/ontology/0003-govern-ontology-lifecycle-and-cascade.md",
@@ -258,7 +269,7 @@
         {
           "path": "docs/adr/adr-authoring/decision-search/0001-discover-adrs-with-local-search.md",
           "status": "Accepted (2026-11-07)",
-          "summary": "로컬 검색은 다중어·짧은 한글과 본문 절에서 문서 후보를 찾고 원문 위치·상태로 이어지며 파생 색인을 현재 원본에서 재생성한다"
+          "summary": "로컬 검색은 다중어·짧은 한글과 본문 절에서 문서 후보를 찾고 원문 위치·상태로 이어지며 색인 없이 검색마다 현재 원본을 읽는다"
         }
       ],
       "dependsOn": ["adr-authoring/current-state"]

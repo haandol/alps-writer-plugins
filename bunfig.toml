@@ -1,0 +1,10 @@
+[run]
+# Package bins (prettier, eslint, tsc, husky, …) declare `#!/usr/bin/env node`.
+# Run them on Bun too, whether or not a Node.js is installed.
+bun = true
+
+[test]
+# The git preload keeps the macOS xcrun shim out of the thousands of git
+# processes the tests start; the timezone preload makes the CLIs a test starts
+# use the same calendar as the test (bun test runs in UTC).
+preload = ["./scripts/test-git.mjs", "./scripts/test-timezone.mjs"]

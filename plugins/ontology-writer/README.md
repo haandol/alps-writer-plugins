@@ -25,19 +25,18 @@ bun scripts/ontology.mjs query --step ordering.confirm-order
 
 `--overview` reads the whole small BC layer by default. It never expands internal
 events, steps, rules or ADRs; an optional `--limit` pages this layer too. Whole-model
-Text search runs with Bun and a local SQLite FTS5 index. Words match in any
+Text search runs over the graph each query has just read from the current Turtle
+files; it keeps no index or cache. Words match in any
 order, quoted phrases require adjacency, and short Korean/substrings remain
 searchable. Matches are ranked by identifiers, names and text relevance; inside
 a BC they carry the matched fields and original source locations. The saved
 HTML uses the same query and ranking rules in memory, without a database or
 network request in the browser.
 
-The source Turtle files and ADR index remain authoritative. The search cache
-is updated from the current source snapshot and can be deleted safely; corrupt,
-busy or unwritable caches use an equivalent in-memory search. `--cache-dir` or
-`WRITER_SEARCH_CACHE_DIR` selects the cache location. Validation, change flags
-and mandatory detail relationships are still checked independently of ranking.
-Use Bun 1.4.2 or later; explicit Node 24 invocation remains compatible.
+The source Turtle files and ADR index remain authoritative, and an edit shows in
+the next query because nothing derived is stored. Validation, change flags and
+mandatory detail relationships are still checked independently of ranking.
+Use Bun 1.4.2 or later.
 
 `--overview --search` returns BC candidates, then `--context --search` shows the
 internal matches. Context responses page elements, relationships and diagnostics
@@ -155,7 +154,7 @@ Model documents use the closed vocabulary in `templates/ontology/vocabulary.ttl`
 - The ADR index, `docs/adr/.mapping.json`, belongs to adr-writer. A category's `realizes` list is the only link between a feature and the steps it realizes: this plugin writes those links in the same change unit as the model and validates them, and adr-writer checks only their shape and moves them when categories split or merge.
 - A model change that affects ADRs needs adr-writer: the ADR revisions in its approval summary follow `/adr-new`'s draft rules, and `/adr-impl` implements them. Without adr-writer such a change stops before the approval summary; a change that affects no ADR is saved by this plugin alone.
 - With a model present, adr-writer's session directive adds one line saying that business context is checked through this plugin. Without this plugin, ADR work states that the business context was not checked.
-- This plugin carries copies of the adr-writer scripts it runs — reading the ADR index and ADR Status, recording a Status transition, opening a report — and of the shared report-writer skill. Edit the originals; `pnpm shared-scripts:sync` and `pnpm report-skill:sync` refresh the copies, and CI fails on a stale one.
+- This plugin carries copies of the adr-writer scripts it runs — reading the ADR index and ADR Status, recording a Status transition, opening a report — and of the shared report-writer skill. Edit the originals; `bun run shared-scripts:sync` and `bun run report-skill:sync` refresh the copies, and CI fails on a stale one.
 
 ## Hook
 

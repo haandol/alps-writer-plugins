@@ -26,8 +26,7 @@ function fixture() {
     return rel;
   };
   const save = () => write("docs/adr/.mapping.json", JSON.stringify(mapping, null, 2));
-  const search = (query, extra = {}) =>
-    searchAdrs({ root, query, cacheDir: path.join(root, "cache"), ...extra });
+  const search = (query, extra = {}) => searchAdrs({ root, query, ...extra });
   return {
     root,
     mapping,
@@ -188,8 +187,8 @@ test("invalid query syntax and page input fail before changing sources", async (
     f.add("orders", "0001-work.md", "Work", "needle");
     f.save();
     const before = readFileSync(path.join(f.root, "docs/adr/.mapping.json"));
-    await assert.rejects(f.search('"unclosed'), /unclosed/);
-    await assert.rejects(f.search("needle", { limit: 0 }), /limit/);
+    assert.throws(() => f.search('"unclosed'), /unclosed/);
+    assert.throws(() => f.search("needle", { limit: 0 }), /limit/);
     assert.deepEqual(readFileSync(path.join(f.root, "docs/adr/.mapping.json")), before);
   } finally {
     f.close();

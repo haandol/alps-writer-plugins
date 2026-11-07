@@ -21,7 +21,7 @@ against the copied tree:
 ```bash
 (
   cd "$adr_draft_root" || exit 1
-  node "${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs" --adr-dir docs/adr --documents-only "$adr_category"
+  bun "${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs" --adr-dir docs/adr --documents-only "$adr_category"
 )
 ```
 

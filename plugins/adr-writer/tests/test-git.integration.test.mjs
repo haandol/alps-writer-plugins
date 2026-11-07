@@ -14,7 +14,7 @@ const probe = `
   import path from "node:path";
   const git = path.join(process.env.PATH.split(path.delimiter)[0], "git");
   const link = (() => { try { return lstatSync(git).isSymbolicLink() ? readlinkSync(git) : null; } catch { return null; } })();
-  const child = spawnSync(process.execPath, ["--import", ${JSON.stringify(preload)}, "-p", "process.env.PATH"], { encoding: "utf8" });
+  const child = spawnSync(process.execPath, ["--preload", ${JSON.stringify(preload)}, "-p", "process.env.PATH"], { encoding: "utf8" });
   if (child.status !== 0) throw new Error(child.stderr);
   console.log(JSON.stringify({ own: process.env.PATH, link, child: child.stdout.trim() }));
 `;
@@ -23,11 +23,12 @@ const probe = `
 function run(dir, PATH, extra = {}) {
   const env = { ...process.env, TMPDIR: dir, PATH, ...extra };
   if (!("TEST_GIT_CHECKED" in extra)) delete env.TEST_GIT_CHECKED;
-  const result = spawnSync(
-    process.execPath,
-    ["--import", preload, "--input-type=module", "-e", probe],
-    { cwd: dir, env, encoding: "utf8", timeout: 20_000 },
-  );
+  const result = spawnSync(process.execPath, ["--preload", preload, "-e", probe], {
+    cwd: dir,
+    env,
+    encoding: "utf8",
+    timeout: 20_000,
+  });
   assert.equal(result.status, 0, result.stderr);
   return JSON.parse(result.stdout);
 }

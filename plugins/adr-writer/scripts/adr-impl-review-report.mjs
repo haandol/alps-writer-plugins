@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // adr-impl-review-report.mjs — render an ADR impl-review punch list as a
 // self-contained HTML review page, and collect the user's per-finding
 // decisions back as feedback.json.
@@ -22,7 +22,7 @@
 // stance a long-lived HTTP server would break.
 //
 // Usage:
-//   node adr-impl-review-report.mjs <findings.json> [--out PATH] [--stdout]
+//   bun adr-impl-review-report.mjs <findings.json> [--out PATH] [--stdout]
 //
 //   <findings.json>   the punch list produced from the subagent's report
 //                     (schema below). "-" reads the JSON from stdin.
@@ -1814,7 +1814,7 @@ function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help || !opts.in) {
     process.stdout.write(
-      "Usage: node adr-impl-review-report.mjs <findings.json|-> [--out PATH] [--stdout]\n",
+      "Usage: bun adr-impl-review-report.mjs <findings.json|-> [--out PATH] [--stdout]\n",
     );
     process.exit(opts.help ? 0 : 2);
   }

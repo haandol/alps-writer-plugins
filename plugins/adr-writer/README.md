@@ -69,14 +69,13 @@ matches remain supported. Results group each document once and include its
 matched fields, source ranges and both current and indexed Status. Follow the
 page continuation to inspect further candidates.
 
-The SQLite FTS5 index contains only derived search data. File changes, moves and
-deletions update it, and an unavailable or corrupt cache uses the same search in
-memory. `--cache-dir` or `WRITER_SEARCH_CACHE_DIR` selects its location. No
-database server, embedding provider or package installation is required.
+Every search reads the current registered files and keeps no index or cache, so
+file changes, moves and deletions show in the next search. No database, embedding
+provider or package installation is required.
 
 Search never edits a source or changes approval. Read diagnostics and full
 candidate documents; an admitted change still reads the full ADR mapping and
-checks prerequisites. The command also retains a Node 24 compatibility path.
+checks prerequisites.
 
 ## Adopt an existing project
 
@@ -187,7 +186,7 @@ Six dependency-free scripts let the cycle verify ADRs and deliver implementation
 Run over a project's live ADRs:
 
 ```bash
-node <plugin>/scripts/adr-structure-lint.mjs [category]   # deterministic structure + invariants
+bun <plugin>/scripts/adr-structure-lint.mjs [category]   # deterministic structure + invariants
 bash <plugin>/scripts/adr-invariants.sh                   # reverse-reference oracle only
 ```
 

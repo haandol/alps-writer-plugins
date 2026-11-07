@@ -65,7 +65,7 @@ cost, or a change beyond the requested scope. Keep the review read-only.
 ### 2. Run the deterministic harness once, for the whole scope
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs --documents-only [category]   # omit the category to lint every ADR
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs --documents-only [category]   # omit the category to lint every ADR
 ```
 
 Run this **once for the entire scope**, not per ADR — it already walks every ADR and the mapping in one pass. It mechanically settles the format, existence, and consistency half of the rules (Status enum and date format, required sections, canonical filenames, path depth, anti-pattern category segments, Decision Drivers and alternatives counts, Related links resolving, `dependsOn` integrity, mapping↔disk consistency and status↔body agreement, values written in code-constant form, and — internally via `adr-invariants.sh --prd-only` — ADR→PRD back-references).

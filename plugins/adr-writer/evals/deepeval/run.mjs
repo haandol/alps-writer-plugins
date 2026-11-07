@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -101,9 +101,9 @@ function snapshotLabel(directory, variant, hash) {
 
 const help = `DeepEval GEval evaluation for adr-sync / adr-rollup
 
-  pnpm eval:deepeval --live --baseline HEAD --jobs 2 --runs 1
-  pnpm eval:deepeval --live --from .codex/evals/captured-run --jobs 2
-  pnpm eval:deepeval --prepare --from .codex/evals/captured-run
+  bun run eval:deepeval --live --baseline HEAD --jobs 2 --runs 1
+  bun run eval:deepeval --live --from .codex/evals/captured-run --jobs 2
+  bun run eval:deepeval --prepare --from .codex/evals/captured-run
 
 Without --from, the target skills run in isolated fixtures with --capture-only,
 then DeepEval GEval evaluates the actual evidence. The custom judge is skipped.

@@ -7,11 +7,11 @@
 staged="$(git diff --cached --name-only)"
 if printf '%s\n' "$staged" | grep -q '^plugins/alps-writer/src/'; then
   echo "[pre-commit] alps-writer/src changed → rebuilding bundle (dist/)"
-  pnpm --filter alps-writer build || exit 1
+  bun run --filter alps-writer build || exit 1
   git add plugins/alps-writer/dist
 elif printf '%s\n' "$staged" |
-  grep -q -E '^(plugins/alps-writer/(package\.json|tsconfig\.json)|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml)$'; then
-  pnpm --filter alps-writer exec tsc --noEmit || exit 1
+  grep -q -E '^(plugins/alps-writer/(package\.json|tsconfig\.json)|package\.json|bun\.lock|bunfig\.toml)$'; then
+  bun run --filter alps-writer typecheck || exit 1
 fi
 
-pnpm lint-staged
+bunx --bun lint-staged

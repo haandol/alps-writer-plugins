@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // publish-release.mjs — publish the GitHub release a main commit's version needs.
 //
 // The Release workflow runs this once CI has passed on a commit pushed to main. A
@@ -10,7 +10,7 @@
 // request and the CI run that passed on it follows.
 //
 // Usage:
-//   node scripts/publish-release.mjs <commit-sha> [--repo OWNER/NAME] [--dry-run]
+//   bun scripts/publish-release.mjs <commit-sha> [--repo OWNER/NAME] [--dry-run]
 //
 // Needs `gh` signed in (GH_TOKEN in the workflow). The repository defaults to
 // GITHUB_REPOSITORY, and CI_RUN_URL names the CI run. --dry-run prints the decision

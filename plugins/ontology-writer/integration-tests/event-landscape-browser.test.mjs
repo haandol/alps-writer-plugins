@@ -44,7 +44,8 @@ async function pixelChange(page, first, second) {
       }
       return { changed, maxDelta };
     },
-    [first.toString("base64"), second.toString("base64")],
+    // A screenshot may be a Uint8Array, whose toString ignores the encoding.
+    [Buffer.from(first).toString("base64"), Buffer.from(second).toString("base64")],
   );
 }
 before(async () => {

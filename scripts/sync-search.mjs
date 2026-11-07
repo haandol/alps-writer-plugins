@@ -1,11 +1,11 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Each independently installed plugin carries the same local search implementation.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const files = ["search-text.mjs", "search-index.mjs"];
+const files = ["search-text.mjs"];
 const plugins = ["adr-writer", "ontology-writer"];
 if (process.argv.slice(2).some((arg) => arg !== "--check"))
   throw new Error("Usage: sync-search.mjs [--check]");
@@ -20,7 +20,7 @@ for (const plugin of plugins) {
     if (check) {
       if (!existsSync(dest) || !readFileSync(dest).equals(source)) {
         console.error(
-          "Shared search drift: " + path.relative(root, dest) + "; run pnpm search:sync",
+          "Shared search drift: " + path.relative(root, dest) + "; run bun run search:sync",
         );
         failed = true;
       }

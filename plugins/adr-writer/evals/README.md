@@ -2,14 +2,14 @@
 
 For a single preparation/execution command and self-contained HTML across
 classification, controlled Skill selection and DeepEval document operations, use
-[Skill evaluation](./skills/README.md): `pnpm eval:skills --prepare --runs 1 --open`.
+[Skill evaluation](./skills/README.md): `bun run eval:skills --prepare --runs 1 --open`.
 It adds execution Skill-on/off comparisons and reuses the scorers below.
-`pnpm eval:llm --prepare --runs 1` selects the response probes. Its explicit
+`bun run eval:llm --prepare --runs 1` selects the response probes. Its explicit
 `--live` path adds DeepEval GEval semantic judgment to every catalog probe and
 keeps mechanical file/action/schema checks. The compatibility runner below also uses an independent Bedrock GPT-6.1 judge.
-`pnpm eval:report <run-directory>` regenerates either report format without model calls.
+`bun run eval:report <run-directory>` regenerates either report format without model calls.
 
-`pnpm test` checks fixtures, serialization, boundaries and judge transport.
+`bun run test` checks fixtures, serialization, boundaries and judge transport.
 Live evals run the actual model and judge what its response and actions mean.
 Word/phrase presence and evaluation-only tail records do not decide behavioral success.
 
@@ -21,7 +21,7 @@ misjudgement usually means the rule is present but out-competed by another
 instruction; a deterministic one usually means the rule is absent, unreachable,
 or contradicted.
 
-**Not part of `pnpm test`.** These call a real model: they cost money, take
+**Not part of `bun run test`.** These call a real model: they cost money, take
 minutes, and are non-deterministic. Never gate CI on them.
 
 For **rollup/sync prompt regression with real document edits, LLM semantic
@@ -31,9 +31,9 @@ adapted from EncBird and Pixelbank and optional baseline-versus-candidate runs:
 
 ```bash
 # From the repository root; no model call:
-pnpm eval:regression --prepare
+bun run eval:regression --prepare
 # Explicit live model execution:
-pnpm eval:regression --live --skill adr-sync --baseline HEAD --runs 1
+bun run eval:regression --live --skill adr-sync --baseline HEAD --runs 1
 ```
 
 The existing runner below and its `--changed` selection do not execute this
@@ -421,7 +421,7 @@ whitespace. The unified skill evaluator additionally checks captured tool calls
 and judges the visible explanation with fixed GEval obligations; the legacy
 runner's record checks alone do not establish semantic intent fit.
 
-Prepare these cases without model calls using `pnpm eval:skills --prepare --only
+Prepare these cases without model calls using `bun run eval:skills --prepare --only
 impl-uses-intent --runs 1 --out <ignored-run-directory>`. The SDK integration
 tests use stub providers to verify that semantic failure and local failure each
 prevent PASS. They do not measure a real model's adherence rate.

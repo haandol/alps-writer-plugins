@@ -1,7 +1,7 @@
 // Search only authored business fields. Graph membership and diagnostics remain
 // the responsibility of navigation and validation.
 import { ATTRIBUTES, RDFS, elementId, inRetiredOnly, isRetired } from "./ontology-lib.mjs";
-import { parseSearchQuery, prepareSearchUnit, rankSearchUnits } from "./search/search-text.mjs";
+import { searchUnits } from "./search/search-text.mjs";
 
 const FIELDS = ATTRIBUTES.filter((field) => field.kind === "fact" && field.iri !== RDFS + "label");
 const location = (triple) =>
@@ -40,8 +40,9 @@ export function ontologySearchUnits(index, { includeRetired = false } = {}) {
     .map((iri) => ontologySearchUnit(index, iri));
 }
 
-/** Pure projection for in-process callers; the CLI supplies SQLite-backed hits. */
-export function ontologySearchInMemory(index, search, options) {
-  const units = ontologySearchUnits(index, options).map(prepareSearchUnit);
-  return new Map(rankSearchUnits(units, parseSearchQuery(search)).map((hit) => [hit.id, hit]));
+/** Rank the current graph's units on every call; there is no index to keep fresh. */
+export function ontologySearch(index, search, options) {
+  return new Map(
+    searchUnits(ontologySearchUnits(index, options), search).map((hit) => [hit.id, hit]),
+  );
 }

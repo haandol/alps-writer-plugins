@@ -1,15 +1,29 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { execFile, spawn } from "node:child_process";
-import { once } from "node:events";
+import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdtempSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { searchCachePath } from "../scripts/search/search-index.mjs";
 
 const run = promisify(execFile);
+
+// Files a search left in the private home, apart from Bun's own transpiler cache.
+const searchFiles = (home) =>
+  readdirSync(home, { recursive: true }).filter(
+    (p) =>
+      ![".cache", path.join(".cache", "bun")].includes(p) &&
+      !p.startsWith(path.join(".cache", "bun") + path.sep),
+  );
 const scripts = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../scripts");
 
 function setup() {
@@ -37,32 +51,25 @@ function setup() {
     );
     return root;
   };
-  const cacheDir = path.join(dir, "cache");
+  // A private home and cache root: searches must leave both empty.
+  const home = path.join(dir, "home");
+  mkdirSync(home);
+  const env = { ...process.env, HOME: home, XDG_CACHE_HOME: path.join(home, ".cache") };
   const command = path.join(installed, "adr-search.mjs");
   const query = async (root, query) =>
     JSON.parse(
       (
-        await run(
-          "bun",
-          [
-            "--no-install",
-            command,
-            "--root",
-            root,
-            "--query",
-            query,
-            "--cache-dir",
-            cacheDir,
-            "--json",
-          ],
-          { timeout: 15000, maxBuffer: 2 * 1024 * 1024 },
-        )
+        await run("bun", ["--no-install", command, "--root", root, "--query", query, "--json"], {
+          timeout: 15000,
+          maxBuffer: 2 * 1024 * 1024,
+          env,
+        })
       ).stdout,
     );
   return {
     dir,
     installed,
-    cacheDir,
+    home,
     makeRepo,
     query,
     close: () => rmSync(dir, { recursive: true, force: true }),
@@ -80,18 +87,13 @@ test("a standalone Bun install searches Korean source text with no package or si
     assert.equal(result.results.length, 1);
     assert.equal(result.results[0].source.lineStart, 7);
     assert.deepEqual(readFileSync(source), before);
-    const file = searchCachePath({
-      root,
-      namespace: "decisions:" + path.join(root, "docs/adr") + ":",
-      cacheDir: f.cacheDir,
-    });
-    assert.equal(readFileSync(file).subarray(0, 15).toString(), "SQLite format 3");
+    assert.deepEqual(searchFiles(f.home), []);
   } finally {
     f.close();
   }
 });
 
-test("concurrent Bun searches keep each worktree's current source and cache independent", async () => {
+test("concurrent Bun searches keep each worktree's current source independent", async () => {
   const f = setup();
   try {
     const left = f.makeRepo("left", "alpha marker");
@@ -111,36 +113,6 @@ test("concurrent Bun searches keep each worktree's current source and cache inde
     assert.equal(results[0].scope.root, left);
     assert.equal(results[1].scope.root, right);
   } finally {
-    f.close();
-  }
-});
-
-test("a held SQLite writer does not change Bun search results or source files", async () => {
-  const f = setup();
-  let holder;
-  try {
-    const root = f.makeRepo("project", "alpha marker");
-    const expected = await f.query(root, "alpha");
-    const file = searchCachePath({
-      root,
-      namespace: "decisions:" + path.join(root, "docs/adr") + ":",
-      cacheDir: f.cacheDir,
-    });
-    const script = path.join(f.dir, "hold.mjs");
-    writeFileSync(
-      script,
-      'import {Database} from "bun:sqlite"; const db=new Database(process.argv[2]); db.exec("BEGIN IMMEDIATE"); console.log("ready"); const timer=setInterval(()=>{},1000); process.on("SIGTERM",()=>{db.exec("ROLLBACK");db.close();clearInterval(timer);});',
-    );
-    holder = spawn("bun", [script, file], { stdio: ["ignore", "pipe", "pipe"] });
-    const ready = await once(holder.stdout, "data", { signal: AbortSignal.timeout(10000) });
-    assert.match(String(ready[0]), /ready/);
-    assert.deepEqual(await f.query(root, "alpha"), expected);
-  } finally {
-    if (holder && holder.exitCode === null) {
-      const done = once(holder, "exit");
-      holder.kill("SIGTERM");
-      await done;
-    }
     f.close();
   }
 });

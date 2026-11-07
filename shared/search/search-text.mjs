@@ -94,18 +94,15 @@ function frequency(text, term) {
 }
 
 /**
- * Rank a fixed corpus using its term matches. SQLite supplies the posting sets
- * in the CLI; the browser computes them in memory. Both use identical BM25
- * term statistics and explicit identifier/title precedence.
+ * Rank a fixed corpus of prepared units with BM25 term statistics and explicit
+ * identifier/title precedence. Matching is computed from the current units on
+ * every call; no index or cache exists, so nothing can fall out of date.
  */
-export function rankSearchUnits(units, terms, postings = null) {
+export function rankSearchUnits(units, terms) {
   if (!terms.length) return [];
-  const matching =
-    postings ??
-    terms.map(
-      (term) =>
-        new Set(units.filter((unit) => searchTermMatches(unit, term)).map((unit) => unit.id)),
-    );
+  const matching = terms.map(
+    (term) => new Set(units.filter((unit) => searchTermMatches(unit, term)).map((unit) => unit.id)),
+  );
   const averageLength = units.reduce((n, unit) => n + unit.length, 0) / Math.max(1, units.length);
   const query = terms.join(" ");
   const results = [];
@@ -148,6 +145,15 @@ export function rankSearchUnits(units, terms, postings = null) {
     });
   }
   return results.sort(compareSearchHits);
+}
+
+/** Search raw source units read from the current files. */
+export function searchUnits(rawUnits, query) {
+  const terms = parseSearchQuery(query);
+  const units = rawUnits.map(prepareSearchUnit);
+  if (new Set(units.map((unit) => unit.id)).size !== units.length)
+    throw new TypeError("search unit ids must be unique");
+  return rankSearchUnits(units, terms);
 }
 
 /** Keep direct matches ahead of incidental text; ties use stable identifiers. */
