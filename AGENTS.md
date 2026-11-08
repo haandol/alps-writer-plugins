@@ -181,7 +181,8 @@ AI drafts until human review, and their agreement is not human-ground-truth accu
 └── marketplace.json      # Codex marketplace manifest
 package.json              # Private workspace root (prettier/husky/lint-staged); version pinned 0.0.0
 bun.lock                  # Bun lockfile (workspace: plugins/alps-writer)
-bunfig.toml               # bun test preloads (git shim, timezone)
+bunfig.toml               # Bun runs package bins; bun test preloads (git shim, timezone)
+stubs/                    # Empty stand-ins for dependencies' unused packages (see //overrides)
 .github/workflows/
 ├── ci.yaml               # Bun test/build/runtime jobs + dist-drift gate; a main push reuses its PR's pass
 └── release.yaml          # After CI passes on main, tags a new version and publishes its release
@@ -193,7 +194,7 @@ scripts/
 plugins/alps-writer/      # PRD plugin (bundles + commits its own MCP server)
 ├── .claude-plugin/plugin.json   # mcpServers only; skills/ (alps-init, lite-alps-init, feature-to-adr) are auto-discovered
 ├── .codex-plugin/plugin.json    # Codex metadata; registers skills + .mcp.json
-├── .mcp.json                    # Codex MCP command (node ./dist/index.js)
+├── .mcp.json                    # Codex MCP command (bun ./dist/index.js)
 ├── package.json          # private; build tooling for the bundle
 ├── tsconfig.json, eslint.config.mjs
 ├── src/
@@ -599,8 +600,10 @@ typechecks, bundles and releases with the same Bun — no Node.js or pnpm
 anywhere. CI pins `setup-bun` to the declared floor (`engines.bun >= 1.4.2`) so
 the floor is the version actually verified. Bun overrides name a package, not a
 version range, so each security floor in `package.json` applies to every copy of
-its package; the `//overrides` note records the one that crosses a major version
-(protobufjs) and the tests that exercise it.
+its package; the `//overrides` note says what each floor keeps. DeepEval declares
+two OpenTelemetry trace exporters the evals never load (telemetry is opted out);
+the overrides point them at the empty packages in `stubs/`, which keeps gRPC and
+protobufjs out of the install. A stub throws if anything loads it.
 
 The `runtime` job still exists because installing is not the same as shipping: a
 marketplace install has no `node_modules` at all — the MCP server is a bundle with
