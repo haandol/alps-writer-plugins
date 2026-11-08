@@ -169,7 +169,8 @@ window.createOntologyKnowledgeSpace = (options) => {
       height = Math.max(270, rows * 175 + 100);
     group.plate.style.width = `${width}px`;
     group.plate.style.height = `${height}px`;
-    group.button.style.setProperty("--node-y", `${-height / 2 - 65}px`);
+    const labelY = -height / 2 - 65;
+    group.button.style.setProperty("--node-y", `${labelY}px`);
     group.inside.replaceChildren();
     let selectedPoint = null;
     shown.forEach((key, i) => {
@@ -205,7 +206,7 @@ window.createOntologyKnowledgeSpace = (options) => {
       const empty = node("p", T.noMatches, "ks-empty ks-billboard");
       group.inside.append(empty);
     }
-    return { width, height: height + 160, selectedPoint };
+    return { width, height: height + 160, selectedPoint, labelY: positions.get(id).y + labelY };
   }
   function show(next) {
     const key = next.level === "contexts" ? "contexts" : JSON.stringify([next.id, next.selected]);
@@ -268,6 +269,11 @@ window.createOntologyKnowledgeSpace = (options) => {
       preset = fit(layout.width, layout.height, positions.get(next.id), true);
       if (layout.selectedPoint) {
         preset = { ...fit(700, 620, layout.selectedPoint, true), tilt: 0, depth: 130 };
+        // A selected tile in a lower row would push the BC label above the plate up
+        // into the heading. Center on the tile only as far as the label stays below it.
+        const heading = (viewport.clientWidth < 500 ? 90 : 170) + 60;
+        const room = (viewport.clientHeight || 640) / 2 + preset.panY - heading;
+        preset.y = Math.min(preset.y, layout.labelY + room / preset.zoom);
       }
     }
     move(cameras.get(key) ?? preset, changedLevel && !first);
