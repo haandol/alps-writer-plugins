@@ -23,8 +23,7 @@ Each plugin installs and works on its own. They connect where their artifacts do
 flowchart LR
     PRD["PRD<br/>alps-writer"] -->|/feature-to-adr| ADR["ADRs<br/>adr-writer"]
     Model["Business ontology<br/>ontology-writer"] -->|steps realized by| ADR
-    ADR -->|/adr-impl| Code["Code and tests"]
-    Code -->|/adr-impl-review| Report["Evidence report"]
+    ADR -->|/adr-impl| Code["Code, tests<br/>and review report"]
 ```
 
 The Full ALPS → ADR handoff needs alps-writer and adr-writer; an ontology that
@@ -78,9 +77,13 @@ fixes that restore intended behavior and behavior-preserving refactors do not.
 
 ## What you see
 
-| Browse the business model                                                  | Read a review                                                        |
-| -------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| ![Business structure view](./docs/images/ontology-business-structure.webp) | ![Report from the bundled example](./docs/images/report-writer.webp) |
+**Browse the business model** — the business structure view of `/ontology-view`:
+
+![Business structure view](./docs/images/ontology-business-structure.webp)
+
+**Read a review** — a standalone report from the bundled example:
+
+![Report from the bundled example](./docs/images/report-writer.webp)
 
 Reports work offline. Self-check questions are optional, and
 the ordinary main-session completion response never prints Q1 or starts grading.
@@ -127,6 +130,7 @@ plugins/
 ├── adr-writer/        # ADR skills, hooks, templates, validation scripts, evals
 └── ontology-writer/   # ontology skills, hook, Turtle vocabulary, CLI and HTML views
 shared/                # canonical files copied into plugins (search, report-writer)
+stubs/                 # empty stand-ins for dependencies' unused packages
 scripts/               # sync, version, release, test-runner and screenshot scripts
 docs/                  # usage guides, ADRs for this repository, README images
 ```

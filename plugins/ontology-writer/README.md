@@ -28,16 +28,16 @@ directive asks the agent to query the business context first.
 bounded contexts (BCs), search inside one, and open any element with its facts,
 relations and realizing ADRs:
 
-| Search inside a BC                                               | Open a step                                                 |
-| ---------------------------------------------------------------- | ----------------------------------------------------------- |
-| ![Search inside a BC](../../docs/images/ontology-bc-search.webp) | ![Step detail](../../docs/images/ontology-step-detail.webp) |
+![Search inside a BC](../../docs/images/ontology-bc-search.webp)
+
+![Step detail](../../docs/images/ontology-step-detail.webp)
 
 "Whole flow & structure" shows every domain event across contexts, and the
 business structure as a 3D city with each process's implementation status:
 
-| Event flow                                                | Business structure                                                        |
-| --------------------------------------------------------- | ------------------------------------------------------------------------- |
-| ![Event flow](../../docs/images/ontology-event-flow.webp) | ![Business structure](../../docs/images/ontology-business-structure.webp) |
+![Event flow](../../docs/images/ontology-event-flow.webp)
+
+![Business structure](../../docs/images/ontology-business-structure.webp)
 
 Screenshots come from the [template model](./templates/ontology/example.ttl);
 `bun run docs:screenshots` regenerates them.
