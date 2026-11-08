@@ -105,7 +105,7 @@ evidence; this build does not establish execution success.
 ## 4. One report
 
 When a model exists, prepare its semantic diff in a draft
-(`node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs impact --draft <draft> --json`).
+(`bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs impact --draft <draft> --json`).
 Start the draft from a copy of every current model document — copies, never
 links (`cp -RL`, or write the text) — then add the candidates; never compare or save a draft holding only candidates, because every
 current element it lacks would count as removed. Never propose deleting a

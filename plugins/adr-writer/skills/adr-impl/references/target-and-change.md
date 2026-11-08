@@ -37,7 +37,7 @@ when that workflow selects it.
    **Every Status transition in this workflow must use the deterministic status script.** Do not edit a Status value with `apply_patch`, regex replacement, or a search for the first matching string — `.mapping.json` commonly contains many identical `Proposed` or dated `Accepted` values. After updating the ADR decision text, use:
 
    ```bash
-   node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs <target-adr-path> Proposed --summary "<current one-line decision summary>"
+   bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs <target-adr-path> Proposed --summary "<current one-line decision summary>"
    ```
 
    The script addresses the mapping record by its exact ADR `path`, requires exactly one match, refuses a pre-existing body/index mismatch, and updates the body and index together.

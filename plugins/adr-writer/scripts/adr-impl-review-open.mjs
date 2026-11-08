@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { spawnSync } from "node:child_process";
 import { closeSync, mkdtempSync, openSync, readFileSync, rmSync, statSync } from "node:fs";
@@ -118,7 +118,7 @@ function runOpener(spawn, opener) {
 
 function usage(message) {
   if (message) process.stderr.write(`adr-impl-review-open: ${message}\n`);
-  process.stderr.write("Usage: node adr-impl-review-open.mjs <report.html>\n");
+  process.stderr.write("Usage: bun adr-impl-review-open.mjs <report.html>\n");
   process.exitCode = 2;
 }
 

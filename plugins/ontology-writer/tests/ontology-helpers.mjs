@@ -20,7 +20,11 @@ export function cli(dir, args, env = process.env) {
   try {
     return {
       code: 0,
-      out: execFileSync("node", [CLI, ...args], { cwd: dir, encoding: "utf8", env }),
+      out: execFileSync(process.execPath, ["--no-install", CLI, ...args], {
+        cwd: dir,
+        encoding: "utf8",
+        env,
+      }),
     };
   } catch (e) {
     return { code: e.status, out: `${e.stdout ?? ""}${e.stderr ?? ""}` };

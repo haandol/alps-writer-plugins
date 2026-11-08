@@ -19,7 +19,7 @@ reduced motion, can be disabled and stop while hidden. Spatial height, area and
 placement never add business order, importance or ownership facts.
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs view [--include-retired] [--lang en|ko] \
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs view [--include-retired] [--lang en|ko] \
   [--no-open | --browser <name>]
 ```
 

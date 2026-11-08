@@ -507,9 +507,9 @@ test("a write that fails and cannot be restored names the file left changed", ()
     let out;
     try {
       out = execFileSync(
-        "node",
+        process.execPath,
         [
-          "--import",
+          "--preload",
           path.join(PLUGIN_ROOT, "tests/fixtures/fail-write.mjs"),
           CLI,
           "apply",

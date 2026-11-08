@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Copy the ADR Writer scripts that Ontology Writer also runs: reading and checking
 // the ADR index and ADR Status, recording a Status transition, and opening a report.
 // A marketplace install ships each plugin alone, so Ontology Writer carries its own
@@ -22,7 +22,7 @@ for (const name of FILES) {
   if (check) {
     if (!existsSync(dest) || !readFileSync(dest).equals(content)) {
       console.error(
-        `Shared script drift: ${path.relative(ROOT, dest)}; run pnpm shared-scripts:sync`,
+        `Shared script drift: ${path.relative(ROOT, dest)}; run bun run shared-scripts:sync`,
       );
       mismatch = true;
     }

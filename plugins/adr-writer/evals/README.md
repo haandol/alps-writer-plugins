@@ -2,14 +2,14 @@
 
 For a single preparation/execution command and self-contained HTML across
 classification, controlled Skill selection and DeepEval document operations, use
-[Skill evaluation](./skills/README.md): `pnpm eval:skills --prepare --runs 1 --open`.
+[Skill evaluation](./skills/README.md): `bun run eval:skills --prepare --runs 1 --open`.
 It adds execution Skill-on/off comparisons and reuses the scorers below.
-`pnpm eval:llm --prepare --runs 1` selects the response probes. Its explicit
+`bun run eval:llm --prepare --runs 1` selects the response probes. Its explicit
 `--live` path adds DeepEval GEval semantic judgment to every catalog probe and
 keeps mechanical file/action/schema checks. The compatibility runner below also uses an independent Bedrock GPT-6.1 judge.
-`pnpm eval:report <run-directory>` regenerates either report format without model calls.
+`bun run eval:report <run-directory>` regenerates either report format without model calls.
 
-`pnpm test` checks fixtures, serialization, boundaries and judge transport.
+`bun run test` checks fixtures, serialization, boundaries and judge transport.
 Live evals run the actual model and judge what its response and actions mean.
 Word/phrase presence and evaluation-only tail records do not decide behavioral success.
 
@@ -21,7 +21,7 @@ misjudgement usually means the rule is present but out-competed by another
 instruction; a deterministic one usually means the rule is absent, unreachable,
 or contradicted.
 
-**Not part of `pnpm test`.** These call a real model: they cost money, take
+**Not part of `bun run test`.** These call a real model: they cost money, take
 minutes, and are non-deterministic. Never gate CI on them.
 
 For **rollup/sync prompt regression with real document edits, LLM semantic
@@ -31,9 +31,9 @@ adapted from EncBird and Pixelbank and optional baseline-versus-candidate runs:
 
 ```bash
 # From the repository root; no model call:
-pnpm eval:regression --prepare
+bun run eval:regression --prepare
 # Explicit live model execution:
-pnpm eval:regression --live --skill adr-sync --baseline HEAD --runs 1
+bun run eval:regression --live --skill adr-sync --baseline HEAD --runs 1
 ```
 
 The existing runner below and its `--changed` selection do not execute this
@@ -44,14 +44,14 @@ separate suite.
 ```bash
 cd plugins/adr-writer
 
-node evals/run.mjs --list                        # scenario names
-node evals/run.mjs --dry-run --only review-      # build fixtures, print prompts, no agent
-node evals/run.mjs --live --only review-catches         # one scenario, one run
-node evals/run.mjs --live --only review-catches --runs 10   # rates
-node evals/run.mjs --changed main --list          # affected scenarios only
-node evals/run.mjs --live --changed main --runs 5        # affected branch + working-tree scenarios
-node evals/run.mjs --live --runs 5 --out /tmp/report.md     # everything, shareable report
-node evals/run.mjs --live --only review-catches --out /tmp/report.md \
+bun evals/run.mjs --list                        # scenario names
+bun evals/run.mjs --dry-run --only review-      # build fixtures, print prompts, no agent
+bun evals/run.mjs --live --only review-catches         # one scenario, one run
+bun evals/run.mjs --live --only review-catches --runs 10   # rates
+bun evals/run.mjs --changed main --list          # affected scenarios only
+bun evals/run.mjs --live --changed main --runs 5        # affected branch + working-tree scenarios
+bun evals/run.mjs --live --runs 5 --out /tmp/report.md     # everything, shareable report
+bun evals/run.mjs --live --only review-catches --out /tmp/report.md \
   --include-transcript --include-fixture-paths        # explicit sensitive detail
 ```
 
@@ -72,9 +72,9 @@ The agent command is configurable, since this plugin ships for two clients and
 models outlive this directory:
 
 ```bash
-node evals/run.mjs --live  # isolated default adapter and logged fixture tools
-ADR_EVAL_CMD="claude -p --model opus --allowedTools ''" node evals/run.mjs --live
-ADR_EVAL_CMD="codex exec" node evals/run.mjs --live
+bun evals/run.mjs --live  # isolated default adapter and logged fixture tools
+ADR_EVAL_CMD="claude -p --model opus --allowedTools ''" bun evals/run.mjs --live
+ADR_EVAL_CMD="codex exec" bun evals/run.mjs --live
 ```
 
 The target command receives the prompt on **stdin** and prints the reply to stdout.
@@ -91,7 +91,7 @@ write an ADR, so they need write access to the fixture directory:
 
 ```bash
 ADR_EVAL_CMD="claude -p --add-dir . --allowedTools 'Read Write Edit Bash'" \
-  node evals/run.mjs --live --only author-
+  bun evals/run.mjs --live --only author-
 ```
 
 Exit code is 0 whenever at least one run was scored, **including when checks
@@ -358,7 +358,7 @@ ADR_EVAL_REPO=~/git/pixelbank \
 ADR_EVAL_ADR=docs/adr/token/0002-free-trial.md \
 ADR_EVAL_VALUES="2회,3회,1회" \
 ADR_EVAL_CMD="claude -p --allowedTools 'Read Grep Glob'" \
-  node evals/run.mjs --live --only review-real-repo-adr --runs 3 --out /tmp/report.md
+  bun evals/run.mjs --live --only review-real-repo-adr --runs 3 --out /tmp/report.md
 ```
 
 The ADR, its sibling category, the repo's own rule docs, and **everything the ADR
@@ -421,7 +421,7 @@ whitespace. The unified skill evaluator additionally checks captured tool calls
 and judges the visible explanation with fixed GEval obligations; the legacy
 runner's record checks alone do not establish semantic intent fit.
 
-Prepare these cases without model calls using `pnpm eval:skills --prepare --only
+Prepare these cases without model calls using `bun run eval:skills --prepare --only
 impl-uses-intent --runs 1 --out <ignored-run-directory>`. The SDK integration
 tests use stub providers to verify that semantic failure and local failure each
 prevent PASS. They do not measure a real model's adherence rate.

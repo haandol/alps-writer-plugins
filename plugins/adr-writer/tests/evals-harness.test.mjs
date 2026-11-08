@@ -33,7 +33,7 @@ test("comprehension scoring prompts include the shipping rubric without requirin
 });
 
 function runEvals(args, cmd) {
-  const r = spawnSync("node", [RUN, ...args], {
+  const r = spawnSync(process.execPath, [RUN, ...args], {
     cwd: PLUGIN_ROOT,
     encoding: "utf8",
     // The runner keeps each fixture as evidence; here they live in a scratch folder.
@@ -205,7 +205,7 @@ test("review fixtures are valid repos by the shipped lint", async () => {
     // the target repo holds, which is not this harness's business.
     if (s.name.startsWith("author-") || needsEnv(s)) continue;
     const { dir } = await built(file);
-    const r = spawnSync("node", [lint, "--no-invariants", "--json"], {
+    const r = spawnSync(process.execPath, [lint, "--no-invariants", "--json"], {
       cwd: dir,
       encoding: "utf8",
     });

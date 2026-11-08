@@ -14,13 +14,11 @@ import {
   processStatus,
   ruleReach,
 } from "./ontology-lib.mjs";
+import { ontologySearch } from "./ontology-search.mjs";
+import { compareSearchHits, parseSearchQuery } from "./search/search-text.mjs";
 
 const compare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const sorted = (values) => [...new Set(values)].sort(compare);
-const normalize = (text) =>
-  String(text ?? "")
-    .normalize("NFKC")
-    .toLowerCase();
 const DETAIL_KINDS = {
   BoundedContext: "context",
   Process: "process",
@@ -28,17 +26,6 @@ const DETAIL_KINDS = {
   BusinessConcept: "concept",
   BusinessEvent: "event",
 };
-const FACT_TEXT = [
-  `${RDFS}label`,
-  "definition",
-  "coreLogic",
-  "reactionCondition",
-  "basis",
-  "startCondition",
-  "businessOutcome",
-  "observedResult",
-  "openScope",
-];
 const NAVIGATION_NOTE =
   "Navigation only: summaries, search matches and pages are not complete business-contract evidence. Follow the next page and relevant boundary/detail queries; no match is not evidence that no business rule applies. Read realizing ADRs for implementation obligations.";
 
@@ -49,6 +36,7 @@ export function navigationOptions({ limit = null, offset = 0, search = "" } = {}
   if (!Number.isSafeInteger(offset) || offset < 0)
     throw new Error("navigation --offset must be a non-negative safe integer");
   if (typeof search !== "string") throw new Error("navigation --search must be text");
+  parseSearchQuery(search);
   return { limit, offset, search: search.trim() };
 }
 
@@ -65,7 +53,8 @@ export function projectNavigation(index, { target, includeRetired = false, searc
   const rows = new Map();
   const layerFindings = knowledgeLayerFindings(index);
   const incompleteContexts = new Set(layerFindings.map((f) => f.element));
-  const needle = normalize(search.trim());
+  search = search.trim();
+  const hits = search ? ontologySearch(index, search, { includeRetired }) : new Map();
   const text = (iri, attr) => index.literal(iri, attr)[0]?.value ?? null;
   const visible = (iri) =>
     includeRetired ||
@@ -110,25 +99,17 @@ export function projectNavigation(index, { target, includeRetired = false, searc
     memberships.set(iri, value);
     return value;
   };
-  // The indexed graph and search term stay fixed during this synchronous read.
-  // A source can appear in many rows; test its text once, only as far as needed.
-  const searchMatches = new Map();
-  const matching = (iri) => {
-    if (!needle) return false;
-    if (!searchMatches.has(iri))
-      searchMatches.set(
-        iri,
-        normalize(elementId(iri)).includes(needle) ||
-          FACT_TEXT.some((field) =>
-            index.literal(iri, field).some((o) => normalize(o.value).includes(needle)),
-          ),
-      );
-    return searchMatches.get(iri);
-  };
+  const matching = (iri) => hits.has(iri);
   const add = (key, row, sources) => {
     for (const iri of sources) scope.add(iri);
-    if (search && !sources.some(matching)) return;
-    rows.set(key, { key, ...row });
+    const best = search
+      ? sources
+          .map((iri) => hits.get(iri))
+          .filter(Boolean)
+          .sort(compareSearchHits)[0]
+      : null;
+    if (search && !best) return;
+    rows.set(key, { key, ...row, ...(best ? { searchMatch: best } : {}) });
   };
   const contextCard = (iri) => ({
     ...ref(iri),
@@ -151,11 +132,16 @@ export function projectNavigation(index, { target, includeRetired = false, searc
     // they cannot be projected to a valid BC card.
     for (const iri of index.subjects.keys()) scope.add(iri);
     const matches = new Map();
+    const bestByContext = new Map();
     if (search) {
       for (const iri of sorted(index.subjects.keys()).filter(visible)) {
         if (!matching(iri)) continue;
-        for (const context of contextsOf(iri))
+        for (const context of contextsOf(iri)) {
           matches.set(context, (matches.get(context) ?? 0) + 1);
+          const hit = hits.get(iri);
+          if (!bestByContext.has(context) || compareSearchHits(hit, bestByContext.get(context)) < 0)
+            bestByContext.set(context, hit);
+        }
       }
     }
     for (const c of contexts) {
@@ -165,7 +151,18 @@ export function projectNavigation(index, { target, includeRetired = false, searc
         key,
         kind: "context",
         ...contextCard(c),
-        ...(search ? { matchingElements: matches.get(c), query: { ...query(c), search } } : {}),
+        ...(search
+          ? {
+              matchingElements: matches.get(c),
+              query: { ...query(c), search },
+              searchMatch: {
+                id: elementId(c),
+                tier: bestByContext.get(c).tier,
+                score: bestByContext.get(c).score,
+                kind: bestByContext.get(c).id === c ? bestByContext.get(c).kind : "internal",
+              },
+            }
+          : {}),
       });
     }
     // Read declared upper knowledge only. Lower-level event and rule edges
@@ -375,7 +372,10 @@ export function pageNavigation(result, options) {
   const diagnostics = overview ? [] : detailDiagnostics(errors, layerFindings, changes);
   const all = [
     ...diagnostics.map((d, i) => ({ key: `diagnostic:${i}`, ...d })),
-    ...items.sort((a, b) => compare(a.key, b.key)),
+    ...items.sort(
+      (a, b) =>
+        (search ? compareSearchHits(a.searchMatch, b.searchMatch) : 0) || compare(a.key, b.key),
+    ),
   ];
   const selected = all.slice(offset, offset + limit);
   const nextOffset = offset + selected.length < all.length ? offset + selected.length : null;

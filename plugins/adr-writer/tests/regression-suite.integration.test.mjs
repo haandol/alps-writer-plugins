@@ -141,7 +141,12 @@ test("the eleven cases have reproducible, executable fixtures and complete sourc
     const tests = tools.call("run_check", { kind: "policy-tests" });
     const lint = tools.call("run_check", { kind: "structure" });
     assert.equal(tests.exitCode, 0, `${item.id}: ${tests.stdout}${tests.stderr}`);
-    assert.match(tests.stdout, /\btests [1-9]\d*/, `${item.id}: policy tests must actually run`);
+    // bun test reports to stderr; its summary names how many tests ran.
+    assert.match(
+      tests.stdout + tests.stderr,
+      /\bRan [1-9]\d* tests?\b/,
+      `${item.id}: policy tests must actually run`,
+    );
     assert.doesNotMatch(tests.stderr, /skipping running files/);
     assert.equal(lint.exitCode, 0, `${item.id}: ${lint.stdout}${lint.stderr}`);
   }
@@ -311,7 +316,7 @@ test("CLI adapter rejects empty and failed outputs without any provider calls", 
   const executable = path.join(directory, "fake-claude");
   writeFileSync(
     executable,
-    '#!/usr/bin/env node\nprocess.stdin.resume();process.stdin.on("end",()=>console.log(JSON.stringify({result:""})));\n',
+    '#!/usr/bin/env bun\nprocess.stdin.resume();process.stdin.on("end",()=>console.log(JSON.stringify({result:""})));\n',
   );
   chmodSync(executable, 0o755);
   await assert.rejects(
@@ -320,7 +325,7 @@ test("CLI adapter rejects empty and failed outputs without any provider calls", 
   );
   writeFileSync(
     executable,
-    '#!/usr/bin/env node\nprocess.stdin.resume();process.stdin.on("end",()=>console.log(JSON.stringify({is_error:true,result:"stub failure"})));\n',
+    '#!/usr/bin/env bun\nprocess.stdin.resume();process.stdin.on("end",()=>console.log(JSON.stringify({is_error:true,result:"stub failure"})));\n',
   );
   await assert.rejects(
     () => invokeClaude({ prompt: "test", cwd: directory, executable }),

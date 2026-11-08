@@ -48,10 +48,10 @@ Keep existing business-change approval, history and downstream contract checks.
 ## Retrieve at the needed resolution
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs query --overview
-node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs query --context ordering --search payment
-node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs query --context ordering --offset 20
-node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs query --step ordering.confirm-order
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs query --overview
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs query --context ordering --search payment
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs query --context ordering --offset 20
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs query --step ordering.confirm-order
 ```
 
 For broad or unlocated work, read the whole lightweight BC layer, choose the

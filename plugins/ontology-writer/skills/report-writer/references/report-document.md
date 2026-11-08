@@ -10,8 +10,8 @@ the run directory prepared through [review artifact storage](review-artifacts.md
 for both the source document and rendered output:
 
 ```sh
-node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --out <run-directory>/report.html
-node <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --out <run-directory>/report.md --format markdown
+bun <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --out <run-directory>/report.html
+bun <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --out <run-directory>/report.md --format markdown
 ```
 
 The CLI defaults to HTML and never opens a browser itself. After verification,

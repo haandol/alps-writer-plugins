@@ -1,7 +1,7 @@
 {
   "name": "alps-writer",
   "description": "Author Full or Lite ALPS documents through a guided MCP workflow. Use /alps-research to review item evidence and errors, or hand Full ALPS features to adr-writer.",
-  "version": "0.11.3",
+  "version": "0.12.0",
   "author": {
     "name": "haandol"
   },
@@ -11,7 +11,7 @@
   "keywords": ["mcp", "alps", "prd", "product-requirements", "specification", "ai"],
   "mcpServers": {
     "alps-writer": {
-      "command": "node",
+      "command": "bun",
       "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.js"]
     }
   }

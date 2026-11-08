@@ -551,7 +551,7 @@ test("adr-impl uses a risk-selected refactor assessment before final review", ()
   assert.match(artifactContract, /Materialize and validate both modes/i);
   assert.match(
     artifactContract,
-    /node \$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/adr-impl-review-open\.mjs <artifact-dir>\/adr-impl-review-report\.html/i,
+    /bun \$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/adr-impl-review-open\.mjs <artifact-dir>\/adr-impl-review-report\.html/i,
   );
   assert.match(artifactContract, /attempts the host's default browser exactly once/i);
   assert.match(

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { mkdirSync, existsSync, readdirSync, writeFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -65,7 +65,7 @@ export async function main(args) {
   }
   if (options.help || (!options.prepare && !options.live)) {
     process.stdout.write(
-      "pnpm eval:calibration --prepare | --live [--split all|development|holdout] [--jobs 2] [--runs 1]\nUses authored reference evidence, not new agent executions. Draft expected labels are NOT human review. Defaults to Bedrock GPT-6.1 Sol / default / us-east-1.\n",
+      "bun run eval:calibration --prepare | --live [--split all|development|holdout] [--jobs 2] [--runs 1]\nUses authored reference evidence, not new agent executions. Draft expected labels are NOT human review. Defaults to Bedrock GPT-6.1 Sol / default / us-east-1.\n",
     );
     return 0;
   }

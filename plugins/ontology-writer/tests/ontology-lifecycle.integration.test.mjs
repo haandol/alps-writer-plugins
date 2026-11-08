@@ -6,7 +6,6 @@ import assert from "node:assert/strict";
 import { cpSync, existsSync, readFileSync, renameSync, rmSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import { pathToFileURL } from "node:url";
 import { cachedRepo, commitAll, initRepo, withTmp, write, writeAdrFiles } from "./helpers.mjs";
 import { ACCEPTED, EXAMPLE, cli } from "./ontology-helpers.mjs";
 import { MAPPING } from "./ontology-lifecycle-helpers.mjs";
@@ -441,7 +440,7 @@ test("the dates a save records are ISO calendar dates whatever locale data the r
       "us-dates.mjs",
       'Date.prototype.toLocaleDateString = () => "11/1/2026";\n',
     );
-    const env = { ...process.env, NODE_OPTIONS: `--import ${pathToFileURL(preload).href}` };
+    const env = { ...process.env, BUN_OPTIONS: `--preload ${preload}` };
     cpSync(path.join(dir, "docs/ontology"), path.join(dir, "draft"), { recursive: true });
     write(
       dir,

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // bump-version.mjs — set the release version everywhere it is user-visible.
 //
 // Why a script: the version lives in five places that must agree, and bumping
@@ -12,12 +12,12 @@
 // purpose (see the "//version" note in each). Do not "fix" them to match.
 //
 // Usage:
-//   node scripts/bump-version.mjs 0.4.23     set an explicit version
-//   node scripts/bump-version.mjs patch      bump the patch component
-//   node scripts/bump-version.mjs minor|major
-//   node scripts/bump-version.mjs --check    verify every site agrees (exit 1 if not)
+//   bun scripts/bump-version.mjs 0.4.23     set an explicit version
+//   bun scripts/bump-version.mjs patch      bump the patch component
+//   bun scripts/bump-version.mjs minor|major
+//   bun scripts/bump-version.mjs --check    verify every site agrees (exit 1 if not)
 //
-// A bump then runs `pnpm build`, so the committed bundle carries the new serverInfo.
+// A bump then runs `bun run build`, so the committed bundle carries the new serverInfo.
 //
 // Exit: 0 = done / in sync, 1 = drift found (--check) or the rebuild failed, 2 = usage error.
 
@@ -166,14 +166,14 @@ function main() {
     process.stdout.write(`  ${rel} — ${found}\n`);
   }
   process.stdout.write(
-    `\n${current} → ${version}\nRebuilding dist/ with the new serverInfo: pnpm build\n`,
+    `\n${current} → ${version}\nRebuilding dist/ with the new serverInfo: bun run build\n`,
   );
   // The committed bundle carries the serverInfo literal, so the bump rebuilds it instead of
   // leaving a step to remember.
-  const build = spawnSync("pnpm", ["build"], { cwd: REPO, stdio: "inherit" });
+  const build = spawnSync(process.execPath, ["run", "build"], { cwd: REPO, stdio: "inherit" });
   if (build.status !== 0)
     die(
-      `pnpm build ${build.error ? `could not start (${build.error.code})` : "failed"}; run it before committing the bump`,
+      `bun run build ${build.error ? `could not start (${build.error.code})` : "failed"}; run it before committing the bump`,
       1,
     );
 }

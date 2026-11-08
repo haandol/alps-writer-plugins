@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { existsSync, mkdirSync, readdirSync, writeFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -67,8 +67,8 @@ ${details("expectedOutput — 고정 의무 JSON", JSON.stringify({ obligations:
 <details><summary>이 사례의 고정 출처</summary>${item.provenance.map((p) => `<p><code>${esc(p.source)}</code><br><span class="meta">${p.commit} · ${p.sha256}</span></p>`).join("")}</details></article>`,
   )
   .join("")}
-<section class="box" id="calibration"><h2>판정기 보정 세트 — 사람 검수 전</h2><p>정상 기대 1, 위반 기대 0의 초안입니다. 아래 대상 의무는 각 반례의 주된 검토 지점이며 한 변경이 여러 의무에 영향을 줄 수 있습니다. 작성된 기준 행동·합성 시간 기록을 실제 에이전트의 실행 로그라고 제시하지 않습니다.</p><div class="table"><table><thead><tr><th>예시</th><th>원 사례</th><th>기대</th><th>대상 의무</th><th>분할</th></tr></thead><tbody>${report.calibration.map((e) => `<tr><td>${esc(e.id)}</td><td>${esc(CASE_CODES[e.caseId])}</td><td>${e.expectedScore}</td><td>${esc(e.targetObligation ?? "정상 표현")}</td><td>${esc(e.split)}</td></tr>`).join("")}</tbody></table></div><pre>pnpm eval:calibration --prepare
-pnpm eval:calibration --live --jobs 2</pre><p>같은 기준 출력에서 실패 조건 하나를 바꾸는 반례와 정상 동의 표현을 포함합니다. 초안 일치율을 사람 정답 정확도로 표시하지 않습니다.</p></section>
+<section class="box" id="calibration"><h2>판정기 보정 세트 — 사람 검수 전</h2><p>정상 기대 1, 위반 기대 0의 초안입니다. 아래 대상 의무는 각 반례의 주된 검토 지점이며 한 변경이 여러 의무에 영향을 줄 수 있습니다. 작성된 기준 행동·합성 시간 기록을 실제 에이전트의 실행 로그라고 제시하지 않습니다.</p><div class="table"><table><thead><tr><th>예시</th><th>원 사례</th><th>기대</th><th>대상 의무</th><th>분할</th></tr></thead><tbody>${report.calibration.map((e) => `<tr><td>${esc(e.id)}</td><td>${esc(CASE_CODES[e.caseId])}</td><td>${e.expectedScore}</td><td>${esc(e.targetObligation ?? "정상 표현")}</td><td>${esc(e.split)}</td></tr>`).join("")}</tbody></table></div><pre>bun run eval:calibration --prepare
+bun run eval:calibration --live --jobs 2</pre><p>같은 기준 출력에서 실패 조건 하나를 바꾸는 반례와 정상 동의 표현을 포함합니다. 초안 일치율을 사람 정답 정확도로 표시하지 않습니다.</p></section>
 <section class="box" id="sources"><h2>고정한 출처와 공통 지침</h2><p>원본 저장소가 없어도 fixture를 재생성하고 평가할 수 있습니다. 아래 커밋과 구절은 새로 고정한 출처이며, 생성 당시 원본과 현재 원본을 혼동하지 않습니다.</p>${sourceProvenance.snapshots.map((p) => `<details><summary>${esc(p.source)}</summary><p class="meta">commit ${p.commit} · SHA-256 ${p.sha256}</p>${p.excerpts.map((ex) => details(`${ex.start}–${ex.end}행`, ex.text)).join("")}</details>`).join("")}
 ${details("GEval 고정 평가 지시", EVALUATION_STEPS.join("\n\n"))}<details><summary>모든 fixture의 공통 ADR 규칙</summary>${Object.entries(
     report.sharedRules,
@@ -129,7 +129,7 @@ export async function generateGoldenReport(output) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const args = process.argv.slice(2);
   if (args.length && (args.length !== 2 || args[0] !== "--out")) {
-    process.stderr.write("pnpm eval:golden [--out new-directory]\n");
+    process.stderr.write("bun run eval:golden [--out new-directory]\n");
     process.exitCode = 2;
   } else
     generateGoldenReport(args[1] ?? path.join(ROOT, ".codex/reports", `golden-${Date.now()}`))

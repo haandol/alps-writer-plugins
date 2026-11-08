@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -9,7 +9,7 @@ const UNSAFE_SUMMARY_RE = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/;
 function usage(message) {
   if (message) console.error(`Error: ${message}`);
   console.error(
-    'Usage: node adr-status-transition.mjs <adr-path> "<status>" [--summary "<text>"] [--root <repo-root>]',
+    'Usage: bun adr-status-transition.mjs <adr-path> "<status>" [--summary "<text>"] [--root <repo-root>]',
   );
   process.exit(2);
 }

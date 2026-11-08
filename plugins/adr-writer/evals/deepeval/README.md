@@ -19,30 +19,30 @@
 
 ## 실행
 
-저장소 루트에서 `pnpm install`을 먼저 수행한다. 스킬 실행은 로그인된 Claude Code
+저장소 루트에서 `bun install`을 먼저 수행한다. 스킬 실행은 로그인된 Claude Code
 CLI를 사용한다. DeepEval 판정은 Bedrock의 `us.openai.gpt-6.1-sol`을 AWS `default`
 프로필, `us-east-1` 리전으로 호출한다. 해당 프로필에 모델 호출 권한이 필요하고 실제
 호출 비용이 발생한다.
 
 ```bash
 # 기본 명령과 명시적 DeepEval 명령은 같은 진입점이다
-pnpm eval:regression --list
-pnpm eval:deepeval --list
+bun run eval:regression --list
+bun run eval:deepeval --list
 
 # 모델 호출 없이 fixture와 미실행 리포트 준비
-pnpm eval:regression --prepare
+bun run eval:regression --prepare
 
 # 스킬 실행 → 증거 수집 → DeepEval 판정 → HTML/JSON
-pnpm eval:regression --live --jobs 2 --runs 1
+bun run eval:regression --live --jobs 2 --runs 1
 
 # 수정 전후 비교: 현재 작업 트리와 이전 Git ref
-pnpm eval:regression --live --baseline HEAD --jobs 2 --runs 1
+bun run eval:regression --live --baseline HEAD --jobs 2 --runs 1
 
 # 이미 실행한 결과를 재사용: 스킬을 다시 실행하지 않고 DeepEval만 호출
-pnpm eval:deepeval --live --from .codex/evals/captured-run --jobs 2
+bun run eval:deepeval --live --from .codex/evals/captured-run --jobs 2
 
 # 수집된 증거를 DeepEval 입력으로 변환하되 아직 채점하지 않음
-pnpm eval:deepeval --prepare --from .codex/evals/captured-run
+bun run eval:deepeval --prepare --from .codex/evals/captured-run
 ```
 
 `--from`에는 기존 `results.json`과 `runs/.../evidence.json`이 있는 폴더를 지정한다.
@@ -75,7 +75,7 @@ Bedrock 기록에는 요청한 추론 프로필 ID와 토큰 사용량을 담는
 이전 자체 판정기를 명시적으로 실행하려면 아래 명령을 사용한다.
 
 ```bash
-pnpm eval:custom --live --only sync-encbird-turn-units
+bun run eval:custom --live --only sync-encbird-turn-units
 ```
 
 ## Golden set 보완과 판정기 보정
@@ -96,14 +96,14 @@ S4의 `metadata`, `tiering`, `archive` 의무는 이 세부 조건을 명시적�
 
 ```bash
 # 현재 입력·발화·의무·고정 출처·Mermaid 커버 범위를 HTML로 생성
-pnpm eval:golden --out .codex/reports/golden-current
+bun run eval:golden --out .codex/reports/golden-current
 
 # 작성된 정상·반례 입력과 판정 기대 초안을 내보냄: 모델 호출 없음
-pnpm eval:calibration --prepare --out .codex/evals/calibration-prepared
+bun run eval:calibration --prepare --out .codex/evals/calibration-prepared
 
 # 판정기만 호출: 에이전트 재실행 없음
-pnpm eval:calibration --live --jobs 2 --out .codex/evals/calibration-live
-pnpm eval:calibration --live --split holdout --runs 3
+bun run eval:calibration --live --jobs 2 --out .codex/evals/calibration-live
+bun run eval:calibration --live --split holdout --runs 3
 ```
 
 판정기 보정 세트는 정상 표현과 통제된 반례 21개다. 기대 점수·라벨 상태·분할 정보는
@@ -178,7 +178,7 @@ HTML에는 전체 평가 흐름, `adr-rollup`, `adr-sync`의 Mermaid 도표 3장
 LLM 채점을 반복하지 않으며 기존 점수·증거·평가 시각을 유지한다.
 
 ```bash
-pnpm eval:report .codex/evals/deepeval-prompt-comparison-final
+bun run eval:report .codex/evals/deepeval-prompt-comparison-final
 open .codex/evals/deepeval-prompt-comparison-final/index.html
 ```
 
@@ -220,13 +220,13 @@ Bedrock에는 JSON 형식 지시를 보내고 반환값을 원래 Zod schema로 
 평가 오류로 처리한다. 형식 변환은 평가 기준을 바꾸지 않는다.
 
 ```bash
-pnpm test:deepeval
-pnpm test
+bun run test:deepeval
+bun run test
 ```
 
 `test:deepeval`은 실제 DeepEval SDK를 쓰되 LLM 제공자만 stub으로 대체한다. 실제 GEval
 호출·strict 판정·오류 오통과 방지·입력 분리·리포트 escaping을 검사한다. 네트워크
-모델 평가를 대신하지는 않는다. 이 테스트는 workspace 의존성이 설치되는 `pnpm test`에
+모델 평가를 대신하지는 않는다. 이 테스트는 workspace 의존성이 설치되는 `bun run test`에
 포함되며, 설치 없이 실행하는 adr-writer의 기본 런타임 테스트와는 분리돼 있다.
 
 공식 API 근거: `confident-ai/deepeval`의 TypeScript `GEval`, `evaluate`,

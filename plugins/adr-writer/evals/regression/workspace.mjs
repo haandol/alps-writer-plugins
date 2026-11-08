@@ -352,15 +352,13 @@ export function makeTools({
             ...(renumbered ? ["--renumbered", renumbered] : []),
           ];
         } else if (kind === "policy-tests") {
-          args = ["--test", "test/policy.test.mjs"];
+          args = ["test", "./test/policy.test.mjs"];
         } else {
           throw new Error("unknown local check");
         }
-        // A fixture policy suite is an independent test process. Inheriting
-        // node:test's worker marker makes Node skip nested --test execution
-        // with exit 0, so a broken fixture would appear to pass our tests.
+        // A fixture policy suite is an independent test process with its own
+        // environment, so the outer test run cannot change its outcome.
         const checkEnv = { ...process.env };
-        delete checkEnv.NODE_TEST_CONTEXT;
         const result = spawnSync(executable, args, {
           cwd: checkRoot,
           env: checkEnv,

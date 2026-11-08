@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -87,10 +87,10 @@ export function parseArgs(args) {
 function help() {
   return `ADR rollup/sync semantic regression
 
-  pnpm eval:custom --list
-  pnpm eval:custom --prepare --out .codex/evals/fixtures
-  pnpm eval:custom --live --only sync-encbird-turn-units --runs 1
-  pnpm eval:custom --live --skill adr-rollup --baseline HEAD --runs 3
+  bun run eval:custom --list
+  bun run eval:custom --prepare --out .codex/evals/fixtures
+  bun run eval:custom --live --only sync-encbird-turn-units --runs 1
+  bun run eval:custom --live --skill adr-rollup --baseline HEAD --runs 3
 
 --live explicitly invokes the logged-in Claude Code CLI and its configured provider.
 Without --live, no model is called. --prepare writes fixtures and a NOT_RUN HTML report.

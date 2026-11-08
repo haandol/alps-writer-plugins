@@ -64,12 +64,14 @@ test("pre-push fixture Git commands cannot change a linked worktree's commits, i
   git(work, ["commit", "-qm", "release"]);
   const head = git(work, ["rev-parse", "HEAD"]);
 
-  const pnpm = path.join(bin, "pnpm");
+  // Package scripts are stubbed; the bundle and hook checks still run on the real Bun.
+  const bun = path.join(bin, "bun");
   writeFileSync(
-    pnpm,
+    bun,
     `#!/bin/sh
 set -e
-if [ "$1" = "test:unit:mjs" ]; then
+if [ "$1" != "run" ]; then exec ${JSON.stringify(process.execPath)} "$@"; fi
+if [ "$2" = "test:unit:mjs" ]; then
   git -C "$RELEASE_HOOK_FIXTURE" init -q
   git -C "$RELEASE_HOOK_FIXTURE" config user.email fixture@example.test
   git -C "$RELEASE_HOOK_FIXTURE" config user.name Fixture
@@ -79,7 +81,7 @@ if [ "$1" = "test:unit:mjs" ]; then
 fi
 `,
   );
-  chmodSync(pnpm, 0o755);
+  chmodSync(bun, 0o755);
   const result = spawnSync("git", ["push", "origin", "HEAD:refs/heads/release"], {
     cwd: work,
     env: { ...env, PATH: `${bin}${path.delimiter}${env.PATH}`, RELEASE_HOOK_FIXTURE: fixture },

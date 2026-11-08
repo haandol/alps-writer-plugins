@@ -1300,6 +1300,11 @@ const CLIENT =
   BOARD_CLIENT +
   readFileSync(new URL("./ontology-view-tabs.js", import.meta.url), "utf8");
 const KNOWLEDGE_CLIENT =
+  readFileSync(new URL("./search/search-text.mjs", import.meta.url), "utf8").replace(
+    /^export /gm,
+    "",
+  ) +
+  "\n" +
   readFileSync(new URL("./ontology-knowledge-space.js", import.meta.url), "utf8") +
   readFileSync(new URL("./ontology-knowledge-client.js", import.meta.url), "utf8");
 if (/<\/(?:script|style)/i.test(CSS + CLIENT + KNOWLEDGE_CLIENT))

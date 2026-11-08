@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Minimal newline-delimited MCP stdio transport for the evaluation-only tools.
 // No network transport, external accounts, arbitrary shell, or SDK dependency.
 import { createInterface } from "node:readline";

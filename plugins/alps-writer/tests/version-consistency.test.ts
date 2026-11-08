@@ -9,7 +9,7 @@
 //
 // The reference is the Claude Code plugin manifest, NOT package.json: both
 // package.json files are private (never published) and are pinned to 0.0.0 on
-// purpose, so the release version lives only in the manifests. `pnpm bump` keeps
+// purpose, so the release version lives only in the manifests. `bun run bump` keeps
 // the five real sites in step; this file fails the build if they diverge.
 
 import assert from "node:assert/strict";
@@ -83,7 +83,7 @@ test("the private package.json files stay pinned to 0.0.0", () => {
     assert.equal(
       pkg.version,
       "0.0.0",
-      `${manifest} is pinned to 0.0.0 by design — the release version lives in the plugin manifests (pnpm bump)`,
+      `${manifest} is pinned to 0.0.0 by design — the release version lives in the plugin manifests (bun run bump)`,
     );
     assert.ok(pkg["//version"], `${manifest} should keep the note explaining the pin`);
   }

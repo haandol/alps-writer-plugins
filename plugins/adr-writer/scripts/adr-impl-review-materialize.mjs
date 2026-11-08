@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -12,7 +12,7 @@ import { COVERAGE_STATUS_LABELS } from "./adr-impl-review-categories.mjs";
 
 function usage(message) {
   if (message) process.stderr.write(`adr-impl-review-materialize: ${message}\n`);
-  process.stderr.write("Usage: node adr-impl-review-materialize.mjs <artifact-dir>\n");
+  process.stderr.write("Usage: bun adr-impl-review-materialize.mjs <artifact-dir>\n");
   process.exit(2);
 }
 

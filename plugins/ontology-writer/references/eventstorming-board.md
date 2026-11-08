@@ -8,7 +8,7 @@ relation. Every source verdict describes evidence, not user approval.
 Write `board.json` in the current ignored review run directory and render it:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/eventstorming-view.mjs <run>/board.json --lang ko
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/eventstorming-view.mjs <run>/board.json --lang ko
 ```
 
 The command works before any ontology exists, validates the input, creates one

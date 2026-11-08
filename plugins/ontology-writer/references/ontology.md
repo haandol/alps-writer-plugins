@@ -219,7 +219,7 @@ business meaning its contract needs.
 
 ## Validation
 
-Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs validate`; use
+Run `bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs validate`; use
 `--require-layers` for construction, with repeatable `--layer-context <id>` for
 a scoped extension. Missing core logic or a missing upper collaboration for an
 internal cross-BC relation is a legacy warning and a construction error. A new

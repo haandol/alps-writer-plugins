@@ -1,27 +1,28 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // ontology.mjs — command line for the optional business ontology
-// level (docs/ontology/*.ttl). Dependency-free: Node built-ins and git only.
+// level (docs/ontology/*.ttl). Bun is the default CLI runtime; Node 24 remains compatible.
+// Text search reads the current documents on every query; it keeps no index or cache.
 //
 // Usage:
-//   node ontology.mjs validate [--adr-dir DIR] [--json]
-//   node ontology.mjs format [--check | --write [--allow-comment-removal]]
-//   node ontology.mjs diff [--base REF] [--json]
-//   node ontology.mjs validate [--require-layers] [--layer-context ID]...
-//   node ontology.mjs query (--overview | --context ID) [--search TEXT] [--limit N] [--offset N]
-//   node ontology.mjs query (--category KEY | --process ID | --step ID | --concept ID | --event ID)
+//   bun ontology.mjs validate [--adr-dir DIR] [--json]
+//   bun ontology.mjs format [--check | --write [--allow-comment-removal]]
+//   bun ontology.mjs diff [--base REF] [--json]
+//   bun ontology.mjs validate [--require-layers] [--layer-context ID]...
+//   bun ontology.mjs query (--overview | --context ID) [--search TEXT] [--limit N] [--offset N]
+//   bun ontology.mjs query (--category KEY | --process ID | --step ID | --concept ID | --event ID)
 //                                [--include-retired] [--adr-dir DIR] [--json]
-//   node ontology.mjs impact (--draft DIR | --base REF [--also-base REF]...) [--process ID]
+//   bun ontology.mjs impact (--draft DIR | --base REF [--also-base REF]...) [--process ID]
 //                                [--same-meaning ID=PROPERTY]... [--mapping FILE] [--glossary FILE] [--json]
-//   node ontology.mjs changes [--json]
-//   node ontology.mjs apply (--draft DIR | --base REF [--also-base REF]... [--process ID]) --base-hash HASH
+//   bun ontology.mjs changes [--json]
+//   bun ontology.mjs apply (--draft DIR | --base REF [--also-base REF]... [--process ID]) --base-hash HASH
 //                                [--same-meaning ID=PROPERTY]...
 //                                [--mapping FILE] [--glossary FILE]
 //                                [--log TEXT]... [--allow-comment-removal]
-//   node ontology.mjs transition --process ID --to Accepted|Proposed [--date YYYY-MM-DD]
+//   bun ontology.mjs transition --process ID --to Accepted|Proposed [--date YYYY-MM-DD]
 //                                [--same-meaning ID=PROPERTY]... [--unread-unchanged]
-//   node ontology.mjs align --process ID [--together ID,ID] [--json]
-//   node ontology.mjs lifecycle [--base REF] [--json]
-//   node ontology.mjs view [--include-retired] [--lang en|ko] [--no-open | --browser NAME]
+//   bun ontology.mjs align --process ID [--together ID,ID] [--json]
+//   bun ontology.mjs lifecycle [--base REF] [--json]
+//   bun ontology.mjs view [--include-retired] [--lang en|ko] [--no-open | --browser NAME]
 //
 //   validate  closed-world model checks plus the ADR index's `realizes` links;
 //             the model is the Turtle documents in the ADR directory's sibling
@@ -502,6 +503,7 @@ function query(opts) {
     process.stdout.write(opts.json ? JSON.stringify(none, null, 2) + "\n" : `${none.note}\n`);
     return 0;
   }
+  // Search runs over the graph just parsed from the current documents; no index.
   const result = queryContext({
     index,
     mapping,

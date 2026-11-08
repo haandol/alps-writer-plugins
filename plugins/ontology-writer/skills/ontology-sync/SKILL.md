@@ -25,7 +25,7 @@ Additional information may support the review; saving it goes through
 
 ## 1. Validate before reading meaning
 
-Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs impact --base HEAD --json`
+Run `bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs impact --base HEAD --json`
 and judge structure by its model findings (`draftValid`, `findings`), the check
 a drafted change gets. Index links left by deleted steps are not a reason to
 stop: they are index-link changes for the summary, listed in `linkChanges` by
@@ -39,8 +39,8 @@ propagation from that edit.
 ## 2. Find the direct edits
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs changes --json
-node ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs lifecycle --json
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs changes --json
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs lifecycle --json
 ```
 
 - **Uncommitted edits** compare with the last committed model:

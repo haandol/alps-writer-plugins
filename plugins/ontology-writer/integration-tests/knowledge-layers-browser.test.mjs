@@ -68,6 +68,11 @@ m:customer onto:performs m:ordering.extra-${i} .
     base: writeView("base", EXAMPLE),
     large: writeView("large", large),
     legacy: writeView("legacy", legacy),
+    search: writeView(
+      "search",
+      EXAMPLE +
+        '\nm:ordering.search-case a onto:Step ; rdfs:label "Search example" ; onto:definition "결제가 완료되면 주문을 확정한다. Quarantine the parcel marker." ; onto:stepKind "system" ; onto:inContext m:ordering .\nm:ordering.place-order onto:hasStep m:ordering.search-case .\nm:customer onto:performs m:ordering.search-case .\n',
+    ),
     invalidMembership: writeView(
       "invalid-membership",
       EXAMPLE + "\nm:ordering.confirm-order onto:inContext m:payment .\n",
@@ -152,6 +157,32 @@ test("an internal keyword finds a BC without showing the internal result on the 
       await page.$$eval("#kw-results button", (bs) => bs.map((b) => b.dataset.knowledgeElement))
     ).includes("payment.request-payment"),
   );
+});
+
+test("saved HTML shares multiword, phrase and Korean search semantics and recovers from incomplete quotes", async () => {
+  await load(files.search);
+  await openBC();
+  const searchFor = async (text) => {
+    await page.$eval(
+      "#kw-search",
+      (e, value) => {
+        e.value = value;
+        e.dispatchEvent(new Event("input", { bubbles: true }));
+      },
+      text,
+    );
+    return page.$$eval("#kw-results [data-knowledge-element]", (nodes) =>
+      nodes.map((n) => n.dataset.knowledgeElement),
+    );
+  };
+  assert.ok((await searchFor("parcel quarantine")).includes("ordering.search-case"));
+  assert.equal((await searchFor('"quarantine parcel"')).length, 0);
+  assert.ok((await searchFor("확정 결제")).includes("ordering.search-case"));
+  assert.ok((await searchFor("결")).includes("ordering.search-case"));
+  assert.match(await page.$eval("#kw-results", (e) => e.textContent), /Matched fields|일치한 필드/);
+  await searchFor('"unclosed');
+  assert.match(await page.$eval("#kw-list-status", (e) => e.textContent), /quotation|따옴표/);
+  assert.ok((await searchFor("결제")).includes("ordering.search-case"));
 });
 
 test("a BC's source facts and document location remain available from its knowledge header", async () => {

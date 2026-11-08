@@ -7,7 +7,7 @@ when that workflow selects it.
    - After the final tests, verify the ADR / mapping structure with the deterministic harness:
 
      ```bash
-     node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs <implemented category key>
+     bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs <implemented category key>
      ```
 
      This check mechanically catches malformed ADR/index state, broken dependencies, and new ADR back-references before the adversarial review spends model work on an invalid baseline. If an `error` comes out, fix it before continuing.
@@ -39,7 +39,7 @@ when that workflow selects it.
    - If the target is `Proposed`, without asking the user run the deterministic transition command:
 
      ```bash
-     node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs <target-adr-path> "Accepted (YYYY-MM-DD)" --summary "<current one-line decision summary>"
+     bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs <target-adr-path> "Accepted (YYYY-MM-DD)" --summary "<current one-line decision summary>"
      ```
 
    - The script updates the Status line in the target ADR body and the `status` of the exact matching `adrs[]` record in `.mapping.json` together. It fails instead of guessing when the path is absent, duplicated, or already inconsistent.

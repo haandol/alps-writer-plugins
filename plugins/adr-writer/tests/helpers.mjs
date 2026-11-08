@@ -137,16 +137,19 @@ export function runInvariants(dir, extraArgs = [], env = {}) {
   return runCapture("bash", [INVARIANTS, ...extraArgs], dir, env);
 }
 
+// Shipped scripts run on the test's own Bun, without auto-installing packages.
+const runScript = (args, dir) => runCapture(process.execPath, ["--no-install", ...args], dir);
+
 // Run adr-structure-lint.mjs in `dir`. Returns {code, stdout}. --json is added
 // by default so tests can parse findings; pass json=false for the text report.
 export function runStructureLint(dir, extraArgs = [], { json = true } = {}) {
   const args = [STRUCTURE_LINT, ...extraArgs];
   if (json && !extraArgs.includes("--json")) args.push("--json");
-  return runCapture("node", args, dir);
+  return runScript(args, dir);
 }
 
 export function runStatusTransition(dir, args) {
-  return runCapture("node", [STATUS_TRANSITION, ...args], dir);
+  return runScript([STATUS_TRANSITION, ...args], dir);
 }
 
 // Run the lint with --json and return {code, ...parsed report}. The default
@@ -161,7 +164,7 @@ export function parseLint(dir, extraArgs = [], { full = false } = {}) {
 // Run the SessionStart hook against a fixture and return the parsed
 // additionalContext string (or the whole JSON when raw=true).
 export function runHook(dir, { raw = false, env = {} } = {}) {
-  const out = execFileSync("node", [HOOK], {
+  const out = execFileSync(process.execPath, [HOOK], {
     cwd: dir,
     env: { ...process.env, CLAUDE_PROJECT_DIR: dir, ...env },
     input: JSON.stringify({ hook_event_name: "SessionStart", source: "startup" }),

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Open a disposable candidate board before or after a model exists. Never writes
 // the model or index; source text and evidence are inert presentation data.
 import { readFileSync, writeFileSync } from "node:fs";

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // SessionStart — emit a compact ADR-first directive when session context starts.
 //
 // startup/resume/clear/compact cover the points where session context is created

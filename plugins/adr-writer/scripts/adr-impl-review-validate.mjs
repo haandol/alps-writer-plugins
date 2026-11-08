@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { reviewCodeGroups } from "./adr-impl-review-prose.mjs";
 
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
@@ -54,7 +54,7 @@ const PASS_ADVISORY_CATEGORIES = new Set(["Refactor"]);
 
 function usage(message) {
   if (message) process.stderr.write(`adr-impl-review-validate: ${message}\n`);
-  process.stderr.write("Usage: node adr-impl-review-validate.mjs <artifact-dir>\n");
+  process.stderr.write("Usage: bun adr-impl-review-validate.mjs <artifact-dir>\n");
   process.exit(2);
 }
 

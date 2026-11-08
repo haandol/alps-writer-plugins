@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // run.mjs — run ADR behaviour scenarios against a real agent, N times each, and
 // report per-check hit rates.
 //

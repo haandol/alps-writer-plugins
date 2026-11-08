@@ -8,6 +8,22 @@ The current Purpose, all still-valid Decision Drivers, adopted choice, rationale
 and requirement contract remain together in the ADR body. Reading this log is
 optional for understanding the current decision.
 
+## 2026-11-07 — 검색 색인 제거, 조회마다 현재 원본에서 계산
+
+- **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Change type**: adopted alternative replacement
+- **What**: 다중어·인용 문구·짧은 한글 검색, 관련도와 원문 근거는 유지하고, 그 계산을 SQLite 파생 색인 대신 조회마다 이미 읽은 현재 원본 그래프에서 한다.
+- **Why**: 사용자는 색인의 현재성 확인과 재생성 부담을 피하려고 꼭 필요하지 않으면 색인을 두지 않는다. 조회는 원래 모델 전체를 해석하므로 색인이 줄일 비용이 작고, 같은 검색어에서 색인과 직접 계산의 결과가 같았다.
+- **What is now void**: 검색 색인을 원본에서 재생성하는 파생 캐시로 두고, 캐시 손상·사용 불가·동시 접근 실패를 같은 결과로 복구하던 보장.
+
+## 2026-11-07 — 로컬 색인의 다중어·한글 검색과 근거 반환
+
+- **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Change type**: requirement rule change
+- **What**: 연속 문구·식별자 순서 중심의 탐색을 다중어·인용 문구·짧은 한글과 관련도 검색으로 확장하고, BC 내부의 일치 필드·원문 위치와 원본 기반 캐시 재생성을 보장한다.
+- **Why**: 사용자는 서비스 운영 부담 없이 Bun과 로컬 SQLite를 사용해 ADR·ontology 검색을 개선하도록 요청했다.
+- **What is now void**: 검색어 전체의 연속 일치만으로 후보를 한정하고 관련도 없이 식별자 순서로만 보여주던 검색 의미. 필수 관계·진단·BC 해상도와 ADR의 구현 권위는 유지한다.
+
 ## 2026-11-05 — BC 지식 공간과 레이어 확대 이동
 
 - **Current ADR**: [render-read-only-ontology-views](./0005-render-read-only-ontology-views.md)

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // SessionStart — when the repository has both an ADR index and a business ontology,
 // ask for the business-context query before ADR decisions or contracts change
 // and before code of a feature linked to a process step changes.
@@ -56,7 +56,7 @@ function main() {
   const where =
     path.normalize(adrDir) === path.normalize("docs/adr") ? "" : ` --adr-dir "${adrDir}"`;
   const directive = [
-    `[Business-context directive] Business ontology present: before creating or changing an ADR decision or contract, first check the feature's business context (node "${QUERY_CLI}" query --category <key>${where}).`,
+    `[Business-context directive] Business ontology present: before creating or changing an ADR decision or contract, first check the feature's business context (bun "${QUERY_CLI}" query --category <key>${where}).`,
     "Before changing code of a feature linked to a process step, query its business context; use it to catch contradictions, never as new obligations.",
     "Unlocated work: query --overview for BC knowledge, then query --context <id> --search <text> and its pages; inspect details and ADRs for contracts.",
   ];

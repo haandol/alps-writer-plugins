@@ -19,7 +19,16 @@ Read the whole BC layer with `query --overview`, search within a selected BC wit
 
 ## Quick Start
 
-Requires Node.js 24 or later. Marketplace installs include the bundled server and dependencies; no npm install or build step is needed.
+Requires Bun 1.4.2 or later. The MCP server, the session-start hooks and every
+plugin script run with Bun; Node.js is not needed to use the plugins. Marketplace
+installs include the bundled server and local search modules; no npm install or
+build step is needed. Developing this repository uses the same Bun as its
+package manager and test runner (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+
+Local search reads the current Markdown and Turtle files on every query and
+keeps no index or cache. It supports words in any order, quoted phrases and short
+Korean text, returns source locations and Status, and preserves the existing
+contract and business-relation checks. Use `/adr-search` to locate a decision.
 
 ### Codex
 
@@ -161,7 +170,7 @@ offline without downloading fonts, stylesheets or a diff library.
 To install only the report skill, without plugin hooks or review workflows:
 
 ```bash
-npx skills add https://github.com/haandol/alps-writer-plugins/tree/main/plugins/adr-writer/skills/report-writer --global --agent codex
+bunx skills add https://github.com/haandol/alps-writer-plugins/tree/main/plugins/adr-writer/skills/report-writer --global --agent codex
 ```
 
 Omit `--global` for a project-local installation. See the [report skill](./plugins/adr-writer/skills/report-writer/SKILL.md) for delivery and presentation rules.
@@ -181,25 +190,25 @@ When calling ALPS document tools directly, pass `doc_path` on every request. Ini
 
 ## Development
 
-The repository is a pnpm workspace. `plugins/alps-writer/` contains the TypeScript MCP server; `plugins/adr-writer/` contains skills, hooks, templates, and validation scripts.
+The repository is a bun run workspace. `plugins/alps-writer/` contains the TypeScript MCP server; `plugins/adr-writer/` contains skills, hooks, templates, and validation scripts.
 
 ```bash
-pnpm install
-pnpm test
-pnpm build
-pnpm lint
-pnpm format:check
-pnpm bump:check
+bun install
+bun run test
+bun run build
+bun run lint
+bun run format:check
+bun run bump:check
 ```
 
-For server development, use `pnpm --filter alps-writer dev` to watch source changes or `pnpm --filter alps-writer start` to run the bundle.
+For server development, use `bun run --filter alps-writer dev` to watch source changes or `bun run --filter alps-writer start` to run the bundle.
 
-The marketplace runs the committed `plugins/alps-writer/dist/` bundle. After changing server source or bundled dependencies, run `pnpm build` and include the regenerated bundle. Use `pnpm bump <version>` for releases so all version sites stay in sync.
+The marketplace runs the committed `plugins/alps-writer/dist/` bundle. After changing server source or bundled dependencies, run `bun run build` and include the regenerated bundle. Use `bun run bump <version>` for releases so all version sites stay in sync.
 
 To prepare a skill evaluation report without model calls:
 
 ```bash
-pnpm eval:skills --prepare --runs 1 --open
+bun run eval:skills --prepare --runs 1 --open
 ```
 
 Live evaluations require `--live` and incur model costs. See the [skill evaluation guide](./plugins/adr-writer/evals/skills/README.md) and [rollup/sync regression guide](./plugins/adr-writer/evals/deepeval/README.md) for execution, comparison, and saved-report commands.
@@ -208,6 +217,6 @@ Live evaluations require `--live` and incur model costs. See the [skill evaluati
 
 Read [CONTRIBUTING.md](./CONTRIBUTING.md) for branch, commit, and pull request conventions, and [AGENTS.md](./AGENTS.md) for architecture and repository rules. Open an issue before substantial changes.
 
-For dependency updates, inspect `pnpm audit` and Dependabot alerts, keep overrides narrowly scoped, and rebuild the committed bundle before testing and publishing.
+For dependency updates, inspect `bun run audit` and Dependabot alerts, keep overrides narrowly scoped, and rebuild the committed bundle before testing and publishing.
 
 [Bug reports and feature requests](https://github.com/haandol/alps-writer-plugins/issues) · [MIT License](./LICENSE)

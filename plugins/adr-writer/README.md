@@ -54,6 +54,29 @@ Every named function or method created or materially changed for ADR behavior us
 
 **Standalone**: adr-writer requires no ALPS PRD and never references the `alps-writer` plugin. ADRs are its first-class artifact; code is implemented from ADRs. `docs/adr/.mapping.json` (the ADR index) stores no PRD reference. The ADR ↔ code link is not stored anywhere — an agent finds the code an ADR governs by reading the ADR and searching the repo, so refactors never churn a stored mapping.
 
+## Find an existing decision
+
+Use `/adr-search <query>`, or run the local command with Bun 1.4.2 or later:
+
+```bash
+bun <plugin>/scripts/adr-search.mjs --query "payment recovery" --json
+bun <plugin>/scripts/adr-search.mjs --query "결제 확정" --category ordering
+```
+
+The search reads registered ADR titles, summaries and sections. Unquoted terms
+match in any order; quoted phrases remain adjacent. Short Korean and substring
+matches remain supported. Results group each document once and include its
+matched fields, source ranges and both current and indexed Status. Follow the
+page continuation to inspect further candidates.
+
+Every search reads the current registered files and keeps no index or cache, so
+file changes, moves and deletions show in the next search. No database, embedding
+provider or package installation is required.
+
+Search never edits a source or changes approval. Read diagnostics and full
+candidate documents; an admitted change still reads the full ADR mapping and
+checks prerequisites.
+
 ## Adopt an existing project
 
 Use `/adr-import [project-path-or-feature-scope]` to inspect an existing codebase.
@@ -163,7 +186,7 @@ Six dependency-free scripts let the cycle verify ADRs and deliver implementation
 Run over a project's live ADRs:
 
 ```bash
-node <plugin>/scripts/adr-structure-lint.mjs [category]   # deterministic structure + invariants
+bun <plugin>/scripts/adr-structure-lint.mjs [category]   # deterministic structure + invariants
 bash <plugin>/scripts/adr-invariants.sh                   # reverse-reference oracle only
 ```
 

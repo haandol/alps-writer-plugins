@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, cpSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -28,14 +28,14 @@ import { toolServerConfig } from "../regression/tool-config.mjs";
 
 const HELP = `Skill evaluation — classification, routing, execution
 
-  pnpm eval:skills --prepare
-  pnpm eval:skills --list --suite execution
-  pnpm eval:skills --prepare --suite execution --compare without-skill
-  pnpm eval:skills --live --suite execution --compare without-skill --runs 5
-  pnpm eval:skills --live --suite execution --compare both --baseline HEAD~1
-  pnpm eval:skills --live --suite routing --runs 3
-  pnpm eval:skills --report .codex/evals/<run> --open
-  pnpm eval:skills --live --rejudge .codex/evals/<run> --jobs 2
+  bun run eval:skills --prepare
+  bun run eval:skills --list --suite execution
+  bun run eval:skills --prepare --suite execution --compare without-skill
+  bun run eval:skills --live --suite execution --compare without-skill --runs 5
+  bun run eval:skills --live --suite execution --compare both --baseline HEAD~1
+  bun run eval:skills --live --suite routing --runs 3
+  bun run eval:skills --report .codex/evals/<run> --open
+  bun run eval:skills --live --rejudge .codex/evals/<run> --jobs 2
 
 Defaults: --prepare, --suite all, --runs 3, --compare none. --live explicitly
 permits target and semantic-judge calls. Deterministic scorers do not call a judge.

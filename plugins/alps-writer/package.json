@@ -9,10 +9,10 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "bundle": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node24 --outfile=dist/index.js",
-    "build": "pnpm typecheck && pnpm bundle && rm -rf dist/templates dist/guides && cp -r src/templates dist/ && cp -r src/guides dist/",
-    "start": "node dist/index.js",
-    "dev": "tsx src/index.ts",
-    "test": "tsx --test tests/**/*.test.ts",
+    "build": "bun run typecheck && bun run bundle && rm -rf dist/templates dist/guides && cp -r src/templates dist/ && cp -r src/guides dist/",
+    "start": "bun dist/index.js",
+    "dev": "bun src/index.ts",
+    "test": "bun test tests",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix"
   },
@@ -34,7 +34,7 @@
   },
   "author": "haandol",
   "engines": {
-    "node": ">=24"
+    "bun": ">=1.4.2"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -46,7 +46,6 @@
     "esbuild": "^0.28.1",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
-    "tsx": "^4.22.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.60.0"
   }

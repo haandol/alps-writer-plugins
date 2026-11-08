@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -26,7 +26,7 @@ export async function renderSavedReport(directory) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (process.argv.length !== 3) {
-    process.stderr.write("Usage: pnpm eval:report <existing-deepeval-report-directory>\n");
+    process.stderr.write("Usage: bun run eval:report <existing-deepeval-report-directory>\n");
     process.exitCode = 1;
   } else {
     try {

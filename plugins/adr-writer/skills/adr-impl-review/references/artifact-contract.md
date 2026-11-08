@@ -53,9 +53,9 @@ Materialize and validate both modes. A compact standard report without selected
 diagrams, quizzes or human-decision controls can then create its final HTML directly:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-materialize.mjs <artifact-dir>
-node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-article.mjs <artifact-dir>/findings.json <artifact-dir>/adr-impl-review-report.html
-node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-open.mjs <artifact-dir>/adr-impl-review-report.html
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-materialize.mjs <artifact-dir>
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-article.mjs <artifact-dir>/findings.json <artifact-dir>/adr-impl-review-report.html
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-open.mjs <artifact-dir>/adr-impl-review-report.html
 ```
 
 The article command runs the existing artifact validator before writing. It does
@@ -66,12 +66,12 @@ For full or rich standard presentation, preserve selected diagrams, quizzes,
 decision controls and the existing composition path:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-materialize.mjs <artifact-dir>
-node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-validate.mjs <artifact-dir>
-node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-report.mjs <findings.json> --out <artifact-dir>/adr-impl-review-audit.html
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-materialize.mjs <artifact-dir>
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-validate.mjs <artifact-dir>
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-report.mjs <findings.json> --out <artifact-dir>/adr-impl-review-audit.html
 # Apply report-writer to compose and check the final adr-impl-review-report.html
 # from the validated audit inputs, preserving all required interactions.
-node ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-open.mjs <artifact-dir>/adr-impl-review-report.html
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-open.mjs <artifact-dir>/adr-impl-review-report.html
 ```
 
 If materialization or validation fails, do not report completion or generate the

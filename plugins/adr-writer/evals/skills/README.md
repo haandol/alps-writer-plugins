@@ -3,19 +3,19 @@
 One workspace command prepares or runs classification probes, controlled Skill
 selection, and actual ADR document operations. Mechanical artifact checks and the DeepEval GEval adapter are reused.
 Natural-language meaning is judged by the live LLM; legacy word/phrase and
-evaluation-tail checks do not gate verdicts. `pnpm eval:llm` is the classification-only
+evaluation-tail checks do not gate verdicts. `bun run eval:llm` is the classification-only
 entry point to the same runner. No evaluation dependency enters the shipped
 ALPS MCP bundle or the dependency-free ADR runtime tests.
 
 ## Prepare and inspect
 
-From the workspace root after `pnpm install`:
+From the workspace root after `bun install`:
 
 ```bash
-pnpm eval:skills --prepare --runs 1 --open
-pnpm eval:llm --prepare --runs 1 --open
-pnpm eval:skills --list --suite execution
-pnpm eval:skills --prepare --suite execution --compare without-skill --runs 3
+bun run eval:skills --prepare --runs 1 --open
+bun run eval:llm --prepare --runs 1 --open
+bun run eval:skills --list --suite execution
+bun run eval:skills --prepare --suite execution --compare without-skill --runs 3
 ```
 
 Preparation is the default and makes no model calls. It writes a self-contained
@@ -34,16 +34,16 @@ silently read the user's separate real repository.
 
 ```bash
 # Explicit paid calls through locally configured Claude Code + the GEval judge:
-pnpm eval:skills --live --suite execution --compare without-skill --runs 5 --open
-pnpm eval:skills --live --suite execution --compare both --baseline HEAD~1 --runs 3
-pnpm eval:skills --live --suite routing --runs 3
-pnpm eval:skills --live --suite classification --only comprehension-load --runs 3
-pnpm eval:llm --live --only lite-alps- --runs 3
-pnpm eval:llm --live --only report- --runs 3
-pnpm eval:llm --live --only report-scope- --runs 2
+bun run eval:skills --live --suite execution --compare without-skill --runs 5 --open
+bun run eval:skills --live --suite execution --compare both --baseline HEAD~1 --runs 3
+bun run eval:skills --live --suite routing --runs 3
+bun run eval:skills --live --suite classification --only comprehension-load --runs 3
+bun run eval:llm --live --only lite-alps- --runs 3
+bun run eval:llm --live --only report- --runs 3
+bun run eval:llm --live --only report-scope- --runs 2
 
 # Preview branch + staged + unstaged + untracked impact without calling models:
-pnpm eval:skills --list --changed main
+bun run eval:skills --list --changed main
 ```
 
 `--suite` accepts `all`, `classification`, `routing`, or `execution`.
@@ -117,9 +117,9 @@ are retained as GEval inputs, not classified by keyword checks. Select it with
 `--suite classification --only import-cycle-options-batch`.
 
 ```bash
-pnpm eval:skills --prepare --suite execution --only import- --runs 1
+bun run eval:skills --prepare --suite execution --only import- --runs 1
 # Explicit model execution, separate from preparation and CI:
-pnpm eval:skills --live --suite execution --only import- --runs 1
+bun run eval:skills --live --suite execution --only import- --runs 1
 ```
 
 Cases may declare exact `artifactPaths` under `.adr-review/` for Markdown, JSON
@@ -175,8 +175,8 @@ new TEXT 4 / VOICE 5 versus existing TEXT 5 / VOICE 6, rather than replacing the
 historical regression contract with today's defaults.
 
 ```bash
-pnpm eval:skills --prepare --suite execution --only rollup-encbird-current- --runs 1
-pnpm eval:skills --live --suite execution --only rollup-encbird-current- --model us.anthropic.claude-opus-5-5 --runs 1 --jobs 2 --timeout 600
+bun run eval:skills --prepare --suite execution --only rollup-encbird-current- --runs 1
+bun run eval:skills --live --suite execution --only rollup-encbird-current- --model us.anthropic.claude-opus-5-5 --runs 1 --jobs 2 --timeout 600
 ```
 
 Rollup has separate planning and local execution-evidence checks.
@@ -293,9 +293,9 @@ separately from the archive/membership transfer probes; passing a familiar
 example does not establish generalization to unseen domains.
 
 ```bash
-pnpm eval:skills --prepare --suite classification --only report-artifact- --runs 1
-pnpm eval:skills --live --suite classification --only report-artifact- --model us.anthropic.claude-opus-5-5 --runs 2 --timeout 600
-pnpm eval:skills --live --suite classification --only report-regression- --model us.anthropic.claude-opus-5-5 --runs 2 --timeout 600
+bun run eval:skills --prepare --suite classification --only report-artifact- --runs 1
+bun run eval:skills --live --suite classification --only report-artifact- --model us.anthropic.claude-opus-5-5 --runs 2 --timeout 600
+bun run eval:skills --live --suite classification --only report-regression- --model us.anthropic.claude-opus-5-5 --runs 2 --timeout 600
 ```
 
 The `report-drilldown-visual-` pair checks a useful sequence within the detailed
@@ -355,8 +355,8 @@ runner never automatically removes a Skill or changes a release requirement.
 ## Regenerate without rerunning
 
 ```bash
-pnpm eval:report .codex/evals/<run-directory>
-pnpm eval:skills --report .codex/evals/<run-directory> --open
+bun run eval:report .codex/evals/<run-directory>
+bun run eval:skills --report .codex/evals/<run-directory> --open
 ```
 
 Both commands rebuild HTML from the recorded results without target or judge
@@ -387,9 +387,9 @@ optional without removing product contracts or schemas. Empty responses and
 missing required evidence are still errors or unverified, never success.
 
 ```bash
-pnpm eval:skills --live --rejudge .codex/evals/<source-run> --jobs 2
-pnpm eval:skills --prepare --rejudge .codex/evals/<source-run>
-pnpm eval:calibration --live --only semantic- --runs 1
+bun run eval:skills --live --rejudge .codex/evals/<source-run> --jobs 2
+bun run eval:skills --prepare --rejudge .codex/evals/<source-run>
+bun run eval:calibration --live --only semantic- --runs 1
 ```
 
 Reassessment restores recorded evidence into a separate check workspace, applies
