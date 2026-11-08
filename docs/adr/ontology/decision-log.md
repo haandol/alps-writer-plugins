@@ -8,6 +8,14 @@ The current Purpose, all still-valid Decision Drivers, adopted choice, rationale
 and requirement contract remain together in the ADR body. Reading this log is
 optional for understanding the current decision.
 
+## 2026-11-08 — 로컬 웹 질문 세션으로 실시간 답변
+
+- **Current ADR**: [build-ontology-from-documents](./0004-build-ontology-from-documents.md)
+- **Change type**: requirement rule change
+- **What**: 리포트의 질문에 로컬 웹 질문 세션에서 바로 보내기·모아 보내기로 답하고, 에이전트가 답마다 후속 질문과 갱신된 후보를 같은 화면에 올린다. 질문은 다이어그램과 선택지별 결과 비교로 시각화하고, 저장소의 문서·ADR·하네스가 답하는 질문은 묻지 않고 해소 항목으로 보인다. 최종 승인 요약과 저장 승인은 대화에서 받는다(R33–R39).
+- **Why**: 사용자는 질문이 많은 구축에서 답을 텍스트로 모두 쓰지 않고 웹에서 시각 자료를 보며 실시간으로 답하기를 원했고, 저장소에 이미 있는 답을 다시 묻지 않기를 원했다.
+- **What is now void**: 질문 답변을 대화의 텍스트로만 받던 방식. 리포트 하나로 질문을 제시하고 질문 식별자로 답하는 보장(R12)은 유지한다.
+
 ## 2026-11-07 — 검색 색인 제거, 조회마다 현재 원본에서 계산
 
 - **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
