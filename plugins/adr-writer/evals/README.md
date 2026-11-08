@@ -44,14 +44,14 @@ separate suite.
 ```bash
 cd plugins/adr-writer
 
-node evals/run.mjs --list                        # scenario names
-node evals/run.mjs --dry-run --only review-      # build fixtures, print prompts, no agent
-node evals/run.mjs --live --only review-catches         # one scenario, one run
-node evals/run.mjs --live --only review-catches --runs 10   # rates
-node evals/run.mjs --changed main --list          # affected scenarios only
-node evals/run.mjs --live --changed main --runs 5        # affected branch + working-tree scenarios
-node evals/run.mjs --live --runs 5 --out /tmp/report.md     # everything, shareable report
-node evals/run.mjs --live --only review-catches --out /tmp/report.md \
+bun evals/run.mjs --list                        # scenario names
+bun evals/run.mjs --dry-run --only review-      # build fixtures, print prompts, no agent
+bun evals/run.mjs --live --only review-catches         # one scenario, one run
+bun evals/run.mjs --live --only review-catches --runs 10   # rates
+bun evals/run.mjs --changed main --list          # affected scenarios only
+bun evals/run.mjs --live --changed main --runs 5        # affected branch + working-tree scenarios
+bun evals/run.mjs --live --runs 5 --out /tmp/report.md     # everything, shareable report
+bun evals/run.mjs --live --only review-catches --out /tmp/report.md \
   --include-transcript --include-fixture-paths        # explicit sensitive detail
 ```
 
@@ -72,9 +72,9 @@ The agent command is configurable, since this plugin ships for two clients and
 models outlive this directory:
 
 ```bash
-node evals/run.mjs --live  # isolated default adapter and logged fixture tools
-ADR_EVAL_CMD="claude -p --model opus --allowedTools ''" node evals/run.mjs --live
-ADR_EVAL_CMD="codex exec" node evals/run.mjs --live
+bun evals/run.mjs --live  # isolated default adapter and logged fixture tools
+ADR_EVAL_CMD="claude -p --model opus --allowedTools ''" bun evals/run.mjs --live
+ADR_EVAL_CMD="codex exec" bun evals/run.mjs --live
 ```
 
 The target command receives the prompt on **stdin** and prints the reply to stdout.
@@ -91,7 +91,7 @@ write an ADR, so they need write access to the fixture directory:
 
 ```bash
 ADR_EVAL_CMD="claude -p --add-dir . --allowedTools 'Read Write Edit Bash'" \
-  node evals/run.mjs --live --only author-
+  bun evals/run.mjs --live --only author-
 ```
 
 Exit code is 0 whenever at least one run was scored, **including when checks
@@ -358,7 +358,7 @@ ADR_EVAL_REPO=~/git/pixelbank \
 ADR_EVAL_ADR=docs/adr/token/0002-free-trial.md \
 ADR_EVAL_VALUES="2회,3회,1회" \
 ADR_EVAL_CMD="claude -p --allowedTools 'Read Grep Glob'" \
-  node evals/run.mjs --live --only review-real-repo-adr --runs 3 --out /tmp/report.md
+  bun evals/run.mjs --live --only review-real-repo-adr --runs 3 --out /tmp/report.md
 ```
 
 The ADR, its sibling category, the repo's own rule docs, and **everything the ADR

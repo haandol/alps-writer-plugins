@@ -257,7 +257,7 @@ Automated in these places, so you rarely have to remember:
 
 Behaviour evals (`plugins/adr-writer/evals/`) are **not** part of `bun run test` —
 they call a real model, cost money, and are non-deterministic. Run them by hand
-when reproducing a reported LLM defect: `node evals/run.mjs --live --only <name> --runs 10`.
+when reproducing a reported LLM defect: `bun evals/run.mjs --live --only <name> --runs 10`.
 
 The [rollup/sync regression suite](./plugins/adr-writer/evals/deepeval/README.md)
 adds actual fixture edits, DeepEval GEval judgments, and local HTML/JSON reports.
@@ -370,7 +370,7 @@ ontology-writer runs copies of `adr-lint-lib.mjs`, `adr-status-transition.mjs` a
 `bun run test:checks`, rejects a stale copy. The dependency-free Mermaid
 implementation remains in the ADR scripts; the sync step distributes it with the
 standalone skill. Global installation is an explicit
-`node scripts/sync-report-skill.mjs --global`, never a build side effect.
+`bun scripts/sync-report-skill.mjs --global`, never a build side effect.
 
 Keep common explanation rules in `explanation-design.md`, meaning and terminology
 checks in `editorial-review.md`, and delivery checks in `format-and-layout.md`.

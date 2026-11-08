@@ -226,7 +226,7 @@ Six dependency-free scripts verify ADR structure and deliver review artifacts wi
 **A fresh draft is not reviewed twice.** `/adr-new` authors under the same rules the reviewer applies (R1-R20), so it self-checks at its step 6 and saves rather than spawning a reviewer — a review one turn after being handed the rules re-derives a judgment just made, and its punch list is mostly items the author already got right. `/adr-review` is the independent read, and it exists because that authoring context does not survive the session: an ADR **edited by hand or by another session** has nobody who knows what its author was told. Run it on request, on an inherited ADR set, or after hand-editing — not automatically after `/adr-new`.
 
 ```bash
-node <adr-writer-plugin>/scripts/adr-structure-lint.mjs [category]   # structure + invariants
+bun <adr-writer-plugin>/scripts/adr-structure-lint.mjs [category]   # structure + invariants
 ```
 
 That one command covers both ADR-well-formedness scripts, since the lint invokes the oracle and folds its exit code in. See the full per-script check list in the [adr-writer README](../plugins/adr-writer/README.md#deterministic-self-test-harness).
