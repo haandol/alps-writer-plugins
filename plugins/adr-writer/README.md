@@ -1,5 +1,55 @@
 # adr-writer
 
+Record the decisions and exact requirements your code must honor as architecture
+decision records (ADRs), then let the agent implement them, test them and prove
+the result. ADRs live in `docs/adr/` with an index, so a decision is found
+before it is changed and code follows it rather than the other way round.
+
+```mermaid
+flowchart LR
+    New["/adr-new<br/>or /adr-import"] --> Proposed["ADR: Proposed"]
+    Proposed --> Impl["/adr-impl<br/>code + tests"]
+    Impl --> Review["/adr-impl-review<br/>evidence report"]
+    Review -->|PASS| Accepted["ADR: Accepted"]
+    Review -->|gaps| Impl
+    Accepted -.->|drift or edits| Sync["/adr-sync"]
+```
+
+## What you can do
+
+| Goal                                          | Command                       |
+| --------------------------------------------- | ----------------------------- |
+| Record a new decision                         | `/adr-new <category>`         |
+| Document decisions in an existing codebase    | `/adr-import [scope]`         |
+| Find the decision that owns a question        | `/adr-search <query>`         |
+| Implement a decision, with tests and review   | `/adr-impl [category]`        |
+| Review an implementation against its contract | `/adr-impl-review [category]` |
+| Review ADR documents without reading code     | `/adr-review [category]`      |
+| Reconcile ADRs with the code after drift      | `/adr-sync [category]`        |
+| Consolidate one decision's recorded evolution | `/adr-rollup [category]`      |
+| Write a standalone report for a reader        | `/report-writer`              |
+
+## Reports you can read
+
+Reviews end in a standalone HTML report that works offline: the purpose and
+context first, then the answer and its limits, figures where they help, the
+evidence, and optional self-check questions.
+
+![A report from the bundled example](../../docs/images/report-writer.webp)
+
+The screenshot renders the bundled [example report](./skills/report-writer/references/examples/report-with-quiz.json);
+`bun run docs:screenshots` regenerates it.
+
+To install only the report skill, without the plugin's hooks or review workflows:
+
+```bash
+bunx skills add https://github.com/haandol/alps-writer-plugins/tree/main/plugins/adr-writer/skills/report-writer --global --agent codex
+```
+
+Omit `--global` for a project-local installation.
+
+## How it works
+
 ADR-driven development cycle for Codex and Claude Code. The ADR admission gate records only durable requirements and architectural decisions, leaving replaceable libraries, SDKs, frameworks, and credential/auth wiring in code. User-facing authoring leads with decision intent and a Decision Digest, records one reviewable obligation and implementation-independent observable evidence per contract row, and keeps implementation defaults below ADR resolution. Edits and sync lead with semantic changes. Implementation and review use **Hiking**: the complete scope becomes one or more low vertical **Hills**, each representing a user flow, logical capability, or evidence-grounded bounded context. Review uses reading zooms: Context for intent/contracts/scope, Container/Hill for a vertical capability, Component for detailed implementation, and collapsed Code for a focused diff or current excerpt. Contract evidence remains co-located inside the owning Hill.
 
 ADR digests, implementation plans, and document reviews show an ephemeral `Comprehension load: N/10`. The shared rubric is a reading aid: a score alone never delays approved implementation or decides approval/completion. High load may prompt non-blocking split guidance; changing an ADR boundary still follows its existing approval contract.
