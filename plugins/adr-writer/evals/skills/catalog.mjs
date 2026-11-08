@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { cases as executionCases } from "../regression/cases.mjs";
 import { sha, confined, listFiles } from "../regression/workspace.mjs";
 import { responseObligations } from "./response-contract.mjs";
+import { ALPS_PLUGIN_ROOT } from "../lib/harness.mjs";
 import { reportCases } from "./report-cases.mjs";
 import { reportScopeCases } from "./report-scope-cases.mjs";
 import { reportArtifactCases } from "./report-artifact-cases.mjs";
@@ -96,7 +97,7 @@ export const routingCases = [
 }));
 
 /** Read shipped metadata, deduplicating identical shared skills rather than manufacturing router hints. */
-export function skillCatalog(roots = [PLUGIN, path.join(ROOT, "plugins/alps-writer")]) {
+export function skillCatalog(roots = [PLUGIN, ALPS_PLUGIN_ROOT]) {
   const found = new Map();
   for (const root of roots) {
     if (!existsSync(path.join(root, "skills"))) continue;

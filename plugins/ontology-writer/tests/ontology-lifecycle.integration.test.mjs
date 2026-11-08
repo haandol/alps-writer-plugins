@@ -440,7 +440,7 @@ test("the dates a save records are ISO calendar dates whatever locale data the r
       "us-dates.mjs",
       'Date.prototype.toLocaleDateString = () => "11/1/2026";\n',
     );
-    const env = { ...process.env, BUN_OPTIONS: `--preload ${preload}` };
+    const env = { ...process.env, BUN_OPTIONS: `${process.env.BUN_OPTIONS} --preload ${preload}` };
     cpSync(path.join(dir, "docs/ontology"), path.join(dir, "draft"), { recursive: true });
     write(
       dir,

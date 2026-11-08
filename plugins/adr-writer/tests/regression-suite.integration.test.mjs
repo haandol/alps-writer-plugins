@@ -11,6 +11,7 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { bunTestSummary } from "./helpers.mjs";
 import { cases } from "../evals/regression/cases.mjs";
 import {
   confined,
@@ -141,13 +142,7 @@ test("the eleven cases have reproducible, executable fixtures and complete sourc
     const tests = tools.call("run_check", { kind: "policy-tests" });
     const lint = tools.call("run_check", { kind: "structure" });
     assert.equal(tests.exitCode, 0, `${item.id}: ${tests.stdout}${tests.stderr}`);
-    // bun test reports to stderr; its summary names how many tests ran.
-    assert.match(
-      tests.stdout + tests.stderr,
-      /\bRan [1-9]\d* tests?\b/,
-      `${item.id}: policy tests must actually run`,
-    );
-    assert.doesNotMatch(tests.stderr, /skipping running files/);
+    assert.ok(bunTestSummary(tests).ran > 0, `${item.id}: policy tests must actually run`);
     assert.equal(lint.exitCode, 0, `${item.id}: ${lint.stdout}${lint.stderr}`);
   }
 });

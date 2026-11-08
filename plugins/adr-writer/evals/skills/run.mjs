@@ -19,7 +19,7 @@ import {
 import { semanticPrompt } from "./response-contract.mjs";
 import { capturedChecks } from "./mechanical-checks.mjs";
 import { checkRequiredGuidance } from "../lib/required-guidance.mjs";
-import { parseTail } from "../lib/harness.mjs";
+import { parseTail, ALPS_PLUGIN_ROOT, ONTOLOGY_PLUGIN_ROOT } from "../lib/harness.mjs";
 import { scenarioNamesForChangedPaths } from "../impact-map.mjs";
 import { BEDROCK_DEFAULTS } from "../deepeval/bedrock.mjs";
 import { validateReportEvaluation } from "./report-evaluation.mjs";
@@ -227,13 +227,12 @@ function toolConfig(directory, root, pluginRoot, logPath, artifactPaths = [], dr
 // plugin's guidance through CLAUDE_PLUGIN_ROOT. The probe root is that root, so it
 // carries the guidance those skills reference; files adr-writer ships stay its own.
 const SIBLING_GUIDANCE = [
-  ["plugins/alps-writer", ["skills", "references"]],
-  ["plugins/ontology-writer", ["skills", "references", "templates"]],
+  [ALPS_PLUGIN_ROOT, ["skills", "references"]],
+  [ONTOLOGY_PLUGIN_ROOT, ["skills", "references", "templates"]],
 ];
 
 function addSiblingGuidance(destination) {
-  for (const [plugin, folders] of SIBLING_GUIDANCE) {
-    const source = path.join(ROOT, plugin);
+  for (const [source, folders] of SIBLING_GUIDANCE) {
     for (const folder of folders)
       for (const file of listFiles(source, folder)) {
         const target = confined(destination, file);
