@@ -1,10 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { PLUGIN_ROOT, withTmp, write } from "./helpers.mjs";
+import { bunTestSummary, PLUGIN_ROOT, withTmp, write } from "./helpers.mjs";
 import { skillText } from "../evals/lib/harness.mjs";
 
 const schemaPath = "skills/adr-impl-review/references/artifact-schema.md";
@@ -23,27 +22,22 @@ const validate = (dir) => run("adr-impl-review-validate.mjs", dir);
 // The admission test's result depends only on its two files, so one execution serves every
 // fixture with the same sources; a changed source runs again.
 const admissionRuns = new Map();
+const ADMISSION_TEST = "admit below the two-request limit, reject at and above it";
 function runAdmissionTest(dir) {
   const key = ["src/admission.mjs", "test/admission.test.mjs"]
     .map((file) => readFileSync(path.join(dir, file), "utf8"))
     .join("\0");
   let execution = admissionRuns.get(key);
   if (!execution) {
-    // bun test names only failing tests on a pipe, so its JUnit report records which ran.
-    const report = path.join(mkdtempSync(path.join(tmpdir(), "admission-")), "junit.xml");
+    // Select the admission test by name: one test ran proves it is the one that ran.
     execution = spawnSync(
       process.execPath,
-      ["test", "--reporter=junit", `--reporter-outfile=${report}`, "./test/admission.test.mjs"],
-      { cwd: dir, encoding: "utf8", env: { ...process.env } },
+      ["test", "-t", ADMISSION_TEST, "./test/admission.test.mjs"],
+      { cwd: dir, encoding: "utf8" },
     );
-    execution.ran = existsSync(report) ? readFileSync(report, "utf8") : "";
-    rmSync(path.dirname(report), { recursive: true, force: true });
     admissionRuns.set(key, execution);
   }
-  assert.match(
-    execution.ran,
-    /<testcase name="admit below the two-request limit, reject at and above it"/,
-  );
+  assert.equal(bunTestSummary(execution).ran, 1, execution.stderr);
   return execution;
 }
 
@@ -60,7 +54,7 @@ function fixture(dir) {
     `import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { canAdmit } from '../src/admission.mjs';
-test('admit below the two-request limit, reject at and above it', () => {
+test(${JSON.stringify(ADMISSION_TEST)}, () => {
   assert.equal(canAdmit(0), true);
   assert.equal(canAdmit(1), true);
   assert.equal(canAdmit(2), false);

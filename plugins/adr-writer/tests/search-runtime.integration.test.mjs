@@ -59,7 +59,7 @@ function setup() {
   const query = async (root, query) =>
     JSON.parse(
       (
-        await run("bun", ["--no-install", command, "--root", root, "--query", query, "--json"], {
+        await run(process.execPath, [command, "--root", root, "--query", query, "--json"], {
           timeout: 15000,
           maxBuffer: 2 * 1024 * 1024,
           env,

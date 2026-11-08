@@ -137,8 +137,19 @@ export function runInvariants(dir, extraArgs = [], env = {}) {
   return runCapture("bash", [INVARIANTS, ...extraArgs], dir, env);
 }
 
-// Shipped scripts run on the test's own Bun, without auto-installing packages.
-const runScript = (args, dir) => runCapture(process.execPath, ["--no-install", ...args], dir);
+/** Counts from a nested bun test report, which Bun writes to stderr. */
+export function bunTestSummary({ stdout = "", stderr = "" }) {
+  const output = stdout + stderr;
+  const count = (pattern) => Number(pattern.exec(output)?.[1] ?? 0);
+  return {
+    ran: count(/^Ran (\d+) tests? /m),
+    pass: count(/^\s*(\d+) pass$/m),
+    fail: count(/^\s*(\d+) fail$/m),
+  };
+}
+
+// Shipped scripts run on the test's own Bun (scripts/test-env.mjs forbids installs).
+const runScript = (args, dir) => runCapture(process.execPath, args, dir);
 
 // Run adr-structure-lint.mjs in `dir`. Returns {code, stdout}. --json is added
 // by default so tests can parse findings; pass json=false for the text report.

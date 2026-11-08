@@ -193,7 +193,7 @@ group's files across one `bun test` process per CPU (`TEST_SHARDS` overrides the
 count) and prints each shard's report, then a summary. Files in one shard share a
 process, so a test keeps its own temporary fixtures and restores any environment
 it changes. The files use the `node:test` API, which Bun implements; `bunfig.toml`
-preloads the git-shim and timezone setup for every `bun test`. Run one with
+preloads the git shim and the test environment for every `bun test`. Run one with
 `bun run test:alps`, `bun run test:adr`, `bun run test:ontology`, `bun run test:deepeval`, or
 `bun run test:report-rendering`. `bun run test:workspace` runs the installed-dependency
 suites and shared asset/guidance checks; CI runs the dependency-free ADR and ontology
@@ -209,9 +209,12 @@ or the Prettier version invalidate entries. Delete that disposable cache or run
 `bunx prettier --check .` for a full scan. CI still checks every file on a
 fresh checkout.
 
-`bun test` runs its tests in UTC unless `TZ` is set, while a CLI a test starts
-would otherwise use the machine's zone. The timezone preload exports the zone the
-tests run in, so a date a test computes and a date its CLI records agree.
+`scripts/test-env.mjs` sets what every process a test starts inherits. `bun test`
+runs its tests in UTC unless `TZ` is set, so it exports that zone and a date a
+test computes agrees with the date its CLI records. It also sets
+`BUN_OPTIONS=--no-install`, so a shipped script never passes a test only because
+Bun installed a package on the fly. Spawn shipped scripts with `process.execPath`
+and nothing more.
 
 On macOS, `/usr/bin/git` is a shim that looks the developer tools up through
 `xcrun` before every run, and the tests start thousands of git processes. When

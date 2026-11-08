@@ -20,7 +20,7 @@ export function cli(dir, args, env = process.env) {
   try {
     return {
       code: 0,
-      out: execFileSync(process.execPath, ["--no-install", CLI, ...args], {
+      out: execFileSync(process.execPath, [CLI, ...args], {
         cwd: dir,
         encoding: "utf8",
         env,
