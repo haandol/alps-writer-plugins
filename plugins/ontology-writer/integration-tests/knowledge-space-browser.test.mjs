@@ -203,6 +203,26 @@ test("spatial detail selection and upward navigation restore both camera and sco
   assert.deepEqual(await internalKeys(), []);
 });
 
+test("a selected element outside the search page keeps the BC label below the heading", async () => {
+  await load();
+  await enter();
+  await settled();
+  // The step is not among the matches, so it joins the page in its lower row.
+  await page.type("#kw-search", "payment");
+  await page.evaluate(() => (location.hash = "#bc=ordering&element=ordering.confirm-order"));
+  await page.waitForFunction(() => document.getElementById("kw-space").dataset.depth === "2");
+  await settled();
+  const [heading, label, step] = await page.evaluate(() =>
+    ["#ks-title", ".ks-expanded .ks-context-node", '[data-space-element="ordering.confirm-order"]']
+      .map((selector) => document.querySelector(selector).getBoundingClientRect())
+      .map(({ top, bottom }) => ({ top, bottom })),
+  );
+  assert.ok(label.top > heading.bottom, "the BC label clears the heading");
+  assert.ok(
+    step.bottom < (await page.$eval("#ks-viewport", (e) => e.getBoundingClientRect().bottom)),
+  );
+});
+
 test("paging a large BC and switching list/3D keeps the same bounded results and selected page", async () => {
   await load(files.large, true);
   await enter();
