@@ -39,6 +39,20 @@ test("five-repeat preparation groups outcomes without dropping native trial reco
   assert.ok(existsSync(result.html));
 });
 
+test("every classification probe finds the guidance its sibling-plugin skills reference", async () => {
+  const items = (await catalog()).filter((entry) => entry.type === "classification");
+  assert.ok(items.some((entry) => entry.id.startsWith("ontology-")));
+  const result = await main(
+    ["--prepare", "--suite", "classification", "--runs", "1", "--out", temp()],
+    { cases: items, target: noCall, judge: noCall },
+  );
+  const errors = result.report.runs.filter((run) => run.verdict === "ERROR");
+  assert.deepEqual(
+    errors.map((run) => `${run.caseId}: ${run.error ?? run.notRunReason ?? ""}`),
+    [],
+  );
+});
+
 test("unified CLI rejects ambiguous live intent and undefined comparison conditions", () => {
   for (const args of [
     ["--live", "--prepare"],

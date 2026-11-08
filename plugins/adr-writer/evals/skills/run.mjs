@@ -224,15 +224,25 @@ function toolConfig(directory, root, pluginRoot, logPath, artifactPaths = [], dr
 }
 
 /** Snapshot ALPS-only instruction files into the shared probe view without changing ADR-owned duplicates. */
-function addAlpsGuidance(destination) {
-  const source = path.join(ROOT, "plugins/alps-writer");
-  for (const folder of ["skills", "references"])
-    for (const file of listFiles(source, folder)) {
-      const target = confined(destination, file);
-      if (existsSync(target)) continue;
-      mkdirSync(path.dirname(target), { recursive: true });
-      cpSync(confined(source, file), target);
-    }
+// Classification probes quote sibling plugins' skills, whose bodies read their own
+// plugin's guidance through CLAUDE_PLUGIN_ROOT. The probe root is that root, so it
+// carries the guidance those skills reference; files adr-writer ships stay its own.
+const SIBLING_GUIDANCE = [
+  ["plugins/alps-writer", ["skills", "references"]],
+  ["plugins/ontology-writer", ["skills", "references", "templates"]],
+];
+
+function addSiblingGuidance(destination) {
+  for (const [plugin, folders] of SIBLING_GUIDANCE) {
+    const source = path.join(ROOT, plugin);
+    for (const folder of folders)
+      for (const file of listFiles(source, folder)) {
+        const target = confined(destination, file);
+        if (existsSync(target)) continue;
+        mkdirSync(path.dirname(target), { recursive: true });
+        cpSync(confined(source, file), target);
+      }
+  }
 }
 
 /** Read plugin metadata first and only selected bodies second; expectations never enter either prompt. */
@@ -577,7 +587,7 @@ export async function main(args, injected = {}) {
     variants.push({ ...candidate, name: "without-skill", guidance: false });
   const probeRoot = path.join(output, "plugin/probes");
   cpSync(candidate.root, probeRoot, { recursive: true });
-  addAlpsGuidance(probeRoot);
+  addSiblingGuidance(probeRoot);
   const entries = skillCatalog();
   json(
     output,
