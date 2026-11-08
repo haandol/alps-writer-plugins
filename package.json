@@ -41,7 +41,8 @@
     "test:workspace": "bun run test:checks && bun scripts/run-tests.mjs workspace",
     "search:sync": "bun scripts/sync-search.mjs",
     "search:check": "bun scripts/sync-search.mjs --check",
-    "test:unit:mjs": "bun scripts/run-tests.mjs unit-mjs"
+    "test:unit:mjs": "bun scripts/run-tests.mjs unit-mjs",
+    "docs:screenshots": "bun scripts/readme-screenshots.mjs"
   },
   "keywords": [
     "claude-code",

@@ -1,5 +1,49 @@
 # ontology-writer
 
+Keep a model of how your business flows — processes, steps, the events they emit,
+the policies that react, and the rules that span features — so an agent changing
+one feature does not break another. The model lives in Turtle files under
+`docs/ontology/`, is checked mechanically, and links each step to the ADRs that
+realize it. ADRs stay the only implementation authority.
+
+![Bounded contexts at a glance](../../docs/images/ontology-bc-overview.webp)
+
+## What you can do
+
+| Goal                                                    | Command                                                                |
+| ------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Build a model from documents, through EventStorming     | `/ontology-build [documents]`                                          |
+| Change the business flow and cascade it to ADRs         | `/ontology-edit [change]`                                              |
+| Check completeness, or reconcile direct Turtle edits    | `/ontology-sync [process]`                                             |
+| Mark a process current once its features run end to end | `/ontology-align [process]`                                            |
+| Browse the model                                        | `/ontology-view`                                                       |
+| Ask before changing a feature                           | `bun scripts/ontology.mjs query --step <id>` (the agent does this too) |
+
+Before an ADR decision or the code of a linked feature changes, the session
+directive asks the agent to query the business context first.
+
+## The saved view
+
+`/ontology-view` writes one read-only HTML file and opens it. Start from the
+bounded contexts (BCs), search inside one, and open any element with its facts,
+relations and realizing ADRs:
+
+![Search inside a BC](../../docs/images/ontology-bc-search.webp)
+
+![Step detail](../../docs/images/ontology-step-detail.webp)
+
+"Whole flow & structure" shows every domain event across contexts, and the
+business structure as a 3D city with each process's implementation status:
+
+![Event flow](../../docs/images/ontology-event-flow.webp)
+
+![Business structure](../../docs/images/ontology-business-structure.webp)
+
+Screenshots come from the [template model](./templates/ontology/example.ttl);
+`bun run docs:screenshots` regenerates them.
+
+## How it fits
+
 Business ontology level above ADRs for Codex and Claude Code. A repository keeps one or more Turtle documents in `docs/ontology/` that describe how the business flows across features: processes and their steps, the events steps emit and the policies that react to them, actors, business rules that span steps, business concepts and terms, and observation criteria. The vocabulary is a closed RDFS-lite ontology, so a model built by an agent is checked mechanically and the same question gets the same answer. The model owns flows and relations; ADRs stay the only implementation authority and keep values, state machines and detailed conditions. Model-dependent checks stay inactive without model documents; an explicit build request can create the first model.
 
 The aim is to capture real business workflows accurately and richly, so domain

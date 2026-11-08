@@ -1,49 +1,40 @@
 # ALPS Writer Plugins
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+![Runtime: Bun 1.4.2+](https://img.shields.io/badge/runtime-Bun%201.4.2%2B-black)
 
-Three plugins for Codex and Claude Code: write product requirements, keep a model of how the business flows, record architecture decisions, and implement them with review.
+Three plugins for Claude Code and Codex that carry intent from a product idea to
+working code: write the requirements, keep a model of how the business flows,
+record the decisions code must honor, and implement them with evidence.
 
-| Plugin            | Purpose                                                                                                                                               |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `alps-writer`     | Write product requirements documents (PRDs) in Full or Lite ALPS format through conversation. Transfer Full ALPS features to ADRs.                    |
-| `adr-writer`      | Create architecture decision records (ADRs), adopt them in existing projects, implement decisions, review results, and reconcile documents with code. |
-| `ontology-writer` | Keep an optional business ontology above ADRs — flows, events, policies and cross-step rules in Turtle — and align the ADRs that realize it.          |
+![Bounded contexts of a business ontology](./docs/images/ontology-bc-overview.webp)
 
-Install any plugin independently. The Full ALPS → ADR workflow needs alps-writer and adr-writer; a business ontology that reaches ADRs needs ontology-writer and adr-writer.
+## The plugins
 
-Ontology Writer constructs knowledge as a small BC layer of responsibilities,
-core business logic and collaborations, then heavier internal workflows per BC.
-Read the whole BC layer with `query --overview`, search within a selected BC with
-`query --context <id> --search <text>`, and follow the detailed work into its ADRs.
+| Plugin                                                 | What it gives you                                                                                       | Start with                          |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| [alps-writer](./plugins/alps-writer/README.md)         | A product requirements document (Full or Lite ALPS) written through conversation, section by section    | `/alps-init`, `/lite-alps-init`     |
+| [adr-writer](./plugins/adr-writer/README.md)           | Architecture decision records (ADRs), implementation against them, and evidence-backed review reports   | `/adr-new`, `/adr-import`           |
+| [ontology-writer](./plugins/ontology-writer/README.md) | An optional model of business flows above the ADRs, with a browsable view and pre-change context checks | `/ontology-build`, `/ontology-view` |
 
-## Quick Start
+Each plugin installs and works on its own. They connect where their artifacts do:
 
-Requires Bun 1.4.2 or later. The MCP server, the session-start hooks and every
-plugin script run with Bun; Node.js is not needed to use the plugins. Marketplace
-installs include the bundled server and local search modules; no npm install or
-build step is needed. Developing this repository uses the same Bun as its
-package manager and test runner (see [CONTRIBUTING.md](CONTRIBUTING.md)).
-
-Local search reads the current Markdown and Turtle files on every query and
-keeps no index or cache. It supports words in any order, quoted phrases and short
-Korean text, returns source locations and Status, and preserves the existing
-contract and business-relation checks. Use `/adr-search` to locate a decision.
-
-### Codex
-
-```bash
-codex plugin marketplace add haandol/alps-writer-plugins
-codex plugin add alps-writer@alps-writer
-codex plugin add adr-writer@alps-writer
-codex plugin add ontology-writer@alps-writer   # only for a business ontology
+```mermaid
+flowchart LR
+    PRD["PRD<br/>alps-writer"] -->|/feature-to-adr| ADR["ADRs<br/>adr-writer"]
+    Model["Business ontology<br/>ontology-writer"] -->|steps realized by| ADR
+    ADR -->|/adr-impl| Code["Code, tests<br/>and review report"]
 ```
 
-Invoke a skill with `$skill-name`, such as `$alps-init` or `$adr-new`, or ask for a workflow in natural language.
+The Full ALPS → ADR handoff needs alps-writer and adr-writer; an ontology that
+reaches ADRs needs ontology-writer and adr-writer.
 
-When prompted, review and trust ADR Writer's `SessionStart` hook. It restores the ADR directive on startup, resume, clear, and compaction; it does not run for every user prompt.
+## Quick start
 
-### Claude Code
+Requires [Bun](https://bun.sh) 1.4.2 or later. The MCP server, hooks and scripts
+run with Bun; nothing else is installed.
+
+**Claude Code**
 
 ```text
 /plugin marketplace add haandol/alps-writer-plugins
@@ -52,9 +43,21 @@ When prompted, review and trust ADR Writer's `SessionStart` hook. It restores th
 /plugin install ontology-writer@alps-writer   # only for a business ontology
 ```
 
-Use `/skill-name` instead of `$skill-name`. The examples below use Claude Code notation.
+**Codex**
 
-For Codex on Amazon Bedrock, see [ADR Writer troubleshooting](./plugins/adr-writer/README.md#amazon-bedrock-rejects-a-subagent-request) before running review skills.
+```bash
+codex plugin marketplace add haandol/alps-writer-plugins
+codex plugin add alps-writer@alps-writer
+codex plugin add adr-writer@alps-writer
+codex plugin add ontology-writer@alps-writer   # only for a business ontology
+```
+
+In Codex, invoke a skill with `$skill-name` (such as `$alps-init`) instead of
+`/skill-name`, or ask in plain language. When prompted, review and trust the
+plugins' `SessionStart` hooks; they restore short directives on startup, resume,
+clear and compaction, and a hook does not run for every user prompt. For Codex on Amazon Bedrock, read the
+[ADR Writer troubleshooting](./plugins/adr-writer/README.md#amazon-bedrock-rejects-a-subagent-request)
+before running review skills.
 
 ## Choose a workflow
 
@@ -64,159 +67,105 @@ For Codex on Amazon Bedrock, see [ADR Writer troubleshooting](./plugins/adr-writ
 | Plan a product, then implement it            | `/alps-init` → `/feature-to-adr` → `/adr-impl`          |
 | Make an architecture or requirement decision | `/adr-new` → `/adr-impl`                                |
 | Document decisions in an existing codebase   | `/adr-import [project-path-or-feature-scope]`           |
+| Find the decision that owns a question       | `/adr-search <query>`                                   |
 | Model how the business flows across features | `/ontology-build` → `/ontology-edit` → `/ontology-view` |
 
-### Write a product spec
+New ADRs start as `Proposed`. `/adr-impl` implements and tests them and runs
+`/adr-impl-review` as its completion gate; a passing review promotes the ADR to
+`Accepted`. Changes to requirements or architecture need your confirmation first;
+fixes that restore intended behavior and behavior-preserving refactors do not.
 
-ALPS (Agentic Lean Product Spec) has two formats:
+## What you see
 
-- **Full ALPS:** nine sections covering the product problem, scope, constraints, features, and demos. The agent asks focused questions and saves content after confirmation.
-- **Lite ALPS:** four sections for a minimum PoC. You provide the problem and Desired Business Impact; the agent proposes a solution, essential user experiences, and an executable demo for approval.
+**Browse the business model** — the business structure view of `/ontology-view`:
 
-Both export to Markdown, keep separate files and completion state, and add a glossary only when terms need confirmed definitions. See the [ALPS format guide](./plugins/alps-writer/templates/alps/about-alps.md) and [Lite walkthrough](./docs/usage.md#a-lite-alps--independent-poc-authoring).
+![Business structure view](./docs/images/ontology-business-structure.webp)
 
-For Full ALPS, `/feature-to-adr` transfers each feature's complete implementation requirements into one or more ADRs. After handoff, ADRs govern implementation; the PRD remains a planning record. Re-import a changed PRD explicitly to propose ADR updates. Equivalent input leaves the ADRs unchanged.
+**Read a review** — a standalone report from the bundled example:
 
-After completing Full or Lite ALPS, the agent offers an optional deep-research review.
-Skipping it leaves the document complete. You can also request
-`/alps-research <document-path>` (`$alps-research` in Codex) to find evidence for
-document items and check facts, numbers, citations, and contradictions. The review
-distinguishes errors and evidence gaps from product goals or policy choices.
+![Report from the bundled example](./docs/images/report-writer.webp)
 
-Research uses the agent's available built-in deep research first. Otherwise, the
-[research skill](./plugins/alps-writer/skills/alps-research/SKILL.md) uses available
-web search and source reading, falling back to connected DuckDuckGo MCP when search
-is unavailable or fails. It reports any fallback or evidence it could not verify.
-DuckDuckGo is supplied by the agent environment; the plugin does not install or
-configure it. Findings include sources and proposed corrections. You choose which
-changes enter ALPS through its existing Section/Feature approval flow.
-
-### Implement and maintain decisions
-
-New ADRs start as `Proposed`. `/adr-impl` checks prerequisites, implements the approved requirements, runs tests, and reviews the result. It uses `/adr-impl-refactor` when a separate refactoring pass is warranted and `/adr-impl-review` as the completion gate. A passing review promotes the ADR to `Accepted`.
-
-After an approved save, `/adr-new` normally runs `/adr-review` on that saved ADR
-as a recommended document check. It honors an explicit skip/defer and reuses an
-unchanged completed review. `/adr-impl` runs its implementation review after code
-and tests, before completion; it reuses that result instead of reviewing again
-after the status transition. Document review never proves implementation complete.
-
-Use `/adr-review` to review ADR documents without editing them or reading code. Use `/adr-sync` to reconcile proven drift, check broad refactors or manual ADR edits, or run a periodic audit. `/adr-rollup` consolidates the recorded evolution of one decision while preserving its requirements and rationale.
-
-`/adr-review` also checks whether the recorded intent is fully expressed as
-requirements with observable completion criteria. `/adr-impl` connects those
-requirements to meaningful normal and relevant edge-case assertions;
-`/adr-impl-review` reads the actual code paths, assertions and execution results
-to assess coverage. Missing clauses or required evidence prevent completion.
-Document-review PASS does not establish implementation completion.
-
-Changes to requirements or architecture need confirmation before implementation. Fixes that restore intended behavior and refactors that preserve it can proceed without a new ADR.
-
-### Adopt an existing project
-
-`/adr-import` reads local code, tests, and documents to propose decisions grouped by business responsibility. With no argument, it uses the current repository. It prepares drafts and collects unresolved intent, conflicts, and approval questions in one report.
-
-Confirm, revise, or defer items by question ID. The agent saves and validates confirmed contracts as `Proposed` ADRs without changing application code or accessing live systems. Repeating an equivalent import leaves existing documents unchanged. See the [adoption guide](./plugins/adr-writer/README.md#adopt-an-existing-project).
+Reports work offline. Self-check questions are optional, and
+the ordinary main-session completion response never prints Q1 or starts grading.
+More screenshots are in the [ontology-writer](./plugins/ontology-writer/README.md#the-saved-view)
+and [adr-writer](./plugins/adr-writer/README.md#reports-you-can-read) READMEs.
 
 ## What belongs in each artifact
 
-The plugins preserve conditions needed to rebuild the system, while leaving recoverable facts in code and tests.
+The plugins preserve conditions needed to rebuild the system and leave
+recoverable facts in code and tests.
 
 | Artifact          | What it owns                                                                                                |
 | ----------------- | ----------------------------------------------------------------------------------------------------------- |
 | PRD               | User problems, expected outcomes, product requirements, and exclusions                                      |
+| Business ontology | How the business flows: events, policies, cross-step rules and terms (optional)                             |
 | ADR               | Architecture decisions, exact requirement values and rules, rationale, alternatives, and durable boundaries |
 | Code and tests    | Implementation details and executable verification                                                          |
 | Issue, PR, commit | Change-specific intent and history                                                                          |
 
 Apply three checks in order:
 
-1. **Requirement gate:** preserve any fact whose loss could change required behavior, values, permissions, ordering, or failure guarantees.
-2. **Code-readthrough test:** leave non-requirement facts in code when they can be recovered from the implementation.
-3. **ADR admission gate and litmus test:** record durable architectural choices, their reasons, and trade-offs when code alone cannot explain them.
+1. **Requirement gate:** keep any fact whose loss could change required behavior,
+   values, permissions, ordering or failure guarantees.
+2. **Code-readthrough test:** leave other facts in code when the implementation
+   shows them.
+3. **ADR admission gate and litmus test:** record durable architectural choices,
+   their reasons and trade-offs when code alone cannot explain them.
 
-Rebuilding does not mean recreating the same files, functions, or libraries. It means preserving behavior and constraints. See the [dependency model](./docs/dependency-model.md) for the reference rules.
+Rebuilding does not mean recreating the same files or libraries; it means keeping
+behavior and constraints. Removing the plugins leaves PRDs, ADRs, models, code and
+tests readable on their own: hooks and skills govern artifacts, actions, evidence
+and approvals, and leave private reasoning and subagent orchestration to the model.
+See the [dependency model](./docs/dependency-model.md) for the reference rules.
 
-Removing the plugins leaves PRDs, ADRs, code, and tests readable on their own. Hooks and skills govern artifacts, actions, evidence, and approvals. They leave private reasoning and subagent orchestration to the model.
+## Repository layout
 
-## Report writing
+This is a Bun workspace monorepo. Each plugin under `plugins/` ships on its own,
+so files two plugins share are kept once under `shared/` and copied into each
+plugin by sync scripts; CI fails on a stale copy.
 
-ADR Writer includes `$report-writer` in Codex and `/report-writer` in Claude Code. It creates standalone HTML for explicit report requests or explanations that need structured detail. Short answers stay in chat; when a report's usefulness is unclear, it asks once. Your format and delivery preferences take precedence.
-
-Reports open with separate Purpose and Context sections, in that order: what
-the report should help the reader understand or decide, then the confirmed
-situation and request that prompted it. The answer and material limitations follow.
-
-HTML reports also use interactive explanations where selecting a responsibility,
-condition or case helps the reader follow the same subject in more detail.
-Controls connect the selection to its result and explanation, with source evidence,
-visible limits and a static reading path preserved.
-
-Reports include useful figures whenever evidence and format support them.
-Whole-system and multi-step explanations prefer a Mermaid overview after the
-brief background and answer, then expand the same responsibilities in detail.
-Figures are never a delivery requirement, including for top-down or C4-like
-requests. Diagram exclusions take precedence; when a figure is not feasible,
-the report explains the supported relationships and limitations in prose.
-
-By default, the skill reviews the content and checks the generated file, opens it once in the default browser, and returns its path. Browser interaction and actual print checks run when requested; unperformed checks are reported. Review reports and evidence stay in separate, Git-excluded `.adr-review/` directories. Self-check questions are strongly recommended when useful, but optional unless you request them. The ordinary main-session completion response never prints Q1 or starts grading.
-
-The default page uses an article-style reading column with responsive spacing and
-wider figures and code evidence. Code reviews can show selected diffs through
-bundled diff2html, with line numbers and change highlighting. Key evidence marked
-for printing stays included, and long code lines wrap on paper. Reports work
-offline without downloading fonts, stylesheets or a diff library.
-
-To install only the report skill, without plugin hooks or review workflows:
-
-```bash
-bunx skills add https://github.com/haandol/alps-writer-plugins/tree/main/plugins/adr-writer/skills/report-writer --global --agent codex
+```text
+plugins/
+├── alps-writer/       # PRD skills and the TypeScript MCP server (committed dist/ bundle)
+├── adr-writer/        # ADR skills, hooks, templates, validation scripts, evals
+└── ontology-writer/   # ontology skills, hook, Turtle vocabulary, CLI and HTML views
+shared/                # canonical files copied into plugins (search, report-writer)
+stubs/                 # empty stand-ins for dependencies' unused packages
+scripts/               # sync, version, release, test-runner and screenshot scripts
+docs/                  # usage guides, ADRs for this repository, README images
 ```
-
-Omit `--global` for a project-local installation. See the [report skill](./plugins/adr-writer/skills/report-writer/SKILL.md) for delivery and presentation rules.
 
 ## Documentation
 
-| Guide                                                                                                                                | Contents                                                                                                          |
-| ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| [Usage](./docs/usage.md)                                                                                                             | Walkthroughs, all commands, hooks, and the ADR index                                                              |
-| [ADR process](./docs/adr-process.md)                                                                                                 | Lifecycle, critical command paths, routing, and efficiency review as diagrams (Korean)                            |
-| [ADR templates](./plugins/adr-writer/templates/adr/)                                                                                 | Authoring rules, directory structure, and index schema                                                            |
-| [Ontology Writer](./plugins/ontology-writer/README.md)                                                                               | Business ontology commands, its session directive, and how it works with adr-writer                               |
-| [Ontology workflow](./plugins/ontology-writer/docs/workflow.md) · [example](./plugins/ontology-writer/docs/order-payment-example.md) | How business evidence becomes an ontology and reaches ADRs, code and tests; updates and readiness checks (Korean) |
-| [MCP server](./docs/mcp-server.md)                                                                                                   | Use the ALPS server in other Model Context Protocol (MCP) clients; environment variables and tool reference       |
-
-When calling ALPS document tools directly, pass `doc_path` on every request. Initialization or loading does not select a default for later calls; missing or invalid targets return an error without changing another document.
+| Guide                                                                                                                                | Contents                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [Usage](./docs/usage.md)                                                                                                             | Walkthroughs, all commands, hooks, and the ADR index                                     |
+| [ADR process](./docs/adr-process.md)                                                                                                 | Lifecycle, critical command paths, routing, and efficiency review as diagrams (Korean)   |
+| [ADR templates](./plugins/adr-writer/templates/adr/)                                                                                 | Authoring rules, directory structure, and index schema                                   |
+| [Ontology workflow](./plugins/ontology-writer/docs/workflow.md) · [example](./plugins/ontology-writer/docs/order-payment-example.md) | How business evidence becomes an ontology and reaches ADRs, code and tests (Korean)      |
+| [MCP server](./docs/mcp-server.md)                                                                                                   | Use the ALPS server in other Model Context Protocol (MCP) clients; environment variables |
 
 ## Development
 
-The repository is a bun run workspace. `plugins/alps-writer/` contains the TypeScript MCP server; `plugins/adr-writer/` contains skills, hooks, templates, and validation scripts.
-
 ```bash
 bun install
-bun run test
-bun run build
+bun run test            # generated-asset checks and every test file
+bun run build           # rebuild the committed alps-writer bundle
 bun run lint
 bun run format:check
-bun run bump:check
+bun run docs:screenshots   # regenerate docs/images from the bundled examples
 ```
 
-For server development, use `bun run --filter alps-writer dev` to watch source changes or `bun run --filter alps-writer start` to run the bundle.
-
-The marketplace runs the committed `plugins/alps-writer/dist/` bundle. After changing server source or bundled dependencies, run `bun run build` and include the regenerated bundle. Use `bun run bump <version>` for releases so all version sites stay in sync.
-
-To prepare a skill evaluation report without model calls:
-
-```bash
-bun run eval:skills --prepare --runs 1 --open
-```
-
-Live evaluations require `--live` and incur model costs. See the [skill evaluation guide](./plugins/adr-writer/evals/skills/README.md) and [rollup/sync regression guide](./plugins/adr-writer/evals/deepeval/README.md) for execution, comparison, and saved-report commands.
+The marketplace runs the committed `plugins/alps-writer/dist/` bundle, so include
+the rebuilt bundle with any server change, and release with `bun run bump <version>`
+so all version sites agree. Skill evaluations are described in the
+[evaluation guide](./plugins/adr-writer/evals/skills/README.md); live runs need
+`--live` and incur model costs.
 
 ## Contributing
 
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) for branch, commit, and pull request conventions, and [AGENTS.md](./AGENTS.md) for architecture and repository rules. Open an issue before substantial changes.
-
-For dependency updates, inspect `bun run audit` and Dependabot alerts, keep overrides narrowly scoped, and rebuild the committed bundle before testing and publishing.
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) for branch, commit and pull request
+conventions, and [AGENTS.md](./AGENTS.md) for architecture and repository rules.
+Open an issue before substantial changes.
 
 [Bug reports and feature requests](https://github.com/haandol/alps-writer-plugins/issues) · [MIT License](./LICENSE)
