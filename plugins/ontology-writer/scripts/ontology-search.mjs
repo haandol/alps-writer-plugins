@@ -1,6 +1,6 @@
 // Search only authored business fields. Graph membership and diagnostics remain
 // the responsibility of navigation and validation.
-import { ATTRIBUTES, RDFS, elementId, inRetiredOnly, isRetired } from "./ontology-lib.mjs";
+import { ATTRIBUTES, RDFS, elementId, isVisible } from "./ontology-lib.mjs";
 import { searchUnits } from "./search/search-text.mjs";
 
 const FIELDS = ATTRIBUTES.filter((field) => field.kind === "fact" && field.iri !== RDFS + "label");
@@ -29,19 +29,15 @@ export function ontologySearchUnit(index, iri) {
   };
 }
 
-export function ontologySearchUnits(index, { includeRetired = false } = {}) {
+function ontologySearchUnits(index, { includeRetired }) {
   return [...index.subjects.keys()]
-    .filter(
-      (iri) =>
-        includeRetired ||
-        !(index.typeOf(iri) === "Process" ? isRetired(index, iri) : inRetiredOnly(index, iri)),
-    )
+    .filter((iri) => isVisible(index, iri, includeRetired))
     .sort()
     .map((iri) => ontologySearchUnit(index, iri));
 }
 
-/** Rank the current graph's units on every call; there is no index to keep fresh. */
-export function ontologySearch(index, search, options) {
+/** Rank the visible elements of the current graph. */
+export function ontologySearch(index, search, options = {}) {
   return new Map(
     searchUnits(ontologySearchUnits(index, options), search).map((hit) => [hit.id, hit]),
   );

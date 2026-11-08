@@ -218,12 +218,6 @@ export function knowledgeViewData({
           : explicit.length
             ? explicit
             : (memberships.get(element.k) ?? []);
-      const search = [
-        element.k,
-        ...ATTRIBUTES.filter((a) => a.kind === "fact" && a.on.includes(element.t)).flatMap((a) =>
-          index.literal(iri, a.iri).map((v) => v.value),
-        ),
-      ];
       const adrs = [];
       if (element.t === "Step") {
         for (const [category, entry] of Object.entries(mapping?.categories ?? {})) {
@@ -253,7 +247,6 @@ export function knowledgeViewData({
           ...element,
           contexts: owners,
           shared: !explicit.length && owners.length > 1,
-          search,
           searchUnit: ontologySearchUnit(index, iri),
           adrs,
           ...(processKey

@@ -48,39 +48,43 @@ export function parseSearchQuery(value) {
 const FIELD_WEIGHT = { identifier: 8, title: 5, heading: 3, summary: 2 };
 const lexical = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
+const WORD = /[\p{L}\p{N}]+/gu;
+const wordCount = (text) => {
+  let n = 0;
+  for (const _ of text.matchAll(WORD)) n++;
+  return n;
+};
+
 /** Normalize one read-only search unit without changing its original evidence. */
 export function prepareSearchUnit(unit) {
   if (!unit || typeof unit.id !== "string" || !unit.id)
     throw new TypeError("a search unit requires a stable id");
-  const fields = [
+  const fields = [];
+  for (const field of [
     { name: "identifier", value: unit.identifier ?? unit.id, source: unit.source },
     { name: "title", value: unit.title ?? "", source: unit.titleSource ?? unit.source },
     ...(unit.fields ?? []),
-  ]
-    .map((field) => {
-      if (typeof field.value !== "string") throw new TypeError("searchable fields must be text");
-      return {
-        ...field,
-        text: normalizeSearchText(field.value),
+  ]) {
+    if (typeof field.value !== "string") throw new TypeError("searchable fields must be text");
+    const text = normalizeSearchText(field.value);
+    if (text)
+      fields.push({
+        name: field.name,
+        text,
         weight: FIELD_WEIGHT[field.name] ?? 1,
-      };
-    })
-    .filter((field) => field.text);
+        ...(field.source ? { source: field.source } : {}),
+      });
+  }
   return {
     id: unit.id,
     fields,
-    identifier: normalizeSearchText(unit.identifier ?? unit.id),
-    title: normalizeSearchText(unit.title ?? ""),
+    identifier: fields[0]?.name === "identifier" ? fields[0].text : "",
     titles: fields.filter((field) => field.name === "title").map((field) => field.text),
     length: Math.max(
       1,
-      fields.reduce((n, field) => n + (field.text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0), 0),
+      fields.reduce((n, field) => n + wordCount(field.text), 0),
     ),
   };
-}
-
-export function searchTermMatches(unit, term) {
-  return unit.fields.some((field) => field.text.includes(term));
 }
 
 function frequency(text, term) {
@@ -95,56 +99,57 @@ function frequency(text, term) {
 
 /**
  * Rank a fixed corpus of prepared units with BM25 term statistics and explicit
- * identifier/title precedence. Matching is computed from the current units on
- * every call; no index or cache exists, so nothing can fall out of date.
+ * identifier/title precedence. Each field is scanned once per term; the counts
+ * give the matching units, document frequencies, scores and match evidence.
  */
 export function rankSearchUnits(units, terms) {
   if (!terms.length) return [];
-  const matching = terms.map(
-    (term) => new Set(units.filter((unit) => searchTermMatches(unit, term)).map((unit) => unit.id)),
-  );
+  const counted = [];
+  const documents = terms.map(() => 0);
+  for (const unit of units) {
+    const counts = unit.fields.map((field) => terms.map((term) => frequency(field.text, term)));
+    const present = terms.map((_, i) => counts.some((row) => row[i] > 0));
+    present.forEach((hit, i) => hit && documents[i]++);
+    if (present.every(Boolean)) counted.push({ unit, counts });
+  }
   const averageLength = units.reduce((n, unit) => n + unit.length, 0) / Math.max(1, units.length);
   const query = terms.join(" ");
-  const results = [];
-  for (const unit of units) {
-    if (!matching.every((set) => set.has(unit.id))) continue;
-    let score = 0;
-    for (const [i, term] of terms.entries()) {
-      const tf = unit.fields.reduce(
-        (n, field) => n + field.weight * frequency(field.text, term),
-        0,
-      );
-      const idf = Math.log(1 + (units.length - matching[i].size + 0.5) / (matching[i].size + 0.5));
-      score += (idf * tf * 2.2) / (tf + 1.2 * (0.25 + (0.75 * unit.length) / averageLength));
-    }
-    const tier =
-      unit.identifier === query
-        ? 3
-        : unit.titles.some((title) => title === query)
-          ? 2
-          : unit.titles.some((title) => terms.every((term) => title.includes(term)))
-            ? 1
-            : 0;
-    results.push({
-      id: unit.id,
-      score,
-      tier,
-      kind: tier === 3 ? "identifier" : tier > 0 ? "title" : "text",
-      matches: unit.fields.flatMap((field) => {
-        const matched = terms.filter((term) => field.text.includes(term));
-        return matched.length
-          ? [
-              {
-                field: field.name,
-                terms: matched,
-                ...(field.source ? { source: field.source } : {}),
-              },
-            ]
-          : [];
-      }),
-    });
-  }
-  return results.sort(compareSearchHits);
+  return counted
+    .map(({ unit, counts }) => {
+      let score = 0;
+      for (const [i] of terms.entries()) {
+        const tf = unit.fields.reduce((n, field, f) => n + field.weight * counts[f][i], 0);
+        const idf = Math.log(1 + (units.length - documents[i] + 0.5) / (documents[i] + 0.5));
+        score += (idf * tf * 2.2) / (tf + 1.2 * (0.25 + (0.75 * unit.length) / averageLength));
+      }
+      const tier =
+        unit.identifier === query
+          ? 3
+          : unit.titles.some((title) => title === query)
+            ? 2
+            : unit.titles.some((title) => terms.every((term) => title.includes(term)))
+              ? 1
+              : 0;
+      return {
+        id: unit.id,
+        score,
+        tier,
+        kind: tier === 3 ? "identifier" : tier > 0 ? "title" : "text",
+        matches: unit.fields.flatMap((field, f) => {
+          const matched = terms.filter((_, i) => counts[f][i] > 0);
+          return matched.length
+            ? [
+                {
+                  field: field.name,
+                  terms: matched,
+                  ...(field.source ? { source: field.source } : {}),
+                },
+              ]
+            : [];
+        }),
+      };
+    })
+    .sort(compareSearchHits);
 }
 
 /** Search raw source units read from the current files. */
@@ -162,4 +167,11 @@ export function compareSearchHits(a, b) {
   if (!a) return 1;
   if (!b) return -1;
   return b.tier - a.tier || b.score - a.score || lexical(a.id, b.id);
+}
+
+/** The best of the hits that exist, or undefined when none does. */
+export function bestSearchHit(hits) {
+  let best;
+  for (const hit of hits) if (hit && compareSearchHits(hit, best) < 0) best = hit;
+  return best;
 }

@@ -1,10 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { commitAll, initRepo, mkTmp, write, writeAdrFiles } from "./helpers.mjs";
-import { EXAMPLE, CLI } from "./ontology-helpers.mjs";
+import { EXAMPLE, cli } from "./ontology-helpers.mjs";
 import { MAPPING } from "./ontology-query-helpers.mjs";
 
 // Files a search left in the private home, apart from Bun's own transpiler cache.
@@ -44,11 +43,7 @@ test("Bun business search reads the current documents without search files, retu
     const env = { ...process.env, HOME: home, XDG_CACHE_HOME: path.join(home, ".cache") };
     const query = (term) =>
       JSON.parse(
-        execFileSync(
-          "bun",
-          ["--no-install", CLI, "query", "--context", "ordering", "--search", term, "--json"],
-          { cwd: root, encoding: "utf8", env },
-        ),
+        cli(root, ["query", "--context", "ordering", "--search", term, "--json"], env).out,
       );
     const before = readFileSync(file);
     const r = query("확정 결제");

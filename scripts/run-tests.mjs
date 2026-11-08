@@ -66,10 +66,8 @@ list.forEach((file, i) => shards[i % width].push(file));
 
 const run = (shard) =>
   new Promise((resolve) => {
-    // alps-writer's own tests resolve its packages from its workspace directory.
     const child = spawn(process.execPath, ["test", "--timeout", "600000", ...shard], {
       cwd: ROOT,
-      env: process.env,
       stdio: ["ignore", "pipe", "pipe"],
     });
     let out = "";

@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
 // ontology.mjs — command line for the optional business ontology
-// level (docs/ontology/*.ttl). Bun is the default CLI runtime; Node 24 remains compatible.
-// Text search reads the current documents on every query; it keeps no index or cache.
+// level (docs/ontology/*.ttl), run with Bun.
 //
 // Usage:
 //   bun ontology.mjs validate [--adr-dir DIR] [--json]
@@ -503,7 +502,6 @@ function query(opts) {
     process.stdout.write(opts.json ? JSON.stringify(none, null, 2) + "\n" : `${none.note}\n`);
     return 0;
   }
-  // Search runs over the graph just parsed from the current documents; no index.
   const result = queryContext({
     index,
     mapping,
