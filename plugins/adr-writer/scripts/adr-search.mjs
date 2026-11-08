@@ -171,8 +171,8 @@ export function searchAdrs(input) {
     ...input,
   };
   options.root = path.resolve(options.root);
-  if (!parseSearchQuery(options.query).length)
-    throw new SearchInputError("--query requires nonempty text");
+  const terms = parseSearchQuery(options.query);
+  if (!terms.length) throw new SearchInputError("--query requires nonempty text");
   if (!Number.isSafeInteger(options.limit) || options.limit < 1 || options.limit > 100)
     throw new SearchInputError("--limit must be an integer from 1 to 100");
   if (!Number.isSafeInteger(options.offset) || options.offset < 0)
@@ -183,9 +183,14 @@ export function searchAdrs(input) {
   const documents = new Map();
   for (const hit of hits) {
     const unit = byId.get(hit.id);
-    const sectionMatch = hit.matches.some(
-      (match) => match.field === "body" || match.field === "heading",
+    // Every unit also carries the document title and index summary, so a section
+    // matches only when its own heading and body hold every term.
+    const own = new Set(
+      hit.matches
+        .filter((match) => match.field === "body" || match.field === "heading")
+        .flatMap((match) => match.terms),
     );
+    const sectionMatch = terms.every((term) => own.has(term));
     if (!documents.has(unit.result.path)) {
       documents.set(unit.result.path, {
         ...unit.result,

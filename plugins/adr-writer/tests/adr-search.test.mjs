@@ -110,6 +110,27 @@ test("many matching sections count as one document and all pages retain unique c
   }
 });
 
+test("a section counts as matching only when its own heading and body hold every term", () => {
+  const f = fixture();
+  try {
+    // The title and the index summary hold both terms; only one section's body does.
+    f.add(
+      "orders",
+      "0001-confirm.md",
+      "Confirm paid orders",
+      "Confirm an order once it is paid.\n\n### Notes\n\nConfirm quickly.\n\n### Payment\n\nPaid in full.",
+    );
+    f.save();
+    const [row] = f.search("confirm paid").results;
+    assert.equal(row.section, "Document metadata");
+    // Decision holds both terms in its own text (with its child sections); Notes and
+    // Payment each hold one, and the title and summary do not make them match.
+    assert.equal(row.matchingSections, 1);
+  } finally {
+    f.close();
+  }
+});
+
 test("body and index changes show in the next search without promoting or editing a decision", () => {
   const f = fixture();
   try {

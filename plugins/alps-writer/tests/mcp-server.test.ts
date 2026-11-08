@@ -409,3 +409,23 @@ test("MCP resume leaves missing required features incomplete and restores comple
     /Section 7 .*Written \(2\/2 features\)/,
   );
 });
+
+test("MCP path inputs say that a relative path is resolved inside the document directory", async (context) => {
+  const { client, dir } = await connectServer(context);
+  const { tools } = await client.listTools();
+  for (const [tool, field] of [
+    ["init_alps_document", "output_path"],
+    ["init_lite_alps_document", "output_path"],
+    ["export_alps_markdown", "output_path"],
+  ]) {
+    const schema = tools.find((t) => t.name === tool)?.inputSchema as
+      | { properties?: Record<string, { description?: string }> }
+      | undefined;
+    assert.match(schema?.properties?.[field]?.description ?? "", /ALPS_OUTPUT_DIR/, tool);
+  }
+  await client.callTool({
+    name: "init_lite_alps_document",
+    arguments: { project_name: "Relative", output_path: "relative.lite.alps.xml" },
+  });
+  assert.ok(fs.existsSync(path.join(dir, "relative.lite.alps.xml")));
+});
