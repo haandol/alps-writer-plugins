@@ -1,0 +1,7 @@
+{
+  "name": "@opentelemetry/exporter-trace-otlp-proto",
+  "version": "0.0.0-unused",
+  "private": true,
+  "description": "Empty stand-in: DeepEval declares this OTLP exporter, but the evals never load it (telemetry is opted out and the integrations that require it are unused).",
+  "main": "index.js"
+}

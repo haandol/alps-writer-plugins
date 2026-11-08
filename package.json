@@ -83,7 +83,7 @@
   "workspaces": [
     "plugins/alps-writer"
   ],
-  "//overrides": "Security floors for vulnerable transitive releases. Bun overrides name a package, not a version range, so each floor applies to every copy of the package: protobufjs 8.6.6 also replaces the 7.x that @grpc/proto-loader and an older OpenTelemetry transformer ask for (DeepEval pulls both in for its telemetry exporters). KaTeX 0.18 keeps renderToString and the stylesheet Mermaid uses; minimatch 11 keeps the Minimatch#match and minimatch() ESLint uses; uuid 11 keeps the CommonJS DeepEval requires; puppeteer 25.16 drops the zod 3 chromium-bidi.",
+  "//overrides": "Security floors for vulnerable transitive releases. Bun overrides name a package, not a version range, so each floor applies to every copy of the package. KaTeX 0.18 keeps renderToString and the stylesheet Mermaid uses; minimatch 11 keeps the Minimatch#match and minimatch() ESLint uses; uuid 11 keeps the CommonJS DeepEval requires; puppeteer 25.16 drops the zod 3 chromium-bidi. The two OpenTelemetry trace exporters point at empty stubs in stubs/: DeepEval declares them, but the evals opt out of telemetry and never load them, and they alone pulled in gRPC and protobufjs.",
   "overrides": {
     "brace-expansion": "5.0.12",
     "fast-uri": "3.1.9",
@@ -99,9 +99,10 @@
     "minimatch": "11.0.3",
     "zod": "4.6.7",
     "puppeteer": "25.16.0",
-    "protobufjs": "8.6.6",
     "@opentelemetry/core": "2.8.0",
-    "uuid": "11.1.1"
+    "uuid": "11.1.1",
+    "@opentelemetry/exporter-trace-otlp-grpc": "file:./stubs/opentelemetry-exporter-trace-otlp-grpc",
+    "@opentelemetry/exporter-trace-otlp-proto": "file:./stubs/opentelemetry-exporter-trace-otlp-proto"
   },
   "patchedDependencies": {
     "deepeval@0.9.16": "patches/deepeval@0.9.16.patch"
