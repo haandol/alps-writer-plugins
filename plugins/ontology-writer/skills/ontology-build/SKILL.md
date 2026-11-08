@@ -101,6 +101,17 @@ evidence; this build does not establish execution success.
   layers complete while those gaps remain. Pass the same scope to `apply`.
 - Absence from the documents is never absence from the business; it stays a
   question or open scope.
+- After drafting the questions, try to answer each one again from the
+  repository before asking: documents, ADRs and their decision logs, and the
+  harness (agent instructions, skills, hooks, contracts, tests and evaluations).
+  A question is resolved only when a current authority states the answer — a
+  newer or `Accepted` decision, or one that explicitly replaces the earlier
+  statement. Show a resolved question as resolved, with its sources, instead of
+  asking it; the user can still answer it, and that answer wins. Ask only what no
+  source answers, what sources of equal authority still contradict, and what
+  needs a choice of business intent. Code alone shows observed behavior and never
+  resolves a question. A resolved answer is evidence, not the user's confirmation
+  of the candidate it settles.
 
 ## 4. One report
 
@@ -123,6 +134,13 @@ before the context-level model details. Render the event map with
 as EventStorming cards, with sources and unknown before/after conditions, and
 link that disposable board from the report. A Mermaid diagram does not replace
 the EventStorming result.
+
+Then open the report's questions in a local web question session following
+[web question session](references/ask-session.md): the user answers there or in
+the conversation by the same identifiers, and each delivered answer brings
+updated candidates and follow-up questions to the same screen. The session only
+collects answers; the approval summary and save approval of section 5 stay in
+the conversation.
 
 ## 5. Save only what the user confirmed
 
