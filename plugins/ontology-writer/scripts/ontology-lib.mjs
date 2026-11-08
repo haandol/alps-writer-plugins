@@ -1734,6 +1734,14 @@ export function inRetiredOnly(index, iri) {
   return false;
 }
 
+/** Whether navigation and search show an element: retired work only when asked for. */
+export function isVisible(index, iri, includeRetired = false) {
+  return (
+    includeRetired ||
+    !(index.typeOf(iri) === "Process" ? isRetired(index, iri) : inRetiredOnly(index, iri))
+  );
+}
+
 /** Whether a process is Accepted, whatever its date. */
 export function isAccepted(index, processIri) {
   return /^Accepted\b/.test(processStatus(index, processIri) ?? "");

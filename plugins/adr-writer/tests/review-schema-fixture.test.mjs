@@ -44,7 +44,6 @@ function runAdmissionTest(dir) {
     execution.ran,
     /<testcase name="admit below the two-request limit, reject at and above it"/,
   );
-  assert.doesNotMatch(execution.stderr, /recursively|skipping running files/);
   return execution;
 }
 

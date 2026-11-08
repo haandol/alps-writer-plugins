@@ -38,7 +38,7 @@ function fixture() {
   };
 }
 
-test("search reads indexed body sections and preserves the selected category and original ranges", async () => {
+test("search reads indexed body sections and preserves the selected category and original ranges", () => {
   const f = fixture();
   try {
     const rel = f.add(
@@ -49,7 +49,7 @@ test("search reads indexed body sections and preserves the selected category and
     );
     f.add("billing", "0001-charge.md", "Billing", "Quarantine the charge record.");
     f.save();
-    const r = await f.search("parcel quarantine", { category: "orders" });
+    const r = f.search("parcel quarantine", { category: "orders" });
     assert.equal(r.complete, true);
     assert.equal(r.navigationOnly, true);
     assert.equal(r.page.total, 1);
@@ -59,19 +59,19 @@ test("search reads indexed body sections and preserves the selected category and
     assert.ok(
       r.results[0].matches.some((m) => m.field === "body" && m.terms.includes("quarantine")),
     );
-    assert.equal((await f.search('"quarantine parcel"')).page.total, 0);
+    assert.equal(f.search('"quarantine parcel"').page.total, 0);
     assert.match(renderAdrSearch(r), /not approval/);
   } finally {
     f.close();
   }
 });
 
-test("title-only hits point at document metadata instead of an unrelated short Status section", async () => {
+test("title-only hits point at document metadata instead of an unrelated short Status section", () => {
   const f = fixture();
   try {
     f.add("orders", "0001-recovery.md", "Parcel recovery", "The operator inspects pending work.");
     f.save();
-    const r = await f.search("parcel recovery");
+    const r = f.search("parcel recovery");
     assert.equal(r.results[0].relevance.kind, "title");
     assert.equal(r.results[0].section, "Document metadata");
     assert.equal(r.results[0].source.lineStart, 1);
@@ -82,7 +82,7 @@ test("title-only hits point at document metadata instead of an unrelated short S
   }
 });
 
-test("many matching sections count as one document and all pages retain unique candidates", async () => {
+test("many matching sections count as one document and all pages retain unique candidates", () => {
   const f = fixture();
   try {
     for (let i = 1; i <= 5; i++)
@@ -94,12 +94,12 @@ test("many matching sections count as one document and all pages retain unique c
       );
     f.save();
     const paths = [],
-      initial = await f.search("needle", { limit: 2 });
+      initial = f.search("needle", { limit: 2 });
     let r = initial;
     for (;;) {
       paths.push(...r.results.map((row) => row.path));
       if (!r.next) break;
-      r = await f.search("needle", r.next);
+      r = f.search("needle", r.next);
     }
     assert.equal(initial.page.total, 5);
     assert.equal(paths.length, 5);
@@ -110,12 +110,12 @@ test("many matching sections count as one document and all pages retain unique c
   }
 });
 
-test("body and index changes invalidate search results without promoting or editing a decision", async () => {
+test("body and index changes show in the next search without promoting or editing a decision", () => {
   const f = fixture();
   try {
     const old = f.add("orders", "0001-payment.md", "Payment", "결제가 완료되면 주문을 확정한다.");
     f.save();
-    assert.equal((await f.search("확정 결제")).results[0].path, old);
+    assert.equal(f.search("확정 결제").results[0].path, old);
     const newer = "docs/adr/orders/0002-payment.md";
     f.write(
       newer,
@@ -125,37 +125,37 @@ test("body and index changes invalidate search results without promoting or edit
     f.save();
     rmSync(path.join(f.root, old));
     const before = readFileSync(path.join(f.root, newer));
-    const r = await f.search("환불");
+    const r = f.search("환불");
     assert.equal(r.complete, false);
     assert.ok(r.diagnostics.some((d) => d.code === "status-mismatch"));
     assert.equal(r.results[0].path, newer);
     assert.equal(r.results[0].status, "Accepted (2026-11-07)");
     assert.equal(r.results[0].indexedStatus, "Proposed");
     assert.equal(r.results[0].trusted, false);
-    assert.equal((await f.search("결제")).page.total, 0);
+    assert.equal(f.search("결제").page.total, 0);
     assert.deepEqual(readFileSync(path.join(f.root, newer)), before);
   } finally {
     f.close();
   }
 });
 
-test("unreadable or unsafe source state is reported rather than silently treated as empty", async () => {
+test("unreadable or unsafe source state is reported rather than silently treated as empty", () => {
   const f = fixture();
   try {
     const rel = f.add("orders", "0001-work.md", "Work", "needle");
     f.save();
     rmSync(path.join(f.root, rel));
-    let r = await f.search("needle");
+    let r = f.search("needle");
     assert.equal(r.complete, false);
     assert.equal(r.diagnostics[0].where, rel);
     f.write("docs/adr/.mapping.json", "{broken");
-    r = await f.search("needle");
+    r = f.search("needle");
     assert.equal(r.found, null);
     assert.equal(r.complete, false);
     assert.equal(r.diagnostics[0].code, "index-unreadable");
     f.mapping.categories.orders.adrs[0].path = "../outside.md";
     f.save();
-    r = await f.search("needle");
+    r = f.search("needle");
     assert.equal(r.complete, false);
     assert.ok(r.diagnostics.some((d) => d.code === "index-adrs-item-path-unsafe"));
   } finally {
@@ -163,7 +163,7 @@ test("unreadable or unsafe source state is reported rather than silently treated
   }
 });
 
-test("a linked document cannot make decision search read outside its document root", async () => {
+test("a linked document cannot make decision search read outside its document root", () => {
   const f = fixture();
   try {
     const rel = f.add("orders", "0001-link.md", "Linked work", "ordinary");
@@ -171,7 +171,7 @@ test("a linked document cannot make decision search read outside its document ro
     rmSync(path.join(f.root, rel));
     symlinkSync(external, path.join(f.root, rel));
     f.save();
-    const r = await f.search("secret");
+    const r = f.search("secret");
     assert.equal(r.complete, false);
     assert.equal(r.page.total, 0);
     assert.match(r.diagnostics[0].message, /outside the selected/);
@@ -181,7 +181,7 @@ test("a linked document cannot make decision search read outside its document ro
   }
 });
 
-test("invalid query syntax and page input fail before changing sources", async () => {
+test("invalid query syntax and page input fail before changing sources", () => {
   const f = fixture();
   try {
     f.add("orders", "0001-work.md", "Work", "needle");

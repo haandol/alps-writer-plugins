@@ -223,7 +223,6 @@ function toolConfig(directory, root, pluginRoot, logPath, artifactPaths = [], dr
   return file;
 }
 
-/** Snapshot ALPS-only instruction files into the shared probe view without changing ADR-owned duplicates. */
 // Classification probes quote sibling plugins' skills, whose bodies read their own
 // plugin's guidance through CLAUDE_PLUGIN_ROOT. The probe root is that root, so it
 // carries the guidance those skills reference; files adr-writer ships stay its own.

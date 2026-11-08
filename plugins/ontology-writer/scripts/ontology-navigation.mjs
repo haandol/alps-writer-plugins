@@ -7,15 +7,15 @@ import {
   contextCollaborations,
   elementId,
   elementIri,
-  inRetiredOnly,
   isRetired,
+  isVisible,
   knowledgeLayerFindings,
   processOfStep,
   processStatus,
   ruleReach,
 } from "./ontology-lib.mjs";
 import { ontologySearch } from "./ontology-search.mjs";
-import { compareSearchHits, parseSearchQuery } from "./search/search-text.mjs";
+import { bestSearchHit, compareSearchHits, parseSearchQuery } from "./search/search-text.mjs";
 
 const compare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const sorted = (values) => [...new Set(values)].sort(compare);
@@ -56,9 +56,7 @@ export function projectNavigation(index, { target, includeRetired = false, searc
   search = search.trim();
   const hits = search ? ontologySearch(index, search, { includeRetired }) : new Map();
   const text = (iri, attr) => index.literal(iri, attr)[0]?.value ?? null;
-  const visible = (iri) =>
-    includeRetired ||
-    !(index.typeOf(iri) === "Process" ? isRetired(index, iri) : inRetiredOnly(index, iri));
+  const visible = (iri) => isVisible(index, iri, includeRetired);
   const ref = (iri) => ({ id: elementId(iri) ?? iri, label: text(iri, `${RDFS}label`) });
   const query = (iri) => {
     const kind = DETAIL_KINDS[index.typeOf(iri)];
@@ -99,15 +97,9 @@ export function projectNavigation(index, { target, includeRetired = false, searc
     memberships.set(iri, value);
     return value;
   };
-  const matching = (iri) => hits.has(iri);
   const add = (key, row, sources) => {
     for (const iri of sources) scope.add(iri);
-    const best = search
-      ? sources
-          .map((iri) => hits.get(iri))
-          .filter(Boolean)
-          .sort(compareSearchHits)[0]
-      : null;
+    const best = bestSearchHit(sources.map((iri) => hits.get(iri)));
     if (search && !best) return;
     rows.set(key, { key, ...row, ...(best ? { searchMatch: best } : {}) });
   };
@@ -131,21 +123,20 @@ export function projectNavigation(index, { target, includeRetired = false, searc
     // Global scope also includes malformed and unassigned elements, even when
     // they cannot be projected to a valid BC card.
     for (const iri of index.subjects.keys()) scope.add(iri);
+    // Hits already hold exactly the visible matches; the count and the best hit
+    // (a total order) do not depend on the order they are visited in.
     const matches = new Map();
-    const bestByContext = new Map();
-    if (search) {
-      for (const iri of sorted(index.subjects.keys()).filter(visible)) {
-        if (!matching(iri)) continue;
-        for (const context of contextsOf(iri)) {
-          matches.set(context, (matches.get(context) ?? 0) + 1);
-          const hit = hits.get(iri);
-          if (!bestByContext.has(context) || compareSearchHits(hit, bestByContext.get(context)) < 0)
-            bestByContext.set(context, hit);
-        }
+    for (const [iri, hit] of hits)
+      for (const context of contextsOf(iri)) {
+        const seen = matches.get(context);
+        matches.set(context, {
+          count: (seen?.count ?? 0) + 1,
+          best: bestSearchHit([seen?.best, hit]),
+        });
       }
-    }
     for (const c of contexts) {
-      if (search && !matches.has(c)) continue;
+      const matched = matches.get(c);
+      if (search && !matched) continue;
       const key = `0-context:${c}`;
       rows.set(key, {
         key,
@@ -153,13 +144,13 @@ export function projectNavigation(index, { target, includeRetired = false, searc
         ...contextCard(c),
         ...(search
           ? {
-              matchingElements: matches.get(c),
+              matchingElements: matched.count,
               query: { ...query(c), search },
               searchMatch: {
                 id: elementId(c),
-                tier: bestByContext.get(c).tier,
-                score: bestByContext.get(c).score,
-                kind: bestByContext.get(c).id === c ? bestByContext.get(c).kind : "internal",
+                tier: matched.best.tier,
+                score: matched.best.score,
+                kind: matched.best.id === c ? matched.best.kind : "internal",
               },
             }
           : {}),
@@ -373,8 +364,7 @@ export function pageNavigation(result, options) {
   const all = [
     ...diagnostics.map((d, i) => ({ key: `diagnostic:${i}`, ...d })),
     ...items.sort(
-      (a, b) =>
-        (search ? compareSearchHits(a.searchMatch, b.searchMatch) : 0) || compare(a.key, b.key),
+      (a, b) => compareSearchHits(a.searchMatch, b.searchMatch) || compare(a.key, b.key),
     ),
   ];
   const selected = all.slice(offset, offset + limit);

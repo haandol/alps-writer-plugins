@@ -2,7 +2,6 @@
 // Find registered decision documents, then follow their original contracts.
 // Usage: bun adr-search.mjs --query TEXT [--category KEY] [--root DIR]
 //        [--adr-dir DIR] [--limit N] [--offset N] [--json]
-// Every search reads the current registered documents; it keeps no index or cache.
 import { readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -154,7 +153,6 @@ function readCorpus({ root, adrDir, category }) {
             { name: "body", value: part.body, source },
           ],
           result: { ...common, section: part.title, source },
-          documentSource,
         });
       }
     }
@@ -192,7 +190,7 @@ export function searchAdrs(input) {
       documents.set(unit.result.path, {
         ...unit.result,
         ...(hit.tier > 0 || !sectionMatch
-          ? { section: "Document metadata", source: unit.documentSource }
+          ? { section: "Document metadata", source: unit.titleSource }
           : {}),
         relevance: { score: hit.score, kind: hit.kind },
         matches: hit.matches,
@@ -204,9 +202,10 @@ export function searchAdrs(input) {
   const results = all.slice(options.offset, options.offset + options.limit);
   const nextOffset =
     options.offset + results.length < all.length ? options.offset + results.length : null;
+  const scope = { root: options.root, adrDir: options.adrDir, category: options.category };
   return {
     query: options.query,
-    scope: { root: options.root, adrDir: options.adrDir, category: options.category },
+    scope,
     found: corpus.found,
     complete: corpus.diagnostics.length === 0,
     navigationOnly: true,
@@ -222,14 +221,7 @@ export function searchAdrs(input) {
     next:
       nextOffset === null
         ? null
-        : {
-            query: options.query,
-            root: options.root,
-            adrDir: options.adrDir,
-            category: options.category,
-            limit: options.limit,
-            offset: nextOffset,
-          },
+        : { query: options.query, ...scope, limit: options.limit, offset: nextOffset },
     results,
   };
 }

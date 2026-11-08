@@ -30,33 +30,30 @@
   const detailScrollHost = () =>
     document.body.dataset.knowledgePresentation === "space" ? bcPanel : detail;
   const PAGE = 20;
-  const searchable = [...elements].map(([key, e]) => ({
-    key,
-    unit: prepareSearchUnit(
-      e.searchUnit ?? {
-        id: key,
-        identifier: key,
-        title: e.n,
-        fields: e.search.map((value) => ({ name: "text", value })),
-      },
-    ),
-  }));
-  const keyByUnit = new Map(searchable.map(({ key, unit }) => [unit.id, key]));
+  const units = [];
+  const keyByUnit = new Map();
+  for (const [key, e] of elements) {
+    const unit = prepareSearchUnit(e.searchUnit);
+    units.push(unit);
+    keyByUnit.set(unit.id, key);
+  }
+  // The saved model never changes, so a repeated query (paging, filtering, opening an
+  // element) reuses the last ranking instead of ranking every element again.
+  let lastQuery = null,
+    lastMatches = null;
   function findMatches(query) {
+    if (query === lastQuery) return lastMatches;
+    let matches;
     try {
-      const terms = parseSearchQuery(query);
-      const hits = rankSearchUnits(
-        searchable.map(({ unit }) => unit),
-        terms,
-      );
-      return { hits: new Map(hits.map((hit) => [keyByUnit.get(hit.id), hit])), error: null };
+      const hits = rankSearchUnits(units, parseSearchQuery(query));
+      matches = { hits: new Map(hits.map((hit) => [keyByUnit.get(hit.id), hit])), error: null };
     } catch (error) {
       if (!(error instanceof SearchInputError)) throw error;
-      return {
-        hits: new Map(),
-        error: T.invalidSearch ?? "Check the search text and its quotation marks.",
-      };
+      matches = { hits: new Map(), error: T.invalidSearch };
     }
+    lastQuery = query;
+    lastMatches = matches;
+    return matches;
   }
   const states = new Map();
   const rootMatches = new Map();
@@ -173,24 +170,18 @@
       if (!error && (!term || own || internal))
         rootMatches.set(c.id, internal ? "internal" : "context");
     }
-    const scores = new Map();
-    const scoreOf = (id) => {
-      if (!scores.has(id))
-        scores.set(
-          id,
-          [id, ...scopes.get(id).members]
-            .map((key) => hits.get(key))
-            .filter(Boolean)
-            .sort(compareSearchHits)[0],
-        );
-      return scores.get(id);
-    };
+    // Without a term or with an invalid one there are no hits, so every best hit is
+    // undefined and the cards keep their authored order.
+    const best = new Map(
+      data.contexts.map((c) => [
+        c.id,
+        bestSearchHit([c.id, ...scopes.get(c.id).members].map((key) => hits.get(key))),
+      ]),
+    );
     const cards = [...home.querySelectorAll("[data-knowledge-card]")];
     cards.sort(
       (a, b) =>
-        (term && !error
-          ? compareSearchHits(scoreOf(a.dataset.knowledgeCard), scoreOf(b.dataset.knowledgeCard))
-          : 0) ||
+        compareSearchHits(best.get(a.dataset.knowledgeCard), best.get(b.dataset.knowledgeCard)) ||
         contextPositions.get(a.dataset.knowledgeCard) -
           contextPositions.get(b.dataset.knowledgeCard),
     );
@@ -213,10 +204,8 @@
         return e && (!s.type || e.t === s.type) && !error && (!term || hits.has(key));
       })
       .sort((a, b) => {
-        if (term) {
-          const relevance = compareSearchHits(hits.get(a), hits.get(b));
-          if (relevance) return relevance;
-        }
+        const relevance = compareSearchHits(hits.get(a), hits.get(b));
+        if (relevance) return relevance;
         const x = elements.get(a),
           y = elements.get(b);
         const typeOrder = order.indexOf(x.t) - order.indexOf(y.t);
@@ -252,16 +241,10 @@
           ...new Set(
             hits
               .get(key)
-              .matches.map((match) => data.searchFieldLabels?.[match.field] ?? match.field),
+              .matches.map((match) => data.searchFieldLabels[match.field] ?? match.field),
           ),
         ];
-        button.append(
-          node(
-            "span",
-            (T.matchedFields ?? "Matched fields") + ": " + fields.join(", "),
-            "kw-result-marks",
-          ),
-        );
+        button.append(node("span", T.matchedFields + ": " + fields.join(", "), "kw-result-marks"));
       }
       const marks = node("span", undefined, "kw-result-marks");
       if (e.m & 4) marks.append(node("span", T.modelIssues, "kw-warning"));
