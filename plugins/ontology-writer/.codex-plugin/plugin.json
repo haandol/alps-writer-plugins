@@ -1,6 +1,6 @@
 {
   "name": "ontology-writer",
-  "version": "0.12.3",
+  "version": "0.13.0",
   "description": "Keep a business ontology above ADRs as a closed RDFS-lite graph in Turtle: build it from documents, change it through one approval summary, align realizing ADRs, query business context and view it in 3D.",
   "author": {
     "name": "haandol",
