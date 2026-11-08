@@ -37728,6 +37728,7 @@ Every document-specific tool requires doc_path. Use the source path returned by 
 var tc = new TemplateController(new TemplateService());
 var liteTc = new TemplateController(new TemplateService(LITE_ALPS_PROFILE));
 var dc = new DocumentController(new DocumentService());
+var PATH_BASE = "An absolute or ~ path is used as given. A relative path is resolved inside the document directory (ALPS_OUTPUT_DIR, default <cwd>/prd/), so give a bare file name or an absolute path, not a path that starts with that directory.";
 var documentPath = external_exports.string().min(1).refine((value) => value.trim().length > 0, "Document path must not be blank").describe(
   "Required source document path. Always pass the path returned by init/load; another call never selects it for this request."
 );
@@ -37839,7 +37840,9 @@ server.tool(
   "Initialize a new ALPS document file.",
   {
     project_name: external_exports.string().min(1).describe("Name of the project"),
-    output_path: external_exports.string().min(1).describe("File path for the document (e.g., ~/Documents/my-project.alps.xml)")
+    output_path: external_exports.string().min(1).describe(
+      `File path for the new document (e.g., my-project.alps.xml or ~/Documents/my-project.alps.xml). ${PATH_BASE}`
+    )
   },
   ({ project_name, output_path }) => ({
     content: [{ type: "text", text: dc.initAlpsDocument(project_name, output_path) }]
@@ -37850,7 +37853,9 @@ server.tool(
   "Initialize a new four-section Lite ALPS document for minimum PoC and demo planning.",
   {
     project_name: external_exports.string().min(1).describe("Name of the project"),
-    output_path: external_exports.string().min(1).describe("File path for the document (e.g., ~/Documents/my-project.lite.alps.xml)")
+    output_path: external_exports.string().min(1).describe(
+      `File path for the new document (e.g., my-project.lite.alps.xml or ~/Documents/my-project.lite.alps.xml). ${PATH_BASE}`
+    )
   },
   ({ project_name, output_path }) => ({
     content: [{ type: "text", text: dc.initLiteAlpsDocument(project_name, output_path) }]
@@ -37921,7 +37926,7 @@ server.tool(
   "Export the ALPS document as clean markdown.",
   {
     doc_path: documentPath,
-    output_path: external_exports.string().optional().describe("Optional output file path. If not provided, returns the content.")
+    output_path: external_exports.string().optional().describe(`Optional output file path; without it the Markdown is returned. ${PATH_BASE}`)
   },
   ({ doc_path, output_path }) => ({
     content: [{ type: "text", text: dc.exportAlpsMarkdown(doc_path, output_path) }]

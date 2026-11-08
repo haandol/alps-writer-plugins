@@ -94,6 +94,11 @@ Every document-specific tool requires doc_path. Use the source path returned by 
 const tc = new TemplateController(new TemplateService());
 const liteTc = new TemplateController(new TemplateService(LITE_ALPS_PROFILE));
 const dc = new DocumentController(new DocumentService());
+// A relative path is resolved inside the document directory, not the working
+// directory, so "prd/x.alps.xml" would land in prd/prd/. Say so where paths are given.
+const PATH_BASE =
+  "An absolute or ~ path is used as given. A relative path is resolved inside the document directory (ALPS_OUTPUT_DIR, default <cwd>/prd/), so give a bare file name or an absolute path, not a path that starts with that directory.";
+
 const documentPath = z
   .string()
   .min(1)
@@ -243,7 +248,9 @@ server.tool(
     output_path: z
       .string()
       .min(1)
-      .describe("File path for the document (e.g., ~/Documents/my-project.alps.xml)"),
+      .describe(
+        `File path for the new document (e.g., my-project.alps.xml or ~/Documents/my-project.alps.xml). ${PATH_BASE}`,
+      ),
   },
   ({ project_name, output_path }) => ({
     content: [{ type: "text", text: dc.initAlpsDocument(project_name, output_path) }],
@@ -258,7 +265,9 @@ server.tool(
     output_path: z
       .string()
       .min(1)
-      .describe("File path for the document (e.g., ~/Documents/my-project.lite.alps.xml)"),
+      .describe(
+        `File path for the new document (e.g., my-project.lite.alps.xml or ~/Documents/my-project.lite.alps.xml). ${PATH_BASE}`,
+      ),
   },
   ({ project_name, output_path }) => ({
     content: [{ type: "text", text: dc.initLiteAlpsDocument(project_name, output_path) }],
@@ -354,7 +363,7 @@ server.tool(
     output_path: z
       .string()
       .optional()
-      .describe("Optional output file path. If not provided, returns the content."),
+      .describe(`Optional output file path; without it the Markdown is returned. ${PATH_BASE}`),
   },
   ({ doc_path, output_path }) => ({
     content: [{ type: "text", text: dc.exportAlpsMarkdown(doc_path, output_path) }],

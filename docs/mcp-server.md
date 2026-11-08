@@ -25,10 +25,10 @@ The bundle inlines its dependencies, so it runs with a plain Bun >= 1.4.2 — no
 
 ## Environment variables
 
-| Variable           | Scope           | Description                                                                                                               | Default                  |
-| ------------------ | --------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| `ALPS_OUTPUT_DIR`  | alps-writer MCP | Directory for document files (`.alps.xml`, `.lite.alps.xml`, exported markdown). `PRD_OUTPUT_DIR` also accepted (legacy). | `<cwd>/prd/`             |
-| `ALPS_ADR_MAPPING` | adr-writer hook | Path (relative to project root) to the ADR mapping file read by the ADR-first hook.                                       | `docs/adr/.mapping.json` |
+| Variable           | Scope           | Description                                                                                                                                                                      | Default                  |
+| ------------------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `ALPS_OUTPUT_DIR`  | alps-writer MCP | Directory for document files (`.alps.xml`, `.lite.alps.xml`, exported markdown); a relative path given to a tool is resolved inside it. `PRD_OUTPUT_DIR` also accepted (legacy). | `<cwd>/prd/`             |
+| `ALPS_ADR_MAPPING` | adr-writer hook | Path (relative to project root) to the ADR mapping file read by the ADR-first hook.                                                                                              | `docs/adr/.mapping.json` |
 
 Config example with `ALPS_OUTPUT_DIR`:
 
