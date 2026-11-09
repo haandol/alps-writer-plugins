@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "title": "주문·결제 구축",
+  "scope": "고객 주문 접수부터 주문 확정까지",
+  "language": "ko",
+  "contexts": [
+    {
+      "id": "ordering",
+      "label": "주문",
+      "definition": "고객 주문을 접수하고 확정하는 경계.",
+      "coreLogic": "주문을 접수하고 결제가 완료되면 확정한다.",
+      "collaboratesWith": ["payment"],
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "주문 정책서",
+          "detail": "1장"
+        }
+      ],
+      "confirmed": true
+    },
+    {
+      "id": "payment",
+      "label": "결제",
+      "definition": "주문 대금을 결제받는 경계.",
+      "coreLogic": "결제를 요청받아 승인 결과를 알린다.",
+      "verdict": "stated",
+      "evidence": [
+        {
+          "source": "결제 설명서"
+        }
+      ],
+      "confirmed": true
+    }
+  ],
+  "actors": [
+    {
+      "id": "customer",
+      "label": "고객",
+      "definition": "상품을 주문하는 사람.",
+      "verdict": "stated",
+      "evidence": [],
+      "confirmed": true
+    }
+  ],
+  "events": [
+    {
+      "id": "ordering.order-submitted",
+      "label": "주문이 접수됨",
+      "definition": "고객 주문이 접수되었다.",
+      "context": "ordering",
+      "verdict": "stated",
+      "evidence": [],
+      "confirmed": true
+    },
+    {
+      "id": "payment.payment-completed",
+      "label": "결제가 완료됨",
+      "definition": "결제가 승인되었다.",
+      "context": "payment",
+      "verdict": "stated",
+      "evidence": [],
+      "confirmed": true
+    }
+  ],
+  "processes": [
+    {
+      "id": "ordering.place-order",
+      "label": "주문",
+      "definition": "고객 주문을 접수해 확정한다.",
+      "startCondition": "고객이 주문서를 제출한다.",
+      "businessOutcome": "결제된 주문이 확정된다.",
+      "openScope": [
+        {
+          "kind": "open-path",
+          "text": "결제 실패 뒤 재시도 경로가 확인되지 않았다."
+        }
+      ],
+      "steps": ["ordering.submit-order", "payment.request-payment", "ordering.confirm-order"],
+      "verdict": "stated",
+      "evidence": [],
+      "confirmed": true
+    }
+  ],
+  "steps": [
+    {
+      "id": "ordering.submit-order",
+      "label": "주문 접수",
+      "definition": "고객 주문을 접수한다.",
+      "context": "ordering",
+      "kind": "system",
+      "performers": ["customer"],
+      "flowsTo": ["payment.request-payment"],
+      "emits": ["ordering.order-submitted"],
+      "verdict": "stated",
+      "evidence": [],
+      "confirmed": true
+    },
+    {
+      "id": "payment.request-payment",
+      "label": "결제 요청",
+      "definition": "주문 대금 결제를 요청한다.",
+      "context": "payment",
+      "kind": "system",
+      "performers": ["customer"],
+      "emits": ["payment.payment-completed"],
+      "verdict": "stated",
+      "evidence": [],
+      "confirmed": true
+    },
+    {
+      "id": "ordering.confirm-order",
+      "label": "주문 확정",
+      "definition": "결제된 주문을 확정한다.",
+      "context": "ordering",
+      "kind": "system",
+      "performers": ["customer"],
+      "verdict": "inferred",
+      "evidence": [],
+      "confirmed": true
+    }
+  ],
+  "policies": [
+    {
+      "id": "ordering.on-payment-completed-confirm-order",
+      "label": "결제 완료 → 주문 확정",
+      "definition": "결제가 끝나면 주문을 확정한다.",
+      "context": "ordering",
+      "trigger": "payment.payment-completed",
+      "starts": ["ordering.confirm-order"],
+      "condition": "결제가 승인되었다.",
+      "basis": {
+        "kind": "operating-policy",
+        "text": "결제된 주문만 확정한다."
+      },
+      "verdict": "stated",
+      "evidence": [],
+      "confirmed": true
+    }
+  ],
+  "rules": [
+    {
+      "id": "ordering.confirm-only-paid-orders",
+      "label": "결제 전 확정 금지",
+      "definition": "결제가 완료되지 않은 주문은 확정하지 않는다.",
+      "constrains": ["ordering.submit-order", "ordering.confirm-order"],
+      "verdict": "stated",
+      "evidence": [],
+      "confirmed": true,
+      "basis": {
+        "kind": "operating-policy",
+        "text": "결제가 끝난 주문만 확정한다."
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "id": "ordering.place-order.paid-order-confirmed",
+      "label": "결제된 주문이 확정됨",
+      "startCondition": "고객이 주문을 제출한다.",
+      "observedResult": "결제가 승인되면 주문이 확정된다.",
+      "process": "ordering.place-order",
+      "passesThrough": ["payment.payment-completed"],
+      "verdict": "stated",
+      "evidence": [],
+      "confirmed": true
+    }
+  ],
+  "links": [
+    {
+      "category": "ordering",
+      "step": "ordering.submit-order",
+      "reason": "주문 접수 ADR이 이 단계를 구현한다.",
+      "verdict": "inferred",
+      "evidence": [],
+      "confirmed": true
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q1",
+      "text": "주문 확정은 결제 완료 직후 자동으로 일어나나요?",
+      "stages": ["payment.request-payment", "ordering.confirm-order"],
+      "options": [
+        {
+          "id": "auto",
+          "label": "자동"
+        },
+        {
+          "id": "manual",
+          "label": "운영자 확인"
+        }
+      ],
+      "evidence": [
+        {
+          "source": "주문 정책서",
+          "verdict": "inferred"
+        }
+      ]
+    }
+  ],
+  "notHeld": [
+    {
+      "text": "결제 승인 대기 시간 30분",
+      "source": "결제 설명서"
+    }
+  ]
+}

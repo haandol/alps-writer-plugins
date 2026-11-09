@@ -17,6 +17,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -128,6 +129,9 @@ export function parseQuestions(text) {
         return fail(`question ${q.id} resolved needs a summary`);
       if (r.optionId && !optIds.has(r.optionId))
         return fail(`question ${q.id} resolved names unknown option ${r.optionId}`);
+      // A partly resolved question shows the settled part and still asks the rest.
+      if (r.partial !== undefined && typeof r.partial !== "boolean")
+        return fail(`question ${q.id} resolved.partial must be true or false`);
     }
     if (!opts.length && q.allowText === false)
       return fail(`question ${q.id} accepts neither an option nor text`);
@@ -149,11 +153,58 @@ export function readEvents(file) {
     });
 }
 
+/**
+ * Append one event. The server and the `record` command are separate processes, so the
+ * sequence number is taken under a short exclusive lock; two writers never share one.
+ */
 function appendEvent(file, event) {
-  const seq = readEvents(file).length + 1;
-  const record = { ...event, seq, at: new Date().toISOString() };
-  appendFileSync(file, `${JSON.stringify(record)}\n`);
-  return record;
+  return withLock(`${file}.lock`, () => {
+    const seq = readEvents(file).length + 1;
+    const record = { ...event, seq, at: new Date().toISOString() };
+    appendFileSync(file, `${JSON.stringify(record)}\n`);
+    return record;
+  });
+}
+
+const LOCK_WAIT_MS = 15_000;
+const LOCK_STALE_MS = 10_000;
+
+/** Run `fn` holding a directory lock; a lock left by a writer that died is stale after a while. */
+function withLock(lock, fn) {
+  const deadline = Date.now() + LOCK_WAIT_MS;
+  for (;;) {
+    try {
+      mkdirSync(lock);
+      break;
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+      let age = 0;
+      try {
+        age = Date.now() - statSync(lock).mtimeMs;
+      } catch {
+        continue; // released between the two calls
+      }
+      if (age > LOCK_STALE_MS) rmSync(lock, { recursive: true, force: true });
+      else if (Date.now() > deadline) throw new Error(`the answers file stays locked: ${lock}`);
+      else Bun.sleepSync(5);
+    }
+  }
+  try {
+    return fn();
+  } finally {
+    rmSync(lock, { recursive: true, force: true });
+  }
+}
+
+/** The recorded session, or null. */
+export function readSession(run) {
+  const file = sessionFiles(run).session;
+  if (!existsSync(file)) return null;
+  try {
+    return JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return null;
+  }
 }
 
 /** Latest answer per question, which web answers still wait for delivery, and closure. */
@@ -220,7 +271,11 @@ export function startServer(
     }
     return good;
   };
-  const token = randomBytes(24).toString("base64url");
+  // Reopening a session keeps its address, so the page the user has open still works.
+  const previous = readSession(run);
+  const token =
+    previous?.url?.match(/\/s\/([A-Za-z0-9_-]{32})\//)?.[1] ??
+    randomBytes(24).toString("base64url");
   const prefix = `/s/${token}`;
   let lastSeen = Date.now();
   appendEvent(files.answers, { type: "open" });
@@ -269,77 +324,81 @@ export function startServer(
     }, 50);
   };
 
-  const server = Bun.serve({
-    hostname: "127.0.0.1",
-    port,
-    async fetch(req) {
-      const url = new URL(req.url);
-      const origin = `http://127.0.0.1:${server.port}`;
-      if (req.headers.get("host") !== `127.0.0.1:${server.port}`) return deny(403, "host");
-      if (url.pathname !== prefix && !url.pathname.startsWith(`${prefix}/`))
-        return deny(404, "not found");
-      lastSeen = Date.now();
-      const route = url.pathname.slice(prefix.length) || "/";
-      if (req.method === "GET") {
-        if (route === "/")
-          return new Response(page(lang, prefix), {
-            headers: { ...headers, "Content-Type": "text/html; charset=utf-8" },
-          });
-        if (route === "/app.js")
-          return asset("ontology-ask-client.js", "text/javascript; charset=utf-8");
-        if (route === "/app.css") return asset("ontology-ask.css", "text/css; charset=utf-8");
-        if (route === "/mermaid.js") return asset(MERMAID, "text/javascript; charset=utf-8");
-        if (route === "/api/state") return json(state());
-        return deny(404, "not found");
-      }
-      if (req.method !== "POST") return deny(405, "method");
-      if (req.headers.get("origin") !== origin) return deny(403, "origin");
-      if (!(req.headers.get("content-type") ?? "").startsWith("application/json"))
-        return deny(415, "content type");
-      const raw = await req.text();
-      if (raw.length > MAX_BODY) return deny(413, "too large");
-      let body;
-      try {
-        body = JSON.parse(raw || "{}");
-      } catch {
-        return deny(400, "json");
-      }
-      if (state().closed) return deny(409, "closed");
-      if (route === "/api/answer") {
-        const doc = current();
-        const q = doc.questions.find((x) => x.id === body.questionId);
-        if (!q || q.closed) return deny(400, "unknown or closed question");
-        const optionId = body.optionId ?? null;
-        const text = typeof body.text === "string" ? body.text.trim() : "";
-        if (optionId && !(q.options ?? []).some((o) => o.id === optionId))
-          return deny(400, "unknown option");
-        if (text.length > MAX_TEXT) return deny(400, "text too long");
-        if (text && q.allowText === false) return deny(400, "text not accepted");
-        if (!optionId && !text) return deny(400, "empty answer");
-        appendEvent(files.answers, {
-          type: "answer",
-          channel: "web",
-          questionId: q.id,
-          optionId,
-          text,
-        });
-        if (body.deliver) appendEvent(files.answers, { type: "deliver", questionIds: [q.id] });
-        return json(state());
-      }
-      if (route === "/api/deliver") {
-        const ids = state()
-          .questions.filter((q) => q.pending)
-          .map((q) => q.id);
-        if (ids.length) appendEvent(files.answers, { type: "deliver", questionIds: ids });
-        return json(state());
-      }
-      if (route === "/api/close") {
-        shutdown("user");
-        return json({ closed: true });
-      }
+  async function handle(req) {
+    const url = new URL(req.url);
+    const origin = `http://127.0.0.1:${server.port}`;
+    if (req.headers.get("host") !== `127.0.0.1:${server.port}`) return deny(403, "host");
+    if (url.pathname !== prefix && !url.pathname.startsWith(`${prefix}/`))
       return deny(404, "not found");
-    },
-  });
+    lastSeen = Date.now();
+    const route = url.pathname.slice(prefix.length) || "/";
+    if (req.method === "GET") {
+      if (route === "/")
+        return new Response(page(lang, prefix), {
+          headers: { ...headers, "Content-Type": "text/html; charset=utf-8" },
+        });
+      if (route === "/app.js")
+        return asset("ontology-ask-client.js", "text/javascript; charset=utf-8");
+      if (route === "/app.css") return asset("ontology-ask.css", "text/css; charset=utf-8");
+      if (route === "/mermaid.js") return asset(MERMAID, "text/javascript; charset=utf-8");
+      if (route === "/api/state") return json(state());
+      return deny(404, "not found");
+    }
+    if (req.method !== "POST") return deny(405, "method");
+    if (req.headers.get("origin") !== origin) return deny(403, "origin");
+    if (!(req.headers.get("content-type") ?? "").startsWith("application/json"))
+      return deny(415, "content type");
+    const raw = await req.text();
+    if (raw.length > MAX_BODY) return deny(413, "too large");
+    let body;
+    try {
+      body = JSON.parse(raw || "{}");
+    } catch {
+      return deny(400, "json");
+    }
+    if (state().closed) return deny(409, "closed");
+    if (route === "/api/answer") {
+      const doc = current();
+      const q = doc.questions.find((x) => x.id === body.questionId);
+      if (!q || q.closed) return deny(400, "unknown or closed question");
+      const optionId = body.optionId ?? null;
+      const text = typeof body.text === "string" ? body.text.trim() : "";
+      if (optionId && !(q.options ?? []).some((o) => o.id === optionId))
+        return deny(400, "unknown option");
+      if (text.length > MAX_TEXT) return deny(400, "text too long");
+      if (text && q.allowText === false) return deny(400, "text not accepted");
+      if (!optionId && !text) return deny(400, "empty answer");
+      appendEvent(files.answers, {
+        type: "answer",
+        channel: "web",
+        questionId: q.id,
+        optionId,
+        text,
+      });
+      if (body.deliver) appendEvent(files.answers, { type: "deliver", questionIds: [q.id] });
+      return json(state());
+    }
+    if (route === "/api/deliver") {
+      const ids = state()
+        .questions.filter((q) => q.pending)
+        .map((q) => q.id);
+      if (ids.length) appendEvent(files.answers, { type: "deliver", questionIds: ids });
+      return json(state());
+    }
+    if (route === "/api/close") {
+      shutdown("user");
+      return json({ closed: true });
+    }
+    return deny(404, "not found");
+  }
+  const serve = (p) => Bun.serve({ hostname: "127.0.0.1", port: p, fetch: handle });
+  let server;
+  try {
+    server = serve(port || previous?.port || 0);
+  } catch (error) {
+    if (port || !previous?.port) throw error;
+    server = serve(0); // the earlier port is taken, so the address changes
+  }
   const url = `http://127.0.0.1:${server.port}${prefix}/`;
   writeFileSync(
     files.session,
@@ -481,6 +540,21 @@ async function main(argv) {
   if (!existsSync(files.questions)) usage(`missing ${files.questions}`);
   if (command === "open") {
     mkdirSync(files.dir, { recursive: true });
+    // A second server would race the first on the same answers; point at the running one.
+    const running = readSession(run);
+    const closedLast = readEvents(files.answers).findLast(
+      (e) => e.type === "open" || e.type === "close",
+    );
+    if (
+      running?.pid &&
+      running.pid !== process.pid &&
+      alive(running.pid) &&
+      closedLast?.type === "open"
+    ) {
+      console.log(`ASK_SESSION ${running.url}`);
+      console.log("ALREADY_OPEN");
+      return;
+    }
     const lang = flag("--lang", "ko");
     const { url, stop } = startServer(run, {
       lang,

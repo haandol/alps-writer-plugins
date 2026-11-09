@@ -10,15 +10,11 @@ import {
   elementId,
   elementIri,
   processOfStep,
+  escapeHtml as esc,
 } from "./ontology-lib.mjs";
 import { projectNavigation } from "./ontology-navigation.mjs";
 import { ontologySearchUnit } from "./ontology-search.mjs";
 
-const esc = (value) =>
-  String(value ?? "").replace(
-    /[&<>"']/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
-  );
 const words = {
   ko: {
     title: "업무 지식 탐색",

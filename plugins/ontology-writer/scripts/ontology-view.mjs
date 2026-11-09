@@ -31,6 +31,8 @@ import {
   openScopeOf,
   processStatus,
   ruleReach,
+  escapeHtml as esc,
+  compareCodePoints as byId,
 } from "./ontology-lib.mjs";
 import {
   implementationState,
@@ -260,12 +262,6 @@ const UI = {
 const RDF_TYPE = `${RDF}type`;
 const LABEL = `${RDFS}label`;
 
-const esc = (value) =>
-  String(value ?? "").replace(
-    /[&<>"']/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
-  );
-const byId = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 /** Element key: the identifier of a model IRI, otherwise the IRI. Findings name elements either way. */
 const keyOf = (value) => elementId(value) ?? value;
 /** Page anchor of an element key. Every character but letters, digits and "-" is escaped, so two keys never share an anchor. */
@@ -857,7 +853,7 @@ ${f.incomplete ? notice(t.incomplete, f.errors.map(errorItem)) : ""}${f.source ?
     ]).join("");
     const rules =
       type === "Step"
-        ? index.ofType("BusinessRule").filter((r) => ruleReach(index, r).includes(iri))
+        ? rulesReaching(index, iri)
         : index.into(iri, "constrains").filter((r) => typeOf(r) === "BusinessRule");
     let realization = "";
     if (type === "Step") {
@@ -1344,4 +1340,20 @@ ${diagrams ? NAVIGATION + mermaidRuntime({ diagramFallback: t.fallback, lazy: { 
 <script data-knowledge-navigation>${KNOWLEDGE_CLIENT}</script>
 </body></html>
 `;
+}
+
+// The rules that reach each step, built once per indexed graph, in the model's rule order.
+const RULES_BY_STEP = new WeakMap();
+function rulesReaching(index, stepIri) {
+  let byStep = RULES_BY_STEP.get(index);
+  if (!byStep) {
+    byStep = new Map();
+    for (const rule of index.ofType("BusinessRule"))
+      for (const step of new Set(ruleReach(index, rule))) {
+        if (!byStep.has(step)) byStep.set(step, []);
+        byStep.get(step).push(rule);
+      }
+    RULES_BY_STEP.set(index, byStep);
+  }
+  return byStep.get(stepIri) ?? [];
 }

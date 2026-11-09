@@ -13,12 +13,12 @@ import {
   processOfStep,
   processStatus,
   ruleReach,
+  compareCodePoints as compare,
+  sortedUnique as sorted,
 } from "./ontology-lib.mjs";
 import { ontologySearch } from "./ontology-search.mjs";
 import { bestSearchHit, compareSearchHits, parseSearchQuery } from "./search/search-text.mjs";
 
-const compare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
-const sorted = (values) => [...new Set(values)].sort(compare);
 const DETAIL_KINDS = {
   BoundedContext: "context",
   Process: "process",
@@ -51,7 +51,7 @@ export function navigationOptions({ limit = null, offset = 0, search = "" } = {}
 export function projectNavigation(index, { target, includeRetired = false, search = "" }) {
   const scope = new Set();
   const rows = new Map();
-  const layerFindings = knowledgeLayerFindings(index);
+  const layerFindings = layerFindingsOf(index);
   const incompleteContexts = new Set(layerFindings.map((f) => f.element));
   search = search.trim();
   const hits = search ? ontologySearch(index, search, { includeRetired }) : new Map();
@@ -419,4 +419,12 @@ export function renderNavigation(result) {
   for (const item of result.items) lines.push(JSON.stringify(item));
   if (result.next) lines.push(`Next query: ${JSON.stringify(result.next)}`);
   return lines.join("\n") + "\n";
+}
+
+// The knowledge-layer check of a model, run once per indexed graph: a view asks for every
+// context's navigation over the same graph, which is never mutated.
+const LAYER_FINDINGS = new WeakMap();
+function layerFindingsOf(index) {
+  if (!LAYER_FINDINGS.has(index)) LAYER_FINDINGS.set(index, knowledgeLayerFindings(index));
+  return LAYER_FINDINGS.get(index);
 }

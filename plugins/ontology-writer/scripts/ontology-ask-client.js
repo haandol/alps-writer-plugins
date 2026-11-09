@@ -35,6 +35,7 @@
         all: "전체",
         resolvedBox: (n) => `저장소 근거로 해소한 질문 ${n}개 — 다르면 다시 답해 주세요`,
         resolvedBy: "해소",
+        partlyResolvedBy: "저장소 근거로 일부 해소",
         override: "다르게 답하기",
         verdicts: { stated: "명시", inferred: "추론", conflicting: "충돌", unconfirmed: "미확인" },
       }
@@ -68,6 +69,7 @@
         resolvedBox: (n) =>
           `${n} questions resolved from repository sources — answer again if they are wrong`,
         resolvedBy: "Resolved",
+        partlyResolvedBy: "Partly resolved from repository sources",
         override: "Answer differently",
         verdicts: {
           stated: "Stated",
@@ -315,13 +317,15 @@
     c.detail.textContent = q.detail ?? "";
     c.detail.hidden = !q.detail;
     setFigure(c.figure, q.diagram);
-    c.resolution.textContent = q.resolved ? `${T.resolvedBy}: ${q.resolved.summary}` : "";
+    c.resolution.textContent = q.resolved
+      ? `${q.resolved.partial ? T.partlyResolvedBy : T.resolvedBy}: ${q.resolved.summary}`
+      : "";
     c.resolution.hidden = !q.resolved;
-    c.root.classList.toggle("is-resolved", Boolean(q.resolved));
-    if (q.resolved && c.controls.parentNode !== c.override) {
+    c.root.classList.toggle("is-resolved", settled(q));
+    if (settled(q) && c.controls.parentNode !== c.override) {
       c.root.insertBefore(c.override, c.answer);
       c.override.append(c.controls);
-    } else if (!q.resolved && c.controls.parentNode === c.override) {
+    } else if (!settled(q) && c.controls.parentNode === c.override) {
       c.root.insertBefore(c.controls, c.answer);
       c.override.remove();
     }
@@ -342,7 +346,7 @@
         }),
       );
       c.evidence.open =
-        !q.resolved && ev.length <= 4 && ev.some((e) => e.verdict === "conflicting");
+        !settled(q) && ev.length <= 4 && ev.some((e) => e.verdict === "conflicting");
     }
     const sig = JSON.stringify(q.options ?? []);
     if (sig !== c.sig) {
@@ -379,9 +383,14 @@
     }
   }
 
+  // A partly resolved question stays among the asked ones; only its settled part is shown.
+  function settled(q) {
+    return Boolean(q.resolved && !q.resolved.partial);
+  }
+
   function paintNav() {
     const groups = new Map();
-    for (const q of state.questions.filter((x) => !x.resolved)) {
+    for (const q of state.questions.filter((x) => !settled(x))) {
       const name = q.group ?? T.all;
       const g = groups.get(name) ?? { first: q.id, total: 0, done: 0 };
       g.total++;
@@ -421,8 +430,8 @@
     status.className = `status${state.working ? " is-working" : ""}${state.closed ? " is-closed" : ""}`;
     warn.textContent = state.warning ? `${T.warning} ${state.warning}` : "";
     warn.hidden = !state.warning;
-    const open = state.questions.filter((q) => !q.resolved);
-    const resolved = state.questions.filter((q) => q.resolved);
+    const open = state.questions.filter((q) => !settled(q));
+    const resolved = state.questions.filter(settled);
     const total = open.length;
     const answered = open.filter((q) => q.answer || q.closed).length;
     const pending = state.questions.filter((q) => q.pending).length;

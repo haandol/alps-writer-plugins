@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -131,6 +131,8 @@ test("follow-up questions and chat answers reach the screen, and answers survive
     await Bun.sleep(100);
     const again = startServer(s.run);
     try {
+      // Reopening keeps the address, so the page the user still has open keeps working.
+      assert.equal(again.url, s.url);
       assert.deepEqual(
         allAnswers(s.run).questions.map((q) => q.answer?.optionId ?? q.answer?.text ?? null),
         ["yes", "user decision", null],
@@ -207,4 +209,52 @@ test("ontology-build opens the web session for its questions and keeps approval 
     read("skills/ontology-build/SKILL.md"),
     /Code alone shows observed behavior and never\s+resolves a question/,
   );
+});
+
+test("a partly resolved question stays asked, and a bad partial flag is refused", () => {
+  const doc = {
+    version: 1,
+    questions: [
+      {
+        id: "Q1",
+        text: "Only the rest?",
+        resolved: { summary: "The first half is settled.", partial: true },
+      },
+    ],
+  };
+  assert.equal(parseQuestions(JSON.stringify(doc)).ok, true);
+  doc.questions[0].resolved.partial = "yes";
+  assert.match(
+    parseQuestions(JSON.stringify(doc)).error,
+    /resolved\.partial must be true or false/,
+  );
+});
+
+test("answers recorded by separate processes at once never share a sequence number", async () => {
+  const s = session();
+  try {
+    const script = path.join(import.meta.dir, "../scripts/ontology-ask.mjs");
+    const writers = Array.from({ length: 6 }, (_, i) =>
+      Bun.spawn([process.execPath, script, "record", s.run, "Q2", "--text", `answer ${i}`], {
+        stdout: "ignore",
+        stderr: "pipe",
+      }),
+    );
+    const posts = Array.from({ length: 4 }, () =>
+      s.post("answer", { questionId: "Q1", optionId: "yes" }),
+    );
+    await Promise.all([...writers.map((w) => w.exited), ...posts]);
+    for (const w of writers) assert.equal(w.exitCode, 0);
+    const seqs = readFileSync(s.files.answers, "utf8")
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => JSON.parse(l).seq);
+    assert.deepEqual(
+      seqs,
+      seqs.map((_, i) => i + 1),
+    );
+    assert.equal(seqs.length, 11, "the open event, six recorded and four web answers");
+  } finally {
+    s.done();
+  }
 });

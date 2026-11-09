@@ -720,7 +720,7 @@ const isText = (o) =>
  *
  * @param {{doc: string, text: string}[]} documents Model documents.
  * @param {{categoryKeys?: string[], requireKnowledgeLayers?: boolean,
- *   requiredContexts?: Set<string>, previousContexts?: Set<string>}} [options]
+ *   requiredContexts?: Set<string>, previousContexts?: Set<string>, parsed?: object[]}} [options]
  *   Category keys detect references written into the model. Construction can
  *   require all or selected BC layers; a save also requires every newly added BC
  *   by supplying the prior BC IRIs. Legacy reading reports layer gaps as warnings.
@@ -734,7 +734,8 @@ export function validateModel(documents, options = {}) {
   const findings = [];
   const add = (level, code, where, element, msg) =>
     findings.push({ level, code, where, element, msg });
-  const parsed = documents.map(parseDocument);
+  // A caller that already parsed the same documents passes them, in the same order.
+  const parsed = options.parsed ?? documents.map(parseDocument);
 
   for (const p of parsed) {
     for (const e of p.errors)
@@ -1290,6 +1291,23 @@ const LINK_TARGETS = [
   /<([^\s<>]+)>/g,
 ];
 
+// Model IRIs and `m:` names in ADR text. `matchAll` copies a global regex, so sharing
+// these never shares match state between calls.
+const MODEL_IRI_RE = new RegExp(`${MODEL.replace(/[.:]/g, (c) => `\\${c}`)}[^\\s<>"'\`)]*`, "g");
+const MODEL_NAME_RE = new RegExp(`(?<![\\w:-])m:([${PN_CHARS}.]*[${PN_CHARS}])`, "gu");
+// The element ids of a model, built once per indexed graph (a graph is never mutated).
+const MODEL_IDS = new WeakMap();
+function modelIds(index) {
+  if (!index) return new Set();
+  let ids = MODEL_IDS.get(index);
+  if (!ids) {
+    ids = new Set();
+    for (const iri of index.subjects.keys()) if (elementId(iri)) ids.add(elementId(iri));
+    MODEL_IDS.set(index, ids);
+  }
+  return ids;
+}
+
 /**
  * Model locations and element identifiers a realizing ADR body must not
  * contain: the model directory in any path or URL, a link into a model
@@ -1300,8 +1318,7 @@ const LINK_TARGETS = [
  *   target, resolved from the ADR's own folder, leads into the model directory.
  */
 export function modelReferenceHits(body, index, { inModel }) {
-  const ids = new Set();
-  for (const iri of index?.subjects.keys() ?? []) if (elementId(iri)) ids.add(elementId(iri));
+  const ids = modelIds(index);
   const hits = [];
   String(body)
     .split("\n")
@@ -1316,13 +1333,8 @@ export function modelReferenceHits(body, index, { inModel }) {
         }
       for (const m of line.matchAll(/`([^`\s]+)`/g))
         if (m[1].includes(".") && ids.has(m[1])) hits.push({ line: n + 1, text: m[0] });
-      for (const m of line.matchAll(
-        new RegExp(`${MODEL.replace(/[.:]/g, (c) => `\\${c}`)}[^\\s<>"'\`)]*`, "g"),
-      ))
-        hits.push({ line: n + 1, text: m[0] });
-      for (const m of line.matchAll(
-        new RegExp(`(?<![\\w:-])m:([${PN_CHARS}.]*[${PN_CHARS}])`, "gu"),
-      ))
+      for (const m of line.matchAll(MODEL_IRI_RE)) hits.push({ line: n + 1, text: m[0] });
+      for (const m of line.matchAll(MODEL_NAME_RE))
         if (ids.has(m[1])) hits.push({ line: n + 1, text: m[0] });
     });
   // One link can match two link forms; report it once.
@@ -1638,7 +1650,16 @@ function dedupe(triples) {
   return [...seen.values()];
 }
 
-const compareCodePoints = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+/** Code-point order, the one ordering ids, paths and names share across the scripts. */
+export const compareCodePoints = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+/** Distinct values in code-point order. */
+export const sortedUnique = (values) => [...new Set(values)].sort(compareCodePoints);
+/** Text escaped for HTML content and attribute values. */
+export const escapeHtml = (value) =>
+  String(value ?? "").replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
 
 // ── semantic diff ──────────────────────────────────────────────────────
 

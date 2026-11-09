@@ -21,11 +21,10 @@ import {
   processesToPropose,
   ruleReach,
   sameMeaningKey,
+  compareCodePoints as byId,
+  sortedUnique as sorted,
 } from "./ontology-lib.mjs";
 import { currentAdrPaths, implementationState, realizersByStep } from "./ontology-query.mjs";
-
-const byId = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
-const sorted = (list) => [...new Set(list)].sort(byId);
 
 /** Steps connected to one changed element: the features realizing them are directly affected. */
 function stepsTouchedBy(index, iri) {

@@ -131,7 +131,12 @@ and write nothing. A change that affects no ADR continues without it.
   pending rows where a meaning awaits another approval. Never weaken or delete a
   contract or feature automatically; a deletion candidate keeps its current
   contract until the user confirms it. `affectedAdrs` lists the ADR files of the
-  affected features, and the base hash binds them.
+  affected features, and the base hash binds them; `affectedAdrReasons` gives each
+  file's reasons (`direct`, `proposed-process`, `relinked`). Leave an affected ADR
+  unrevised only when its current contract already holds the changed business
+  meaning — for example a new link to a step its feature already implements, with
+  the hand-off compliance contracts already there — and record that reason; it
+  keeps its content and Status.
 - **Unrealized system steps.** For every system step without a realizing feature,
   new ones included, apply the ADR admission gate and the decision identity check
   and present an existing-ADR update or a new ADR candidate, or the reason there
@@ -162,9 +167,10 @@ and write nothing. A change that affects no ADR continues without it.
 
 Show, in one summary: the model's semantic diff in business language; the
 affected features found through the index; the index-link changes; the processes
-that become `Proposed`; for each affected ADR the semantic diff of Decision,
-Decision Drivers, requirement contract and Consequences and its regeneration
-checklist; new realizing candidates; the glossary cleanup decision; change-log
+that become `Proposed`; for each affected ADR whether it is revised and why, and
+for each revised ADR the semantic diff of Decision, Decision Drivers, requirement
+contract and Consequences and its regeneration checklist (group the unrevised ones
+by reason, one line each); new realizing candidates; the glossary cleanup decision; change-log
 lines; and any Turtle comments the rewrite drops. Approving it approves exactly
 the shown ontology change and ADR revisions; do not ask again for the same
 revision in `/adr-impl`.
@@ -192,7 +198,7 @@ nothing was written: compare each affected ADR with the version the draft
 started from, keep the user's newer edit, rerun `impact`, and re-present only
 the changed range. For any other refusal, fix what it reports, rerun `impact`
 and re-present anything the fix changes. Then save the approved ADR revisions
-in place; each affected ADR is `Proposed` through
+in place; each revised ADR is `Proposed` through
 `bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs`, this plugin's copy of
 adr-writer's transition.
 A renewed `Accepted` date becomes the comparison baseline once the saved unit is
@@ -206,10 +212,11 @@ one: make HEAD's model readable as the refusal says first.
 
 ## 8. Cascade and report
 
-- Run adr-writer's `/adr-impl` for the affected ADRs in prerequisite order. No affected ADR is
-  reported complete before its prerequisites.
-- When the last affected ADR becomes `Accepted` — or right after `apply` when no
-  ADR was affected — run `/ontology-align` for each process that became
+- Run adr-writer's `/adr-impl` for the revised ADRs in prerequisite order. No revised ADR is
+  reported complete before its prerequisites. An unrevised affected ADR keeps its
+  Status and is not re-implemented.
+- When the last revised ADR becomes `Accepted` — or right after `apply` when no
+  ADR was revised — run `/ontology-align` for each process that became
   `Proposed`.
 - When implementation or the alignment review fails part way, the process stays
   `Proposed`; report the completed and the remaining features separately, never
