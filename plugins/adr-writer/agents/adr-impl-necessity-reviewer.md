@@ -58,7 +58,8 @@ Prove it with code locations and call paths, not with "it looks necessary."
 
 For each review unit, try: "if this code were deleted or replaced with a smaller
 existing structure, would the ADR contract break?" Run the related tests or
-non-destructive commands where possible. When verification would require
+non-destructive commands where possible, only within
+`${CLAUDE_PLUGIN_ROOT}/references/execution-boundary.md` (read it completely first). When verification would require
 modifying the repository, do not run it — propose a concrete test procedure
 instead.
 

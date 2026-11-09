@@ -1,7 +1,7 @@
 node_modules
 dist
 # The alps-writer plugin ships its bundled MCP server so it runs from the
-# plugin install alone (no npm/npx). Keep this dist tracked.
+# plugin install alone. Keep this dist tracked.
 !plugins/alps-writer/dist
 !plugins/alps-writer/dist/**
 .devcontainer

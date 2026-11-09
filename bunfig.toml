@@ -1,6 +1,6 @@
 [run]
 # Package bins (prettier, eslint, tsc, husky, …) declare `#!/usr/bin/env node`.
-# Run them on Bun too, whether or not a Node.js is installed.
+# Run them on Bun as well.
 bun = true
 
 [test]

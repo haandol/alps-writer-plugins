@@ -756,3 +756,8 @@ test("ontology-view is a read-only navigation screen delivered like a report", (
   );
   has(view, "Without model documents the command creates no view");
 });
+
+test("the alignment review runs its entry points within the bundled execution boundary", () => {
+  assert.match(ALIGN, /`\$\{CLAUDE_PLUGIN_ROOT\}\/references\/execution-boundary\.md`/);
+  assert.ok(read("references/execution-boundary.md").includes("## Where verification runs"));
+});

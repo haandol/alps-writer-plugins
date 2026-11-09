@@ -7,6 +7,13 @@
 export const IMPACT_RULES = [
   {
     pathPrefixes: [
+      "plugins/adr-writer/references/execution-boundary.md",
+      "plugins/ontology-writer/references/execution-boundary.md",
+    ],
+    scenarioPrefixes: ["impl-review-stays-local-", "sync-stays-local-"],
+  },
+  {
+    pathPrefixes: [
       "plugins/adr-writer/references/outcome-evaluation.md",
       "plugins/alps-writer/references/outcome-evaluation.md",
     ],

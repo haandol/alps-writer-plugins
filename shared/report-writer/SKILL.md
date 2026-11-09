@@ -69,7 +69,7 @@ modules only for the content or format being handled:
   read [code evidence](references/code-evidence.md) when actual code matters.
 - **Structured output:** use [the document contract](references/report-document.md)
   with `scripts/render-report.mjs` when hierarchy and evidence validation help.
-  This Node-only renderer needs no package installation. For HTML composition
+  This renderer runs on Bun and needs no package installation. For HTML composition
   and static layout checks, use [HTML layout](references/html-layout.md).
 
 Strongly recommend a short quiz when it helps the reader apply the core content.

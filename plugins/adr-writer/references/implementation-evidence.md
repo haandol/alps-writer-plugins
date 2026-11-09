@@ -62,7 +62,8 @@ Before selecting or executing validation, read and apply
 observable evidence, execution readiness, actual user-entry verification,
 code/semantic judgments, result aggregation and cause-specific repair. Connect
 the tests selected here to those rules; retain the ideal/edge coverage and review
-classifications in this document.
+classifications in this document. Before running any test, evaluation or
+reproduction, read and apply `${CLAUDE_PLUGIN_ROOT}/references/execution-boundary.md`.
 
 Tests read as executable documentation. Name each test as the behavior it proves
 and keep unrelated behaviors separate so a failure names the broken rule.

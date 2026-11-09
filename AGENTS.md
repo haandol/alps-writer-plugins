@@ -1,8 +1,8 @@
 # AGENTS.md
 
-`alps-writer-plugins` — a Codex and Claude Code marketplace shipping three independent plugins: **alps-writer** (ALPS/PRD authoring via an MCP server), **ontology-writer** (an optional business ontology above ADRs) and **adr-writer** (ADR-driven development cycle). Each installs from the marketplace alone — no npm. The alps-writer MCP server is bundled with esbuild (dependencies inlined) and the bundle is committed at `plugins/alps-writer/dist/`, so the plugin runs straight from a marketplace install.
+`alps-writer-plugins` — a Codex and Claude Code marketplace shipping three independent plugins: **alps-writer** (ALPS/PRD authoring via an MCP server), **ontology-writer** (an optional business ontology above ADRs) and **adr-writer** (ADR-driven development cycle). Each installs from the marketplace alone. The alps-writer MCP server is bundled with esbuild (dependencies inlined) and the bundle is committed at `plugins/alps-writer/dist/`, so the plugin runs straight from a marketplace install.
 
-**Tech Stack**: TypeScript 5.9+, Bun >= 1.4.2 (runtime, package manager, test runner — no Node.js or pnpm), Bun workspace, MCP SDK (`@modelcontextprotocol/sdk`), Zod
+**Tech Stack**: TypeScript 5.9+, Bun >= 1.4.2 (runtime, package manager, test runner), Bun workspace, MCP SDK (`@modelcontextprotocol/sdk`), Zod
 
 ## The design principle — an abstraction ladder, C4-style
 
@@ -389,7 +389,7 @@ codex plugin add adr-writer@alps-writer
 /plugin install adr-writer@alps-writer    # ADR plugin (skills + hooks)
 ```
 
-- **alps-writer** runs its MCP server from the committed bundle plus its local `skills/`; no npm/bunx is required.
+- **alps-writer** runs its MCP server from the committed bundle plus its local `skills/`.
 - **adr-writer** ships local `skills/`, `agents/`, `hooks/`, and `templates/adr/`. Codex requires users to review and trust the bundled hook before it runs. No MCP.
 
 The hook script (in adr-writer) is ESM (`.mjs`) and reads NDJSON events from stdin per the Claude Code hooks spec. The hooks configuration runs it with Bun; it uses only built-in modules (no extra deps), so the plugin requires nothing beyond Bun >= 1.4.2.
@@ -583,7 +583,7 @@ avoid a round trip — not the only thing standing between a bad commit and `mai
   hook start) run while the unit tests run and report after them in that order;
   the rebuild rewrites generated files the tests check, so it waits for the tests.
 
-- **`.github/workflows/ci.yaml`** — three jobs, all on Bun 1.4.2 (the declared floor), with no Node.js setup. `test` runs
+- **`.github/workflows/ci.yaml`** — three jobs, all on Bun 1.4.2 (the declared floor). `test` runs
   `test:workspace`; `build` adds lint, `format:check`, `bump:check`, and a rebuild
   that fails if the committed `plugins/alps-writer/dist/` differs; `runtime` runs
   the complete ADR suite once and checks consumer entry points with **no install step**. The hooks only exist for someone who
@@ -596,8 +596,7 @@ avoid a round trip — not the only thing standing between a bad commit and `mai
 
 **Why Bun only.** Users run the MCP server, hooks and plugin scripts with Bun,
 so the repository installs (`bun install`, `bun.lock`), tests (`bun test`),
-typechecks, bundles and releases with the same Bun — no Node.js or pnpm
-anywhere. CI pins `setup-bun` to the declared floor (`engines.bun >= 1.4.2`) so
+typechecks, bundles and releases with the same Bun. CI pins `setup-bun` to the declared floor (`engines.bun >= 1.4.2`) so
 the floor is the version actually verified. Bun overrides name a package, not a
 version range, so each security floor in `package.json` applies to every copy of
 its package; the `//overrides` note says what each floor keeps. DeepEval declares
