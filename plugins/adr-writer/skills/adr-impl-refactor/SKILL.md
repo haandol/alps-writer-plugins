@@ -37,7 +37,7 @@ to verify Git exclusion before writing artifacts.
 
 ## 2. Establish the test baseline
 
-Run the narrowest existing tests that cover the changed path before applying any refactor. Record the command and result.
+Read `${CLAUDE_PLUGIN_ROOT}/references/execution-boundary.md` completely, then run the narrowest existing tests that cover the changed path before applying any refactor. Record the command and result.
 
 - If the relevant tests fail, stop. Refactoring a failing baseline makes cause and effect ambiguous.
 - If no related tests exist, produce proposals only. Do not auto-apply a candidate whose behavior cannot be checked before and after.

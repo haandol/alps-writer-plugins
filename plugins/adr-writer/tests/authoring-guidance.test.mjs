@@ -50,7 +50,7 @@ test("authoring guidance synchronization repairs drift and its check never mutat
       "scripts/sync-authoring-guidance.mjs",
       readFileSync(path.join(root, "scripts/sync-authoring-guidance.mjs")),
     );
-    for (const name of names)
+    for (const name of [...names, "execution-boundary.md"])
       write(
         dir,
         `plugins/adr-writer/references/${name}`,
@@ -69,6 +69,18 @@ test("authoring guidance synchronization repairs drift and its check never mutat
     assert.equal(readFileSync(target, "utf8"), "stale");
     assert.equal(run().status, 0);
     assert.equal(run("--check").status, 0);
+    const boundary = write(
+      dir,
+      "plugins/ontology-writer/references/execution-boundary.md",
+      "stale",
+    );
+    assert.equal(run("--check").status, 1, "the ontology-writer copy is checked too");
+    assert.equal(readFileSync(boundary, "utf8"), "stale");
+    assert.equal(run().status, 0);
+    assert.equal(
+      readFileSync(boundary, "utf8"),
+      readFileSync(path.join(PLUGIN_ROOT, "references/execution-boundary.md"), "utf8"),
+    );
     assert.equal(
       run("--global").status,
       2,

@@ -84,7 +84,7 @@ const groups = [
     "리뷰와 설명",
     "판정 근거",
     "계약 충족의 증거",
-    ["impl-review-evidence-", "impl-review-provability"],
+    ["impl-review-evidence-", "impl-review-provability", "impl-review-stays-local-"],
   ],
   [
     "리뷰와 설명",

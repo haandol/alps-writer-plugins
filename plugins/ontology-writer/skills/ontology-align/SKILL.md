@@ -72,7 +72,9 @@ For every criterion, **write the execution scope into the evidence before
 running**: the system steps from its start condition to its business result,
 the steps of other processes that emit or react to the events it passes through
 (only when that process is `Accepted` or verified together), and each step's real
-entry point.
+entry point. Before running anything, read `${CLAUDE_PLUGIN_ROOT}/references/execution-boundary.md`
+completely: real entry points run in the repository's local or test environment,
+and a criterion only a live environment could show stays unverified.
 
 - Create the start condition, run every in-scope system step through its
   realizing feature's real entry point, and observe the business result.

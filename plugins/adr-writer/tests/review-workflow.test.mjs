@@ -907,3 +907,24 @@ test("human-facing review reports use one junior-readable visual writing guide",
   assert.match(visualization, /diagramOmissionReason/);
   assert.match(visualization, /`diagramIds` array linking to them/);
 });
+
+test("every workflow that executes verification loads the execution boundary first", () => {
+  const boundary = /`\$\{CLAUDE_PLUGIN_ROOT\}\/references\/execution-boundary\.md`/;
+  for (const file of [
+    "skills/adr-impl/SKILL.md",
+    "skills/adr-impl-review/SKILL.md",
+    "skills/adr-impl-refactor/SKILL.md",
+    "agents/adr-impl-sufficiency-reviewer.md",
+    "agents/adr-impl-necessity-reviewer.md",
+    "agents/adr-impl-refactor-reviewer.md",
+    "references/implementation-evidence.md",
+  ])
+    assert.match(readCore(file), boundary, `${file} must load the execution boundary`);
+  const text = readCore("references/execution-boundary.md");
+  for (const heading of [
+    "## Where verification runs",
+    "## Secrets",
+    "## When only a live environment can show it",
+  ])
+    assert.ok(text.includes(heading), `execution boundary keeps ${heading}`);
+});

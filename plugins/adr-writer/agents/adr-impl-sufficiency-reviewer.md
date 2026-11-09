@@ -117,7 +117,8 @@ For each Hill (expand the zooms only when supplied or required by full mode):
    every Component's detailed implementation, verification result, and focused
    Code evidence.
 3. Select the relevant counterexample that could break the vertical result.
-4. Execute the linked targeted tests or a non-destructive reproduction.
+4. Execute the linked targeted tests or a non-destructive reproduction within
+   `${CLAUDE_PLUGIN_ROOT}/references/execution-boundary.md`; read it completely before the first execution.
 5. Account for every contract id assigned to the Hill before the final verdict.
 
 If a Hill boundary hides a cross-Hill invariant, move the complete invariant

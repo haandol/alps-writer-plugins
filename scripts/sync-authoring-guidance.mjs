@@ -10,16 +10,22 @@ if (args.some((arg) => arg !== "--check")) {
   process.exit(2);
 }
 const check = args.includes("--check");
-const names = [
-  "requirement-delegation.md",
-  "comprehension-load.md",
-  "feature-boundaries.md",
-  "outcome-evaluation.md",
-];
+// Guidance owned by adr-writer, copied into each plugin that installs alone and reads it.
+const copies = {
+  "alps-writer": [
+    "requirement-delegation.md",
+    "comprehension-load.md",
+    "feature-boundaries.md",
+    "outcome-evaluation.md",
+  ],
+  "ontology-writer": ["execution-boundary.md"],
+};
 let drift = false;
-for (const name of names) {
+for (const [plugin, name] of Object.entries(copies).flatMap(([p, names]) =>
+  names.map((n) => [p, n]),
+)) {
   const source = path.join(root, "plugins/adr-writer/references", name);
-  const target = path.join(root, "plugins/alps-writer/references", name);
+  const target = path.join(root, "plugins", plugin, "references", name);
   const content = readFileSync(source);
   if (check) {
     if (!existsSync(target) || !readFileSync(target).equals(content)) {

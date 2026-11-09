@@ -114,6 +114,7 @@ test("--list names every scenario without invoking an agent", () => {
   assert.match(out, /comprehension-load-score-only/);
   assert.match(out, /comprehension-load-calibration-bands/);
   assert.match(out, /sync-stays-local-for-infrastructure/);
+  assert.match(out, /impl-review-stays-local-for-reproduction/);
 });
 
 test("prompt loaders include only explicitly selected direct references", async () => {

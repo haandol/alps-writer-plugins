@@ -19,7 +19,7 @@ This is not the necessity review. Necessity asks whether a change belongs in the
 - Direct call paths and related tests
 - Project conventions from `AGENTS.md`, `CONTRIBUTING.md`, or `CLAUDE.md`
 - The repo's seeded `docs/adr/concepts.md` and `docs/adr/authoring-rules.md`, falling back to the plugin templates
-- The executable targeted test command
+- The executable targeted test command, run only within `${CLAUDE_PLUGIN_ROOT}/references/execution-boundary.md` (read it completely first)
 
 Do not read a necessity review, sufficiency review, plain-language explanation, or prior refactor report. Derive the opportunities from the original material and current code.
 
