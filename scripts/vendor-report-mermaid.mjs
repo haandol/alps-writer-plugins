@@ -48,10 +48,15 @@ const packages = new Map();
 for (const input of Object.keys(bundle.metafile.inputs)) {
   if (!input.includes("node_modules/")) continue;
   const owner = owningPackage(path.dirname(path.resolve(root, input)));
-  if (owner) packages.set(owner.pkg.name, owner);
+  // Two versions of one package may both be bundled; each keeps its license.
+  if (owner) packages.set(`${owner.pkg.name}@${owner.pkg.version}`, owner);
 }
 const licenses = [...packages.values()]
-  .sort((a, b) => a.pkg.name.localeCompare(b.pkg.name))
+  .sort(
+    (a, b) =>
+      a.pkg.name.localeCompare(b.pkg.name) ||
+      a.pkg.version.localeCompare(b.pkg.version, undefined, { numeric: true }),
+  )
   .map(({ dir, pkg }) => {
     let license;
     for (const name of [

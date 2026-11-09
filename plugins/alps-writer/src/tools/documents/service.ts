@@ -379,7 +379,7 @@ export class DocumentService {
         flag: "wx",
       });
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+      if ((error as Error & { code?: string }).code === "EEXIST") {
         throw new Error(
           `Document already exists at ${filepath}. Use load_alps_document() to resume.`,
           { cause: error },

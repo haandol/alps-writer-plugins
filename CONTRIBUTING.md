@@ -248,8 +248,7 @@ Automated in these places, so you rarely have to remember:
   (`build` runs adr-writer's unit tests the same way, before its install), an MCP
   `initialize` round-trip against the committed bundle, and the hooks — since a
   consumer has no `node_modules` and the installed jobs always do. Every job sets
-  up only Bun, at the declared floor (`engines.bun >= 1.4.2`); no job installs
-  Node.js. Hooks can be skipped with `--no-verify`, CI cannot. On a push to main, its `verified` job looks for the merged pull request:
+  up only Bun, at the declared floor (`engines.bun >= 1.4.2`). Hooks can be skipped with `--no-verify`, CI cannot. On a push to main, its `verified` job looks for the merged pull request:
   when the workflow passed on that head and the pushed commit carries its tree,
   the three jobs skip instead of repeating the same checks, and otherwise they
   all run.
