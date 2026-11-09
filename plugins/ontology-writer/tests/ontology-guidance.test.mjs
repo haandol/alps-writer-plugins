@@ -200,7 +200,7 @@ test("ontology-edit drafts, reviews and applies one approved change unit downwar
     edit,
     "Approving it approves exactly the shown ontology change and ADR revisions; do not ask again for the same revision in `/adr-impl`.",
   );
-  has(edit, "No affected ADR is reported complete before its prerequisites.");
+  has(edit, "No revised ADR is reported complete before its prerequisites.");
   has(edit, "run `/ontology-align` for each process that became `Proposed`");
   has(
     edit,
@@ -263,8 +263,13 @@ test("a same-meaning wording edit is confirmed by the user and carried through i
 test("a summary that went stale is compared again and the user's newer edits are kept", () => {
   has(
     EDIT,
-    "`affectedAdrs` lists the ADR files of the affected features, and the base hash binds them.",
+    "`affectedAdrs` lists the ADR files of the affected features, and the base hash binds them;",
   );
+  has(
+    EDIT,
+    "Leave an affected ADR unrevised only when its current contract already holds the changed business meaning",
+  );
+  has(EDIT, "An unrevised affected ADR keeps its Status and is not re-implemented.");
   has(
     EDIT,
     "When it refuses because the bound state changed after the summary — the model, index, glossary, change log, draft, an affected ADR or the confirmations — nothing was written: compare each affected ADR with the version the draft started from, keep the user's newer edit, rerun `impact`, and re-present only the changed range.",
@@ -291,7 +296,7 @@ test("a summary that went stale is compared again and the user's newer edits are
   );
   has(
     BUILD,
-    "Build the save draft the same way — every current model document plus only the confirmed candidates — and pass `apply` the base hash of the `impact` run whose comparison the approval summary showed.",
+    "Build the save draft the same way — every current model document plus only the confirmed candidates (`ontology-candidates.mjs prepare --confirmed-only`) — and pass `apply` the base hash of the `impact` run whose comparison the approval summary showed.",
   );
 });
 
@@ -328,7 +333,7 @@ test("ontology-edit shows every item in one summary and writes or cascades nothi
   );
   has(
     EDIT,
-    "Show, in one summary: the model's semantic diff in business language; the affected features found through the index; the index-link changes; the processes that become `Proposed`; for each affected ADR the semantic diff of Decision, Decision Drivers, requirement contract and Consequences and its regeneration checklist; new realizing candidates; the glossary cleanup decision; change-log lines; and any Turtle comments the rewrite drops.",
+    "Show, in one summary: the model's semantic diff in business language; the affected features found through the index; the index-link changes; the processes that become `Proposed`; for each affected ADR whether it is revised and why, and for each revised ADR the semantic diff of Decision, Decision Drivers, requirement contract and Consequences and its regeneration checklist (group the unrevised ones by reason, one line each); new realizing candidates; the glossary cleanup decision; change-log lines; and any Turtle comments the rewrite drops.",
   );
   has(
     EDIT,
@@ -336,11 +341,11 @@ test("ontology-edit shows every item in one summary and writes or cascades nothi
   );
   has(
     EDIT,
-    "Then save the approved ADR revisions in place; each affected ADR is `Proposed` through `bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs`, this plugin's copy of adr-writer's transition.",
+    "Then save the approved ADR revisions in place; each revised ADR is `Proposed` through `bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs`, this plugin's copy of adr-writer's transition.",
   );
   has(
     EDIT,
-    "When the last affected ADR becomes `Accepted` — or right after `apply` when no ADR was affected — run `/ontology-align` for each process that became `Proposed`.",
+    "When the last revised ADR becomes `Accepted` — or right after `apply` when no ADR was revised — run `/ontology-align` for each process that became `Proposed`.",
   );
   has(EDIT, "If the user rejects the summary, write nothing.");
 });
@@ -760,4 +765,15 @@ test("ontology-view is a read-only navigation screen delivered like a report", (
 test("the alignment review runs its entry points within the bundled execution boundary", () => {
   assert.match(ALIGN, /`\$\{CLAUDE_PLUGIN_ROOT\}\/references\/execution-boundary\.md`/);
   assert.ok(read("references/execution-boundary.md").includes("## Where verification runs"));
+});
+
+test("ontology-build writes one candidate file and names new elements from their meaning", () => {
+  has(BUILD, "Record the candidates in one `<run>/candidates.json`");
+  has(BUILD, "do not write project-specific scripts for them.");
+  has(BUILD, "never from a sequence number or the order documents list it in");
+  const candidates = read("skills/ontology-build/references/candidates.md");
+  has(
+    candidates,
+    "ontology-candidates.mjs prepare <run>/candidates.json --run <run> --confirmed-only",
+  );
 });

@@ -39,6 +39,7 @@ import {
   sameKeys,
   unionGraph,
   validateModel,
+  compareCodePoints,
 } from "./ontology-lib.mjs";
 
 /**
@@ -1021,7 +1022,9 @@ export function readModelHistory(ontologyDir, { cwd = process.cwd(), mappingPath
       return { available: false, reason: "not a git work tree", noHistory: true };
     }
   }
-  const dir = repositoryName(top, cwd, ontologyDir);
+  // The physical working directory, resolved once: every path below is named from it.
+  const here = realpathSync(cwd);
+  const dir = repositoryName(top, here, ontologyDir);
   if (dir === null)
     return {
       available: false,
@@ -1030,7 +1033,7 @@ export function readModelHistory(ontologyDir, { cwd = process.cwd(), mappingPath
       noHistory: true,
     };
   // An index outside the repository has no history: the gates stay unknown.
-  const mapRel = mappingPath ? repositoryName(top, cwd, mappingPath) : null;
+  const mapRel = mappingPath ? repositoryName(top, here, mappingPath) : null;
   const also = mapRel ? [mapRel] : [];
   const logRel = `${dir}/${CHANGE_LOG}`;
   let head = facts?.head ?? null;
@@ -1280,7 +1283,7 @@ export function readModelHistory(ontologyDir, { cwd = process.cwd(), mappingPath
     if (!files) return null;
     return [...files.entries()]
       .filter(([file]) => file.endsWith(".ttl"))
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .sort(([a], [b]) => compareCodePoints(a, b))
       .map(([file, id]) => {
         if (!parsedBlob.has(id))
           parsedBlob.set(
@@ -1317,13 +1320,16 @@ export function readModelHistory(ontologyDir, { cwd = process.cwd(), mappingPath
   // working tree reads them from disk.
   const adrRoot = mappingPath ? path.dirname(mappingPath) : null;
   const treeCache = objects;
+  // ADR file contents by object id: unchanged ADRs are the same objects at every judged
+  // commit, so each is read from git once.
+  const adrTexts = new Map();
   const recordFindingsAt = (c, mapping, index) => {
     const categories = mapping?.categories ?? {};
     const linkedKeys = Object.keys(categories).filter(
       (k) => Array.isArray(categories[k]?.realizes) && categories[k].realizes.length,
     );
     if (!adrRoot || !linkedKeys.length) return { findings: [], unread: false };
-    const name = (p) => repositoryName(top, cwd, p) ?? `\0outside:${p}`;
+    const name = (p) => repositoryName(top, here, p) ?? `\0outside:${p}`;
     const folderOf = (key) => name(path.join(adrRoot, ...key.split("/")));
     const wanted = new Set();
     for (const k of linkedKeys) {
@@ -1348,7 +1354,9 @@ export function readModelHistory(ontologyDir, { cwd = process.cwd(), mappingPath
     ]);
     const entryAt = new Map(locations.map((p, i) => [p, ends[i]]));
     const fileIds = ends.filter((r) => r.entry && r.entry.mode !== "40000").map((r) => r.entry.id);
-    const texts = catObjects(fileIds, top);
+    const unreadIds = fileIds.filter((id) => !adrTexts.has(id));
+    for (const [id, obj] of catObjects(unreadIds, top)) adrTexts.set(id, obj);
+    const texts = adrTexts;
     const findings = adrRecordFindings({
       categories,
       index,
@@ -1385,20 +1393,14 @@ export function readModelHistory(ontologyDir, { cwd = process.cwd(), mappingPath
   const errorsKnown = new Map();
   const errorsAt = (c, mapping) => {
     if (errorsKnown.has(c)) return errorsKnown.get(c);
-    const files = filesOf.get(c);
+    // The documents graphAt already parsed, validated without parsing them again.
+    const parsed = parsedAt(c);
     let errors = null;
-    if (files) {
-      const docs = [...files]
-        .filter(([file]) => file.endsWith(".ttl"))
-        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-        .map(([file, id]) => ({
-          doc: file,
-          ...decodeDocument(blobs.get(id)?.data ?? Buffer.alloc(0)),
-        }));
-      const v = validateModel(docs, {
-        categoryKeys: Object.keys(mapping?.categories ?? {}),
-        modelDir: dir,
-      });
+    if (parsed) {
+      const v = validateModel(
+        parsed.map((d) => ({ doc: d.doc })),
+        { categoryKeys: Object.keys(mapping?.categories ?? {}), modelDir: dir, parsed },
+      );
       const records = v.index && mapping ? recordFindingsAt(c, mapping, v.index) : null;
       errors = {
         errors: [
@@ -1442,7 +1444,7 @@ export function readModelHistory(ontologyDir, { cwd = process.cwd(), mappingPath
     headDocuments: () =>
       [...headFiles]
         .filter(([f]) => f.endsWith(".ttl"))
-        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .sort(([a], [b]) => compareCodePoints(a, b))
         .map(([file, id]) => ({
           file,
           ...decodeDocument(blobs.get(id)?.data ?? Buffer.alloc(0)),
@@ -1478,14 +1480,14 @@ class MissingObjects extends Error {}
 
 /**
  * A path as the repository names it: lexically from the physical working
- * directory, so the links on the way stay names that history resolves in each
+ * directory `here` (already resolved by the caller), so the links on the way stay names that history resolves in each
  * commit as the file system does; a path that only links bring into the
  * repository is named by its real location. Null when it lies outside.
  */
-function repositoryName(top, cwd, p) {
+function repositoryName(top, here, p) {
   const inside = (r) => !(r === ".." || r.startsWith(`..${path.sep}`) || path.isAbsolute(r));
   const name = (r) => r.split(path.sep).join("/") || ".";
-  const lexical = path.resolve(realpathSync(cwd), p);
+  const lexical = path.resolve(here, p);
   if (inside(path.relative(top, lexical))) return name(path.relative(top, lexical));
   try {
     const real = path.relative(top, realpathSync(lexical));
@@ -1522,7 +1524,7 @@ const firstLine = (error) =>
  */
 export function modelDocumentsAt(ref, ontologyDir, { cwd = process.cwd() } = {}) {
   const top = git(["rev-parse", "--show-toplevel"], cwd).trim();
-  const dir = repositoryName(top, cwd, ontologyDir);
+  const dir = repositoryName(top, realpathSync(cwd), ontologyDir);
   if (dir === null) throw new Error("the model directory lies outside the repository");
   const sha = git(["rev-parse", "--verify", "-q", `${ref}^{commit}`], top).trim();
   const logRel = `${dir}/${CHANGE_LOG}`;
@@ -1533,7 +1535,7 @@ export function modelDocumentsAt(ref, ontologyDir, { cwd = process.cwd() } = {})
   if (unread.length) throw new Error(unread.join("; "));
   const ttl = [...files]
     .filter(([f]) => f.endsWith(".ttl"))
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    .sort(([a], [b]) => compareCodePoints(a, b));
   const logId = files.get(logRel);
   const blobs = catObjects([...ttl.map(([, id]) => id), ...(logId ? [logId] : [])], top);
   const docs = ttl.map(([file, id]) => {

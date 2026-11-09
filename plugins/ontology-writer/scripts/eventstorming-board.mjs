@@ -1,7 +1,14 @@
 // Read-only EventStorming presentation. Candidate evidence is disposable; a model's
 // uses relation is not evidence that an entity changed its business state.
 import { readFileSync } from "node:fs";
-import { elementId, elementIri, isRetired, openScopeOf, isSystemStep } from "./ontology-lib.mjs";
+import {
+  elementId,
+  elementIri,
+  isRetired,
+  openScopeOf,
+  isSystemStep,
+  escapeHtml as esc,
+} from "./ontology-lib.mjs";
 import { queryContext, implementationState, realizersByStep } from "./ontology-query.mjs";
 import { renderEventTimeline } from "./eventstorming-timeline.mjs";
 
@@ -14,11 +21,6 @@ export const BOARD_CLIENT =
   readFileSync(new URL("./eventstorming-motion.js", import.meta.url), "utf8") +
   readFileSync(new URL("./eventstorming-timeline.js", import.meta.url), "utf8") +
   readFileSync(new URL("./eventstorming-landscape.js", import.meta.url), "utf8");
-const esc = (s) =>
-  String(s ?? "").replace(
-    /[&<>"']/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
-  );
 const anchor = (id) =>
   `event-stage-${String(id).replace(/[^\p{L}\p{N}-]/gu, (c) => `_${c.codePointAt(0).toString(16)}_`)}`;
 const verdicts = ["stated", "inferred", "conflicting", "unconfirmed"];

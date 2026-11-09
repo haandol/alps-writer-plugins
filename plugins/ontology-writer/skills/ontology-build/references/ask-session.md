@@ -8,7 +8,9 @@ and the save approval stay in the conversation.
 
 ## Write the questions
 
-Write `<run>/ask/questions.json` in the report's run directory:
+`ontology-candidates.mjs prepare` writes `<run>/ask/questions.json` from the
+candidate file's questions (see [candidate artifacts](candidates.md)). Otherwise
+write it in the report's run directory:
 
 ```json
 {
@@ -78,7 +80,10 @@ diagram it cannot draw shows its source and the error.
 Before asking, apply the resolve-before-asking pass of section 3. A question a
 current repository source answers gets `resolved` (a `summary` and, when an
 option fits, its `optionId`) with that source in `evidence`; the screen lists it
-under resolved questions, and the user can still answer it. Ask the rest.
+under resolved questions, and the user can still answer it. When sources settle
+only part of a question, add `"partial": true` to `resolved`, put the settled
+part in its `summary` and ask only the remaining part as the question's text; it
+stays among the asked questions. Ask the rest.
 
 Check the diagrams' syntax before opening or after rewriting the file:
 
@@ -95,7 +100,10 @@ bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology-ask.mjs wait <run>             # run 
 
 `open` binds to the loopback address with a per-session token, prints
 `ASK_SESSION <url>`, opens the browser (`--no-open`, `--browser <name>`) and
-writes `<run>/ask/session.json`. Give the user the URL.
+writes `<run>/ask/session.json`. Give the user the URL. Reopening a session that
+ended keeps the same address when its port is free, so an open page keeps
+working; while the session is still running, `open` prints its address and
+`ALREADY_OPEN` instead of starting a second server.
 
 `wait` exits when the user delivers answers or the session ends and prints the
 delivered answers as JSON. On each wake-up:

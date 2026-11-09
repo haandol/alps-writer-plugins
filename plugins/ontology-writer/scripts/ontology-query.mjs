@@ -22,11 +22,11 @@ import {
   openScopeOf,
   processOfStep,
   processStatus,
+  compareCodePoints as byId,
+  sortedUnique as sorted,
 } from "./ontology-lib.mjs";
 
 const LABEL = `${RDFS}label`;
-const byId = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
-const sorted = (list) => [...new Set(list)].sort(byId);
 
 /** Categories realizing each step id, with their ADR paths and Status. */
 export function realizersByStep(mapping) {

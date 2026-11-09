@@ -756,6 +756,10 @@ test("the summary judges links as the index draft saves them, and its text names
     assert.deepEqual(summary.categoriesOfProposedProcesses, ["payments"]);
     assert.deepEqual(summary.relinkedCategories, ["payments"]);
     assert.deepEqual(summary.affectedAdrs, ["docs/adr/payments/0001-b.md"]);
+    // Each bound ADR carries why it is bound, so the summary can judge which need a revision.
+    assert.deepEqual(summary.affectedAdrReasons, {
+      "docs/adr/payments/0001-b.md": ["direct", "proposed-process", "relinked"],
+    });
     const text = exits(dir, ["impact", "--draft", "draft", ...args], 0).out;
     assert.match(text, /^system steps without a realizing feature: none$/m);
     assert.match(text, /^features whose index links change: payments$/m);
@@ -774,6 +778,10 @@ test("the summary judges links as the index draft saves them, and its text names
     assert.match(relink, /^directly affected features: none$/m);
     assert.match(relink, /^features whose index links change: payments$/m);
     assert.match(relink, /^affected ADRs: docs\/adr\/payments\/0001-b\.md$/m);
+    const relinkOnly = impact(dir, args);
+    assert.deepEqual(relinkOnly.affectedAdrReasons, {
+      "docs/adr/payments/0001-b.md": ["relinked"],
+    });
   });
 });
 

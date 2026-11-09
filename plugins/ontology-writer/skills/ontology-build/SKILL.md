@@ -48,6 +48,10 @@ existing evidence and approval boundaries for both layers.
 
 Work in a disposable run directory under `.adr-review/` following
 [review artifact storage](../report-writer/references/review-artifacts.md).
+Record the candidates in one `<run>/candidates.json` and generate the draft,
+board, index draft, question file and review summary from it with
+[candidate artifacts](references/candidates.md); do not write project-specific
+scripts for them.
 
 - Candidates are the facts the model owns: flows, event hand-offs and policies,
   actor responsibilities, rules across steps, business concepts and terms,
@@ -67,6 +71,12 @@ Work in a disposable run directory under `.adr-review/` following
   inferred or unconfirmed mark stays so; its confirmed mark never replaces the
   user's confirmation; an input that names its original source gives that
   location.
+- Name each new candidate from its business meaning, never from a sequence
+  number or the order documents list it in: a step or concept by what it is
+  (`<context>.<meaning>`), a policy by its trigger and reaction
+  (`<context>.on-<event>-<action>`), a rule by what it constrains and requires.
+  Reorganized or added documents then keep the same ids, and an element that
+  already exists keeps its id.
 - Mark candidates that come from planned rather than current business; the user
   chooses which to adopt.
 - For each rule and policy, propose a basis kind (`regulation`, `contract`,
@@ -160,8 +170,9 @@ the conversation.
   different hash means the model, index, glossary, change log or an affected ADR
   changed since the report: re-present only the changed range.
 - Build the save draft the same way — every current model document plus only
-  the confirmed candidates — and pass `apply` the base hash of the `impact` run
-  whose comparison the approval summary showed.
+  the confirmed candidates (`ontology-candidates.mjs prepare --confirmed-only`)
+  — and pass `apply` the base hash of the `impact` run whose comparison the
+  approval summary showed.
 - Unconfirmed paths are not saved. When they belong to one of the three axes,
   record them as open paths on the saved process or step; an axis the user says
   the business does not have becomes not applicable. Show these open-scope items

@@ -8,6 +8,14 @@ The current Purpose, all still-valid Decision Drivers, adopted choice, rationale
 and requirement contract remain together in the ADR body. Reading this log is
 optional for understanding the current decision.
 
+## 2026-11-09 — 갱신이 필요한 영향 ADR만 갱신
+
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./0003-govern-ontology-lifecycle-and-cascade.md)
+- **Change type**: requirement rule change
+- **What**: 승인 요약은 영향 ADR마다 갱신 여부와 근거를 보이고, 갱신하는 ADR만 semantic diff를 보인 뒤 `Proposed`로 구현한다. 현재 계약이 바뀐 업무 의미를 이미 담고 있는 영향 ADR은 내용과 Status를 유지하고, 그 판단의 기준 revision은 승인 요약에 묶인다(R31·R36).
+- **Why**: 문서 기반 첫 구축에서 연결만 새로 생긴 기능 21개의 ADR 128개가 모두 갱신·재구현 대상이 되어, 계약이 바뀌지 않는 기능까지 재구현 범위가 커졌다.
+- **What is now void**: 영향 ADR을 모두 edit-in-place로 갱신해 `Proposed`로 만들던 규칙. 승인 뒤 바뀐 영향 ADR을 덮어쓰지 않는 보장(R48)은 유지한다.
+
 ## 2026-11-08 — 로컬 웹 질문 세션으로 실시간 답변
 
 - **Current ADR**: [build-ontology-from-documents](./0004-build-ontology-from-documents.md)

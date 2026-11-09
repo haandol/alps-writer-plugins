@@ -700,6 +700,26 @@ function relinked(current, draft) {
   return { categories, adrs: [...new Set(adrs)].sort() };
 }
 
+/**
+ * Why each affected ADR is bound: its feature realizes a changed element (`direct`), a step of
+ * a process that becomes Proposed (`proposed-process`), or its index links change (`relinked`).
+ * The reasons let a summary judge which ADRs need a revision; every listed ADR stays bound.
+ */
+function affectedAdrReasons(summary, index, relink) {
+  const reasons = new Map();
+  const add = (paths, why) => {
+    for (const p of paths) reasons.set(p, new Set([...(reasons.get(p) ?? []), why]));
+  };
+  for (const c of summary.directlyAffectedCategories)
+    add(currentAdrPaths(index?.categories?.[c]), "direct");
+  for (const c of summary.categoriesOfProposedProcesses)
+    add(currentAdrPaths(index?.categories?.[c]), "proposed-process");
+  add(relink.adrs, "relinked");
+  return Object.fromEntries(
+    [...reasons].sort(([a], [b]) => (a < b ? -1 : 1)).map(([p, set]) => [p, [...set].sort()]),
+  );
+}
+
 /** An index or glossary draft passed to impact or apply, read as text; a missing one is a usage error. */
 function draftText(file, flag) {
   if (!file) return null;
@@ -907,6 +927,7 @@ function impact(opts) {
     ...(summary
       ? {
           affectedAdrs: [...new Set([...summary.affectedAdrs, ...relink.adrs])].sort(),
+          affectedAdrReasons: affectedAdrReasons(summary, draftIndex ?? mapping, relink),
           relinkedCategories: relink.categories,
         }
       : {}),
@@ -951,6 +972,13 @@ function impact(opts) {
       show("features of processes that become Proposed", summary.categoriesOfProposedProcesses);
       show("features whose index links change", out.relinkedCategories);
       show("affected ADRs", out.affectedAdrs);
+      // Reasons only when they tell more than "every ADR is bound for one reason".
+      const reasonKinds = new Set(Object.values(out.affectedAdrReasons).flat());
+      if (reasonKinds.size > 1)
+        show(
+          "affected ADR reasons",
+          Object.entries(out.affectedAdrReasons).map(([p, r]) => `${p} (${r.join(", ")})`),
+        );
       show(
         "index links to remove or move",
         summary.linkChanges.map((l) => `${l.category} → ${l.step} (${l.reason})`),
@@ -1280,9 +1308,10 @@ function apply(opts) {
   const renewed = new Set();
   const notRenewed = new Map();
   const renewedOn = `Accepted (${today()})`;
+  // The renewal audit, when one runs, also carries the level the lifecycle check reuses.
+  let audit = null;
   if (!direct) {
     const sameMeaning = confirmations(opts, before, check.index);
-    let audit = null;
     for (const p of current.index.ofType("Process")) {
       const id = elementId(p);
       if (propose.has(id) || proposedResult.typeOf(p) !== "Process") continue;
@@ -1368,6 +1397,7 @@ function apply(opts) {
     ...lifecycleEditsOf(opts, current.index, lifecycleHistory, {
       retirements: true,
       committed: false,
+      level: audit?.level ?? null,
     }),
     ...(direct && lifecycleHistory.available
       ? lifecycleHistoryFindings(lifecycleHistory, (input) => alignmentPlan(input)).filter(
@@ -1488,16 +1518,19 @@ function renewalInputs(
   savedFindings = null,
   history = readModelHistory(opts.ontologyDir, { mappingPath: mappingPathOf(opts) }),
 ) {
-  const { findings, mapping } = levelFindings(opts);
+  // One read of the level serves the promotion errors and the lifecycle audit.
+  const read = levelFindings(opts);
+  const { findings, mapping } = read;
   const level = savedFindings
     ? [...savedFindings, ...findings.filter((f) => f.code.startsWith("ontology-adr-"))]
     : findings;
   return {
     history,
     mapping,
+    level: read,
     baselines: acceptedBaselines(history),
     errors: level.filter((f) => f.level === "error"),
-    edits: lifecycleEditsOf(opts, workingIndex, history),
+    edits: lifecycleEditsOf(opts, workingIndex, history, { level: read }),
   };
 }
 
@@ -1664,13 +1697,14 @@ function transition(opts) {
       return fail(
         `cannot tell whether "${opts.process}" has lifecycle edits Ontology Writer's transitions do not explain: ${unaudited}; ${readableRemedy(unaudited)} first`,
       );
-    const { findings, mapping } = levelFindings(opts);
+    const level = levelFindings(opts);
+    const { findings, mapping } = level;
     const why = promotionRefusal({
       index: current.index,
       mapping,
       id: opts.process,
       errors: findings.filter((f) => f.level === "error"),
-      edits: () => lifecycleEditsOf(opts, current.index, history),
+      edits: () => lifecycleEditsOf(opts, current.index, history, { level }),
     });
     if (why) return fail(why);
     // Over a demotion not committed yet — an approved change, since a hand edit stopped
@@ -1799,8 +1833,10 @@ function transition(opts) {
  * @param {object} before The base model.
  * @param {string} baseLog The change log at the base.
  * @param {object|null} history From `readModelHistory`, for the audit against HEAD.
- * @param {{committed?: boolean, historyAudit?: object|null}} [options] `committed: false`
- *   leaves the history audit out; `historyAudit` is one `lifecycleHistoryAudit` already run.
+ * @param {{committed?: boolean, historyAudit?: object|null, level?: object|null}} [options]
+ *   `committed: false` leaves the history audit out; `historyAudit` is one
+ *   `lifecycleHistoryAudit` already run; `level` is `levelFindings` already read in this
+ *   command, with nothing written since.
  */
 function lifecycleAudit(
   opts,
@@ -1808,10 +1844,10 @@ function lifecycleAudit(
   before,
   baseLog,
   history,
-  { committed = true, historyAudit = null } = {},
+  { committed = true, historyAudit = null, level: known = null } = {},
 ) {
   const added = addedLines(readText(path.join(opts.ontologyDir, CHANGE_LOG)) ?? "", baseLog);
-  const { findings: level, mapping } = levelFindings(opts);
+  const { findings: level, mapping } = known ?? levelFindings(opts);
   const errors = level.filter((f) => f.level === "error");
   const promotion = (p) =>
     alignmentPlan({ index: workingIndex, mapping, processId: elementId(p), errors }).blocking
@@ -1840,7 +1876,7 @@ function lifecycleEditsOf(
   opts,
   workingIndex,
   history = readModelHistory(opts.ontologyDir, { mappingPath: mappingPathOf(opts) }),
-  { retirements = false, committed = true } = {},
+  { retirements = false, committed = true, level = null } = {},
 ) {
   if (!history.available) return [];
   const head = history.head ? history.graphAt(history.head) : indexGraph([]);
@@ -1848,7 +1884,7 @@ function lifecycleEditsOf(
   const baseLog = history.head ? history.changeLogAt(history.head) : "";
   // With `retirements`, an uncommitted retirement no approved save is known to have made
   // too; with `committed: false`, only the uncommitted change against HEAD.
-  return lifecycleAudit(opts, workingIndex, head, baseLog, history, { committed }).filter(
+  return lifecycleAudit(opts, workingIndex, head, baseLog, history, { committed, level }).filter(
     (f) => f.level === "error" || (retirements && f.code === "ontology-lifecycle-needs-approval"),
   );
 }
