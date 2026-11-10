@@ -7,6 +7,8 @@ in code and tests, not a perfect ontology or inference capability. Capture the
 evidenced decisions and their reasons, exceptions, waits, cancellations,
 compensation and manual/external hand-offs that matter to that workflow. Its reviewable outputs are an event map, boundary candidates and a
 model proposal; it does not prescribe private reasoning or a workshop topology.
+The discovered business structure should guide the responsibilities and
+dependencies of realizing features and code through their ADR contracts.
 
 ## From evidence to an event map
 
@@ -33,7 +35,9 @@ Keep unanswered questions and disputed connections visible on the working map.
 
 Derive bounded contexts from consistent language and rule ownership. Identify
 subdomains as business problem areas and explain their relationship to those
-contexts; neither a service nor a repository folder proves either boundary.
+contexts; neither a service, an existing functional ADR category nor a repository
+folder proves either boundary. Discover the actual business work before assigning
+its realizing feature documents.
 Core/supporting/generic classification needs business evidence and may remain
 unconfirmed. Do not force a one-to-one subdomain/context relationship or move
 existing ADR categories without authorization. Preserve confirmed boundaries;

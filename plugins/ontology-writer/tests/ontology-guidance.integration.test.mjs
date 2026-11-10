@@ -18,15 +18,18 @@ test("the session directive's query reads the model beside an index kept elsewhe
     );
     write(dir, "ontology/ordering.ttl", EXAMPLE);
     const ctx = runHook(dir, { env: { ALPS_ADR_MAPPING: "adr/.mapping.json" } });
-    const [, cli, where] =
-      ctx.match(/\(bun "([^"]+)" query --category <key>( --adr-dir "adr")\)/) ?? [];
+    const [, cli, where] = ctx.match(/\(bun "([^"]+)" query --step <id>( --adr-dir "adr")\)/) ?? [];
     assert.ok(cli && where, ctx);
-    const query = spawnSync("bun", [cli, "query", "--category", "ordering", "--adr-dir", "adr"], {
-      cwd: dir,
-      encoding: "utf8",
-    });
+    const query = spawnSync(
+      "bun",
+      [cli, "query", "--step", "ordering.submit-order", "--adr-dir", "adr"],
+      {
+        cwd: dir,
+        encoding: "utf8",
+      },
+    );
     assert.equal(query.status, 0, query.stdout + query.stderr);
-    assert.match(query.stdout, /Business context — category "ordering"/);
+    assert.match(query.stdout, /Business context — step "ordering.submit-order"/);
     assert.doesNotMatch(query.stdout, /no ontology|NOT FOUND/);
   });
 });

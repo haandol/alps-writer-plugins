@@ -77,7 +77,16 @@ async function open(file = candidate, reduced = true) {
   p.on("pageerror", (e) => errors.push(e.message));
   await offline(p, requests);
   await p.goto(pathToFileURL(file).href);
-  await p.waitForFunction(() => Boolean(document.querySelector(".event-timeline")?.timeline));
+  // The client is assigned before its first animation-frame draw. Wait for the
+  // recorded routes, independently of the playback state each test will judge.
+  await p.waitForFunction(() => {
+    const host = document.querySelector(".event-timeline");
+    return (
+      Boolean(host?.timeline) &&
+      host.querySelectorAll(".story-route").length ===
+        host.querySelectorAll("[data-story-from]").length
+    );
+  });
   return p;
 }
 async function areas(p) {

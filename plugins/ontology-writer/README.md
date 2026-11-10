@@ -24,20 +24,41 @@ directive asks the agent to query the business context first.
 
 ## The saved view
 
-`/ontology-view` writes one read-only HTML file and opens it. Start from the
-bounded contexts (BCs), search inside one, and open any element with its facts,
-relations and realizing ADRs:
+`/ontology-view` writes one read-only HTML file and opens it. Explore the same
+three layers in **EventStorming** or **3D business structure**:
 
-![Search inside a BC](../../docs/images/ontology-bc-search.webp)
+1. Domain and bounded context (BC): responsibilities, language and collaborations.
+2. Business process: its starting condition, activities and outcome.
+3. Realizing functional ADR: the decision, Status and original contract.
 
-![Step detail](../../docs/images/ontology-step-detail.webp)
+The processes come from the business model. A functional ADR may support multiple
+processes; category-level realization links are labeled with that precision.
+The two representations keep the same scope, search, page and selection.
 
-"Whole flow & structure" shows every domain event across contexts, and the
-business structure as a 3D city with each process's implementation status:
+The 3D map locates BCs within the supplied business domains, preserving multiple
+and unrecorded memberships. Opening a BC or process retains its ancestor
+boundaries and location in the whole. Internal regions distinguish participation
+shared across BCs and ADRs associated with multiple processes. Search and paging
+retain spatial addresses; only current results receive buildings. Read full names
+and descriptions in the adjacent list, or point to a building or list item to
+locate it. Recorded connections remain visible without hovering. Arrows and
+moving light follow recorded event hand-offs from source to destination, including
+named endpoints outside the current page or scope. Hover emphasizes related
+connections; undirected collaboration keeps a plain line. The motion illustrates
+business direction, not live traffic, and respects pause, reduced motion and
+hidden/offscreen views. Height and distance are not workload or execution measurements.
+Append `#view=structure` to a generated file address to enter the city directly.
 
-![Event flow](../../docs/images/ontology-event-flow.webp)
+![Business processes inside a BC](../../docs/images/ontology-bc-search.webp)
 
-![Business structure](../../docs/images/ontology-business-structure.webp)
+![Business facts and relations](../../docs/images/ontology-step-detail.webp)
+
+Open a selected process's event flow for its conditions, rules, branching and
+external hand-offs. ADR inspection is the final abstraction layer.
+
+![Scoped event flow](../../docs/images/ontology-event-flow.webp)
+
+![The same business layer in 3D](../../docs/images/ontology-business-structure.webp)
 
 Screenshots come from the [template model](./templates/ontology/example.ttl);
 `bun run docs:screenshots` regenerates them.
@@ -59,6 +80,14 @@ Construct ontology knowledge in layers. The upper layer contains BCs only:
 their responsibilities, authored core business logic and declared collaborations.
 The heavier layer holds each BC's internal workflows, connected by context
 membership. Exact implementation contracts remain in ADRs.
+
+Development starts at the smallest known scope. Use the BC overview and scoped
+search to locate unfamiliar work; query a known step or process directly. Expand
+only for relevant hand-offs, shared rules or unresolved questions, then read the
+owning ADR contract and code. Reuse checked context while its source assumptions
+hold. The [retrieval guide](./references/knowledge-layers.md#retrieve-at-the-needed-resolution)
+explains entry points, paging, stopping and refresh conditions; this limits what
+the LLM reads, while the CLI still parses the model for its graph and checks.
 
 ```bash
 bun scripts/ontology.mjs query --overview
@@ -135,9 +164,19 @@ Install [`adr-writer`](../adr-writer) as well when the repository has ADRs. A mo
 | `/ontology-sync [process]`    | Review completeness/readiness without mutation when requested, or reconcile direct Turtle edits and propose downstream changes                                                                                                                                                                    |
 | `/ontology-align [process]`   | Make a process current only when its realizing features are implemented, compliance contracts are in place, nothing contradicts the model and every observation criterion passed by executing the features' real entry points                                                                     |
 | `/ontology-build [documents]` | Capture workflows through an evidence-based event map, identify contexts/subdomains, then propose model facts with sources; save only confirmed scope                                                                                                                                             |
-| `/ontology-view`              | Start with authored BC knowledge, search its internal work and inspect details/ADRs; open the whole event flow and 3D structure explicitly                                                                                                                                                        |
+| `/ontology-view`              | Explore domain/BC → business process → realizing ADR in EventStorming or 3D, with shared navigation and scoped business evidence                                                                                                                                                                  |
 
 ## Completeness and the next workflow
+
+The build's local question screen keeps option answers and free-text answers
+exclusive: typing clears the selected option, and later updates preserve the
+current draft. A separate discussion area lets the user ask the authoring agent
+about the model or a specific review question and read the reply beside it.
+Discussion does not submit candidate answers or approve model changes. It uses
+the current agent's session, displays whether an agent is listening, and retains
+questions and replies across reopening. Hosts that cannot wake the agent
+automatically require notification in the main conversation; the screen explains
+that handoff instead of starting another inference service.
 
 Ask `/ontology-sync` to review completeness/readiness when you want a read-only
 assessment of the actual business workflow. It reports business-model
@@ -146,29 +185,36 @@ including unknown scope. Use `/ontology-build` for additional information,
 `/ontology-edit` for a requested change, the reconciliation path of
 `/ontology-sync` for direct edits, and `/ontology-align` for execution evidence.
 The read-only review is an agent workflow using existing commands, not a new
-CLI flag. The viewer opens on a 3D map of authored BC knowledge. Selecting a BC
-moves the camera into its expanding area and unfolds the current internal search
-page. Selecting an element zooms to its facts, process flow and realizing ADRs;
-returning restores the prior camera, search and page. Boundary links lead to their
-actual BCs, and shared work remains identified as shared. Move, rotate, zoom and
-reset the spatial view, or switch to the equivalent list view. Transitions can be
+CLI flag. The viewer starts at the domain/BC layer. Selecting a BC reveals its
+actual business processes; selecting a process reveals the functional ADRs that
+realize its activities. This guides business responsibility boundaries through
+ADR contracts into code organization, without deriving the business structure
+from existing functional ADR categories or technical services.
+
+EventStorming and 3D business structure share all three layers and preserve search,
+paging, selection and return positions. Shared processes and ADRs retain identity;
+external participation and unrecorded memberships are explicit. Move and zoom in
+both views, rotate in 3D, and read details on a flat surface. Transitions can be
 disabled and honor reduced motion. Internal scenes and diagrams are built on demand.
+The existing `#all` address enters this common hierarchy. Reopening resets local
+navigation state; the browser writes no persistent state.
 
-The explicit whole-workflow entry opens the EventStorming canvas: domain events
-lead the story across contexts, with their producing actions, incoming policies
-and conditions. Related business rules and recorded open paths appear beside the
-flow, preserving their scope and evidence. Branches and returning links remain
-visible; position does not establish time or an unrecorded causal relation.
+The selected process's event board retains exact reactions, action order, rules
+and open paths, with direct external hand-offs. A linked activity opens the same
+model detail. Only indexed Markdown inside the real ADR root is included; missing
+or unsafe document paths and Status inconsistencies stay visible.
 
-The whole-workflow view has two tabs: Event flow and Business structure. Inside
-Event flow, switch between individual events and Business areas: sourced domain,
-subdomain and context groupings with cross-context hand-offs. Shared contexts
-appear once with explicit memberships; unknown membership stays separate.
-Business structure shows context districts, process towers, steps and hand-offs in 3D.
-The event inspector can open the same step
-in Business structure. Both views keep their navigation in the open page;
-reopening resets it. Read actual context ownership from the model details,
-not a process tower's physical placement.
+Preview a current draft and its supplied business evidence without adoption:
+
+```bash
+bun scripts/ontology.mjs view --draft <draft-directory> \
+  --mapping <draft-index.json> --board <business-board.json> --lang ko
+```
+
+Domain/subdomain memberships and classifications come only from that explicit
+business evidence, preserving identities and source verdicts. The model vocabulary
+is unchanged. Saved-model facts, unadopted candidates and unperformed reviews remain
+distinct; a view never saves the model, index or ADRs.
 
 The event flow places emitted events on a continuous trace with solid arrows;
 action-only stages remain labeled intermediate actions. Connection labels open
@@ -190,6 +236,14 @@ Unknown changes and unperformed
 reviews remain explicit.
 
 ## Business ontology
+
+Skill entrypoints keep task routing and approval boundaries close to the request.
+Candidate review, confirmed saves, direct-edit history and extra viewing evidence
+live in the relevant skill's `references/` and are read at that stage. Edit,
+build and sync share [change meaning](./references/change-meaning.md) and the
+[approved change unit](./references/change-unit.md), so changes to save and
+cascade rules have one owner. The shared report-writer skill remains generated
+from the workspace's canonical report guidance.
 
 Model documents use the closed vocabulary in `templates/ontology/vocabulary.ttl`; `templates/ontology/example.ttl` shows a small model. The model owns business flows, event hand-offs, policies, cross-step rules and business terms. The rules are in `references/ontology.md`; the deterministic commands are `bun scripts/ontology.mjs <command>` with `validate`, `format`, `diff`, `query`, `impact`, `apply`, `transition`, `align`, `lifecycle`, `changes` and `view`, documented at the top of the script. `validate` also checks the ADR index's `realizes` links against the model.
 

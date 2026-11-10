@@ -1,6 +1,6 @@
 ---
 name: ontology-align
-description: Run the alignment review that makes a business process current — check that every system step is realized by implemented features, that compliance contracts sit in the required ADRs, that ADR contracts do not contradict the model, and that each observation criterion is confirmed by executing the realizing features' real entry points — then promote the process to Accepted automatically, or report what remains. Runs after the last affected ADR is Accepted, after an approved change with no affected ADR, when a Proposed process's realizing ADRs are all Accepted, or on request. Keywords - "/ontology-align", "정렬 검토", "프로세스 현행 판정", "process alignment review".
+description: Verify that a business process is realized by implemented features, matching ADR compliance contracts and execution of its observation criteria. Promote Proposed to Accepted only after alignment passes. Use on request or at the approved implementation handoff; readiness-only reviews use ontology-sync.
 argument-hint: "[process-id]"
 ---
 

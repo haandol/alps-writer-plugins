@@ -119,7 +119,13 @@ export function assertNoUnrealizedStep(html) {
       .join(""),
     /state-unrealized/,
   );
-  assert.ok(viewData(html).elements.every((e) => e.s !== "unrealized"));
+  const layered = /<script type="application\/json" id="layered-data">([\s\S]*?)<\/script>/.exec(
+    html,
+  );
+  const elements = layered
+    ? Object.values(JSON.parse(layered[1]).elements)
+    : viewData(html).elements;
+  assert.ok(elements.every((e) => e.s !== "unrealized"));
 }
 
 /** `count` processes of one step each in the ordering context: a landscape of more nodes than that. */

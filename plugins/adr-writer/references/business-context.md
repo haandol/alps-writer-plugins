@@ -31,6 +31,9 @@ Automatic lifecycle transitions — `/adr-impl` promoting to `Accepted`,
 
 Run ontology-writer's query, the command its session directive names:
 
+Choose the needed scope below before running it. This example requests the
+whole feature's context:
+
 ```bash
 bun <ontology-writer>/scripts/ontology.mjs query --category <key>
 ```
@@ -48,6 +51,41 @@ with their basis, and the open scope. Every step carries its process Status and
 its realizing features with their ADR Status. Never persist a result; it is not
 a record or a second authority.
 
+## Retrieve only the context needed for the change
+
+Choose the entry point from what is already known, rather than walking every
+layer on every implementation task:
+
+- **Unlocated work:** use `query --overview` to read the lightweight BC layer,
+  then `query --context <id> --search <business wording>` in relevant BCs.
+- **Known process or element:** query it directly with `--process`, `--step`,
+  `--concept` or `--event`. A single-step change need not start with every
+  process realized by the feature.
+- **Known feature:** use its confirmed `realizes` links to locate affected
+  steps; use `--category` for feature-wide changes, uncertain scope or link
+  diagnosis. Preserve the unlinked-feature handling below. Category names and
+  code folders do not establish the business boundary.
+- **Further evidence:** follow only relevant hand-offs, shared concepts, rules,
+  neighboring BCs or missing observation criteria. `--search`, `--limit` and
+  `--offset` page overview/context queries only. Follow returned `next` when
+  more evidence is needed; keep the same search and custom `--adr-dir`.
+
+Search and page summaries locate candidates; they do not establish the full
+contract. Read the selected detail and the owning ADRs' full contracts,
+retaining relevant cross-boundary conditions and diagnostics. Do not trim away
+warnings or connections to make a broad result look complete. Stop expanding
+when the change's business question and relevant dependencies are understood,
+then find and implement the code from its ADRs. This does not replace the ADR
+admission gate's required mapping/ADR reads, prerequisites or review coverage.
+
+Within the same active change, reuse checked context while its sources remain
+current. Refresh affected queries when their basis changes: relevant model facts,
+realization links, ADR contracts or Status, or the requested business scope.
+Do not repeat a query before each file edit or create a persistent context cache.
+Retrieval itself never starts a model build, sync,
+save or alignment review. Missing or disputed knowledge keeps its existing
+uncertainty and approval handling.
+
 ## Unlinked features
 
 When the target feature realizes no step, judge one of three outcomes and show
@@ -64,6 +102,12 @@ again.
 The purpose is to carry actual business logic into ADR contracts, code and tests.
 The model is useful when it captures the workflow accurately and richly; formal
 ontology completeness and inference capability are not implementation goals.
+
+The ontology supplies the business-workflow structure; functional ADRs explain
+its realization. Preserve confirmed business responsibilities and dependencies
+in the owning contracts so they guide code organization as well as behavior.
+Use this supplied context through ontology-writer, without reading or reshaping
+the model here or deriving business boundaries from existing ADR categories.
 
 - **Connect workflow to verification.** In authoring, identify the starting
   condition, performer, event hand-offs, outcome and relevant observation

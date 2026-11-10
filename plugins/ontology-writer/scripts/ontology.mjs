@@ -22,6 +22,7 @@
 //   bun ontology.mjs align --process ID [--together ID,ID] [--json]
 //   bun ontology.mjs lifecycle [--base REF] [--json]
 //   bun ontology.mjs view [--include-retired] [--lang en|ko] [--no-open | --browser NAME]
+//                         [--draft DIR] [--mapping FILE] [--board FILE]
 //
 //   validate  closed-world model checks plus the ADR index's `realizes` links;
 //             the model is the Turtle documents in the ADR directory's sibling
@@ -71,9 +72,11 @@
 //             cross-process hand-offs to run now or deferred
 //   lifecycle lifecycle changes since a revision that Ontology Writer's transitions
 //             cannot explain (direct edits of Status or replacement)
-//   view      read-only standalone HTML: landscape, process flows, element details
-//             with realization status; written to an ignored .adr-review/ run
-//             directory and opened once in the default (or named) browser
+//   view      read-only standalone HTML: domains/BCs → business processes → realizing
+//             ADRs, one hierarchy in EventStorming or 3D. --draft reads an explicit
+//             unadopted model; --mapping selects its index, --board supplies review
+//             evidence. Written to an ignored .adr-review/ run directory and opened
+//             once in the default (or named) browser; never saves the source model.
 //
 // Exit: 0 = clean / no difference / complete context, 1 = findings, differences,
 //       a missing target or an incomplete context, 2 = usage error.
@@ -140,7 +143,9 @@ import {
   recordedAdrFiles,
 } from "./ontology-fs.mjs";
 import { openReviewReport } from "./adr-impl-review-open.mjs";
-import { renderView } from "./ontology-view.mjs";
+import { renderLayeredView } from "./ontology-layered-view.mjs";
+import { readAdrDocument } from "./ontology-layered-data.mjs";
+import { validateEventBoard } from "./eventstorming-board.mjs";
 import { currentAdrPaths, queryContext, renderContext } from "./ontology-query.mjs";
 import { navigationOptions } from "./ontology-navigation.mjs";
 
@@ -181,6 +186,7 @@ function parseArgs(argv) {
     draft: null,
     baseHash: null,
     mappingFile: null,
+    boardFile: null,
     glossaryFile: null,
     logs: [],
     process: null,
@@ -210,6 +216,7 @@ function parseArgs(argv) {
     else if (a === "--draft") opts.draft = value().replace(/\/+$/, "");
     else if (a === "--base-hash") opts.baseHash = value();
     else if (a === "--mapping") opts.mappingFile = value();
+    else if (a === "--board" && command === "view") opts.boardFile = value();
     else if (a === "--glossary") opts.glossaryFile = value();
     else if (a === "--log") opts.logs.push(value());
     else if (a === "--same-meaning") opts.sameMeaning.push(value());
@@ -297,13 +304,13 @@ function usage(msg) {
  * The ADR index and, when the file exists but cannot be read or parsed, an error
  * finding with its position — an unreadable index is never read as "no index".
  */
-function loadMapping(adrDir) {
-  const file = path.join(adrDir, ".mapping.json");
+function loadMapping(adrDir, selectedFile = null) {
+  const file = selectedFile ?? path.join(adrDir, ".mapping.json");
   let text;
   try {
     text = readFileSync(file, "utf8");
   } catch (error) {
-    if (error.code === "ENOENT" || error.code === "ENOTDIR")
+    if (!selectedFile && (error.code === "ENOENT" || error.code === "ENOTDIR"))
       return { mapping: null, finding: null };
     return {
       mapping: null,
@@ -336,13 +343,17 @@ function loadMapping(adrDir) {
 
 /** Model and index findings of the working tree, the unreadable-index finding included. */
 function levelFindings(opts) {
-  const { mapping, finding } = loadMapping(opts.adrDir);
+  const mappingFile = opts.command === "view" ? opts.mappingFile : null;
+  const { mapping, finding } = loadMapping(opts.adrDir, mappingFile);
   const level = ontologyFindings({
     ontologyDir: opts.ontologyDir,
     adrRoot: opts.adrDir,
     mapping,
-    mappingPath: rel(path.join(opts.adrDir, ".mapping.json")),
+    mappingPath: rel(mappingFile ?? path.join(opts.adrDir, ".mapping.json")),
     rel,
+    ...(opts.command === "view"
+      ? { readAdr: (file) => readAdrDocument({ path: file }, { adrRoot: opts.adrDir }).body }
+      : {}),
   });
   return { ...level, mapping, findings: finding ? [finding, ...level.findings] : level.findings };
 }
@@ -2092,20 +2103,35 @@ function lifecycle(opts) {
 }
 
 function view(opts) {
-  const { model, findings, index, mapping } = levelFindings(opts);
+  const selected = { ...opts, ontologyDir: opts.draft ?? opts.ontologyDir };
+  let metadata = null;
+  if (opts.boardFile) {
+    try {
+      metadata = JSON.parse(readFileSync(opts.boardFile, "utf8"));
+    } catch (error) {
+      usage(`cannot read --board (${error.message})`);
+    }
+    const errors = validateEventBoard(metadata);
+    if (errors.length) usage(`invalid --board: ${errors.join("; ")}`);
+  }
+  const { model, findings, index, mapping } = levelFindings(selected);
   if (!model) {
-    process.stdout.write(`no ontology in ${opts.ontologyDir}; no view was created\n`);
+    process.stdout.write(`no ontology in ${selected.ontologyDir}; no view was created\n`);
     return 1;
   }
-  const html = renderView({
+  const html = renderLayeredView({
     index,
     mapping,
     findings,
-    changes: index
-      ? changeFlags(opts.ontologyDir, index, { mappingPath: mappingPathOf(opts) })
-      : null,
+    changes:
+      index && !opts.draft
+        ? changeFlags(opts.ontologyDir, index, { mappingPath: mappingPathOf(opts) })
+        : null,
     includeRetired: opts.includeRetired,
     lang: opts.lang === "ko" ? "ko" : "en",
+    adrRoot: opts.adrDir,
+    metadata,
+    sourceKind: opts.draft ? "draft" : "model",
   });
   const run = allocateRunDirectory(process.cwd(), "ontology-view");
   const file = path.resolve(run.dir, "ontology-view.html");

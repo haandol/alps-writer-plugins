@@ -259,9 +259,13 @@ plugins/ontology-writer/  # Business ontology plugin (optional level above ADRs)
     └── example.ttl       # canonical example model
 ```
 
-The ontology's purpose is to capture actual business workflows accurately and
-richly so their business logic reaches ADR contracts, code and tests. A perfect
-ontology or inference capability is not the objective. Build from evidence-based
+The ontology represents actual business workflows and responsibility boundaries.
+Its purpose follows Domain-Driven Design: guide that business structure through
+feature-level ADR contracts into code organization, behavior and tests. Existing
+functional ADRs, services and source folders do not define the business units;
+discover the business structure first and connect its realizing features below it.
+The plugin-specific core intent lives in `plugins/ontology-writer/AGENTS.md`.
+A perfect ontology or inference capability is not the objective. Build from evidence-based
 EventStorming: a whole-scope event map first, then bounded contexts and subdomains,
 then confirmed model facts and feature-level ADR contracts. Capture relevant
 exceptions, decisions and their reasons, manual/external hand-offs and unknown
@@ -279,12 +283,15 @@ layer before selecting and searching a BC; known targets can be queried directly
 Construction uses `--require-layers` (and `--layer-context` for scoped work), while
 legacy gaps remain readable and explicitly incomplete. C4 and HNSW motivate this
 resolution and retrieval strategy; no approximate vector index is implied.
-The saved-model UI follows the same BC-first hierarchy through a 3D BC map,
-camera descent into the selected BC's current search page, and element detail.
-Spatial and list views share scope, paging and navigation state; transitions
-honor reduced motion and stop while hidden. Internal scenes are created on
-selection. Whole event flow and its 3D structure are opened explicitly; their
-renderers remain idle on the initial BC screen.
+The saved-model UI follows one hierarchy: domain/BC → business process →
+realizing functional ADR. EventStorming and 3D share scope, search, paging,
+selection and return state. Processes come from the business model and retain
+shared participation; ADR categories supply realization links, not business
+containers. Category-level links disclose their precision. Only the selected
+layer and requested detail are instantiated, and indexed ADR Markdown is read
+inside its real document root. Navigation ends at the ADR contract. Transitions
+honor reduced motion and stop while hidden. Explicit draft and supplied board
+inputs remain read-only and do not adopt the model.
 
 The plugins are split so adr-writer never references ALPS or reads the business ontology. The couplings run one way, from the upper level down: alps-writer's `/feature-to-adr` transfers each implementable Feature's complete contract into one or several ADRs and delegates each new decision owner to adr-writer's `/adr-new`; ontology-writer writes the ADR index's `realizes` links in the same change unit as the model and hands a model change's ADR revisions to adr-writer's `/adr-new` draft rules and `/adr-impl`. Normal implementation then reads only ADRs; explicit PRD re-import remains an alps-writer-side semantic comparison. adr-writer knows the model only as the shape of `realizes` and, when model documents exist, one session-directive line saying that business context is checked through ontology-writer. ontology-writer runs copies of three adr-writer scripts (reading the ADR index and Status, recording a Status transition, opening a report), refreshed by `scripts/sync-shared-scripts.mjs` and checked in `bun run test:checks`.
 

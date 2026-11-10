@@ -30,8 +30,10 @@ after(async () => {
 });
 
 test("main trace lines reach destination events or explicit action checkpoints, with solid order lines and original relations", async () => {
-  const routes = await page.$$eval(".story-route:not(.story-signal)", (paths) =>
-    paths.map((p) => {
+  // A resize can replace the SVG between $$eval's node collection and callback.
+  // Collect and inspect in one browser turn so these are the attached routes.
+  const routes = await page.evaluate(() =>
+    [...document.querySelectorAll(".story-route:not(.story-signal)")].map((p) => {
       const host = p.closest(".event-timeline"),
         world = host.querySelector(".story-world").getBoundingClientRect();
       const zoom = host.timeline.camera().zoom,

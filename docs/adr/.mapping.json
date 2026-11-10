@@ -247,12 +247,12 @@
         {
           "path": "docs/adr/ontology/0004-build-ontology-from-documents.md",
           "status": "Proposed",
-          "summary": "근거 기반 이벤트 스토밍으로 전체 업무 이벤트 맵과 컨텍스트·서브도메인을 식별하고 확인된 모델 후보만 저장한다"
+          "summary": "근거 기반 이벤트 스토밍으로 후보를 만들고, 선택지와 직접 답변을 구분하며 같은 확인 화면의 에이전트 질의응답과 별도 저장 승인을 보존한다"
         },
         {
           "path": "docs/adr/ontology/0005-render-read-only-ontology-views.md",
-          "status": "Accepted (2026-11-05)",
-          "summary": "BC 지식을 3차원으로 조망하고 선택한 내부 업무·상세로 확대 이동하며 목록과 전체 업무 탐색을 함께 제공한다"
+          "status": "Accepted (2026-11-10)",
+          "summary": "업무 모델의 도메인·BC → 프로세스 업무 단위 → 실현 기능 ADR을 두 표현의 공통 계층으로 탐색하고 코드 전에서 멈춘다"
         }
       ],
       "dependsOn": [

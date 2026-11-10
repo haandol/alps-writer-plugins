@@ -1,8 +1,11 @@
 # Business ontology
 
-The purpose is to capture actual business workflows accurately and richly so
-business logic reaches ADRs, code and tests. A perfect ontology or inference
-capability is not the goal. Preserve the evidenced flow, decision reasons,
+The ontology is the business-workflow layer. It captures actual work and its
+responsibility structure so that structure guides feature-level ADR contracts,
+code organization, behavior and tests, following Domain-Driven Design. Functional
+ADRs realize business work; their categories are not the business model itself.
+The core intent is recorded in the plugin's `AGENTS.md`.
+A perfect ontology or inference capability is not the goal. Preserve the evidenced flow, decision reasons,
 exceptions and manual/external hand-offs at business resolution; exact values
 and feature-level conditions retain their ADR owner rather than disappearing.
 For discovery, load `eventstorming.md`; for business completeness and readiness,

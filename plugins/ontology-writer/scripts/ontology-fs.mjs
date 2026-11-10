@@ -357,6 +357,7 @@ export function ontologyFindings({
   rel,
   inScope = () => true,
   cwd = process.cwd(),
+  readAdr = null,
 }) {
   const directoryErrors = [];
   const documents = readModelDocuments(ontologyDir, rel, (directory, error) =>
@@ -408,6 +409,7 @@ export function ontologyFindings({
         folderOf: (key) => path.resolve(cwd, adrRoot, ...key.split("/")),
         join: path.join,
         read: (file) => {
+          if (readAdr) return readAdr(file);
           try {
             return readFileSync(file, "utf8");
           } catch {
@@ -432,7 +434,9 @@ export function ontologyFindings({
     let glossary = null;
     try {
       if (statSync(path.join(adrRoot, "glossary.md")).isFile())
-        glossary = readFileSync(path.join(adrRoot, "glossary.md"), "utf8");
+        glossary = readAdr
+          ? readAdr(path.resolve(cwd, adrRoot, "glossary.md"))
+          : readFileSync(path.join(adrRoot, "glossary.md"), "utf8");
     } catch {
       glossary = null;
     }

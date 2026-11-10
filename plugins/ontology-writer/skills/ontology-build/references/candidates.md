@@ -90,5 +90,5 @@ candidates: `{ "category", "step", "reason", "verdict", "evidence", "confirmed" 
 ids), `scope` and `scopeType` for the board. `notHeld` lists what the model does
 not hold (`{ "text", "source" }`) for the report's transfer section.
 
-Name ids from business meaning (section 2 of the skill); `check` warns about ids
+Name ids from business meaning under [candidate review](candidate-review.md); `check` warns about ids
 such as `rule-01`.

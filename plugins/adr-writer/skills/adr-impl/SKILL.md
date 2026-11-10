@@ -20,6 +20,8 @@ When `docs/ontology/` holds Turtle documents, read
 change or code of a feature linked to a process step. Name the checked context in
 the plan and connect its business scenarios to approved ADR rows and tests;
 completion is judged by ADR rows only. Without them, skip it.
+Use that module's scoped retrieval route: enter at a known target and expand
+only for business questions or dependencies the change still needs to resolve.
 
 Implements the specified ADR in code. Once implementation, tests, the verified refactor pass, and final implementation review pass, it automatically updates a `Proposed` target to `Accepted`; an existing `Accepted` target whose decision and requirement contract remain unchanged stays `Accepted` throughout. **If no ADR exists, apply the ADR admission gate first.** Write an ADR with `/adr-new <category>` only for a durable requirement or architectural decision; implement replaceable libraries, SDKs, frameworks, credential/auth wiring, and other code-level choices without creating one. If an ALPS Section 7 feature already exists, batch-convert with `/feature-to-adr`.
 
