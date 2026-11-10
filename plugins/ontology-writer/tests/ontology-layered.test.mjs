@@ -201,6 +201,34 @@ test("ADR document Status uses the common parser and ignores headings in code ex
     );
   }));
 
+test("document inspection does not double-count a Status mismatch already found by validation", () =>
+  withTmp((dir) => {
+    const { index } = fixture(dir);
+    write(dir, ADR_PATH, ADR_BODY.replace("Accepted (2026-10-01)", "Proposed"));
+    const finding = {
+      level: "error",
+      code: "ontology-adr-status-mismatch",
+      category: "rendering",
+      where: ADR_PATH,
+      element: null,
+      msg: "The source Status differs from its index.",
+    };
+    const data = layeredData(
+      renderLayeredView({
+        index,
+        mapping: LAYER_MAPPING,
+        cwd: dir,
+        adrRoot: "docs/adr",
+        findings: [finding],
+      }),
+    );
+    assert.equal(
+      data.errors.filter((error) => error.code === finding.code && error.where === ADR_PATH).length,
+      1,
+    );
+    assert.equal(data.businessSteps["studio.request"].state, "unknown");
+  }));
+
 test("process EventStorming retains exact reaction conditions, cycles and direct outside hand-offs", () =>
   withTmp((dir) => {
     const { index, data } = fixture(dir);

@@ -17,6 +17,8 @@ const CSS = asset("./ontology-layered-view.css");
 const CLIENT =
   asset("./search/search-text.mjs").replace(/^export /gm, "") +
   "\n" +
+  asset("./ontology-layered-city.js") +
+  "\n" +
   asset("./ontology-layered-client.js");
 const json = (value) => JSON.stringify(value).replace(/</g, "\\u003c");
 
@@ -190,12 +192,20 @@ export function renderLayeredView(options) {
         (read.documentStatus !== String(record.status ?? "").trim()
           ? "The document Status and the index do not agree."
           : null);
-      if (message)
+      const code = read.error ? "ontology-adr-missing" : "ontology-adr-status-mismatch";
+      const where = typeof record?.path === "string" ? record.path : category;
+      if (
+        message &&
+        !findings.some(
+          (finding) =>
+            finding.code === code && finding.category === category && finding.where === where,
+        )
+      )
         findings.push({
           level: "error",
-          code: read.error ? "ontology-adr-missing" : "ontology-adr-status-mismatch",
+          code,
           category,
-          where: typeof record?.path === "string" ? record.path : category,
+          where,
           element: null,
           msg: message,
         });
@@ -229,11 +239,12 @@ export function renderLayeredView(options) {
 <main id="workspace"><nav class="breadcrumbs" id="breadcrumbs" aria-label="${word("현재 위치", "Current location")}"></nav><section class="scope-heading"><div><p class="eyebrow" id="layer-label"></p><h2 id="scope-title" tabindex="-1"></h2><p id="scope-description"></p></div><button type="button" id="go-up">↑ ${word("상위로", "Up a level")}</button></section>
 <section id="scope-summary"></section><div class="find-bar" role="search"><label class="sr" for="layer-search">${word("현재 범위 검색", "Search the current scope")}</label><input id="layer-search" type="search" placeholder="${word("이름, 식별자, 업무 문구로 검색", "Search names, identifiers or business wording")}" autocomplete="off"><label class="sr" for="search-scope">${word("검색 대상", "Search scope")}</label><select id="search-scope"><option value="layer">${word("현재 레이어", "Current layer")}</option><option value="knowledge">${word("업무 자료", "Business knowledge")}</option></select><label class="sr" for="domain-filter">${word("서브도메인", "Subdomain")}</label><select id="domain-filter"></select></div>
 <div class="canvas-toolbar"><span id="results-status" role="status" aria-live="polite"></span><div class="camera-controls"><button type="button" data-camera="pan" aria-pressed="true">${word("이동", "Pan")}</button><button type="button" data-camera="rotate" aria-pressed="false">${word("회전", "Rotate")}</button><button type="button" data-camera="out" aria-label="${word("축소", "Zoom out")}">−</button><output id="camera-scale">100%</output><button type="button" data-camera="in" aria-label="${word("확대", "Zoom in")}">+</button><button type="button" data-camera="reset">${word("시점 초기화", "Reset view")}</button><button type="button" id="motion-toggle" aria-pressed="true">${word("전환 효과", "Transitions")}</button></div></div>
-<section id="layer-viewport" tabindex="0" aria-label="${word("업무 탐색 지도. 드래그로 이동하고 더하기·빼기로 확대합니다.", "Business map. Drag to pan; plus and minus zoom.")}"><div id="layer-world"><svg id="layer-connections" aria-hidden="true"></svg><div id="layer-nodes"></div></div><p id="empty-scope" hidden></p></section>
+<div id="city-options" class="city-options" hidden><span>${word("정보 표시", "Visibility")}</span><label for="city-labels">${word("이름", "Names")}</label><select id="city-labels"><option value="auto">${word("자동 · 겹침 줄이기", "Auto · reduce overlap")}</option><option value="all">${word("모두 표시", "Show all")}</option></select><button type="button" id="city-links" aria-pressed="true">${word("연결 표시", "Show connections")}</button><span id="city-visibility" role="status"></span></div>
+<section id="layer-viewport" tabindex="0" aria-label="${word("업무 탐색 지도. 드래그로 이동하고 더하기·빼기로 확대합니다.", "Business map. Drag to pan; plus and minus zoom.")}"><div id="layer-world"><canvas id="layer-city" aria-hidden="true" hidden></canvas><svg id="layer-connections" aria-hidden="true"></svg><div id="layer-nodes"></div></div><div id="city-hud" class="city-hud" hidden aria-hidden="true"><strong id="city-layer-title"></strong><span id="city-layer-hint"></span></div><div id="city-tooltip" class="city-tooltip" hidden aria-hidden="true"></div><p id="city-unavailable" class="city-unavailable" hidden>${word("3D 그림을 표시할 수 없어 같은 업무 목록으로 보여줍니다.", "The 3D canvas is unavailable. The same business items remain available as a list.")}</p><p id="empty-scope" hidden></p></section>
 <div class="canvas-footer"><p id="camera-hint"></p><div class="pagination"><button type="button" id="page-previous">← ${word("이전", "Previous")}</button><span id="page-status"></span><button type="button" id="page-next">${word("다음", "Next")} →</button></div></div>
 <section id="layer-relations"></section><section id="business-workflow" hidden><div class="panel-title"><h3>${word("업무 흐름과 인계", "Business flow and hand-offs")}</h3><button type="button" id="workflow-close">${word("흐름 닫기", "Close flow")}</button></div><div id="workflow-frame-host"></div></section>
 <section id="detail-panel" class="detail-panel" hidden aria-labelledby="detail-title"><div class="panel-title"><h3 id="detail-title" tabindex="-1"></h3><button type="button" id="detail-close">${word("상세 닫기", "Close detail")}</button></div><div class="document" id="detail-body"></div></section>
-<section class="guidance-panel" id="help-panel" hidden><h3>${word("지도를 읽는 방법", "How to read this map")}</h3><p>${word("BC는 같은 업무 언어와 규칙을 소유하는 바운디드 컨텍스트입니다. BC를 누르면 실제 업무 프로세스가, 프로세스를 누르면 실현 기능 ADR이 열립니다. 두 표현은 같은 업무·선택·검색 위치를 유지합니다. ADR은 아키텍처 결정을 기록한 문서이며, 여기에서 탐색을 마칩니다.", "A bounded context owns a business language and rules. Select it for actual business processes, then select a process for its realizing architectural decision records (ADRs). Both representations keep the same work, selection and search position. Navigation ends at the ADR.")}</p><p>${word("드래그로 이동하고 +/−로 확대합니다. 3D에서는 회전 모드를 고를 수 있습니다. 키보드 화살표는 이동, Home은 시점 초기화입니다. 위치와 크기는 중요도·발생 시각을 뜻하지 않습니다.", "Drag to pan and use +/− to zoom. In 3D you can switch to rotation. Arrow keys pan and Home resets the view. Position and size do not imply importance or occurrence time.")}</p><p>${word("구현됨 표시는 ADR Status에서 계산한 결과입니다. 업무 완전성 검토와 실제 실행 검증은 별도로 확인해야 합니다.", "Implementation labels are computed from ADR Status. Business completeness and actual execution require separate evidence.")}</p><div id="readiness-guide"></div></section>
+<section class="guidance-panel" id="help-panel" hidden><h3>${word("지도를 읽는 방법", "How to read this map")}</h3><p>${word("BC는 같은 업무 언어와 규칙을 소유하는 바운디드 컨텍스트입니다. BC를 누르면 실제 업무 프로세스가, 프로세스를 누르면 실현 기능 ADR이 열립니다. 두 표현은 같은 업무·선택·검색 위치를 유지합니다. ADR은 아키텍처 결정을 기록한 문서이며, 여기에서 탐색을 마칩니다.", "A bounded context owns a business language and rules. Select it for actual business processes, then select a process for its realizing architectural decision records (ADRs). Both representations keep the same work, selection and search position. Navigation ends at the ADR.")}</p><p>${word("드래그로 이동하고 +/−로 확대합니다. 3D에서는 회전 모드를 고를 수 있습니다. 키보드 화살표는 이동, Home은 시점 초기화입니다. 마을의 구역은 BC, 건물은 현재 레이어의 업무 또는 ADR입니다. 선택한 범위만 펼치며, 이름·상태는 확대 수준과 선택에 맞춰 표시합니다. 높이와 창문 수는 업무량이나 실행 진행률을 뜻하지 않습니다.", "Drag to pan and use +/− to zoom. In 3D you can switch to rotation. Arrow keys pan and Home resets the view. City districts are BCs; buildings represent the current business-process or ADR layer. Only the selected scope unfolds; labels and status follow zoom and focus. Height and window counts are decorative, not workload or execution progress.")}</p><p>${word("구현됨 표시는 ADR Status에서 계산한 결과입니다. 업무 완전성 검토와 실제 실행 검증은 별도로 확인해야 합니다.", "Implementation labels are computed from ADR Status. Business completeness and actual execution require separate evidence.")}</p><div id="readiness-guide"></div></section>
 <section class="guidance-panel" id="diagnostics-panel" hidden></section><noscript>${word("이 화면의 탐색에는 JavaScript가 필요합니다.", "This view requires JavaScript for navigation.")}</noscript></main></div>
 <template id="business-source">${prepared.body}</template>${adrBodies}${workflows}<script type="application/json" id="layered-data">${json(data)}</script><script>${CLIENT}</script>${prepared.diagrams ? mermaidRuntime({ diagramFallback: prepared.t.fallback, lazy: { root: "#detail-body", ahead: "500px" } }) : ""}</body></html>`;
 }

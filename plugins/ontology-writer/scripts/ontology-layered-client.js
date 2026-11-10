@@ -48,7 +48,10 @@
     t("시작·활동·결과", "Trigger, work & outcome"),
     t("결정과 구현 계약", "Decisions & contracts"),
   ];
-  let mode = "events",
+  let mode =
+      new URLSearchParams(location.hash.slice(1)).get("view") === "structure"
+        ? "structure"
+        : "events",
     gesture = "pan",
     effects = !reduced.matches;
   const initialCamera = () => ({ x: 20, y: 25, zoom: 1, yaw: -14, pitch: 38, fitted: false });
@@ -82,6 +85,10 @@
     frameKey = null;
   let drag = null,
     suppressClick = false;
+  let city = null,
+    cityAttempted = false,
+    cityLinks = true;
+  let flatSize = { width: 356, height: 331 };
 
   const nameOf = (id) =>
     contexts.get(id)?.name ?? containers.get(id)?.name ?? elements[id]?.n ?? id;
@@ -242,6 +249,7 @@
         name: adr.name,
         description: adr.summary,
         status: adr.status,
+        marks: adr.issues.length ? 4 : 0,
         shared: adr.containers.length > 1,
         searchUnit: {
           id,
@@ -261,6 +269,7 @@
         name: context.name,
         description: context.definition,
         extra: context.coreLogic,
+        domains: context.domains.map((id) => data.domains.find((domain) => domain.id === id)),
         marks: elements[id]?.m ?? 0,
         searchUnit: elements[id]?.searchUnit,
       };
@@ -394,6 +403,23 @@
     for (const toggle of document.querySelectorAll("button[data-view]"))
       toggle.setAttribute("aria-pressed", String(toggle.dataset.view === mode));
     document.querySelector('[data-camera="rotate"]').disabled = mode !== "structure";
+    $("city-options").hidden = mode !== "structure";
+    $("city-hud").hidden = mode !== "structure";
+    $("city-layer-title").textContent = `${titles[level]} · ${$("scope-title").textContent}`;
+    $("city-layer-hint").textContent = [
+      t(
+        "구역을 선택하면 그 BC의 업무 건물이 펼쳐집니다.",
+        "Select a district to unfold its business processes.",
+      ),
+      t(
+        "업무 건물을 선택하면 실현 기능 ADR이 펼쳐집니다.",
+        "Select a business building for its realizing ADRs.",
+      ),
+      t(
+        "ADR 블록을 선택하면 평면에서 계약 원문을 읽습니다.",
+        "Select an ADR block to read its contract on a flat surface.",
+      ),
+    ][level];
   }
 
   function evidence(claim) {
@@ -453,6 +479,7 @@
           : node.kind === "ADR"
             ? t("기능 범주 연결 · 원문 열기", "Category association · read decision")
             : node.extra;
+    const warning = node.marks & 12 ? t(" · 검증 필요", " · needs review") : "";
     const marks = [
       [1, t("은퇴", "Retired")],
       [2, t("변경 확인", "Changed")],
@@ -462,7 +489,7 @@
       .filter(([mask]) => node.marks & mask)
       .map(([, label]) => tag(label, "warning"))
       .join("");
-    return `<button type="button" class="layer-node" data-layer-node="${esc(node.id)}" data-kind="${node.kind}" aria-pressed="${state.selected === node.id}" style="left:${position.x}px;top:${position.y}px"><span class="node-type"><span>${esc(kind)}</span><span>${node.shared ? t("공유", "Shared") + " · " : ""}${esc(node.status ?? (node.state ? stateLabel(node.state) : ""))}</span></span><span class="node-name">${esc(node.name)}</span><span class="node-description">${esc(node.description || t("설명 미기록", "Description unrecorded"))}</span><span class="node-detail">${esc(detail)}</span>${marks ? `<span class="node-flags">${marks}</span>` : ""}<span class="node-foot"><code title="${esc(node.id)}">${esc(domainNames.length ? domainNames.join(" · ") : node.id)}</code><span aria-hidden="true">↗</span></span></button>`;
+    return `<button type="button" class="layer-node" data-layer-node="${esc(node.id)}" data-kind="${node.kind}" aria-pressed="${state.selected === node.id}" style="left:${position.x}px;top:${position.y}px"><span class="node-type"><span>${esc(kind)}</span><span>${node.shared ? t("공유", "Shared") + " · " : ""}${esc(node.status ?? (node.state ? stateLabel(node.state) : ""))}${warning}</span></span><span class="node-name">${esc(node.name)}</span><span class="node-description">${esc(node.description || t("설명 미기록", "Description unrecorded"))}</span><span class="node-detail">${esc(detail)}</span>${marks ? `<span class="node-flags">${marks}</span>` : ""}<span class="node-foot"><code title="${esc(node.id)}">${esc(domainNames.length ? domainNames.join(" · ") : node.id)}</code><span aria-hidden="true">↗</span></span></button>`;
   }
 
   function layerRelations() {
@@ -488,6 +515,7 @@
   }
 
   function renderNodes() {
+    city?.setActive(false);
     const result = filteredNodes();
     const pages = Math.max(1, Math.ceil(result.nodes.length / PAGE));
     state.page = Math.min(Math.max(0, state.page), pages - 1);
@@ -504,6 +532,7 @@
     );
     const width = columns * 352 + 4,
       height = Math.max(1, Math.ceil(currentNodes.length / columns)) * 286 + 45;
+    flatSize = { width, height };
     $("layer-world").style.width = `${width}px`;
     $("layer-world").style.height = `${height}px`;
     $("layer-nodes").innerHTML = currentNodes
@@ -555,7 +584,7 @@
       : `<p class="note">${state.level === "adrs" ? t("ADR끼리의 순서나 의존 관계는 실현 링크에서 추정하지 않습니다.", "ADR order or dependencies are not inferred from realization links.") : t("현재 페이지와 연결된 기록이 없습니다.", "No recorded connections touch this page.")}</p>`;
   }
 
-  function fitCamera(width = parseFloat($("layer-world").style.width)) {
+  function fitCamera(width = flatSize.width) {
     const viewport = $("layer-viewport");
     state.camera = {
       ...initialCamera(),
@@ -566,13 +595,61 @@
   }
   function paintCamera() {
     const c = state.camera;
-    $("layer-world").style.transform =
-      `translate(${c.x}px,${c.y}px) scale(${c.zoom})${mode === "structure" ? ` rotateX(${c.pitch}deg) rotateZ(${c.yaw}deg)` : ""}`;
+    if (mode === "structure" && !cityAttempted) {
+      cityAttempted = true;
+      city = window.createOntologyCity($("layer-city"), $("layer-nodes"));
+      $("layer-viewport").dataset.city = city ? "ready" : "unavailable";
+    }
+    const spatial = mode === "structure" && city;
+    $("layer-city").hidden = !spatial;
+    $("city-hud").hidden = !spatial;
+    $("city-unavailable").hidden = mode !== "structure" || Boolean(city);
+    $("city-options").hidden = !spatial;
+    document.querySelector('[data-camera="rotate"]').disabled = !spatial;
+    if (spatial) {
+      $("layer-world").style.width = "100%";
+      $("layer-world").style.height = "100%";
+      $("layer-world").style.transform = "none";
+      city.render({
+        layer: state.level,
+        nodes: currentNodes,
+        relations,
+        selected: state.selected,
+        camera: c,
+        flatWidth: flatSize.width,
+      });
+      cityReadout();
+    } else {
+      city?.setActive(false);
+      $("layer-world").style.width = `${flatSize.width}px`;
+      $("layer-world").style.height = `${flatSize.height}px`;
+      $("layer-world").style.transform = `translate(${c.x}px,${c.y}px) scale(${c.zoom})`;
+    }
     $("camera-scale").textContent = `${Math.round(c.zoom * 100)}%`;
-    $("camera-hint").textContent = t(
-      "드래그로 이동 · +/−로 확대 · 배치는 순서나 중요도를 뜻하지 않습니다.",
-      "Drag to pan · +/− to zoom · placement does not imply order or importance.",
-    );
+    $("camera-hint").textContent = spatial
+      ? t(
+          "구역·건물로 현재 레이어 탐색 · 아치는 기록된 연결 · 바닥 격자는 배치 · 높이·창문 수는 업무량을 뜻하지 않습니다.",
+          "Districts and buildings show the current layer · arcs are recorded links · the ground grid is layout · height and windows do not measure workload.",
+        )
+      : t(
+          "드래그로 이동 · +/−로 확대 · 배치는 순서나 중요도를 뜻하지 않습니다.",
+          "Drag to pan · +/− to zoom · placement does not imply order or importance.",
+        );
+  }
+
+  function cityReadout() {
+    if (!city || mode !== "structure") return;
+    $("city-visibility").textContent =
+      `${t("이름", "Names")} ${city.snapshot().labelIds.length}/${currentNodes.length} · ${t("가리킨 항목은 항상 표시", "Point or focus to reveal")}`;
+  }
+
+  function cityHint(id) {
+    cityReadout();
+    const item = currentNodes.find((node) => node.id === id);
+    $("city-tooltip").hidden = !item || mode !== "structure";
+    if (item && mode === "structure")
+      $("city-tooltip").innerHTML =
+        `<strong>${esc(item.name)}</strong><p>${esc(item.description ?? "")}</p>${item.domains?.length ? `<p>${item.domains.map((domain) => `${esc(domain.name)} · ${esc(domain.verdict)}`).join("<br>")}</p>` : ""}<span>${esc(item.status ?? (item.state ? stateLabel(item.state) : ""))}</span>${item.shared ? `<span> · ${t("공유 항목", "Shared item")}</span>` : ""}${item.marks & 12 ? `<p class="warning">${t("검증 오류로 이 범위는 불완전합니다. 검증·변경 정보를 확인하세요.", "Validation errors leave this scope incomplete. Inspect Validation & changes.")}</p>` : ""}`;
   }
 
   /** Clone only requested known fragments; links remain inside this navigator. */
@@ -685,6 +762,7 @@
   function render({ animate = false } = {}) {
     transition?.cancel();
     transition = null;
+    $("city-tooltip").hidden = true;
     renderNavigation();
     renderSummary();
     renderNodes();
@@ -692,7 +770,7 @@
     renderWorkflow();
     refreshMotion();
     if (animate && effects && !reduced.matches && !document.hidden)
-      transition = $("layer-nodes").animate(
+      transition = $(mode === "structure" && city ? "layer-world" : "layer-nodes").animate(
         [
           { opacity: 0.25, transform: "scale(.76) translateY(20px)" },
           { opacity: 1, transform: "scale(1) translateY(0)" },
@@ -810,8 +888,11 @@
     toggle.addEventListener("click", () => {
       mode = toggle.dataset.view;
       if (mode === "events") gesture = "pan";
+      transition?.cancel();
+      transition = null;
       renderNavigation();
-      paintCamera();
+      renderNodes();
+      $("city-tooltip").hidden = true;
       refreshMotion();
       document
         .querySelector('[data-camera="pan"]')
@@ -857,7 +938,21 @@
     if (reduced.matches) effects = false;
     refreshMotion();
   });
-  document.addEventListener("visibilitychange", refreshMotion);
+  document.addEventListener("visibilitychange", () => {
+    refreshMotion();
+    paintCamera();
+  });
+
+  $("city-labels").addEventListener("change", () => {
+    city?.visibility({ labels: $("city-labels").value, links: cityLinks });
+    paintCamera();
+  });
+  $("city-links").addEventListener("click", () => {
+    cityLinks = !cityLinks;
+    $("city-links").setAttribute("aria-pressed", String(cityLinks));
+    city?.visibility({ labels: $("city-labels").value, links: cityLinks });
+    paintCamera();
+  });
 
   const viewport = $("layer-viewport");
   viewport.addEventListener("pointerdown", (event) => {
@@ -872,6 +967,17 @@
     };
   });
   viewport.addEventListener("pointermove", (event) => {
+    if (!drag && mode === "structure" && city) {
+      const rect = $("layer-city").getBoundingClientRect();
+      const id =
+        event.target.closest("[data-layer-node]")?.dataset.layerNode ??
+        city.pick(
+          ((event.clientX - rect.left) * $("layer-city").clientWidth) / rect.width,
+          ((event.clientY - rect.top) * $("layer-city").clientHeight) / rect.height,
+        );
+      city.hover(id);
+      cityHint(id);
+    }
     if (!drag || event.pointerId !== drag.id) return;
     const x = event.clientX - drag.x,
       y = event.clientY - drag.y;
@@ -901,6 +1007,10 @@
   }
   viewport.addEventListener("pointerup", finishDrag);
   viewport.addEventListener("pointercancel", finishDrag);
+  viewport.addEventListener("pointerleave", () => {
+    city?.hover(null);
+    cityHint(null);
+  });
   viewport.addEventListener(
     "click",
     (event) => {
@@ -912,6 +1022,18 @@
     },
     true,
   );
+  $("layer-city").addEventListener("click", (event) => {
+    if (!city || mode !== "structure") return;
+    const rect = $("layer-city").getBoundingClientRect();
+    const id = city.pick(
+      ((event.clientX - rect.left) * $("layer-city").clientWidth) / rect.width,
+      ((event.clientY - rect.top) * $("layer-city").clientHeight) / rect.height,
+    );
+    if (id)
+      [...$("layer-nodes").querySelectorAll("[data-layer-node]")]
+        .find((node) => node.dataset.layerNode === id)
+        ?.click();
+  });
   viewport.addEventListener(
     "wheel",
     (event) => {
@@ -954,12 +1076,27 @@
   viewport.addEventListener("focusin", (event) => {
     const node = event.target.closest("[data-layer-node]");
     if (!node) return;
+    // Native focus may scroll overflow:hidden content before focusin. Keep
+    // movement in the shared camera so labels and canvas geometry stay aligned.
+    viewport.scrollLeft = 0;
+    viewport.scrollTop = 0;
+    if (mode === "structure") {
+      city?.focus(node.dataset.layerNode);
+      cityHint(node.dataset.layerNode);
+    }
     const a = node.getBoundingClientRect(),
       b = viewport.getBoundingClientRect();
     if (a.left < b.left || a.right > b.right || a.top < b.top || a.bottom > b.bottom) {
       state.camera.x += b.left + b.width / 2 - (a.left + a.width / 2);
       state.camera.y += b.top + b.height / 2 - (a.top + a.height / 2);
       paintCamera();
+      remember();
+    }
+  });
+  viewport.addEventListener("focusout", (event) => {
+    if (!viewport.contains(event.relatedTarget)) {
+      city?.focus(null);
+      cityHint(null);
     }
   });
   window.addEventListener("resize", () => {
@@ -1046,5 +1183,6 @@
     state: () => ({ ...clone(state), mode, effects, reducedMotion: reduced.matches }),
     visible: () => currentNodes.map((node) => node.id),
     relations: () => clone(relations),
+    city: () => city?.snapshot() ?? null,
   });
 })();

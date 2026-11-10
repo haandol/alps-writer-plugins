@@ -72,7 +72,7 @@ after(async () => {
   }
 });
 
-async function withPage(run, { at = url, width = 1440, reduced = false } = {}) {
+async function withPage(run, { at = url, width = 1440, reduced = false, beforeLoad = null } = {}) {
   const page = await browser.newPage();
   page.setDefaultTimeout(10000);
   page.on("pageerror", (error) => issues.push(error.message));
@@ -80,6 +80,7 @@ async function withPage(run, { at = url, width = 1440, reduced = false } = {}) {
   await page.setViewport({ width, height: 1040 });
   if (reduced)
     await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
+  if (beforeLoad) await page.evaluateOnNewDocument(beforeLoad);
   await page.evaluateOnNewDocument(() => {
     window.storageWrites = [];
     const original = Storage.prototype.setItem;
@@ -520,3 +521,270 @@ test("legacy whole and direct BC/process/ADR addresses use the common hierarchy 
     { at: url + "#bc=unknown&adr=constructor&element=__proto__" },
   );
 });
+
+const cityState = (page) => page.evaluate(() => window.ontologyLayered.city());
+async function clickRoof(page, id) {
+  await page.$eval("#layer-viewport", (node) => node.scrollIntoView({ block: "center" }));
+  await page.waitForFunction(() =>
+    document.getAnimations().every((animation) => animation.playState !== "running"),
+  );
+  const point = await page.evaluate((id) => {
+    const roof = window.ontologyLayered.city().drawn.find((node) => node.id === id).roof;
+    const rect = document.getElementById("layer-city").getBoundingClientRect();
+    return { x: rect.x + roof[0], y: rect.y + roof[1] };
+  }, id);
+  await page.mouse.click(point.x, point.y);
+}
+
+test("the village initializes only its current layer and real building clicks descend to processes and ADRs", async () =>
+  withPage(async (page) => {
+    assert.equal(await cityState(page), null);
+    await changeView(page, "structure");
+    assert.deepEqual((await cityState(page)).nodeIds.sort(), ["billing", "studio"]);
+    assert.ok((await cityState(page)).drawn.every((node) => node.kind === "BoundedContext"));
+    const colours = await page.$eval("#layer-city", (canvas) => {
+      const pixels = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+      const colours = new Set();
+      for (let i = 0; i < pixels.length; i += 400)
+        colours.add(`${pixels[i]},${pixels[i + 1]},${pixels[i + 2]}`);
+      return colours.size;
+    });
+    assert.ok(colours > 30, "the canvas draws city geometry and lighting");
+    await clickRoof(page, "studio");
+    assert.equal((await state(page)).level, "containers");
+    assert.deepEqual((await cityState(page)).nodeIds.sort(), ["studio.animation", "studio.image"]);
+    assert.ok((await cityState(page)).drawn.every((node) => node.kind === "Process"));
+    await clickRoof(page, "studio.image");
+    assert.equal((await state(page)).level, "adrs");
+    assert.ok((await cityState(page)).nodeIds.includes(ADR_PATH));
+    assert.ok((await cityState(page)).drawn.every((node) => node.kind === "ADR"));
+    await clickRoof(page, ADR_PATH);
+    assert.equal((await state(page)).adr, ADR_PATH);
+    assert.match(await page.$eval(".adr-document", (node) => node.textContent), /at most once/);
+  }));
+
+test("village visibility choices preserve identity, relationships, search, page and camera across representations", async () =>
+  withPage(
+    async (page) => {
+      await pick(page, "studio");
+      await page.type("#layer-search", "Extra");
+      await page.click("#page-next");
+      const before = await state(page),
+        ids = await visible(page),
+        links = await page.evaluate(() => window.ontologyLayered.relations());
+      await changeView(page, "structure");
+      await page.select("#city-labels", "all");
+      await page.click("#city-links");
+      assert.equal((await cityState(page)).links, false);
+      assert.deepEqual((await cityState(page)).relations, []);
+      assert.deepEqual((await cityState(page)).nodeIds, ids);
+      assert.deepEqual(await page.evaluate(() => window.ontologyLayered.relations()), links);
+      assert.deepEqual((await state(page)).camera, before.camera);
+      assert.equal((await state(page)).page, before.page);
+      await changeView(page, "events");
+      assert.deepEqual(await visible(page), ids);
+      assert.equal((await state(page)).query, "Extra");
+      assert.deepEqual((await state(page)).camera, before.camera);
+      await changeView(page, "structure");
+      assert.equal((await cityState(page)).labels, "all");
+      assert.equal((await cityState(page)).links, false);
+    },
+    { at: largeUrl },
+  ));
+
+test("automatic city names avoid overlap while keyboard focus reveals a hidden name without changing scope", async () =>
+  withPage(
+    async (page) => {
+      await pick(page, "studio");
+      await changeView(page, "structure");
+      for (let i = 0; i < 5; i++) await page.click('[data-camera="out"]');
+      let city = await cityState(page);
+      assert.ok(
+        city.labelIds.length < city.nodeIds.length,
+        "dense distant labels are selectively visible",
+      );
+      const boxes = await page.$$eval('[data-city-label="shown"]', (nodes) =>
+        nodes.map((node) => {
+          const r = node.getBoundingClientRect();
+          return { x: r.x, y: r.y, right: r.right, bottom: r.bottom };
+        }),
+      );
+      for (let i = 0; i < boxes.length; i++)
+        for (let j = i + 1; j < boxes.length; j++)
+          assert.equal(
+            boxes[i].x < boxes[j].right &&
+              boxes[i].right > boxes[j].x &&
+              boxes[i].y < boxes[j].bottom &&
+              boxes[i].bottom > boxes[j].y,
+            false,
+          );
+      const id = city.nodeIds.find((id) => !city.labelIds.includes(id));
+      await page.focus(`[data-layer-node=${JSON.stringify(id)}]`);
+      city = await cityState(page);
+      assert.ok(city.labelIds.includes(id));
+      assert.ok(
+        (await page.$eval("#city-visibility", (node) => node.textContent)).includes(
+          `${city.labelIds.length}/${city.nodeIds.length}`,
+        ),
+      );
+      assert.equal((await state(page)).level, "containers");
+      assert.equal(
+        await page.$eval(
+          `[data-layer-node=${JSON.stringify(id)}]`,
+          (node) => node.dataset.cityDetail,
+        ),
+        "true",
+      );
+      await page.keyboard.press("Enter");
+      assert.equal((await state(page)).container, id);
+    },
+    { at: largeUrl },
+  ));
+
+test("tabbing to an offscreen city building reveals it through the shared camera without native viewport scrolling", async () =>
+  withPage(async (page) => {
+    await changeView(page, "structure");
+    await page.focus("#layer-viewport");
+    for (let i = 0; i < 35; i++) await page.keyboard.press("ArrowLeft");
+    const before = await state(page);
+    assert.ok((await cityState(page)).drawn.every((node) => !node.onScreen));
+    await page.keyboard.press("Tab");
+    const id = await page.evaluate(() => document.activeElement.dataset.layerNode);
+    assert.ok(id, "Tab reaches a semantic building button");
+    const city = await cityState(page),
+      after = await state(page);
+    assert.ok(city.drawn.find((node) => node.id === id).onScreen);
+    assert.ok(city.labelIds.includes(id));
+    assert.deepEqual(
+      await page.$eval("#layer-viewport", (node) => [node.scrollLeft, node.scrollTop]),
+      [0, 0],
+    );
+    assert.notEqual(after.camera.x, before.camera.x);
+    assert.equal(after.level, before.level);
+    assert.equal(after.selected, before.selected);
+    await changeView(page, "events");
+    assert.deepEqual((await state(page)).camera, after.camera);
+    await changeView(page, "structure");
+    await pick(page, id, { keyboard: true });
+    assert.equal((await state(page)).context, id);
+  }));
+
+test("city pan, zoom and rotation change the actual projected buildings without turning a drag into selection", async () =>
+  withPage(async (page) => {
+    await changeView(page, "structure");
+    await page.$eval("#layer-viewport", (node) => node.scrollIntoView({ block: "center" }));
+    const before = await cityState(page);
+    const position = await page.$eval("#layer-city", (node) => {
+      const r = node.getBoundingClientRect();
+      return { x: r.x + 30, y: r.y + 120 };
+    });
+    await page.mouse.move(position.x, position.y);
+    await page.mouse.down();
+    await page.mouse.move(position.x + 65, position.y + 45, { steps: 5 });
+    await page.mouse.up();
+    const after = await cityState(page);
+    assert.notDeepEqual(after.drawn[0].roof, before.drawn[0].roof);
+    assert.equal((await state(page)).level, "contexts");
+    await page.click('[data-camera="in"]');
+    const zoomed = await cityState(page);
+    assert.notDeepEqual(zoomed.drawn[0].bounds, after.drawn[0].bounds);
+    await page.click('[data-camera="rotate"]');
+    await page.focus("#layer-viewport");
+    await page.keyboard.press("ArrowRight");
+    assert.notDeepEqual((await cityState(page)).drawn[0].roof, zoomed.drawn[0].roof);
+    assert.equal((await state(page)).selected, null);
+  }));
+
+test("city rendering stops while hidden and a returning tab draws the latest requested layer", async () =>
+  withPage(async (page) => {
+    await changeView(page, "structure");
+    const other = await browser.newPage();
+    try {
+      await other.bringToFront();
+      await page.waitForFunction(() => document.hidden);
+      const frames = (await cityState(page)).frames;
+      await page.evaluate(() => {
+        document.querySelector('[data-layer-node="studio"]').click();
+        document.getElementById("go-up").click();
+        document.querySelector('[data-layer-node="billing"]').click();
+      });
+      assert.equal((await state(page)).context, "billing");
+      assert.equal((await cityState(page)).frames, frames);
+      assert.equal(await page.$eval("#layer-world", (node) => node.getAnimations().length), 0);
+    } finally {
+      await other.close();
+      await page.bringToFront();
+    }
+    await page.waitForFunction(() =>
+      window.ontologyLayered.city().drawn.every((node) => node.kind === "Process"),
+    );
+    assert.equal((await state(page)).context, "billing");
+    assert.deepEqual((await cityState(page)).nodeIds.sort(), ["billing.collect", "studio.image"]);
+  }));
+
+test("a city entry address honors reduced motion and reopening discards visibility preferences", async () =>
+  withPage(
+    async (page) => {
+      assert.equal((await state(page)).mode, "structure");
+      await clickRoof(page, "studio");
+      assert.equal(await page.$eval("#layer-world", (node) => node.getAnimations().length), 0);
+      await page.select("#city-labels", "all");
+      await page.click("#city-links");
+      await page.goto(url + "#view=structure", { waitUntil: "load" });
+      await page.reload({ waitUntil: "load" });
+      assert.equal((await cityState(page))?.labels ?? "auto", "auto");
+      assert.equal(
+        await page.$eval("#city-links", (node) => node.getAttribute("aria-pressed")),
+        "true",
+      );
+    },
+    { at: url + "#view=structure", reduced: true },
+  ));
+
+test("an unavailable city canvas keeps the same selectable business list and an explicit explanation", async () =>
+  withPage(
+    async (page) => {
+      await changeView(page, "structure");
+      assert.equal(await cityState(page), null);
+      assert.match(
+        await page.$eval("#city-unavailable", (node) => node.innerText),
+        /같은 업무 목록/,
+      );
+      assert.deepEqual((await visible(page)).sort(), ["billing", "studio"]);
+      await pick(page, "studio", { keyboard: true });
+      await pick(page, "studio.animation", { keyboard: true });
+      await pick(page, ADR_PATH, { keyboard: true });
+      assert.equal((await state(page)).adr, ADR_PATH);
+    },
+    {
+      beforeLoad: () => {
+        const original = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function (...args) {
+          return this.id === "layer-city" ? null : original.apply(this, args);
+        };
+      },
+    },
+  ));
+
+test("the narrow city keeps all requested names legible and reaches the same ADR contract", async () =>
+  withPage(
+    async (page) => {
+      await pick(page, "studio");
+      await changeView(page, "structure");
+      await page.select("#city-labels", "all");
+      const city = await cityState(page);
+      assert.equal(city.labelIds.length, city.nodeIds.length);
+      assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
+        true,
+      );
+      await page.$eval("#layer-search", (input) => {
+        input.value = "애니메이션";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await pick(page, "studio.animation", { keyboard: true });
+      await pick(page, ADR_PATH, { keyboard: true });
+      assert.match(await page.$eval(".adr-document", (node) => node.textContent), /at most once/);
+    },
+    { at: largeUrl, width: 390 },
+  ));

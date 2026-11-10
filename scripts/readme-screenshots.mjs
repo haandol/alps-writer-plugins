@@ -131,6 +131,7 @@ try {
   await shot("ontology-event-flow");
   await open("#bc=ordering&process=ordering.place-order");
   await page.click('button[data-view="structure"]');
+  await page.$eval("#layer-viewport", (node) => node.scrollIntoView({ block: "center" }));
   await shot("ontology-business-structure");
 
   if (!ontologyOnly) {

@@ -498,30 +498,188 @@ code {
 .layer-node[data-kind="Step"] {
   border-top-color: #7da0b3;
 }
-body[data-view="structure"] #layer-viewport {
-  background-color: #eaf0e7;
-  perspective: 1400px;
+/* The city and event board share semantic buttons; only their projection changes. */
+#layer-city {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
 }
-body[data-view="structure"] .layer-node {
-  box-shadow:
-    2px 4px 0 #b6c5ac,
-    5px 9px 0 #b6c5ac,
-    8px 15px 0 #b6c5ac,
-    12px 22px 18px #445e4930;
+.city-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 12px;
 }
-body[data-view="structure"] .layer-node[data-kind="Process"] {
-  box-shadow:
-    2px 4px 0 #d3c3a1,
-    5px 9px 0 #d3c3a1,
-    8px 15px 0 #d3c3a1,
-    12px 22px 18px #445e4930;
+.city-options select {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffefb;
+  padding: 6px 9px;
 }
-body[data-view="structure"] .layer-node[data-kind="ADR"] {
-  box-shadow:
-    2px 4px 0 #b9cbd2,
-    5px 9px 0 #b9cbd2,
-    8px 15px 0 #b9cbd2,
-    12px 22px 18px #445e4930;
+.city-options button {
+  font-size: 11px;
+  padding: 6px 10px;
+}
+#city-visibility {
+  margin-left: auto;
+  font-size: 11px;
+}
+.city-hud {
+  position: absolute;
+  left: 18px;
+  top: 16px;
+  z-index: 3;
+  max-width: calc(100% - 36px);
+  display: grid;
+  gap: 7px;
+  color: #e3effa;
+  pointer-events: none;
+  text-shadow: 0 1px 5px #050a17;
+}
+.city-hud strong {
+  font-size: 13px;
+  font-weight: 650;
+}
+.city-hud span {
+  font-size: 11px;
+  color: #adbed4;
+}
+.city-tooltip {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 4;
+  width: 300px;
+  max-width: calc(100% - 32px);
+  padding: 13px 16px;
+  border: 1px solid #59708d;
+  border-radius: 9px;
+  background: #10223af2;
+  color: #e2eaf4;
+  box-shadow: 0 5px 25px #02071670;
+  pointer-events: none;
+}
+.city-tooltip strong {
+  font-size: 14px;
+}
+.city-tooltip p {
+  margin: 6px 0 8px;
+  font-size: 12px;
+  color: #baccdf;
+  line-height: 1.7;
+}
+.city-tooltip > span {
+  font-size: 11px;
+  color: #f3ce87;
+}
+.city-unavailable {
+  position: absolute;
+  left: 20px;
+  bottom: 5px;
+  font-size: 12px;
+  color: #526652;
+  pointer-events: none;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] {
+  background: #0c1b31;
+  border-color: #284460;
+  perspective: none;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-world {
+  transform-style: flat;
+  transform-origin: center;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-connections {
+  display: none;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-nodes {
+  transform-style: flat;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node {
+  padding: 7px 10px;
+  gap: 3px;
+  border: 1px solid transparent;
+  border-top-width: 1px;
+  border-radius: 7px;
+  background: transparent;
+  color: #edf4fc;
+  box-shadow: none;
+  text-shadow:
+    0 1px 5px #020814,
+    0 0 3px #020814;
+  transform-style: flat;
+  overflow: hidden;
+  z-index: 2;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-name {
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-type {
+  color: #a4bed3;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-description,
+body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-detail,
+body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-foot,
+body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-flags,
+body[data-view="structure"]
+  #layer-viewport[data-city="ready"]
+  .layer-node[data-city-detail="false"]
+  .node-type {
+  display: none;
+}
+body[data-view="structure"]
+  #layer-viewport[data-city="ready"]
+  .layer-node[data-kind="BoundedContext"]
+  .node-foot {
+  display: flex;
+  padding: 0;
+  margin: 1px 0 0;
+  border: 0;
+  font-size: 10px;
+  color: #abc3d9;
+}
+body[data-view="structure"]
+  #layer-viewport[data-city="ready"]
+  .layer-node[data-kind="BoundedContext"]
+  .node-foot
+  code {
+  max-width: 100%;
+}
+body[data-view="structure"]
+  #layer-viewport[data-city="ready"]
+  .layer-node[data-kind="BoundedContext"]
+  .node-foot
+  > span {
+  display: none;
+}
+body[data-view="structure"]
+  #layer-viewport[data-city="ready"]
+  .layer-node[data-city-label="hidden"] {
+  opacity: 0;
+  pointer-events: none;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node[data-city-focus="true"],
+body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node:focus-visible {
+  border-color: #8af0ea;
+  background: #17394ced;
+  outline: 2px solid #6ed3d488;
+  outline-offset: 2px;
+  z-index: 5;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] #empty-scope {
+  color: #b5c6da;
+  position: relative;
+  pointer-events: none;
 }
 #empty-scope {
   padding: 90px 30px;
@@ -919,6 +1077,23 @@ body[data-view="structure"] .layer-node[data-kind="ADR"] {
   #layer-viewport {
     height: 510px;
   }
+  .city-options {
+    gap: 6px;
+  }
+  #city-visibility {
+    width: 100%;
+    margin-left: 0;
+  }
+  .city-hud {
+    left: 12px;
+    top: 12px;
+  }
+  .city-hud strong {
+    font-size: 11px;
+  }
+  .city-hud span {
+    font-size: 10px;
+  }
   .camera-controls {
     gap: 4px;
   }
@@ -1010,5 +1185,27 @@ body[data-view="structure"] .layer-node[data-kind="ADR"] {
   .detail-panel,
   .scope-summary-card {
     break-inside: avoid;
+  }
+}
+
+@media print {
+  #layer-city,
+  .city-options,
+  .city-hud,
+  .city-tooltip,
+  .city-unavailable {
+    display: none !important;
+  }
+  body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node {
+    opacity: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    color: #283b35 !important;
+    background: white !important;
+    border-color: #ccd7c9;
+  }
+  body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-type {
+    display: flex !important;
+    color: #52665a !important;
   }
 }
