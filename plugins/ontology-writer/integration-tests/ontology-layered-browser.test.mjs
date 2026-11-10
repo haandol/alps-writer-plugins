@@ -788,3 +788,107 @@ test("the narrow city keeps all requested names legible and reaches the same ADR
     },
     { at: largeUrl, width: 390 },
   ));
+
+test("structural districts retain sourced membership, shared participation and ancestor boundaries", async () =>
+  withPage(async (page) => {
+    await changeView(page, "structure");
+    let city = await cityState(page);
+    const studio = city.regions.find((region) => region.ids.includes("studio"));
+    assert.deepEqual(studio.domains, ["delivery", "visual"]);
+    assert.equal(studio.kind, "shared-domains");
+    assert.equal(city.drawn.filter((node) => node.id === "studio").length, 1);
+    assert.deepEqual(
+      city.relations,
+      [],
+      "the overview is a responsibility map without an always-on web of event lines",
+    );
+    await page.hover('[data-layer-node="studio"]');
+    city = await cityState(page);
+    const modelLinks = await page.evaluate(() => window.ontologyLayered.relations());
+    assert.ok(city.relations.length > 0);
+    assert.ok(city.relations.every((index) => modelLinks[index].kind === "collaboration"));
+    await pick(page, "studio");
+    city = await cityState(page);
+    assert.equal(city.locator, "studio");
+    assert.ok(city.ancestors.some((ancestor) => ancestor.id === "studio"));
+    assert.ok(city.regions.find((region) => region.kind === "shared").ids.includes("studio.image"));
+    assert.ok(
+      city.regions.find((region) => region.kind === "scope").ids.includes("studio.animation"),
+    );
+    assert.ok(
+      (await page.evaluate(() => window.ontologyLayered.relations())).some(
+        (edge) => edge.kind === "reaction",
+      ),
+    );
+    assert.deepEqual(
+      city.relations,
+      [],
+      "event reactions remain in the workflow rather than becoming structural roads",
+    );
+    const parent = city.ancestors.find((ancestor) => ancestor.id === "studio");
+    for (const place of city.places) {
+      assert.ok(place.x > parent.x0 && place.x < parent.x1);
+      assert.ok(place.z > parent.z0 && place.z < parent.z1);
+    }
+    await pick(page, "studio.image");
+    city = await cityState(page);
+    assert.ok(city.ancestors.some((ancestor) => ancestor.id === "studio"));
+    assert.ok(city.ancestors.some((ancestor) => ancestor.id === "studio.image"));
+    assert.equal(city.drawn.filter((node) => node.id === ADR_PATH).length, 1);
+    assert.equal(city.locator, "studio");
+    await changeView(page, "events");
+    assert.deepEqual(await visible(page), city.nodeIds);
+  }));
+
+test("structural addresses survive search and paging while only the current results receive buildings", async () =>
+  withPage(
+    async (page) => {
+      await pick(page, "studio");
+      await changeView(page, "structure");
+      const original = await cityState(page);
+      await page.type("#layer-search", "Extra");
+      assert.deepEqual((await cityState(page)).places, original.places);
+      await page.click("#page-next");
+      const next = await cityState(page);
+      assert.deepEqual(next.places, original.places);
+      assert.deepEqual(next.drawn.map((node) => node.id).sort(), (await visible(page)).sort());
+      assert.ok(next.nodeIds.length < next.places.length);
+      const selected = next.nodeIds[0];
+      await pick(page, selected);
+      await page.click("#go-up");
+      assert.deepEqual((await cityState(page)).places, original.places);
+    },
+    { at: largeUrl },
+  ));
+
+test("the city list preserves full names when map labels hide and scrolling the list never moves the camera", async () =>
+  withPage(
+    async (page) => {
+      await pick(page, "studio");
+      await changeView(page, "structure");
+      for (let i = 0; i < 5; i++) await page.click('[data-camera="out"]');
+      const city = await cityState(page);
+      assert.ok(city.labelIds.length < city.nodeIds.length);
+      const list = await page.$$eval("#layer-nodes [data-layer-node]", (nodes) =>
+        nodes.map((node) => ({
+          id: node.dataset.layerNode,
+          opacity: getComputedStyle(node).opacity,
+          name: node.querySelector(".node-name").innerText,
+          clamp: getComputedStyle(node.querySelector(".node-name")).display,
+        })),
+      );
+      assert.deepEqual(list.map((node) => node.id).sort(), [...city.nodeIds].sort());
+      assert.ok(list.every((node) => node.opacity === "1" && node.name && node.clamp === "block"));
+      const before = await state(page);
+      await page.$eval("#layer-nodes", (node) => node.scrollIntoView({ block: "center" }));
+      const rect = await page.$eval("#layer-nodes", (node) => {
+        const r = node.getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + 80 };
+      });
+      await page.mouse.move(rect.x, rect.y);
+      await page.mouse.wheel({ deltaY: 250 });
+      await page.waitForFunction(() => document.getElementById("layer-nodes").scrollTop > 0);
+      assert.deepEqual((await state(page)).camera, before.camera);
+    },
+    { at: largeUrl },
+  ));

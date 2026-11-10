@@ -1,11 +1,10 @@
-// The night-city visual language projected from the navigator's current page only.
+// A structural map of authored membership, shared participation and realization.
 // Camera, selection, membership and lifecycle belong to the shared navigator.
 (() => {
   const clamp = (v, low, high) => Math.max(low, Math.min(high, v));
   const mix = (a, b, amount) => a.map((v, i) => v + (b[i] - v) * amount);
   const rgb = (c, alpha = 1) => `rgba(${c.map(Math.round).join(",")},${alpha})`;
   const NIGHT = [10, 20, 39],
-    CYAN = [109, 226, 235],
     GOLD = [255, 207, 110];
   const PALETTE = [
     [116, 188, 218],
@@ -61,7 +60,11 @@
       projected = [],
       labelIds = [],
       renderedRelations = [],
-      faces = [];
+      faces = [],
+      regions = [],
+      ancestors = [],
+      places = [],
+      occupiedLabels = [];
     let project = () => null,
       eye = [0, 0, 0],
       width = 0,
@@ -136,120 +139,137 @@
       return [at(u0, v0), at(u1, v0), at(u1, v1), at(u0, v1)];
     }
 
-    /** Uniform architectural shapes indicate the current resolution, never business quantity. */
-    function layout(nodes) {
-      const columns = Math.min(nodes.length || 1, width < 600 ? 2 : 3);
-      const rows = Math.ceil(nodes.length / columns) || 1;
-      return nodes.map((node, i) => {
-        const x = ((i % columns) - (columns - 1) / 2) * 4.3;
-        const z = (Math.floor(i / columns) - (rows - 1) / 2) * 4.0;
-        const h =
-          node.kind === "BoundedContext"
-            ? 1.6
-            : node.kind === "Process"
-              ? 2.7
-              : node.kind === "ADR"
-                ? 1.55
-                : 1.0;
+    // Allocate stable addresses from scope membership, not the current search/page
+    // or event order. Only scene.nodes will receive geometry or hit targets.
+    function districts(groups) {
+      const ordered = [...groups].sort((a, b) => a.id.localeCompare(b.id));
+      const columns = Math.max(1, Math.min(3, Math.ceil(Math.sqrt(ordered.length))));
+      const sizes = ordered.map((group) => {
+        const cols = Math.max(1, Math.min(3, Math.ceil(Math.sqrt(group.ids.length))));
+        return {
+          cols,
+          w: cols * 3.4 + 1.6,
+          d: Math.max(1, Math.ceil(group.ids.length / cols)) * 3.1 + 4.0,
+        };
+      });
+      const colWidths = Array.from({ length: columns }, (_, col) =>
+        Math.max(0, ...sizes.filter((_, i) => i % columns === col).map((size) => size.w)),
+      );
+      const rowDepths = Array.from({ length: Math.ceil(ordered.length / columns) }, (_, row) =>
+        Math.max(...sizes.slice(row * columns, (row + 1) * columns).map((size) => size.d)),
+      );
+      const sum = (values) => values.reduce((a, b) => a + b, 0);
+      const totalW = sum(colWidths) + Math.max(0, columns - 1) * 2.8;
+      const totalD = sum(rowDepths) + Math.max(0, rowDepths.length - 1) * 2.8;
+      const positions = new Map();
+      const plots = ordered.map((group, i) => {
+        const col = i % columns,
+          row = Math.floor(i / columns),
+          size = sizes[i];
+        const x0 = sum(colWidths.slice(0, col)) + col * 2.8 - totalW / 2;
+        const z0 = sum(rowDepths.slice(0, row)) + row * 2.8 - totalD / 2;
+        [...group.ids].sort().forEach((id, j) =>
+          positions.set(id, {
+            id,
+            group: group.id,
+            x: x0 + 2.5 + (j % size.cols) * 3.4,
+            z: z0 + 4.2 + Math.floor(j / size.cols) * 3.1,
+          }),
+        );
+        return { ...group, x0, x1: x0 + size.w, z0, z1: z0 + size.d };
+      });
+      return { plots, positions, width: totalW || 8, depth: totalD || 8 };
+    }
+    function layout() {
+      const structure = scene.structure;
+      const plan = districts(structure.groups);
+      const y = structure.ancestors.length * 0.42;
+      regions = plan.plots.map((plot) => ({
+        ...plot,
+        y,
+        colour: colourFor({ id: plot.id }),
+        visible: plot.ids.filter((id) => scene.nodes.some((node) => node.id === id)),
+      }));
+      ancestors = structure.ancestors.map((parent, i) => {
+        const pad = (structure.ancestors.length - i) * 1.3;
+        return {
+          ...parent,
+          x0: -plan.width / 2 - pad,
+          x1: plan.width / 2 + pad,
+          z0: -plan.depth / 2 - pad,
+          z1: plan.depth / 2 + pad,
+          y: i * 0.42,
+          colour: colourFor({ id: parent.id }),
+        };
+      });
+      places = [...plan.positions.values()];
+      return scene.nodes.map((node) => {
+        const position = plan.positions.get(node.id);
+        const h = node.kind === "BoundedContext" ? 1.05 : node.kind === "ADR" ? 0.65 : 0.85;
+        const floor = y + 0.16;
         return {
           ...node,
-          x,
-          z,
-          h,
+          ...position,
+          h: floor + h,
+          floor,
+          number: structure.numbers[node.id],
           colour: colourFor(node),
-          box: { x0: x - 1, x1: x + 1, y0: 0.2, y1: h, z0: z - 0.8, z1: z + 0.8 },
+          box: {
+            x0: position.x - 0.85,
+            x1: position.x + 0.85,
+            y0: floor,
+            y1: floor + h,
+            z0: position.z - 0.68,
+            z1: position.z + 0.68,
+          },
         };
       });
     }
-    function drawGround(items) {
-      const span = Math.max(6, Math.ceil(Math.sqrt(items.length || 1)) * 4.3);
-      g.strokeStyle = "rgba(107,152,206,.1)";
-      g.lineWidth = 1;
-      for (let k = -span; k <= span; k += 2.15) {
-        for (const pair of [
-          [
-            [-span, -0.2, k],
-            [span, -0.2, k],
-          ],
-          [
-            [k, -0.2, -span],
-            [k, -0.2, span],
-          ],
-        ]) {
-          const a = project(...pair[0]),
-            b = project(...pair[1]);
-          if (!a || !b) continue;
-          g.beginPath();
-          g.moveTo(a[0], a[1]);
-          g.lineTo(b[0], b[1]);
-          g.stroke();
-        }
-      }
-      if (scene.layer !== "contexts" && items.length) {
-        const xs = items.map((n) => n.x),
-          zs = items.map((n) => n.z);
+    function drawGround() {
+      for (const region of [...ancestors, ...regions]) {
         addBox(
           {
-            x0: Math.min(...xs) - 2,
-            x1: Math.max(...xs) + 2,
-            z0: Math.min(...zs) - 1.8,
-            z1: Math.max(...zs) + 1.8,
-            y0: -0.25,
-            y1: -0.1,
+            x0: region.x0,
+            x1: region.x1,
+            z0: region.z0,
+            z1: region.z1,
+            y0: region.y - 0.13,
+            y1: region.y,
           },
           null,
-          { plot: true },
+          { plot: true, region },
         );
       }
     }
     function geometry(items) {
       for (const item of items) {
-        const { x, z, h } = item;
+        const { x, z, h, floor } = item;
         addBox(
-          { x0: x - 1.65, x1: x + 1.65, z0: z - 1.5, z1: z + 1.5, y0: -0.06, y1: 0.13 },
+          {
+            x0: x - 1.23,
+            x1: x + 1.23,
+            z0: z - 1.03,
+            z1: z + 1.03,
+            y0: floor - 0.13,
+            y1: floor - 0.04,
+          },
           item,
           { plot: true },
         );
-        if (item.kind === "BoundedContext") {
-          addBox({ ...item.box, x0: x - 0.45, x1: x + 0.45, z0: z - 0.5, z1: z + 0.5 }, item, {
-            windows: 3,
-          });
-          addBox(
-            { x0: x - 1.2, x1: x - 0.48, z0: z - 0.65, z1: z + 0.65, y0: 0.18, y1: 0.82 },
-            item,
-            { windows: 2 },
-          );
-          addBox(
-            { x0: x + 0.48, x1: x + 1.2, z0: z - 0.65, z1: z + 0.65, y0: 0.18, y1: 0.82 },
-            item,
-            { windows: 2 },
-          );
-          addBox(
-            { x0: x - 0.52, x1: x + 0.52, z0: z - 0.57, z1: z + 0.57, y0: h, y1: h + 0.13 },
-            item,
-            { roof: true },
-          );
-        } else {
-          addBox(item.box, item, { windows: item.kind === "Process" ? 5 : 3 });
-          addBox(
-            { x0: x - 1.1, x1: x + 1.1, z0: z - 0.9, z1: z + 0.9, y0: h, y1: h + 0.17 },
-            item,
-            { roof: true },
-          );
-          if (item.kind === "Process")
-            addBox(
-              { x0: x + 0.65, x1: x + 1.35, z0: z + 0.5, z1: z + 1.2, y0: 0.18, y1: 0.95 },
-              item,
-              { windows: 2 },
-            );
-        }
+        addBox(item.box, item, { windows: item.kind === "BoundedContext" ? 3 : 2 });
+        addBox({ x0: x - 0.9, x1: x + 0.9, z0: z - 0.73, z1: z + 0.73, y0: h, y1: h + 0.1 }, item, {
+          roof: true,
+        });
       }
     }
+
     function drawFace(face, focusSet) {
       const { p, node, shade, plot, roof, windows, top } = face;
       const dim = node && focusSet && !focusSet.has(node.id);
-      const colour = node?.colour ?? [83, 139, 184];
-      let body = plot ? [22, 40, 66] : mix([28, 43, 69], colour, roof ? 0.4 : 0.1);
+      const colour = node?.colour ?? face.region?.colour ?? [83, 139, 184];
+      let body = plot
+        ? mix([16, 33, 54], colour, face.region ? 0.1 : 0.05)
+        : mix([28, 43, 69], colour, roof ? 0.4 : 0.1);
       body = body.map((v) => v * shade);
       if (dim) body = mix(body, NIGHT, 0.65);
       path(p);
@@ -279,11 +299,17 @@
         }
       }
     }
-    function drawConnections(items, focusSet) {
+    function drawConnections(items, chosen) {
       const byId = new Map(items.map((n) => [n.id, n]));
       renderedRelations = [];
       if (!showLinks) return;
       for (const [index, edge] of scene.relations.entries()) {
+        if (
+          edge.kind !== "collaboration" ||
+          !chosen ||
+          (edge.from !== chosen && edge.to !== chosen)
+        )
+          continue;
         const a = byId.get(edge.from),
           b = byId.get(edge.to);
         if (!a || !b) continue;
@@ -300,142 +326,311 @@
           if (point) points.push(point);
         }
         if (points.length < 2) continue;
-        const relevant = !focusSet || (focusSet.has(a.id) && focusSet.has(b.id));
         g.beginPath();
         g.moveTo(points[0][0], points[0][1]);
         for (const p of points.slice(1)) g.lineTo(p[0], p[1]);
-        g.strokeStyle =
-          edge.kind === "reaction"
-            ? `rgba(241,171,111,${relevant ? 0.78 : 0.13})`
-            : `rgba(149,189,232,${relevant ? 0.62 : 0.12})`;
-        g.lineWidth = relevant ? 1.6 : 1;
+        g.strokeStyle = "rgba(149,189,232,.72)";
+        g.lineWidth = 1.6;
         g.stroke();
-        if (edge.kind === "reaction") {
-          const last = points.at(-1),
-            prior = points.at(-2),
-            angle = Math.atan2(last[1] - prior[1], last[0] - prior[0]);
-          path([
-            last,
-            [last[0] - 7 * Math.cos(angle - 0.42), last[1] - 7 * Math.sin(angle - 0.42)],
-            [last[0] - 7 * Math.cos(angle + 0.42), last[1] - 7 * Math.sin(angle + 0.42)],
-          ]);
-          g.fillStyle = g.strokeStyle;
-          g.fill();
-        }
         renderedRelations.push(index);
       }
     }
-    function drawLabels(items, focusSet) {
-      const elements = new Map(
-        [...labels.querySelectorAll("[data-layer-node]")].map((n) => [n.dataset.layerNode, n]),
+    function lines(text, maxWidth, limit = 2) {
+      const words = String(text).split(/\s+/),
+        result = [];
+      let line = "";
+      for (const word of words) {
+        const next = line ? `${line} ${word}` : word;
+        if (g.measureText(next).width > maxWidth && line) {
+          result.push(line);
+          line = word;
+        } else line = next;
+      }
+      if (line) result.push(line);
+      const output = result.slice(0, limit);
+      if (result.length > limit) output[limit - 1] += "…";
+      return output;
+    }
+    function caption(
+      text,
+      x,
+      y,
+      maxWidth,
+      colour,
+      { note = "", align = "center", limit = 2, avoid = false, anchor = null } = {},
+    ) {
+      g.font = "600 12px system-ui";
+      const textLines = lines(text, maxWidth - 18, limit);
+      const w = Math.min(
+        maxWidth,
+        Math.max(36, ...textLines.map((line) => g.measureText(line).width)) + 18,
       );
-      const hud = { x: 12, y: 10, w: Math.min(430, width - 24), h: 62 };
-      const occupied = [hud];
+      const h = textLines.length * 16 + (note ? 15 : 0) + 12;
+      let box = {
+        x: clamp(align === "left" ? x : x - w / 2, 6, width - w - 6),
+        y: clamp(y, 72, height - h - 6),
+        w,
+        h,
+      };
+      if (avoid && occupiedLabels.some((other) => overlaps(box, other))) {
+        const candidates = [];
+        for (let y = 76; y + h < height - 6; y += 14)
+          for (let x = 6; x + w <= width - 6; x += 14) candidates.push({ x, y, w, h });
+        candidates.sort(
+          (a, b) => Math.hypot(a.x - box.x, a.y - box.y) - Math.hypot(b.x - box.x, b.y - box.y),
+        );
+        box =
+          candidates.find(
+            (candidate) => !occupiedLabels.some((other) => overlaps(candidate, other)),
+          ) ?? box;
+      }
+      if (anchor) {
+        g.beginPath();
+        g.moveTo(anchor[0], anchor[1]);
+        g.lineTo(clamp(anchor[0], box.x + 4, box.x + box.w - 4), box.y + box.h);
+        g.strokeStyle = rgb(colour, 0.4);
+        g.lineWidth = 1;
+        g.stroke();
+      }
+      g.fillStyle = "rgba(8,22,37,.9)";
+      g.fillRect(box.x, box.y, w, h);
+      g.fillStyle = rgb(colour);
+      g.fillRect(box.x, box.y, 2, h);
+      g.fillStyle = "#e0eaf3";
+      g.textAlign = "left";
+      textLines.forEach((line, i) => g.fillText(line, box.x + 9, box.y + 19 + i * 16, w - 18));
+      if (note) {
+        g.font = "10px system-ui";
+        g.fillStyle = "#a7b9ca";
+        g.fillText(note, box.x + 9, box.y + h - 8, w - 18);
+      }
+      occupiedLabels.push(box);
+      return box;
+    }
+    function drawRegionNames(items) {
+      occupiedLabels = [{ x: 0, y: 0, w: width, h: 70 }];
+      // Territory names must not cover building markers, even on a narrow map.
+      for (const item of items) {
+        const points = cubePoints(item.box)
+          .map((point) => project(...point))
+          .filter(Boolean);
+        if (!points.length) continue;
+        const b = bounds(points);
+        occupiedLabels.push({
+          x: b.left - 12,
+          y: b.top - 13,
+          w: b.right - b.left + 24,
+          h: b.bottom - b.top + 25,
+        });
+      }
+      if (ancestors.length) {
+        occupiedLabels.push({
+          x: 10,
+          y: 76,
+          w: Math.min(265, width - 20),
+          h: ancestors.length * 31 + 6,
+        });
+        occupiedLabels.push({ x: 12, y: height - 105, w: 154, h: 93 });
+      }
+      const ko = scene.structure.language === "ko";
+      for (const region of regions) {
+        const floor = bounds(
+          [
+            project(region.x0, region.y, region.z0),
+            project(region.x1, region.y, region.z0),
+            project(region.x1, region.y, region.z1),
+            project(region.x0, region.y, region.z1),
+          ].filter(Boolean),
+        );
+        if (floor.right < 0 || floor.left > width || floor.bottom < 0 || floor.top > height)
+          continue;
+        const p = project((region.x0 + region.x1) / 2, region.y, region.z0 + 0.4);
+        if (!p) continue;
+        const badge =
+          region.kind === "shared-domains"
+            ? ko
+              ? "복수 소속"
+              : "Multiple memberships"
+            : region.kind === "shared"
+              ? ko
+                ? "공유 범위"
+                : "Shared scope"
+              : "";
+        region.labelBox = caption(
+          region.label,
+          p[0],
+          p[1] - 36,
+          Math.min(210, width * 0.45),
+          region.colour,
+          {
+            avoid: true,
+            anchor: p,
+            note: [
+              badge,
+              `${region.visible.length}/${region.ids.length} ${scene.layer === "contexts" ? "BC" : ko ? "항목" : "items"}`,
+              region.note,
+            ]
+              .filter(Boolean)
+              .join(" · "),
+          },
+        );
+      }
+      if (ancestors.length) {
+        let y = 78;
+        for (const [i, ancestor] of ancestors.entries()) {
+          const kind =
+            ancestor.kind === "BoundedContext"
+              ? "BC"
+              : ancestor.kind === "Process"
+                ? ko
+                  ? "업무"
+                  : "Process"
+                : ko
+                  ? "영역"
+                  : "Domain";
+          const box = caption(
+            `${kind} · ${ancestor.label}`,
+            12 + i * 8,
+            y,
+            Math.min(245, width - 28),
+            ancestor.colour,
+            { align: "left", limit: 1 },
+          );
+          y += box.h + 3;
+        }
+      }
+    }
+    function drawLocator() {
+      if (!scene.structure.context) return;
+      const plan = districts(scene.structure.landscape);
+      const box = { x: 12, y: height - 105, w: 154, h: 93 };
+      occupiedLabels.push(box);
+      g.fillStyle = "rgba(8,22,37,.9)";
+      g.fillRect(box.x, box.y, box.w, box.h);
+      g.font = "10px system-ui";
+      g.textAlign = "left";
+      g.fillStyle = "#acc2d2";
+      g.fillText(
+        scene.structure.language === "ko" ? "전체에서의 위치" : "Location in the whole",
+        box.x + 9,
+        box.y + 15,
+      );
+      const scale = Math.min((box.w - 22) / plan.width, (box.h - 34) / plan.depth);
+      const origin = { x: box.x + box.w / 2, y: box.y + 25 + (box.h - 30) / 2 };
+      for (const region of plan.plots) {
+        g.strokeStyle = "#426077";
+        g.strokeRect(
+          origin.x + region.x0 * scale,
+          origin.y + region.z0 * scale,
+          (region.x1 - region.x0) * scale,
+          (region.z1 - region.z0) * scale,
+        );
+      }
+      for (const place of plan.positions.values()) {
+        const selected = place.id === scene.structure.context;
+        g.fillStyle = selected ? "#8be5d6" : "#506b7d";
+        g.beginPath();
+        g.arc(
+          origin.x + place.x * scale,
+          origin.y + place.z * scale,
+          selected ? 4 : 1.6,
+          0,
+          Math.PI * 2,
+        );
+        g.fill();
+      }
+    }
+    function drawLabels(items, chosen) {
+      const elements = new Map(
+        [...labels.querySelectorAll("[data-layer-node]")].map((node) => [
+          node.dataset.layerNode,
+          node,
+        ]),
+      );
       labelIds = [];
       projected = [];
-      const ordered = [...items].sort((a, b) => {
-        const priority = (n) =>
-          n.id === focused
-            ? 4
-            : n.id === hover
-              ? 3
-              : n.id === scene.selected
-                ? 2
-                : focusSet?.has(n.id)
-                  ? 1
-                  : 0;
-        return priority(b) - priority(a) || project(a.x, a.h, a.z)[2] - project(b.x, b.h, b.z)[2];
-      });
+      const ordered = [...items].sort(
+        (a, b) =>
+          Number(b.id === chosen) - Number(a.id === chosen) ||
+          project(a.x, a.h, a.z)[2] - project(b.x, b.h, b.z)[2],
+      );
       for (const item of ordered) {
-        const node = elements.get(item.id);
-        if (!node) continue;
-        const top = project(item.x, item.h + 0.28, item.z);
-        const screen = cubePoints({ ...item.box, y1: item.h + 0.2 })
+        const node = elements.get(item.id),
+          roof = project(item.x, item.h + 0.1, item.z);
+        const points = cubePoints({ ...item.box, y1: item.h + 0.1 })
           .map((p) => project(...p))
           .filter(Boolean);
-        if (!top || screen.length < 8) continue;
-        const box = bounds(screen),
+        if (!node || !roof || points.length < 8) continue;
+        const box = bounds(points),
           onScreen = box.right >= 0 && box.left <= width && box.bottom >= 0 && box.top <= height;
-        const important = item.id === focused || item.id === hover || item.id === scene.selected;
-        const detail = important || (item.kind !== "BoundedContext" && box.right - box.left >= 100);
-        const w = clamp(width * 0.24, Math.min(142, (width - 24) / 2), 232),
-          h = item.kind === "BoundedContext" ? (detail ? 94 : 72) : detail ? 74 : 54;
-        const edges = [
-          [item.x - 1.75, 0.14, item.z],
-          [item.x + 1.75, 0.14, item.z],
-          [item.x, 0.14, item.z - 1.6],
-          [item.x, 0.14, item.z + 1.6],
-        ];
-        edges.sort(
-          (a, b) =>
-            a.reduce((n, v, i) => n + (v - eye[i]) ** 2, 0) -
-            b.reduce((n, v, i) => n + (v - eye[i]) ** 2, 0),
-        );
-        const anchor = item.kind === "BoundedContext" ? project(...edges[0]) : top;
-        let label = {
-          x: anchor[0] - w / 2,
-          y: item.kind === "BoundedContext" ? anchor[1] + 8 : anchor[1] - h - 9,
-          w,
-          h,
-        };
-        const canShow =
-          onScreen && (labelMode === "all" || important || box.right - box.left >= 30);
-        if (canShow) {
-          // Nearer/selected labels win. When all names are requested, use leader
-          // lines to move colliding labels without moving any business object.
-          label.x = clamp(label.x, 8, Math.max(8, width - w - 8));
-          label.y = clamp(label.y, 8, Math.max(8, height - h - 12));
-          if (overlaps(label, hud)) label.y = hud.y + hud.h + 8;
-          if (labelMode === "all" && occupied.some((other) => overlaps(label, other))) {
-            const candidates = [];
-            for (let y = 82; y + h < height - 8; y += h + 10)
-              for (let x = 8; x + w <= width - 8; x += w + 10) candidates.push({ x, y, w, h });
-            candidates.sort(
-              (a, b) =>
-                (a.x - label.x) ** 2 +
-                (a.y - label.y) ** 2 -
-                ((b.x - label.x) ** 2 + (b.y - label.y) ** 2),
-            );
-            label =
-              candidates.find(
-                (candidate) => !occupied.some((other) => overlaps(candidate, other)),
-              ) ?? label;
-          }
+        const important = item.id === chosen;
+        const detail = important || box.right - box.left > 90;
+        if (onScreen) {
+          g.beginPath();
+          g.arc(roof[0], roof[1], important ? 12 : 10, 0, Math.PI * 2);
+          g.fillStyle = important ? "#b9f0d8" : "#11283ee8";
+          g.fill();
+          g.strokeStyle = rgb(item.colour, 0.9);
+          g.lineWidth = 1;
+          g.stroke();
+          g.font = "600 10px system-ui";
+          g.textAlign = "center";
+          g.fillStyle = important ? "#173c31" : "#eef5f8";
+          g.fillText(String(item.number), roof[0], roof[1] + 3.5);
+        }
+        g.font = "600 12px system-ui";
+        const w = Math.min(205, (width - 24) / 2),
+          textLines = lines(item.name, w - 18);
+        const h = textLines.length * 16 + 12;
+        let label = { x: clamp(roof[0] - w / 2, 8, width - w - 8), y: roof[1] - h - 18, w, h };
+        const canShow = onScreen && (important || labelMode === "all" || box.right - box.left > 85);
+        if (canShow && (labelMode === "all" || important)) {
+          const candidates = [label];
+          for (let y = 78; y + h < height - 8; y += h + 9)
+            for (let x = 8; x + w <= width - 8; x += w + 10) candidates.push({ x, y, w, h });
+          candidates.sort(
+            (a, b) =>
+              Math.hypot(a.x + w / 2 - roof[0], a.y + h - roof[1]) -
+              Math.hypot(b.x + w / 2 - roof[0], b.y + h - roof[1]),
+          );
+          label =
+            candidates.find(
+              (candidate) =>
+                candidate.y >= 72 && !occupiedLabels.some((other) => overlaps(candidate, other)),
+            ) ?? label;
         }
         const shown =
           canShow &&
-          (important || labelMode === "all" || !occupied.some((other) => overlaps(label, other))) &&
-          label.y + h < height - 8;
-        node.style.left = `${shown ? label.x : top[0] - w / 2}px`;
-        node.style.top = `${shown ? label.y : top[1] - h - 9}px`;
-        node.style.width = `${w}px`;
-        node.style.height = `${h}px`;
+          label.y >= 72 &&
+          label.y + h <= height - 8 &&
+          (important ||
+            labelMode === "all" ||
+            !occupiedLabels.some((other) => overlaps(label, other)));
         node.dataset.cityLabel = shown ? "shown" : "hidden";
         node.dataset.cityDetail = detail ? "true" : "false";
         node.dataset.cityFocus = important ? "true" : "false";
         if (shown) {
-          occupied.push(label);
+          const labelBox = caption(item.name, label.x, label.y, w, item.colour, { align: "left" });
           labelIds.push(item.id);
-          g.strokeStyle = rgb(item.colour, important ? 0.72 : 0.25);
-          g.lineWidth = 1;
           g.beginPath();
-          g.moveTo(top[0], top[1]);
-          g.lineTo(clamp(top[0], label.x + 8, label.x + w - 8), label.y + label.h);
+          g.moveTo(roof[0], roof[1] - 12);
+          g.lineTo(
+            clamp(roof[0], labelBox.x + 5, labelBox.x + labelBox.w - 5),
+            labelBox.y + labelBox.h,
+          );
+          g.strokeStyle = rgb(item.colour, important ? 0.8 : 0.3);
+          g.lineWidth = 1;
           g.stroke();
         }
-        const roof = project(
-          item.x,
-          item.h + (item.kind === "BoundedContext" ? 0.13 : 0.17),
-          item.z,
-        );
         projected.push({
           id: item.id,
           kind: item.kind,
-          roof: [roof[0], roof[1]],
+          roof: roof.slice(0, 2),
           bounds: box,
           onScreen,
           label: shown,
           detail,
+          group: item.group,
         });
       }
     }
@@ -465,30 +660,40 @@
         g.fillStyle = `rgba(191,218,245,${0.1 + (i % 4) * 0.06})`;
         g.fillRect(x, y, 1, 1);
       }
-      const items = layout(scene.nodes);
-      const span = Math.max(6, Math.ceil(Math.sqrt(items.length || 1)) * 4.3),
+      const items = layout();
+      const floors = [...ancestors, ...regions];
+      const span =
+          Math.max(
+            6,
+            ...floors.flatMap((floor) => [
+              Math.abs(floor.x0),
+              Math.abs(floor.x1),
+              Math.abs(floor.z0),
+              Math.abs(floor.z1),
+            ]),
+          ) * 1.4,
         distance = span * 1.5 + 5;
       const home = projector(0.756, (38 * Math.PI) / 180, distance);
-      const points = items
-        .flatMap((n) =>
+      const points = floors
+        .flatMap((floor) =>
           cubePoints({
-            x0: n.x - 1.8,
-            x1: n.x + 1.8,
-            y0: -0.2,
-            y1: n.h + 0.5,
-            z0: n.z - 1.65,
-            z1: n.z + 1.65,
+            x0: floor.x0 - 0.3,
+            x1: floor.x1 + 0.3,
+            z0: floor.z0 - 0.3,
+            z1: floor.z1 + 0.3,
+            y0: -0.15,
+            y1: floor.y + 1.65,
           }).map((p) => home.point(...p)),
         )
         .filter(Boolean);
       const b = points.length ? bounds(points) : { left: -0.2, right: 0.2, top: -0.2, bottom: 0.2 };
       const focal = Math.min(
         (width - 70) / Math.max(0.01, b.right - b.left),
-        (height - 135) / Math.max(0.01, b.bottom - b.top),
+        (height - 180) / Math.max(0.01, b.bottom - b.top),
       );
       const camera = scene.camera;
-      const flatFit = clamp((width - 28) / scene.flatWidth, 0.45, 1);
-      const flatX = (width - scene.flatWidth * flatFit) / 2;
+      const flatFit = clamp((scene.cameraWidth - 28) / scene.flatWidth, 0.45, 1);
+      const flatX = (scene.cameraWidth - scene.flatWidth * flatFit) / 2;
       const zoom = camera.zoom / flatFit;
       const current = projector(
         1 + (camera.yaw * Math.PI) / 180,
@@ -507,35 +712,23 @@
       const focusSet = chosen
         ? new Set([
             chosen,
-            ...scene.relations.flatMap((edge) =>
-              edge.from === chosen ? [edge.to] : edge.to === chosen ? [edge.from] : [],
-            ),
+            ...scene.relations
+              .filter((edge) => edge.kind === "collaboration")
+              .flatMap((edge) =>
+                edge.from === chosen ? [edge.to] : edge.to === chosen ? [edge.from] : [],
+              ),
           ])
         : null;
-      drawGround(items);
+      drawGround();
       geometry(items);
       // Ground plates sit below every building. Sorting a whole floor by its
       // midpoint depth would paint it over the farther buildings in a large BC.
       faces.sort((a, b) => Number(Boolean(b.plot)) - Number(Boolean(a.plot)) || b.depth - a.depth);
       for (const face of faces) drawFace(face, focusSet);
-      drawConnections(items, focusSet);
-      const selected = items.find((n) => n.id === chosen);
-      if (selected) {
-        const low = project(selected.x, 0.15, selected.z),
-          high = project(selected.x, selected.h + 1.6, selected.z);
-        if (low && high) {
-          const beam = g.createLinearGradient(low[0], low[1], high[0], high[1]);
-          beam.addColorStop(0, rgb(CYAN, 0.48));
-          beam.addColorStop(1, rgb(CYAN, 0));
-          g.strokeStyle = beam;
-          g.lineWidth = 3;
-          g.beginPath();
-          g.moveTo(...low.slice(0, 2));
-          g.lineTo(...high.slice(0, 2));
-          g.stroke();
-        }
-      }
-      drawLabels(items, focusSet);
+      drawConnections(items, chosen);
+      drawRegionNames(items);
+      drawLocator();
+      drawLabels(items, chosen);
       frames++;
     }
     return {
@@ -575,6 +768,10 @@
       snapshot: () => ({
         layer: scene?.layer ?? null,
         nodeIds: scene?.nodes.map((n) => n.id) ?? [],
+        regions: structuredClone(regions),
+        ancestors: structuredClone(ancestors),
+        places: structuredClone(places),
+        locator: scene?.structure.context ?? null,
         labelIds: [...labelIds],
         drawn: structuredClone(projected),
         relations: [...renderedRelations],

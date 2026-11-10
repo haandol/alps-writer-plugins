@@ -585,7 +585,49 @@ code {
   color: #526652;
   pointer-events: none;
 }
+/* The structural map explains containment; the adjacent list carries readable text. */
+.city-number {
+  display: none;
+}
+.city-group-label {
+  display: none;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] .city-group-label {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  background: #eef2ea;
+  color: #4e6a59;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.city-group-label small {
+  font-size: 10px;
+  font-weight: 400;
+  color: #718675;
+}
+.city-list-heading {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: var(--city-list-width);
+  height: 72px;
+  padding: 16px;
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  background: #fcfcf8;
+  border-left: 1px solid #d7dfda;
+  border-bottom: 1px solid #d7dfda;
+  color: #2b4038;
+  z-index: 4;
+}
+.city-list-heading span {
+  font-size: 11px;
+  color: #6a7a71;
+}
 body[data-view="structure"] #layer-viewport[data-city="ready"] {
+  --city-list-width: 300px;
   background: #0c1b31;
   border-color: #284460;
   perspective: none;
@@ -594,93 +636,187 @@ body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-world {
   transform-style: flat;
   transform-origin: center;
 }
+body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-city {
+  width: calc(100% - var(--city-list-width));
+}
 body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-connections {
   display: none;
 }
 body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-nodes {
+  position: absolute;
+  right: 0;
+  top: 72px;
+  bottom: 0;
+  width: var(--city-list-width);
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  display: flex;
+  flex-direction: column;
   transform-style: flat;
+  pointer-events: auto;
+  background: #fcfcf8;
+  border-left: 1px solid #d7dfda;
+  cursor: auto;
 }
 body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node {
-  padding: 7px 10px;
-  gap: 3px;
-  border: 1px solid transparent;
-  border-top-width: 1px;
-  border-radius: 7px;
+  position: relative;
+  left: auto !important;
+  top: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0;
+  flex: 0 0 auto;
+  padding: 15px 14px 15px 44px;
+  gap: 6px;
+  border: 0;
+  border-bottom: 1px solid #dde4dd;
+  border-radius: 0;
   background: transparent;
-  color: #edf4fc;
+  color: #294137;
   box-shadow: none;
-  text-shadow:
-    0 1px 5px #020814,
-    0 0 3px #020814;
+  text-shadow: none;
   transform-style: flat;
-  overflow: hidden;
-  z-index: 2;
+  overflow: visible;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] .city-number {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  left: 12px;
+  top: 17px;
+  width: 23px;
+  height: 23px;
+  border: 1px solid #aabfaf;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 600;
+  color: #446451;
 }
 body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-name {
+  display: block;
   font-size: 14px;
-  line-height: 1.4;
-  font-weight: 600;
+  line-height: 1.5;
+  font-weight: 650;
+  overflow: visible;
 }
 body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-type {
-  color: #a4bed3;
+  flex-wrap: wrap;
+  color: #697d71;
   font-size: 10px;
-  white-space: nowrap;
-  overflow: hidden;
+  white-space: normal;
 }
-body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-description,
-body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-detail,
-body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-foot,
-body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-flags,
-body[data-view="structure"]
-  #layer-viewport[data-city="ready"]
-  .layer-node[data-city-detail="false"]
-  .node-type {
+body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-description {
+  font-size: 11px;
+  -webkit-line-clamp: 2;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-detail {
   display: none;
 }
-body[data-view="structure"]
-  #layer-viewport[data-city="ready"]
-  .layer-node[data-kind="BoundedContext"]
-  .node-foot {
-  display: flex;
+body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node .node-foot {
   padding: 0;
-  margin: 1px 0 0;
+  margin: 0;
   border: 0;
   font-size: 10px;
-  color: #abc3d9;
+  color: #617b6b;
 }
-body[data-view="structure"]
-  #layer-viewport[data-city="ready"]
-  .layer-node[data-kind="BoundedContext"]
-  .node-foot
-  code {
+body[data-view="structure"] #layer-viewport[data-city="ready"] .node-foot code {
   max-width: 100%;
-}
-body[data-view="structure"]
-  #layer-viewport[data-city="ready"]
-  .layer-node[data-kind="BoundedContext"]
-  .node-foot
-  > span {
-  display: none;
-}
-body[data-view="structure"]
-  #layer-viewport[data-city="ready"]
-  .layer-node[data-city-label="hidden"] {
-  opacity: 0;
-  pointer-events: none;
+  white-space: normal;
 }
 body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node[data-city-focus="true"],
 body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node:focus-visible {
-  border-color: #8af0ea;
-  background: #17394ced;
-  outline: 2px solid #6ed3d488;
-  outline-offset: 2px;
-  z-index: 5;
+  background: #e9f1e6;
+  outline: 2px solid #8cab8d;
+  outline-offset: -3px;
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] .city-hud {
+  max-width: calc(100% - var(--city-list-width) - 36px);
+}
+body[data-view="structure"] #layer-viewport[data-city="ready"] .city-tooltip {
+  right: calc(var(--city-list-width) + 14px);
+  max-width: calc(100% - var(--city-list-width) - 28px);
 }
 body[data-view="structure"] #layer-viewport[data-city="ready"] #empty-scope {
   color: #b5c6da;
   position: relative;
+  width: calc(100% - var(--city-list-width));
   pointer-events: none;
 }
+body[data-view="structure"] #workspace {
+  display: flex;
+  flex-direction: column;
+}
+body[data-view="structure"] #workspace > * {
+  order: 10;
+}
+body[data-view="structure"] #breadcrumbs {
+  order: 0;
+}
+body[data-view="structure"] #workspace > .scope-heading {
+  order: 1;
+}
+body[data-view="structure"] #workspace > .find-bar {
+  order: 2;
+}
+body[data-view="structure"] #workspace > .canvas-toolbar {
+  order: 3;
+}
+body[data-view="structure"] #city-options {
+  order: 4;
+}
+body[data-view="structure"] #layer-viewport {
+  order: 5;
+  flex: 0 0 auto;
+}
+body[data-view="structure"] #workspace > .canvas-footer {
+  order: 6;
+}
+body[data-view="structure"] #scope-summary {
+  order: 7;
+}
+body[data-view="structure"] #layer-relations {
+  order: 8;
+}
+@media (min-width: 1021px) {
+  body[data-view="structure"] .outline {
+    position: sticky;
+    top: 76px;
+    height: calc(100vh - 76px);
+    overflow: auto;
+    align-self: start;
+  }
+}
+@media (max-width: 1020px) {
+  body[data-view="structure"] #layer-viewport[data-city="ready"] {
+    height: 860px;
+  }
+  body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-city {
+    width: 100%;
+    height: 450px;
+  }
+  body[data-view="structure"] #layer-viewport[data-city="ready"] .city-list-heading {
+    top: 450px;
+    width: 100%;
+  }
+  body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-nodes {
+    top: 522px;
+    width: 100%;
+  }
+  body[data-view="structure"] #layer-viewport[data-city="ready"] .city-hud {
+    max-width: calc(100% - 30px);
+  }
+  body[data-view="structure"] #layer-viewport[data-city="ready"] .city-tooltip {
+    right: 14px;
+    bottom: auto;
+    top: 160px;
+    max-width: calc(100% - 28px);
+  }
+  body[data-view="structure"] #layer-viewport[data-city="ready"] #empty-scope {
+    width: 100%;
+  }
+}
+
 #empty-scope {
   padding: 90px 30px;
   text-align: center;
@@ -1193,8 +1329,15 @@ body[data-view="structure"] #layer-viewport[data-city="ready"] #empty-scope {
   .city-options,
   .city-hud,
   .city-tooltip,
-  .city-unavailable {
+  .city-unavailable,
+  .city-list-heading {
     display: none !important;
+  }
+  body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-nodes {
+    position: static;
+    width: auto;
+    overflow: visible;
+    display: grid;
   }
   body[data-view="structure"] #layer-viewport[data-city="ready"] .layer-node {
     opacity: 1 !important;

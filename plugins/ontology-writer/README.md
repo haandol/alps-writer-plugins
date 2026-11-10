@@ -35,12 +35,14 @@ The processes come from the business model. A functional ADR may support multipl
 processes; category-level realization links are labeled with that precision.
 The two representations keep the same scope, search, page and selection.
 
-The 3D view uses a night city: BC districts, business-process buildings, then
-realizing ADR blocks. Only the selected layer is instantiated. Zoom and focus
-control label detail; automatic visibility avoids overlapping names, and the
-reader can show all names or hide connection lines. Hover or keyboard focus
-reveals a label, while selection opens the next business scope. Building height
-and windows are visual styling, not workload, step counts or execution progress.
+The 3D map locates BCs within the supplied business domains, preserving multiple
+and unrecorded memberships. Opening a BC or process retains its ancestor
+boundaries and location in the whole. Internal regions distinguish participation
+shared across BCs and ADRs associated with multiple processes. Search and paging
+retain spatial addresses; only current results receive buildings. Read full names
+and descriptions in the adjacent list, or point to a building or list item to
+locate it. Focus reveals recorded BC collaborations; event order stays in the
+workflow. Height and distance are not workload or execution measurements.
 Append `#view=structure` to a generated file address to enter the city directly.
 
 ![Business processes inside a BC](../../docs/images/ontology-bc-search.webp)

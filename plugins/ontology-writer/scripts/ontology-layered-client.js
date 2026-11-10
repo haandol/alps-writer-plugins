@@ -88,6 +88,7 @@
   let city = null,
     cityAttempted = false,
     cityLinks = true;
+  let cityScope = null;
   let flatSize = { width: 356, height: 331 };
 
   const nameOf = (id) =>
@@ -327,6 +328,89 @@
     return containers.get(state.container).adrs.map((id) => rawNode(id, "ADR"));
   }
 
+  /** Spatial inclusion uses authored membership, never event order or ADR folders. */
+  function structureScope() {
+    const domainGroups = new Map();
+    for (const context of data.contexts) {
+      const ids = [...context.domains].sort();
+      const key = JSON.stringify(ids);
+      if (!domainGroups.has(key)) {
+        const sources = ids.map((id) => data.domains.find((domain) => domain.id === id));
+        domainGroups.set(key, {
+          id: `domains:${key}`,
+          kind: ids.length > 1 ? "shared-domains" : "domain",
+          label:
+            sources.map((domain) => domain.name).join(" / ") ||
+            t("도메인 소속 미기록", "Domain membership unrecorded"),
+          note: sources.map((domain) => domain.verdict).join(" · "),
+          domains: ids,
+          ids: [],
+        });
+      }
+      domainGroups.get(key).ids.push(context.id);
+    }
+    const landscape = [...domainGroups.values()];
+    const inventory =
+      state.level === "contexts" && state.searchScope === "layer"
+        ? data.contexts.map((context) => rawNode(context.id, "BoundedContext"))
+        : nodesInScope();
+    const groups = new Map();
+    if (state.level === "contexts" && state.searchScope === "layer") {
+      for (const group of landscape) groups.set(group.id, { ...group, ids: [...group.ids] });
+    } else {
+      for (const item of inventory) {
+        const key =
+          state.searchScope === "knowledge" ? item.kind : item.shared ? "shared" : "local";
+        if (!groups.has(key))
+          groups.set(key, {
+            id: key,
+            kind: key === "shared" ? "shared" : "scope",
+            label:
+              state.searchScope === "knowledge"
+                ? (types.get(item.kind) ?? item.kind)
+                : state.level === "containers"
+                  ? key === "shared"
+                    ? t("다른 BC와 함께 참여", "Shared participation across BCs")
+                    : t("현재 BC의 참여 업무", "Work involving this BC")
+                  : key === "shared"
+                    ? t("여러 업무에 연결된 ADR", "ADRs shared by processes")
+                    : t("현재 업무에 연결된 ADR", "ADRs associated with this process"),
+            ids: [],
+          });
+        groups.get(key).ids.push(item.id);
+      }
+    }
+    const context = contexts.get(state.context);
+    const process = containers.get(state.container);
+    const ancestors = [];
+    if (context) {
+      const domains = context.domains.map((id) => data.domains.find((domain) => domain.id === id));
+      if (domains.length)
+        ancestors.push({
+          id: `domains:${JSON.stringify([...context.domains].sort())}`,
+          kind: "domain",
+          label: domains.map((domain) => domain.name).join(" / "),
+        });
+      ancestors.push({ id: context.id, kind: "BoundedContext", label: context.name });
+    }
+    if (process) ancestors.push({ id: process.id, kind: "Process", label: process.name });
+    return {
+      groups: [...groups.values()],
+      ancestors,
+      landscape,
+      context: context?.id ?? null,
+      contextName: context?.name ?? "",
+      total: inventory.length,
+      numbers: Object.fromEntries(
+        inventory
+          .map((node) => node.id)
+          .sort()
+          .map((id, i) => [id, i + 1]),
+      ),
+      language: data.language,
+    };
+  }
+
   function filteredNodes() {
     const nodes = nodesInScope();
     try {
@@ -408,16 +492,16 @@
     $("city-layer-title").textContent = `${titles[level]} · ${$("scope-title").textContent}`;
     $("city-layer-hint").textContent = [
       t(
-        "구역을 선택하면 그 BC의 업무 건물이 펼쳐집니다.",
-        "Select a district to unfold its business processes.",
+        "도메인 구역 안의 BC와 협업 경계를 살펴봅니다.",
+        "Locate BCs within business domains and inspect collaboration boundaries.",
       ),
       t(
-        "업무 건물을 선택하면 실현 기능 ADR이 펼쳐집니다.",
-        "Select a business building for its realizing ADRs.",
+        "상위 경계 안에서 참여 업무와 여러 BC의 공유 업무를 구별합니다.",
+        "Keep the parent boundary while distinguishing local and shared participation.",
       ),
       t(
-        "ADR 블록을 선택하면 평면에서 계약 원문을 읽습니다.",
-        "Select an ADR block to read its contract on a flat surface.",
+        "업무의 실현 범위와 여러 업무에 공유되는 ADR을 살펴봅니다.",
+        "Inspect this process's realization and ADRs shared with other work.",
       ),
     ][level];
   }
@@ -489,7 +573,7 @@
       .filter(([mask]) => node.marks & mask)
       .map(([, label]) => tag(label, "warning"))
       .join("");
-    return `<button type="button" class="layer-node" data-layer-node="${esc(node.id)}" data-kind="${node.kind}" aria-pressed="${state.selected === node.id}" style="left:${position.x}px;top:${position.y}px"><span class="node-type"><span>${esc(kind)}</span><span>${node.shared ? t("공유", "Shared") + " · " : ""}${esc(node.status ?? (node.state ? stateLabel(node.state) : ""))}${warning}</span></span><span class="node-name">${esc(node.name)}</span><span class="node-description">${esc(node.description || t("설명 미기록", "Description unrecorded"))}</span><span class="node-detail">${esc(detail)}</span>${marks ? `<span class="node-flags">${marks}</span>` : ""}<span class="node-foot"><code title="${esc(node.id)}">${esc(domainNames.length ? domainNames.join(" · ") : node.id)}</code><span aria-hidden="true">↗</span></span></button>`;
+    return `<button type="button" class="layer-node" data-layer-node="${esc(node.id)}" data-kind="${node.kind}" aria-pressed="${state.selected === node.id}" style="left:${position.x}px;top:${position.y}px"><span class="city-number" aria-hidden="true">${cityScope.numbers[node.id]}</span><span class="node-type"><span>${esc(kind)}</span><span>${node.shared ? t("공유", "Shared") + " · " : ""}${esc(node.status ?? (node.state ? stateLabel(node.state) : ""))}${warning}</span></span><span class="node-name">${esc(node.name)}</span><span class="node-description">${esc(node.description || t("설명 미기록", "Description unrecorded"))}</span><span class="node-detail">${esc(detail)}</span>${marks ? `<span class="node-flags">${marks}</span>` : ""}<span class="node-foot"><code title="${esc(node.id)}">${esc(domainNames.length ? domainNames.join(" · ") : node.id)}</code><span aria-hidden="true">↗</span></span></button>`;
   }
 
   function layerRelations() {
@@ -516,6 +600,7 @@
 
   function renderNodes() {
     city?.setActive(false);
+    cityScope = structureScope();
     const result = filteredNodes();
     const pages = Math.max(1, Math.ceil(result.nodes.length / PAGE));
     state.page = Math.min(Math.max(0, state.page), pages - 1);
@@ -535,9 +620,18 @@
     flatSize = { width, height };
     $("layer-world").style.width = `${width}px`;
     $("layer-world").style.height = `${height}px`;
-    $("layer-nodes").innerHTML = currentNodes
-      .map((node) => nodeMarkup(node, positions.get(node.id)))
-      .join("");
+    const markup = (node) => nodeMarkup(node, positions.get(node.id));
+    $("layer-nodes").innerHTML =
+      mode === "structure"
+        ? cityScope.groups
+            .map((group) => {
+              const members = currentNodes.filter((node) => group.ids.includes(node.id));
+              return members.length
+                ? `<div class="city-group-label"><strong>${esc(group.label)}</strong>${group.note ? `<small>${esc(group.note)}</small>` : ""}</div>${members.map(markup).join("")}`
+                : "";
+            })
+            .join("")
+        : currentNodes.map(markup).join("");
     relations = layerRelations();
     const shownRelations = relations.filter(
       (edge) => positions.has(edge.from) && positions.has(edge.to),
@@ -605,6 +699,7 @@
     $("city-hud").hidden = !spatial;
     $("city-unavailable").hidden = mode !== "structure" || Boolean(city);
     $("city-options").hidden = !spatial;
+    $("city-list-heading").hidden = !spatial;
     document.querySelector('[data-camera="rotate"]').disabled = !spatial;
     if (spatial) {
       $("layer-world").style.width = "100%";
@@ -617,7 +712,11 @@
         selected: state.selected,
         camera: c,
         flatWidth: flatSize.width,
+        cameraWidth: $("layer-viewport").clientWidth,
+        structure: cityScope,
       });
+      $("city-list-title").textContent =
+        `${titles[levels.indexOf(state.level)]} · ${currentNodes.length}`;
       cityReadout();
     } else {
       city?.setActive(false);
@@ -628,8 +727,8 @@
     $("camera-scale").textContent = `${Math.round(c.zoom * 100)}%`;
     $("camera-hint").textContent = spatial
       ? t(
-          "구역·건물로 현재 레이어 탐색 · 아치는 기록된 연결 · 바닥 격자는 배치 · 높이·창문 수는 업무량을 뜻하지 않습니다.",
-          "Districts and buildings show the current layer · arcs are recorded links · the ground grid is layout · height and windows do not measure workload.",
+          "구역은 기록된 소속·참여 범위 · 번호는 옆 목록과 연결 · 공유 영역은 단독 소유가 아닙니다. 사건의 순서는 업무 흐름에서 확인합니다.",
+          "Regions show recorded membership and participation · numbers locate list items · shared areas do not imply exclusive ownership. Read event order in the workflow.",
         )
       : t(
           "드래그로 이동 · +/−로 확대 · 배치는 순서나 중요도를 뜻하지 않습니다.",
@@ -640,7 +739,7 @@
   function cityReadout() {
     if (!city || mode !== "structure") return;
     $("city-visibility").textContent =
-      `${t("이름", "Names")} ${city.snapshot().labelIds.length}/${currentNodes.length} · ${t("가리킨 항목은 항상 표시", "Point or focus to reveal")}`;
+      `${t("지도 이름", "Map names")} ${city.snapshot().labelIds.length}/${currentNodes.length} · ${t("전체 이름은 옆 목록에서 확인", "Every name is available in the list")}`;
   }
 
   function cityHint(id) {
@@ -958,6 +1057,7 @@
   viewport.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     suppressClick = false;
+    if (mode === "structure" && city && event.target.closest("#layer-nodes")) return;
     drag = {
       id: event.pointerId,
       x: event.clientX,
@@ -1037,6 +1137,7 @@
   viewport.addEventListener(
     "wheel",
     (event) => {
+      if (mode === "structure" && city && event.target.closest("#layer-nodes")) return;
       event.preventDefault();
       zoom(event.deltaY < 0 ? 1.06 : 1 / 1.06);
     },
@@ -1083,6 +1184,16 @@
     if (mode === "structure") {
       city?.focus(node.dataset.layerNode);
       cityHint(node.dataset.layerNode);
+      if (city) {
+        const item = city.snapshot().drawn.find((item) => item.id === node.dataset.layerNode);
+        if (item && !item.onScreen) {
+          state.camera.x += $("layer-city").clientWidth / 2 - item.roof[0];
+          state.camera.y += $("layer-city").clientHeight / 2 - item.roof[1];
+          paintCamera();
+          remember();
+        }
+        return;
+      }
     }
     const a = node.getBoundingClientRect(),
       b = viewport.getBoundingClientRect();
