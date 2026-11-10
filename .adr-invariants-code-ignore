@@ -18,4 +18,5 @@ plugins/adr-writer/scripts/adr-invariants.sh
 plugins/adr-writer/scripts/adr-structure-lint.mjs
 plugins/alps-writer/skills/
 plugins/ontology-writer/skills/
+plugins/ontology-writer/references/change-unit.md
 plugins/ontology-writer/tests/

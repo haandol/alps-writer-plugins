@@ -215,6 +215,14 @@ reviews remain explicit.
 
 ## Business ontology
 
+Skill entrypoints keep task routing and approval boundaries close to the request.
+Candidate review, confirmed saves, direct-edit history and extra viewing evidence
+live in the relevant skill's `references/` and are read at that stage. Edit,
+build and sync share [change meaning](./references/change-meaning.md) and the
+[approved change unit](./references/change-unit.md), so changes to save and
+cascade rules have one owner. The shared report-writer skill remains generated
+from the workspace's canonical report guidance.
+
 Model documents use the closed vocabulary in `templates/ontology/vocabulary.ttl`; `templates/ontology/example.ttl` shows a small model. The model owns business flows, event hand-offs, policies, cross-step rules and business terms. The rules are in `references/ontology.md`; the deterministic commands are `bun scripts/ontology.mjs <command>` with `validate`, `format`, `diff`, `query`, `impact`, `apply`, `transition`, `align`, `lifecycle`, `changes` and `view`, documented at the top of the script. `validate` also checks the ADR index's `realizes` links against the model.
 
 ## Working with adr-writer

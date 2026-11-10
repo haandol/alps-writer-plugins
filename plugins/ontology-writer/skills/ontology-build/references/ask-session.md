@@ -84,7 +84,8 @@ behind the question; conflicting evidence opens by default. A session-level
 Mermaid renders in the page from the bundled engine with strict security; a
 diagram it cannot draw shows its source and the error.
 
-Before asking, apply the resolve-before-asking pass of section 3. A question a
+Before asking, apply the resolve-before-asking pass in
+[candidate review](candidate-review.md#sufficiency-and-unresolved-questions). A question a
 current repository source answers gets `resolved` (a `summary` and, when an
 option fits, its `optionId`) with that source in `evidence`; the screen lists it
 under resolved questions, and the user can still answer it. When sources settle
@@ -175,4 +176,5 @@ When a question is answered twice, the latest answer counts.
 
 Answers persist in `<run>/ask/answers.jsonl`; reopening the session shows them.
 When the session ends, unanswered questions remain questions of the report and
-their candidates are not saved. Then continue with section 5 in the conversation.
+their candidates are not saved. Then continue with
+[confirmed save](save.md) in the conversation.

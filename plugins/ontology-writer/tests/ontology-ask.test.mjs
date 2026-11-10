@@ -200,13 +200,14 @@ test("questions carry diagrams, evidence and resolved answers, and bad diagram s
 
 test("ontology-build opens the web session for its questions and keeps approval in the conversation", async () => {
   const { readFileSync } = await import("node:fs");
+  const { workflowText } = await import("./ontology-guidance-helpers.mjs");
   const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
   assert.match(read("skills/ontology-build/SKILL.md"), /references\/ask-session\.md/);
   const guide = read("skills/ontology-build/references/ask-session.md");
   assert.match(guide, /approval summary\s+and the save approval stay in the conversation/);
   assert.match(guide, /ontology-ask\.mjs wait <run>/);
   assert.match(
-    read("skills/ontology-build/SKILL.md"),
+    workflowText("ontology-build"),
     /Code alone shows observed behavior and never\s+resolves a question/,
   );
 });
