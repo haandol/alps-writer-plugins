@@ -26,6 +26,22 @@ folders are evidence, not the definition of the business domain or its boundarie
 - Keep views as read-only projections of the same business knowledge. A different
   visual form or drill-down level must not redefine boundaries or invent links.
 
+## Retrieve business context during development
+
+- Start at the smallest known scope. For unlocated work, read the lightweight BC
+  overview and search within the relevant BC; query a known process or step
+  directly. The hierarchy is a way to narrow work, not a required tour of every
+  layer. Follow [the retrieval guide](references/knowledge-layers.md#retrieve-at-the-needed-resolution).
+- Expand through recorded hand-offs, rules, shared concepts or unresolved scope
+  only when they matter to the change. Search pages locate work; relevant detail
+  and the realizing ADR supply the meaning and exact implementation contract.
+- Stop expanding once the change's business question and relevant boundaries
+  are understood. Preserve unresolved conditions and diagnostics; do not infer
+  missing rules from an empty search or truncate away necessary connections.
+- Reuse checked context within the same work while its sources remain current.
+  Refresh affected queries when relevant model facts, links, ADR contracts or
+  Status, or task scope change. Keep results temporary and continue from ADRs.
+
 The authoritative vocabulary and ownership rules are in
 [`references/ontology.md`](references/ontology.md). Construction follows
 [`references/eventstorming.md`](references/eventstorming.md); completeness and

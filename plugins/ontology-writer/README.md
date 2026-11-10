@@ -67,6 +67,14 @@ their responsibilities, authored core business logic and declared collaborations
 The heavier layer holds each BC's internal workflows, connected by context
 membership. Exact implementation contracts remain in ADRs.
 
+Development starts at the smallest known scope. Use the BC overview and scoped
+search to locate unfamiliar work; query a known step or process directly. Expand
+only for relevant hand-offs, shared rules or unresolved questions, then read the
+owning ADR contract and code. Reuse checked context while its source assumptions
+hold. The [retrieval guide](./references/knowledge-layers.md#retrieve-at-the-needed-resolution)
+explains entry points, paging, stopping and refresh conditions; this limits what
+the LLM reads, while the CLI still parses the model for its graph and checks.
+
 ```bash
 bun scripts/ontology.mjs query --overview
 bun scripts/ontology.mjs query --context ordering --search payment

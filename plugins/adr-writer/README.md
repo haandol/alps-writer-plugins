@@ -280,6 +280,13 @@ This plugin never reads the model: `adr-structure-lint` checks only the shape of
 business-context checks of ADR work run through ontology-writer's query. Without
 model documents nothing changes.
 
+For development, use the smallest known business scope: unfamiliar work starts
+with the BC overview and scoped search; known steps/processes go directly to
+detail, and feature-wide work can use the category query. Expand for relevant
+dependencies, then read the owning ADR contracts. The
+[business-context guide](./references/business-context.md#retrieve-only-the-context-needed-for-the-change)
+keeps retrieval selective without replacing required ADR reads or review coverage.
+
 ## Hook
 
 One hook supports the main session — **no external LLM calls**; the main model classifies text and decides.

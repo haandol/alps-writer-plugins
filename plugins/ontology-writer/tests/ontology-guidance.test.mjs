@@ -43,7 +43,7 @@ test("the session directive asks for the business context only when the index an
     const ctx = runHook(dir);
     assert.match(
       ctx,
-      /before creating or changing an ADR decision or contract, first check the feature's business context \(bun "\S+ontology\.mjs" query --category <key>\)/,
+      /before creating or changing an ADR decision or contract, first check the feature's business context \(bun "\S+ontology\.mjs" query --step <id>\)/,
     );
     assert.match(
       ctx,
