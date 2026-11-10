@@ -45,10 +45,11 @@
     bottom: Math.max(...points.map((p) => p[1])),
   });
 
-  /** A read-only scene; render is lazy and performs no timer, fetch or storage work. */
-  window.createOntologyCity = (canvas, labels) => {
+  /** Static structure and a separate, cancellable overlay for recorded event flow. */
+  window.createOntologyCity = (canvas, labels, flowCanvas, onMotion = () => {}) => {
     const g = canvas.getContext?.("2d");
     if (!g) return null;
+    const flow = flowCanvas?.getContext?.("2d");
     let active = false,
       scene = null,
       hover = null,
@@ -64,7 +65,19 @@
       regions = [],
       ancestors = [],
       places = [],
-      occupiedLabels = [];
+      occupiedLabels = [],
+      flowPaths = [],
+      ports = [],
+      textMasks = [];
+    let motionEnabled = false,
+      pauseReason = "paused",
+      inView = true,
+      pendingFrame = 0,
+      lastTick = null,
+      elapsed = 0,
+      flowFrames = 0,
+      samples = [],
+      lastMotion = "";
     let project = () => null,
       eye = [0, 0, 0],
       width = 0,
@@ -300,41 +313,253 @@
       }
     }
     function drawConnections(items, chosen) {
-      const byId = new Map(items.map((n) => [n.id, n]));
+      const byId = new Map(items.map((node) => [node.id, node]));
+      const groups = new Map();
+      flowPaths = [];
+      ports = [];
       renderedRelations = [];
       if (!showLinks) return;
-      for (const [index, edge] of scene.relations.entries()) {
-        if (
-          edge.kind !== "collaboration" ||
-          !chosen ||
-          (edge.from !== chosen && edge.to !== chosen)
-        )
-          continue;
-        const a = byId.get(edge.from),
-          b = byId.get(edge.to);
-        if (!a || !b) continue;
+      const touches = (edge) => byId.has(edge.from) || byId.has(edge.to);
+      const add = (edge, index) => {
+        const key = JSON.stringify([edge.kind, edge.from, edge.to]);
+        if (!groups.has(key)) groups.set(key, { ...edge, indexes: [] });
+        groups.get(key).indexes.push(index);
+      };
+      scene.relations.forEach((edge, index) => {
+        if (edge.kind === "reaction" && touches(edge)) add(edge, index);
+      });
+      scene.relations.forEach((edge, index) => {
+        if (edge.kind !== "collaboration" || !touches(edge)) return;
+        const related = [...groups.values()].find(
+          (route) =>
+            (route.from === edge.from && route.to === edge.to) ||
+            (route.from === edge.to && route.to === edge.from),
+        );
+        // The collaboration remains in the evidence; its line need not duplicate
+        // a recorded directed route between the same two business boundaries.
+        if (related) related.indexes.push(index);
+        else add(edge, index);
+      });
+      const outside = new Map();
+      for (const route of groups.values())
+        for (const id of [route.from, route.to]) {
+          if (!byId.has(id) && !outside.has(id))
+            outside.set(id, { id, incoming: route.from === id });
+        }
+      const incoming = [...outside.values()]
+        .filter((port) => port.incoming)
+        .sort((a, b) => a.id.localeCompare(b.id));
+      const outgoing = [...outside.values()]
+        .filter((port) => !port.incoming)
+        .sort((a, b) => a.id.localeCompare(b.id));
+      for (const list of [incoming, outgoing])
+        list.forEach((port, i) => {
+          port.point = [
+            port.incoming ? 22 : width - 22,
+            100 + ((i + 0.5) * (height - 160)) / Math.max(1, list.length),
+          ];
+          port.number = `E${ports.length + 1}`;
+          ports.push(port);
+        });
+      const endpoint = (id) =>
+        byId.has(id)
+          ? project(byId.get(id).x, byId.get(id).h + 0.18, byId.get(id).z)
+          : outside.get(id)?.point;
+      for (const [ordinal, route] of [...groups.values()].entries()) {
+        const a = byId.get(route.from),
+          b = byId.get(route.to);
+        const first = endpoint(route.from),
+          last = endpoint(route.to);
+        if (!first || !last) continue;
         const points = [];
-        for (let i = 0; i <= 24; i++) {
-          const u = i / 24,
-            v = 1 - u,
-            lift = Math.max(a.h, b.h) + 0.7 + Math.hypot(b.x - a.x, b.z - a.z) * 0.12;
-          const point = project(
-            a.x * v + b.x * u,
-            v * v * (a.h + 0.18) + 2 * v * u * lift + u * u * (b.h + 0.18),
-            a.z * v + b.z * u,
-          );
-          if (point) points.push(point);
+        for (let i = 0; i <= 48; i++) {
+          const u = i / 48,
+            v = 1 - u;
+          if (a && b) {
+            const lift =
+              Math.max(a.h, b.h) +
+              1.0 +
+              Math.hypot(b.x - a.x, b.z - a.z) * 0.15 +
+              (ordinal % 3) * 0.2;
+            const point = project(
+              a.x * v + b.x * u,
+              v * v * (a.h + 0.18) + 2 * v * u * lift + u * u * (b.h + 0.18),
+              a.z * v + b.z * u,
+            );
+            if (point) points.push(point.slice(0, 2));
+          } else {
+            points.push([
+              first[0] * v + last[0] * u,
+              first[1] * v + last[1] * u - Math.sin(u * Math.PI) * (38 + (ordinal % 3) * 12),
+            ]);
+          }
         }
         if (points.length < 2) continue;
+        const emphasized = !chosen || route.from === chosen || route.to === chosen;
+        const directed = route.kind === "reaction";
         g.beginPath();
-        g.moveTo(points[0][0], points[0][1]);
-        for (const p of points.slice(1)) g.lineTo(p[0], p[1]);
-        g.strokeStyle = "rgba(149,189,232,.72)";
-        g.lineWidth = 1.6;
+        g.moveTo(...points[0]);
+        for (const point of points.slice(1)) g.lineTo(...point);
+        g.strokeStyle = directed
+          ? `rgba(235,190,112,${emphasized ? 0.5 : 0.18})`
+          : `rgba(148,186,219,${emphasized ? 0.4 : 0.14})`;
+        g.lineWidth = emphasized ? 1.4 : 1;
         g.stroke();
-        renderedRelations.push(index);
+        if (directed) {
+          const destination = points.at(-1),
+            prev = points.at(-3),
+            angle = Math.atan2(destination[1] - prev[1], destination[0] - prev[0]),
+            // Stop the arrow outside the numbered endpoint instead of hiding it below the marker.
+            end = [destination[0] - 15 * Math.cos(angle), destination[1] - 15 * Math.sin(angle)];
+          path([
+            end,
+            [end[0] - 9 * Math.cos(angle - 0.45), end[1] - 9 * Math.sin(angle - 0.45)],
+            [end[0] - 9 * Math.cos(angle + 0.45), end[1] - 9 * Math.sin(angle + 0.45)],
+          ]);
+          g.fillStyle = emphasized ? "#f8d99a" : "#b59b70";
+          g.fill();
+        }
+        const visible = points.some(([x, y]) => x >= 0 && x <= width && y >= 0 && y <= height);
+        flowPaths.push({ ...route, points, emphasized, visible, directed });
+        renderedRelations.push(...route.indexes);
       }
     }
+    function drawPorts() {
+      for (const port of ports) {
+        const [x, y] = port.point,
+          info = scene.endpoints[port.id];
+        g.beginPath();
+        g.arc(x, y, 11, 0, Math.PI * 2);
+        g.fillStyle = "#173952";
+        g.fill();
+        g.strokeStyle = "#82cbd5";
+        g.lineWidth = 1.2;
+        g.stroke();
+        g.font = "600 9px system-ui";
+        g.textAlign = "center";
+        g.fillStyle = "#e6f7f6";
+        g.fillText(port.number, x, y + 3);
+        textMasks.push({ x: x - 12, y: y - 12, w: 24, h: 24 });
+        caption(
+          info?.name ?? port.id,
+          port.incoming ? 40 : width - 170,
+          y - 24,
+          Math.min(155, width * 0.43),
+          [130, 203, 213],
+          {
+            align: "left",
+            avoid: true,
+            anchor: port.point,
+            note: info?.inScope
+              ? scene.structure.language === "ko"
+                ? "다른 페이지"
+                : "Another page"
+              : scene.structure.language === "ko"
+                ? "이 범위 밖의 업무"
+                : "Work outside this scope",
+          },
+        );
+      }
+    }
+    const pointAt = (route, fraction) => {
+      const n = fraction * (route.points.length - 1),
+        i = Math.min(route.points.length - 2, Math.floor(n));
+      return route.points[i].map(
+        (value, axis) => value + (route.points[i + 1][axis] - value) * (n - i),
+      );
+    };
+    function motionReason() {
+      if (!active) return "inactive";
+      if (document.hidden) return "hidden";
+      if (!inView) return "outside";
+      if (!showLinks) return "links-hidden";
+      if (!flow) return "unavailable";
+      if (!motionEnabled) return pauseReason;
+      if (!flowPaths.some((route) => route.directed && route.visible)) return "no-flow";
+      return "playing";
+    }
+    function clearFlow() {
+      if (flow && !document.hidden) flow.clearRect(0, 0, width, height);
+      samples = [];
+    }
+    function paintFlow() {
+      if (!flow || document.hidden) return;
+      flow.clearRect(0, 0, width, height);
+      samples = [];
+      for (const [index, route] of flowPaths.entries()) {
+        if (!route.directed || !route.visible) continue;
+        for (let particle = 0; particle < 2; particle++) {
+          const fraction = (elapsed / 4800 + index * 0.173 + particle * 0.5) % 1;
+          for (let trail = 7; trail >= 0; trail--) {
+            const u = fraction - trail * 0.012;
+            if (u < 0) continue;
+            const point = pointAt(route, u);
+            if (
+              point[0] < 0 ||
+              point[0] > width ||
+              point[1] < 0 ||
+              point[1] > height ||
+              textMasks.some(
+                (box) =>
+                  point[0] >= box.x - 3 &&
+                  point[0] <= box.x + box.w + 3 &&
+                  point[1] >= box.y - 3 &&
+                  point[1] <= box.y + box.h + 3,
+              )
+            )
+              continue;
+            const alpha = (1 - trail / 8) * (route.emphasized ? 1 : 0.45);
+            flow.beginPath();
+            flow.arc(...point, trail ? 1.7 : 3.1, 0, Math.PI * 2);
+            flow.fillStyle = trail
+              ? `rgba(251,192,88,${alpha * 0.55})`
+              : `rgba(255,245,204,${alpha})`;
+            flow.shadowColor = "#ffd28a";
+            flow.shadowBlur = trail ? 0 : 8;
+            flow.fill();
+            if (!trail) samples.push({ from: route.from, to: route.to, fraction, position: point });
+          }
+        }
+      }
+      flow.shadowBlur = 0;
+    }
+    function tick(now) {
+      pendingFrame = 0;
+      if (motionReason() !== "playing") {
+        syncMotion();
+        return;
+      }
+      if (lastTick === null) lastTick = now;
+      if (now - lastTick >= 32) {
+        elapsed += Math.min(100, now - lastTick);
+        lastTick = now;
+        paintFlow();
+        flowFrames++;
+      }
+      pendingFrame = requestAnimationFrame(tick);
+    }
+    function syncMotion() {
+      const reason = motionReason();
+      if (reason === "playing") {
+        if (!pendingFrame) pendingFrame = requestAnimationFrame(tick);
+      } else {
+        if (pendingFrame) cancelAnimationFrame(pendingFrame);
+        pendingFrame = 0;
+        lastTick = null;
+        clearFlow();
+      }
+      const count = flowPaths.filter((route) => route.directed && route.visible).length;
+      const key = `${reason}|${count}`;
+      if (key !== lastMotion) {
+        lastMotion = key;
+        onMotion({ reason, count });
+      }
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      inView = entry.isIntersecting;
+      syncMotion();
+    });
+    observer.observe(canvas);
     function lines(text, maxWidth, limit = 2) {
       const words = String(text).split(/\s+/),
         result = [];
@@ -405,10 +630,14 @@
         g.fillText(note, box.x + 9, box.y + h - 8, w - 18);
       }
       occupiedLabels.push(box);
+      textMasks.push(box);
       return box;
     }
     function drawRegionNames(items) {
       occupiedLabels = [{ x: 0, y: 0, w: width, h: 70 }];
+      textMasks = [...occupiedLabels];
+      for (const port of ports)
+        occupiedLabels.push({ x: port.point[0] - 14, y: port.point[1] - 14, w: 28, h: 28 });
       // Territory names must not cover building markers, even on a narrow map.
       for (const item of items) {
         const points = cubePoints(item.box)
@@ -505,6 +734,7 @@
       const plan = districts(scene.structure.landscape);
       const box = { x: 12, y: height - 105, w: 154, h: 93 };
       occupiedLabels.push(box);
+      textMasks.push(box);
       g.fillStyle = "rgba(8,22,37,.9)";
       g.fillRect(box.x, box.y, box.w, box.h);
       g.font = "10px system-ui";
@@ -577,6 +807,7 @@
           g.textAlign = "center";
           g.fillStyle = important ? "#173c31" : "#eef5f8";
           g.fillText(String(item.number), roof[0], roof[1] + 3.5);
+          textMasks.push({ x: roof[0] - 13, y: roof[1] - 13, w: 26, h: 26 });
         }
         g.font = "600 12px system-ui";
         const w = Math.min(205, (width - 24) / 2),
@@ -640,12 +871,22 @@
       width = canvas.clientWidth;
       height = canvas.clientHeight;
       if (!width || !height) return;
+      const rect = canvas.getBoundingClientRect();
+      inView =
+        rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
         canvas.width = Math.round(width * dpr);
         canvas.height = Math.round(height * dpr);
       }
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (flow) {
+        if (flowCanvas.width !== canvas.width || flowCanvas.height !== canvas.height) {
+          flowCanvas.width = canvas.width;
+          flowCanvas.height = canvas.height;
+        }
+        flow.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
       hits = [];
       faces = [];
       const gradient = g.createLinearGradient(0, 0, 0, height);
@@ -712,11 +953,9 @@
       const focusSet = chosen
         ? new Set([
             chosen,
-            ...scene.relations
-              .filter((edge) => edge.kind === "collaboration")
-              .flatMap((edge) =>
-                edge.from === chosen ? [edge.to] : edge.to === chosen ? [edge.from] : [],
-              ),
+            ...scene.relations.flatMap((edge) =>
+              edge.from === chosen ? [edge.to] : edge.to === chosen ? [edge.from] : [],
+            ),
           ])
         : null;
       drawGround();
@@ -729,6 +968,9 @@
       drawRegionNames(items);
       drawLocator();
       drawLabels(items, chosen);
+      drawPorts();
+      if (motionReason() === "playing") paintFlow();
+      syncMotion();
       frames++;
     }
     return {
@@ -742,6 +984,12 @@
       setActive(value) {
         active = value;
         if (value) draw();
+        else syncMotion();
+      },
+      motion({ enabled, reason = "paused" }) {
+        motionEnabled = enabled;
+        pauseReason = reason;
+        syncMotion();
       },
       hover(id) {
         if (hover !== id) {
@@ -775,6 +1023,22 @@
         labelIds: [...labelIds],
         drawn: structuredClone(projected),
         relations: [...renderedRelations],
+        routes: flowPaths.map(({ from, to, kind, indexes, directed, visible }) => ({
+          from,
+          to,
+          kind,
+          indexes,
+          directed,
+          visible,
+        })),
+        ports: ports.map(({ id, point, number }) => ({ id, point: [...point], number })),
+        flow: {
+          reason: motionReason(),
+          running: Boolean(pendingFrame),
+          frames: flowFrames,
+          elapsed,
+          samples: structuredClone(samples),
+        },
         frames,
         active,
         labels: labelMode,

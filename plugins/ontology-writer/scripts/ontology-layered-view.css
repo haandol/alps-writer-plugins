@@ -499,12 +499,26 @@ code {
   border-top-color: #7da0b3;
 }
 /* The city and event board share semantic buttons; only their projection changes. */
-#layer-city {
+#layer-city,
+#layer-flow {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: auto;
+}
+#layer-flow {
+  pointer-events: none;
+}
+.city-flow-legend {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+#city-motion-status {
+  color: #557966;
+  font-size: 11px;
 }
 .city-options {
   display: flex;
@@ -636,7 +650,8 @@ body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-world {
   transform-style: flat;
   transform-origin: center;
 }
-body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-city {
+body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-city,
+body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-flow {
   width: calc(100% - var(--city-list-width));
 }
 body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-connections {
@@ -791,7 +806,8 @@ body[data-view="structure"] #layer-relations {
   body[data-view="structure"] #layer-viewport[data-city="ready"] {
     height: 860px;
   }
-  body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-city {
+  body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-city,
+  body[data-view="structure"] #layer-viewport[data-city="ready"] #layer-flow {
     width: 100%;
     height: 450px;
   }
@@ -1326,6 +1342,7 @@ body[data-view="structure"] #layer-relations {
 
 @media print {
   #layer-city,
+  #layer-flow,
   .city-options,
   .city-hud,
   .city-tooltip,

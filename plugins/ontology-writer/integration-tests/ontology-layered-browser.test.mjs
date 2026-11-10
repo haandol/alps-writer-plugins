@@ -16,7 +16,7 @@ import {
 import { commitAll, git, initRepo, write } from "../tests/helpers.mjs";
 import { launch, offline } from "./view-pages.mjs";
 
-let dir, browser, url, largeUrl, snapshot;
+let dir, browser, url, largeUrl, collaborationUrl, snapshot;
 const issues = [],
   requests = [];
 const addedProcesses =
@@ -51,6 +51,12 @@ before(async () => {
   write(dir, "large-draft/business.ttl", BUSINESS);
   write(dir, "large-draft/extra.ttl", addedProcesses);
   largeUrl = view(["--draft", "large-draft", "--board", "board.json"]);
+  write(
+    dir,
+    "collaboration-draft/business.ttl",
+    BUSINESS.replace(/ ; onto:triggers m:[\w.-]+/g, ""),
+  );
+  collaborationUrl = view(["--draft", "collaboration-draft"]);
   snapshot = git(dir, ["status", "--porcelain"]);
   browser = await launch();
 });
@@ -523,6 +529,23 @@ test("legacy whole and direct BC/process/ADR addresses use the common hierarchy 
 });
 
 const cityState = (page) => page.evaluate(() => window.ontologyLayered.city());
+const movingFlow = (page) =>
+  page.waitForFunction(() => {
+    const flow = window.ontologyLayered.city()?.flow;
+    return flow?.reason === "playing" && flow.frames > 2 && flow.samples.length > 0;
+  });
+const flowPixels = (page) =>
+  page.$eval("#layer-flow", (canvas) => {
+    const pixels = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+    let hash = 0,
+      count = 0;
+    for (let i = 3; i < pixels.length; i += 4)
+      if (pixels[i]) {
+        count++;
+        hash = (hash + pixels[i] * (i + 1)) % 1000000007;
+      }
+    return { count, hash };
+  });
 async function clickRoof(page, id) {
   await page.$eval("#layer-viewport", (node) => node.scrollIntoView({ block: "center" }));
   await page.waitForFunction(() =>
@@ -797,16 +820,23 @@ test("structural districts retain sourced membership, shared participation and a
     assert.deepEqual(studio.domains, ["delivery", "visual"]);
     assert.equal(studio.kind, "shared-domains");
     assert.equal(city.drawn.filter((node) => node.id === "studio").length, 1);
-    assert.deepEqual(
-      city.relations,
-      [],
-      "the overview is a responsibility map without an always-on web of event lines",
-    );
+    assert.ok(city.relations.length > 0, "recorded connections are visible without hovering");
+    const beforeHover = [...city.relations];
     await page.hover('[data-layer-node="studio"]');
     city = await cityState(page);
     const modelLinks = await page.evaluate(() => window.ontologyLayered.relations());
     assert.ok(city.relations.length > 0);
-    assert.ok(city.relations.every((index) => modelLinks[index].kind === "collaboration"));
+    assert.deepEqual(
+      city.relations,
+      beforeHover,
+      "hover emphasizes instead of hiding other connections",
+    );
+    assert.ok(
+      city.routes.every(
+        (route) =>
+          !route.directed || route.indexes.some((index) => modelLinks[index].kind === "reaction"),
+      ),
+    );
     await pick(page, "studio");
     city = await cityState(page);
     assert.equal(city.locator, "studio");
@@ -820,10 +850,10 @@ test("structural districts retain sourced membership, shared participation and a
         (edge) => edge.kind === "reaction",
       ),
     );
-    assert.deepEqual(
-      city.relations,
-      [],
-      "event reactions remain in the workflow rather than becoming structural roads",
+    assert.ok(city.routes.some((route) => route.directed));
+    assert.ok(
+      city.ports.some((port) => port.id === "billing.collect"),
+      "an external endpoint retains its business identity",
     );
     const parent = city.ancestors.find((ancestor) => ancestor.id === "studio");
     for (const place of city.places) {
@@ -892,3 +922,131 @@ test("the city list preserves full names when map labels hide and scrolling the 
     },
     { at: largeUrl },
   ));
+
+test("recorded direction flows automatically on a separate canvas without re-laying out the business map", async () =>
+  withPage(async (page) => {
+    await changeView(page, "structure");
+    await page.$eval("#layer-viewport", (node) => node.scrollIntoView({ block: "center" }));
+    await page.mouse.move(5, 80);
+    await movingFlow(page);
+    const first = await cityState(page),
+      pixels = await flowPixels(page);
+    assert.deepEqual(
+      first.routes
+        .filter((route) => route.directed)
+        .map((route) => [route.from, route.to])
+        .sort(),
+      [
+        ["billing", "studio"],
+        ["studio", "billing"],
+      ],
+    );
+    assert.ok(pixels.count > 0, "moving light is actually painted");
+    await page.waitForFunction(
+      (elapsed) => window.ontologyLayered.city().flow.elapsed >= elapsed + 180,
+      {},
+      first.flow.elapsed,
+    );
+    const second = await cityState(page);
+    assert.notEqual((await flowPixels(page)).hash, pixels.hash);
+    assert.equal(
+      second.frames,
+      first.frames,
+      "animation does not rebuild the static city or labels",
+    );
+    assert.notDeepEqual(second.flow.samples, first.flow.samples);
+    const before = await state(page);
+    await page.hover('[data-layer-node="studio"]');
+    assert.deepEqual((await cityState(page)).relations, first.relations);
+    assert.equal((await state(page)).context, before.context);
+  }));
+
+test("flow controls stop scheduled drawing while retaining direction and resume on the current scope", async () =>
+  withPage(async (page) => {
+    await changeView(page, "structure");
+    await page.$eval("#layer-viewport", (node) => node.scrollIntoView({ block: "center" }));
+    await movingFlow(page);
+    const routes = (await cityState(page)).routes;
+    await page.click("#motion-toggle");
+    const paused = await cityState(page);
+    assert.equal(paused.flow.reason, "paused");
+    assert.equal(paused.flow.running, false);
+    assert.deepEqual(paused.routes, routes);
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    assert.equal((await cityState(page)).flow.frames, paused.flow.frames);
+    assert.equal((await flowPixels(page)).count, 0);
+    await page.click("#motion-toggle");
+    await movingFlow(page);
+    await page.click("#city-links");
+    assert.equal((await cityState(page)).flow.reason, "links-hidden");
+    assert.equal((await cityState(page)).flow.running, false);
+    await page.click("#city-links");
+    await movingFlow(page);
+    await changeView(page, "events");
+    assert.equal((await cityState(page)).flow.running, false);
+    await changeView(page, "structure");
+    await movingFlow(page);
+    await pick(page, "studio");
+    await pick(page, "studio.image");
+    assert.equal(
+      (await cityState(page)).flow.reason,
+      "no-flow",
+      "ADR realization is not fabricated as data transmission",
+    );
+    assert.equal((await cityState(page)).flow.running, false);
+  }));
+
+test("reduced motion leaves arrows visible, and an undirected-only model never invents flowing data", async () => {
+  await withPage(
+    async (page) => {
+      assert.equal((await cityState(page)).flow.reason, "reduced");
+      assert.ok((await cityState(page)).routes.some((route) => route.directed));
+      assert.equal((await cityState(page)).flow.running, false);
+      assert.equal((await flowPixels(page)).count, 0);
+    },
+    { at: url + "#view=structure", reduced: true },
+  );
+  await withPage(
+    async (page) => {
+      assert.ok((await cityState(page)).routes.length > 0);
+      assert.ok((await cityState(page)).routes.every((route) => !route.directed));
+      assert.equal((await cityState(page)).flow.reason, "no-flow");
+      assert.equal((await cityState(page)).flow.running, false);
+    },
+    { at: collaborationUrl + "#view=structure" },
+  );
+});
+
+test("a hidden document and an offscreen map suspend flow animation without changing business navigation", async () =>
+  withPage(async (page) => {
+    await changeView(page, "structure");
+    await page.$eval("#layer-viewport", (node) => node.scrollIntoView({ block: "center" }));
+    await movingFlow(page);
+    const other = await browser.newPage();
+    try {
+      await other.bringToFront();
+      await page.waitForFunction(
+        () => document.hidden && window.ontologyLayered.city().flow.reason === "hidden",
+      );
+      const stopped = (await cityState(page)).flow.frames;
+      await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 100)));
+      assert.equal((await cityState(page)).flow.frames, stopped);
+      assert.equal((await cityState(page)).flow.running, false);
+    } finally {
+      await other.close();
+      await page.bringToFront();
+    }
+    await movingFlow(page);
+    const before = await state(page);
+    await page.evaluate(() => {
+      const spacer = document.createElement("div");
+      spacer.style.height = "200vh";
+      document.body.append(spacer);
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+    await page.waitForFunction(() => window.ontologyLayered.city().flow.reason === "outside");
+    assert.equal((await cityState(page)).flow.running, false);
+    assert.equal((await state(page)).level, before.level);
+    await page.$eval("#layer-viewport", (node) => node.scrollIntoView({ block: "center" }));
+    await movingFlow(page);
+  }));

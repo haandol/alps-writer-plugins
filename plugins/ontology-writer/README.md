@@ -41,8 +41,12 @@ boundaries and location in the whole. Internal regions distinguish participation
 shared across BCs and ADRs associated with multiple processes. Search and paging
 retain spatial addresses; only current results receive buildings. Read full names
 and descriptions in the adjacent list, or point to a building or list item to
-locate it. Focus reveals recorded BC collaborations; event order stays in the
-workflow. Height and distance are not workload or execution measurements.
+locate it. Recorded connections remain visible without hovering. Arrows and
+moving light follow recorded event hand-offs from source to destination, including
+named endpoints outside the current page or scope. Hover emphasizes related
+connections; undirected collaboration keeps a plain line. The motion illustrates
+business direction, not live traffic, and respects pause, reduced motion and
+hidden/offscreen views. Height and distance are not workload or execution measurements.
 Append `#view=structure` to a generated file address to enter the city directly.
 
 ![Business processes inside a BC](../../docs/images/ontology-bc-search.webp)

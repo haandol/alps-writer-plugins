@@ -578,13 +578,32 @@
 
   function layerRelations() {
     if (state.searchScope === "knowledge") return [];
-    if (state.level === "contexts")
-      return data.collaborations.map(([from, to]) => ({
+    if (state.level === "contexts") {
+      const edges = data.collaborations.map(([from, to]) => ({
         from,
         to,
         kind: "collaboration",
         label: t("기록된 협업", "Recorded collaboration"),
       }));
+      const seen = new Set();
+      for (const edge of data.reactions) {
+        const source = data.businessSteps[edge.sourceStep]?.contexts ?? [];
+        const target = data.businessSteps[edge.targetStep]?.contexts ?? [];
+        // A shared/unknown step never supplies an invented primary BC or direction.
+        if (source.length !== 1 || target.length !== 1 || source[0] === target[0]) continue;
+        const key = JSON.stringify([source[0], target[0], edge.event, edge.policy]);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        edges.push({
+          ...edge,
+          from: source[0],
+          to: target[0],
+          kind: "reaction",
+          label: nameOf(edge.event),
+        });
+      }
+      return edges;
+    }
     if (state.level === "containers") {
       const members = new Set(
         (state.context === "unassigned"
@@ -691,11 +710,17 @@
     const c = state.camera;
     if (mode === "structure" && !cityAttempted) {
       cityAttempted = true;
-      city = window.createOntologyCity($("layer-city"), $("layer-nodes"));
+      city = window.createOntologyCity(
+        $("layer-city"),
+        $("layer-nodes"),
+        $("layer-flow"),
+        cityMotion,
+      );
       $("layer-viewport").dataset.city = city ? "ready" : "unavailable";
     }
     const spatial = mode === "structure" && city;
     $("layer-city").hidden = !spatial;
+    $("layer-flow").hidden = !spatial;
     $("city-hud").hidden = !spatial;
     $("city-unavailable").hidden = mode !== "structure" || Boolean(city);
     $("city-options").hidden = !spatial;
@@ -714,6 +739,17 @@
         flatWidth: flatSize.width,
         cameraWidth: $("layer-viewport").clientWidth,
         structure: cityScope,
+        endpoints: Object.fromEntries(
+          relations
+            .flatMap((edge) => [edge.from, edge.to])
+            .map((id) => [
+              id,
+              {
+                name: nameOf(id),
+                inScope: cityScope.groups.some((group) => group.ids.includes(id)),
+              },
+            ]),
+        ),
       });
       $("city-list-title").textContent =
         `${titles[levels.indexOf(state.level)]} · ${currentNodes.length}`;
@@ -727,8 +763,8 @@
     $("camera-scale").textContent = `${Math.round(c.zoom * 100)}%`;
     $("camera-hint").textContent = spatial
       ? t(
-          "구역은 기록된 소속·참여 범위 · 번호는 옆 목록과 연결 · 공유 영역은 단독 소유가 아닙니다. 사건의 순서는 업무 흐름에서 확인합니다.",
-          "Regions show recorded membership and participation · numbers locate list items · shared areas do not imply exclusive ownership. Read event order in the workflow.",
+          "구역은 기록된 소속·참여 범위 · 번호는 옆 목록과 연결 · 공유 영역은 단독 소유가 아닙니다. 자세한 사건·조건은 업무 흐름에서 확인합니다.",
+          "Regions show recorded membership and participation · numbers locate list items · shared areas do not imply exclusive ownership. Read event and condition details in the workflow.",
         )
       : t(
           "드래그로 이동 · +/−로 확대 · 배치는 순서나 중요도를 뜻하지 않습니다.",
@@ -740,6 +776,29 @@
     if (!city || mode !== "structure") return;
     $("city-visibility").textContent =
       `${t("지도 이름", "Map names")} ${city.snapshot().labelIds.length}/${currentNodes.length} · ${t("전체 이름은 옆 목록에서 확인", "Every name is available in the list")}`;
+  }
+
+  function cityMotion({ reason, count }) {
+    const states = {
+      playing: t("흐름 재생 중", "Flow playing"),
+      paused: t("흐름 일시 정지", "Flow paused"),
+      reduced: t("동작 줄이기 · 화살표로 방향 표시", "Reduced motion · arrows retain direction"),
+      hidden: t("화면 숨김 · 흐름 정지", "Hidden · flow stopped"),
+      outside: t("지도 화면 밖 · 흐름 정지", "Map outside view · flow stopped"),
+      inactive: t("3D 보기 닫힘", "3D view inactive"),
+      "links-hidden": t("연결 표시 꺼짐", "Connections hidden"),
+      "no-flow": t(
+        "현재 범위에 방향이 기록된 연결 없음",
+        "No recorded directional connection in this scope",
+      ),
+      unavailable: t(
+        "흐름 효과 표시 불가 · 화살표로 방향 표시",
+        "Flow effect unavailable · arrows retain direction",
+      ),
+    };
+    $("city-motion-status").textContent =
+      `${states[reason]}${count ? ` · ${count} ${t("경로", "routes")}` : ""}`;
+    $("city-motion-status").dataset.motion = reason;
   }
 
   function cityHint(id) {
@@ -855,8 +914,12 @@
     $("motion-toggle").textContent = reduced.matches
       ? t("동작 줄이기", "Reduced motion")
       : effects
-        ? t("전환 효과 켜짐", "Transitions on")
-        : t("전환 효과 꺼짐", "Transitions off");
+        ? t("움직임 켜짐", "Motion on")
+        : t("움직임 꺼짐", "Motion off");
+    city?.motion({
+      enabled: effects && !reduced.matches,
+      reason: reduced.matches ? "reduced" : "paused",
+    });
   }
   function render({ animate = false } = {}) {
     transition?.cancel();
