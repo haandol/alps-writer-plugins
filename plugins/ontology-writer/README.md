@@ -24,20 +24,27 @@ directive asks the agent to query the business context first.
 
 ## The saved view
 
-`/ontology-view` writes one read-only HTML file and opens it. Start from the
-bounded contexts (BCs), search inside one, and open any element with its facts,
-relations and realizing ADRs:
+`/ontology-view` writes one read-only HTML file and opens it. Explore the same
+three layers in **EventStorming** or **3D business structure**:
 
-![Search inside a BC](../../docs/images/ontology-bc-search.webp)
+1. Domain and bounded context (BC): responsibilities, language and collaborations.
+2. Business process: its starting condition, activities and outcome.
+3. Realizing functional ADR: the decision, Status and original contract.
 
-![Step detail](../../docs/images/ontology-step-detail.webp)
+The processes come from the business model. A functional ADR may support multiple
+processes; category-level realization links are labeled with that precision.
+The two representations keep the same scope, search, page and selection.
 
-"Whole flow & structure" shows every domain event across contexts, and the
-business structure as a 3D city with each process's implementation status:
+![Business processes inside a BC](../../docs/images/ontology-bc-search.webp)
 
-![Event flow](../../docs/images/ontology-event-flow.webp)
+![Business facts and relations](../../docs/images/ontology-step-detail.webp)
 
-![Business structure](../../docs/images/ontology-business-structure.webp)
+Open a selected process's event flow for its conditions, rules, branching and
+external hand-offs. ADR inspection is the final abstraction layer.
+
+![Scoped event flow](../../docs/images/ontology-event-flow.webp)
+
+![The same business layer in 3D](../../docs/images/ontology-business-structure.webp)
 
 Screenshots come from the [template model](./templates/ontology/example.ttl);
 `bun run docs:screenshots` regenerates them.
@@ -135,7 +142,7 @@ Install [`adr-writer`](../adr-writer) as well when the repository has ADRs. A mo
 | `/ontology-sync [process]`    | Review completeness/readiness without mutation when requested, or reconcile direct Turtle edits and propose downstream changes                                                                                                                                                                    |
 | `/ontology-align [process]`   | Make a process current only when its realizing features are implemented, compliance contracts are in place, nothing contradicts the model and every observation criterion passed by executing the features' real entry points                                                                     |
 | `/ontology-build [documents]` | Capture workflows through an evidence-based event map, identify contexts/subdomains, then propose model facts with sources; save only confirmed scope                                                                                                                                             |
-| `/ontology-view`              | Start with authored BC knowledge, search its internal work and inspect details/ADRs; open the whole event flow and 3D structure explicitly                                                                                                                                                        |
+| `/ontology-view`              | Explore domain/BC → business process → realizing ADR in EventStorming or 3D, with shared navigation and scoped business evidence                                                                                                                                                                  |
 
 ## Completeness and the next workflow
 
@@ -156,29 +163,36 @@ including unknown scope. Use `/ontology-build` for additional information,
 `/ontology-edit` for a requested change, the reconciliation path of
 `/ontology-sync` for direct edits, and `/ontology-align` for execution evidence.
 The read-only review is an agent workflow using existing commands, not a new
-CLI flag. The viewer opens on a 3D map of authored BC knowledge. Selecting a BC
-moves the camera into its expanding area and unfolds the current internal search
-page. Selecting an element zooms to its facts, process flow and realizing ADRs;
-returning restores the prior camera, search and page. Boundary links lead to their
-actual BCs, and shared work remains identified as shared. Move, rotate, zoom and
-reset the spatial view, or switch to the equivalent list view. Transitions can be
+CLI flag. The viewer starts at the domain/BC layer. Selecting a BC reveals its
+actual business processes; selecting a process reveals the functional ADRs that
+realize its activities. This guides business responsibility boundaries through
+ADR contracts into code organization, without deriving the business structure
+from existing functional ADR categories or technical services.
+
+EventStorming and 3D business structure share all three layers and preserve search,
+paging, selection and return positions. Shared processes and ADRs retain identity;
+external participation and unrecorded memberships are explicit. Move and zoom in
+both views, rotate in 3D, and read details on a flat surface. Transitions can be
 disabled and honor reduced motion. Internal scenes and diagrams are built on demand.
+The existing `#all` address enters this common hierarchy. Reopening resets local
+navigation state; the browser writes no persistent state.
 
-The explicit whole-workflow entry opens the EventStorming canvas: domain events
-lead the story across contexts, with their producing actions, incoming policies
-and conditions. Related business rules and recorded open paths appear beside the
-flow, preserving their scope and evidence. Branches and returning links remain
-visible; position does not establish time or an unrecorded causal relation.
+The selected process's event board retains exact reactions, action order, rules
+and open paths, with direct external hand-offs. A linked activity opens the same
+model detail. Only indexed Markdown inside the real ADR root is included; missing
+or unsafe document paths and Status inconsistencies stay visible.
 
-The whole-workflow view has two tabs: Event flow and Business structure. Inside
-Event flow, switch between individual events and Business areas: sourced domain,
-subdomain and context groupings with cross-context hand-offs. Shared contexts
-appear once with explicit memberships; unknown membership stays separate.
-Business structure shows context districts, process towers, steps and hand-offs in 3D.
-The event inspector can open the same step
-in Business structure. Both views keep their navigation in the open page;
-reopening resets it. Read actual context ownership from the model details,
-not a process tower's physical placement.
+Preview a current draft and its supplied business evidence without adoption:
+
+```bash
+bun scripts/ontology.mjs view --draft <draft-directory> \
+  --mapping <draft-index.json> --board <business-board.json> --lang ko
+```
+
+Domain/subdomain memberships and classifications come only from that explicit
+business evidence, preserving identities and source verdicts. The model vocabulary
+is unchanged. Saved-model facts, unadopted candidates and unperformed reviews remain
+distinct; a view never saves the model, index or ADRs.
 
 The event flow places emitted events on a continuous trace with solid arrows;
 action-only stages remain labeled intermediate actions. Connection labels open

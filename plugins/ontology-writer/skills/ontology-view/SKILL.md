@@ -1,6 +1,6 @@
 ---
 name: ontology-view
-description: Open a read-only standalone HTML view of the business ontology — authored BC knowledge first, scoped internal search and detail, plus an explicitly opened EventStorming board with entity changes and evidence, workflow-readiness guidance, a 3D business city of the landscape, an explorer that finds every element and lists it by bounded context, the business landscape (bounded contexts, processes and the events and policies between them), each process flow, and element details with realization status computed from the ADR index — so the user can find what to change and then ask for it in natural language or edit the Turtle directly. Use when the user asks to see, browse or visualize docs/ontology. Keywords - "/ontology-view", "온톨로지 보기", "업무 흐름 시각화", "온톨로지 탐색", "3D", "ontology view".
+description: Open an offline, read-only business ontology explorer with the same three layers in EventStorming and 3D — domains/bounded contexts, actual business processes, and realizing functional ADRs. Preserve authored facts, shared responsibilities, source verdicts, realization precision and missing evidence; stop at the ADR contract. Use for ontology viewing, browsing, visualization and 3D navigation.
 argument-hint: "[--include-retired]"
 ---
 
@@ -10,17 +10,24 @@ This view is a navigation screen, not a review, evaluation or analysis report:
 the report-writing contract does not apply, only its delivery rules. The view
 never edits the model, the ADR index or ADRs, and it has no saving behavior.
 
-The initial 3D space contains authored BC knowledge only. Selecting a BC expands
-its area and moves the camera to the current internal search page; selecting an
-element moves closer and opens its flat detail. Upward navigation restores the
-prior camera and reading state. The list view exposes the same knowledge without
-spatial effects. Pan, rotation, zoom and reset stay page-local; transitions honor
-reduced motion, can be disabled and stop while hidden. Spatial height, area and
-placement never add business order, importance or ownership facts.
+The ontology guides actual business structure through functional ADR contracts
+into code organization. The viewer follows that direction: **domain/BC → business
+process → realizing functional ADR**. A process is the business container; existing
+ADR categories and source folders must not define or replace business units.
+Shared processes and ADRs keep one identity across their participating BCs.
+
+**EventStorming** and **3D business structure** are two projections of this same
+hierarchy. They share scope, search, page, selection and return path at every
+layer. Selecting a BC expands its area and reveals its actual processes;
+selecting a process reveals its realizing ADRs. Read business detail and ADR
+contracts on a flat surface. Navigation stops at the ADR, before source code.
+Pan, rotation, zoom and reset stay page-local; transitions honor reduced motion,
+can be disabled and stop while hidden. Spatial height, area and placement never
+add business order, importance or ownership facts.
 
 ```bash
 bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs view [--include-retired] [--lang en|ko] \
-  [--no-open | --browser <name>]
+  [--no-open | --browser <name>] [--draft DIR] [--mapping FILE] [--board FILE]
 ```
 
 - Use `--lang ko` when the user writes Korean; other languages use English labels.
@@ -32,7 +39,13 @@ bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs view [--include-retired] [--lang 
 - Report the absolute path the command prints and whether it opened. When
   opening fails, report the actual reason with the path.
 - Without model documents the command creates no view; say that the repository
-  has no business ontology.
+  has no business ontology. An explicit `--draft DIR` previews an unadopted model
+  without saving it. Use `--mapping FILE` for its proposed realization links.
+- `--board FILE` supplies validated disposable business evidence, including domain
+  memberships and entity/view candidates. Preserve its source verdicts; it does
+  not approve or save model facts. Never infer domains by matching ADR folders.
+- For a draft, distinguish its current contents from committed-model history.
+  Existing `#all`, BC and element addresses enter the common hierarchy.
 
 The view shows validation errors at their positions and marks the parts they
 affect as incomplete; it marks uncommitted model edits and unsynced direct edits
@@ -42,18 +55,18 @@ realized by features, and a system step without a realizing feature is marked
 unrealized. Realization is computed when the view is generated and is never
 stored.
 
-Beside the document, an explorer finds any element by name or identifier and
-lists every element under the bounded context it names, each process with its
-steps in flow order; elements that name no context are listed apart. A 3D
-business city shows each bounded context as a district and each process as a
-tower with one floor per step, from the bottom in flow order, lit by the step's
-realization; events and policies float beside the floors that emit them or that
-they start, with an arc for each trigger. A roof opens the process flow and a
-floor, orb or diamond opens the details. Everything the city shows is also in
-the lists, diagrams and details. Diagrams are drawn as they come near view; a
-large landscape diagram is drawn when the reader asks for it, while the city
-and the lists show the same facts. Its motion pauses on request and never starts
-when the reader prefers reduced motion.
+Search the current layer by name, identifier or business wording, or select
+**Business knowledge** to find internal facts with their process and BC scope.
+Every layer has finite pages. Unknown membership stays apart; shared work and
+other BCs' participation stay explicit. Return to the previous search, page and
+camera after inspection, including with keyboard and narrow-screen navigation.
+
+ADR associations follow existing `realizes` links. A category-level association
+does not establish that every ADR in that category directly implements each
+step. Show the actual precision, shared associations, missing documents and
+Status inconsistencies. Only indexed Markdown inside the real ADR root is read;
+symlink escapes and other file types are rejected. Render text inertly and do
+not offer a source-code explorer or execute document contents.
 
 The view must explain the business without requiring a memorized icon legend:
 show the performer and used object on each activity, its incoming event and
@@ -64,17 +77,14 @@ a generic Actor type. Missing conditions or transitions stay unrecorded or
 unverified. The context inspector should read as a business outline, with routes
 to upstream/downstream work and evidence.
 
-The saved model opens at the authored **BC knowledge layer**: names, responsibilities,
-core business logic and collaborations only. Select a BC to search and page its
-internal knowledge, inspect facts and process flows, and follow relations into
-other BCs or realizing ADRs. Keep shared work and unknown membership explicit.
-Do not render every internal diagram or start the whole-workflow canvases on
-the first BC screen. Preserve the current search, page and selection when
-returning, with keyboard and narrow-screen access. Missing upper knowledge stays
-missing; never generate it from a lower layer merely to fill the UI.
+The initial screen contains the authored **BC knowledge layer** and supplied
+domain evidence: names, responsibilities, core business logic and collaborations.
+Only create the selected layer and requested details. Missing upper knowledge
+stays missing; never generate it from a lower layer merely to fill the UI.
 
-The separate **Whole flow & structure** entry opens **Event flow**, a flat, draggable EventStorming
-canvas. Candidate boards also keep their event-first entry. Its primary trace reaches the next emitted event, with explicit
+Within a selected process, open the scoped EventStorming canvas to inspect its
+activities and direct external hand-offs. Candidate boards without a model keep
+their event-first entry. Its primary trace reaches the next emitted event, with explicit
 intermediate-action checkpoints where no event is recorded. Project only the
 supplied stage relationships through their producing actions; do not add links
 to make a story appear continuous. Connection labels retain reaction versus
@@ -98,17 +108,11 @@ the flow, distinguishing process-wide questions from step-level questions. A
 process-wide unknown is not a confirmed failure branch at one event. Keep its
 source and verdict visible through disclosure.
 
-Inside the explicitly opened whole-workflow view, the two tabs are **Event flow**
-and **Business structure**. They are below the BC-first navigation, not its initial view.
-The existing 3D business structure owns the context districts, process towers,
-step floors and event/policy hand-offs. Within Event flow, **Business areas** shows
-the domain scope, sourced subdomain memberships and bounded contexts; selecting
-a context opens its activities/evidence and selecting an event returns to the trace.
-Keep shared contexts once with explicit membership labels, and unknown membership
-apart. Business areas remains a perspective inside the event view. Selecting a source step from the event inspector leads to the same model
-step and its details in Business structure. Context identities remain distinct
-even when their labels match; actual step ownership is read from model facts,
-not inferred from a process tower's physical placement.
+Both representations expose the same model elements and relations. Domain
+memberships require provided identities and evidence, may be multiple, and stay
+unconfirmed when absent. Same-name BCs remain distinct. Read actual step ownership
+from model facts, not physical placement. A scoped event-board inspector opens
+its source step in the common business-detail panel.
 
 The event flow keeps a readable, untilted order while using restrained depth and
 surface styling. Its subtle moving strokes follow recorded event reactions only,
@@ -148,7 +152,7 @@ For a request to inspect EventStorming discovery, use `/ontology-build` and
 `references/eventstorming.md` to show its event map, evidence and boundary
 candidates. Use `references/eventstorming-board.md` to render a candidate board even before
 a model exists. The `view` command reconstructs the saved model; it does not
-recover workshop history or candidate source verdicts. Do not claim the 3D city
+recover workshop history or candidate source verdicts. Do not claim the 3D projection
 is evidence of the discovery process or that an unavailable view mode exists.
 
 To add source information, use `/ontology-build`; for a natural-language change,

@@ -65,6 +65,12 @@ The purpose is to carry actual business logic into ADR contracts, code and tests
 The model is useful when it captures the workflow accurately and richly; formal
 ontology completeness and inference capability are not implementation goals.
 
+The ontology supplies the business-workflow structure; functional ADRs explain
+its realization. Preserve confirmed business responsibilities and dependencies
+in the owning contracts so they guide code organization as well as behavior.
+Use this supplied context through ontology-writer, without reading or reshaping
+the model here or deriving business boundaries from existing ADR categories.
+
 - **Connect workflow to verification.** In authoring, identify the starting
   condition, performer, event hand-offs, outcome and relevant observation
   criteria; propose feature-level contracts for relevant normal, exception,

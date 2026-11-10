@@ -7,6 +7,11 @@ gate. Completeness means enough accurate business context to understand,
 implement and verify the requested workflow, not a perfect graph or inference
 system. Keep results disposable and state the requested scope and evidence limits.
 
+Business readiness includes whether realizing feature contracts retain the
+model's business responsibilities and dependency boundaries. Their implementation
+review then checks the code against those approved contracts. Similar directory
+names or a valid link alone do not establish that business structure reached code.
+
 ## Three separate conclusions
 
 | Question                                              | Evidence and conclusion                                                                                                                                                                                                                                                                                                 |

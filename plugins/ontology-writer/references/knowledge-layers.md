@@ -11,6 +11,13 @@ observation criteria. `inContext` connects its contextual elements to their BC.
 A process can cross BCs. Exact values, state machines and feature-level
 conditions stay in the realizing ADRs, reached through the ADR index.
 
+Business workflow and functional realization are different resolutions. Use the
+model's processes and responsibilities to organize business work within a BC;
+use the ADR index to connect the functional decisions that realize it. Do not
+turn ADR folders into business containers or redefine a BC from its current
+implementation inventory. This separation lets confirmed business structure
+guide code organization through ADRs without copying code structure upward.
+
 ## Author the upper knowledge
 
 - Keep the BC's responsibility in `definition`. Put its principal business

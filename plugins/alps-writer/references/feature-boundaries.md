@@ -37,6 +37,12 @@ ownership, data authority and interactions. A service, team, package, database o
 repository is evidence to inspect, not automatically a bounded context. One
 monolith may hold several contexts; one context may span services or repositories.
 
+When business-workflow context is supplied, use its confirmed responsibilities
+and rules to guide feature boundaries and their realization. Existing functional
+ADRs are lower-level evidence, not the definition of a business unit. Carry that
+business structure through architectural contracts into cohesive code ownership
+and dependencies without requiring identical folders at every resolution.
+
 Use this grouping by default, without requiring the user to request DDD or know
 its terminology. Reuse already established boundaries. When the evidence supports
 a candidate, explain the business responsibility in plain language. Ask only

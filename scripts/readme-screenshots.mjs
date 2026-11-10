@@ -4,7 +4,7 @@
 // example report. Uses the browser the Mermaid tests use (MERMAID_BROWSER_PATH or
 // an installed Chrome/Chromium). Writes docs/images/*.webp.
 //
-// Usage: bun scripts/readme-screenshots.mjs
+// Usage: bun scripts/readme-screenshots.mjs [--ontology-only]
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -16,6 +16,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "docs/images");
 const ONTOLOGY = path.join(ROOT, "plugins/ontology-writer");
 const REPORT = path.join(ROOT, "plugins/adr-writer/skills/report-writer");
+const ontologyOnly = process.argv.includes("--ontology-only");
 const { browserPath } = await import(
   path.join(ROOT, "plugins/adr-writer/evals/deepeval/coverage-render.mjs")
 );
@@ -75,21 +76,22 @@ const browser = await puppeteer.launch({ executablePath: browserPath(), headless
 try {
   const view = sampleProject(path.join(work, "project"));
   const report = path.join(work, "report.html");
-  run([
-    path.join(REPORT, "scripts/render-report.mjs"),
-    path.join(REPORT, "references/examples/report-with-quiz.json"),
-    "--out",
-    report,
-  ]);
+  if (!ontologyOnly)
+    run([
+      path.join(REPORT, "scripts/render-report.mjs"),
+      path.join(REPORT, "references/examples/report-with-quiz.json"),
+      "--out",
+      report,
+    ]);
 
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
-  // Wait for the BC space's camera transition, then let layout and motion settle.
+  // Screenshots show the current product entry, after the optional layer transition.
   const shot = async (name, options = {}) => {
     await page.evaluate(() => document.activeElement?.blur());
     await page
       .waitForFunction(
-        () => document.getElementById("kw-space")?.dataset.transitioning !== "true",
+        () => document.getAnimations().every((animation) => animation.playState !== "running"),
         {
           timeout: 15000,
         },
@@ -107,31 +109,34 @@ try {
   const open = async (hash = "") => {
     await page.goto("about:blank"); // a hash-only change would keep the previous page state
     await page.goto(`file://${view}${hash}`, { waitUntil: "load" });
-    await page.waitForSelector("#kw-space:not([hidden])");
+    await page.waitForFunction(() => window.ontologyLayered);
   };
   mkdirSync(OUT, { recursive: true });
 
   await open();
   await shot("ontology-bc-overview");
   await open("#bc=ordering");
-  await page.type("#kw-search", "payment");
   await shot("ontology-bc-search");
   // Search the BC, then open the step from its results, as a reader would.
   await open("#bc=ordering");
-  await page.type("#kw-search", "confirm");
-  const step = '#kw-results [data-knowledge-element="ordering.confirm-order"]';
+  await page.select("#search-scope", "knowledge");
+  await page.type("#layer-search", "confirm");
+  const step = '[data-layer-node="ordering.confirm-order"]';
   await page.waitForSelector(step, { visible: true });
   await page.click(step);
   await shot("ontology-step-detail");
-  await open();
-  await page.click("#kw-show-whole");
-  await page.waitForSelector("#whole-workspace:not([hidden])");
+  await open("#bc=ordering&process=ordering.place-order");
+  await page.click('[data-action="workflow"]');
+  await page.waitForSelector("#workflow-frame-host iframe");
   await shot("ontology-event-flow");
-  await page.click("#view-structure-tab");
+  await open("#bc=ordering&process=ordering.place-order");
+  await page.click('button[data-view="structure"]');
   await shot("ontology-business-structure");
 
-  await page.goto(`file://${report}`, { waitUntil: "networkidle0" });
-  await shot("report-writer", { clip: { x: 0, y: 0, width: 1440, height: 1420 } });
+  if (!ontologyOnly) {
+    await page.goto(`file://${report}`, { waitUntil: "networkidle0" });
+    await shot("report-writer", { clip: { x: 0, y: 0, width: 1440, height: 1420 } });
+  }
 } finally {
   await browser.close();
   rmSync(work, { recursive: true, force: true });

@@ -347,9 +347,10 @@ export function realizationOf(
  * @param {object|null} input.changes Change flags (uncommitted / unsynced Accepted edits).
  * @param {boolean} [input.includeRetired]
  * @param {"en"|"ko"} [input.lang]
- * @returns {string} HTML
+ * @returns {{t: object, lang: string, body: string, diagrams: boolean, app: object|null}}
+ *   Shared model projection and inert detail markup for either presentation shell.
  */
-export function renderView({
+export function prepareView({
   index,
   mapping,
   findings = [],
@@ -357,6 +358,7 @@ export function renderView({
   includeRetired = false,
   lang = "en",
   initialView = "contexts",
+  includeWorkbench = true,
 }) {
   const t = UI[lang] ?? UI.en;
   const errors = findings.filter((f) => f.level === "error");
@@ -370,7 +372,13 @@ export function renderView({
     const items = errors.map((e) =>
       errorText(e, e.element == null ? "" : ` <code>${esc(keyOf(e.element))}</code>`),
     );
-    return page(t, lang, `${banner(items)}<p class="unparsed">${esc(t.unparsed)}</p>`, false);
+    return {
+      t,
+      lang,
+      body: `${banner(items)}<p class="unparsed">${esc(t.unparsed)}</p>`,
+      diagrams: false,
+      app: null,
+    };
   }
 
   const realizers = realizersByStep(mapping);
@@ -960,10 +968,12 @@ ${realization}</article>`;
   }
 
   const workflowInput = { index, mapping, findings, includeRetired, lang, modelLink: linkKey };
-  const workbench = renderEventBoard(modelEventBoard(workflowInput), {
-    lang,
-    modelLink: linkKey,
-  });
+  const workbench = includeWorkbench
+    ? renderEventBoard(modelEventBoard(workflowInput), {
+        lang,
+        modelLink: linkKey,
+      })
+    : "";
   const readiness = renderWorkflowReadiness(workflowInput);
   const body = `${banner(errors.map(errorItem))}${unavailableBanner}${changeBanner}${workbench}${readiness}<nav aria-label="${esc(t.processes)}"><a href="#landscape">${esc(t.landscape)}</a> · <a href="#elements">${esc(t.elements)}</a></nav>
 ${landscapeSection}
@@ -1254,7 +1264,13 @@ ${flowSections}
     },
   });
   knowledge.initialView = initialView;
-  return page(t, lang, body, true, { explorer, city, data, knowledge });
+  return { t, lang, body, diagrams: true, app: { explorer, city, data, knowledge } };
+}
+
+/** Preserve the existing embedding renderer while sharing its model and detail interpretation. */
+export function renderView(options) {
+  const prepared = prepareView(options);
+  return page(prepared.t, prepared.lang, prepared.body, prepared.diagrams, prepared.app);
 }
 
 // Diagram nodes become links once Mermaid has drawn them, figure by figure, as each
