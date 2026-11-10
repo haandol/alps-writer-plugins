@@ -247,7 +247,7 @@
         {
           "path": "docs/adr/ontology/0004-build-ontology-from-documents.md",
           "status": "Proposed",
-          "summary": "근거 기반 이벤트 스토밍으로 전체 업무 이벤트 맵과 컨텍스트·서브도메인을 식별하고 확인된 모델 후보만 저장한다"
+          "summary": "근거 기반 이벤트 스토밍으로 후보를 만들고, 선택지와 직접 답변을 구분하며 같은 확인 화면의 에이전트 질의응답과 별도 저장 승인을 보존한다"
         },
         {
           "path": "docs/adr/ontology/0005-render-read-only-ontology-views.md",

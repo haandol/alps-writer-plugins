@@ -148,9 +148,12 @@ the EventStorming result.
 Then open the report's questions in a local web question session following
 [web question session](references/ask-session.md): the user answers there or in
 the conversation by the same identifiers, and each delivered answer brings
-updated candidates and follow-up questions to the same screen. The session only
-collects answers; the approval summary and save approval of section 5 stay in
-the conversation.
+updated candidates and follow-up questions to the same screen. Free text replaces
+the selected option. The separate discussion area sends model questions to the
+current authoring agent and displays its replies without submitting candidate
+answers. Follow the session's listening/response loop and keep unavailability
+visible. The approval summary and save approval of section 5 stay in the host
+conversation, separate from web discussion.
 
 ## 5. Save only what the user confirmed
 

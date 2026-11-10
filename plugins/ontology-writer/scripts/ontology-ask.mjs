@@ -9,6 +9,8 @@
 //   bun ontology-ask.mjs wait <run> [--timeout SECONDS]
 //   bun ontology-ask.mjs answers <run>
 //   bun ontology-ask.mjs record <run> <question-id> [--option ID] [--text TEXT]
+//   bun ontology-ask.mjs messages <run>
+//   bun ontology-ask.mjs reply <run> <message-id> [--text TEXT | --text-file FILE]
 //   bun ontology-ask.mjs check <run>
 import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -85,6 +87,7 @@ export const sessionFiles = (run) => {
     answers: path.join(dir, "answers.jsonl"),
     cursor: path.join(dir, "cursor.json"),
     session: path.join(dir, "session.json"),
+    listener: path.join(dir, "listener.json"),
   };
 };
 
@@ -157,9 +160,12 @@ export function readEvents(file) {
  * Append one event. The server and the `record` command are separate processes, so the
  * sequence number is taken under a short exclusive lock; two writers never share one.
  */
-function appendEvent(file, event) {
+function appendEvent(file, event, reuse = () => null) {
   return withLock(`${file}.lock`, () => {
-    const seq = readEvents(file).length + 1;
+    const events = readEvents(file);
+    const existing = reuse(events);
+    if (existing) return existing;
+    const seq = events.length + 1;
     const record = { ...event, seq, at: new Date().toISOString() };
     appendFileSync(file, `${JSON.stringify(record)}\n`);
     return record;
@@ -240,6 +246,113 @@ export function summarize(doc, events) {
   return { questions, lastDeliver, closed };
 }
 
+/** New answers have one input mode; historical combined answers remain readable. */
+function answerError(q, optionId, text) {
+  if (optionId && !(q.options ?? []).some((o) => o.id === optionId)) return "unknown option";
+  if (text.length > MAX_TEXT) return "text too long";
+  if (text.trim() && q.allowText === false) return "text not accepted";
+  if (optionId && text.trim()) return "choose an option or write an answer, not both";
+  if (!optionId && !text.trim()) return "empty answer";
+  return null;
+}
+
+function discussionError(message, status = 400) {
+  return Object.assign(new Error(message), { status });
+}
+
+/** Store a user question separately from candidate answers, reusing its retry identity. */
+export function recordDiscussionMessage(run, { messageId, text, questionId = null }) {
+  const files = sessionFiles(run);
+  const doc = loadQuestions(files);
+  if (!doc.ok) throw discussionError(doc.error);
+  if (typeof messageId !== "string" || !ID.test(messageId))
+    throw discussionError("invalid message identity");
+  if (typeof text !== "string" || !text.trim()) throw discussionError("empty question");
+  if (text.length > MAX_TEXT) throw discussionError("question too long");
+  const q = questionId === null ? null : doc.value.questions.find((q) => q.id === questionId);
+  const question = text.trim();
+  return appendEvent(
+    files.answers,
+    {
+      type: "discussion-question",
+      messageId,
+      text: question,
+      context: q ? { questionId: q.id, text: q.text, detail: q.detail ?? "" } : null,
+    },
+    (events) => {
+      const prior = events.find(
+        (e) => e.type === "discussion-question" && e.messageId === messageId,
+      );
+      if (prior && (prior.text !== question || (prior.context?.questionId ?? null) !== questionId))
+        throw discussionError("message identity already has different content", 409);
+      if (!prior && questionId !== null && !q) throw discussionError("unknown question context");
+      return prior;
+    },
+  );
+}
+
+/** Only the local authoring agent can publish a reply; the browser has no reply endpoint. */
+export function recordDiscussionReply(run, messageId, text) {
+  const files = sessionFiles(run);
+  if (typeof messageId !== "string" || !ID.test(messageId))
+    throw discussionError("invalid message identity");
+  if (typeof text !== "string" || !text.trim()) throw discussionError("empty reply");
+  if (text.length > MAX_TEXT) throw discussionError("reply too long");
+  const reply = text.trim();
+  return appendEvent(
+    files.answers,
+    { type: "discussion-reply", messageId, text: reply },
+    (events) => {
+      if (!events.some((e) => e.type === "discussion-question" && e.messageId === messageId))
+        throw discussionError("unknown discussion message");
+      const prior = events.find((e) => e.type === "discussion-reply" && e.messageId === messageId);
+      if (prior && prior.text !== reply)
+        throw discussionError("message already has a different reply", 409);
+      return prior;
+    },
+  );
+}
+
+const readJson = (file) => {
+  try {
+    return JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return null;
+  }
+};
+
+/** A live wait command establishes availability; a question-file message does not. */
+function discussionState(files, events) {
+  const listener = readJson(files.listener);
+  const available = Boolean(
+    listener?.waiting && listener.until > Date.now() && alive(listener.pid),
+  );
+  const cursor = readJson(files.cursor)?.seq ?? 0;
+  const replies = new Map(
+    events.filter((e) => e.type === "discussion-reply").map((e) => [e.messageId, e]),
+  );
+  return {
+    available,
+    messages: events
+      .filter((e) => e.type === "discussion-question")
+      .map((e) => ({
+        messageId: e.messageId,
+        text: e.text,
+        context: e.context,
+        at: e.at,
+        delivered: e.seq <= cursor,
+        reply: replies.has(e.messageId)
+          ? { text: replies.get(e.messageId).text, at: replies.get(e.messageId).at }
+          : null,
+      })),
+  };
+}
+
+export function discussionMessages(run) {
+  const files = sessionFiles(run);
+  return discussionState(files, readEvents(files.answers));
+}
+
 const loadQuestions = (files) => parseQuestions(readFileSync(files.questions, "utf8"));
 
 /** The answers a delivery hands to the agent, with the question text they answer. */
@@ -310,6 +423,9 @@ export function startServer(
       agent: doc.agent ?? null,
       lang,
       questions: s.questions,
+      sequence: events.at(-1)?.seq ?? 0,
+      questionRevision: goodMtime,
+      discussion: discussionState(files, events),
       working,
       warning,
       closed: Boolean(s.closed),
@@ -356,6 +472,8 @@ export function startServer(
     } catch {
       return deny(400, "json");
     }
+    if (!body || typeof body !== "object" || Array.isArray(body))
+      return deny(400, "object required");
     if (state().closed) return deny(409, "closed");
     if (route === "/api/answer") {
       const doc = current();
@@ -363,11 +481,8 @@ export function startServer(
       if (!q || q.closed) return deny(400, "unknown or closed question");
       const optionId = body.optionId ?? null;
       const text = typeof body.text === "string" ? body.text.trim() : "";
-      if (optionId && !(q.options ?? []).some((o) => o.id === optionId))
-        return deny(400, "unknown option");
-      if (text.length > MAX_TEXT) return deny(400, "text too long");
-      if (text && q.allowText === false) return deny(400, "text not accepted");
-      if (!optionId && !text) return deny(400, "empty answer");
+      const invalid = answerError(q, optionId, text);
+      if (invalid) return deny(400, invalid);
       appendEvent(files.answers, {
         type: "answer",
         channel: "web",
@@ -377,6 +492,14 @@ export function startServer(
       });
       if (body.deliver) appendEvent(files.answers, { type: "deliver", questionIds: [q.id] });
       return json(state());
+    }
+    if (route === "/api/discussion") {
+      try {
+        recordDiscussionMessage(run, body);
+        return json(state());
+      } catch (error) {
+        return deny(error.status ?? 500, error.message);
+      }
     }
     if (route === "/api/deliver") {
       const ids = state()
@@ -445,39 +568,65 @@ const alive = (pid) => {
   }
 };
 
-/** Block until the user delivers answers or the session ends; print them and advance the cursor. */
+/** Deliver candidate answers and model questions separately; never treat discussion as approval. */
 export async function waitForAnswers(run, { timeoutSeconds = 0, pollMs = 300 } = {}) {
   const files = sessionFiles(run);
   const cursor = existsSync(files.cursor)
     ? (JSON.parse(readFileSync(files.cursor, "utf8")).seq ?? 0)
     : 0;
   const deadline = timeoutSeconds > 0 ? Date.now() + timeoutSeconds * 1000 : Infinity;
-  for (;;) {
-    const events = readEvents(files.answers);
-    const fresh = events.filter(
-      (e) => e.seq > cursor && (e.type === "deliver" || e.type === "close"),
-    );
-    const session = existsSync(files.session)
-      ? JSON.parse(readFileSync(files.session, "utf8"))
-      : null;
-    const stopped = !fresh.length && session && !alive(session.pid);
-    if (fresh.length || stopped) {
-      const ids = new Set(fresh.filter((e) => e.type === "deliver").flatMap((e) => e.questionIds));
-      const doc = loadQuestions(files);
-      const closed = fresh.find((e) => e.type === "close");
-      const result = {
-        answers: doc.ok ? answerPayload(doc.value, events, ids) : [],
-        closed: Boolean(closed || stopped),
-        ...(closed ? { reason: closed.reason } : stopped ? { reason: "server stopped" } : {}),
-      };
+  const waiter = randomBytes(12).toString("hex");
+  try {
+    for (;;) {
       writeFileSync(
-        files.cursor,
-        JSON.stringify({ seq: Math.max(cursor, ...fresh.map((e) => e.seq)) }),
+        files.listener,
+        JSON.stringify({
+          id: waiter,
+          pid: process.pid,
+          waiting: true,
+          until: Date.now() + Math.max(1500, pollMs * 3),
+        }),
       );
-      return result;
+      const events = readEvents(files.answers);
+      const fresh = events.filter(
+        (e) => e.seq > cursor && ["deliver", "discussion-question", "close"].includes(e.type),
+      );
+      const session = existsSync(files.session)
+        ? JSON.parse(readFileSync(files.session, "utf8"))
+        : null;
+      const lifecycle = events.findLast((e) => e.type === "open" || e.type === "close");
+      const closed = lifecycle?.type === "close" ? lifecycle : null;
+      const stopped = !fresh.length && session && !alive(session.pid);
+      if (fresh.length || stopped || closed) {
+        const ids = new Set(
+          fresh.filter((e) => e.type === "deliver").flatMap((e) => e.questionIds),
+        );
+        const doc = loadQuestions(files);
+        const result = {
+          answers: doc.ok ? answerPayload(doc.value, events, ids) : [],
+          messages: fresh
+            .filter((e) => e.type === "discussion-question")
+            .map((e) => ({
+              messageId: e.messageId,
+              text: e.text,
+              context: e.context,
+              at: e.at,
+            })),
+          closed: Boolean(closed || stopped),
+          ...(closed ? { reason: closed.reason } : stopped ? { reason: "server stopped" } : {}),
+        };
+        writeFileSync(
+          files.cursor,
+          JSON.stringify({ seq: Math.max(cursor, ...fresh.map((e) => e.seq)) }),
+        );
+        return result;
+      }
+      if (Date.now() > deadline) return { answers: [], messages: [], closed: false, timeout: true };
+      await Bun.sleep(pollMs);
     }
-    if (Date.now() > deadline) return { answers: [], closed: false, timeout: true };
-    await Bun.sleep(pollMs);
+  } finally {
+    if (readJson(files.listener)?.id === waiter)
+      writeFileSync(files.listener, JSON.stringify({ id: waiter, waiting: false }));
   }
 }
 
@@ -504,9 +653,8 @@ export function recordChatAnswer(run, questionId, { optionId = null, text = "" }
   if (!doc.ok) throw new Error(doc.error);
   const q = doc.value.questions.find((x) => x.id === questionId);
   if (!q) throw new Error(`unknown question ${questionId}`);
-  if (optionId && !(q.options ?? []).some((o) => o.id === optionId))
-    throw new Error(`unknown option ${optionId}`);
-  if (!optionId && !text.trim()) throw new Error("an answer needs --option or --text");
+  const invalid = answerError(q, optionId, text);
+  if (invalid) throw new Error(invalid);
   return appendEvent(files.answers, {
     type: "answer",
     channel: "chat",
@@ -583,6 +731,16 @@ async function main(argv) {
     return;
   }
   if (command === "answers") return console.log(JSON.stringify(allAnswers(run), null, 2));
+  if (command === "messages") return console.log(JSON.stringify(discussionMessages(run), null, 2));
+  if (command === "reply") {
+    const [messageId] = rest;
+    if (!messageId) usage("reply needs a message id");
+    const file = flag("--text-file");
+    if (file && flag("--text")) usage("choose --text or --text-file");
+    const text = file ? readFileSync(file, "utf8") : flag("--text", "");
+    recordDiscussionReply(run, messageId, text);
+    return console.log(`REPLIED ${messageId}`);
+  }
   if (command === "check") {
     const doc = loadQuestions(files);
     if (!doc.ok) usage(doc.error);

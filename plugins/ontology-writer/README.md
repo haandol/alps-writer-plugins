@@ -139,6 +139,16 @@ Install [`adr-writer`](../adr-writer) as well when the repository has ADRs. A mo
 
 ## Completeness and the next workflow
 
+The build's local question screen keeps option answers and free-text answers
+exclusive: typing clears the selected option, and later updates preserve the
+current draft. A separate discussion area lets the user ask the authoring agent
+about the model or a specific review question and read the reply beside it.
+Discussion does not submit candidate answers or approve model changes. It uses
+the current agent's session, displays whether an agent is listening, and retains
+questions and replies across reopening. Hosts that cannot wake the agent
+automatically require notification in the main conversation; the screen explains
+that handoff instead of starting another inference service.
+
 Ask `/ontology-sync` to review completeness/readiness when you want a read-only
 assessment of the actual business workflow. It reports business-model
 sufficiency, ADR contract readiness and actual execution evidence separately,
