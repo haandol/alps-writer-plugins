@@ -22,7 +22,7 @@ const optional = [
 ];
 
 for (const [name, selected, absent] of [
-  ["PASS without quiz", ["artifact-contract", "artifact-schema"], optional],
+  ["PASS with the user's quiz exclusion", ["artifact-contract", "artifact-schema"], optional],
   [
     "quiz included",
     ["artifact-contract", "artifact-schema", "quiz-artifact"],
@@ -71,8 +71,8 @@ test("review entry and delivery spine state conditional loads without embedding 
   for (const name of ["artifact-contract", "artifact-schema", ...optional])
     assert.ok(!core.includes(body(name)), `${name} belongs after scope discovery`);
   assert.match(spine, /Writing or repairing native artifacts/);
-  assert.match(spine, /Quiz included/);
-  assert.match(spine, /Without a quiz, omit its data and section without approval/);
+  assert.match(spine, /\*\*Quiz:\*\* read \[quiz artifacts\]/);
+  assert.match(spine, /Only a user's explicit exclusion replaces it/);
   assert.match(spine, /only for `FIX_REQUIRED`,\s+`BLOCK`, or requested detailed repair guidance/);
   assert.match(spine, /only when the user asks to run it/);
   assert.match(

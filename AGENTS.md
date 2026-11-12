@@ -215,7 +215,7 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 ├── .claude-plugin/plugin.json   # Claude metadata; hooks/ is auto-discovered
 ├── .codex-plugin/plugin.json    # Codex metadata; registers skills + hooks
 ├── README.md
-├── skills/               # adr-import, adr-new, adr-impl, adr-impl-refactor, adr-impl-review, adr-sync, adr-rollup, report-writer
+├── skills/               # adr-import, adr-new, adr-impl, adr-impl-refactor, adr-impl-review, adr-sync, adr-rollup, report-writer, reader-profile
 ├── agents/               # ADR authoring reviewer + isolated refactor/impl explainer/review/report roles
 ├── evals/                # behaviour evals (real model; NOT in bun run test)
 │   ├── run.mjs           # runner — N runs per scenario, hit rates, shareable report
@@ -244,7 +244,7 @@ plugins/ontology-writer/  # Business ontology plugin (optional level above ADRs)
 ├── .claude-plugin/plugin.json   # Claude metadata; hooks/ is auto-discovered
 ├── .codex-plugin/plugin.json    # Codex metadata; registers skills + hooks
 ├── README.md
-├── skills/               # ontology-edit, ontology-sync, ontology-align, ontology-build, ontology-view, report-writer
+├── skills/               # ontology-edit, ontology-sync, ontology-align, ontology-build, ontology-view, report-writer, reader-profile
 ├── scripts/              # deterministic tools (standard built-ins only)
 │   ├── ontology-lib.mjs      # vocabulary, Turtle subset, closed-world checks, canonical form, diff
 │   ├── ontology-fs.mjs       # model documents + ADR index-link findings

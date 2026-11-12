@@ -10,6 +10,11 @@
   "summary": [
     "Payment retries must not create a second charge. The completed-payment retry check passed: the same key returned the recorded result. Provider timeout recovery still needs verification, so this result does not establish safety for every retry path."
   ],
+  "overview": {
+    "paragraphs": [
+      "Retry safety depends on one part, settlement: it ties a repeated request to the result already recorded for its key. The section below explains when that reuse applies and which provider path it leaves unverified."
+    ]
+  },
   "requiredEvidenceIds": ["R1"],
   "review": {
     "status": "reviewed",

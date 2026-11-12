@@ -1643,7 +1643,7 @@ test("review artifact validator accepts concise standard-mode artifacts without 
   });
 });
 
-test("review artifact validator accepts PASS without metrics, comprehension, or explanation artifacts", () => {
+test("review artifact validator accepts PASS without metrics or explanation when the user excluded the quiz", () => {
   withArtifacts((dir) => {
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
     writeFileSync(
@@ -1663,7 +1663,7 @@ test("review artifact validator accepts PASS without metrics, comprehension, or 
       };
     findings.atAGlance = { ...STANDARD_AT_A_GLANCE };
     delete findings.metrics;
-    delete findings.comprehensionCheck;
+    findings.comprehensionCheck = { excluded: "The user asked for no quiz in this review." };
     delete findings.explanation;
     findings.findings = [];
     findings.implementationChoices = [];
@@ -1694,6 +1694,24 @@ test("review artifact validator accepts PASS without metrics, comprehension, or 
   });
 });
 
+test("review artifact validator requires a quiz unless the user excluded it", () => {
+  for (const [check, pattern] of [
+    [undefined, /comprehensionCheck is required: 1 to 6 questions/],
+    [{ excluded: " " }, /excluded must state the user's exclusion request/],
+    [{ excluded: "no quiz", questions: [] }, /excluded cannot be combined with questions/],
+  ])
+    withArtifacts((dir) => {
+      writeFileSync(path.join(dir, "explanation.md"), validExplanation());
+      writeFileSync(path.join(dir, "implementation-review.md"), validReport());
+      const findings = validFindings(dir);
+      if (check === undefined) delete findings.comprehensionCheck;
+      else findings.comprehensionCheck = check;
+      writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+      const result = validate(dir);
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, pattern);
+    });
+});
 test("standard-mode artifacts reject necessity findings and missing contract coverage", () => {
   withArtifacts((dir) => {
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
@@ -1831,11 +1849,11 @@ test("review artifact validator enforces an intent-first subject-specific explan
   });
 });
 
-test("review artifact validator requires one to five hidden-answer comprehension questions", () => {
+test("review artifact validator requires one to six hidden-answer comprehension questions", () => {
   withArtifacts((dir) => {
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
     const findings = validFindings(dir);
-    findings.comprehensionCheck.questions = Array.from({ length: 6 }, (_, index) => ({
+    findings.comprehensionCheck.questions = Array.from({ length: 7 }, (_, index) => ({
       id: `Q${index + 1}`,
       question: `Question ${index + 1}?`,
       options: ["A", "B", "C", "D"].map((id) => ({
@@ -1862,7 +1880,7 @@ test("review artifact validator requires one to five hidden-answer comprehension
 
     const result = validate(dir);
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /must contain 1 to 5 questions/);
+    assert.match(result.stderr, /must contain 1 to 6 questions/);
   });
 
   withArtifacts((dir) => {

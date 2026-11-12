@@ -1,0 +1,9 @@
+@prefix m: <urn:ontology-writer:model:> .
+@prefix onto: <urn:ontology-writer:vocabulary:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+m:business-modeling a onto:BoundedContext ;
+    rdfs:label "업무 모델링" ;
+    onto:definition "기능을 가로지르는 실제 업무 흐름과 책임 구조를 비즈니스 온톨로지로 발견·확인·유지하는 경계." ;
+    onto:coreLogic "문서·설명·저장소 근거에서 이벤트 스토밍으로 업무 흐름과 경계 후보를 찾고, 사용자가 확인한 범위만 모델로 저장하며, 저장된 변경을 실현 결정의 개정 대상으로 넘기고 정렬 검토로 실현 여부를 확인한다." ;
+    onto:collaboratesWith m:architecture-decision, m:reporting .

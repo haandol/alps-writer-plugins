@@ -214,7 +214,7 @@ test("implementation review leads with Context and a reader-priority narrative",
     skill,
     /Never include a comprehension question, grading criterion, evidence, or answer\s+request in the ordinary main-session completion response/i,
   );
-  assert.match(validator, /must contain 1 to 5 questions/);
+  assert.match(validator, /must contain 1 to 6 questions/);
   assert.match(validator, /must mark 1 or 2 questions with revisit: true/);
   assert.match(validator, /exposes comprehensionCheck/);
   assert.match(validator, /Container\/Hill heading/);

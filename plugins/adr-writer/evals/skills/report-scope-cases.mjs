@@ -86,7 +86,7 @@ export const reportScopeCases = [
     title: "명시한 퀴즈 요청은 권고라는 이유로 생략하지 않음",
     task: "완료된 결제 요청은 같은 키로 재시도하면 저장된 결과를 반환하고, 결제 결과가 불명확하면 다시 청구하기 전에 원래 결과를 조회한다는 내용의 짧은 HTML 교육 보고서를 만들어줘. 핵심 내용을 적용하는 중간 난이도 퀴즈 한 문제도 꼭 넣어줘.",
     expectation:
-      "Plan the explicitly requested one-question quiz with four choices, one correct answer, evidence and staged self-check. Optional default generation does not override an explicit request. Do not start a conversational quiz or claim unperformed verification.",
+      "Plan the explicitly requested one-question quiz with four choices, one correct answer, evidence and staged self-check. The default question count does not override an explicit request. Do not start a conversational quiz or claim unperformed verification.",
   },
   {
     id: "report-scope-static-verification",

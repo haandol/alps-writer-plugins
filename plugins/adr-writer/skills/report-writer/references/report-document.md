@@ -1,9 +1,18 @@
 # Structured report document
 
-HTML is the default delivery format unless the user requests otherwise. For
-HTML or Markdown delivery, the included renderer checks hierarchy and
-source coverage. It does not perform editorial judgment. Complete the semantic
-review in `editorial-review.md` before calling the report complete.
+HTML is the default delivery format unless the user requests otherwise. Every
+HTML or Markdown report is produced from [the report template](../templates/report.json)
+through the included renderer, so all reports share one page shell, stylesheet
+and fixed reading order. Do not hand-write the HTML shell, replace the stylesheet
+or reorder the fixed regions. The renderer checks hierarchy, source coverage and
+unfilled `{{...}}` placeholders; it does not perform editorial judgment. Complete
+the semantic review in `editorial-review.md` before calling the report complete.
+
+Start from a copy of the template. Replace every placeholder with content from
+the [reading-path plan](reading-path.md), delete optional objects the content
+does not need, and add sections or children by repeating the same node shape.
+Revising a report that was not produced from the template rebuilds it through
+the template unless the user asks to keep its existing design.
 
 Run from any project with explicit input and output paths. For a review, use
 the run directory prepared through [review artifact storage](review-artifacts.md)
@@ -31,17 +40,27 @@ follow [final delivery](format-and-layout.md#final-delivery).
   "Purpose" ("목표"), then `background` under a separate "Context" ("배경")
   heading, followed by the answer in its own area before navigation.
   An optional `summaryTitle` supplies an
-  authored answer heading; no default title is imposed. Do not repeat headings
+  authored answer heading; no default title is imposed. Keep `summary` free of
+  implementation identifiers; see the [level budget](reading-path.md#allocate-detail-by-level). Do not repeat headings
   as paragraph labels or invent missing context. Legacy inputs may omit
   `purpose` or `background`: existing text remains intact without being split,
   moved between fields or supplemented by a guessed meaning. Omitted fields
   produce no empty sections. These presentation fields do not alter a caller's
   original audit schema or store approval state.
+- `overview`: the fixed Overview region ("전체 그림"/"Overview") after the
+  answer. `paragraphs` (one or more) explain how the parts the sections open
+  connect to produce the answer; an optional `diagram` uses the node diagram
+  fields below. The renderer follows it with a reading map listing each
+  top-level section with its `preview`, so give every top-level section a
+  preview that states the question it answers. New reports always include
+  `overview`; legacy inputs without it keep a plain section link bar. Its anchor
+  is `#overview`, so no node may use that identifier.
 - `sections`: one to four domain nodes. Each has `id`, `title`, `domain`, `scope`,
   optional `preview`, optional `paragraphs`, optional `children`, optional `diagram`, and optional
-  `evidence` and `expanded`. Omitting `expanded` defaults to an open subsection;
-  `true` also opens it. Use `false` only for an explicitly requested collapsed
-  screen view, never automatically for successful findings or routine detail.
+  `evidence` and `expanded`. A first-level child starts open unless `expanded`
+  is `false`; use `false` only for an explicitly requested collapsed view. A
+  child at the second level or deeper starts collapsed unless `expanded` is
+  `true`; set `true` only when the conclusion cannot be understood without it.
   Required visible findings stay open. Evidence uses its separate item-level
   `expanded` flag below; printing always includes the explanatory subsections.
   Each parent has at most four child explanation nodes. Supporting evidence
@@ -66,9 +85,20 @@ follow [final delivery](format-and-layout.md#final-delivery).
   state or a claim of independent human review.
 
 Follow [explanation design](explanation-design.md) for domain scope, intent and
-meaningful descent. Encode explanations as plain-text `paragraphs`, with blank
-lines for semantic breaks; do not embed headings or lists to bypass the child
-limit. No reader-profile, intent registry or depth fields are needed.
+meaningful descent. A node's `paragraphs` (and `overview.paragraphs`) is the
+section body in reading order. Each entry is either plain text, with blank lines
+for semantic breaks, or one presentation block you choose for that passage:
+
+- `{"table": {"caption"?, "headers": [...], "rows": [[...], ...]}}` with one
+  text cell per header in every row;
+- `{"list": {"ordered"?: true, "items": [...]}}`;
+- `{"code": {"language"?, "text"}}` for exact literal text.
+
+Choose blocks by what helps the reader ([writing style](writing-style.md#choose-the-form-and-visualize-where-it-helps));
+a node's `diagram` holds its figure. Blocks render in HTML and Markdown, and
+their rows and items do not count toward the four-child limit. Plain text must
+not imitate headings or bullet lists; use child nodes and list blocks instead.
+No reader-profile, intent registry or depth fields are needed.
 
 Use `preview` for a short statement of what a branch adds. HTML
 shows it with the title even if the reader collapses the branch; older nodes fall back to their existing
@@ -131,6 +161,11 @@ status and source path with actual report content and verification.
   "summary": [
     "Payment retries must not create a second charge. The completed-payment retry check passed: the same key returned the recorded result. Provider timeout recovery still needs verification, so this result does not establish safety for every retry path."
   ],
+  "overview": {
+    "paragraphs": [
+      "Retry safety rests on one part here: settlement, which ties a repeated request to the result already recorded for its key. The section below explains when that reuse applies and which path it does not cover."
+    ]
+  },
   "requiredEvidenceIds": ["R1"],
   "review": {
     "status": "reviewed",

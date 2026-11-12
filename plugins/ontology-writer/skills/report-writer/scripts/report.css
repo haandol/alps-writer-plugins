@@ -37,6 +37,8 @@ main {
 /* Keep prose aligned at every depth; figures may use the full page measure. */
 header,
 .report-answer,
+.report-overview > :is(h2, p, nav, .table-wrap, .body-list, .body-code),
+.report-node > :is(.table-wrap, .body-list, .body-code),
 nav,
 footer,
 .report-node > :is(h2, p, summary, .comprehension, .evidence-group) {
@@ -146,6 +148,91 @@ a:hover {
   outline: 2px solid var(--link);
   outline-offset: 4px;
   border-radius: 2px;
+}
+
+/* Author-chosen body blocks: tables scroll in their own region, lists and code keep the column. */
+.table-wrap {
+  max-width: 100%;
+  margin-block: 1.5rem 2rem;
+  overflow-x: auto;
+}
+
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  text-align: left;
+}
+
+.table-wrap caption {
+  padding-bottom: 0.65rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.table-wrap :is(th, td) {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.table-wrap thead th {
+  background: var(--surface);
+}
+
+.body-list {
+  margin-block: 0 1.25em;
+  padding-left: 1.5rem;
+}
+
+.body-list li + li {
+  margin-top: 0.35rem;
+}
+
+.body-code {
+  margin-block: 0 1.25em;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  background: var(--surface);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.report-overview {
+  margin-block: 3rem 0;
+  scroll-margin-top: 1.5rem;
+}
+
+.report-overview > h2 {
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+
+.reading-map {
+  margin: 0.5rem 0 0;
+  padding-left: 1.5rem;
+}
+
+.reading-map li {
+  margin-block: 0.75rem;
+  padding-left: 0.25rem;
+}
+
+.reading-map a {
+  font-weight: 600;
+}
+
+.reading-map .branch-preview {
+  margin-top: 0.15rem;
+}
+
+.report-overview nav {
+  display: block;
+  padding-bottom: 0;
+  font-size: 1rem;
 }
 
 nav {
@@ -493,12 +580,32 @@ footer {
 
   header,
   .report-answer,
+  .report-overview > :is(h2, p, nav, .table-wrap, .body-list, .body-code),
+  .report-node > :is(.table-wrap, .body-list, .body-code),
   footer,
   .report-node > :is(h2, p, summary, .comprehension, .evidence-group) {
     max-width: none;
   }
 
-  nav,
+  .table-wrap,
+  .body-code {
+    overflow: visible;
+  }
+
+  .body-code {
+    white-space: pre-wrap;
+  }
+
+  .table-wrap thead {
+    display: table-header-group;
+  }
+
+  .table-wrap tr {
+    break-inside: avoid;
+  }
+
+  /* The Overview reading map is content and prints; the bare legacy link bar does not. */
+  main > nav,
   .revisit-explanation,
   .diagram-scroll,
   .diagram-source,

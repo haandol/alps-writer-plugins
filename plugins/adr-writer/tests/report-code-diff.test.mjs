@@ -98,7 +98,13 @@ test("a copied marketplace skill renders diffs without node_modules or browser d
     cpSync(new URL("../skills/report-writer/", import.meta.url), skill, { recursive: true });
     const input = path.join(directory, "report.json");
     const output = path.join(directory, "report.html");
-    writeFileSync(input, JSON.stringify(report()));
+    writeFileSync(
+      input,
+      JSON.stringify({
+        ...report(),
+        comprehensionCheck: { excluded: "Excluded for this fixture." },
+      }),
+    );
     const result = spawnSync(
       process.execPath,
       [path.join(skill, "scripts/render-report.mjs"), input, "--out", output],

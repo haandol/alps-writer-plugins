@@ -129,7 +129,7 @@ plugins/
 ├── alps-writer/       # PRD skills and the TypeScript MCP server (committed dist/ bundle)
 ├── adr-writer/        # ADR skills, hooks, templates, validation scripts, evals
 └── ontology-writer/   # ontology skills, hook, Turtle vocabulary, CLI and HTML views
-shared/                # canonical files copied into plugins (search, report-writer)
+shared/                # canonical files copied into plugins (search, report-writer, reader-profile)
 stubs/                 # empty stand-ins for dependencies' unused packages
 scripts/               # sync, version, release, test-runner and screenshot scripts
 docs/                  # usage guides, ADRs for this repository, README images

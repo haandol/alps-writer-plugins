@@ -56,8 +56,9 @@ must remain distinguishable without relying only on color.
 
 The structured renderer's current document schema does not accept arbitrary
 interactive modules or executable HTML fields. Do not smuggle scripts into plain
-paragraphs or add unknown fields. Compose custom HTML locally when needed, or
-augment validated core output while retaining its required content and evidence.
+paragraphs or add unknown fields. Render the report through the template first,
+then insert the module inside its owning section of the rendered page, keeping
+the page shell, stylesheet, fixed regions and required evidence intact.
 Renderer validation of the core does not validate the added module.
 
 ## Verify the explanation states

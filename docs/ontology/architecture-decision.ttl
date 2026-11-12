@@ -1,0 +1,9 @@
+@prefix m: <urn:ontology-writer:model:> .
+@prefix onto: <urn:ontology-writer:vocabulary:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+m:architecture-decision a onto:BoundedContext ;
+    rdfs:label "아키텍처 결정" ;
+    onto:definition "구현이 지켜야 할 결정과 요구사항 계약을 하나의 현재 상태 기록으로 수용·기록·유지하는 경계." ;
+    onto:coreLogic "새 결정이나 넘어온 기능 계약을 수용 기준으로 걸러 지속적인 결정만 받아들이고, 사용자 확인을 거친 계약을 제안 상태의 결정으로 기록하며, 구현 검증이 끝난 결정을 승인 상태로 올리고, 드리프트·통합·가져오기로 기록을 현재 상태로 유지한다." ;
+    onto:collaboratesWith m:business-modeling, m:implementation-assurance, m:reporting .

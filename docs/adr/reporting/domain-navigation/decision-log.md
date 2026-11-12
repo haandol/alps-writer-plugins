@@ -4,6 +4,41 @@ This document is the **major decision-change history** of the reporting/domain-n
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-11-12 — 온톨로지의 BC 구조를 리포트 개요 그림에 재사용
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 리포트 주제가 비즈니스 온톨로지의 BC에 속하면 그 BC를 전체 그림의 부분으로 삼고, 온톨로지 조회 결과의 BC와 협력 관계로 개요 그림을 그리며, 독자 프로필에서 수준이 낮은 BC를 더 자세히 설명한다.
+- **Why**: 독자 프로필을 BC 식별자로 연결하면서, 이미 정리된 업무 구조를 리포트 시각화에 다시 쓰도록 사용자가 정했다.
+
+## 2026-11-12 — 모든 보고서에 1~6문항 퀴즈를 필수로 포함
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 강하게 권고하던 1~5문항 퀴즈를 구현 리뷰를 포함한 모든 보고서의 1~6문항 필수 항목으로 바꾼다. 사용자가 명시적으로 제외한 보고서만 제외 요청을 기록하고 생략한다.
+- **Why**: 권고에 그치자 작성 모델이 보고서에서 퀴즈를 반복해 생략했고, 사용자가 모든 리포트에 퀴즈를 두도록 정했다.
+
+## 2026-11-12 — 독자 프로필로 출발 수준과 비유를 정함
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 새 사용자 프로필을 저장하지 않던 규칙을, 독자 프로필 ADR이 정한 프로필의 영역별 수준으로 출발 수준과 비유를 정하는 규칙으로 바꾼다.
+- **Why**: 사용자가 프로젝트 이해 수준에 맞춘 설명을 원하며, 개인정보 없이 영역별 이해만 남기는 프로필을 별도 계약으로 정했다.
+
+## 2026-11-12 — 구조는 템플릿, 섹션 내용과 시각화는 작성 모델
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 내장 템플릿은 전체 영역 구성과 각 영역의 추상화 수준을 고정하고, 각 설명의 내용과 문단·표·목록·코드·그림 선택은 작성 모델이 정한다. 직접 하위 설명 4개 상한은 하위 절과 독립 설명 카드에만 적용하며, 이해를 돕는 경우 그림과 표를 적극 사용한다.
+- **Why**: 템플릿이 표를 표현하지 못해 비교 내용을 문장으로 풀어야 했다. 사용자는 구조와 추상화 수준은 템플릿이, 섹션 내용의 표현은 LLM이 맡고 시각화를 최대한 활용하도록 정했다.
+
+## 2026-11-12 — 내장 템플릿·작성 계획·수준별 정보 배분·문체 통일
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: HTML 리포트를 내장 템플릿으로만 생성하고 핵심 답 뒤에 고정 `전체 그림` 영역을 둔다. 본문 전에 읽기 경로를 계획하고 수준별로 담을 정보를 정하며, 한국어 `~다` 평서체 등 문체를 통일한다. 하위 설명은 두 번째 깊이부터 기본으로 접는다.
+- **Why**: 모델마다 리포트의 문체와 절 구성이 달라지고, 한 번에 모든 세부를 노출해 추상에서 구체로 내려가는 탑다운 구성이 약하다는 사용자 피드백에 따라 일관된 형태와 읽기 흐름을 보장하기 위해서다.
+
 ## 2026-10-07 — 가능한 그림을 기본 제공하고 부재는 완료 조건에서 제외
 
 - **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)

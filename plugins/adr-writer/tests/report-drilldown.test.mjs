@@ -147,23 +147,27 @@ test("collapsible branches expose an authored preview or existing scope without 
   assert.doesNotMatch(html, /<script>Explain/);
 });
 
-test("explanations start open while optional evidence stays folded and explicit choices remain supported", () => {
+test("first-level explanations start open, deeper ones fold, and explicit choices remain supported", () => {
   const doc = report();
   const child = doc.sections[0].children[0];
   child.diagram = {
     source: "flowchart LR\nA[Repeated request] --> B[Stored result]",
     explanation: "The request reuses its recorded result.",
   };
-  child.children = [{ ...child, id: "completion-detail", expanded: true }];
+  child.children = [
+    { ...child, id: "completion-detail", expanded: true },
+    { ...child, id: "completion-edge", diagram: undefined },
+  ];
   const before = structuredClone(doc);
   const html = renderHtml(doc);
   const details = [...html.matchAll(/<details\b([^>]*)>/g)].map((match) => match[1]);
-  assert.equal(details.filter((attrs) => attrs.includes('class="report-node"')).length, 3);
-  assert.ok(
-    details
-      .filter((attrs) => attrs.includes('class="report-node"'))
-      .every((attrs) => /\bopen(?:\s|$)/.test(attrs)),
-  );
+  const nodes = details.filter((attrs) => attrs.includes('class="report-node"'));
+  assert.equal(nodes.length, 4);
+  const opened = (id) => /\bopen(?:\s|$)/.test(nodes.find((attrs) => attrs.includes(`id="${id}"`)));
+  assert.ok(opened("completed") && opened("unknown"), "first-level children start open");
+  assert.ok(opened("completion-detail"), "an author can open a deeper explanation");
+  assert.ok(!opened("completion-edge"), "deeper explanations start folded");
+  assert.match(html, /id="completion-edge">\s*<summary>[^<]+<span class="branch-preview">/);
   assert.ok(
     details
       .filter(
@@ -185,6 +189,7 @@ test("explanations start open while optional evidence stays folded and explicit 
   const heading = collapsed.match(/<details\b[^>]*id="completed"[^>]*>/)[0];
   assert.doesNotMatch(heading, /\bopen\b/);
   assert.match(collapsed, /id="completion-detail" open/);
+  assert.doesNotMatch(collapsed, /id="completion-edge" open/);
   assert.match(collapsed, /id="unknown" open/);
   assert.ok(collapsed.includes(child.paragraphs[0]), "collapsed content is retained in the HTML");
 });

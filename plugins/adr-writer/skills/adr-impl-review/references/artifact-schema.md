@@ -205,28 +205,29 @@ with zero findings or zero choices. Empty arrays are allowed only as stated.
 
 ### Required top-level fields
 
-| Field                   | Shape and meaning                                                                                          |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `language`              | Non-empty report-language string.                                                                          |
-| `reviewMode`            | `standard` or `full`.                                                                                      |
-| `adr`                   | Non-empty path to the reviewed ADR, readable by the validator.                                             |
-| `verdict`               | `PASS`, `FIX_REQUIRED`, `INCONCLUSIVE`, or `BLOCK`, as synthesized.                                        |
-| `report`                | Path resolving to this artifact directory's `implementation-review.md`; that relative filename is valid.   |
-| `scope`                 | Array of non-empty strings identifying the complete implementation scope; non-empty for `PASS`.            |
-| `changeScope`           | Array of non-empty strings identifying the separate change scope; empty when no code changed.              |
-| `atAGlance`             | Object with non-empty `impact`, `action`, and `risk`; use `None` only for an axis checked and found empty. |
-| `relatedAdrComparisons` | Array of zero to two comparisons under the contract above.                                                 |
-| `diagramRequirements`   | Array of selected diagram records; empty only with each Hill's local omission metadata.                    |
-| `reviewHike`            | Context and non-empty Hills under the nested contract below.                                               |
-| `reviewDiagnostics`     | Object with all three diagnostic entries defined below.                                                    |
-| `contractCoverage`      | Non-empty array of the seven-field coverage rows; `D0` always represents the ADR Decision.                 |
-| `implementationChoices` | Array of four-field choice records; empty when no notable choices were found.                              |
-| `findings`              | Array of evidence-complete findings; empty when none were found.                                           |
+| Field                   | Shape and meaning                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `language`              | Non-empty report-language string.                                                                             |
+| `reviewMode`            | `standard` or `full`.                                                                                         |
+| `adr`                   | Non-empty path to the reviewed ADR, readable by the validator.                                                |
+| `verdict`               | `PASS`, `FIX_REQUIRED`, `INCONCLUSIVE`, or `BLOCK`, as synthesized.                                           |
+| `report`                | Path resolving to this artifact directory's `implementation-review.md`; that relative filename is valid.      |
+| `scope`                 | Array of non-empty strings identifying the complete implementation scope; non-empty for `PASS`.               |
+| `changeScope`           | Array of non-empty strings identifying the separate change scope; empty when no code changed.                 |
+| `atAGlance`             | Object with non-empty `impact`, `action`, and `risk`; use `None` only for an axis checked and found empty.    |
+| `relatedAdrComparisons` | Array of zero to two comparisons under the contract above.                                                    |
+| `diagramRequirements`   | Array of selected diagram records; empty only with each Hill's local omission metadata.                       |
+| `reviewHike`            | Context and non-empty Hills under the nested contract below.                                                  |
+| `reviewDiagnostics`     | Object with all three diagnostic entries defined below.                                                       |
+| `contractCoverage`      | Non-empty array of the seven-field coverage rows; `D0` always represents the ADR Decision.                    |
+| `implementationChoices` | Array of four-field choice records; empty when no notable choices were found.                                 |
+| `findings`              | Array of evidence-complete findings; empty when none were found.                                              |
+| `comprehensionCheck`    | Quiz of 1 to 6 questions per [quiz artifacts](quiz-artifact.md), or `{ "excluded": "<the user's request>" }`. |
 
 `relatedAdrComparisonOmissionReason` is conditionally required when comparisons
-are empty and must be omitted when comparisons exist. When a quiz is included,
-read [quiz artifacts](quiz-artifact.md) for its optional schema and hidden-answer
-behavior. An optional example is not needed to construct these required artifacts.
+are empty and must be omitted when comparisons exist. Read [quiz artifacts](quiz-artifact.md)
+for the quiz schema and hidden-answer behavior; use the `excluded` form only when
+the user explicitly excluded the quiz for this review. An optional example is not needed to construct these required artifacts.
 
 ### Required diagnostics
 

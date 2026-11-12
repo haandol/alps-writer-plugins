@@ -1,22 +1,23 @@
-# Optional comprehension artifacts
+# Comprehension artifacts
 
-Read only when a quiz is included or its existing artifacts are being revised.
+Read when writing or revising a review's quiz.
 For explicitly requested conversational grading, load
 [the interactive check](interactive-check.md) separately. Inclusion never starts it.
 
 The [common comprehension workflow](../../report-writer/references/comprehension.md)
 owns quiz generation, omission criteria, difficulty, count, placement and staged
-self-check. Generation is strongly recommended, not mandatory. If included,
-retain the generated `Comprehension check` audit section; otherwise omit the
-optional data and section without an approval or required omission record.
+self-check. The quiz is required: retain the generated `Comprehension check`
+audit section. Only when the user explicitly excluded the quiz, set
+`comprehensionCheck` to `{ "excluded": "<the user's request>" }` and write no
+quiz section.
 The fields below adapt that common quiz to this review's native audit schema.
 
-When present, `comprehensionCheck.questions` contains one to five questions with
+`comprehensionCheck.questions` contains one to six questions with
 non-empty `id`, `question`, exactly four `options`, one boolean `revisit`, one
 `correctOptionId`, `explanation`, and `evidence`. Never generate free-response
-primary questions or filler to reach five. For each question, keep:
+primary questions or filler to reach six. For each question, keep:
 
-- `id` — `Q1` through `Q5` in order
+- `id` — `Q1` through `Q6` in order
 - `question` — the visible application prompt
 - `options` — exactly four `{ "id": "A".."D", "text": "...", "feedback": "..." }` objects
 - `revisit` — boolean; exactly one or two questions are marked for later re-check

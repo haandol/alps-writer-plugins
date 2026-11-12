@@ -9,7 +9,7 @@ selection, source fidelity and rendering guidance.
 Include useful figures whenever evidence and delivery format support them.
 For a whole-system or multi-step process, prefer an overview after the background
 and answer, before component detail. Show purpose, boundaries and essential
-relationships; the first top-level node is a useful location in the shared renderer.
+relationships; in the shared renderer it belongs in `overview.diagram`.
 
 Assess visualization at every depth, including leaf sections. A detailed view
 should expose the new relationships, conditions, state changes or interactions
@@ -26,6 +26,24 @@ or evidence limits; explain supported relationships and material limitations
 in prose when a figure is not feasible. Never invent participants or calls to
 fill a diagram.
 Missing figures alone never block delivery, including top-down or C4-like requests.
+
+## Reuse the business ontology
+
+When the project has a business ontology and ontology-writer is available, and
+the report's topic belongs to its bounded contexts, reuse that work instead of
+redrawing the business structure. Run ontology-writer's `query --overview` and
+pipe it to `scripts/ontology-figure.mjs --contexts <id,...>` (add `--neighbors`
+to show directly collaborating contexts as dashed context). Use the generated
+Mermaid as the Overview figure, and open a context with `query --context <id>`
+when a section needs its processes. Use only the query output, never the model
+documents, and keep the BC labels as the ontology states them. Where the
+[reader profile](reader-profile.md) marks one of these contexts `beginner`, that
+section explains it in more detail. Without an ontology, draw the figure from
+the report's evidence as usual.
+
+When the content is a comparison or mapping rather than a relationship, a table
+in the section body may explain it better than a figure; see
+[writing style](writing-style.md#choose-the-form-and-visualize-where-it-helps).
 
 Choose any Mermaid type supported by the bundled engine that answers the question
 and honors requested notation: sequence for interaction order, class for

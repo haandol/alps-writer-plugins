@@ -285,7 +285,8 @@ test("review and sync reports put the at-a-glance answer after Purpose and Conte
     SHARED("explanation-design"),
     'Directly below the title, place two separate sections in this order: "Purpose", then "Context" ("목표", then "배경" in Korean).',
     "Immediately follow with the answer, material implication, conclusion-changing limitations and required next action in a distinct display area.",
-    "Put navigation and detailed evidence after this early answer; choose later headings for the subject rather than imposing a universal outline.",
+    'Then the fixed Overview ("전체 그림" in Korean) shows the whole as the parts the sections open and how they connect, with a figure when supported.',
+    "Put detailed evidence after these; choose the titles of sections after the Overview for the subject rather than imposing a universal outline.",
   );
   for (const [template, detail] of [
     [REVIEW_REPORT, "### Per-ADR"],

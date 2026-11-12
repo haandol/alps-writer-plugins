@@ -28,6 +28,7 @@ flowchart LR
 | Reconcile ADRs with the code after drift      | `/adr-sync [category]`        |
 | Consolidate one decision's recorded evolution | `/adr-rollup [category]`      |
 | Write a standalone report for a reader        | `/report-writer`              |
+| Pitch reports at your level in this project   | `/reader-profile`             |
 
 ## Reports you can read
 
@@ -36,6 +37,13 @@ context first, then the answer and its limits, figures where they help, the
 evidence, and optional self-check questions.
 
 ![A report from the bundled example](../../docs/images/report-writer.webp)
+
+Reports pitch each explanation at your level in the project. `/reader-profile`
+(or `$reader-profile` in Codex) reads only the messages you typed in this project's Claude Code and Codex
+sessions, with emails, URLs, paths, tokens and long identifiers removed first,
+and keeps a short per-area note of what you know and what to explain, under
+`~/.agents/report-writer/reader-profiles/` outside the repository. Report writing
+asks before building it, and again when it is more than three months old.
 
 The screenshot renders the bundled [example report](./skills/report-writer/references/examples/report-with-quiz.json);
 `bun run docs:screenshots` regenerates it.
