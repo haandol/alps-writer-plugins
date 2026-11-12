@@ -7,13 +7,16 @@ const esc = (value) =>
   );
 const encoded = (value) => Buffer.from(value, "utf8").toString("base64");
 
+/** Every report carries one to six questions unless the user excluded the quiz. */
+export const MAX_QUESTIONS = 6;
+
 /**
  * Reject incomplete or ambiguous quiz data before rendering. Section ownership is
  * checked by the report adapter; question count and answer shape are shared.
  */
 export function validateQuestions(questions) {
-  if (!Array.isArray(questions) || questions.length < 1 || questions.length > 5)
-    throw new Error("comprehensionCheck.questions must contain 1 to 5 questions");
+  if (!Array.isArray(questions) || questions.length < 1 || questions.length > MAX_QUESTIONS)
+    throw new Error(`comprehensionCheck.questions must contain 1 to ${MAX_QUESTIONS} questions`);
   let revisitCount = 0;
   for (const [index, question] of questions.entries()) {
     const name = `comprehensionCheck.questions[${index}]`;

@@ -252,7 +252,7 @@ Model documents use the closed vocabulary in `templates/ontology/vocabulary.ttl`
 - The ADR index, `docs/adr/.mapping.json`, belongs to adr-writer. A category's `realizes` list is the only link between a feature and the steps it realizes: this plugin writes those links in the same change unit as the model and validates them, and adr-writer checks only their shape and moves them when categories split or merge.
 - A model change that affects ADRs needs adr-writer: the ADR revisions in its approval summary follow `/adr-new`'s draft rules, and `/adr-impl` implements them. Without adr-writer such a change stops before the approval summary; a change that affects no ADR is saved by this plugin alone.
 - With a model present, adr-writer's session directive adds one line saying that business context is checked through this plugin. Without this plugin, ADR work states that the business context was not checked.
-- This plugin carries copies of the adr-writer scripts it runs — reading the ADR index and ADR Status, recording a Status transition, opening a report — and of the shared report-writer skill. Edit the originals; `bun run shared-scripts:sync` and `bun run report-skill:sync` refresh the copies, and CI fails on a stale one.
+- This plugin carries copies of the adr-writer scripts it runs — reading the ADR index and ADR Status, recording a Status transition, opening a report — and of the shared report-writer and reader-profile skills. Edit the originals; `bun run shared-scripts:sync` and `bun run report-skill:sync` refresh the copies, and CI fails on a stale one.
 
 ## Hook
 

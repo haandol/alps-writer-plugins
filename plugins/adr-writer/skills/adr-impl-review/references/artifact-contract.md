@@ -8,10 +8,10 @@ Reuse loaded owners; load a child only for its stated operation:
 - **Writing or repairing native artifacts:** read [artifact schema](artifact-schema.md)
   for exact fields, generated anchors, coverage and disclosure. Load the
   [worked JSON example](artifact-example.md) only when an example is needed.
-- **Quiz included:** read [quiz artifacts](quiz-artifact.md). Quiz generation is
-  strongly recommended, not mandatory; the [common comprehension workflow](../../report-writer/references/comprehension.md)
-  owns selection. Without a quiz, omit its data and section without approval or
-  an omission record. Do not load quiz details for a no-quiz report.
+- **Quiz:** read [quiz artifacts](quiz-artifact.md). The quiz is required; the
+  [common comprehension workflow](../../report-writer/references/comprehension.md)
+  owns its content. Only a user's explicit exclusion replaces it with
+  `comprehensionCheck.excluded`, and then no quiz section is written.
 - **Repair guide:** read [repair guidance](repair-guide.md) only for `FIX_REQUIRED`,
   `BLOCK`, or requested detailed repair guidance.
 - **Explicit interactive request:** read [interactive check](interactive-check.md)

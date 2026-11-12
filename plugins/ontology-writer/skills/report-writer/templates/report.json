@@ -1,0 +1,107 @@
+{
+  "title": "{{Title: the reader's question or the report's conclusion, written in the report language}}",
+  "language": "{{ko or en}}",
+  "purpose": [
+    "{{What this report lets the reader understand, distinguish, decide, explain or do. One short paragraph grounded in the request.}}"
+  ],
+  "background": [
+    "{{The confirmed problem or open question, the requested work and its subject, and why it was requested now. Facts from the conversation and supplied material only.}}"
+  ],
+  "summary": [
+    "{{The core answer first: conclusion, why it matters, the limitation that changes it, and the next action. No file paths, functions, fields, commands or logs.}}"
+  ],
+  "overview": {
+    "paragraphs": [
+      "{{The whole subject as the parts the sections below open (at most four), and how those parts connect to produce the answer above. Name the parts by responsibility, not by implementation.}}"
+    ],
+    "diagram": {
+      "source": "{{Mermaid source showing only the parts and their relationships. Delete this diagram object when evidence or format cannot support a figure.}}",
+      "explanation": "{{One or two sentences telling the reader what the figure establishes.}}"
+    }
+  },
+  "sections": [
+    {
+      "id": "part-one",
+      "title": "{{Section title naming the question this part answers}}",
+      "domain": "{{Evidenced domain, subdomain or responsibility this part belongs to}}",
+      "scope": "{{What this section covers and leaves out}}",
+      "preview": "{{One sentence: what the reader learns here that the Overview did not show}}",
+      "paragraphs": [
+        "{{Lead answer for this part in one or two sentences, including any condition that changes it.}}",
+        "{{The part's role, relationships and rules. Introduce a role before using an implementation name for it.}}",
+        {
+          "table": {
+            "caption": "{{Optional block: what this comparison shows. The section body is yours: add, reorder or delete text, table, list and code blocks as the content needs.}}",
+            "headers": ["{{Item}}", "{{Attribute the reader compares by}}"],
+            "rows": [["{{Row}}", "{{Short cell}}"]]
+          }
+        }
+      ],
+      "diagram": {
+        "source": "{{Optional: Mermaid source for this part's flow, relationships or states. Delete this diagram object when a figure would not help.}}",
+        "explanation": "{{What the reader should notice in the figure}}"
+      },
+      "children": [
+        {
+          "id": "part-one-detail",
+          "title": "{{The narrower question one responsibility of this part raises}}",
+          "domain": "{{Same domain as the parent}}",
+          "scope": "{{Which responsibility of the parent this opens}}",
+          "preview": "{{One sentence: the mechanism, condition or case this adds}}",
+          "paragraphs": [
+            "{{Concrete behavior: an evidenced or clearly illustrative input, the applicable condition, the result and the important exception, with exact values.}}"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "label": "{{What this source shows}}",
+          "source": "{{Resolvable local path, #fragment or https URL}}",
+          "excerpt": "{{Short literal excerpt; delete this field when not needed}}"
+        }
+      ]
+    }
+  ],
+  "requiredEvidenceIds": ["E1"],
+  "review": {
+    "status": "draft",
+    "basis": "{{The checks actually performed on the latest output}}",
+    "limitations": "{{What remains unverified, or an empty string}}"
+  },
+  "comprehensionCheck": {
+    "questions": [
+      {
+        "id": "Q1",
+        "sectionId": "part-one",
+        "question": "{{Required quiz, 1 to 6 questions: a medium-difficulty question applying this section's core rule to a situation. Add Q2..Q6 as the core content needs. Replace comprehensionCheck with { \"excluded\": \"<the user's request>\" } only when the user explicitly excluded the quiz.}}",
+        "options": [
+          {
+            "id": "A",
+            "text": "{{Option A: a plausible reading of the content}}",
+            "feedback": "{{Neutral feedback explaining why option A does or does not follow}}"
+          },
+          {
+            "id": "B",
+            "text": "{{Option B: a plausible reading of the content}}",
+            "feedback": "{{Neutral feedback explaining why option B does or does not follow}}"
+          },
+          {
+            "id": "C",
+            "text": "{{Option C: a plausible reading of the content}}",
+            "feedback": "{{Neutral feedback explaining why option C does or does not follow}}"
+          },
+          {
+            "id": "D",
+            "text": "{{Option D: a plausible reading of the content}}",
+            "feedback": "{{Neutral feedback explaining why option D does or does not follow}}"
+          }
+        ],
+        "correctOptionId": "{{Correct option id, A to D}}",
+        "explanation": "{{Why the correct option follows from the report}}",
+        "evidence": "{{The passage or source that supports the answer}}",
+        "revisit": true
+      }
+    ]
+  }
+}

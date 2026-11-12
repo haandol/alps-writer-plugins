@@ -1,20 +1,18 @@
 # Comprehension support
 
-Strongly recommend a short quiz when it helps the reader apply a substantive
-report's core content. Generation is not mandatory. Honor explicit inclusion or
-exclusion; otherwise the report's purpose and learning value determine whether
-to include it. Omission needs no approval or mandatory justification record and
-must not block delivery. Generating questions or selecting correct answers does
-not measure learning gains or cognitive-load reduction.
-
-The rules below apply when a quiz is included.
+Every report includes a quiz of one to six questions on its core content. The
+only exception is a user's explicit exclusion for that report: record it as
+`comprehensionCheck: { "excluded": "<the user's request>" }` instead of questions.
+Chat answers that are not reports carry no quiz. Generating questions or
+selecting correct answers does not measure learning gains or cognitive-load
+reduction, and an unanswered quiz never blocks the original task.
 
 ## Select the core content
 
 After the report's explanation is grounded and coherent, select the concepts
 the reader needs to understand its conclusion or use it correctly. Generate one
-to five questions for the whole report, not per domain. Use fewer when that
-covers the material; never add filler to reach five.
+to six questions for the whole report, not per domain. Use fewer when that
+covers the material; never add filler to reach six.
 
 Questions have medium difficulty: ask the reader to apply a central concept,
 causal relationship, condition, boundary, or important choice in a small
@@ -88,7 +86,7 @@ not in an ADR, mapping, repository, or other authoritative registry.
 Add `comprehensionCheck: { "questions": [...] }` to the shared report document.
 Each question contains:
 
-- `id`: `Q1` through `Q5` in order; `sectionId`: the existing node after whose
+- `id`: `Q1` through `Q6` in order; `sectionId`: the existing node after whose
   explanation the question belongs; `question`: its visible prompt.
 - `options`: exactly four objects with `id` (`A` through `D` in order), `text`,
   and neutral `feedback`; `correctOptionId`: exactly one of those option IDs.
@@ -96,8 +94,9 @@ Each question contains:
   source supporting the answer.
 - `revisit`: boolean; one or two questions are true, or the sole question is true.
 
-Omit `comprehensionCheck` when no quiz is selected; this is valid for new and legacy
-inputs without an omission record. The renderer rejects unknown section references,
+`comprehensionCheck` is required: the CLI renderer refuses a report without it,
+and accepts `{ "excluded": "<the user's request>" }` only for an explicit user
+exclusion. The renderer rejects unknown section references,
 ambiguous choices, excess questions and missing answer evidence. It makes no model
 call and does not judge topical importance or difficulty; the author reviews those.
 

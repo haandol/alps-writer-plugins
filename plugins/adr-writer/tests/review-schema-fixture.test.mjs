@@ -182,6 +182,7 @@ Requests at capacity are rejected.
     contractCoverage: coverage,
     implementationChoices: [],
     findings: [],
+    comprehensionCheck: { excluded: "The user excluded the quiz for this fixture." },
   };
   // If documentation drops a required key, fail rather than rescue the fixture
   // from a copied payload. New documented keys likewise need meaningful values.
@@ -237,8 +238,7 @@ test("mandatory schema alone produces materializable and valid artifacts with ex
   assert.equal(separator, " | ");
   withTmp((dir) => {
     const data = fixture(dir);
-    for (const field of ["metrics", "explanation", "comprehensionCheck", "title"])
-      assert.ok(!(field in data));
+    for (const field of ["metrics", "explanation", "title"]) assert.ok(!(field in data));
     const result = materialize(dir);
     assert.equal(result.status, 0, result.stderr);
     const validation = validate(dir);

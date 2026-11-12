@@ -21,8 +21,9 @@ or forcing the whole page to scroll sideways. Do not enlarge a small diagram to
 an arbitrary minimum width. Preserve usable focus indicators and print layout.
 
 The shared renderer embeds `scripts/report.css` into the standalone HTML; no font
-download or external stylesheet is needed. Use that stylesheet as the default
-instead of adding a separate theme when composing a report.
+download or external stylesheet is needed. Every report uses this template and
+stylesheet: do not hand-write the page shell, add a separate theme or restyle
+the fixed regions (title, Purpose, Context, answer, Overview, sections, review).
 Code-review diffs use the bundled diff2html view described in
 [code evidence](code-evidence.md), with print styles that preserve line numbers
 and change markers while wrapping long lines across the available page width.
@@ -42,12 +43,13 @@ may use their own scroll region without widening the whole page.
 
 ## Print and handout layout
 
-Print all explanatory subsections, figures, and evidence marked as necessary
-regardless of their current collapsed state. Leave optional evidence folded unless
+Print all explanatory subsections at every depth, figures, and evidence marked
+as necessary regardless of their current collapsed state. Leave optional evidence folded unless
 the reader has opened it and its enclosing evidence group; do not automatically
 add raw logs and code appendices to the handout. Restore the screen state after printing;
-repeated print events must not lose it. The initial HTML itself must contain
-expanded subsections rather than relying on a script to reveal the document.
+repeated print events must not lose it. The initial HTML itself contains
+the top-level sections and first-level children expanded; the print script opens
+deeper collapsed explanations, and without scripts they print as title and preview.
 Keep the purpose, context, answer, child explanations, questions, and included source
 evidence in their established reading order. No material limitation or required
 action may exist only in an optional folded source.

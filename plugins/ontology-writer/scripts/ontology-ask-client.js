@@ -23,6 +23,8 @@
         sent: "전달됨",
         chat: "대화에서 답함",
         closedQ: "닫힌 질문",
+        expand: "펼치기",
+        collapse: "접기",
         textHint: "직접 답하기 — 입력하면 선택지 대신 이 답을 보냅니다",
         endSession: "세션 끝내기",
         ended: "세션이 끝났습니다. 남은 질문은 대화에서 답할 수 있습니다.",
@@ -78,6 +80,8 @@
         sent: "Delivered",
         chat: "Answered in chat",
         closedQ: "Closed",
+        expand: "Expand",
+        collapse: "Collapse",
         textHint: "Write an answer — typing replaces the selected option",
         endSession: "End session",
         ended: "The session has ended. Remaining questions can be answered in the conversation.",
@@ -470,7 +474,15 @@
     c.id = el("span", "qid");
     c.text = el("span", "qtext");
     c.badge = el("span", "badge");
-    c.headline.append(c.id, c.text, c.badge);
+    // Closed cards fold to their question and answer; the toggle reopens them for reading.
+    c.toggle = el("button", "card-toggle");
+    c.toggle.type = "button";
+    c.toggle.addEventListener("click", () => {
+      c.manual = !c.root.classList.contains("is-collapsed");
+      const current = state.questions.find((item) => item.id === q.id);
+      if (current) update(c, current);
+    });
+    c.headline.append(c.id, c.text, c.badge, c.toggle);
     c.detail = el("p", "detail");
     c.figure = figure();
     c.evidence = el("details", "evidence");
@@ -641,7 +653,19 @@
     const closed = Boolean(q.closed) || state.closed;
     c.root.classList.toggle("closed", closed);
     c.root.classList.toggle("is-answered", Boolean(q.answer));
-    for (const n of c.root.querySelectorAll("input, textarea, button")) n.disabled = closed;
+    // A closed question can no longer be answered, so it folds to its question and answer.
+    // Open questions stay expanded, answered or not, because their answer may still change.
+    // A reader's own toggle holds until the question closes or reopens.
+    const auto = closed;
+    const autoKey = String(closed);
+    if (c.autoKey !== autoKey) ((c.autoKey = autoKey), (c.manual = undefined));
+    const collapsed = c.manual ?? auto;
+    c.root.classList.toggle("is-collapsed", collapsed);
+    c.toggle.textContent = collapsed ? T.expand : T.collapse;
+    c.toggle.setAttribute("aria-expanded", String(!collapsed));
+    c.toggle.hidden = !closed;
+    for (const n of c.root.querySelectorAll("input, textarea, button"))
+      if (n !== c.toggle) n.disabled = closed;
     c.send.disabled = closed || !c.input.value.trim() || c.sending === c.revision;
     c.draft.hidden = !c.editing;
     c.draft.textContent = c.sending === c.revision ? T.submitting : T.draft;

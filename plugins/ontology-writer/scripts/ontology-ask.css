@@ -120,6 +120,33 @@ button:disabled {
 .card.closed {
   opacity: 0.6;
 }
+/* A folded card keeps only its group, question line and answer. */
+.card.is-collapsed {
+  padding-block: 10px;
+}
+.card.is-collapsed > :not(.group, h2, .answer) {
+  display: none;
+}
+.card.is-collapsed h2 {
+  margin-bottom: 2px;
+}
+.card.is-collapsed .answer {
+  margin: 0;
+}
+.card-toggle {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.card.closed .card-toggle {
+  opacity: 1;
+}
 .group {
   margin: 0 0 4px;
   font-size: 0.8rem;

@@ -1,0 +1,9 @@
+@prefix m: <urn:ontology-writer:model:> .
+@prefix onto: <urn:ontology-writer:vocabulary:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+m:product-planning a onto:BoundedContext ;
+    rdfs:label "제품 기획" ;
+    onto:definition "사용자의 문제와 원하는 결과를 제품 요구사항 문서(PRD)로 정리하고, 구현할 기능 계약을 결정 기록으로 넘기는 경계." ;
+    onto:coreLogic "사용자가 제시한 문제·비즈니스 임팩트를 받아 섹션마다 설명·질문·승인을 거쳐 PRD를 저장하고, 기능마다 구현에 필요한 계약을 빠짐없이 결정 기록으로 이관한 뒤 PRD는 기획 기록으로 남긴다." ;
+    onto:collaboratesWith m:architecture-decision, m:implementation-assurance .

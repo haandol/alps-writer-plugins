@@ -349,3 +349,43 @@ test("a failed older chat receipt preserves a newer draft and does not label it 
     }
   });
 });
+
+test("closed questions fold to their answer while open answered ones stay editable", async () => {
+  await inQuestionPage(async (s, page) => {
+    await choose(page, "Q1", "yes");
+    await saved(page, "Q1", "Keep");
+    const folded = (id) =>
+      page.$eval(`#q-${id}`, (card) => card.classList.contains("is-collapsed"));
+    const visible = (selector) =>
+      page.$eval(
+        selector,
+        (node) => node.getClientRects().length > 0 && getComputedStyle(node).display !== "none",
+      );
+    assert.equal(await folded("Q1"), false, "an open answered question can still change");
+    assert.equal(await visible("#q-Q1 textarea"), true);
+    assert.equal(await visible("#q-Q1 .card-toggle"), false);
+
+    const next = structuredClone(QUESTIONS);
+    next.questions[0].closed = true;
+    next.agent = { message: "Q1 settled." };
+    writeFileSync(s.files.questions, JSON.stringify(next));
+    await page.waitForFunction(() =>
+      document.querySelector("#q-Q1").classList.contains("is-collapsed"),
+    );
+    assert.equal(await visible("#q-Q1 textarea"), false, "a folded card hides its controls");
+    assert.equal(await visible("#q-Q1 .answer"), true, "a folded card keeps its answer visible");
+    assert.equal(await folded("Q2"), false, "an unanswered question stays open");
+    assert.equal(
+      await page.$eval("#q-Q1 .card-toggle", (b) => b.getAttribute("aria-expanded")),
+      "false",
+    );
+
+    await page.click("#q-Q1 .card-toggle");
+    assert.equal(await folded("Q1"), false, "the reader can reopen a closed card");
+    assert.equal(await page.$eval("#q-Q1 textarea", (t) => t.disabled), true, "it stays read-only");
+    await new Promise((resolve) => setTimeout(resolve, 1300));
+    assert.equal(await folded("Q1"), false, "a refresh keeps the reader's choice");
+    await page.click("#q-Q1 .card-toggle");
+    assert.equal(await folded("Q1"), true);
+  });
+});

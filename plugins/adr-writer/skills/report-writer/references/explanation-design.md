@@ -6,15 +6,17 @@ owning workflow retains scope, evidence, verdict and permissions.
 ## Establish the reader's question
 
 Identify the reader, question or decision, language, format and available evidence.
-Use relevant context from the current request, conversation and available user
-memory to choose the starting explanation, vocabulary and depth. Current
+Use the project's [reader profile](reader-profile.md) for the report's area, and
+relevant context from the current request, conversation and available user
+memory, to choose the starting explanation, vocabulary and depth. Current
 instructions and the stated audience take precedence over remembered preferences.
 A remembered project name alone does not establish knowledge of its internals.
 Use the relevant known concept or experience to explain a relationship in the
 subject; mentioning the reader's background without changing the explanation is
 insufficient. When familiarity is unknown, use a plain account of the problem,
-actors and outcome. Do not invent familiarity, repeat a background interview,
-require personal-data lookup or create a learner-profile record.
+actors and outcome. Do not invent familiarity or repeat a background interview.
+Build or change the reader profile only as [reader profile](reader-profile.md)
+allows, and never look up personal data for any other purpose.
 
 Directly below the title, place two separate sections in this order:
 "Purpose", then "Context" ("목표", then "배경" in Korean).
@@ -28,8 +30,11 @@ Do not invent motives or learning results, or repeat the purpose as background.
 
 Immediately follow with the answer, material implication, conclusion-changing
 limitations and required next action in a distinct display area. Its heading is
-optional. Put navigation and detailed evidence after this early answer; choose
-later headings for the subject rather than imposing a universal outline.
+optional. Then the fixed Overview ("전체 그림" in Korean) shows the whole as the
+parts the sections open and how they connect, with a figure when supported.
+Put detailed evidence after these; choose the titles of sections after the
+Overview for the subject rather than imposing a universal outline. Plan this
+path and allocate detail per level with [reading path](reading-path.md).
 Do not force report openings onto short progress or completion messages.
 
 When explaining material autonomous choices, connect the affected user's intent,
@@ -86,9 +91,11 @@ attach findings or alternatives where they change its explanation.
   system, domain and bounded-context boundaries coincide. Label an editorial
   grouping as such rather than inventing an architectural boundary.
 - **Keep at most four immediate child explanation units.** Paragraph count is
-  unrestricted. Reorganize five or more peer sections, list items, cards or
-  comparisons by meaningful scope; do not truncate, hide an unstructured dump,
-  use arbitrary numbered groups or add empty levels. Supporting sources and
+  unrestricted. Reorganize five or more peer sections or explanation cards by
+  meaningful scope; do not truncate, hide an unstructured dump, use arbitrary
+  numbered groups or add empty levels. Tables, lists and code blocks inside an
+  explanation are presentation the author chooses; their rows and items do not
+  count, but items that each need their own explanation become child sections. Supporting sources and
   quizzes belong to their explanation and do not consume this child allowance.
 - **Lead with the answer and orient each descent.** After the required Purpose
   and Context opening, start each explanatory section with the direct answer
@@ -104,9 +111,13 @@ attach findings or alternatives where they change its explanation.
   branches. Titles and previews should make the next reading choice clear
   without repeating an inventory. A simple source list needs no artificial
   parent paragraph.
-- **Separate explanation from evidence disclosure.** Default all explanatory
-  subsections to expanded; readers may collapse them or explicitly request a
-  collapsed view. Detailed evidence, logs and code default to collapsed. Expand
+- **Separate explanation from evidence disclosure.** Top-level sections and
+  their first-level children start expanded; deeper children start collapsed
+  with their title and preview visible, so the first screen shows the answer,
+  Overview and each part's explanation without every mechanism. Mark a deeper
+  child expanded only when the conclusion cannot be understood without it.
+  Readers may open or collapse any branch, and print includes all of them.
+  Detailed evidence, logs and code default to collapsed. Expand
   evidence needed to understand a result, limit or action, and keep material
   facts in the body too. Preserve complete source access without turning every
   required evidence ID into an expansion requirement. Disclosure is not depth.
@@ -144,13 +155,14 @@ the main explanation. Preserve exact values rather than deleting detail.
 Stop when the intended reader can explain the responsibility's behavior and
 limits or apply its rule without guessing hidden steps. If the source does not
 support deeper internals, state that boundary. Use the existing prose and figures;
-do not add a mandatory depth, mapping registry, or authoring-plan artifact.
+do not add a mandatory depth or mapping registry, and keep the reading-path plan
+a working step rather than a saved artifact.
 
 When choosing a familiar starting point or connecting it to an unfamiliar part,
 use [abstraction and analogy](abstraction-and-analogy.md). For figures, use
 [diagrams](diagrams.md) when choosing, drawing or reviewing them. Assess useful
 views throughout the explanation; a whole-system or multi-step report normally
-benefits from an overview after the background and answer, before component detail.
+places its overview figure in the Overview region, before component detail.
 Honor exclusions and evidence limits; a missing figure alone never blocks delivery.
 For HTML, use [interactive explanations](interactive-explanations.md) when the
 reader can learn by expanding a responsibility or changing a condition or case.

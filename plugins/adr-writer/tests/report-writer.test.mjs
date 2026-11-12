@@ -16,6 +16,7 @@ const read = (relative) => readFileSync(path.join(ROOT, relative), "utf8");
 const sample = () => ({
   title: "A retry keeps one settlement",
   language: "en",
+  comprehensionCheck: { excluded: "The user excluded the quiz for this fixture." },
   summary: ["The duplicate path preserves one charge.", "Provider recovery remains unverified."],
   requiredEvidenceIds: ["R1", "T1"],
   review: {
@@ -123,7 +124,7 @@ test("five peer units, missing evidence and hidden headings fail instead of trun
   assert.throws(() => validateReport(duplicate), /unique/);
   const hidden = sample();
   hidden.sections[0].paragraphs = ["## Hidden fifth section"];
-  assert.throws(() => validateReport(hidden), /headings and peer lists/);
+  assert.throws(() => validateReport(hidden), /child nodes for headings/);
   const ignored = sample();
   ignored.unlistedFinding = "must not disappear";
   assert.throws(() => validateReport(ignored), /would be lost/);
@@ -335,7 +336,9 @@ test("standalone report guidance links and examples resolve within the shipped s
         visit(destination);
       } else if (destination.endsWith(".json")) {
         const doc = JSON.parse(readFileSync(destination, "utf8"));
-        assert.equal(validateReport(doc).semanticReview, doc.review.status);
+        if (destination.includes(`${path.sep}templates${path.sep}`))
+          assert.throws(() => validateReport(doc), /Unfilled template placeholders/);
+        else assert.equal(validateReport(doc).semanticReview, doc.review.status);
       }
     }
   };
@@ -457,6 +460,176 @@ test("CLI and API preserve output and diagnostics for optional figures at any de
         }
       }
     }
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});
+
+const TEMPLATE = "shared/report-writer/templates/report.json";
+/** Fill every placeholder the way an author would, keeping the template's shape. */
+function filledTemplate() {
+  const doc = JSON.parse(read(TEMPLATE).replace(/\{\{[^{}]*\}\}/g, "Filled text"));
+  doc.language = "ko";
+  doc.overview.diagram.source = "flowchart LR\n  A[Part one] --> B[Answer]";
+  doc.sections[0].diagram.source = "flowchart LR\n  A[Input] --> B[Rule]";
+  doc.sections[0].evidence[0].source = "notes.md";
+  const quiz = doc.comprehensionCheck.questions[0];
+  quiz.correctOptionId = "B";
+  quiz.options.forEach((option, i) => (option.text = `Distinct option ${i}`));
+  return doc;
+}
+
+test("the shipped template is refused until every placeholder is filled", () => {
+  const raw = JSON.parse(read(TEMPLATE));
+  assert.throws(() => validateReport(raw), /Unfilled template placeholders/);
+  const partly = filledTemplate();
+  partly.sections[0].children[0].paragraphs[0] = "Input {{example}} stays";
+  assert.throws(() => validateReport(partly), /part-one-detail\.paragraphs\[0\]/);
+  const doc = filledTemplate();
+  assert.equal(validateReport(doc).nodes, 3);
+  const quizless = filledTemplate();
+  quizless.comprehensionCheck.questions[0].question = "Which {{case}} applies?";
+  assert.throws(() => validateReport(quizless), /comprehensionCheck\.questions\[0\]\.question/);
+  delete quizless.comprehensionCheck;
+  assert.doesNotThrow(() => validateReport(quizless), "deleting the optional quiz slot is valid");
+  const evidence = filledTemplate();
+  evidence.sections[0].evidence[0].excerpt = "template: {{ name }}";
+  assert.doesNotThrow(() => validateReport(evidence), "literal evidence may contain braces");
+});
+
+test("the fixed Overview follows the answer and maps every top-level section", () => {
+  const doc = filledTemplate();
+  doc.sections[0].title = "First part";
+  doc.sections[0].preview = "Why the first part decides the answer.";
+  doc.sections.push({
+    id: "part-two",
+    title: "Second part",
+    domain: "Filled text",
+    scope: "The second part",
+    paragraphs: ["The second part explains its own rule."],
+  });
+  const html = renderHtml(doc);
+  const at = (needle) => html.indexOf(needle);
+  assert.ok(at('class="report-answer"') < at('id="overview"'));
+  assert.ok(at('id="overview"') < at('id="part-one"'));
+  assert.match(html, /<section class="report-overview" id="overview"><h2>전체 그림<\/h2>/);
+  assert.match(
+    html,
+    /<ol class="reading-map"><li><a href="#part-one">First part<\/a><span class="branch-preview">Why the first part decides the answer\.<\/span><\/li><li><a href="#part-two">Second part<\/a><span class="branch-preview">The second part<\/span>/,
+  );
+  assert.doesNotMatch(html, /<nav aria-label="Domains">/, "the reading map replaces the link bar");
+  assert.match(html, /mermaid/, "an Overview figure loads the diagram runtime");
+  const markdown = renderMarkdown(doc);
+  assert.ok(markdown.indexOf("## 전체 그림") > markdown.indexOf("Filled text"));
+  assert.match(
+    markdown,
+    /^1\. \[First part\]\(#part-one\) — Why the first part decides the answer\.$/m,
+  );
+  assert.match(markdown, /^2\. \[Second part\]\(#part-two\)/m);
+  doc.language = "en";
+  assert.match(renderHtml(doc), /<h2>Overview<\/h2>/);
+});
+
+test("legacy reports without an Overview keep their link bar, and the anchor is reserved", () => {
+  const legacy = sample();
+  assert.match(renderHtml(legacy), /<nav aria-label="Domains">/);
+  assert.doesNotMatch(renderHtml(legacy), /<section class="report-overview"/);
+  const clash = filledTemplate();
+  clash.sections[0].id = "overview";
+  assert.throws(() => validateReport(clash), /unique safe node identifiers/);
+  const quiz = filledTemplate();
+  assert.throws(() => {
+    quiz.overview.paragraphs = ["- a list item"];
+    validateReport(quiz);
+  }, /overview\.paragraphs\[0\]: use a list block/);
+});
+
+test("report guidance makes the template, plan and style the common authoring path", () => {
+  const skill = read("shared/report-writer/SKILL.md");
+  for (const phrase of [
+    /Plan the reading path/,
+    /templates\/report\.json/,
+    /Never hand-write the\s+page shell/,
+    /writing-style\.md/,
+    /reading-path\.md/,
+  ])
+    assert.match(skill, phrase);
+  const style = read("shared/report-writer/references/writing-style.md");
+  assert.match(style, /`~다` form/);
+  const plan = read("shared/report-writer/references/reading-path.md");
+  assert.match(plan, /never as a report section,\s+companion file or approval record/);
+  assert.match(plan, /\| Core answer \(summary\)/);
+});
+
+test("authors choose tables, lists and code inside a section without consuming branch slots", () => {
+  const doc = filledTemplate();
+  const rows = Array.from({ length: 7 }, (_, i) => [
+    `Input ${i}`,
+    i % 2 ? "measured" : "unmeasured",
+  ]);
+  doc.sections[0].paragraphs = [
+    "The rule opens with prose.",
+    { table: { caption: "Before and after <fix>", headers: ["Input", "Result | state"], rows } },
+    { list: { ordered: true, items: ["First", "Second", "Third", "Fourth", "Fifth", "Sixth"] } },
+    { code: { language: "python", text: "if total is None:\n    return '{{ kept }}'" } },
+  ];
+  const summary = validateReport(doc);
+  assert.equal(summary.nodes, 3, "blocks never become explanation branches");
+  const html = renderHtml(doc);
+  assert.match(
+    html,
+    /<div class="table-wrap" role="region" tabindex="0" aria-label="Before and after &lt;fix&gt;"><table><caption>/,
+  );
+  assert.equal((html.match(/<tbody>[\s\S]*?<\/tbody>/)[0].match(/<tr>/g) ?? []).length, 7);
+  assert.match(html, /<ol class="body-list"><li>First<\/li>/);
+  assert.match(html, /<pre class="body-code"><code data-language="python">if total is None:/);
+  const markdown = renderMarkdown(doc);
+  assert.match(markdown, /^\| Input \| Result \\\| state \|$/m);
+  assert.match(markdown, /^\| --- \| --- \|$/m);
+  assert.match(markdown, /^6\. Sixth$/m);
+  assert.match(markdown, /```python\nif total is None:/);
+
+  for (const [block, message] of [
+    [{ table: { headers: ["A", "B"], rows: [["only one"]] } }, /one text cell per header/],
+    [{ list: { items: [] } }, /list\.items requires at least 1/],
+    [
+      { table: { headers: ["A"], rows: [["x"]] }, list: { items: ["y"] } },
+      /exactly one of table, list or code/,
+    ],
+    [{ chart: {} }, /exactly one of table, list or code/],
+    [{ table: { headers: ["{{column}}"], rows: [["x"]] } }, /Unfilled template placeholders/],
+  ]) {
+    const bad = filledTemplate();
+    bad.sections[0].paragraphs = [block];
+    assert.throws(() => validateReport(bad), message);
+  }
+});
+
+test("the CLI requires a quiz unless the user excluded it, and renders the exclusion without one", () => {
+  const temp = mkdtempSync(path.join(os.tmpdir(), "report-quiz-required-"));
+  try {
+    const cli = path.join(
+      ROOT,
+      "plugins/adr-writer/skills/report-writer/scripts/render-report.mjs",
+    );
+    const input = path.join(temp, "report.json"),
+      output = path.join(temp, "report.html");
+    const run = (doc) => {
+      writeFileSync(input, JSON.stringify(doc));
+      return spawnSync(process.execPath, [cli, input, "--out", output], { encoding: "utf8" });
+    };
+    const missing = sample();
+    delete missing.comprehensionCheck;
+    const refused = run(missing);
+    assert.equal(refused.status, 2);
+    assert.match(refused.stderr, /needs comprehensionCheck with 1 to 6 questions/);
+    assert.doesNotThrow(() => validateReport(missing), "the API leaves enforcement to callers");
+    const blank = sample();
+    blank.comprehensionCheck = { excluded: "  " };
+    assert.match(run(blank).stderr, /excluded must state the user's exclusion request/);
+    const excluded = run(sample());
+    assert.equal(excluded.status, 0, excluded.stderr);
+    assert.doesNotMatch(readFileSync(output, "utf8"), /<article class="quiz">/);
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }

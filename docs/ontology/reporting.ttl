@@ -1,0 +1,9 @@
+@prefix m: <urn:ontology-writer:model:> .
+@prefix onto: <urn:ontology-writer:vocabulary:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+m:reporting a onto:BoundedContext ;
+    rdfs:label "리포트 전달" ;
+    onto:definition "검토·분석 결과를 독자가 이해할 수 있는 독립 리포트로 구성해 전달하는 경계." ;
+    onto:coreLogic "리포트 요청이나 복잡한 설명 필요를 받아 독자 프로필로 눈높이를 정하고, 고정 템플릿 위에 읽기 경로를 계획해 내용과 시각화·퀴즈를 채운 뒤 검증을 통과한 리포트만 열어 전달한다." ;
+    onto:collaboratesWith m:architecture-decision, m:business-modeling, m:implementation-assurance .

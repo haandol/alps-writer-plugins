@@ -1,0 +1,9 @@
+@prefix m: <urn:ontology-writer:model:> .
+@prefix onto: <urn:ontology-writer:vocabulary:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+m:implementation-assurance a onto:BoundedContext ;
+    rdfs:label "구현 검증" ;
+    onto:definition "결정된 계약을 코드와 테스트로 실현하고, 그 실현이 계약을 충족하는지 증거로 판정하는 경계." ;
+    onto:coreLogic "제안 상태의 결정과 그 선행 결정을 받아 구현과 테스트를 만들고, 안전한 리팩터링을 거친 뒤 계약·코드·테스트 증거로 구현을 검토해 판정하며, 자연어 지침은 실제 모델 행동으로 평가한다." ;
+    onto:collaboratesWith m:architecture-decision, m:reporting .

@@ -27,8 +27,8 @@ Apply [explanation design](explanation-design.md) for the opening, domain
 hierarchy and expanded explanations versus collapsed evidence. Use semantic
 headings, anchors and accessible disclosure controls to express that structure.
 Labels identify what a collapsed branch adds; source groups retain complete
-access without hiding conclusion-changing facts. Preserve an established report
-design when changing its depth; use the shared stylesheet when none exists.
+access without hiding conclusion-changing facts. Produce every report through the
+shared template and stylesheet described in [the document contract](report-document.md).
 
 In every format, place a node's child explanations before its comprehension
 questions and detailed source evidence. Label parent support material with its

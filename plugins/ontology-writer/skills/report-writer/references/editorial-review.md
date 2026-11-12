@@ -42,7 +42,10 @@ premises at their point of use; retain real evidence gaps and limit affected cla
   deeper resolution. Reject repeated parent summaries, hidden prerequisites and
   evidence that makes the reader reconstruct the mechanism.
   Follow an actual whole-to-behavior path: do roles and relationships appear
-  before unfamiliar implementation names? Treat a missing explanatory bridge
+  before unfamiliar implementation names? Check the
+  [level budget](reading-path.md#allocate-detail-by-level): the answer carries no
+  implementation identifiers, the Overview explains how the parts connect, and
+  no level opens with detail that belongs below it. Treat a missing explanatory bridge
   separately from optional detail reduction. Topic grouping and control counts
   cannot establish that the subject becomes understandable at a lower level.
 - **Answer first and qualification:** after Purpose and Context, does each
@@ -137,7 +140,8 @@ than prescribe sentence forms, scores, or a minimum number of findings.
 - **Purpose and evidence:** the title's promise, central answer, hierarchy,
   concrete explanation, numerical examples, source support, and claim strength.
 - **Repetition and voice:** generic or inflated rhetoric, decorative naming,
-  duplicated prose and diagrams, and consistency with supplied reference
+  duplicated prose and diagrams, one register throughout per
+  [writing style](writing-style.md), and consistency with supplied reference
   passages and the user's current preferences.
 
 Explain technical shorthand through behavior, not merely by expanding an

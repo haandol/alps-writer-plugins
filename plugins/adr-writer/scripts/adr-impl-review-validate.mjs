@@ -693,10 +693,28 @@ function validateReviewDiagnostics(diagnostics, errors) {
   }
 }
 
+/** The quiz is mandatory: 1 to 6 questions, or the user's explicit exclusion. */
 function validateComprehensionCheck(check, errors) {
-  if (check === undefined) return;
+  if (check === undefined) {
+    errors.push(
+      'findings.json comprehensionCheck is required: 1 to 6 questions, or { "excluded": "<the user\'s request>" }',
+    );
+    return;
+  }
   if (!check || typeof check !== "object" || Array.isArray(check)) {
     errors.push("findings.json comprehensionCheck must be an object");
+    return;
+  }
+  if (check.excluded !== undefined) {
+    if (typeof check.excluded !== "string" || !check.excluded.trim())
+      errors.push(
+        "findings.json comprehensionCheck.excluded must state the user's exclusion request",
+      );
+    const extra = Object.keys(check).filter((key) => key !== "excluded");
+    if (extra.length)
+      errors.push(
+        `findings.json comprehensionCheck.excluded cannot be combined with ${extra.join(", ")}`,
+      );
     return;
   }
 
@@ -708,8 +726,8 @@ function validateComprehensionCheck(check, errors) {
     errors.push("findings.json comprehensionCheck.questions must be an array");
     return;
   }
-  if (check.questions.length < 1 || check.questions.length > 5) {
-    errors.push("findings.json comprehensionCheck.questions must contain 1 to 5 questions");
+  if (check.questions.length < 1 || check.questions.length > 6) {
+    errors.push("findings.json comprehensionCheck.questions must contain 1 to 6 questions");
   }
 
   const seen = new Set();

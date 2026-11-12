@@ -243,6 +243,8 @@ function node(title, key) {
     title,
     domain: title,
     scope: "선택한 평가 범위의 결과와 원본 근거",
+    /** The evaluation catalog keeps every group open at every depth for side-by-side scanning. */
+    expanded: true,
     children: [],
   };
 }
@@ -361,7 +363,7 @@ export function saveSkillsReport(directory, report) {
         title: item.title,
         domain: labels[type],
         scope: item.id,
-        expanded: runs.some((r) => ["ERROR", "NOT_PROVEN"].includes(r.verdict)) || undefined,
+        expanded: true,
         paragraphs: [
           summaryText(runs),
           ...summarizeReportAxes(item, runs).map(

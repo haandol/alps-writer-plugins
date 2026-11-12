@@ -110,6 +110,7 @@ Retries preserve the stored result.
       diagramRequirements: [],
       implementationChoices: [],
       findings: [],
+      comprehensionCheck: { excluded: "The user excluded the quiz for this fixture." },
       contractCoverage,
       reviewHike: {
         context: {

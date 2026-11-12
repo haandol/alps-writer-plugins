@@ -83,13 +83,13 @@ test("question caps, distinct choices, one answer, evidence and revisit boundari
       (d) => {
         d.comprehensionCheck.questions = [];
       },
-      /1 to 5/,
+      /1 to 6/,
     ],
     [
       (d) => {
-        d.comprehensionCheck.questions = Array.from({ length: 6 }, (_, i) => question(i + 1));
+        d.comprehensionCheck.questions = Array.from({ length: 7 }, (_, i) => question(i + 1));
       },
-      /1 to 5/,
+      /1 to 6/,
     ],
     [
       (d) => {

@@ -349,7 +349,11 @@ function main() {
   if (!data.reviewDiagnostics || typeof data.reviewDiagnostics !== "object") {
     usage("findings.json reviewDiagnostics must be an object");
   }
-  if (data.comprehensionCheck !== undefined && !Array.isArray(data.comprehensionCheck?.questions)) {
+  if (
+    data.comprehensionCheck !== undefined &&
+    data.comprehensionCheck?.excluded === undefined &&
+    !Array.isArray(data.comprehensionCheck?.questions)
+  ) {
     usage("findings.json comprehensionCheck.questions must be an array");
   }
 
