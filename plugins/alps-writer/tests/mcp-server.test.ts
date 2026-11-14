@@ -429,3 +429,39 @@ test("MCP path inputs say that a relative path is resolved inside the document d
   });
   assert.ok(fs.existsSync(path.join(dir, "relative.lite.alps.xml")));
 });
+
+test("MCP Markdown export preserves the source when an output path aliases it", async (context) => {
+  const { client, dir } = await connectServer(context);
+  for (const lite of [false, true]) {
+    const filename = lite ? "export.lite.alps.xml" : "export.alps.xml";
+    const doc_path = path.join(dir, filename);
+    const created = await client.callTool({
+      name: lite ? "init_lite_alps_document" : "init_alps_document",
+      arguments: { project_name: "Export safety", output_path: doc_path },
+    });
+    assert.notEqual(created.isError, true);
+    const original = fs.readFileSync(doc_path, "utf8");
+    const alias = path.join(dir, `${filename}.link`);
+    fs.symlinkSync(doc_path, alias);
+    for (const output_path of [doc_path, `./${filename}`, alias]) {
+      const rejected = await client.callTool({
+        name: "export_alps_markdown",
+        arguments: { doc_path, output_path },
+      });
+      assert.equal(rejected.isError, true, output_path);
+      assert.match(textContent(rejected), /must not replace the source/);
+      assert.equal(fs.readFileSync(doc_path, "utf8"), original);
+      assert.ok(fs.lstatSync(alias).isSymbolicLink());
+    }
+    const output_path = path.join(dir, "markdown", `${filename}.md`);
+    const exported = await client.callTool({
+      name: "export_alps_markdown",
+      arguments: { doc_path, output_path },
+    });
+    assert.notEqual(exported.isError, true);
+    assert.match(fs.readFileSync(output_path, "utf8"), /^# Export safety/);
+    assert.equal(fs.readFileSync(doc_path, "utf8"), original);
+    const loaded = await client.callTool({ name: "load_alps_document", arguments: { doc_path } });
+    assert.notEqual(loaded.isError, true);
+  }
+});

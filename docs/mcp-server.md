@@ -82,6 +82,7 @@ Config example with `ALPS_OUTPUT_DIR`:
 
 Document writes are guarded:
 
+- Markdown export rejects an output path pointing to the source document, including links and relative aliases, so the XML remains editable.
 - Full documents use `.alps.xml`; Lite documents use `.lite.alps.xml` and declare the Lite profile in the root. A failed `init` or `load` leaves no document selected.
 - Existing files are never selected implicitly by either initialization tool; resume them explicitly with `load_alps_document`.
 - Full ALPS resumes in dependency order `1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9`. Lite ALPS resumes in `1 → 2 → 3 → 4`; Section 3 is optional and Section 4 is required.

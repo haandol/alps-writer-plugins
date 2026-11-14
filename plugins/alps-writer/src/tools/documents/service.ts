@@ -666,6 +666,17 @@ ${this.resumeGuidance(profile)}`;
     const result = lines.join("\n");
     if (outputPath) {
       const out = this.expandPath(outputPath);
+      // Compare file identity so relative paths and links cannot export over the source.
+      const source = fs.statSync(this.workingDoc!);
+      let target: fs.Stats | undefined;
+      try {
+        target = fs.statSync(out);
+      } catch (error) {
+        if (!["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? ""))
+          throw error;
+      }
+      if (target && source.dev === target.dev && source.ino === target.ino)
+        throw new Error("Markdown output must not replace the source ALPS document.");
       fs.mkdirSync(path.dirname(out), { recursive: true });
       this.writeAtomic(out, result);
       return `Exported to ${out}`;

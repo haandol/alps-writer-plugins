@@ -37606,6 +37606,16 @@ ${markdown}
     const result = lines.join("\n");
     if (outputPath) {
       const out = this.expandPath(outputPath);
+      const source = fs3.statSync(this.workingDoc);
+      let target;
+      try {
+        target = fs3.statSync(out);
+      } catch (error62) {
+        if (!["ENOENT", "ENOTDIR"].includes(error62.code ?? ""))
+          throw error62;
+      }
+      if (target && source.dev === target.dev && source.ino === target.ino)
+        throw new Error("Markdown output must not replace the source ALPS document.");
       fs3.mkdirSync(path4.dirname(out), { recursive: true });
       this.writeAtomic(out, result);
       return `Exported to ${out}`;
