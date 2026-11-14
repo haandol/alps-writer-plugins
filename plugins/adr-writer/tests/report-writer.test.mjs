@@ -62,6 +62,37 @@ const sample = () => ({
   ],
 });
 
+test("the shipped minimal report example passes the CLI with its quiz intact", () => {
+  const reference = read("shared/report-writer/references/report-document.md");
+  const example = reference
+    .slice(reference.indexOf("## Minimal example"))
+    .match(/```json\n([\s\S]*?)\n```/);
+  assert.ok(example, "the documented JSON example must exist");
+  const doc = JSON.parse(example[1]);
+  assert.ok(doc.comprehensionCheck.questions.length > 0);
+  validateReport(doc, { requireQuiz: true });
+  const dir = mkdtempSync(path.join(os.tmpdir(), "report-example-"));
+  try {
+    const input = path.join(dir, "example.json");
+    const output = path.join(dir, "example.html");
+    writeFileSync(input, example[1]);
+    const result = spawnSync(
+      process.execPath,
+      [
+        path.join(ROOT, "plugins/adr-writer/skills/report-writer/scripts/render-report.mjs"),
+        input,
+        "--out",
+        output,
+      ],
+      { encoding: "utf8" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(readFileSync(output, "utf8"), /Return the recorded result without another charge/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("report hierarchy preserves complete evidence and renders HTML/Markdown without dependencies", () => {
   const doc = sample();
   assert.deepEqual(validateReport(doc), {

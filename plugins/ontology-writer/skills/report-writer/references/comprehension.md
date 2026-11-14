@@ -35,7 +35,7 @@ reader needs to understand, not the verdict label.
 Place each question after the explanation needed to answer it, including child
 explanations, and before the owning domain's detailed evidence in every format.
 If those explanations can be collapsed, provide a route back to them. Questions
-are supporting material, not extra explanation branches: apply the one-to-five
+are supporting material, not extra explanation branches: apply the one-to-six
 question limit across the whole report separately from the four-child limit.
 Assign questions by actual subject, not arbitrary numbered batches.
 
