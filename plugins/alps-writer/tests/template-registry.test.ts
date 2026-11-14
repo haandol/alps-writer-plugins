@@ -1,4 +1,4 @@
-// The template registry decides which subsection IDs and titles save_alps_section
+// The template registry decides which subsection IDs and titles alps_section
 // accepts, so its reading of the chapter XML is a user-facing contract: a title it
 // misreads is a title the author cannot save.
 

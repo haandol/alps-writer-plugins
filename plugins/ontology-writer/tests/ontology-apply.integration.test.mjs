@@ -10,6 +10,7 @@ import {
   linkSync,
   lstatSync,
   mkdirSync,
+  renameSync,
   rmSync,
   symlinkSync,
 } from "node:fs";
@@ -42,6 +43,37 @@ import {
   repo,
   statusOf,
 } from "./ontology-apply-helpers.mjs";
+
+test("a custom current index is bound by impact and receives the approved mapping draft", () => {
+  withTmp((dir) => {
+    repo(dir);
+    const indexFile = "docs/adr/current.json";
+    renameSync(path.join(dir, "docs/adr/.mapping.json"), path.join(dir, indexFile));
+    commitAll(dir, "move current index");
+    const decoy = '{"categories":{}}\n';
+    write(dir, "docs/adr/.mapping.json", decoy);
+    draft(dir);
+    const next = structuredClone(MAPPING);
+    next.categories.payments.adrs[0].summary = "Confirmed payment decision";
+    const nextText = JSON.stringify(next, null, 2);
+    write(dir, "mapping.next.json", nextText);
+    const args = ["--index", indexFile, "--mapping", "mapping.next.json"];
+    const summary = impact(dir, args);
+    assert.equal(summary.draftValid, true);
+    const before = read(dir, indexFile);
+    write(dir, indexFile, `${before}\n`);
+    const stale = apply(dir, summary.baseHash, args);
+    assert.equal(stale.code, 1, stale.out);
+    assert.match(stale.out, /changed after the approval summary/);
+    assert.equal(read(dir, indexFile), `${before}\n`);
+    assert.equal(read(dir, "docs/adr/.mapping.json"), decoy);
+    write(dir, indexFile, before);
+    const saved = apply(dir, impact(dir, args).baseHash, args);
+    assert.equal(saved.code, 0, saved.out);
+    assert.equal(read(dir, indexFile), nextText);
+    assert.equal(read(dir, "docs/adr/.mapping.json"), decoy);
+  });
+});
 
 test("an affected ADR edited after the summary stops the apply and keeps the edit", () => {
   withTmp((dir) => {

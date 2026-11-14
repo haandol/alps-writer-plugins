@@ -127,7 +127,7 @@ Sources appear in an evidence group after the owning explanation and its quiz.
 There is no source-count quota; preserve every required source and group by the
 claim it supports rather than inventing explanation nodes to fit a count.
 
-## Optional content
+## Figures, code diffs and comprehension support
 
 Read the relevant module only when authoring or checking that content:
 
@@ -136,7 +136,8 @@ Read the relevant module only when authoring or checking that content:
 - **Code diffs:** [code evidence](code-evidence.md#diff-data-example) owns
   `kind: "diff"`, complete patch hunks and their presentation.
 - **Quizzes:** [comprehension support](comprehension.md#structured-quiz-data)
-  owns `comprehensionCheck`, question rules and staged disclosure. Omission is valid.
+  owns `comprehensionCheck`, question rules and staged disclosure. Include one to six
+  questions, or the user's explicit exclusion for this report.
 
 ## Compatibility with specialized reports
 
@@ -148,15 +149,16 @@ schema or conflating code verdict with comprehension readiness.
 
 ## Minimal example
 
-This illustrative input omits figures and quizzes. Replace its facts, review
-status and source path with actual report content and verification.
+This illustrative input has one section and one quiz question. It omits figures.
+Replace its facts, review status, source path and question with the actual report
+content and verification. A quiz-free report requires the user's explicit exclusion.
 
 ```json
 {
   "title": "Repeated requests keep one payment result",
   "language": "en",
   "background": [
-    "A repeated payment request may have a recorded completion or an unknown provider outcome. This review helps the developer distinguish which retry behavior the evidence supports and which recovery path still needs verification before relying on the no-duplicate-charge guarantee."
+    "A payment client may retry after losing a response. The reviewed case already has a recorded completion for the same key."
   ],
   "summary": [
     "Payment retries must not create a second charge. The completed-payment retry check passed: the same key returned the recorded result. Provider timeout recovery still needs verification, so this result does not establish safety for every retry path."
@@ -191,6 +193,44 @@ status and source path with actual report content and verification.
         }
       ]
     }
-  ]
+  ],
+  "purpose": [
+    "Distinguish verified retry behavior from provider recovery that still needs evidence."
+  ],
+  "comprehensionCheck": {
+    "questions": [
+      {
+        "id": "Q1",
+        "sectionId": "settlement",
+        "question": "A payment with a recorded completion is retried with the same key. Which outcome follows from the verified behavior?",
+        "options": [
+          {
+            "id": "A",
+            "text": "Create another charge.",
+            "feedback": "The stored completion identifies a payment that has already been charged."
+          },
+          {
+            "id": "B",
+            "text": "Return the recorded result without another charge.",
+            "feedback": "The verified completed-key path reuses the existing result."
+          },
+          {
+            "id": "C",
+            "text": "Delete the stored completion before retrying.",
+            "feedback": "Deleting the completion would remove the basis for reusing that result."
+          },
+          {
+            "id": "D",
+            "text": "Treat every provider timeout as a verified success.",
+            "feedback": "Provider-timeout recovery remains unverified in this report."
+          }
+        ],
+        "correctOptionId": "B",
+        "explanation": "The verified case has a completed key. Reusing its recorded result avoids a second charge.",
+        "evidence": "The settlement paragraph and R1 state that a completed key creates no second charge.",
+        "revisit": true
+      }
+    ]
+  }
 }
 ```

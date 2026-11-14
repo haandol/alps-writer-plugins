@@ -292,7 +292,7 @@ export class DocumentService {
   private readWorkingDocument(): LoadedDocument {
     if (!this.workingDoc) {
       throw new Error(
-        "No document loaded. Call init_alps_document(), init_lite_alps_document(), or load_alps_document() first.",
+        "No document loaded. Call alps_document(action: 'init', profile: 'full', project_name, output_path), alps_document(action: 'init', profile: 'lite', project_name, output_path), or alps_document(action: 'load', doc_path) first.",
       );
     }
 
@@ -368,7 +368,7 @@ export class DocumentService {
     if (pathError) throw new Error(pathError);
     if (fs.existsSync(filepath)) {
       throw new Error(
-        `Document already exists at ${filepath}. Use load_alps_document() to resume.`,
+        `Document already exists at ${filepath}. Use alps_document(action: 'load', doc_path) to resume.`,
       );
     }
 
@@ -381,7 +381,7 @@ export class DocumentService {
     } catch (error) {
       if ((error as Error & { code?: string }).code === "EEXIST") {
         throw new Error(
-          `Document already exists at ${filepath}. Use load_alps_document() to resume.`,
+          `Document already exists at ${filepath}. Use alps_document(action: 'load', doc_path) to resume.`,
           { cause: error },
         );
       }
@@ -398,18 +398,18 @@ export class DocumentService {
    */
   private resumeGuidance(profile: DocumentProfile): string {
     const steps = isLiteProfile(profile)
-      ? `1. Call ${profile.sectionGuideTool}(N) before working on any section
+      ? `1. Call alps_template(action: 'guide', profile: '${isLiteProfile(profile) ? "lite" : "full"}', section: N) before working on any section
 2. Follow the guide: ask only for missing user-owned or protected context, but propose Sections 2 and 4 before asking the user to design them
 3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
-4. Get explicit "yes" confirmation before calling save_alps_section(doc_path)`
-      : `1. Call ${profile.sectionGuideTool}(N) before working on any section
+4. Get explicit "yes" confirmation before calling alps_section(action: 'save', doc_path, section, subsection_id, title, content)`
+      : `1. Call alps_template(action: 'guide', profile: '${isLiteProfile(profile) ? "lite" : "full"}', section: N) before working on any section
 2. Reuse supplied context. Ask 1-2 focused questions at a time only for missing information. DO NOT auto-generate content that invents missing product decisions
 3. Wait when a question needs an answer; otherwise present the section's approval digest
-4. Get explicit "yes" confirmation before calling save_alps_section(doc_path)`;
+4. Get explicit "yes" confirmation before calling alps_section(action: 'save', doc_path, section, subsection_id, title, content)`;
 
     return `⚠️ CONVERSATION MODE REQUIRED:
 ${steps}
-Read read_alps_glossary(doc_path) when terminology is needed. Require the user's meaning for undefined jargon or acronyms before finalizing dependent content; reuse supplied definitions. Save confirmed definitions with save_alps_glossary_entry(doc_path) under the current section approval. The optional appendix stays after the numbered sections and is absent when unnecessary.
+Read alps_glossary(action: 'read', doc_path) when terminology is needed. Require the user's meaning for undefined jargon or acronyms before finalizing dependent content; reuse supplied definitions. Save confirmed definitions with alps_glossary(action: 'save', doc_path, term, definition) under the current section approval. The optional appendix stays after the numbered sections and is absent when unnecessary.
 NEVER save generated content without user approval.`;
   }
 
@@ -666,6 +666,17 @@ ${this.resumeGuidance(profile)}`;
     const result = lines.join("\n");
     if (outputPath) {
       const out = this.expandPath(outputPath);
+      // Compare file identity so relative paths and links cannot export over the source.
+      const source = fs.statSync(this.workingDoc!);
+      let target: fs.Stats | undefined;
+      try {
+        target = fs.statSync(out);
+      } catch (error) {
+        if (!["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? ""))
+          throw error;
+      }
+      if (target && source.dev === target.dev && source.ino === target.ino)
+        throw new Error("Markdown output must not replace the source ALPS document.");
       fs.mkdirSync(path.dirname(out), { recursive: true });
       this.writeAtomic(out, result);
       return `Exported to ${out}`;

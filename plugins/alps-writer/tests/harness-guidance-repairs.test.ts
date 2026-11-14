@@ -141,8 +141,14 @@ test("Section 7 loads worked Features only through opt-in templates and keeps th
   assert.equal(service.getSection(7), template);
   assert.equal(service.getSectionGuide(7), guide);
 
-  assert.match(guide, /get_alps_section\(7, include_examples: true\)/);
-  assert.match(guide, /read_alps_section\(doc_path, 3\), read_alps_section\(doc_path, 6\)/);
+  assert.match(
+    guide,
+    /alps_template\(action: 'section', profile: 'full', section: 7, include_examples: true\)/,
+  );
+  assert.match(
+    guide,
+    /alps_section\(action: 'read', doc_path, section: 3\), alps_section\(action: 'read', doc_path, section: 6\)/,
+  );
   assert.match(guide, /If a referenced section is empty, STOP and author it first/);
   assert.match(guide, /Feature `7\.x` is one approval and save unit/);
   assert.match(guide, /Never save a requirement contract that was absent from\s+the digest/);
@@ -274,7 +280,7 @@ test("both overview responses distinguish new documents from resume in their own
   for (const profile of [ALPS_PROFILE, LITE_ALPS_PROFILE]) {
     const controller = new TemplateController(new TemplateService(profile));
     const response = controller.getAlpsOverview();
-    assert.match(response, /get_alps_document_status/);
+    assert.match(response, /alps_document\(action: 'status'/);
     assert.match(response, /New document:/);
     assert.match(response, /Resume:.*first incomplete required section/);
     assert.ok(response.includes(profile.authoringOrder.join(" → ")));

@@ -23,7 +23,7 @@ authoring flow as Full ALPS while omitting implementation-preparation Sections.
 - Section 3 reviews Sections 1 and 2 when the user has explicit exclusions.
 - Section 4 reviews Sections 1 and 2, plus Section 3 when it was written.
 
-Call the referenced `read_alps_section(doc_path, N)` tools before working on a dependent Section. If a
+Call the referenced `alps_section(action: 'read', doc_path, section: N)` tools before working on a dependent Section. If a
 required prerequisite is incomplete, complete it first.
 
 ## Conversation Guide
@@ -37,9 +37,9 @@ definition; otherwise ask at first use and wait before finalizing dependent
 content. This clarification also applies in proposal-led Sections 2 and 4.
 An acronym's expanded name alone may not explain its product meaning.
 
-Read `read_alps_glossary(doc_path)` when needed. Include new or changed definitions in the
+Read `alps_glossary(action: 'read', doc_path)` when needed. Include new or changed definitions in the
 current Section's approval digest and save them with
-`save_alps_glossary_entry(doc_path, term, definition)` after that approval. Resolve conflicting
+`alps_glossary(action: 'save', doc_path, term, definition)` after that approval. Resolve conflicting
 meanings with the user before updating affected content. Never invent a confirmed
 definition or add a separate approval, upfront interview, or final writing stage.
 
@@ -51,15 +51,15 @@ short first-use explanations and product requirements in the body.
 
 For every Section that needs content:
 
-1. Call `get_lite_alps_section_guide(N)`.
-2. Call `get_lite_alps_section(N)`.
+1. Call `alps_template(action: 'guide', profile: 'lite', section: N)`.
+2. Call `alps_template(action: 'section', profile: 'lite', section: N)`.
 3. Explain the Section's purpose briefly.
 4. Ask one focused question, or at most two closely related questions, when required context is
    missing. Skip optional Section 3 without a question when no explicit exclusion exists and the
    approved boundary is not materially ambiguous.
 5. Wait for the user's response and integrate it iteratively.
 6. When the Section is complete, present a concise plain-text approval digest.
-7. Save only after explicit approval with `save_alps_section`.
+7. Save only after explicit approval with `alps_section(action: 'save', doc_path, section, subsection_id, title, content)`.
 
 Use atomic confirmation by default. Batch confirmation is allowed only when the user explicitly
 requests it or provides a complete structured source covering several Sections. Batch mode keeps
@@ -150,7 +150,7 @@ changes or completes a Full document.
 ## Optional research after completion
 
 After required Sections 1, 2, and 4 are approved and written, check the selected
-document with `get_alps_document_status(doc_path)`, export it, and ask once whether
+document with `alps_document(action: 'status', doc_path)`, export it, and ask once whether
 the user wants a deep-research review of the ALPS items' evidence and errors.
 Unwritten optional Section 3 does not block this invitation. Reuse an explicit
 review request or an answered choice in the current conversation. An unanswered

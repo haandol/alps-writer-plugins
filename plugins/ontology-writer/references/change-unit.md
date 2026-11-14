@@ -95,6 +95,9 @@ and re-present anything the fix changes. Then save the approved ADR revisions
 in place; each revised ADR is `Proposed` through
 `bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-status-transition.mjs`, this plugin's copy of
 adr-writer's transition.
+Carry the selected current index into the transition with `--index FILE`, or
+`--adr-dir DIR` for a conventional `.mapping.json`; `ALPS_ADR_MAPPING` is the
+default when neither option is given. This is not the `--mapping` draft input.
 A renewed `Accepted` date becomes the comparison baseline once the saved unit is
 committed; ask the user to commit it before the next ontology sync. `apply`
 refuses while the working tree holds a lifecycle edit made by hand or a

@@ -41,8 +41,8 @@ test("Full and Lite clarify terms during authoring and place only needed definit
   ]) {
     const text = read(overview);
     assert.match(text, /ask at first use and wait/);
-    assert.match(text, /read_alps_glossary/);
-    assert.match(text, /save_alps_glossary_entry/);
+    assert.match(text, /alps_glossary\(action: 'read'/);
+    assert.match(text, /alps_glossary\(action: 'save'/);
     assert.match(text, /approval digest/);
     assert.match(text, /ordinary-language documents|Ordinary-language documents/);
     assert.match(text, /defining a qualifying\s+term is mandatory/);

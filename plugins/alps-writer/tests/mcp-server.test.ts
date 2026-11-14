@@ -46,21 +46,48 @@ test("MCP template examples are opt-in, reachable from the Full guide, and indep
     return textContent(result);
   };
   const workedFeature = "Template-based AI Document Writing";
-  const guide = await call("get_alps_section_guide", { section: 7 });
-  assert.match(guide, /get_alps_section\(7, include_examples: true\)/);
+  const guide = await call("alps_template", { action: "guide", profile: "full", section: 7 });
+  assert.match(
+    guide,
+    /alps_template\(action: 'section', profile: 'full', section: 7, include_examples: true\)/,
+  );
   assert.ok(!guide.includes(workedFeature));
-  assert.match(guide, /read_alps_section\(doc_path, 3\), read_alps_section\(doc_path, 6\)/);
-  const full = await call("get_alps_section", { section: 7 });
-  const lite = await call("get_lite_alps_section", { section: 4 });
+  assert.match(
+    guide,
+    /alps_section\(action: 'read', doc_path, section: 3\), alps_section\(action: 'read', doc_path, section: 6\)/,
+  );
+  const full = await call("alps_template", { action: "section", profile: "full", section: 7 });
+  const lite = await call("alps_template", { action: "section", profile: "lite", section: 4 });
   assert.ok(!full.includes(workedFeature));
   assert.match(full, /7\.x\.6 Evaluation Rubric/);
   assert.match(lite, /4\.1 Demo Scenario/);
   assert.doesNotMatch(lite, /Introduce myself on an overseas business trip/);
-  assert.equal(await call("get_alps_section", { section: 7, include_examples: false }), full);
-  assert.equal(await call("get_lite_alps_section", { section: 4, include_examples: false }), lite);
+  assert.equal(
+    await call("alps_template", {
+      action: "section",
+      profile: "full",
+      section: 7,
+      include_examples: false,
+    }),
+    full,
+  );
+  assert.equal(
+    await call("alps_template", {
+      action: "section",
+      profile: "lite",
+      section: 4,
+      include_examples: false,
+    }),
+    lite,
+  );
 
   // Interleave profiles so opting into one cannot change the other's next default response.
-  const examples = await call("get_alps_section", { section: 7, include_examples: true });
+  const examples = await call("alps_template", {
+    action: "section",
+    profile: "full",
+    section: 7,
+    include_examples: true,
+  });
   assert.ok(examples.includes(workedFeature));
   assert.match(examples, /Account creation.*unregistered valid email/);
   assert.match(examples, /Confirmed save.*persisted exactly once/);
@@ -71,31 +98,61 @@ test("MCP template examples are opt-in, reachable from the Full guide, and indep
     examples,
     /Demo outcome:.*approved section appears and the next incomplete section becomes active/,
   );
-  assert.equal(await call("get_lite_alps_section", { section: 4 }), lite);
-  const liteExamples = await call("get_lite_alps_section", { section: 4, include_examples: true });
+  assert.equal(
+    await call("alps_template", { action: "section", profile: "lite", section: 4 }),
+    lite,
+  );
+  const liteExamples = await call("alps_template", {
+    action: "section",
+    profile: "lite",
+    section: 4,
+    include_examples: true,
+  });
   assert.match(liteExamples, /Introduce myself on an overseas business trip/);
   assert.ok(!liteExamples.includes(workedFeature));
   assert.doesNotMatch(liteExamples, /7\.x|9-section limit|30-day retention/);
-  assert.equal(await call("get_alps_section", { section: 7 }), full);
-  assert.equal(await call("get_lite_alps_section", { section: 4 }), lite);
-  assert.equal(await call("get_alps_section_guide", { section: 7 }), guide);
+  assert.equal(
+    await call("alps_template", { action: "section", profile: "full", section: 7 }),
+    full,
+  );
+  assert.equal(
+    await call("alps_template", { action: "section", profile: "lite", section: 4 }),
+    lite,
+  );
+  assert.equal(
+    await call("alps_template", { action: "guide", profile: "full", section: 7 }),
+    guide,
+  );
 
-  for (const name of ["get_alps_full_template", "get_lite_alps_full_template"]) {
-    const defaultTemplate = await call(name);
-    assert.equal(await call(name, { include_examples: false }), defaultTemplate);
+  for (const profile of ["full", "lite"]) {
+    const defaultTemplate = await call("alps_template", { action: "full", profile });
+    assert.equal(
+      await call("alps_template", { action: "full", profile, include_examples: false }),
+      defaultTemplate,
+    );
     assert.doesNotMatch(defaultTemplate, /\*\*Example:\*\*/);
     assert.ok(!defaultTemplate.includes(workedFeature));
-    const withExamples = await call(name, { include_examples: true });
-    assert.ok(withExamples.includes(workedFeature) === (name === "get_alps_full_template"));
+    const withExamples = await call("alps_template", {
+      action: "full",
+      profile,
+      include_examples: true,
+    });
+    assert.ok(withExamples.includes(workedFeature) === (profile === "full"));
     assert.match(withExamples, /\*\*Example:\*\*/);
-    assert.equal(await call(name), defaultTemplate);
+    assert.equal(await call("alps_template", { action: "full", profile }), defaultTemplate);
   }
-  const liteGuide = await call("get_lite_alps_section_guide", { section: 4 });
-  assert.match(liteGuide, /read_alps_section\(doc_path, 1\), read_alps_section\(doc_path, 2\)/);
-  assert.doesNotMatch(liteGuide, /get_alps_section\(7|Template-based AI Document Writing/);
+  const liteGuide = await call("alps_template", { action: "guide", profile: "lite", section: 4 });
+  assert.match(
+    liteGuide,
+    /alps_section\(action: 'read', doc_path, section: 1\), alps_section\(action: 'read', doc_path, section: 2\)/,
+  );
+  assert.doesNotMatch(
+    liteGuide,
+    /alps_template\(action: 'section', profile: 'full', section: 7|Template-based AI Document Writing/,
+  );
   const invalidLite = await client.callTool({
-    name: "get_lite_alps_section",
-    arguments: { section: 7, include_examples: true },
+    name: "alps_template",
+    arguments: { action: "section", profile: "lite", section: 7, include_examples: true },
   });
   assert.equal(invalidLite.isError, true);
 });
@@ -106,45 +163,38 @@ test("stdio MCP server exposes schemas and enforces document validation", async 
   const listed = await client.listTools();
   const names = listed.tools.map((tool) => tool.name).sort();
   assert.deepEqual(names, [
-    "export_alps_markdown",
-    "get_alps_document_status",
-    "get_alps_full_template",
-    "get_alps_overview",
-    "get_alps_section",
-    "get_alps_section_guide",
-    "get_lite_alps_full_template",
-    "get_lite_alps_overview",
-    "get_lite_alps_section",
-    "get_lite_alps_section_guide",
-    "init_alps_document",
-    "init_lite_alps_document",
-    "list_alps_sections",
-    "list_lite_alps_sections",
-    "load_alps_document",
-    "read_alps_glossary",
-    "read_alps_section",
-    "save_alps_glossary_entry",
-    "save_alps_section",
+    "alps_document",
+    "alps_export",
+    "alps_glossary",
+    "alps_section",
+    "alps_template",
   ]);
-
-  const saveTool = listed.tools.find((tool) => tool.name === "save_alps_section");
-  assert.deepEqual(saveTool?.inputSchema.required?.sort(), [
-    "content",
-    "doc_path",
-    "section",
-    "subsection_id",
-    "title",
-  ]);
+  // The 19-tool baseline serialized to 10,833 UTF-8 bytes with the same SDK.
+  assert.ok(Buffer.byteLength(JSON.stringify(listed.tools)) < 10833);
+  const saveTool = listed.tools.find((tool) => tool.name === "alps_section");
+  assert.deepEqual(saveTool?.inputSchema.required?.sort(), ["action", "doc_path", "section"]);
+  assert.equal(
+    listed.tools.find((tool) => tool.name === "alps_template")?.annotations?.readOnlyHint,
+    true,
+  );
+  for (const tool of listed.tools.filter((tool) => tool.name !== "alps_template"))
+    assert.equal(tool.annotations?.readOnlyHint, false);
 
   const initialized = await client.callTool({
-    name: "init_alps_document",
-    arguments: { project_name: "integration", output_path: target },
+    name: "alps_document",
+    arguments: {
+      action: "init",
+      profile: "full",
+      project_name: "integration",
+      output_path: target,
+    },
   });
   assert.match(textContent(initialized), /Created ALPS document/);
 
   const rejected = await client.callTool({
-    name: "save_alps_section",
+    name: "alps_section",
     arguments: {
+      action: "save",
       doc_path: target,
       section: 1,
       subsection_id: "1",
@@ -156,8 +206,9 @@ test("stdio MCP server exposes schemas and enforces document validation", async 
   assert.match(textContent(rejected), /Title for 1\.1 must be "Purpose"/);
 
   const saved = await client.callTool({
-    name: "save_alps_section",
+    name: "alps_section",
     arguments: {
+      action: "save",
       doc_path: target,
       section: 1,
       subsection_id: "1",
@@ -171,22 +222,26 @@ test("stdio MCP server exposes schemas and enforces document validation", async 
 
   assert.match(
     textContent(
-      await client.callTool({ name: "read_alps_glossary", arguments: { doc_path: target } }),
+      await client.callTool({
+        name: "alps_glossary",
+        arguments: { action: "read", doc_path: target },
+      }),
     ),
     /No glossary/,
   );
   const glossaryBefore = fs.readFileSync(target, "utf8");
   const blankDefinition = await client.callTool({
-    name: "save_alps_glossary_entry",
-    arguments: { doc_path: target, term: "PO", definition: " " },
+    name: "alps_glossary",
+    arguments: { action: "save", doc_path: target, term: "PO", definition: " " },
   });
   assert.equal(blankDefinition.isError, true);
   assert.equal(fs.readFileSync(target, "utf8"), glossaryBefore);
   assert.match(
     textContent(
       await client.callTool({
-        name: "save_alps_glossary_entry",
+        name: "alps_glossary",
         arguments: {
+          action: "save",
           doc_path: target,
           term: "PO",
           definition: "Issued purchase order, excluding drafts",
@@ -196,22 +251,26 @@ test("stdio MCP server exposes schemas and enforces document validation", async 
     /Saved glossary term: PO/,
   );
   assert.match(
-    textContent(
-      await client.callTool({ name: "export_alps_markdown", arguments: { doc_path: target } }),
-    ),
+    textContent(await client.callTool({ name: "alps_export", arguments: { doc_path: target } })),
     /Appendix: Glossary[\s\S]*Issued purchase order/,
   );
 
   const liteTarget = path.join(dir, "integration.lite.alps.xml");
   const liteInitialized = await client.callTool({
-    name: "init_lite_alps_document",
-    arguments: { project_name: "lite integration", output_path: liteTarget },
+    name: "alps_document",
+    arguments: {
+      action: "init",
+      profile: "lite",
+      project_name: "lite integration",
+      output_path: liteTarget,
+    },
   });
   assert.match(textContent(liteInitialized), /Created Lite ALPS document/);
 
   const liteSaved = await client.callTool({
-    name: "save_alps_section",
+    name: "alps_section",
     arguments: {
+      action: "save",
       doc_path: liteTarget,
       section: 1,
       subsection_id: "1",
@@ -223,17 +282,28 @@ test("stdio MCP server exposes schemas and enforces document validation", async 
   assert.match(fs.readFileSync(liteTarget, "utf8"), /profile="lite"/);
   assert.match(
     textContent(
-      await client.callTool({ name: "read_alps_glossary", arguments: { doc_path: liteTarget } }),
+      await client.callTool({
+        name: "alps_glossary",
+        arguments: { action: "read", doc_path: liteTarget },
+      }),
     ),
     /No glossary/,
   );
   await client.callTool({
-    name: "save_alps_glossary_entry",
-    arguments: { doc_path: liteTarget, term: "셀러", definition: "입점 승인된 판매 사업자" },
+    name: "alps_glossary",
+    arguments: {
+      action: "save",
+      doc_path: liteTarget,
+      term: "셀러",
+      definition: "입점 승인된 판매 사업자",
+    },
   });
   assert.match(
     textContent(
-      await client.callTool({ name: "read_alps_glossary", arguments: { doc_path: liteTarget } }),
+      await client.callTool({
+        name: "alps_glossary",
+        arguments: { action: "read", doc_path: liteTarget },
+      }),
     ),
     /입점 승인된 판매 사업자/,
   );
@@ -244,20 +314,29 @@ test("MCP document operations require a target and never fall back after invalid
   const { client, dir } = await connectServer(context);
   const target = path.join(dir, "target.alps.xml");
   await client.callTool({
-    name: "init_alps_document",
-    arguments: { project_name: "Target", output_path: target },
+    name: "alps_document",
+    arguments: { action: "init", profile: "full", project_name: "Target", output_path: target },
   });
   const before = fs.readFileSync(target, "utf8");
   const operations = [
     {
-      name: "save_alps_section",
-      arguments: { section: 1, subsection_id: "1", title: "Purpose", content: "must not write" },
+      name: "alps_section",
+      arguments: {
+        action: "save",
+        section: 1,
+        subsection_id: "1",
+        title: "Purpose",
+        content: "must not write",
+      },
     },
-    { name: "read_alps_section", arguments: { section: 1 } },
-    { name: "save_alps_glossary_entry", arguments: { term: "PO", definition: "must not write" } },
-    { name: "read_alps_glossary", arguments: {} },
-    { name: "get_alps_document_status", arguments: {} },
-    { name: "export_alps_markdown", arguments: { output_path: path.join(dir, "forbidden.md") } },
+    { name: "alps_section", arguments: { action: "read", section: 1 } },
+    {
+      name: "alps_glossary",
+      arguments: { action: "save", term: "PO", definition: "must not write" },
+    },
+    { name: "alps_glossary", arguments: { action: "read" } },
+    { name: "alps_document", arguments: { action: "status" } },
+    { name: "alps_export", arguments: { output_path: path.join(dir, "forbidden.md") } },
   ];
   const malformed = path.join(dir, "malformed.alps.xml");
   fs.writeFileSync(malformed, "not a document");
@@ -281,12 +360,13 @@ test("MCP preserves significant whitespace in a relative document target", async
   const { client, dir } = await connectServer(context);
   const doc_path = " leading.alps.xml";
   await client.callTool({
-    name: "init_alps_document",
-    arguments: { project_name: "Leading", output_path: doc_path },
+    name: "alps_document",
+    arguments: { action: "init", profile: "full", project_name: "Leading", output_path: doc_path },
   });
   const result = await client.callTool({
-    name: "save_alps_section",
+    name: "alps_section",
     arguments: {
+      action: "save",
       doc_path,
       section: 1,
       subsection_id: "1",
@@ -304,18 +384,25 @@ test("MCP interleaved Full and Lite operations use only their explicit targets, 
   const full = path.join(first.dir, "full.alps.xml");
   const lite = path.join(first.dir, "lite.lite.alps.xml");
   await first.client.callTool({
-    name: "init_alps_document",
-    arguments: { project_name: "Full", output_path: full },
+    name: "alps_document",
+    arguments: { action: "init", profile: "full", project_name: "Full", output_path: full },
   });
   await first.client.callTool({
-    name: "init_lite_alps_document",
-    arguments: { project_name: "Lite", output_path: lite },
+    name: "alps_document",
+    arguments: { action: "init", profile: "lite", project_name: "Lite", output_path: lite },
   });
-  await first.client.callTool({ name: "load_alps_document", arguments: { doc_path: full } });
-  await first.client.callTool({ name: "load_alps_document", arguments: { doc_path: lite } });
+  await first.client.callTool({
+    name: "alps_document",
+    arguments: { action: "load", doc_path: full },
+  });
+  await first.client.callTool({
+    name: "alps_document",
+    arguments: { action: "load", doc_path: lite },
+  });
   const interleaved = await first.client.callTool({
-    name: "save_alps_section",
+    name: "alps_section",
     arguments: {
+      action: "save",
       doc_path: full,
       section: 1,
       subsection_id: "1",
@@ -333,21 +420,22 @@ test("MCP interleaved Full and Lite operations use only their explicit targets, 
     [lite, "Target User and Core Problem", "Lite body"],
   ]) {
     const saved = await client.callTool({
-      name: "save_alps_section",
-      arguments: { doc_path, section: 1, subsection_id: "1", title, content },
+      name: "alps_section",
+      arguments: { action: "save", doc_path, section: 1, subsection_id: "1", title, content },
     });
     assert.notEqual(saved.isError, true);
     const glossary = await client.callTool({
-      name: "save_alps_glossary_entry",
-      arguments: { doc_path, term: "Scope", definition: content },
+      name: "alps_glossary",
+      arguments: { action: "save", doc_path, term: "Scope", definition: content },
     });
     assert.notEqual(glossary.isError, true);
   }
   const fullBefore = fs.readFileSync(full, "utf8"),
     liteBefore = fs.readFileSync(lite, "utf8");
   const rejected = await client.callTool({
-    name: "save_alps_section",
+    name: "alps_section",
     arguments: {
+      action: "save",
       doc_path: lite,
       section: 1,
       subsection_id: "1",
@@ -360,21 +448,25 @@ test("MCP interleaved Full and Lite operations use only their explicit targets, 
     [full, "Full body", "Lite body"],
     [lite, "Lite body", "Full body"],
   ]) {
-    for (const name of ["read_alps_section", "read_alps_glossary", "export_alps_markdown"]) {
+    for (const name of ["alps_section", "alps_glossary", "alps_export"]) {
       const result = await client.callTool({
         name,
-        arguments: { doc_path, ...(name === "read_alps_section" ? { section: 1 } : {}) },
+        arguments: {
+          doc_path,
+          ...(name === "alps_export" ? {} : { action: "read" }),
+          ...(name === "alps_section" ? { section: 1 } : {}),
+        },
       });
       assert.notEqual(result.isError, true);
       assert.ok(textContent(result).includes(expected));
       assert.ok(!textContent(result).includes(forbidden));
     }
     const status = textContent(
-      await client.callTool({ name: "get_alps_document_status", arguments: { doc_path } }),
+      await client.callTool({ name: "alps_document", arguments: { action: "status", doc_path } }),
     );
     assert.ok(status.includes(doc_path));
     const output_path = path.join(first.dir, expected + ".md");
-    await client.callTool({ name: "export_alps_markdown", arguments: { doc_path, output_path } });
+    await client.callTool({ name: "alps_export", arguments: { doc_path, output_path } });
     assert.ok(fs.readFileSync(output_path, "utf8").includes(expected));
     assert.ok(!fs.readFileSync(output_path, "utf8").includes(forbidden));
   }
@@ -386,25 +478,28 @@ test("MCP resume leaves missing required features incomplete and restores comple
   const { client, dir } = await connectServer(context);
   const doc_path = path.join(dir, "coverage.alps.xml");
   await client.callTool({
-    name: "init_alps_document",
-    arguments: { project_name: "Coverage", output_path: doc_path },
+    name: "alps_document",
+    arguments: { action: "init", profile: "full", project_name: "Coverage", output_path: doc_path },
   });
   const save = (section: number, subsection_id: string, title: string, content: string) =>
     client.callTool({
-      name: "save_alps_section",
-      arguments: { doc_path, section, subsection_id, title, content },
+      name: "alps_section",
+      arguments: { action: "save", doc_path, section, subsection_id, title, content },
     });
   await save(6, "1", "Core Features (Functional Requirements)", "- F1: Login\n- F2: Logout");
   await save(7, "1", "Login", "Login behavior; may lead to F2.");
   await save(7, "3", "Export", "Export behavior.");
   const before = fs.readFileSync(doc_path, "utf8");
-  const resumed = await client.callTool({ name: "load_alps_document", arguments: { doc_path } });
+  const resumed = await client.callTool({
+    name: "alps_document",
+    arguments: { action: "load", doc_path },
+  });
   assert.match(textContent(resumed), /Section 7 .*In progress \(1\/2 features\).*missing: F2/);
   assert.equal(fs.readFileSync(doc_path, "utf8"), before);
   await save(7, "2", "Logout", "Logout behavior.");
   assert.match(
     textContent(
-      await client.callTool({ name: "get_alps_document_status", arguments: { doc_path } }),
+      await client.callTool({ name: "alps_document", arguments: { action: "status", doc_path } }),
     ),
     /Section 7 .*Written \(2\/2 features\)/,
   );
@@ -414,9 +509,8 @@ test("MCP path inputs say that a relative path is resolved inside the document d
   const { client, dir } = await connectServer(context);
   const { tools } = await client.listTools();
   for (const [tool, field] of [
-    ["init_alps_document", "output_path"],
-    ["init_lite_alps_document", "output_path"],
-    ["export_alps_markdown", "output_path"],
+    ["alps_document", "output_path"],
+    ["alps_export", "output_path"],
   ]) {
     const schema = tools.find((t) => t.name === tool)?.inputSchema as
       | { properties?: Record<string, { description?: string }> }
@@ -424,8 +518,124 @@ test("MCP path inputs say that a relative path is resolved inside the document d
     assert.match(schema?.properties?.[field]?.description ?? "", /ALPS_OUTPUT_DIR/, tool);
   }
   await client.callTool({
-    name: "init_lite_alps_document",
-    arguments: { project_name: "Relative", output_path: "relative.lite.alps.xml" },
+    name: "alps_document",
+    arguments: {
+      action: "init",
+      profile: "lite",
+      project_name: "Relative",
+      output_path: "relative.lite.alps.xml",
+    },
   });
   assert.ok(fs.existsSync(path.join(dir, "relative.lite.alps.xml")));
+});
+
+test("MCP Markdown export preserves the source when an output path aliases it", async (context) => {
+  const { client, dir } = await connectServer(context);
+  for (const lite of [false, true]) {
+    const filename = lite ? "export.lite.alps.xml" : "export.alps.xml";
+    const doc_path = path.join(dir, filename);
+    const created = await client.callTool({
+      name: "alps_document",
+      arguments: {
+        action: "init",
+        profile: lite ? "lite" : "full",
+        project_name: "Export safety",
+        output_path: doc_path,
+      },
+    });
+    assert.notEqual(created.isError, true);
+    const original = fs.readFileSync(doc_path, "utf8");
+    const alias = path.join(dir, `${filename}.link`);
+    fs.symlinkSync(doc_path, alias);
+    for (const output_path of [doc_path, `./${filename}`, alias]) {
+      const rejected = await client.callTool({
+        name: "alps_export",
+        arguments: { doc_path, output_path },
+      });
+      assert.equal(rejected.isError, true, output_path);
+      assert.match(textContent(rejected), /must not replace the source/);
+      assert.equal(fs.readFileSync(doc_path, "utf8"), original);
+      assert.ok(fs.lstatSync(alias).isSymbolicLink());
+    }
+    const output_path = path.join(dir, "markdown", `${filename}.md`);
+    const exported = await client.callTool({
+      name: "alps_export",
+      arguments: { doc_path, output_path },
+    });
+    assert.notEqual(exported.isError, true);
+    assert.match(fs.readFileSync(output_path, "utf8"), /^# Export safety/);
+    assert.equal(fs.readFileSync(doc_path, "utf8"), original);
+    const loaded = await client.callTool({
+      name: "alps_document",
+      arguments: { action: "load", doc_path },
+    });
+    assert.notEqual(loaded.isError, true);
+  }
+});
+
+test("grouped MCP actions reject missing, unrelated and unknown inputs without writing", async (context) => {
+  const { client, dir } = await connectServer(context);
+  const doc_path = path.join(dir, "validation.alps.xml");
+  await client.callTool({
+    name: "alps_document",
+    arguments: {
+      action: "init",
+      profile: "full",
+      project_name: "Validation",
+      output_path: doc_path,
+    },
+  });
+  const original = fs.readFileSync(doc_path, "utf8");
+  const cases = [
+    { name: "alps_template", arguments: { action: "overview" } },
+    { name: "alps_template", arguments: { action: "unknown", profile: "full" } },
+    { name: "alps_template", arguments: { action: "section", profile: "full" } },
+    {
+      name: "alps_template",
+      arguments: { action: "guide", profile: "full", section: 1, include_examples: true },
+    },
+    { name: "alps_template", arguments: { action: "section", profile: "lite", section: 5 } },
+    {
+      name: "alps_document",
+      arguments: {
+        action: "init",
+        project_name: "Missing profile",
+        output_path: path.join(dir, "forbidden.alps.xml"),
+      },
+    },
+    { name: "alps_document", arguments: { action: "load", doc_path, profile: "lite" } },
+    { name: "alps_document", arguments: { doc_path } },
+    {
+      name: "alps_section",
+      arguments: { action: "save", doc_path, section: 1, subsection_id: "1", title: "Purpose" },
+    },
+    {
+      name: "alps_section",
+      arguments: { action: "read", doc_path, section: 1, content: "must not write" },
+    },
+    { name: "alps_glossary", arguments: { action: "save", doc_path, term: "PO" } },
+    { name: "alps_glossary", arguments: { action: "read", doc_path, term: "unused" } },
+    { name: "alps_export", arguments: { doc_path, typo_path: "unused.md" } },
+  ];
+  for (const request of cases) {
+    const result = await client.callTool(request);
+    assert.equal(result.isError, true, JSON.stringify(request));
+    assert.equal(fs.readFileSync(doc_path, "utf8"), original);
+  }
+  assert.equal(fs.existsSync(path.join(dir, "forbidden.alps.xml")), false);
+  const removed = await client.callTool({ name: "save_alps_section", arguments: {} });
+  assert.equal(removed.isError, true, "a removed name must not survive as an extra public alias");
+
+  for (const profile of ["full", "lite"]) {
+    for (const action of ["overview", "sections"]) {
+      const result = await client.callTool({
+        name: "alps_template",
+        arguments: { profile, action },
+      });
+      assert.notEqual(result.isError, true);
+      if (action === "sections")
+        assert.equal(JSON.parse(textContent(result)).length, profile === "full" ? 9 : 4);
+      else assert.match(textContent(result), /alps_template/);
+    }
+  }
 });

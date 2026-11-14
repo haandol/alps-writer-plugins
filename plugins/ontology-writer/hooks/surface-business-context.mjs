@@ -53,8 +53,13 @@ function main() {
   // The model lives beside the index found here, wherever that index lives.
   if (!hasModel(path.join(path.dirname(path.dirname(mappingFile)), "ontology"))) quiet();
   const adrDir = path.dirname(MAPPING_PATH);
+  const quote = (value) => `"${value.replace(/[\\"$`]/g, "\\$&")}"`;
   const where =
-    path.normalize(adrDir) === path.normalize("docs/adr") ? "" : ` --adr-dir "${adrDir}"`;
+    path.basename(MAPPING_PATH) !== ".mapping.json"
+      ? ` --index ${quote(MAPPING_PATH)}`
+      : path.normalize(adrDir) === path.normalize("docs/adr")
+        ? ""
+        : ` --adr-dir ${quote(adrDir)}`;
   const directive = [
     `[Business-context directive] Ontology: before creating or changing an ADR decision or contract, first check the feature's business context (bun "${QUERY_CLI}" query --step <id>${where}).`,
     "Before changing code of a feature linked to a process step, query its business context; use it to catch contradictions, never as new obligations.",

@@ -32,4 +32,5 @@ reviews identify the passage and its effect on the reader.
 Diagram multi-participant or timing-dependent paths when the evidence supports
 them, using [diagrams](diagrams.md); a wording issue or one-step correction can stay in prose. Do not turn a
 hypothetical failure into an observed event. Quiz generation follows the common
-skill's strong recommendation, not an additional review requirement.
+skill's contract: one to six questions, unless the user explicitly excluded them.
+The quiz is separate from the system's review verdict.

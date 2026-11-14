@@ -1,9 +1,18 @@
 ---
 name: report-writer
-description: Create or revise requested reports, and use reports when connected explanations or evidence materially help the reader. Answer simple requests in chat; ask when report usefulness is unclear. Selected reports default to standalone HTML opened in the default browser, subject to user preferences.
+description: Create or revise reports, or manage the project's reader profile on request. Use a report for connected explanations or evidence; answer simple requests in chat. Reports default to standalone HTML opened in the default browser, subject to user preferences.
 ---
 
 # Report writing
+
+## Reader profile requests
+
+When the user asks to build, refresh, show, correct or delete the reader profile,
+follow [reader profile](references/reader-profile.md) and its local script.
+`report-writer profile <build|refresh|show|correct|delete>` selects the same path;
+natural-language requests need no command syntax. This path manages the profile
+only: do not create a report, open a browser or add a quiz. Read sessions only
+when the user requested profile creation/refresh or agreed to it.
 
 ## Choose the delivery
 

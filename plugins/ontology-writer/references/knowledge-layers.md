@@ -81,7 +81,8 @@ infer a BC from the category folder or a similar name.
 
 `--search`, `--limit` and `--offset` apply to overview/context navigation, not
 detailed queries. Follow returned `next` parameters only while further results
-are needed, retaining the search, model and custom `--adr-dir`. Check the result's
+are needed, retaining the search, model and current index selection (`--index FILE`
+or a custom `--adr-dir`). Check the result's
 scope, remaining counts and diagnostics before relying on it. If detail is too
 broad, choose a justified smaller target instead of cutting off its output.
 Navigation pages are not complete contract evidence: inspect relevant detail

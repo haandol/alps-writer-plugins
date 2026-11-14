@@ -284,6 +284,17 @@
         }
       ],
       "dependsOn": ["adr-authoring/current-state"]
+    },
+    "delivery/plugin-surface": {
+      "feature": "Public plugin entrypoints",
+      "adrs": [
+        {
+          "path": "docs/adr/delivery/plugin-surface/0001-limit-public-plugin-entrypoints.md",
+          "status": "Accepted (2026-11-14)",
+          "summary": "플러그인별 MCP 도구는 5개 이하, 공개 스킬은 10개 이하로 묶고 전체 기능·승인 경계와 선택적 읽기를 보존한다"
+        }
+      ],
+      "dependsOn": ["alps-authoring/document-selection"]
     }
   }
 }

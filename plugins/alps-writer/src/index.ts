@@ -3,14 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import {
-  FIRST_SECTION,
-  LAST_SECTION,
-  LITE_FIRST_SECTION,
-  LITE_LAST_SECTION,
-  LITE_SECTION_RANGE,
-  SECTION_RANGE,
-} from "./constants.js";
+import { FIRST_SECTION, LAST_SECTION, LITE_LAST_SECTION } from "./constants.js";
 import { LITE_ALPS_PROFILE } from "./profiles.js";
 import { TemplateService } from "./tools/templates/service.js";
 import { TemplateController } from "./tools/templates/controller.js";
@@ -22,7 +15,7 @@ const server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.15.0" },
+  { name: "alps-writer", version: "0.15.1" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
@@ -41,34 +34,34 @@ Keywords: PRD, ALPS, Lite ALPS, 기획서, 기획 문서, 제품 요구사항, �
 </TRIGGER>
 
 <WORKFLOW>
-Every document-specific tool requires doc_path. Use the source path returned by init/load on every read, save, glossary, status, and export call. There is no active-document fallback; missing or invalid paths fail without selecting another document.
-1. Full ALPS: init_alps_document() or load_alps_document()
-   Lite ALPS: init_lite_alps_document() or load_alps_document()
-2. Full ALPS: get_alps_overview()
-   Lite ALPS: get_lite_alps_overview()
+Every operation on an existing document requires doc_path; init requires output_path. Use the source path returned by init/load on every read, save, glossary, status, and export call. There is no active-document fallback; missing or invalid paths fail without selecting another document.
+1. Full ALPS: alps_document(action: 'init', profile: 'full', project_name, output_path) or alps_document(action: 'load', doc_path)
+   Lite ALPS: alps_document(action: 'init', profile: 'lite', project_name, output_path) or alps_document(action: 'load', doc_path)
+2. Full ALPS: alps_template(action: 'overview', profile: 'full')
+   Lite ALPS: alps_template(action: 'overview', profile: 'lite')
    The matching overview MUST be called first to get the conversation guide.
 3. Use atomic confirmation by default. Batch confirmation is allowed only when the user explicitly requests it or supplies a complete structured source covering multiple sections.
    Full ALPS order: 1, 2, 3, 4, 6, 5, 7, 8, 9.
    Lite ALPS order: 1, 2, 3, 4. Section 3 is optional.
    For Full ALPS, author Requirements (6) before Design (5), because Design reuses the Feature IDs defined in Section 6.1.
    For each section:
-   a. Call the matching get_alps_section_guide(N) or get_lite_alps_section_guide(N)
-   b. Call the matching get_alps_section(N) or get_lite_alps_section(N)
+   a. Call the matching alps_template(action: 'guide', profile: 'full', section: N) or alps_template(action: 'guide', profile: 'lite', section: N)
+   b. Call the matching alps_template(action: 'section', profile: 'full', section: N) or alps_template(action: 'section', profile: 'lite', section: N)
    c. Follow conversation guide from overview
    d. Present a concise plain-text approval digest and get explicit user confirmation
-   e. save_alps_section(doc_path, section, subsection_id, title, content) — one call per X.n subsection; Full ALPS Section 7 uses one call per Feature — only AFTER confirmation
+   e. alps_section(action: 'save', doc_path, section, subsection_id, title, content) — one call per X.n subsection; Full ALPS Section 7 uses one call per Feature — only AFTER confirmation
    f. Move to the next section only after this one is confirmed
 4. In batch mode, keep every section and dynamic Feature as a separately labeled
-   approval unit and persist each with its own save_alps_section call. Never merge,
+   approval unit and persist each with its own alps_section(action: 'save', doc_path, section, subsection_id, title, content) call. Never merge,
    skip, or infer a Feature.
-5. export_alps_markdown(doc_path) for final output
-6. After the selected document's required Sections are approved and saved (Full: all nine; Lite: 1, 2, and 4), verify written completion with get_alps_document_status(doc_path) and ask once whether the user wants an optional deep-research review of the ALPS items' evidence and errors. Lite's unwritten optional Section 3 does not block this invitation. Reuse an explicit review request or an answered choice in the current conversation. An unanswered invitation, decline, deferral, or research failure never changes document completion. Do not start research without a request. If requested, use the bundled alps-research skill: prefer actual available built-in deep research; otherwise investigate with the agent's web search and source-reading tools. If web search is unavailable or fails, use connected DuckDuckGo MCP and disclose that fallback and its reason. If neither works, report the external evidence gaps and continue accessible source and internal checks. Tie findings to the original items, distinguish factual errors from unsupported hypotheses and chosen goals/policies, verify source passages, and present corrections for existing Section/Feature approval before saving. Research alone never authorizes document changes.
+5. alps_export(doc_path) for final output
+6. After the selected document's required Sections are approved and saved (Full: all nine; Lite: 1, 2, and 4), verify written completion with alps_document(action: 'status', doc_path) and ask once whether the user wants an optional deep-research review of the ALPS items' evidence and errors. Lite's unwritten optional Section 3 does not block this invitation. Reuse an explicit review request or an answered choice in the current conversation. An unanswered invitation, decline, deferral, or research failure never changes document completion. Do not start research without a request. If requested, use the bundled alps-research skill: prefer actual available built-in deep research; otherwise investigate with the agent's web search and source-reading tools. If web search is unavailable or fails, use connected DuckDuckGo MCP and disclose that fallback and its reason. If neither works, report the external evidence gaps and continue accessible source and internal checks. Tie findings to the original items, distinguish factual errors from unsupported hypotheses and chosen goals/policies, verify source passages, and present corrections for existing Section/Feature approval before saving. Research alone never authorizes document changes.
 </WORKFLOW>
 
 <RULES>
 - Before grouping an existing project, distinguish repository organization (monorepo/multirepo) from execution/deployment shape (monolith/microservices/hybrid), using accessible evidence and marking unknown scope. Group product features by bounded context (business meaning and rule ownership) and vertical user story by default. Never divide Features by frontend/backend/database layers or assume service boundaries are business boundaries. Reuse confirmed grouping; propose grounded candidates and clarify material ambiguity. Preserve Full/Lite sections and their permitted C4 levels.
-- In both profiles, require clear meanings for user jargon, uncommon terms/acronyms, or expressions that cannot be written out plainly. Read existing definitions with read_alps_glossary(doc_path); reuse meanings already supplied by the user. Ask at first use when the meaning is unclear and wait before finalizing dependent content. Never invent the meaning.
-- Include new or changed definitions in the current section's approval digest, then save each with save_alps_glossary_entry(doc_path, term, definition). Do not add a separate approval or interview stage. Check missing definitions before completion. The optional Glossary Appendix appears after all numbered sections only when needed; ordinary-language documents need no glossary. Do not require DDD or domain classification for glossary maintenance, or move requirement rules out of their owning sections.
+- In both profiles, require clear meanings for user jargon, uncommon terms/acronyms, or expressions that cannot be written out plainly. Read existing definitions with alps_glossary(action: 'read', doc_path); reuse meanings already supplied by the user. Ask at first use when the meaning is unclear and wait before finalizing dependent content. Never invent the meaning.
+- Include new or changed definitions in the current section's approval digest, then save each with alps_glossary(action: 'save', doc_path, term, definition). Do not add a separate approval or interview stage. Check missing definitions before completion. The optional Glossary Appendix appears after all numbered sections only when needed; ordinary-language documents need no glossary. Do not require DDD or domain classification for glossary maintenance, or move requirement rules out of their owning sections.
 - MUST call the overview tool matching the selected document profile first
 - NEVER proceed without user confirmation
 - ALWAYS confirm progress at the SECTION level. Lite Section 3 is optional; when no explicit exclusions were provided and the approved boundary is not materially ambiguous, state that and skip it without a dedicated question.
@@ -107,267 +100,208 @@ const documentPath = z
     "Required source document path. Always pass the path returned by init/load; another call never selects it for this request.",
   );
 
-// Template tools
-server.tool(
-  "get_alps_overview",
-  "Get the ALPS template overview and authoring order. After init/load, read get_alps_document_status: new documents start at Section 1; resumed documents continue at the first incomplete section in authoring order. Read the selected section's guide before drafting.",
-  {},
-  () => ({
-    content: [{ type: "text", text: tc.getAlpsOverview() }],
-  }),
-);
+/** Required fields are also allowed; callers name only the additional optional fields. */
+function actionFields(
+  input: Record<string, unknown>,
+  context: z.RefinementCtx,
+  required: readonly string[],
+  optional: readonly string[] = [],
+) {
+  const allowed = new Set(["action", ...required, ...optional]);
+  for (const key of required) {
+    if (input[key] === undefined)
+      context.addIssue({
+        code: "custom",
+        path: [key],
+        message: `${key} is required for ${input.action}`,
+      });
+  }
+  for (const key of Object.keys(input)) {
+    if (input[key] !== undefined && !allowed.has(key))
+      context.addIssue({
+        code: "custom",
+        path: [key],
+        message: `${key} does not apply to ${input.action}`,
+      });
+  }
+}
 
-server.tool("list_alps_sections", "List all available ALPS template sections.", {}, () => ({
-  content: [{ type: "text", text: JSON.stringify(tc.listAlpsSections()) }],
-}));
+const profile = z.enum(["full", "lite"]);
+const sectionNumber = z.number().int().min(FIRST_SECTION).max(LAST_SECTION);
+const response = (text: string) => ({ content: [{ type: "text" as const, text }] });
 
-server.tool(
-  "get_alps_section",
-  "Get a specific ALPS template section by number.",
+server.registerTool(
+  "alps_template",
   {
-    section: z
-      .number()
-      .min(FIRST_SECTION)
-      .max(LAST_SECTION)
-      .describe(`Section number (${SECTION_RANGE})`),
-    include_examples: z.boolean().default(false).describe("Include example content"),
+    description:
+      "Read Full/Lite authoring material: overview, sections (list), section, full (all sections), or guide. Read overview after init/load and the section guide before drafting. section/guide require section; include_examples applies only to section/full and defaults to false.",
+    inputSchema: z
+      .strictObject({
+        action: z.enum(["overview", "sections", "section", "full", "guide"]),
+        profile,
+        section: sectionNumber.optional(),
+        include_examples: z.boolean().optional(),
+      })
+      .superRefine((input, ctx) => {
+        const required = [
+          "profile",
+          ...(["section", "guide"].includes(input.action) ? ["section"] : []),
+        ];
+        actionFields(
+          input,
+          ctx,
+          required,
+          ["section", "full"].includes(input.action) ? ["include_examples"] : [],
+        );
+        if (
+          input.profile === "lite" &&
+          input.section !== undefined &&
+          input.section > LITE_LAST_SECTION
+        )
+          ctx.addIssue({
+            code: "custom",
+            path: ["section"],
+            message: `Lite sections end at ${LITE_LAST_SECTION}`,
+          });
+      }),
+    annotations: { readOnlyHint: true, openWorldHint: false },
   },
-  ({ section, include_examples }) => ({
-    content: [{ type: "text", text: tc.getAlpsSection(section, include_examples) }],
-  }),
-);
-
-server.tool(
-  "get_alps_full_template",
-  "Get the complete ALPS template with all sections combined.",
-  { include_examples: z.boolean().default(false).describe("Include example content") },
-  ({ include_examples }) => ({
-    content: [{ type: "text", text: tc.getAlpsFullTemplate(include_examples) }],
-  }),
-);
-
-server.tool(
-  "get_alps_section_guide",
-  "Get conversation guide for writing a specific ALPS section. Use this before starting each section.",
-  {
-    section: z
-      .number()
-      .min(FIRST_SECTION)
-      .max(LAST_SECTION)
-      .describe(`Section number (${SECTION_RANGE})`),
+  ({ action, profile, section, include_examples }) => {
+    const controller = profile === "lite" ? liteTc : tc;
+    switch (action) {
+      case "overview":
+        return response(controller.getAlpsOverview());
+      case "sections":
+        return response(JSON.stringify(controller.listAlpsSections()));
+      case "section":
+        return response(controller.getAlpsSection(section!, include_examples ?? false));
+      case "full":
+        return response(controller.getAlpsFullTemplate(include_examples ?? false));
+      case "guide":
+        return response(controller.getAlpsSectionGuide(section!));
+    }
   },
-  ({ section }) => ({
-    content: [{ type: "text", text: tc.getAlpsSectionGuide(section) }],
-  }),
 );
 
-server.tool(
-  "get_lite_alps_overview",
-  "Get the Lite ALPS overview for mockup and PoC authoring. Call this before writing any Lite ALPS section.",
-  {},
-  () => ({
-    content: [{ type: "text", text: liteTc.getAlpsOverview() }],
-  }),
-);
-
-server.tool(
-  "list_lite_alps_sections",
-  "List all available Lite ALPS template sections.",
-  {},
-  () => ({
-    content: [{ type: "text", text: JSON.stringify(liteTc.listAlpsSections()) }],
-  }),
-);
-
-server.tool(
-  "get_lite_alps_section",
-  "Get a specific Lite ALPS template section by number.",
+server.registerTool(
+  "alps_document",
   {
-    section: z
-      .number()
-      .min(LITE_FIRST_SECTION)
-      .max(LITE_LAST_SECTION)
-      .describe(`Section number (${LITE_SECTION_RANGE})`),
-    include_examples: z.boolean().default(false).describe("Include example content"),
-  },
-  ({ section, include_examples }) => ({
-    content: [{ type: "text", text: liteTc.getAlpsSection(section, include_examples) }],
-  }),
-);
-
-server.tool(
-  "get_lite_alps_full_template",
-  "Get the complete Lite ALPS template with all sections combined.",
-  { include_examples: z.boolean().default(false).describe("Include example content") },
-  ({ include_examples }) => ({
-    content: [{ type: "text", text: liteTc.getAlpsFullTemplate(include_examples) }],
-  }),
-);
-
-server.tool(
-  "get_lite_alps_section_guide",
-  "Get the conversation guide for a specific Lite ALPS section. Use this before starting each Lite section.",
-  {
-    section: z
-      .number()
-      .min(LITE_FIRST_SECTION)
-      .max(LITE_LAST_SECTION)
-      .describe(`Section number (${LITE_SECTION_RANGE})`),
-  },
-  ({ section }) => ({
-    content: [{ type: "text", text: liteTc.getAlpsSectionGuide(section) }],
-  }),
-);
-
-// Document tools
-server.tool(
-  "read_alps_glossary",
-  "Read existing term definitions in the specified Full or Lite document. No glossary is created by reading.",
-  { doc_path: documentPath },
-  ({ doc_path }) => ({ content: [{ type: "text", text: dc.readAlpsGlossary(doc_path) }] }),
-);
-
-server.tool(
-  "save_alps_glossary_entry",
-  "Save one confirmed term and its meaning to the optional trailing Glossary Appendix in the specified Full or Lite document. Reuse supplied definitions; ask the user about unclear meanings. Include new/changed meanings in the current section approval before calling. Never silently replace a conflicting definition. Do not populate a generic dictionary or classify domains.",
-  {
-    doc_path: documentPath,
-    term: z.string().trim().min(1).describe("The uncommon term or acronym used in this document"),
-    definition: z.string().trim().min(1).describe("User-confirmed meaning in this document"),
-  },
-  ({ doc_path, term, definition }) => ({
-    content: [{ type: "text", text: dc.saveAlpsGlossaryEntry(doc_path, term, definition) }],
-  }),
-);
-
-server.tool(
-  "init_alps_document",
-  "Initialize a new ALPS document file.",
-  {
-    project_name: z.string().min(1).describe("Name of the project"),
-    output_path: z
-      .string()
-      .min(1)
-      .describe(
-        `File path for the new document (e.g., my-project.alps.xml or ~/Documents/my-project.alps.xml). ${PATH_BASE}`,
+    description:
+      "Manage a document: init requires profile, project_name and output_path; load/status require doc_path and detect the profile from the source. After loading, follow that profile's overview and guide; obtain section approval before saving.",
+    inputSchema: z
+      .strictObject({
+        action: z.enum(["init", "load", "status"]),
+        profile: profile.optional(),
+        project_name: z.string().min(1).optional(),
+        output_path: z.string().min(1).describe(PATH_BASE).optional(),
+        doc_path: documentPath.optional(),
+      })
+      .superRefine((input, ctx) =>
+        actionFields(
+          input,
+          ctx,
+          input.action === "init" ? ["profile", "project_name", "output_path"] : ["doc_path"],
+        ),
       ),
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   },
-  ({ project_name, output_path }) => ({
-    content: [{ type: "text", text: dc.initAlpsDocument(project_name, output_path) }],
-  }),
+  ({ action, profile, project_name, output_path, doc_path }) => {
+    switch (action) {
+      case "init":
+        return response(
+          profile === "lite"
+            ? dc.initLiteAlpsDocument(project_name!, output_path!)
+            : dc.initAlpsDocument(project_name!, output_path!),
+        );
+      case "load":
+        return response(dc.loadAlpsDocument(doc_path!));
+      case "status":
+        return response(dc.getAlpsDocumentStatus(doc_path!));
+    }
+  },
 );
 
-server.tool(
-  "init_lite_alps_document",
-  "Initialize a new four-section Lite ALPS document for minimum PoC and demo planning.",
+server.registerTool(
+  "alps_section",
   {
-    project_name: z.string().min(1).describe("Name of the project"),
-    output_path: z
-      .string()
-      .min(1)
-      .describe(
-        `File path for the new document (e.g., my-project.lite.alps.xml or ~/Documents/my-project.lite.alps.xml). ${PATH_BASE}`,
+    description:
+      "Read or save one section/subsection of doc_path. read optionally takes subsection_id. save requires subsection_id, title and content; present a contract-complete plain-text approval digest and obtain explicit user confirmation first. Fixed titles match the template; each Full Section 7 Feature is one save unit.",
+    inputSchema: z
+      .strictObject({
+        action: z.enum(["read", "save"]),
+        doc_path: documentPath,
+        section: sectionNumber,
+        subsection_id: z
+          .string()
+          .min(1)
+          .describe(
+            'Part after the section number: "1" stores N.1; Full Section 7 uses the positive Feature number.',
+          )
+          .optional(),
+        title: z.string().min(1).optional(),
+        content: z.string().optional(),
+      })
+      .superRefine((input, ctx) =>
+        actionFields(
+          input,
+          ctx,
+          input.action === "save"
+            ? ["doc_path", "section", "subsection_id", "title", "content"]
+            : ["doc_path", "section"],
+          input.action === "read" ? ["subsection_id"] : [],
+        ),
       ),
+    annotations: { readOnlyHint: false, openWorldHint: false },
   },
-  ({ project_name, output_path }) => ({
-    content: [{ type: "text", text: dc.initLiteAlpsDocument(project_name, output_path) }],
-  }),
+  ({ action, doc_path, section, subsection_id, title, content }) =>
+    response(
+      action === "read"
+        ? dc.readAlpsSection(doc_path, section, subsection_id)
+        : dc.saveAlpsSection(doc_path, section, subsection_id!, title!, content!),
+    ),
 );
 
-server.tool(
-  "load_alps_document",
-  `Load an existing ALPS or Lite ALPS document to resume editing. The document profile is detected automatically.
-⚠️ CRITICAL: After loading, you MUST follow the conversation guide:
-1. Call the matching get_alps_section_guide(N) or get_lite_alps_section_guide(N)
-2. Follow the selected profile: Full asks for missing context before drafting; Lite asks only for missing or protected context and proposes Sections 2 and 4
-3. Wait when a focused question is required; otherwise present the completed proposal for approval
-4. Get explicit confirmation before saving each section`,
+server.registerTool(
+  "alps_glossary",
   {
-    doc_path: z.string().min(1).describe("Path to the .alps.xml or .lite.alps.xml file"),
-  },
-  ({ doc_path }) => ({
-    content: [{ type: "text", text: dc.loadAlpsDocument(doc_path) }],
-  }),
-);
-
-server.tool(
-  "save_alps_section",
-  `Save content to a subsection in the ALPS document.
-⚠️ BEFORE CALLING THIS TOOL:
-1. Present a concise plain-text approval digest in the conversation
-2. Include every requirement value and rule that the saved content will enforce
-3. Ask the user to approve, revise, or defer it
-4. Call this tool only after the user has confirmed`,
-  {
-    doc_path: documentPath,
-    section: z
-      .number()
-      .min(FIRST_SECTION)
-      .max(LAST_SECTION)
-      .describe(`Section number (${SECTION_RANGE})`),
-    subsection_id: z
-      .string()
-      .min(1)
-      .describe(
-        'Subsection ID — the part AFTER the section number. Pass "1" to store N.1, "1.2" to store N.1.2. Fixed sections must match the active document template. For Full ALPS Section 7, pass the positive feature number.',
+    description:
+      "Read definitions or save one confirmed term in doc_path's optional trailing Glossary Appendix. save requires term/definition approved with the current section; reuse supplied meanings and resolve conflicts first. Reading creates nothing.",
+    inputSchema: z
+      .strictObject({
+        action: z.enum(["read", "save"]),
+        doc_path: documentPath,
+        term: z.string().trim().min(1).optional(),
+        definition: z.string().trim().min(1).optional(),
+      })
+      .superRefine((input, ctx) =>
+        actionFields(
+          input,
+          ctx,
+          input.action === "save" ? ["doc_path", "term", "definition"] : ["doc_path"],
+        ),
       ),
-    title: z
-      .string()
-      .min(1)
-      .describe(
-        "Title of the subsection. Fixed sections MUST equal the active template title. For a dynamic Feature section, use the approved feature name.",
-      ),
-    content: z.string().describe("Content for the subsection (markdown)"),
+    annotations: { readOnlyHint: false, openWorldHint: false },
   },
-  ({ doc_path, section, subsection_id, title, content }) => ({
-    content: [
-      { type: "text", text: dc.saveAlpsSection(doc_path, section, subsection_id, title, content) },
-    ],
-  }),
+  ({ action, doc_path, term, definition }) =>
+    response(
+      action === "read"
+        ? dc.readAlpsGlossary(doc_path)
+        : dc.saveAlpsGlossaryEntry(doc_path, term!, definition!),
+    ),
 );
 
-server.tool(
-  "read_alps_section",
-  "Read a section or subsection from the specified document.",
+server.registerTool(
+  "alps_export",
   {
-    doc_path: documentPath,
-    section: z
-      .number()
-      .min(FIRST_SECTION)
-      .max(LAST_SECTION)
-      .describe(`Section number (${SECTION_RANGE})`),
-    subsection_id: z
-      .string()
-      .optional()
-      .describe('Subsection ID (e.g., "1" for X.1). If omitted, returns entire section.'),
+    description:
+      "Return doc_path as Markdown, or write it to output_path. The source document is preserved; an output path aliasing it is rejected.",
+    inputSchema: z.strictObject({
+      doc_path: documentPath,
+      output_path: z.string().min(1).describe(PATH_BASE).optional(),
+    }),
+    annotations: { readOnlyHint: false, openWorldHint: false },
   },
-  ({ doc_path, section, subsection_id }) => ({
-    content: [{ type: "text", text: dc.readAlpsSection(doc_path, section, subsection_id) }],
-  }),
-);
-
-server.tool(
-  "get_alps_document_status",
-  "Get the status of all sections in the specified document.",
-  { doc_path: documentPath },
-  ({ doc_path }) => ({
-    content: [{ type: "text", text: dc.getAlpsDocumentStatus(doc_path) }],
-  }),
-);
-
-server.tool(
-  "export_alps_markdown",
-  "Export the ALPS document as clean markdown.",
-  {
-    doc_path: documentPath,
-    output_path: z
-      .string()
-      .optional()
-      .describe(`Optional output file path; without it the Markdown is returned. ${PATH_BASE}`),
-  },
-  ({ doc_path, output_path }) => ({
-    content: [{ type: "text", text: dc.exportAlpsMarkdown(doc_path, output_path) }],
-  }),
+  ({ doc_path, output_path }) => response(dc.exportAlpsMarkdown(doc_path, output_path)),
 );
 
 async function main() {

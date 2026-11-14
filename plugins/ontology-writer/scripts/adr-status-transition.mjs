@@ -9,7 +9,7 @@ const UNSAFE_SUMMARY_RE = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/;
 function usage(message) {
   if (message) console.error(`Error: ${message}`);
   console.error(
-    'Usage: bun adr-status-transition.mjs <adr-path> "<status>" [--summary "<text>"] [--root <repo-root>]',
+    'Usage: bun adr-status-transition.mjs <adr-path> "<status>" [--summary "<text>"] [--root <repo-root>] [--adr-dir DIR | --index FILE]',
   );
   process.exit(2);
 }
@@ -18,6 +18,8 @@ function parseArgs(argv) {
   const positional = [];
   let summary;
   let root = process.cwd();
+  let adrDir;
+  let indexFile;
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -31,16 +33,28 @@ function parseArgs(argv) {
       root = argv[++i];
       continue;
     }
+    if (arg === "--adr-dir" || arg === "--index") {
+      if (!argv[i + 1] || argv[i + 1].startsWith("--")) usage(`${arg} requires a value`);
+      if (arg === "--adr-dir") adrDir = argv[++i];
+      else indexFile = argv[++i];
+      continue;
+    }
     if (arg.startsWith("--")) usage(`unknown option: ${arg}`);
     positional.push(arg);
   }
 
   if (positional.length !== 2) usage("ADR path and target status are required");
+  if (adrDir && indexFile) usage("give --adr-dir or --index, not both");
   return {
     adrArg: positional[0],
     status: positional[1].trim(),
     summary,
     root: path.resolve(root),
+    // Explicit selection wins; otherwise use the same index as the session hook.
+    indexFile:
+      indexFile ??
+      (adrDir ? path.join(adrDir, ".mapping.json") : process.env.ALPS_ADR_MAPPING || undefined) ??
+      "docs/adr/.mapping.json",
   };
 }
 
@@ -117,7 +131,7 @@ function writeBothOrRollback(files) {
 }
 
 function main() {
-  const { adrArg, status, summary, root } = parseArgs(process.argv.slice(2));
+  const { adrArg, status, summary, root, indexFile } = parseArgs(process.argv.slice(2));
   if (!classifyStatus(status).ok) {
     usage(`invalid ADR status: ${status}`);
   }
@@ -125,7 +139,7 @@ function main() {
 
   const adrPath = normalizeAdrPath(root, adrArg);
   const adrFile = path.join(root, ...adrPath.split("/"));
-  const mappingFile = path.join(root, "docs", "adr", ".mapping.json");
+  const mappingFile = path.resolve(root, indexFile);
   if (!existsSync(adrFile)) throw new Error(`ADR file does not exist: ${adrPath}`);
   if (!existsSync(mappingFile)) throw new Error(`mapping file does not exist: ${mappingFile}`);
 

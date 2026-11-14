@@ -122,11 +122,11 @@ PRD 레이어는 커맨드 하나지만, 실제로는 9개 섹션과 확인 게�
 ```mermaid
 flowchart TD
     Start(["/alps-init"]) --> Q{"새 문서인가,<br/>기존 .alps.xml 이어쓰기인가?"}
-    Q -->|신규| I["init_alps_document()"]
-    Q -->|이어쓰기| L["load_alps_document()"]
-    I --> Ov["get_alps_overview()<br/>9개 섹션 전체의 작성 가이드"]
+    Q -->|신규| I["alps_document(action: 'init', profile: 'full', project_name, output_path)"]
+    Q -->|이어쓰기| L["alps_document(action: 'load', doc_path)"]
+    I --> Ov["alps_template(action: 'overview', profile: 'full')<br/>9개 섹션 전체의 작성 가이드"]
     L --> Ov
-    L --> Status["get_alps_document_status()<br/>완료 섹션을 한 번 요약"]
+    L --> Status["alps_document(action: 'status', doc_path)<br/>완료 섹션을 한 번 요약"]
     Ov --> StartAt{"시작 위치"}
     Status --> StartAt
     StartAt -->|"신규"| First["Section 1"]
@@ -136,17 +136,17 @@ flowchart TD
 
     subgraph Loop["섹션마다 — 한 번에 하나씩, 절대 묶지 않는다"]
         direction TB
-        G["get_alps_section_guide(N)"] --> T["get_alps_section(N)"]
+        G["alps_template(action: 'guide', profile: 'full', section: N)"] --> T["alps_template(action: 'section', profile: 'full', section: N)"]
         T --> Ask["초점이 잡힌 질문 1~2개"]
         Ask --> Show["완성된 섹션을 출력"]
         Show --> C{"사용자 확인?"}
         C -->|수정 요청| Ask
-        C -->|승인| Save["save_alps_section(section, subsection_id, title, content)<br/>확인 후에만"]
+        C -->|승인| Save["alps_section(action: 'save', doc_path, section, subsection_id, title, content)<br/>확인 후에만"]
     end
 
     Loop --> More{"남은 섹션?"}
     More -->|있음| Loop
-    More -->|없음| Export["export_alps_markdown()"]
+    More -->|없음| Export["alps_export(doc_path)"]
     Export --> Next(["다음 단계 안내:<br/>/feature-to-adr (일괄) 또는 /adr-new (결정 하나)"])
 
     classDef cmd fill:#e8f0fe,stroke:#4285f4,color:#111;
@@ -157,7 +157,7 @@ flowchart TD
 
 **작성 순서** — `1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9`. 섹션 번호와 최종 문서 순서는 그대로다(5는 Design, 6은 Requirements). _질문하는_ 순서만 어긋나는데, Section 5가 Section 6.1이 정의하는 Feature ID(F1, F2, …)를 재사용하기 때문이다. 질문 순서가 숫자 순서에서 벗어나는 곳은 여기 한 군데뿐이다.
 
-기존 문서는 `get_alps_document_status` 결과를 읽고 이 순서에서 첫 미완료 섹션부터 이어간다. 완료된 섹션은 한 번 요약하되, 사용자가 전체 재검토를 요청하거나 선행 내용이 바뀐 경우가 아니면 다시 승인받지 않는다.
+기존 문서는 `alps_document(action: 'status', doc_path)` 결과를 읽고 이 순서에서 첫 미완료 섹션부터 이어간다. 완료된 섹션은 한 번 요약하되, 사용자가 전체 재검토를 요청하거나 선행 내용이 바뀐 경우가 아니면 다시 승인받지 않는다.
 
 | §   | 섹션                      | §   | 섹션                        |
 | --- | ------------------------- | --- | --------------------------- |
@@ -186,10 +186,10 @@ sequenceDiagram
     F2A->>F2A: adr-writer 플러그인이 설치되어 있는가?
     Note over F2A: 없으면 — 현재 클라이언트에 맞는<br/>설치 안내를 출력하고 중단
 
-    F2A->>MCP: load_alps_document()
-    F2A->>MCP: read_alps_section(7) — 기능 목록
-    F2A->>MCP: read_alps_section(6) — 6.3 의존성 그래프, 6.2 NFR
-    F2A->>MCP: read_alps_section(4) — 4.2 기술 스택 / 전역 제약
+    F2A->>MCP: alps_document(action: 'load', doc_path)
+    F2A->>MCP: alps_section(action: 'read', doc_path, section: 7) — 기능 목록
+    F2A->>MCP: alps_section(action: 'read', doc_path, section: 6) — 6.3 의존성 그래프, 6.2 NFR
+    F2A->>MCP: alps_section(action: 'read', doc_path, section: 4) — 4.2 기술 스택 / 전역 제약
 
     F2A->>F2A: 6.3 그래프의 정합성 검사
     alt 기능 하나를 지정

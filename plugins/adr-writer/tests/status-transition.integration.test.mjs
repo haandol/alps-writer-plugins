@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   cachedRepo,
   initRepo,
@@ -10,6 +12,70 @@ import {
   withTmp,
   write,
 } from "./helpers.mjs";
+
+test("status transition uses a custom index and never falls back to another index", () => {
+  withTmp((dir) => {
+    const adrPath = "spec/decisions/ordering/0001-order.md";
+    const indexPath = "spec/decisions/current.json";
+    const original = "# ADR 0001: Order\n\n## Status\n\nProposed\n";
+    const index = JSON.stringify({
+      categories: {
+        ordering: {
+          adrs: [
+            {
+              path: adrPath,
+              status: "Proposed",
+              summary: "Order",
+            },
+          ],
+        },
+      },
+    });
+    const defaultIndex = write(dir, "docs/adr/.mapping.json", '{"categories":{}}\n');
+    const script = fileURLToPath(new URL("../scripts/adr-status-transition.mjs", import.meta.url));
+    for (const mode of ["index", "directory", "environment"]) {
+      write(dir, adrPath, original);
+      const selected = mode === "directory" ? "spec/decisions/.mapping.json" : indexPath;
+      write(dir, selected, index);
+      const args =
+        mode === "index"
+          ? ["--index", selected]
+          : mode === "directory"
+            ? ["--adr-dir", "spec/decisions"]
+            : [];
+      const env = {
+        ...process.env,
+        ALPS_ADR_MAPPING: mode === "environment" ? selected : "missing.json",
+      };
+      const result = spawnSync(
+        process.execPath,
+        [script, adrPath, "Accepted (2026-11-14)", "--root", dir, ...args],
+        {
+          encoding: "utf8",
+          env,
+        },
+      );
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(readFileSync(path.join(dir, adrPath), "utf8"), /Accepted \(2026-11-14\)/);
+      assert.equal(
+        JSON.parse(readFileSync(path.join(dir, selected), "utf8")).categories.ordering.adrs[0]
+          .status,
+        "Accepted (2026-11-14)",
+      );
+      assert.equal(readFileSync(defaultIndex, "utf8"), '{"categories":{}}\n');
+    }
+    write(dir, adrPath, original);
+    const missing = spawnSync(
+      process.execPath,
+      [script, adrPath, "Accepted (2026-11-14)", "--root", dir, "--index", "missing.json"],
+      { encoding: "utf8" },
+    );
+    assert.equal(missing.status, 1);
+    assert.match(missing.stderr, /mapping file does not exist/);
+    assert.equal(readFileSync(path.join(dir, adrPath), "utf8"), original);
+    assert.equal(readFileSync(defaultIndex, "utf8"), '{"categories":{}}\n');
+  });
+});
 
 function seedRepo(dir) {
   cachedRepo(dir, "status-transition: seed", (at) => {

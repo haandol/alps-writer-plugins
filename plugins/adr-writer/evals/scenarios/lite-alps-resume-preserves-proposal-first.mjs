@@ -34,7 +34,7 @@ export default {
     return [
       alpsSkillText("lite-alps-init"),
       alpsLiteGuideText(2),
-      `\n---\n\n# Actual load_alps_document response`,
+      `\n---\n\n# Actual alps_document load response`,
       resume,
       `\n---\n\n# Approved document context`,
       SECTION_ONE,
