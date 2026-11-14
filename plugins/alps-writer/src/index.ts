@@ -100,13 +100,14 @@ const documentPath = z
     "Required source document path. Always pass the path returned by init/load; another call never selects it for this request.",
   );
 
-/** Check action-specific inputs before a grouped tool can read or mutate a document. */
+/** Required fields are also allowed; callers name only the additional optional fields. */
 function actionFields(
   input: Record<string, unknown>,
   context: z.RefinementCtx,
   required: readonly string[],
-  allowed: readonly string[] = required,
+  optional: readonly string[] = [],
 ) {
+  const allowed = new Set(["action", ...required, ...optional]);
   for (const key of required) {
     if (input[key] === undefined)
       context.addIssue({
@@ -116,7 +117,7 @@ function actionFields(
       });
   }
   for (const key of Object.keys(input)) {
-    if (key !== "action" && input[key] !== undefined && !allowed.includes(key))
+    if (input[key] !== undefined && !allowed.has(key))
       context.addIssue({
         code: "custom",
         path: [key],
@@ -146,10 +147,12 @@ server.registerTool(
           "profile",
           ...(["section", "guide"].includes(input.action) ? ["section"] : []),
         ];
-        actionFields(input, ctx, required, [
-          ...required,
-          ...(["section", "full"].includes(input.action) ? ["include_examples"] : []),
-        ]);
+        actionFields(
+          input,
+          ctx,
+          required,
+          ["section", "full"].includes(input.action) ? ["include_examples"] : [],
+        );
         if (
           input.profile === "lite" &&
           input.section !== undefined &&
@@ -245,9 +248,7 @@ server.registerTool(
           input.action === "save"
             ? ["doc_path", "section", "subsection_id", "title", "content"]
             : ["doc_path", "section"],
-          input.action === "save"
-            ? ["doc_path", "section", "subsection_id", "title", "content"]
-            : ["doc_path", "section", "subsection_id"],
+          input.action === "read" ? ["subsection_id"] : [],
         ),
       ),
     annotations: { readOnlyHint: false, openWorldHint: false },

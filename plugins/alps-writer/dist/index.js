@@ -37740,7 +37740,8 @@ var PATH_BASE = "An absolute or ~ path is used as given. A relative path is reso
 var documentPath = external_exports.string().min(1).refine((value) => value.trim().length > 0, "Document path must not be blank").describe(
   "Required source document path. Always pass the path returned by init/load; another call never selects it for this request."
 );
-function actionFields(input2, context, required2, allowed = required2) {
+function actionFields(input2, context, required2, optional2 = []) {
+  const allowed = /* @__PURE__ */ new Set(["action", ...required2, ...optional2]);
   for (const key of required2) {
     if (input2[key] === void 0)
       context.addIssue({
@@ -37750,7 +37751,7 @@ function actionFields(input2, context, required2, allowed = required2) {
       });
   }
   for (const key of Object.keys(input2)) {
-    if (key !== "action" && input2[key] !== void 0 && !allowed.includes(key))
+    if (input2[key] !== void 0 && !allowed.has(key))
       context.addIssue({
         code: "custom",
         path: [key],
@@ -37775,10 +37776,12 @@ server.registerTool(
         "profile",
         ...["section", "guide"].includes(input2.action) ? ["section"] : []
       ];
-      actionFields(input2, ctx, required2, [
-        ...required2,
-        ...["section", "full"].includes(input2.action) ? ["include_examples"] : []
-      ]);
+      actionFields(
+        input2,
+        ctx,
+        required2,
+        ["section", "full"].includes(input2.action) ? ["include_examples"] : []
+      );
       if (input2.profile === "lite" && input2.section !== void 0 && input2.section > LITE_LAST_SECTION)
         ctx.addIssue({
           code: "custom",
@@ -37854,7 +37857,7 @@ server.registerTool(
         input2,
         ctx,
         input2.action === "save" ? ["doc_path", "section", "subsection_id", "title", "content"] : ["doc_path", "section"],
-        input2.action === "save" ? ["doc_path", "section", "subsection_id", "title", "content"] : ["doc_path", "section", "subsection_id"]
+        input2.action === "read" ? ["subsection_id"] : []
       )
     ),
     annotations: { readOnlyHint: false, openWorldHint: false }
