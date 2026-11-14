@@ -6,7 +6,7 @@ argument-hint: "[project-name-or-lite-alps-path]"
 
 # lite-alps-init
 
-Every document-specific call requires `doc_path`: use the document path returned by
+Every call on an existing document requires `doc_path`: use the document path returned by
 init/load for reads, saves, glossary operations, status and export. Pass it even
 after loading; no other call selects a default document.
 
@@ -28,7 +28,7 @@ Apply the overview's optional glossary rules throughout authoring, including
 proposal-led Sections 2 and 4. Require a clear user meaning for jargon, uncommon
 terms/acronyms, or expressions that cannot be written out plainly; reuse supplied
 definitions and ask before finalizing content that depends on an unclear meaning.
-Read `read_alps_glossary(doc_path)` as needed and use `save_alps_glossary_entry(doc_path)` under the
+Read `alps_glossary(action: 'read', doc_path)` as needed and use `alps_glossary(action: 'save', doc_path, term, definition)` under the
 current Section approval. Check missing definitions before completion. The appendix
 comes after the four Sections only when needed, without a glossary interview,
 separate approval, or extra domain-classification exercise.
@@ -52,9 +52,9 @@ implementation readiness.
 
 1. Use the user's request to choose a new Lite ALPS document or resume an existing
    `.lite.alps.xml`; ask only when that choice is unclear.
-2. Call `mcp__alps-writer__init_lite_alps_document` or
-   `mcp__alps-writer__load_alps_document`.
-3. Call `mcp__alps-writer__get_lite_alps_overview`.
+2. Call `alps_document(action: 'init', profile: 'lite', project_name, output_path)` or
+   `alps_document(action: 'load', doc_path)`.
+3. Call `alps_template(action: 'overview', profile: 'lite')`.
 4. Select the confirmation mode:
    - Atomic is the default: discuss, approve, and save one Section at a time.
    - Batch is allowed only when the user explicitly requests it or supplies a complete structured
@@ -69,20 +69,20 @@ implementation readiness.
    - Sections 1, 2, and 4 are required.
    - Section 3 is optional and remains unwritten when the user has no explicit exclusions and the
      approved boundary is not materially ambiguous.
-   - After loading, call `mcp__alps-writer__get_alps_document_status`, summarize completed required
+   - After loading, call `alps_document(action: 'status', doc_path)`, summarize completed required
      Sections once, and resume at the first incomplete required Section.
 6. For each Section:
-   - Call `mcp__alps-writer__get_lite_alps_section_guide(N)`.
-   - Call `mcp__alps-writer__get_lite_alps_section(N)`.
+   - Call `alps_template(action: 'guide', profile: 'lite', section: N)`.
+   - Call `alps_template(action: 'section', profile: 'lite', section: N)`.
    - Read every prerequisite named by the guide with
-     `mcp__alps-writer__read_alps_section`.
+     `alps_section(action: 'read', doc_path, section: N)`.
    - Briefly explain the Section's purpose.
    - Follow step 7's Section-specific question and proposal rules. When a question is needed,
      ask one focused question or at most two closely related questions from the guide, wait for
      the answer, and integrate it. Otherwise continue with the proposal or optional skip.
    - When the Section is complete, present a concise plain-text approval digest.
    - Save each approved subsection separately with
-     `mcp__alps-writer__save_alps_section`.
+     `alps_section(action: 'save', doc_path, section, subsection_id, title, content)`.
 7. Section scope:
    - **Section 1 — Overview**: ask for the target user and core problem, then the final business
      impact that user should gain and why it matters. Keep the result in
@@ -129,9 +129,9 @@ implementation readiness.
    Never add `C4Container`, technology stacks, interfaces, storage, deployment, libraries, code
    structure, NFR wizards, Feature IDs, implementation plans, or ADR handoff steps to Lite.
 10. When the requested document work is complete, call
-    `mcp__alps-writer__export_alps_markdown`.
+    `alps_export(doc_path)`.
 11. After required Sections 1, 2, and 4 are approved and written, confirm the selected
-    document's completion with `get_alps_document_status(doc_path)` and ask once
+    document's completion with `alps_document(action: 'status', doc_path)` and ask once
     whether the user wants an optional deep-research review of its evidence and errors.
     Unwritten optional Section 3 does not block this invitation. Reuse a review request
     or an answered choice already in the current conversation; an unanswered invitation,

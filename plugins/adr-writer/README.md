@@ -28,7 +28,7 @@ flowchart LR
 | Reconcile ADRs with the code after drift      | `/adr-sync [category]`        |
 | Consolidate one decision's recorded evolution | `/adr-rollup [category]`      |
 | Write a standalone report for a reader        | `/report-writer`              |
-| Pitch reports at your level in this project   | `/reader-profile`             |
+| Pitch reports at your level in this project   | `/report-writer profile`      |
 
 ## Reports you can read
 
@@ -38,8 +38,8 @@ evidence, and optional self-check questions.
 
 ![A report from the bundled example](../../docs/images/report-writer.webp)
 
-Reports pitch each explanation at your level in the project. `/reader-profile`
-(or `$reader-profile` in Codex) reads only the messages you typed in this project's Claude Code and Codex
+Reports pitch each explanation at your level in the project. `/report-writer profile`
+(or `$report-writer profile` in Codex) reads only the messages you typed in this project's Claude Code and Codex
 sessions, with emails, URLs, paths, tokens and long identifiers removed first,
 and keeps a short per-area note of what you know and what to explain, under
 `~/.agents/report-writer/reader-profiles/` outside the repository. Report writing

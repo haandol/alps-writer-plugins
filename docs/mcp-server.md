@@ -48,43 +48,38 @@ Config example with `ALPS_OUTPUT_DIR`:
 
 ## MCP tools
 
-### Full ALPS template tools
+The server exposes five tools. Full and Lite share the same tools; select
+`profile: "full"` or `"lite"` for templates and new documents. Existing documents
+use their own profile. Tool calls use named JSON arguments.
 
-| Tool                     | Description                                            |
-| ------------------------ | ------------------------------------------------------ |
-| `get_alps_overview`      | Get the ALPS template overview with conversation guide |
-| `list_alps_sections`     | List all available template sections                   |
-| `get_alps_section`       | Get a specific template section by number (1–9)        |
-| `get_alps_full_template` | Get the complete template with all sections            |
-| `get_alps_section_guide` | Get the conversation guide for writing a section       |
+| Tool            | Actions                                            | Required inputs                                                                         |
+| --------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `alps_template` | `overview`, `sections`, `section`, `full`, `guide` | `action`, `profile`; `section` for `section`/`guide`                                    |
+| `alps_document` | `init`, `load`, `status`                           | `action`; `profile`, `project_name`, `output_path` for init; `doc_path` for load/status |
+| `alps_section`  | `read`, `save`                                     | `action`, `doc_path`, `section`; also `subsection_id`, `title`, `content` for save      |
+| `alps_glossary` | `read`, `save`                                     | `action`, `doc_path`; also `term`, `definition` for save                                |
+| `alps_export`   | Markdown export                                    | `doc_path`; optional `output_path` writes a file                                        |
 
-### Lite ALPS template tools
+`alps_template` includes examples only when `include_examples: true` is supplied
+for `section` or `full`. Section reads can select `subsection_id`; without it,
+they return the whole section. Irrelevant action arguments are rejected.
 
-| Tool                          | Description                                                |
-| ----------------------------- | ---------------------------------------------------------- |
-| `get_lite_alps_overview`      | Get the current 4-section Lite ALPS overview and rules     |
-| `list_lite_alps_sections`     | List the Lite ALPS template sections                       |
-| `get_lite_alps_section`       | Get a current Lite ALPS template section by number (1–4)   |
-| `get_lite_alps_full_template` | Get the complete Lite ALPS template                        |
-| `get_lite_alps_section_guide` | Get the conversation guide for writing a Lite ALPS section |
+For example, call `alps_template` with:
 
-### Document management tools
+```json
+{ "action": "section", "profile": "lite", "section": 4, "include_examples": true }
+```
 
-| Tool                       | Description                                                    |
-| -------------------------- | -------------------------------------------------------------- |
-| `init_alps_document`       | Create a new Full ALPS document (`.alps.xml`)                  |
-| `init_lite_alps_document`  | Create a new Lite ALPS document (`.lite.alps.xml`)             |
-| `load_alps_document`       | Load either document type and detect its profile automatically |
-| `save_alps_section`        | Save content using the active document's template              |
-| `read_alps_section`        | Read the current content of a section                          |
-| `get_alps_document_status` | Get the status of all sections in the active document          |
-| `export_alps_markdown`     | Export the active document as clean Markdown                   |
+The previous per-operation tool names are replaced by these five names. Update
+external callers with the action and profile above. Document formats and the
+section approval boundary remain unchanged. Each plugin stays within five MCP
+tools and ten public skills; ADR Writer and Ontology Writer expose no MCP server.
 
 Document writes are guarded:
 
 - Markdown export rejects an output path pointing to the source document, including links and relative aliases, so the XML remains editable.
 - Full documents use `.alps.xml`; Lite documents use `.lite.alps.xml` and declare the Lite profile in the root. A failed `init` or `load` leaves no document selected.
-- Existing files are never selected implicitly by either initialization tool; resume them explicitly with `load_alps_document`.
+- Existing files are never selected implicitly by initialization; resume them explicitly with `alps_document(action: 'load')`.
 - Full ALPS resumes in dependency order `1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9`. Lite ALPS resumes in `1 → 2 → 3 → 4`; Section 3 is optional and Section 4 is required.
 - Static subsection IDs and titles are validated against the active XML templates during load and save. Full Section 7 accepts one dynamic entry per approved Feature.
 - Markdown content is XML-escaped on disk and decoded when read or exported. Saves use an atomic replacement so interrupted writes do not leave a partially written document.

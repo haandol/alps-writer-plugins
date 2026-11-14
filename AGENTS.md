@@ -4,6 +4,12 @@
 
 **Tech Stack**: TypeScript 5.9+, Bun >= 1.4.2 (runtime, package manager, test runner), Bun workspace, MCP SDK (`@modelcontextprotocol/sdk`), Zod
 
+Each plugin exposes at most **5 MCP tools** and **10 public skills**, counted
+separately including aliases. Group related operations without removing features
+or weakening approval, validation or failure guarantees. Keep operation-specific
+detail in selectively loaded, plugin-local references. ADR Writer handles reader
+profile requests through `report-writer profile`.
+
 ## The design principle — an abstraction ladder, C4-style
 
 Everything in this repo serves one idea, so weigh changes against it.
@@ -215,7 +221,7 @@ plugins/adr-writer/       # ADR plugin (standalone, ALPS-agnostic)
 ├── .claude-plugin/plugin.json   # Claude metadata; hooks/ is auto-discovered
 ├── .codex-plugin/plugin.json    # Codex metadata; registers skills + hooks
 ├── README.md
-├── skills/               # adr-import, adr-new, adr-impl, adr-impl-refactor, adr-impl-review, adr-sync, adr-rollup, report-writer, reader-profile
+├── skills/               # adr-import, adr-new, adr-impl, adr-impl-refactor, adr-impl-review, adr-review, adr-search, adr-sync, adr-rollup, report-writer
 ├── agents/               # ADR authoring reviewer + isolated refactor/impl explainer/review/report roles
 ├── evals/                # behaviour evals (real model; NOT in bun run test)
 │   ├── run.mjs           # runner — N runs per scenario, hit rates, shareable report
@@ -365,7 +371,7 @@ research artifacts disposable and retain the existing post-handoff boundary.
 append a glossary only when qualifying jargon, uncommon terms/acronyms, or
 expressions that cannot be written out plainly need confirmed definitions. Ask
 for unclear meanings at first use; reuse supplied meanings and the current
-Section approval. `read_alps_glossary` and `save_alps_glossary_entry` operate on the
+Section approval. `alps_glossary(action: 'read', doc_path)` and `alps_glossary(action: 'save', doc_path, term, definition)` operate on the
 explicitly selected document. The optional XML glossary follows all Sections, survives later
 saves and reloads, and exports last. Never pre-seed a dictionary or add a separate DDD exercise for glossary maintenance.
 

@@ -80,4 +80,4 @@ The chain performs a one-way ownership handoff (PRD → ADR → code). Before ha
 
 - Project README — installation and command reference
 - `templates/adr/concepts.md` — how the ADR cycle works, read after `/feature-to-adr`
-- `get_alps_overview` MCP tool — runtime conversation guide consumed by the agent
+- `alps_template(action: 'overview', profile: 'full')` MCP tool — runtime conversation guide consumed by the agent

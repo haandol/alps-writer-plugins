@@ -5,9 +5,10 @@ import os from "node:os";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-/** report-writer and its companion reader-profile skill ship side by side in each plugin. */
+/** ADR Writer routes profile requests through report-writer; Ontology keeps its companion. */
 const SKILLS = {
-  "report-writer": '\nargument-hint: "[report-topic-or-source] [format]"\n---\n',
+  "report-writer":
+    '\nargument-hint: "[report-topic-or-source] [format] | profile <build|refresh|show|correct|delete>"\n---\n',
   "reader-profile": '\nargument-hint: "[build|refresh|show|delete]"\n---\n',
 };
 if (process.argv.slice(2).some((arg) => !["--check", "--global"].includes(arg)))
@@ -34,6 +35,13 @@ for (const [skill, hint] of Object.entries(SKILLS)) {
   ]);
   for (const root of roots) {
     const target = path.join(root, skill);
+    if (skill === "reader-profile" && root === path.join(ROOT, "plugins/adr-writer/skills")) {
+      if (existsSync(path.join(target, "SKILL.md"))) {
+        console.error(`Obsolete public skill: ${target}; ADR profile requests use report-writer.`);
+        mismatch = true;
+      }
+      continue;
+    }
     for (const [relative, baseContent] of entries) {
       const content =
         relative === "SKILL.md" && target.startsWith(path.join(ROOT, "plugins"))
@@ -55,5 +63,5 @@ for (const [skill, hint] of Object.entries(SKILLS)) {
 if (mismatch) process.exitCode = 1;
 else
   console.log(
-    `${check ? "Verified" : "Synchronized"} report-writer and reader-profile in ${roots.length} location${roots.length === 1 ? "" : "s"}.`,
+    `${check ? "Verified" : "Synchronized"} report-writer and the selected reader-profile entrypoints in ${roots.length} location${roots.length === 1 ? "" : "s"}.`,
   );

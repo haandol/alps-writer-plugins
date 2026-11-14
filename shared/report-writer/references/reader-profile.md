@@ -3,7 +3,7 @@
 A reader profile records, per business area of one project, how far the user
 understands it: an explanation level, what they already know (starting points
 for analogies) and what they do not (terms to unpack). Reports read it to set
-their starting level; the `reader-profile` skill builds and maintains it. Use
+their starting level; explicit profile requests build and maintain it. Use
 `scripts/reader-profile.mjs` for every step that touches sessions or the file.
 
 ## Use it when writing a report

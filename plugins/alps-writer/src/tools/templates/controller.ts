@@ -8,7 +8,7 @@ export class TemplateController {
    * The caller uses document status and the profile order, so this controller stays stateless.
    */
   getAlpsOverview(): string {
-    const { sectionGuideTool, authoringOrder } = this.service.profile;
+    const { id, authoringOrder } = this.service.profile;
     return (
       this.service.getOverview() +
       `
@@ -16,11 +16,11 @@ export class TemplateController {
 ---
 ## Next Step
 
-Read \`get_alps_document_status()\` after initializing or loading the document.
-- New document: begin with \`${sectionGuideTool}(1)\`.
+Read \`alps_document(action: 'status', doc_path)\` after initializing or loading the document.
+- New document: begin with \`alps_template(action: 'guide', profile: '${id === "lite" ? "lite" : "full"}', section: 1)\`.
 - Resume: use the first incomplete required section in this order: ${authoringOrder.join(" → ")}. Do not restart a completed, unchanged section.
 - Follow the profile's optional-section rules; an unwritten optional section does not force a restart.
-Call \`${sectionGuideTool}(N)\` for the selected section. Reuse supplied context, ask only for missing information, and obtain approval before saving.`
+Call \`alps_template(action: 'guide', profile: '${id === "lite" ? "lite" : "full"}', section: N)\` for the selected section. Reuse supplied context, ask only for missing information, and obtain approval before saving.`
     );
   }
 

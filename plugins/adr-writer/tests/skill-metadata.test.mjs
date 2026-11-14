@@ -18,6 +18,20 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ADR_ROOT = path.join(HERE, "..");
 const PLUGINS_ROOT = path.join(ADR_ROOT, "..");
 
+test("each standalone plugin exposes at most ten skills including aliases", () => {
+  for (const plugin of ["alps-writer", "adr-writer", "ontology-writer"]) {
+    const skills = readdirSync(path.join(PLUGINS_ROOT, plugin, "skills"), {
+      recursive: true,
+    }).filter((file) => String(file).endsWith(`${path.sep}SKILL.md`));
+    assert.ok(
+      skills.length > 0 && skills.length <= 10,
+      `${plugin}: ${skills.length} public skills`,
+    );
+    if (plugin === "adr-writer")
+      assert.ok(!skills.some((file) => String(file) === path.join("reader-profile", "SKILL.md")));
+  }
+});
+
 function read(absolutePath) {
   return readSkillContract(absolutePath);
 }
@@ -749,7 +763,7 @@ test("alps-init resumes from status in the dependency-respecting section order",
   const init = read(path.join(PLUGINS_ROOT, "alps-writer", "skills", "alps-init", "SKILL.md"));
 
   assert.match(init, /1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9/);
-  assert.match(init, /get_alps_document_status/);
+  assert.match(init, /alps_document\(action: 'status'/);
   assert.match(init, /first section in that order that is not `✅ Written`/);
   assert.match(init, /Do not reopen or re-confirm a completed unchanged section/);
   assert.match(init, /user requests a full review/);
@@ -764,7 +778,7 @@ test("alps-init defaults to atomic confirmation but supports explicit batch appr
   assert.match(init, /Batch is opt-in/);
   assert.match(init, /complete structured source/);
   assert.match(init, /separately labeled draft/);
-  assert.match(init, /separate.*save_alps_section/s);
+  assert.match(init, /separate.*alps_section\(action: 'save'/s);
   assert.match(feature, /Batch approval is allowed only/);
   assert.match(feature, /separately labeled/);
   assert.match(nfr, /top-3 focus set/);

@@ -113,6 +113,12 @@ test("report guidance reads the profile, asks before building it and never discl
   const skill = read("shared/report-writer/SKILL.md");
   assert.match(skill, /Calibrate to the reader/);
   assert.match(skill, /older than three months, ask once/);
+  assert.match(skill, /report-writer profile <build\|refresh\|show\|correct\|delete>/);
+  assert.match(skill, /do not create a report, open a browser or add a quiz/);
+  assert.match(
+    skill,
+    /Read sessions only\s+when the user requested profile creation\/refresh or agreed to it/,
+  );
   const reference = read("shared/report-writer/references/reader-profile.md");
   for (const phrase of [
     /Never read sessions without that answer/,

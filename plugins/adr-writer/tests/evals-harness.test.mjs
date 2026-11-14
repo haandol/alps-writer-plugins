@@ -168,7 +168,7 @@ test("prompt loaders include only explicitly selected direct references", async 
 test("the Lite resume eval embeds the shipping profile-aware runtime guidance", async () => {
   const { prompt } = await built("lite-alps-resume-preserves-proposal-first.mjs");
 
-  assert.match(prompt, /get_lite_alps_section_guide/);
+  assert.match(prompt, /alps_template\(action: 'guide', profile: 'lite'/);
   assert.match(prompt, /propose Sections 2 and 4 before asking the user to design them/i);
   assert.doesNotMatch(prompt, /Ask 1-2 focused questions at a time - DO NOT auto-generate content/);
 });

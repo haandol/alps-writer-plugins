@@ -42,7 +42,7 @@ Some sections depend on other sections. Before working on a section with referen
 </reference-map>
 
 <mandatory-actions>
-1. Call `read_alps_section(doc_path, N)` for each referenced section
+1. Call `alps_section(action: 'read', doc_path, section: N)` for each referenced section
 2. Summarize key points from referenced sections before asking questions
 3. If referenced sections are incomplete, warn user and suggest completing them first
 </mandatory-actions>
@@ -61,9 +61,9 @@ supplied by the user; otherwise ask at first use and wait before finalizing cont
 that depends on it. Expanding an acronym is insufficient when its product meaning
 remains ambiguous. Never substitute an inferred definition for the user's meaning.
 
-Use `read_alps_glossary(doc_path)` to reuse existing definitions. Include new or changed
+Use `alps_glossary(action: 'read', doc_path)` to reuse existing definitions. Include new or changed
 definitions in the current section's approval digest, then call
-`save_alps_glossary_entry(doc_path, term, definition)` for each confirmed entry. Do not add a
+`alps_glossary(action: 'save', doc_path, term, definition)` for each confirmed entry. Do not add a
 separate approval, initial terminology interview, or final glossary-writing stage.
 If a definition conflicts with an existing meaning, resolve it with the user before
 updating the definition and affected content.
@@ -96,12 +96,12 @@ first-use explanations and all requirement rules in their owning body sections.
 
 <conversation-flow>
 For EVERY section:
-1. Call `get_alps_section_guide(N)` before writing
+1. Call `alps_template(action: 'guide', profile: 'full', section: N)` before writing
 2. Briefly explain section purpose (1-2 sentences)
 3. Reuse supplied context and ask 1 (max 2) focused questions only for information still missing
 4. Integrate answers iteratively
 5. When complete, present a concise plain-text approval digest and ask for confirmation
-6. Call `save_alps_section(doc_path, section, subsection_id, title, content)` — one call per X.n subsection — only AFTER explicit "yes". `subsection_id` and `title` MUST match the `<subsection id="N.x" title="...">` in that section's XML template.
+6. Call `alps_section(action: 'save', doc_path, section, subsection_id, title, content)` — one call per X.n subsection — only AFTER explicit "yes". `subsection_id` and `title` MUST match the `<subsection id="N.x" title="...">` in that section's XML template.
 7. Move to the next section only after confirmation. Follow the recommended authoring order above — author Section 6 (Requirements) before Section 5 (Design).
 
 <section-level-checkpoint>
@@ -148,7 +148,7 @@ When user asks to edit/update/modify/remove/add anything:
 2. Include short change-log (1-3 bullets)
 3. Ask a follow-up question only for missing context or an unresolved decision; otherwise present the modified digest for approval
 4. Do NOT repeat the entire section digest unless requested
-5. After approval, call `save_alps_section` with the ORIGINAL title (e.g., `Purpose`, no `v2`) and the SAME `subsection_id` so it overwrites in place, then continue in the authoring order without a second permission question for that approved unit
+5. After approval, call `alps_section(action: 'save', doc_path, section, subsection_id, title, content)` with the ORIGINAL title (e.g., `Purpose`, no `v2`) and the SAME `subsection_id` so it overwrites in place, then continue in the authoring order without a second permission question for that approved unit
 </change-requests>
 
 <reference-document-handling>
@@ -161,7 +161,7 @@ When user provides PDF, ALPS (PRD), or any reference:
 </reference-document-handling>
 
 <rules>
-- NEVER write section without calling get_alps_section_guide() first
+- NEVER write section without calling alps_template(action: 'guide', profile: 'full', section: N) first
 - NEVER proceed without explicit user confirmation
 - ALWAYS confirm at the section level — never skip a section without the user approving it
 - Batch confirmation requires explicit opt-in or a complete structured source
@@ -169,7 +169,7 @@ When user provides PDF, ALPS (PRD), or any reference:
 - For Section 7, ALWAYS review Sections 3 and 6 first and include one Demo outcome under every Feature's Evaluation Rubric; do not add a duplicate demo subsection
 - For Section 7, ALWAYS use first-reader-friendly language and recommend an optional Mermaid diagram when it materially clarifies a multi-participant or multi-layer flow; prefer `sequenceDiagram` for data flow and never treat the diagram as a completion requirement
 - When information is missing, ask 1-2 questions at a time (1 for complex topics); do not re-ask information already provided
-- When saving, ALWAYS call `save_alps_section(doc_path, section, subsection_id, title, content)` with all five arguments; `subsection_id` and `title` must match the section's XML template
+- When saving, ALWAYS call `alps_section(action: 'save', doc_path, section, subsection_id, title, content)` with action and all five content arguments; `subsection_id` and `title` must match the section's XML template
 - Author Section 6 (Requirements) before Section 5 (Design) — see the recommended authoring order
 - In Section 4.1, ALWAYS include both Mermaid `C4Context` and `C4Container` diagrams. These are the only C4 levels allowed; never generate Component, Dynamic, Deployment, or Code-level C4 diagrams.
 - In Section 4.2, record only Architecture Constraints that regenerated implementations must preserve. Never persist a replaceable technology inventory.
@@ -178,7 +178,7 @@ When user provides PDF, ALPS (PRD), or any reference:
 ## Optional research after completion
 
 After all nine Sections are approved and written, check the selected document with
-`get_alps_document_status(doc_path)`, export it, and ask once whether the user wants
+`alps_document(action: 'status', doc_path)`, export it, and ask once whether the user wants
 a deep-research review of the ALPS items' evidence and errors. Reuse an explicit
 review request or an answered choice in the current conversation. An unanswered
 invitation, decline, deferral, or research failure leaves document completion intact.

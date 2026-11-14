@@ -46,5 +46,8 @@ test("the Section 7 runtime surfaces the Demo outcome and both dependencies", ()
   assert.match(template, /Demo outcome/);
   assert.doesNotMatch(template, /#### 7\.x\.7 Feature Demo/);
   assert.match(guide, /Section 3 \(Demo Scenario\), Section 6 \(Requirements Summary\)/);
-  assert.match(guide, /read_alps_section\(doc_path, 3\), read_alps_section\(doc_path, 6\)/);
+  assert.match(
+    guide,
+    /alps_section\(action: 'read', doc_path, section: 3\), alps_section\(action: 'read', doc_path, section: 6\)/,
+  );
 });
