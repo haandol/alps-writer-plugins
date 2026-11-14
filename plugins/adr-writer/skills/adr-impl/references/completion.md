@@ -43,6 +43,9 @@ when that workflow selects it.
      ```
 
    - The script updates the Status line in the target ADR body and the `status` of the exact matching `adrs[]` record in `.mapping.json` together. It fails instead of guessing when the path is absent, duplicated, or already inconsistent.
+   - Keep a custom current index selected: the script honors `ALPS_ADR_MAPPING`,
+     or pass `--index FILE` explicitly (`--adr-dir DIR` selects `DIR/.mapping.json`).
+     Explicit selection overrides the environment; relative paths use `--root` or the current repository.
    - If the target entered the cycle as `Accepted` and its decision and requirement contract remained unchanged, do not run the transition script. Keep the existing dated `Accepted` Status and verify body/index lockstep with `adr-structure-lint`.
    - If several ADRs in one category were implemented together, transition only the `Proposed` targets and only after each one's completion review passes; retain unchanged `Accepted` targets as-is.
    - Run `adr-structure-lint` once more after any transition, or after an unchanged-`Accepted` completion, to verify the dated Status format and body/index lockstep.

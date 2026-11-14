@@ -83,6 +83,9 @@
 // --overview returns the complete authored BC layer by default; --context uses
 // 20 rows per page. Optional --limit (1..100) and --offset page navigation only.
 // --require-layers and repeatable --layer-context also apply to impact/apply.
+// All commands accept --index FILE for the current ADR index, or --adr-dir DIR
+// for DIR/.mapping.json. Without either, ALPS_ADR_MAPPING or docs/adr/.mapping.json
+// selects it. --mapping remains the proposed/preview index, not the current index.
 
 import { createHash } from "node:crypto";
 import {
@@ -152,7 +155,7 @@ import { navigationOptions } from "./ontology-navigation.mjs";
 const rel = (p) => path.relative(process.cwd(), p).split(path.sep).join("/");
 // Text output keeps a list this long on one line; a longer one takes a line per item.
 const SHORT_LIST = 20;
-const mappingPathOf = (opts) => path.join(opts.adrDir, ".mapping.json");
+const mappingPathOf = (opts) => opts.indexFile ?? path.join(opts.adrDir, ".mapping.json");
 
 /** The usage the header comment documents, without its comment markers. */
 function usageText() {
@@ -168,9 +171,11 @@ function usageText() {
 function parseArgs(argv) {
   const [command, ...rest] = argv;
   if (["help", "--help", "-h"].includes(command)) return { command: "help" };
+  let adrDirProvided = false;
   const opts = {
     command,
     adrDir: "docs/adr",
+    indexFile: null,
     ontologyDir: null,
     json: false,
     write: false,
@@ -202,8 +207,14 @@ function parseArgs(argv) {
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     const value = () => rest[++i] ?? usage(`${a} requires a value`);
-    if (a === "--adr-dir") opts.adrDir = value().replace(/\/+$/, "");
-    else if (a === "--base") opts.base = value();
+    if (a === "--adr-dir") {
+      opts.adrDir = value().replace(/\/+$/, "");
+      adrDirProvided = true;
+    } else if (a === "--index") {
+      opts.indexFile = value();
+      if (!opts.indexFile.trim() || opts.indexFile.startsWith("--"))
+        usage("--index requires a file path");
+    } else if (a === "--base") opts.base = value();
     else if (a === "--json") opts.json = true;
     else if (a === "--write") opts.write = true;
     else if (a === "--check") opts.write = false;
@@ -291,6 +302,11 @@ function parseArgs(argv) {
   if ((command === "transition" || command === "align") && !opts.process)
     usage(`${command} needs --process ID`);
   if (command === "transition" && !opts.to) usage("transition needs --to STATE");
+  if (adrDirProvided && opts.indexFile) usage("give --adr-dir or --index, not both");
+  if (!adrDirProvided) {
+    opts.indexFile ??= process.env.ALPS_ADR_MAPPING || null;
+    if (opts.indexFile) opts.adrDir = path.dirname(opts.indexFile);
+  }
   opts.ontologyDir = path.join(path.dirname(opts.adrDir), "ontology");
   return opts;
 }
@@ -343,13 +359,13 @@ function loadMapping(adrDir, selectedFile = null) {
 
 /** Model and index findings of the working tree, the unreadable-index finding included. */
 function levelFindings(opts) {
-  const mappingFile = opts.command === "view" ? opts.mappingFile : null;
+  const mappingFile = (opts.command === "view" ? opts.mappingFile : null) ?? opts.indexFile;
   const { mapping, finding } = loadMapping(opts.adrDir, mappingFile);
   const level = ontologyFindings({
     ontologyDir: opts.ontologyDir,
     adrRoot: opts.adrDir,
     mapping,
-    mappingPath: rel(mappingFile ?? path.join(opts.adrDir, ".mapping.json")),
+    mappingPath: rel(mappingFile ?? mappingPathOf(opts)),
     rel,
     ...(opts.command === "view"
       ? { readAdr: (file) => readAdrDocument({ path: file }, { adrRoot: opts.adrDir }).body }
@@ -673,7 +689,7 @@ function baseHash(
   for (const f of findModelDocuments(opts.ontologyDir))
     h.update(`${rel(f)}\0${readText(f) ?? ""}\0`);
   for (const f of [
-    path.join(opts.adrDir, ".mapping.json"),
+    mappingPathOf(opts),
     path.join(opts.adrDir, "glossary.md"),
     path.join(opts.ontologyDir, CHANGE_LOG),
   ])
@@ -845,7 +861,7 @@ function impact(opts) {
     base = at.commit;
     documents = current.docs.map((d) => ({ doc: rel(d.file), text: d.text }));
   }
-  const { mapping, finding: mappingError } = loadMapping(opts.adrDir);
+  const { mapping, finding: mappingError } = loadMapping(opts.adrDir, opts.indexFile);
   // apply refuses an unreadable index, so the summary says so first.
   if (mappingError)
     return fail(
@@ -1232,8 +1248,11 @@ function apply(opts) {
     before = indexGraph(at.triples);
     base = at.commit;
   }
-  const mappingPath = path.join(opts.adrDir, ".mapping.json");
-  const { mapping: currentMapping, finding: mappingError } = loadMapping(opts.adrDir);
+  const mappingPath = mappingPathOf(opts);
+  const { mapping: currentMapping, finding: mappingError } = loadMapping(
+    opts.adrDir,
+    opts.indexFile,
+  );
   if (mappingError)
     return refuse([
       `[${mappingError.code}] ${mappingError.where}`,

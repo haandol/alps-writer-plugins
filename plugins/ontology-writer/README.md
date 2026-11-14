@@ -114,7 +114,10 @@ Use Bun 1.4.2 or later.
 `--overview --search` returns BC candidates, then `--context --search` shows the
 internal matches. Context responses page elements, relationships and diagnostics
 together, with the exact continuation in `next`. Keep the model unchanged across
-pages, and retain a custom `--adr-dir` in follow-up commands.
+pages, and retain the current index selection in follow-up commands. `--index FILE`
+selects an exact current index; `--adr-dir DIR` selects `DIR/.mapping.json`.
+Without either, the CLI uses `ALPS_ADR_MAPPING` or `docs/adr/.mapping.json`.
+`--mapping FILE` remains a proposed or preview index for impact/apply/view.
 
 Record `coreLogic` and `collaboratesWith` in the model rather than generating an
 upper summary on each query. Use `validate --require-layers` for construction,
