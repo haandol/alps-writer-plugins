@@ -103,6 +103,21 @@ Observable evidence is a review oracle, not a test prescription. Do not name tes
 
 **Metric signals keep their intent.** An ADR records evaluation so an implementation agent can judge its own work against the business intent. A metric is only a proxy for that intent: optimized alone, it can rise while the purpose is defeated. When the outcome is judged or improved through a metric, record it under Observable evidence with the purpose it stands for. Users rarely think of the counterweight, so always propose a **tension metric** derived from an abuse, shortcut or opposite-failure scenario: it protects the same purpose and worsens when the primary metric is pushed up that way (resolved-request rate with incorrect-answer or unjustified-refusal rate). Record the adopted pair with that scenario. Mark each signal **required** (a confirmed condition with its value and basis) or **monitoring** (observed, not a gate). Keep a transferred pair together; never promote a monitoring signal into a required row or drop it as non-binding. The user decides adoption; do not invent a target or block the ADR on a declined candidate. Calculation code, dashboards and run results stay below ADR resolution.
 
+### Relied-on boundaries — each context stands on its own
+
+At any snapshot, a context's ADRs together with the code they govern must explain each other without another context's documents, the root `.mapping.json` or another repository. When a decision relies on another context, another repository or an external system, record what it relies on under **Relied-on boundary** in the requirement contract:
+
+- the received or called element (event, command, query, API) named in business terms, and the context or system that provides it
+- the meaning and values this decision relies on, with their units
+- ordering, duplicate-delivery, availability and failure assumptions, and what this context does when they fail (that behavior belongs under Failure guarantees)
+- how this context translates the element into its own language, when the meanings differ
+
+Example: "Shipping relies on Ordering's _order paid_ event: one event per paid order, carrying the order identifier and the paid amount in KRW; it may arrive more than once and out of order. Shipping creates at most one shipment per order and treats a repeated event as already handled."
+
+Record only the relied-on part, in this context's words. The providing ADR stays the owner of its contract; when the two disagree, treat it as a contradiction resolved against the owner, never by editing the owner from the copy. `dependsOn` orders the prerequisite and a Related link helps navigation, but neither replaces this content. When you change a contract that another category's Relied-on boundary restates, find those categories (reverse `dependsOn` and a search for the element) and check or update their rows in the same change unit, naming them in the approval summary.
+
+In a multirepo system each repository keeps the ADRs for the code it holds and records its dependencies on other repositories the same way. A link to another repository's documents is navigation, never a prerequisite for understanding. These rules need no business ontology; when one exists, it helps verify that the boundaries match the cross-context flow.
+
 ### Intent completeness and provability
 
 The regeneration test also asks whether completion can be judged from the
@@ -556,6 +571,7 @@ For the PR reviewer or the author before merge.
 - [ ] **Reviewable contract rows** — each requirement row states one obligation, so implementation review can assign it one coverage status without hiding partial completion
 - [ ] **Observable evidence** — each obligation has an implementation-independent result that distinguishes compliance from violation; no test file, command, library, function, class, fixture, or internal representation is pinned
 - [ ] **Metric signals keep their intent** — a recorded metric names the purpose it stands for, keeps the adopted tension pair and the scenario it exposes, and is marked required or monitoring; a monitoring signal is not written as a gate ([Reviewable contract rows](#reviewable-contract-rows-and-observable-evidence))
+- [ ] **Relied-on boundaries are self-contained** — every dependency on another context, repository or external system states the relied-on element, meaning, values and failure assumptions in this ADR; a `dependsOn` key or Related link alone is not enough ([Relied-on boundaries](#relied-on-boundaries--each-context-stands-on-its-own))
 - [ ] **Requirement values appear verbatim** — numbers the result must honor (max turns, count limits, retention, size caps, NFR targets) are not blurred into "appropriately" or "is limited". Does each carry a scrap of justification (policy, contract, regulation)?
 - [ ] **Non-numeric requirements survived too** — allowed value sets, mandatory fields, permission and visibility rules, ordering and uniqueness, units and formats, forbidden transitions were not dropped as "obvious from the code" ([non-numeric requirements](#non-numeric-requirements--value-sets-mandatory-fields-permissions-ordering))
 - [ ] **Decision-changing assumptions are explicit and correctly routed** — every assumption that could change the adopted alternative appears in Purpose or the relevant Driver with what must be reconsidered if false; requirements remain in the contract, implementation defaults remain in code

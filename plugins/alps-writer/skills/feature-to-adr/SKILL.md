@@ -127,7 +127,7 @@ loaded source does not already establish them:
 - allowed values and transitions, mandatory inputs, permissions, visibility,
   ordering, uniqueness, and units
 - success invariants, rejection behavior, and failure guarantees
-- system, data, security, and external-provider boundaries
+- system, data, security, external-provider and relied-on context boundaries
 - fallback and degradation policy
 - discriminating Decision Drivers, realistic alternatives, and
   decision-changing assumptions

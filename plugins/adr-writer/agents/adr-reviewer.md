@@ -131,6 +131,14 @@ contract already entails; ask only for a material choice that remains unresolved
 If a source row bundles clauses, account for each clause rather than letting
 one clear clause stand for the whole row.
 
+When the decision relies on another context, repository or external system (a
+`dependsOn` edge, a Related link, or behavior that consumes an outside event,
+command, query or API), check that its Relied-on boundary states the relied-on
+element, meaning, values and failure assumptions in this ADR
+(`authoring-rules.md` "Relied-on boundaries"). A dependency explained only by a
+category key or a link is an R19 omission, because the ADR is no longer
+understandable without another context's documents.
+
 When the ADR records a metric signal, check that it names the intent it stands
 for, keeps any tension pair the supplied source contains, and keeps its required or monitoring meaning (`authoring-rules.md` "Metric
 signals keep their intent"). A dropped source pair or a monitoring signal written

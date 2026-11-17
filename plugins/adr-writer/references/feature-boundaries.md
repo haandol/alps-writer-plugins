@@ -71,6 +71,29 @@ decisions; retain them in the same feature scope. A genuinely shared contract ha
 one owner at its actual shared scope, with relationships to affected features.
 Do not duplicate it or create technical-layer categories as a shortcut.
 
+## Keep each context understandable on its own
+
+At any snapshot, one context's documents together with the code they govern must
+explain each other without another context's documents, the root index or another
+repository. When a feature relies on another context, repository or external
+system, its owning ADR records what it relies on under **Relied-on boundary**:
+the received or called element (event, command, query, API) in business terms,
+the meaning and values it relies on, ordering, duplicate and failure assumptions,
+and how this context translates the element into its own language. Record only
+the relied-on part; the providing side stays the owner of its contract, and a
+mismatch is a contradiction resolved against the owner. `dependsOn` orders the
+prerequisite; a Related link or a category key never replaces this content.
+Apply this when writing or reviewing the dependent ADR. While only grouping
+features, name the dependency and any open question within that feature's
+grouping; add no separate section for it.
+
+In a multirepo system each repository keeps the ADRs for the code it holds and
+records its dependencies on other repositories the same way, so it stays
+understandable when the others are unavailable. When a providing contract
+changes, check and update the relied-on records that restate it in the same
+change unit. These rules hold without a business ontology; when one exists, it
+helps verify that the boundaries match the cross-context flow.
+
 ## Preserve each artifact's resolution
 
 Product documents keep the user problem, product responsibility, observable

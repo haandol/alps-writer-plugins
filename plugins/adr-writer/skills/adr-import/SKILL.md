@@ -235,8 +235,8 @@ Check that references exist and the graph has no cycle or self-edge before savin
 Do not add code paths, scan inventories, approval records or upstream document
 references. Preserve unrelated entries and already established glossary meanings.
 Persist confirmed meanings, boundaries and exact contracts in their owning ADRs.
-State each confirmed prerequisite guarantee and its owner in the dependent ADR
-at decision resolution, including within-category relationships; a Related link
+State each confirmed prerequisite guarantee and its owner in the dependent ADR's
+Relied-on boundary at decision resolution, including within-category relationships; a Related link
 alone does not explain the guarantee. The documents must remain readable and
 their prerequisite relationships recoverable without the disposable maps.
 

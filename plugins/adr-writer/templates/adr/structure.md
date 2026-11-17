@@ -19,6 +19,8 @@ The folder tree is organized along **two axes** — both expressed within the ex
 - **Top-level folder = a bounded context (a DDD domain unit).** It is a model boundary named in the domain expert's ubiquitous language (`identity/`, `ordering/`, `catalog/`). One context usually **holds several features.**
 - **Sub-folder = a feature (vertical slice).** The unit that traces one user action all the way from UI → API → Data (`identity/login/`, `ordering/checkout/`). It maps 1:1 onto an ALPS Section 7 feature.
 
+**Each context folder stands on its own.** Taken at any snapshot with the code it governs, a context's ADRs must be understandable without another context's folder, the root `.mapping.json` or another repository: dependencies on other contexts, repositories and external systems are written into the dependent ADR's Relied-on boundary (`authoring-rules.md` "Relied-on boundaries"). In a multirepo system each repository keeps the ADRs for the code it holds.
+
 **When a context has only one feature, omit the sub-folder and keep a flat structure** — a single-segment key means context == feature. Workshop or small projects and existing flat layouts (`auth/`, the workshop Feature ID `f1/`) can stay as they are and need no migration — a flat folder is reinterpreted as "a context with one feature".
 
 ```
@@ -168,6 +170,8 @@ Never use these names for either a context folder or a feature sub-folder — th
 ## The ADR registry (.mapping.json)
 
 `docs/adr/.mapping.json` is this project's **single ADR index** — it records category (key) → `adrs` (each adr = `{path, status, summary}`) plus the `dependsOn` between categories. **It stores neither code paths nor a PRD reference** (adr-writer is standalone and does not reference ALPS). The location of the code an ADR governs is found by reading the ADR's Decision and searching the repo each time (see "Finding the related code" below). Even when a refactor changes the code structure, the mapping needs no edit — if the decision did not change, neither the ADR nor the mapping changes.
+
+The mapping is a **derived index** for navigation and tooling, never the only place a fact lives: `status` and `summary` mirror the ADR body, each `dependsOn` edge has its meaning in the dependent ADR's Relied-on boundary, `subdomainType` is advisory, and `realizes` is business-ontology navigation that an ADR-only reading does not need.
 
 ```json
 {

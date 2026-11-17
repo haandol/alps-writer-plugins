@@ -49,7 +49,7 @@ const groups = [
     "결정 관리",
     "작성",
     "업무 경계",
-    ["author-groups-", "author-discovers-", "author-checks-business-"],
+    ["author-groups-", "author-discovers-", "author-checks-business-", "author-records-relied-on-"],
   ],
   ["결정 관리", "작성", "기존 프로젝트", ["import-"]],
   ["결정 관리", "문서 검토", "요구사항 보존", ["review-catches-", "review-requirement-"]],
@@ -57,7 +57,7 @@ const groups = [
     "결정 관리",
     "문서 검토",
     "완결성과 검토 범위",
-    ["review-real-", "review-document-", "review-provability"],
+    ["review-real-", "review-document-", "review-provability", "review-flags-unexplained-"],
   ],
   [
     "결정 관리",
