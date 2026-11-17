@@ -87,6 +87,14 @@ If quantification is unsuitable, propose the observable counterexample instead.
 A candidate must come from a real scenario for the same purpose, never an
 unrelated number added to fill a slot.
 
+The scenario is always surfaced; the counterweight takes one of two forms. If
+the harm is not yet guarded, propose a new tension metric. If a confirmed
+required condition or case already catches that shortcut, name it as the guard
+instead: it stays required and its violation still fails. A rate summarizing
+required cases may serve as a monitoring summary, but never relabel a required
+condition, or a violation of it, as a tension, counterexample-only or monitoring
+signal that no longer fails on its own.
+
 Keep the pair, the scenario, its protected purpose and its required or monitoring
 meaning together wherever the primary metric is owned, including after transfer
 to an ADR, so a later agent compares both. When a recorded tension signal worsens

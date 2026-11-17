@@ -17,7 +17,7 @@ export const obligations = [
   },
   {
     id: "optional-signals",
-    text: "Completion checks are distinct from improvement monitoring. Every proposed eval metric is paired with a tension candidate derived from an abuse or opposite-failure scenario for the same purpose; its adoption is the user's choice and a declined candidate does not block writing or implementation. No invented threshold becomes required. Do not invoke tools or claim actual execution in this response-only proposal.",
+    text: "Completion checks are distinct from improvement monitoring. Every proposed eval metric states an abuse or opposite-failure scenario for the same purpose with its counterweight, either a tension candidate or the existing required case that already catches it. A rate summarizing required cases may be a monitoring summary, but no required case's violation is excused by that label; its adoption is the user's choice and a declined candidate does not block writing or implementation. No invented threshold becomes required. Do not invoke tools or claim actual execution in this response-only proposal.",
   },
 ];
 
