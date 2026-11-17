@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-11-17 — current ADR: [업그레이드 후 규칙 문서 갱신](./0001-safe-proportional-development-gates.md)** — 문서 리뷰가 뒤처진 규칙 문서를 리뷰 전에 승인받아 갱신하고, 전체 리뷰는 그 뒤 선택하게 했다. 플러그인 업그레이드 후 한 명령으로 새 규칙을 받을 수 있게 하기 위해서이며, 갱신은 ADR을 바꾸지 않는다.
+
 - **2026-11-17 — current ADR: [스냅샷 정합성](./0001-safe-proportional-development-gates.md)** — 변경 단위를 공유 브랜치에 함께 도달하는 변경으로 정의하고, 구현된 계약을 고치는 ADR 변경은 그 코드와 함께 병합하게 했다. 공유 브랜치의 어느 스냅샷에서도 문서와 코드가 서로를 설명하게 하기 위해서다.
 
 - **2026-11-17 — current ADR: [지표 개선의 의도 보호](./0001-safe-proportional-development-gates.md)** — 문서가 평가 기준을 기록하는 목적을 에이전트의 의도 기반 자가 평가로 명시하고, tension metric을 주 지표의 편법 최적화에서 반대로 움직이는 보호 신호로 정의했다. 사용자가 떠올리기 어려운 tension metric을 '의미 있을 때'가 아니라 주 지표마다 항상 제안하고 채택은 사용자가 정하도록 바꿨다. 기록된 tension 신호가 나빠지면 자동 실패로 보지 않되 의도 훼손 여부를 확인한 뒤 개선을 판단한다.

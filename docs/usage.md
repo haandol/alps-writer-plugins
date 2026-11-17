@@ -180,6 +180,8 @@ opener; browser automation is requested separately.
 
 ### D. Inherited or hand-edited ADRs — review them as documents
 
+**After upgrading the plugin, run `/adr-review`.** The rule documents in `docs/adr/` (`README.md`, `concepts.md`, `authoring-rules.md`, `structure.md`) are copied once when the first ADR is written and are not updated by a plugin upgrade. When they lag the installed plugin, `/adr-review` first shows what changed, keeps your hand edits, and refreshes them on approval; it then asks whether to review the ADRs against the new rules. A refresh never edits an ADR.
+
 Run `/adr-review [category]` when an ADR set arrives without the context of whoever wrote it: a repo you inherited, an ADR edited by hand, or one changed by another session. It reads the ADRs against the authoring rules (abstraction level, requirement preservation, alternatives) without opening the code and reports a punch list — it never edits the ADRs, the mapping, or code. It is deliberately **not** run right after `/adr-new`, which judges its own draft against the same rules.
 
 In all flows the hook runs automatically once adr-writer is installed. Session startup, resume, clear, and compaction recovery inject the compact admission directive; admitted work reads the ADR map on demand.
