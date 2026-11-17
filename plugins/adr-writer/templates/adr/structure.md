@@ -30,10 +30,11 @@ docs/adr/
 ├── structure.md                 # this document — directory layout · mapping policy
 ├── decision-log.template.md     # the decision-log.md seed (read-only — copied into a category to use)
 ├── .mapping.json                # ADR registry/index (adrs, dependsOn, subdomainType; stores no code paths and no PRD reference)
-├── glossary.md                  # optional confirmed meanings; created only when needed, not indexed as an ADR
+├── glossary.md                  # optional meanings shared by every context; created only when needed, not indexed as an ADR
 ├── identity/                       # BOUNDED CONTEXT (core subdomain)
 │   ├── 0001-token-rotation.md      # a cross-cutting decision for the whole context (directly under the parent folder)
 │   ├── decision-log.md             # (optional) this category's major decision-change history — a convention file, not in the mapping
+│   ├── glossary.md                 # (optional) the meanings this context uses — keeps the context readable on its own
 │   ├── login/                      # feature (vertical slice — includes UI/API/Data)
 │   │   └── NNNN-kebab-title.md
 │   └── signup/                     # feature

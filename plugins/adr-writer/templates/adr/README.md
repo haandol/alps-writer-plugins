@@ -4,8 +4,9 @@ This directory documents the project's major architectural decisions. An ADR is 
 
 This document is the directory's index — what an ADR is, the template to write one from, and where the ADR list lives. The principle, the rules, and the layout live in sub-documents.
 
-When uncommon terminology needs explanation, `glossary.md` at this root stores
-confirmed term meanings. It is created only when needed, is not an ADR or mapping
+When uncommon terminology needs explanation, a context's own `<context>/glossary.md`
+stores the meanings that context uses, and `glossary.md` at this root stores the
+terms that mean the same everywhere. It is created only when needed, is not an ADR or mapping
 entry, and does not replace the requirements in ADR bodies. Read it selectively;
 normal authoring requires no upfront terminology exercise.
 

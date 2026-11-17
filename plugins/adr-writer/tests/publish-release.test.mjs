@@ -5,6 +5,7 @@ import { test } from "node:test";
 import {
   decide,
   provenance,
+  pullNumberFromMessage,
   releaseNotes,
   releaseTitle,
 } from "../../../scripts/publish-release.mjs";
@@ -90,4 +91,13 @@ test("the notes end with the commit, pull request and CI run the release came fr
     provenance({ sha: SHA }),
     `Published by the Release workflow on ${SHA} after CI passed.`,
   );
+});
+
+test("a merge commit names its pull request when GitHub has not associated them yet", () => {
+  assert.equal(pullNumberFromMessage("chore(release): v0.15.3 (#82)\n\n* feat(adr): ..."), 82);
+  assert.equal(pullNumberFromMessage("Merge pull request #7 from owner/branch\n\nbody"), 7);
+  // Only the subject's trailing number counts: a body mention or a mid-subject one does not.
+  assert.equal(pullNumberFromMessage("fix: handle #12 input\n\nsee (#34)"), null);
+  assert.equal(pullNumberFromMessage("chore(release): v0.15.3"), null);
+  assert.equal(pullNumberFromMessage(undefined), null);
 });

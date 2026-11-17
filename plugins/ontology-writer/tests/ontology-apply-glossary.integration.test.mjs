@@ -353,3 +353,23 @@ test("a glossary rename, a changed definition or a glossary-side addition never 
     assert.equal(apply(dir, section.baseHash, ["--glossary", "glossary.next.md"]).code, 0);
   });
 });
+
+test("a context's own glossary that still defines a business term the model owns is reported", () => {
+  withTmp((dir) => {
+    repo(dir);
+    write(
+      dir,
+      "docs/adr/payments/glossary.md",
+      "| Term | Meaning |\n| --- | --- |\n| Refund | Money given back to a buyer. |\n",
+    );
+    commitAll(dir, "a context glossary from before the model owned its terms");
+    write(
+      dir,
+      "docs/ontology/model.ttl",
+      `${ACCEPTED}\nm:payment.refund a onto:BusinessConcept ;\n    rdfs:label "Refund" ;\n    onto:definition "Money given back to a buyer." ;\n    onto:inContext m:payment .\n`,
+    );
+    const validate = cli(dir, ["validate"]).out;
+    assert.match(validate, /ontology-glossary-overlap[^\n]*docs\/adr\/payments\/glossary\.md/);
+    assert.match(validate, /owns the business term "Refund"/);
+  });
+});

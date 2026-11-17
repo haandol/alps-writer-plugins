@@ -38,7 +38,9 @@ and write nothing. A change that affects no ADR continues without it.
   the glossary also defines, propose removing that entry as part of the same
   decision. The summary's `glossaryCleanup` covers the layouts the glossary reader
   recognizes, so also read `docs/adr/glossary.md` yourself for the concepts and
-  contexts the change saves. When the entry is a heading that only organizes other
+  contexts the change saves. The cleanup covers only that root glossary; remove an
+  entry a context's own `docs/adr/<context>/glossary.md` holds by editing that file in
+  the same change unit. When the entry is a heading that only organizes other
   terms, propose rewording that heading (for example `## Payment terms`) instead of
   removing its section. When it is a detail of another term's entry — a facet line
   such as `- **Category**: …` or a row of a details table — propose rewording that

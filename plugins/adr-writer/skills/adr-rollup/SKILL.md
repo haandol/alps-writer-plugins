@@ -9,7 +9,8 @@ disable-model-invocation: true
 
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
-Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
+Read the context's own `docs/adr/<context>/glossary.md` and the root
+`docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Preserve this optional supporting file. For permitted definition edits, and for
 business terms the merged ADR relies on where `docs/ontology/` holds Turtle
 documents, apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under existing

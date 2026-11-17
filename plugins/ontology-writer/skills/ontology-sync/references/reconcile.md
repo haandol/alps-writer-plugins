@@ -111,7 +111,8 @@ bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs lifecycle --json
 ## Report disagreements
 
 - **Glossary coexistence.** When a business term is defined both in the model and
-  in `docs/adr/glossary.md` (`ontology-glossary-overlap`), propose removing the
+  in `docs/adr/glossary.md` or a context's `docs/adr/<context>/glossary.md`
+  (`ontology-glossary-overlap`), propose removing the
   glossary entry if the meanings are the same; otherwise ask which meaning stays.
   When the entry is a heading that only organizes other terms, propose rewording that
   heading instead of removing its section; when it is a detail of another term's entry

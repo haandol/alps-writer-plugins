@@ -17,7 +17,7 @@ Author an ADR directly. Works without an ALPS PRD — this is the plugin's canon
 When qualifying jargon or an unclear acronym appears — or, where `docs/ontology/`
 holds Turtle documents, a business term the ADR defines or relies on — read
 `${CLAUDE_PLUGIN_ROOT}/references/glossary.md`. Require a clear user meaning,
-reuse supplied definitions, and create or update `docs/adr/glossary.md` only when
+reuse supplied definitions, and create or update the context's or root glossary only when
 needed under the current ADR approval. Keep the decision and requirement contract
 self-contained in the ADR; glossary work adds no separate classification interview.
 
