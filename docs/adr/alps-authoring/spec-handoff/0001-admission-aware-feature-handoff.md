@@ -4,7 +4,7 @@ Date: 2026-08-15
 
 ## Status
 
-Accepted (2026-10-30)
+Accepted (2026-11-17)
 
 ## Purpose
 
@@ -146,6 +146,7 @@ flowchart LR
 - 모든 구현 관련 입력은 ADR 소유, implementation discretion, legacy context 또는 현재 기준 레벨의 승인된 변경 제안으로 분류하고 unresolved material이 하나라도 있는 Feature는 handoff를 완료하지 않는다.
 - PRD에서 확인한 motivation, 요구사항 값, 허용 집합, 전이, 필수성, 권한, 가시성, 순서, 유일성, 단위, NFR, 외부 경계, fallback과 관련 non-goal은 손실 없이 적절한 ADR section으로 이전한다.
 - PRD의 평가 지표와 그 tension metric은 짝이 보호하는 사업 목적, 계산 대상과 필수·관찰용 의미와 함께 소유 ADR의 observable evidence로 이전한다. 인계 뒤 PRD를 읽지 않는 구현 에이전트가 지표 개선이 의도를 훼손하지 않는지 같은 근거로 판단할 수 있어야 하며, 관찰용 신호를 필수 조건으로 승격하거나 누락하지 않는다. PRD 지표에 tension 짝이 없으면 어뷰징·반대 실패 시나리오에서 후보를 제안하며, 채택 여부로 인계를 막지 않는다.
+- 다른 Feature·컨텍스트·외부 시스템에 대해 기대는 보장은 의존하는 쪽 ADR의 Relied-on boundary로 이전해 PRD와 다른 컨텍스트 문서 없이 읽을 수 있게 한다.
 - 구현에 필요한 Feature prerequisite는 실제 category 간 `dependsOn`으로 이전하고, 단순 코드 재사용과 작업 편의 순서는 저장하지 않는다. 선행 Feature가 아직 인계되지 않았으면 그 Feature도 인계를 완료하지 않는다.
 - 일반적인 ADR 구현과 유지 흐름은 PRD를 읽지 않는다.
 - PRD 재import는 사용자가 명시적으로 요청할 때만 수행한다.

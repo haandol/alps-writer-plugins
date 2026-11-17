@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-11-17 — current ADR: [admission-aware feature handoff](./0001-admission-aware-feature-handoff.md)** — Feature가 다른 Feature·컨텍스트·외부 시스템에 기대는 보장을 의존하는 쪽 ADR의 Relied-on boundary로 이전하도록 했다. `dependsOn`은 선행 순서를, 경계 계약은 그 의미를 담는다.
+
 - **2026-11-17 — current ADR: [admission-aware feature handoff](./0001-admission-aware-feature-handoff.md)** — PRD의 주 지표·tension 짝을 보호 목적과 필수·관찰용 의미와 함께 소유 ADR의 observable evidence로 이전하도록 했다. 짝이 없는 지표에는 인계 중 tension 후보를 제안한다. 인계 뒤 PRD 없이도 지표 개선이 의도를 훼손하지 않는지 판단할 근거를 유지한다.
 
 - **2026-10-29 — current ADR: [admission-aware feature handoff](./0001-admission-aware-feature-handoff.md)** — 이전 범위의 정의를 모두 ADR 루트 용어집으로 옮기던 규칙을 바꿨다. 이제 ADR 위의 현재 기준 레벨(업무 온톨로지처럼 인계 뒤에도 ADR이 따르는 레벨)이 정의를 소유한 업무 용어는 용어집으로 옮기지 않는다. 같은 뜻은 재사용하고, 새 정의·의미 변경과 기능 사이 관계는 그 레벨의 변경 제안으로 인계 승인 요약에 함께 보이며, 승인 전이나 거절 시 그 뜻에 의존하는 항목은 미해결로 남는다. 인계 완료와 PRD 권위의 종료는 Feature 단위다. 같은 사실의 기준이 두 레벨에 생기지 않게 하기 위해서다.

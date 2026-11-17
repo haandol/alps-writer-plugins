@@ -30,6 +30,7 @@ technical layer.
 - Required guarantees: <verbatim values and rules with their basis, or omit this row>
 - Prohibitions: <forbidden states, transitions, actions, or visibility, or omit this row>
 - Failure guarantees: <what remains guaranteed on rejection or failure, or omit this row>
+- Relied-on boundary: <what this decision relies on from another context, repository or external system — element, meaning, values, failure assumptions — or omit this row>
 - Observable evidence: <one implementation-independent result per obligation; no test or code details>
 <write "none" only when the complete contract is empty>
 **Why this decision**: <the discriminating rationale against the realistic alternatives>

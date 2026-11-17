@@ -71,7 +71,7 @@
       "adrs": [
         {
           "path": "docs/adr/alps-authoring/spec-handoff/0001-admission-aware-feature-handoff.md",
-          "status": "Accepted (2026-10-30)",
+          "status": "Accepted (2026-11-17)",
           "summary": "PRD handoff는 완전한 계약을 ADR로 이전하고, 필요한 용어 정의는 용어집으로 옮기거나 현재 기준 레벨이 소유하면 그 레벨의 변경 제안으로 넘기며, 명시적 재import와 의미 동일 입력의 무변경을 보장한다"
         }
       ],
@@ -192,8 +192,8 @@
       "adrs": [
         {
           "path": "docs/adr/document-authoring/domain-organization/0001-organize-features-by-bounded-context.md",
-          "status": "Accepted (2026-09-30)",
-          "summary": "제품 기획과 ADR은 프로젝트 형태를 먼저 조사하고 바운디드 컨텍스트 안의 버티컬 슬라이스 또는 사용자 스토리별로 구성한다"
+          "status": "Accepted (2026-11-17)",
+          "summary": "제품 기획과 ADR은 프로젝트 형태를 먼저 조사하고 바운디드 컨텍스트 안의 버티컬 슬라이스별로 구성하며, 각 컨텍스트는 의존하는 경계 계약을 자기 ADR에 기록해 다른 컨텍스트·색인·저장소 없이 이해할 수 있다"
         }
       ],
       "dependsOn": ["adr-authoring/current-state", "adr-authoring/decision-boundary"]
