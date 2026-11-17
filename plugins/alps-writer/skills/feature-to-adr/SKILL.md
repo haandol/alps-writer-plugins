@@ -113,6 +113,10 @@ unchanged. Before final classification, run a **gap-driven enrichment** pass.
 
 Transfer the problem, intended outcome, and supplied priorities/scope into Purpose.
 For evaluation, apply `${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md`.
+The ADR alone guides later evaluation: move each metric with its tension pair,
+protected purpose and required-or-monitoring meaning into Observable evidence,
+never promoting or dropping a monitoring signal. Propose a missing tension from
+its abuse scenario.
 
 Start with the regeneration test: if the PRD disappeared after handoff, identify
 which missing fact could let rebuilt code violate the Feature contract or leave

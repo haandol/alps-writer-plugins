@@ -6,7 +6,7 @@ export const deterministicScore = (input) => responseChecks(input, {});
 export const obligations = [
   {
     id: "full-purpose",
-    text: "For Full, distinguish completion checks of supported customer questions from later resolution-rate improvement. Propose a meaningful tension such as wrong answers or unjustified handoffs and explain the purpose-defeating shortcut. Do not invent a numeric threshold or call every monitoring change a mandatory failure.",
+    text: "For Full, distinguish completion checks of supported customer questions from later resolution-rate improvement. Always propose a tension such as wrong answers or unjustified handoffs and explain the purpose-defeating shortcut. Do not invent a numeric threshold or call every monitoring change a mandatory failure.",
   },
   {
     id: "lite-scope",
@@ -14,7 +14,7 @@ export const obligations = [
   },
   {
     id: "optional",
-    text: "The approved absence of a numeric KPI for Lite does not block writing, saving or completion, and no metric quota or omission approval is imposed. A relevant observable counterexample is acceptable. Do not equate optional metrics with optional existing product or safety requirements.",
+    text: "The approved absence of a numeric KPI for Lite does not block writing, saving or completion, and no metric quota or omission approval is imposed. A relevant observable counterexample is acceptable; any improvement signal the response proposes still gets a tension candidate. Do not equate optional metrics with optional existing product or safety requirements.",
   },
   {
     id: "evidence",
@@ -25,7 +25,7 @@ export const obligations = [
 export default {
   name: "alps-evaluates-outcomes-with-optional-tension",
   description:
-    "Full and Lite connect intent to acceptance while proposing useful tension signals without metric quotas.",
+    "Full and Lite connect intent to acceptance, always proposing tension candidates for proposed signals while leaving adoption to the user.",
   obligations,
   deterministicScore,
   build() {

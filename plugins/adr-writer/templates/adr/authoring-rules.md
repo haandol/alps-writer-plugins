@@ -101,6 +101,8 @@ For each obligation, record implementation-independent **observable evidence**: 
 
 Observable evidence is a review oracle, not a test prescription. Do not name test files, commands, libraries, functions, classes, fixtures, internal tables, or data representations. Different implementations may use different tests and structures while producing the same observable result.
 
+**Metric signals keep their intent.** An ADR records evaluation so an implementation agent can judge its own work against the business intent. A metric is only a proxy for that intent: optimized alone, it can rise while the purpose is defeated. When the outcome is judged or improved through a metric, record it under Observable evidence with the purpose it stands for. Users rarely think of the counterweight, so always propose a **tension metric** derived from an abuse, shortcut or opposite-failure scenario: it protects the same purpose and worsens when the primary metric is pushed up that way (resolved-request rate with incorrect-answer or unjustified-refusal rate). Record the adopted pair with that scenario. Mark each signal **required** (a confirmed condition with its value and basis) or **monitoring** (observed, not a gate). Keep a transferred pair together; never promote a monitoring signal into a required row or drop it as non-binding. The user decides adoption; do not invent a target or block the ADR on a declined candidate. Calculation code, dashboards and run results stay below ADR resolution.
+
 ### Intent completeness and provability
 
 The regeneration test also asks whether completion can be judged from the
@@ -553,6 +555,7 @@ For the PR reviewer or the author before merge.
 - [ ] **Regeneration test** — imagining all code deleted and only this ADR left, could requirement-honoring code be rebuilt? Is any contract missing (limits, cycles, permissions, required validation, state transitions)?
 - [ ] **Reviewable contract rows** — each requirement row states one obligation, so implementation review can assign it one coverage status without hiding partial completion
 - [ ] **Observable evidence** — each obligation has an implementation-independent result that distinguishes compliance from violation; no test file, command, library, function, class, fixture, or internal representation is pinned
+- [ ] **Metric signals keep their intent** — a recorded metric names the purpose it stands for, keeps the adopted tension pair and the scenario it exposes, and is marked required or monitoring; a monitoring signal is not written as a gate ([Reviewable contract rows](#reviewable-contract-rows-and-observable-evidence))
 - [ ] **Requirement values appear verbatim** — numbers the result must honor (max turns, count limits, retention, size caps, NFR targets) are not blurred into "appropriately" or "is limited". Does each carry a scrap of justification (policy, contract, regulation)?
 - [ ] **Non-numeric requirements survived too** — allowed value sets, mandatory fields, permission and visibility rules, ordering and uniqueness, units and formats, forbidden transitions were not dropped as "obvious from the code" ([non-numeric requirements](#non-numeric-requirements--value-sets-mandatory-fields-permissions-ordering))
 - [ ] **Decision-changing assumptions are explicit and correctly routed** — every assumption that could change the adopted alternative appears in Purpose or the relevant Driver with what must be reconsidered if false; requirements remain in the contract, implementation defaults remain in code
@@ -577,4 +580,4 @@ For the PR reviewer or the author before merge.
 - [ ] **One ADR = one decision** holds (no split signals)
 - [ ] **`.mapping.json`** has the matching category entry including the new ADR
 
-<!-- adr-writer:rules-version 0.15.1 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.15.2 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

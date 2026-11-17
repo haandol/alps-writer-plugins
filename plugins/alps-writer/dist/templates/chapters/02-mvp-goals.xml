@@ -6,9 +6,10 @@ If we provide a 30% discount coupon upon sign-up, the revisit rate within 14 day
     </example>
   </subsection>
   <subsection id="2.2" title="Key Performance Indicators (KPIs)">
-    <description>Define the quantitative metrics to evaluate the purpose (hypothesis) stated above.</description>
+    <description>Define the quantitative metrics to evaluate the purpose (hypothesis) stated above. For every KPI, always propose a tension metric, because users rarely think of one: derive an abuse, shortcut or opposite-failure scenario that raises the KPI while defeating the purpose, and propose a measure of the same purpose that worsens in it. State the scenario. The user decides adoption; an adopted tension is monitoring-only unless confirmed as required. Never invent its target or block completion on a declined candidate.</description>
     <example>
 Revisit rate within 14 days after sign-up: 30% or higher
+Tension (monitoring only): full-price repeat purchase rate among those revisitors — a discount alone can raise revisits without creating lasting use.
     </example>
   </subsection>
 </section>

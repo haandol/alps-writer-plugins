@@ -308,14 +308,21 @@ alps-writer's own `references/` by `scripts/sync-authoring-guidance.mjs`.
 Both packages use plugin-local references rather than assuming sibling install
 directories. Build synchronizes them; `authoring-guidance:check` rejects drift.
 
+PRDs and ADRs record evaluation so an agent can judge its own work against the
+business intent. A metric is only a proxy for that intent, and optimizing it alone
+can raise the score while defeating the purpose; a tension metric protects the
+same purpose and worsens when the primary metric is pushed up through a shortcut.
 Acceptance evaluates the intended outcome before implementation; improvement
-signals remain distinct. Propose meaningful tension metrics that expose harm from
-over-optimizing a primary metric, without a mandatory count or a blocker when
-none is suitable. Distinguish monitoring signals from confirmed required
+signals remain distinct. Users rarely think of tension metrics, which come from
+abuse and opposite-failure scenarios, so agents always propose one for every
+primary metric: product KPIs (Full Sections 2 and 8, Lite 1.2) and Feature or
+experience metrics. The user decides adoption; a declined candidate never blocks. `/feature-to-adr` carries each pair, its
+protected purpose and required-or-monitoring meaning into the owning ADR's
+Observable evidence, so implementation compares both without the PRD. Distinguish monitoring signals from confirmed required
 conditions; only the latter are gates, and primary gains never cancel their
 violations. Full uses 7.x.6 Evaluation Rubric: Ideal Cases and Edge Cases retain inputs,
 observations and decision rules; Automated Evaluation Metrics connects their
-results to calculations, scope and useful eval/tension pairs. Existing Acceptance
+results to calculations, scope and eval/tension pairs. Existing Acceptance
 Criteria headings remain readable without an automatic migration.
 Code comparisons, actual user-entry evidence and LLM meaning judgments serve
 different obligations; only aggregation of fixed inputs is deterministic. Missing

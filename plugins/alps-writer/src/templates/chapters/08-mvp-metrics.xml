@@ -2,6 +2,7 @@
   <description>
 - List the key data points and methods for collecting them to measure the MVP's success.
 - Define success thresholds for each key performance indicator.
+- Keep each tension metric from Section 2 next to the KPI it protects and give it a collection method. A monitoring-only tension needs no target; record one only when the user confirmed it as required.
 - Non-functional requirements (from Section 6.2) are also validated here or through dedicated release testing.
 - Keep each NFR's value, unit, population, and measurement condition intact. Daily active users and concurrent users are different quantities.
   </description>
@@ -10,6 +11,7 @@
 | Metric | Collection Method | Related Feature/KPI |
 |--------|-------------------|---------------------|
 | Revisit count within 14 days | User session tracking | KPI |
+| Full-price repeat purchases among revisitors | Order tracking joined to coupon use | Tension for the revisit KPI |
 | Authentication and password storage checks | Release verification of protected actions and non-plaintext password storage | NF1 |
 | Daily-user workload | One-day release workload with 1,000 distinct active users; record response latency | NF2, NF3 |
 | Average response latency | Request-to-response timing, using the p95 percentile | NF3 |
@@ -21,6 +23,7 @@
 | KPI | Baseline | Target | Measurement Period |
 |-----|----------|--------|-------------------|
 | Revisit rate (14 days) | N/A | ≥ 30% | Ongoing |
+| Full-price repeat purchase rate (tension, monitoring only) | N/A | No target; reviewed with revisit rate | Ongoing |
 | Authentication and password storage (NF1) | N/A | Authentication required; no plaintext passwords | Release verification |
 | Daily active users served (NF2) | N/A | ≥ 1,000 daily active users while meeting NF3 | One-day release workload |
 | Response latency (NF3) | N/A | &lt; 3 seconds (p95) | Ongoing and during the NF2 workload |

@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-11-17 — current ADR: [지표 개선의 의도 보호](./0001-safe-proportional-development-gates.md)** — 문서가 평가 기준을 기록하는 목적을 에이전트의 의도 기반 자가 평가로 명시하고, tension metric을 주 지표의 편법 최적화에서 반대로 움직이는 보호 신호로 정의했다. 사용자가 떠올리기 어려운 tension metric을 '의미 있을 때'가 아니라 주 지표마다 항상 제안하고 채택은 사용자가 정하도록 바꿨다. 기록된 tension 신호가 나빠지면 자동 실패로 보지 않되 의도 훼손 여부를 확인한 뒤 개선을 판단한다.
+
 - **2026-10-16 — current ADR: [ADR 0001](0001-safe-proportional-development-gates.md)** — 인지비용의 필수 응답 대기와 독립 Hill의 순서 강제를 비차단 안내·실제 의존성 기준으로 변경한다.
 
 - **2026-10-15 — current ADR: [의도부터 테스트까지의 증명 가능성](./0001-safe-proportional-development-gates.md)** — 문서에서 의도·요구사항·관찰 기준의 완결성을 확인하고 구현에서 계약별 정상·반례 테스트의 단언과 실행 근거를 연결한다.

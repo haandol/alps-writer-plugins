@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-11-17 — current ADR: [지표 개선의 의도 보호](./0001-require-feature-level-demo.md)** — 평가 기준의 목적을 구현 에이전트의 의도 기반 자가 평가로 명시하고 tension metric을 주 지표의 편법 최적화에서 반대로 움직이는 보호 신호로 정의했다. 사용자가 떠올리기 어려운 tension 후보를 '의미 있을 때'가 아니라 주 지표마다 항상 제안하고 채택은 사용자가 정하도록 바꿨으며, 같은 제안을 Full ALPS의 제품 수준 KPI(Section 2·8)로 확장했다. 편법을 이미 필수 사례가 잡으면 그 사례를 견제 수단으로 명시하고 필수로 유지한다.
+
 - **2026-10-05 — current ADR: [사례와 자동 평가 지표](./0001-require-feature-level-demo.md)** — 평가 영역을 Evaluation Rubric으로 부르고 Ideal Cases·Edge Cases·Automated Evaluation Metrics로 구성한다. 지표를 관련 사례와 계산·판정에 연결하고, 선택적 tension 후보와 데모 결과의 의미 및 기존 문서 호환성을 보존한다.
 
 - **2026-10-05 — current ADR: [실행 가능한 수용 기준](./0001-require-feature-level-demo.md)** — 결과 체크리스트를 독립 수용 의무별 상황·증거·검증 수단·판정 규칙으로 구체화하고, LLM 의미 판단과 고정 결과의 집계 및 실제 사용자 동작 증거를 구분한다.
