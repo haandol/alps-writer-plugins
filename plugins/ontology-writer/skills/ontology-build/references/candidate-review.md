@@ -50,7 +50,8 @@ scripts for them.
   `operating-policy`, `user-decision`) and a short basis sentence; a candidate
   without a found basis is marked and gets a basis question.
 - When a candidate concept or context term is already defined in
-  `docs/adr/glossary.md`, show that definition; a different meaning becomes a
+  `docs/adr/glossary.md` or a context's `docs/adr/<context>/glossary.md`, show that
+  definition; a different meaning becomes a
   question.
 
 ## Sufficiency and unresolved questions

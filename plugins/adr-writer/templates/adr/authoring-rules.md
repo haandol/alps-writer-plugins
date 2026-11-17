@@ -6,8 +6,9 @@ An ADR records an architectural decision (Purpose, Decision, Consequences). To k
 
 For jargon, uncommon terms/acronyms, or expressions that cannot be written out
 plainly, require a clear meaning from the user when it is not already supplied.
-Preserve needed definitions in the optional root `glossary.md` under the current
-ADR approval. Reuse equivalent entries, preserve unrelated terms, and resolve
+Preserve needed definitions under the current ADR approval: a term one context
+uses, or means in its own way, in that context's optional `<context>/glossary.md`,
+and a term that means the same everywhere in the optional root `glossary.md`. Reuse equivalent entries, preserve unrelated terms, and resolve
 conflicting meanings before changing them. Keep short explanations and all
 requirement rules in the owning ADR. The glossary has no Status or mapping entry;
 ordinary documents need no glossary, DDD exercise, or domain classification.
@@ -223,6 +224,8 @@ Changing a requirement value or rule **changes a system behavior requirement.** 
 1. **Update the ADR's requirement contract to the new value or rule** (7 turns → 10 turns).
 2. Record the transition as one line in the category's `decision-log.md` — a requirement value or rule change is major at minimum ([logging criteria](#what-to-log--minor-vs-major)).
 3. **Bring the code to that value in the same change unit.**
+
+A **change unit** is what reaches the shared branch together: one merged pull request, or one push when the team works without them. Every snapshot of the shared branch must show each ADR with code that follows it, so a reader of that snapshot alone can trust the pair. A new ADR whose code has not landed stays `Proposed`, and its Status tells the reader the code does not follow it yet. An edit to an implemented contract, of a value or any other rule, lands together with the code that follows it and never alone on the shared branch: the edit replaces the contract the code still follows, which would leave that code undocumented. When the edit needs review before implementation, review it on its branch.
 
 **Never change the code first and reconcile the ADR later.** That lets a code change redefine the requirement after the fact, inverting the PRD → ADR → code direction ([stability gradient](./concepts.md#dependencies-run-one-way-references-are-written-in-neither-direction)). This holds even when the edit looks like "one constant" — the order is set by **whether it is a contract**, not by the size of the change.
 
@@ -596,4 +599,4 @@ For the PR reviewer or the author before merge.
 - [ ] **One ADR = one decision** holds (no split signals)
 - [ ] **`.mapping.json`** has the matching category entry including the new ADR
 
-<!-- adr-writer:rules-version 0.15.3 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.15.4 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

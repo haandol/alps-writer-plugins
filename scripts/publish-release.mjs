@@ -49,6 +49,19 @@ export function releaseNotes(body) {
   return section.join("\n").trim() || null;
 }
 
+/**
+ * The pull request number a squash or merge commit names: the trailing `(#123)` GitHub
+ * appends to a squash subject, or `Merge pull request #123` of a merge commit. Null when
+ * the message names none.
+ */
+export function pullNumberFromMessage(message) {
+  const subject = String(message ?? "")
+    .split("\n", 1)[0]
+    .trim();
+  const match = /\(#(\d+)\)$/.exec(subject) ?? /^Merge pull request #(\d+)\b/.exec(subject);
+  return match ? Number(match[1]) : null;
+}
+
 /** The release title: "A v1.2.3", "A & B v1.2.3", "A, B & C v1.2.3" and so on. */
 export function releaseTitle(names, version) {
   const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} & ${names.at(-1)}` : names[0];
@@ -106,6 +119,20 @@ function tagCommit(repo, tag) {
   return api(repo, `git/tags/${ref.object.sha}`).object.sha;
 }
 
+/**
+ * The pull request `sha` merged. GitHub's commit-to-pull-request association can still be
+ * empty right after a merge, so the number the commit message names is the fallback; it
+ * counts only when that pull request records `sha` as its merge commit.
+ */
+function mergedPull(repo, sha) {
+  const listed = (api(repo, `commits/${sha}/pulls`) ?? []).find((p) => p.merge_commit_sha === sha);
+  if (listed) return listed;
+  const number = pullNumberFromMessage(api(repo, `commits/${sha}`)?.commit?.message);
+  if (!number) return null;
+  const named = api(repo, `pulls/${number}`, { missing: true });
+  return named?.merge_commit_sha === sha ? named : null;
+}
+
 /** Display names of the plugins the marketplace ships, in its order. */
 function pluginNames() {
   const read = (rel) => JSON.parse(readFileSync(path.join(ROOT, rel), "utf8"));
@@ -143,7 +170,7 @@ function main() {
     return;
   }
 
-  const pull = (api(repo, `commits/${sha}/pulls`) ?? []).find((p) => p.merge_commit_sha === sha);
+  const pull = mergedPull(repo, sha);
   const notes = releaseNotes(pull?.body);
   const title = releaseTitle(pluginNames(), version);
   const footer = provenance({ sha, pr: pull?.number, runUrl: process.env.CI_RUN_URL });

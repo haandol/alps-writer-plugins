@@ -8,7 +8,8 @@ argument-hint: "[adr-path-or-category] [--base <ref>] [--mode standard|full]"
 
 > **Review results**: Apply [report-writer](../report-writer/SKILL.md).
 
-Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
+Read the context's own `docs/adr/<context>/glossary.md` and the root
+`docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Its absence is normal; preserve it as supporting material, not an indexed ADR.
 When this workflow permits ADR writing and a definition needs creation or change,
 apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval

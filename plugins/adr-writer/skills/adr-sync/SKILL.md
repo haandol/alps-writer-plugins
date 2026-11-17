@@ -8,7 +8,8 @@ argument-hint: "[category?] [--quick]"
 
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
-Read `docs/adr/glossary.md` only when the selected ADRs need a term definition.
+Read the context's own `docs/adr/<context>/glossary.md` and the root
+`docs/adr/glossary.md` only when the selected ADRs need a term definition.
 Its absence is normal; preserve it as supporting material, not an indexed ADR.
 When this workflow permits ADR writing and a definition needs creation or change,
 or ADR content relies on a business term where `docs/ontology/` holds Turtle

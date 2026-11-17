@@ -4,7 +4,8 @@ description: Adversarially review whether each ADR implementation review unit is
 tools: Read, Grep, Glob, Bash
 ---
 
-Read `docs/adr/glossary.md` selectively when a term in the assigned ADRs needs
+Read the context's own `docs/adr/<context>/glossary.md` and the root
+`docs/adr/glossary.md` selectively when a term in the assigned ADRs needs
 explanation. Missing glossary files are normal. Keep all requirement obligations
 in the owning ADR; report unresolved meanings or conflicts without inventing
 definitions or changing review-only permissions.

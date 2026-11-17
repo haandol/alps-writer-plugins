@@ -431,33 +431,45 @@ export function ontologyFindings({
           }),
       }),
     );
-    let glossary = null;
+    // The root glossary and each context's own glossary (`<context>/glossary.md`) may
+    // both name business terms the model owns.
+    const glossaryFiles = [path.join(adrRoot, "glossary.md")];
     try {
-      if (statSync(path.join(adrRoot, "glossary.md")).isFile())
-        glossary = readAdr
-          ? readAdr(path.resolve(cwd, adrRoot, "glossary.md"))
-          : readFileSync(path.join(adrRoot, "glossary.md"), "utf8");
+      for (const entry of readdirSync(path.resolve(cwd, adrRoot), { withFileTypes: true }))
+        if (entry.isDirectory() && !entry.name.startsWith("."))
+          glossaryFiles.push(path.join(adrRoot, entry.name, "glossary.md"));
     } catch {
-      glossary = null;
+      // No ADR folder: only the root glossary can exist, and it does not either.
     }
-    for (const o of glossaryOverlap(glossary, index))
-      findings.push(
-        o.possible
-          ? {
-              level: "warn",
-              code: "ontology-glossary-mention",
-              where: rel(path.join(adrRoot, "glossary.md")),
-              element: o.id,
-              msg: `the glossary names the business term "${o.term}" (${o.type}) in a table column that may hold other content; ask the user whether it defines the term there, and if it does, clean it up through the model's change approval`,
-            }
-          : {
-              level: "warn",
-              code: "ontology-glossary-overlap",
-              where: rel(path.join(adrRoot, "glossary.md")),
-              element: o.id,
-              msg: `the ontology owns the business term "${o.term}" (${o.type}); remove the glossary entry — or reword it where it only groups or details other terms — through the model's change approval`,
-            },
-      );
+    for (const file of glossaryFiles) {
+      let glossary = null;
+      try {
+        if (statSync(path.resolve(cwd, file)).isFile())
+          glossary = readAdr
+            ? readAdr(path.resolve(cwd, file))
+            : readFileSync(path.resolve(cwd, file), "utf8");
+      } catch {
+        glossary = null;
+      }
+      for (const o of glossaryOverlap(glossary, index))
+        findings.push(
+          o.possible
+            ? {
+                level: "warn",
+                code: "ontology-glossary-mention",
+                where: rel(file),
+                element: o.id,
+                msg: `the glossary names the business term "${o.term}" (${o.type}) in a table column that may hold other content; ask the user whether it defines the term there, and if it does, clean it up through the model's change approval`,
+              }
+            : {
+                level: "warn",
+                code: "ontology-glossary-overlap",
+                where: rel(file),
+                element: o.id,
+                msg: `the ontology owns the business term "${o.term}" (${o.type}); remove the glossary entry — or reword it where it only groups or details other terms — through the model's change approval`,
+              },
+        );
+    }
   }
   return { model: documents.length > 0 || directoryErrors.length > 0, findings, index };
 }

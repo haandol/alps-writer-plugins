@@ -61,8 +61,11 @@ Rule: never copy ALPS's user stories or acceptance-criteria prose into an ADR. T
 
 ### Optional terminology support at the ADR level
 
-`docs/adr/glossary.md` preserves confirmed meanings for jargon, uncommon terms or
-acronyms, and expressions that cannot be written out plainly. Create it only when
+A context's own `docs/adr/<context>/glossary.md` preserves the confirmed meanings
+that context uses, so the same word can mean different things in two contexts and
+each context stays readable on its own; the root `docs/adr/glossary.md` keeps the
+terms that mean the same everywhere. Glossaries hold jargon, uncommon terms or
+acronyms, and expressions that cannot be written out plainly. Create one only when
 needed. It is supporting material within the ADR level, not another authority,
 an indexed ADR, or a DDD classification exercise. Read it selectively.
 
@@ -91,7 +94,7 @@ When a realizing ADR contradicts the model's flow, event hand-offs, policies,
 business rules or actor responsibilities, the model is the reference and the ADR
 changes unless the user approves an ontology change. ADR edits, category moves and
 code refactors never change the model. In such a repository the model owns
-business-term definitions, so the glossary keeps only other terms. Without model
+business-term definitions, so the glossaries keep only other terms. Without model
 documents nothing in this section applies. The model is kept with the separate
 ontology-writer plugin, whose `references/ontology.md` holds the vocabulary
 and validation rules; ADR Writer never reads the model.
@@ -313,4 +316,4 @@ An ADR body is **a requirements and architecture document describing the current
 
 **Three layers preserve different things**: the ADR body = current state / `decision-log.md` = the timeline of major changes / Git = the verbatim diff. The log is a **convention file** rather than an ADR, so it is not registered in `.mapping.json` and the deterministic harness does not check it — for the recording criteria and format see [`authoring-rules.md` "Decision log (decision-log.md)"](./authoring-rules.md#decision-log-decision-logmd), and for the directory and non-indexing policy see [`structure.md`](./structure.md#decision-log-decision-logmd--a-convention-file-not-registered-in-the-mapping).
 
-<!-- adr-writer:rules-version 0.15.3 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.15.4 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

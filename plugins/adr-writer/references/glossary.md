@@ -8,7 +8,9 @@ domains.
 
 ## Read and clarify
 
-Read `docs/adr/glossary.md` if it exists and relevant definitions are needed.
+Read the applicable glossary if it exists and relevant definitions are needed:
+the context's own `docs/adr/<context>/glossary.md` first, then the root
+`docs/adr/glossary.md`. Within a context, its own entry is the meaning.
 Reuse meanings already supplied by the user or confirmed in the existing
 documents. For an unclear term, ask at first use and wait before finalizing
 dependent decisions or contracts. An expanded acronym alone is insufficient when
@@ -16,7 +18,17 @@ the meaning remains ambiguous. Do not invent a confirmed definition.
 
 ## Save only needed definitions
 
-Create `docs/adr/glossary.md` only when there is a qualifying definition to
+A business term means what its bounded context says it means, and the same word
+can mean different things in two contexts. So save a term one context uses, or
+means in its own way, in that context's `docs/adr/<context>/glossary.md` (the
+top-level context folder, not a feature sub-folder), so the context stays
+understandable on its own. Keep the root `docs/adr/glossary.md` for terms that mean
+the same everywhere, such as shared acronyms and technical jargon. Never merge two
+contexts' meanings into one entry; a relied-on boundary states the translation
+between them. Existing root entries stay valid until an approved change moves
+them; changing this default moves nothing automatically.
+
+Create a glossary file only when there is a qualifying definition to
 preserve. Use a Markdown heading and a two-column table: `Term | Meaning in these
 documents`. Escape table separators when needed. Do not pre-seed an empty glossary,
 populate a general dictionary, or add domain-taxonomy columns.
@@ -41,8 +53,10 @@ business ontology in `docs/ontology/` (one or more Turtle documents). A PRD
 is planning input, not a current reference level.
 
 When that level defines a business term (a business concept or a bounded
-context's term), reuse its definition and do not define the term again in the
-glossary. Show a new definition or a changed meaning in the ADR approval summary
+context's term), reuse its definition and do not define the term again in any
+glossary, the root or a context's own. The model then owns business terms, so the
+glossaries keep only other terms; each ADR still keeps its short first-use
+explanation, so a context remains readable without the model. Show a new definition or a changed meaning in the ADR approval summary
 as that level's change proposal; it is decided only through that level's own
 approval path (for the business ontology, ontology-writer's `/ontology-edit`).
 Approving the ADR does not approve the proposal. While the proposal is unapproved or rejected, do not finalize ADR content

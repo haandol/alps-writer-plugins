@@ -8,7 +8,12 @@ test("ADR authoring requires confirmed meanings without making a glossary a prer
   const guide = read("../references/glossary.md");
   assert.match(guide, /ask at first use and wait before finalizing/);
   assert.match(guide, /Reuse meanings already supplied/);
-  assert.match(guide, /Create `docs\/adr\/glossary\.md` only when/);
+  assert.match(guide, /Create a glossary file only when/);
+  // A context's meaning lives with that context; the root keeps only shared terms.
+  assert.match(guide, /that context's `docs\/adr\/<context>\/glossary\.md`/);
+  assert.match(guide, /root `docs\/adr\/glossary\.md` for terms that mean\s+the same everywhere/);
+  assert.match(guide, /Never merge two\s+contexts' meanings into one entry/);
+  assert.match(guide, /moves nothing automatically/);
   assert.match(guide, /current ADR's approval digest/);
   assert.match(guide, /equivalent existing entry is a no-op/);
   assert.match(guide, /preserve unrelated terms/);
@@ -24,7 +29,7 @@ test("ADR authoring requires confirmed meanings without making a glossary a prer
 test("handoff transfers needed meanings without upstream references or replacing unrelated terms", () => {
   const handoff = read("../../alps-writer/skills/feature-to-adr/SKILL.md");
   assert.match(handoff, /optional trailing Glossary Appendix/);
-  assert.match(handoff, /`docs\/adr\/glossary\.md`/);
+  assert.match(handoff, /the context and root glossaries/);
   assert.match(handoff, /selected transfer needs/);
   assert.match(handoff, /Preserve unrelated entries and existing layout/);
   assert.match(handoff, /equivalent meanings are no-ops/);

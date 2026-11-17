@@ -433,7 +433,7 @@ test("ontology-sync checks a direct edit like a draft, compares it per process f
   );
   has(
     SYNC,
-    "**Glossary coexistence.** When a business term is defined both in the model and in `docs/adr/glossary.md` (`ontology-glossary-overlap`), propose removing the glossary entry if the meanings are the same; otherwise ask which meaning stays.",
+    "**Glossary coexistence.** When a business term is defined both in the model and in `docs/adr/glossary.md` or a context's `docs/adr/<context>/glossary.md` (`ontology-glossary-overlap`), propose removing the glossary entry if the meanings are the same; otherwise ask which meaning stays.",
     "When the entry is a heading that only organizes other terms, propose rewording that heading instead of removing its section; when it is a detail of another term's entry (a facet line or a details-table row), propose rewording its label instead of removing the detail.",
     "`ontology-glossary-mention` names the term in a table column that may hold other content: ask the user whether that cell defines the term, and if it does, treat it as an entry; if not, leave it.",
   );
@@ -641,7 +641,7 @@ test("ontology-build runs on request, keeps to its scope and gives every candida
   );
   has(
     BUILD,
-    "When a candidate concept or context term is already defined in `docs/adr/glossary.md`, show that definition; a different meaning becomes a question.",
+    "When a candidate concept or context term is already defined in `docs/adr/glossary.md` or a context's `docs/adr/<context>/glossary.md`, show that definition; a different meaning becomes a question.",
   );
 });
 

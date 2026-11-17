@@ -49,7 +49,7 @@ Load:
 - the high-level architecture constraints and external boundaries
 - `docs/adr/.mapping.json` when it exists
 - the optional trailing Glossary Appendix and any supplied term explanations needed
-  by the selected Features; read `docs/adr/glossary.md` if it exists
+  by the selected Features; read the context and root glossaries if they exist
 - whether a current reference level above ADRs exists: the business ontology,
   which the ontology-writer plugin keeps, is
   one or more Turtle documents in `docs/ontology/`. The PRD being
@@ -83,7 +83,7 @@ others use `<context>/<feature>`. Never invent boundaries or use technical layer
 ## 3. Enrich gaps and preflight a complete ownership transfer
 
 Carry qualifying jargon, uncommon terms/acronyms, and expressions that cannot be
-written out plainly into `docs/adr/glossary.md` when the selected transfer needs
+written out plainly into the context's glossary when the selected transfer needs
 their meanings. Reuse already confirmed definitions; ask about an unclear meaning
 before finalizing dependent contracts. Include new or changed meanings in the
 existing ADR approval and pass them to `/adr-new` so it does not repeat questions.
