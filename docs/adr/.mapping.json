@@ -61,7 +61,7 @@
         {
           "path": "docs/adr/alps-authoring/feature-demo/0001-require-feature-level-demo.md",
           "status": "Proposed",
-          "summary": "Feature 평가는 Ideal Cases·Edge Cases·Automated Evaluation Metrics로 동작과 계산·판정을 연결하고 선택적 tension 지표와 데모 결과를 보존한다"
+          "summary": "Feature 평가는 Ideal Cases·Edge Cases·Automated Evaluation Metrics로 동작과 계산·판정을 연결하고 항상 제안하는 tension 지표와 데모 결과를 보존한다"
         }
       ],
       "dependsOn": []
@@ -105,7 +105,7 @@
         {
           "path": "docs/adr/alps-authoring/lite-format/0001-lite-alps-authoring-profile.md",
           "status": "Proposed",
-          "summary": "Lite ALPS는 핵심 경험과 데모에 사전 판단 기준과 선택적 개선·tension 신호를 연결하며 네 Section과 승인 경계를 유지한다"
+          "summary": "Lite ALPS는 핵심 경험과 데모에 사전 판단 기준과 개선 신호와 항상 제안하는 tension 후보를 연결하며 네 Section과 승인 경계를 유지한다"
         }
       ],
       "dependsOn": ["alps-authoring/authoring-interaction"]

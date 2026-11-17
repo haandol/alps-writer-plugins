@@ -41,8 +41,10 @@ Before eliciting or drafting, read
 to the ADR body and the Decision Digest without weakening any contract.
 
 For acceptance and improvement criteria, apply
-`${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md`: propose useful optional
-tension signals and preserve monitoring versus required meaning.
+`${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md`: for every metric, always
+propose a tension metric with the abuse or opposite-failure scenario it exposes
+(users rarely think of one), let the user decide adoption, and preserve
+monitoring versus required meaning.
 
 Before interpreting delegated choices, read
 `${CLAUDE_PLUGIN_ROOT}/references/requirement-delegation.md` completely.

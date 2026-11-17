@@ -131,6 +131,13 @@ contract already entails; ask only for a material choice that remains unresolved
 If a source row bundles clauses, account for each clause rather than letting
 one clear clause stand for the whole row.
 
+When the ADR records a metric signal, check that it names the intent it stands
+for, keeps any tension pair the supplied source contains, and keeps its required or monitoring meaning (`authoring-rules.md` "Metric
+signals keep their intent"). A dropped source pair or a monitoring signal written
+as a required row is an R19 omission. A recorded metric with no tension pair is
+not FIX_REQUIRED, because the user may have declined one; add an advisory note
+proposing a candidate from its abuse or opposite-failure scenario.
+
 Compare supplied intent/requirement sources when available. If none are supplied,
 state that intent coverage is limited to the ADR's recorded intent. Do not claim
 to have verified unknown intent, fail an otherwise complete ADR merely because

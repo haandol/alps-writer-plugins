@@ -4,6 +4,19 @@ Use this guidance when writing evaluation rubrics, transferring them, or judging
 implementation and improvement. The purpose is to preserve the user's outcome
 when an agent can improve a proxy score without improving the product.
 
+## Why documents carry evaluation
+
+PRDs and ADRs record intent, contracts and evaluation criteria so that an agent
+can judge its own work against the business intent, not just finish a task. Every
+metric is a proxy for that intent. An agent that optimizes one metric in
+isolation can raise the score while defeating the purpose: answering fast by
+answering wrongly, resolving tickets by refusing them, raising revisits with
+discounts that never turn into paid use. A tension metric protects the same
+purpose and moves the opposite way when the primary metric is pushed through such
+a shortcut. Read together, the pair tells a real improvement from gaming. Before
+optimizing any metric, recover the intent it stands for; judge a gain by whether
+that intent improved.
+
 ## Cases and automated evaluation metrics
 
 Before implementation, connect each independent evaluation obligation to its use
@@ -19,8 +32,8 @@ Metrics. Ideal cases demonstrate intended successful behavior; edge cases cover
 relevant boundaries, invalid inputs and recovery. They retain setup, evidence and
 explicit rules. Metrics identify the cases/population they summarize, calculation,
 unit, direction, observation/exclusion conditions, evaluator and required-versus-
-monitoring use. Show useful eval/tension pairs protecting the same purpose, not
-unrelated numbers or merely two names. Case checks still determine required
+monitoring use. Pair each eval metric with its proposed tension metric protecting
+the same purpose, not unrelated numbers or merely two names. Case checks still determine required
 behavior: a high aggregate score cannot erase a failed or unverified required case.
 An empty population, missing observation or judgment error is not zero or a pass;
 show missingness and coverage rather than silently dropping cases.
@@ -57,19 +70,37 @@ remain at implementation resolution; do not create another authoritative validat
 plan. Condensed authoring formats retain their existing result/demo text rather
 than importing a detailed table, metric quota or evaluator implementation.
 
-## Propose useful tension metrics without making them mandatory
+## Always propose tension metrics; let the user decide adoption
 
-When proposing a primary metric, actively consider what could worsen if an agent
-optimized it too aggressively. Suggest a meaningful tension metric when one
-protects the same user purpose and exposes that shortcut. Explain the connection:
-resolved-request rate may need incorrect-answer or unjustified-refusal rates;
-deployment volume may need change-failure rate or user-impact duration.
+A user usually knows the primary metric, but rarely thinks of its tension metric:
+that comes from imagining how the metric could be gamed or how its opposite
+failure could grow, which the user is not looking for. So the agent always
+proposes it. Whenever a primary metric is proposed, supplied or optimized, at
+product or feature level, derive at least one purpose-defeating scenario: an
+abuse, shortcut or opposite failure that raises the primary while harming the
+intent. Then propose a tension metric that protects the same purpose and worsens
+in that scenario, and state the scenario it exposes. Examples: resolved-request
+rate rises by answering wrongly or refusing hard requests, so propose
+incorrect-answer and unjustified-refusal rates; deployment volume rises by
+shipping risky changes, so propose change-failure rate or user-impact duration.
+If quantification is unsuitable, propose the observable counterexample instead.
+A candidate must come from a real scenario for the same purpose, never an
+unrelated number added to fill a slot.
 
-Do not require one metric per objective or experience, fill a quota, fabricate a
-threshold, or turn the absence of a tension metric into a writing, approval,
-saving, implementation or improvement blocker. If quantification is unsuitable,
-use a relevant observable failure or counterexample when helpful. Do not demand
-an omission form, rationale field, separate interview or approval for this.
+Keep the pair, the scenario, its protected purpose and its required or monitoring
+meaning together wherever the primary metric is owned, including after transfer
+to an ADR, so a later agent compares both. When a recorded tension signal worsens
+while the primary improves, report it and check whether the intent was harmed
+before calling the change an improvement.
+
+Proposal is the agent's duty; adoption is the user's choice. The user may accept,
+revise or decline a candidate. Do not fabricate a threshold for it, require an
+omission form, rationale field, separate interview or extra approval step, or
+turn a declined or missing adopted tension metric into a writing, approval,
+saving, implementation or improvement blocker. An adopted tension metric is
+monitoring-only unless the user confirms it as a required condition. During
+implementation or improvement, report a new proposal with the result and keep
+working within the approved scope; do not wait for its adoption.
 
 Distinguish monitoring signals from required acceptance or adoption conditions.
 Suggesting or accepting a metric for observation does not make its value a hard

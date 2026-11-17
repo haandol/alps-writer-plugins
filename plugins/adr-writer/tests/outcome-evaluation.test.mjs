@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import authoring from "../evals/scenarios/alps-evaluates-outcomes-with-optional-tension.mjs";
+import kpiTension from "../evals/scenarios/alps-evaluates-outcomes-kpi-tension.mjs";
 import implementation, {
   deterministicScore,
 } from "../evals/scenarios/impl-distinguishes-monitoring-from-required-metrics.mjs";
@@ -92,7 +93,7 @@ test("outcome probes use shipping guidance, keep judge obligations private and r
     new URL("../references/outcome-evaluation.md", import.meta.url),
     "utf8",
   );
-  const scenarios = [authoring, implementation, validationAuthoring, validation];
+  const scenarios = [authoring, kpiTension, implementation, validationAuthoring, validation];
   for (const scenario of scenarios) {
     assert.ok(scenario.build().includes(guide));
     for (const obligation of scenario.obligations)
@@ -104,6 +105,7 @@ test("outcome probes use shipping guidance, keep judge obligations private and r
   );
   assert.ok(selected.has(implementation.name));
   assert.ok(selected.has(authoring.name));
+  assert.ok(selected.has(kpiTension.name));
   assert.ok(selected.has(validationAuthoring.name));
   assert.ok(selected.has(validation.name));
   const evidenceChanges = scenarioNamesForChangedPaths(

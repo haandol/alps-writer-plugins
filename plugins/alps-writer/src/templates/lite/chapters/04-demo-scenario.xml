@@ -8,7 +8,7 @@
 - Use the experience's intent to judge whether the visible result is useful; include a relevant result that would defeat that intent when needed to make the pass condition clear. Do not invent new product policy or claim that visible output alone proves the intended outcome.
 - Show the complete generated scenario, its experience coverage, and how it supports the Desired Business Impact before asking for approval.
 - End with one overall pass result that requires every Essential User Experience to satisfy its initial pass/fail criterion. Use the approved intended results to judge representative inputs and relevant counterexamples within this same scenario.
-- Monitoring metrics proposed earlier are optional observations, not automatic pass/fail gates. Preserve confirmed required conditions; do not block the demo because no tension metric exists or pretend the demo measures production improvement.
+- Monitoring metrics proposed earlier are optional observations, not automatic pass/fail gates. Preserve confirmed required conditions; do not block the demo because a tension candidate was declined or pretend the demo measures production improvement.
 - Keep demonstrated claims inside the approved Overview, Solution and Essential User Experiences, and explicit Out of Scope boundary.
 - Treat a passing demo as evidence that the approved product behavior runs, not as proof of business impact or market validity.
 - Ask only when the demo exposes a protected product decision about money, permissions, law or regulation, privacy or safety, irreversible data meaning, an external promise, or the acceptance boundary.

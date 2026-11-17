@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-11-17 — current ADR: [tension 후보의 항상 제안](./0001-evaluate-critical-prompt-decisions.md)** — 주 지표가 있는데 tension 후보를 제안하지 않고 진행하는 응답을 더는 허용하지 않는다. 거절된 후보가 진행을 막지 않는지도 함께 평가한다.
+
 - **2026-10-16 — current ADR: [Skill 평가의 실행 증거와 비교](./0001-evaluate-critical-prompt-decisions.md)** — 표현 일치 점수를 의미 판정에서 제거하고 최초 판정·재판정의 기본 경로를 Bedrock GPT-6.1 Sol 및 default 프로필로 통일한다.
 
 - **2026-10-05 — current ADR: [의도를 보존하는 평가](./0001-evaluate-critical-prompt-decisions.md)** — 초기 수용과 개선 신호를 구분하고 의미 있는 tension metric을 적극 권장하되 선택 사항으로 유지하며, 관찰용 신호와 필수로 확정한 보호 조건의 판단을 구분한다.

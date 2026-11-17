@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the alps-authoring/lit
 Each ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-11-17 — tension 후보를 항상 제안
+
+- **Current ADR**: [lite-alps-authoring-profile](./0001-lite-alps-authoring-profile.md)
+- **Change type**: requirement rule change
+- **What**: 의미 있는 경우에만 제안하던 tension metric을, 확인했거나 제안한 신호마다 어뷰징·반대 실패 시나리오와 함께 항상 제안하도록 바꿨다. 채택은 사용자가 정하고, 신호 자체나 채택을 완료 조건으로 요구하지 않는다.
+- **Why**: 사용자는 주 지표는 떠올려도 반대·어뷰징 시나리오에서 나오는 tension metric은 떠올리기 어렵기 때문이다.
+
 ## 2026-10-05 — 경험 평가와 선택적 tension 신호
 
 - **Current ADR**: [lite-alps-authoring-profile](./0001-lite-alps-authoring-profile.md)

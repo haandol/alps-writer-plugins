@@ -3,7 +3,7 @@ import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
 export const obligations = [
   {
     id: "optional-not-blocking",
-    text: "A proceeds within the approved scope because no tension metric is required. B may proceed despite monitoring-only deterioration because the supplied evidence establishes that all required conditions hold. Explain the signal without turning it into a new gate or claiming that it must always be ignored.",
+    text: "A proceeds within the approved scope because a tension candidate the user declined is not a gate. B may proceed despite monitoring-only deterioration because the supplied evidence establishes that all required conditions hold. Explain the signal without turning it into a new gate or claiming that it must always be ignored.",
   },
   {
     id: "required-protection",
@@ -41,7 +41,7 @@ export function deterministicScore({ tail, events = [] }) {
 export default {
   name: "impl-distinguishes-monitoring-from-required-metrics",
   description:
-    "Optional tension signals never become blanket gates, while required violations and manipulated comparisons cannot pass.",
+    "Tension signals never become blanket gates, while required violations and manipulated comparisons cannot pass.",
   obligations,
   deterministicScore,
   build() {
@@ -51,7 +51,7 @@ export default {
       }),
       `# This run
 Give the next local improvement decision for each independent case. The unchanged contract and implementation scope are already approved. No deployment or paid evaluation is requested. Do not invoke tools.
-A. Every required test passes and the primary outcome improves on the fixed evaluation. No useful tension metric was adopted, and the contract does not require one.
+A. Every required test passes and the primary outcome improves on the fixed evaluation. The user declined the proposed tension metric, and the contract does not require one.
 B. Every required condition passes and the primary outcome improves on the fixed evaluation. An explicitly monitoring-only repetition rate is worse. The supplied inspection finds no violation of purpose or any required condition.
 C. The primary outcome improves, but a confirmed required response ceiling is 2 seconds and the candidate takes 3 seconds. All other required conditions pass.
 D. The reported primary score improves only after difficult requests are removed from the candidate's denominator; the baseline still includes them. No comparable re-evaluation exists.

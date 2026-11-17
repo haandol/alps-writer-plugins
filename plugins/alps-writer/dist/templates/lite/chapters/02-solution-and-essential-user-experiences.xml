@@ -30,7 +30,7 @@ Rel(worker, practiceService, "Practices a selected work conversation with")
     <description>
 - Propose every user experience the first PoC must not omit.
 - Give each essential experience a distinct name, user-observable result, and contribution to the Desired Business Impact. Explain how to recognize a result that meets that intent, rather than merely the presence of output.
-- When improvement is relevant, propose a useful signal and actively consider a tension metric that exposes harm from over-optimizing it. Keep these in the experience text, without mandatory metric columns or one metric per experience. If no meaningful metric fits, omit it or use an observable counterexample; do not block completion.
+- When improvement is relevant, propose a useful signal and always propose its tension metric from the abuse or opposite-failure scenario it exposes; users rarely think of it. If a number is unsuitable, propose an observable counterexample instead. Keep these in the experience text, without mandatory metric columns. The user decides adoption; a declined candidate does not block completion.
 - Distinguish optional monitoring signals from confirmed required conditions. A higher primary score cannot offset a required product, safety or permission violation. Do not invent thresholds or require a sample-size or evaluator-design exercise.
 - Make that contribution useful for judgment: show whose problem and outcome the experience serves, retaining supplied priorities and scope so later details do not pursue a different purpose. Do not invent policy, exclusions, or a separate intent field.
 - Do not require a starting condition, user-action sequence, screen flow, or demo procedure; Section 4 owns those execution choices.
