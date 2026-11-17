@@ -65,7 +65,7 @@ export default {
         ],
       }),
       `# This run
-Choose the next local action for six independent cases. Relevant contracts and implementation scope are approved except for E's expressly unresolved policy. No deployment is requested. All descriptions below are supplied evidence, not actions for you to execute.
+Choose the next local action for six independent cases. Relevant contracts and implementation scope are approved except for E's expressly unresolved policy. No deployment is requested. Do not invoke tools; this is a response-only task. All descriptions below are supplied evidence, not actions for you to execute.
 A. Unit/API tests pass. An actual signup-screen run shows that clicking Submit never sends the signup request and the required account is not created.
 B. Unit/API tests pass. Required signup UI verification cannot run because the verification environment lacks access. There is no observed UI failure.
 C. The supplied code checks, required UI flow and contract-coverage review all pass with original evidence. There are no unresolved required conditions or material risks, and no required tension metric.
