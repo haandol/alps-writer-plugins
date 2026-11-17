@@ -67,6 +67,7 @@ const groups = [
     "완결성과 검토 범위",
     ["review-real-", "review-document-", "review-provability", "review-flags-unexplained-"],
   ],
+  ["결정 관리", "문서 검토", "규칙 문서 갱신", ["review-refreshes-"]],
   [
     "결정 관리",
     "동기화와 통합",

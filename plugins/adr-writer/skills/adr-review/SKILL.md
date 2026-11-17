@@ -1,6 +1,6 @@
 ---
 name: adr-review
-description: Review ADR document quality, intent and requirement completeness, and whether observable criteria can establish completion. Applies R1-R20 without reading code; report-only, never edits ADRs or implementation. Use for ADR quality, abstraction, requirement preservation or provability reviews.
+description: Review ADR document quality, intent and requirement completeness, and whether observable criteria can establish completion. Applies R1-R20 without reading code; report-only, never edits ADRs or implementation, and first offers to refresh lagging seeded rule documents. Use for ADR quality, abstraction, requirement preservation or provability reviews, and after upgrading the plugin.
 argument-hint: "[category-or-adr-path?]"
 ---
 
@@ -32,7 +32,9 @@ Review ADRs that already exist **as documents** and return a punch list. With no
 >
 > **This reviews saved ADRs, including the recommended follow-up to `/adr-new`.** The authoring path keeps its pre-save self-check and approval; its post-save recommendation targets the exact saved ADR and honors skip/defer or an unchanged completed review. This command derives the document verdict from the ADR and supplied intent sources, without inheriting the author's self-check conclusion. It can also review inherited or hand-edited ADRs when requested.
 
-> **Report-only**: never edit an ADR, `.mapping.json`, or code. Return findings and let the user decide. That is what makes a full sweep safe — a sweep that also edited would fan one misjudgment across every ADR at once.
+> **Report-only**: never edit an ADR, `.mapping.json`, or code. Return findings and let the user decide. That is what makes a full sweep safe — a sweep that also edited would fan one misjudgment across every ADR at once. The one write this command may make is step 2a's approved refresh of the seeded rule documents, before any ADR is reviewed.
+
+> **After a plugin upgrade, run this command.** When the repository's seeded rule documents lag the installed plugin, step 2a refreshes them first and then asks whether to review the ADRs against the new rules, so a refresh alone costs no sweep.
 
 > **Language**: this skill and every other harness prompt are written in English. Write the human-facing report in the language the user explicitly requests or currently uses. If the conversation does not establish a language, use the target ADR's dominant language; for a sweep, use the dominant language across the reviewed ADRs. Keep technical terms when translation would reduce precision. Any user-facing phrasing below is a guide, not a literal string.
 
@@ -74,6 +76,10 @@ Run this **once for the entire scope**, not per ADR — it already walks every A
 Keep the result and pass each ADR's slice of it to that ADR's reviewer, so the LLM never re-derives what the harness already proved. **Inherit, do not re-diagnose**: an in-scope document error goes into the final report as `FIX_REQUIRED (confirmed by harness)`. Do not import code-side findings from a broader harness run; use the document-only invocation above.
 
 **The harness never flags a bare number** — whether a value is a requirement (keep) or a tuning value (drop) is judgment, so it stays with the reviewer in step 3. This is deliberate: pushing an author to delete a requirement value is the failure mode this plugin guards against hardest.
+
+### 2a. Refresh lagging rule documents first
+
+If the harness reports `rules-doc-stale`, `rules-doc-unstamped`, `rules-doc-layout-legacy` or `rules-doc-layout-duplicated`, read and apply `${CLAUDE_PLUGIN_ROOT}/references/rule-doc-refresh.md` before reviewing any ADR: otherwise every reviewer would judge the set against rules the repository does not hold. After an approved refresh, rerun the harness and ask once whether to continue the sweep against the refreshed rules; stop there when the user only wanted the refresh. If the user declines the refresh, continue and lead the report with the lag (step 5).
 
 ### 3. Review each ADR against the `adr-reviewer` contract
 
@@ -122,7 +128,7 @@ A per-ADR punch list is just N separate reviews. What a sweep adds is what only 
   - **Version lag** (`rules-doc-stale` / `rules-doc-unstamped`) — report which docs lag and which rules that costs.
   - **Layout lag** (`rules-doc-layout-legacy` / `rules-doc-layout-duplicated`) — the repo predates the `README.md` (index) / `concepts.md` (working model) split, or half-migrated and left duplicate sections behind. Say so plainly: the reviewers still found the material (they fall back to `README.md`), but a duplicated copy can drift from the one `concepts.md` holds, so a rule may have been judged against the stale half.
 
-  Route the fix to `/adr-new` (its step 1 owns both and asks before overwriting hand-edits). Never refresh them here — this command is report-only.
+  When step 2a's refresh was declined, say that rerunning this command offers it again. Never refresh without that approval.
 
 - **Do not open the codebase.** R1's code-reality half and R17 (code→ADR back-references) need code, so they are out of scope here — say so explicitly in the report and route them to `/adr-sync`. Suppressing that boundary would let a reader mistake a clean `/adr-review` for "the ADRs match the code".
 
@@ -146,7 +152,7 @@ This command stays report-only. Route what the user approves:
 
 ## Prohibited
 
-- Never edit an ADR, `.mapping.json`, `decision-log.md`, or code — this command reports only.
+- Never edit an ADR, `.mapping.json`, `decision-log.md`, a glossary, or code — this command reports only. Step 2a's approved rule-document refresh is the only write.
 - Never collapse several ADRs into one verdict or use one ADR's findings as evidence for another.
 - Never silently narrow the scope. If you review a subset, say which ADRs were skipped and why.
 - Never report a clean sweep as "the ADRs are correct" — it means the ADRs are well _written_. Consistency with code is `/adr-sync`'s verdict.
