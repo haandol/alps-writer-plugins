@@ -54,6 +54,13 @@ not the classification or approval of a concrete value.
   its basis and trade-offs for the existing contract approval. Keep it visibly
   unapproved until the user confirms it. Do not present an illustrative number
   or a common default as an established requirement.
+- A proposal for a protected choice needs a basis in the user's intent, the
+  supplied facts or the existing contract. Without one — for example an allowed
+  state set the user neither listed nor delegated — ask an open question about
+  that choice instead of offering an invented candidate or seeding the question
+  with invented examples. An unapproved candidate stays in the questions, never
+  in the draft's contract rows. This adds no question about details the
+  contract already settles or leaves to implementation.
 - Leave freely replaceable implementation tuning in code when another value
   preserves the same contract and boundaries. Delegation alone does not prove
   that this condition holds.

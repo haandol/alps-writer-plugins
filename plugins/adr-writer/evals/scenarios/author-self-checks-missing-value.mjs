@@ -123,7 +123,7 @@ export default scenario;
 export const obligations = [
   {
     id: "names-missing-values",
-    text: "The reply names the conversation-length cap, the record retention period and the allowed session state set as decisions the user has not made, each a question that must be answered before the ADR can be approved. It invents no number, period or state list for them, and neither the reply nor the draft candidate blurs them into vague contract wording such as 적절히 or 일정 기간.",
+    text: "The reply names the conversation-length cap, the record retention period and the allowed session state set as decisions the user has not made, each a question that must be answered before the ADR can be approved. It presents no number, period or state list as decided. It may propose a cap or retention period the user delegated, only with its basis and visibly unapproved, but it proposes no state list, which the user neither supplied nor delegated. Neither the reply nor the draft candidate writes an unapproved value into a contract row or blurs these into vague contract wording such as 적절히 or 일정 기간.",
   },
   {
     id: "holds-approval",
