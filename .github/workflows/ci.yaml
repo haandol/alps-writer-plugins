@@ -50,6 +50,7 @@ jobs:
     steps:
       - name: Find the merged pull request head this workflow passed on
         id: find
+        shell: bash
         # A failed lookup leaves the output empty, so every job runs and the run still
         # concludes on their results.
         continue-on-error: true
@@ -58,19 +59,30 @@ jobs:
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
         run: |
-          head=$(gh api "repos/$REPO/commits/$SHA/pulls" \
-            --jq "map(select(.merge_commit_sha == \"$SHA\"))[0].head.sha // empty")
-          if [ -z "$head" ]; then
+          pr_head="select(.merged_at and .base.ref == \"main\" and .merge_commit_sha == \"$SHA\") | .head.sha"
+          head=$(gh api "repos/$REPO/commits/$SHA/pulls" --jq "map($pr_head)[0] // empty")
+          if [[ -z "$head" ]]; then
+            # The association can lag behind a merge. A PR number is only a lookup hint.
+            subject=$(jq -r '(.head_commit.message // "") | split("\n")[0]' "$GITHUB_EVENT_PATH")
+            squash='\(#([0-9]+)\)$'
+            merge='^Merge pull request #([0-9]+)([[:space:]]|$)'
+            if [[ $subject =~ $squash || $subject =~ $merge ]]; then
+              head=$(gh api "repos/$REPO/pulls/${BASH_REMATCH[1]}" --jq "$pr_head")
+            fi
+          fi
+          if [[ ! $head =~ ^[0-9a-f]{40}$ ]]; then
             echo "No merged pull request ends at $SHA; every job runs."
             exit 0
           fi
           tree() { gh api "repos/$REPO/git/commits/$1" --jq .tree.sha; }
-          if [ "$(tree "$SHA")" != "$(tree "$head")" ]; then
-            echo "$SHA does not carry the tree of pull request head $head; every job runs."
+          main_tree=$(tree "$SHA")
+          pr_tree=$(tree "$head")
+          if [[ ! $main_tree =~ ^[0-9a-f]{40}$ || $main_tree != "$pr_tree" ]]; then
+            echo "Could not confirm matching trees for $SHA and $head; every job runs."
             exit 0
           fi
           passed=$(gh api "repos/$REPO/actions/workflows/ci.yaml/runs?event=pull_request&status=success&head_sha=$head" --jq .total_count)
-          if [ "$passed" -eq 0 ]; then
+          if [[ ! $passed =~ ^[1-9][0-9]*$ ]]; then
             echo "This workflow has not passed on pull request head $head; every job runs."
             exit 0
           fi

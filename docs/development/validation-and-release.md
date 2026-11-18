@@ -45,9 +45,12 @@ The pre-push hook is the local gate before a push, and CI runs the integration
 tests on every pull request. Locally, run the integration test files a change
 touches (git history reading, a CLI or a browser view) rather than the whole
 `bun run test` again.
-On a push to main, CI skips its jobs when it already passed on the merged pull
-request's head and the pushed commit carries that head's tree, which the
-ruleset's up-to-date requirement guarantees for every merge method.
+Deleting only ordinary remote branches takes the short path through the local
+pre-push hook. Pushes that include commits, tags or `main` follow the normal checks.
+On a push to main, CI reuses a successful PR check only after verifying the
+merged PR and matching Git trees. If GitHub has not yet listed the associated PR,
+CI tries the number from the merge or squash subject. If any proof is missing,
+the three jobs run.
 
 The release version lives in **16 sites** that must agree, in four groups: the six plugin manifests (`.claude-plugin/` + `.codex-plugin/` for each of the three plugins), the four `marketplace.json` versions (metadata + one per plugin entry), the `serverInfo` literal in `plugins/alps-writer/src/index.ts`, and the five `adr-writer:rules-version` stamps in `plugins/adr-writer/templates/adr/`. The `serverInfo` literal is what an MCP client reports, and `tsconfig`'s `rootDir: "src"` prevents importing the version from `package.json`. The stamps are what `adr-structure-lint` compares a consumer's seeded docs against, so a stamp left behind makes the plugin report its own templates as stale to everyone at once. Always bump with `bun run bump <version>`: it runs `bun run build` afterwards, so the committed `dist/` carries the new `serverInfo`. Bumping by hand has drifted twice (0.3.0 and 0.4.20 both shipped with a stale server version).
 

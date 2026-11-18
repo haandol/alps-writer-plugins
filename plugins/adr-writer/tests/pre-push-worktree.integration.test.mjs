@@ -94,4 +94,20 @@ fi
   assert.equal(git(base, ["config", "user.email"]), "outer@example.test");
   assert.equal(git(fixture, ["log", "-1", "--format=%s"]), "fixture");
   assert.equal(git(remote, ["rev-parse", "refs/heads/release"]), head);
+
+  // Any invocation of Bun now fails: deleting the topic branch needs none,
+  // while a push that also publishes a ref must still enter validation.
+  writeFileSync(bun, "#!/bin/sh\nexit 1\n");
+  const push = (...refs) =>
+    spawnSync("git", ["push", "origin", ...refs], {
+      cwd: work,
+      env: { ...env, PATH: `${bin}${path.delimiter}${env.PATH}` },
+      encoding: "utf8",
+      timeout: 20_000,
+    });
+  const mixed = push(":refs/heads/release", "HEAD:refs/heads/new");
+  assert.notEqual(mixed.status, 0);
+  assert.equal(git(remote, ["rev-parse", "refs/heads/release"]), head);
+  const deletion = push(":refs/heads/release");
+  assert.equal(deletion.status, 0, deletion.stdout + deletion.stderr);
 });

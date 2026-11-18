@@ -229,7 +229,8 @@ Automated in these places, so you rarely have to remember:
   `plugins/alps-writer/dist/` when the MCP server source is staged, and otherwise
   typechecks only when the commit changes the package configuration or the
   dependencies — the only other inputs of that typecheck.
-- **`.husky/pre-push`** runs the fast part locally and blocks the push on any
+- **`.husky/pre-push`** returns immediately for pushes that only delete remote
+  branches other than `main`. For other updates it runs the fast part locally and blocks the push on any
   failure: the generated-asset checks, the unit tests of `bun run test:unit` (the ALPS
   Writer ones beside the rest), `lint`, `format:check`,
   `bump:check`, a boot check on the committed MCP bundle and the adr-writer hook,
