@@ -1,9 +1,34 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { chmodSync } from "node:fs";
+import { chmodSync, mkdirSync, symlinkSync } from "node:fs";
 import path from "node:path";
 import { cli, EXAMPLE } from "./ontology-helpers.mjs";
-import { withTmp, write } from "./helpers.mjs";
+import { runHook, withTmp, write } from "./helpers.mjs";
+
+test(
+  "a broken model directory link is not a first-time setup",
+  { skip: process.platform === "win32" },
+  () =>
+    withTmp((root) => {
+      mkdirSync(path.join(root, "docs"));
+      symlinkSync("missing", path.join(root, "docs/ontology"));
+      assert.doesNotMatch(runHook(root), /\/ontology-build/);
+      const result = cli(root, ["validate", "--json"]);
+      assert.equal(result.code, 1);
+      assert.ok(
+        JSON.parse(result.out).findings.some((f) => f.code === "ontology-directory-unreadable"),
+      );
+      const aligned = cli(root, ["align", "--process", "payment", "--json"]);
+      assert.equal(aligned.code, 1);
+      const plan = JSON.parse(aligned.out);
+      assert.ok(
+        plan.errors.some(
+          (f) => f.code === "ontology-directory-unreadable" && f.where === "docs/ontology",
+        ),
+      );
+      assert.equal(plan.nextAction.command, "/ontology-sync payment");
+    }),
+);
 
 test(
   "an unreadable model directory is incomplete instead of being reported as no ontology",
@@ -27,6 +52,7 @@ test(
           ),
         );
         assert.doesNotMatch(body.note, /no ontology in/);
+        assert.doesNotMatch(runHook(root), /\/ontology-build/);
       } finally {
         chmodSync(hidden, 0o700);
       }

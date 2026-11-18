@@ -6,9 +6,69 @@ import assert from "node:assert/strict";
 import { cpSync, existsSync, readFileSync, renameSync, rmSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import { cachedRepo, commitAll, initRepo, withTmp, write, writeAdrFiles } from "./helpers.mjs";
+import { cachedRepo, commitAll, git, initRepo, withTmp, write, writeAdrFiles } from "./helpers.mjs";
 import { ACCEPTED, EXAMPLE, cli } from "./ontology-helpers.mjs";
 import { MAPPING } from "./ontology-lifecycle-helpers.mjs";
+
+test("process status and alignment plan recommend the actual next action without writing", () => {
+  withTmp((dir) => {
+    initRepo(dir);
+    const process = "payment.take-payment";
+    const record = MAPPING.categories.payments.adrs[0];
+    function snapshot(mapping, status, model) {
+      write(dir, "docs/adr/.mapping.json", JSON.stringify(mapping));
+      writeAdrFiles(dir, mapping);
+      write(dir, record.path, `# ADR 0001: Payment\n\n## Status\n\n${status}\n`);
+      write(dir, "docs/ontology/model.ttl", model);
+      commitAll(dir, "model and ADRs");
+    }
+    function expectAction(command, reason, blocked) {
+      for (const args of [
+        ["query", "--process", process],
+        ["align", "--process", process],
+      ]) {
+        const out = cli(dir, [...args, "--lang", "ko", "--json"]);
+        assert.equal(out.code, args[0] === "align" && blocked ? 1 : 0, out.out);
+        const action = JSON.parse(out.out).nextAction;
+        assert.equal(action.command, command);
+        assert.match(action.reason, reason);
+      }
+      const shown = cli(dir, ["query", "--process", process, "--lang", "ko"]);
+      assert.ok(shown.out.includes("다음 행동:") && shown.out.includes(command));
+    }
+    const pending = structuredClone(MAPPING);
+    pending.categories.payments.adrs[0].status = "Proposed";
+    snapshot(pending, "Proposed", EXAMPLE);
+    expectAction(`/adr-impl ${record.path}`, /payments/, true);
+    const prerequisite = {
+      path: "docs/adr/ledger/0001-ledger.md",
+      status: "Proposed",
+      summary: "ledger contract",
+    };
+    pending.categories.ledger = { adrs: [prerequisite], dependsOn: [] };
+    pending.categories.payments.dependsOn = ["ledger"];
+    snapshot(pending, "Proposed", EXAMPLE);
+    expectAction(`/adr-impl ${prerequisite.path}`, /payments.*ledger/, true);
+    pending.categories.ledger.dependsOn = ["payments"];
+    snapshot(pending, "Proposed", EXAMPLE);
+    expectAction(`/ontology-sync ${process}`, /선행 관계/, true);
+    snapshot(MAPPING, record.status, EXAMPLE);
+    expectAction(`/ontology-align ${process}`, /실제 실행/, false);
+    const unlinked = structuredClone(MAPPING);
+    delete unlinked.categories.payments.realizes;
+    snapshot(unlinked, record.status, EXAMPLE);
+    expectAction(`/ontology-edit ${process}`, /payment.request-payment/, true);
+    snapshot(MAPPING, record.status, ACCEPTED);
+    expectAction(`/ontology-view ${process}`, /Accepted/, false);
+    assert.equal(git(dir, ["status", "--porcelain"]), "");
+    write(
+      dir,
+      "docs/ontology/model.ttl",
+      ACCEPTED.replace("The order has a completed payment.", "The payment was settled."),
+    );
+    expectAction(`/ontology-sync ${process}`, /모델 변경/, false);
+  });
+});
 
 test("impact, apply and transition move one approved change unit and refuse stale or unexplained edits", () => {
   withTmp((dir) => {
@@ -82,6 +142,11 @@ test("impact, apply and transition move one approved change unit and refuse stal
       "`payment.payment-completed` now means collected and settled: settlement moved into payment",
     ]);
     assert.equal(applied.code, 0, applied.out);
+    assert.match(
+      applied.out,
+      /Next action: Check the approved revision decision for .*checkout\/0001-a\.md before aligning ordering\.place-order\.\n$/,
+    );
+    assert.equal((applied.out.match(/^Next action:/gm) ?? []).length, 1);
     const model = readFileSync(path.join(dir, "docs/ontology/model.ttl"), "utf8");
     assert.equal(
       (model.match(/onto:status "Proposed"/g) ?? []).length,
@@ -138,6 +203,7 @@ test("impact, apply and transition move one approved change unit and refuse stal
       "2020-01-02",
     ]);
     assert.equal(ok.code, 0, ok.out);
+    assert.match(ok.out, /Next action: .*\/ontology-view payment\.take-payment/);
     const accepted = readFileSync(path.join(dir, "docs/ontology/model.ttl"), "utf8");
     assert.match(accepted, /onto:status "Accepted \(2020-01-02\)" ;\n    onto:hasStep m:payment/);
     commitAll(dir, "payment accepted after its review");

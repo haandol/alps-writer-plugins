@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// Local web question session for an ontology build.
+// Local web sessions for ontology build questions and agent-run alignment requests.
 // The agent writes <run>/ask/questions.json; the user answers in the browser;
 // answers are appended to <run>/ask/answers.jsonl. The session never saves the
 // model, the ADR index or the glossary — final approval stays in the conversation.
@@ -11,6 +11,10 @@
 //   bun ontology-ask.mjs record <run> <question-id> [--option ID] [--text TEXT]
 //   bun ontology-ask.mjs messages <run>
 //   bun ontology-ask.mjs reply <run> <message-id> [--text TEXT | --text-file FILE]
+//   bun ontology-ask.mjs prompt <run> <message-id> --file <prompt.json>
+//   bun ontology-ask.mjs approved <run> <message-id> <prompt-id>
+//   bun ontology-ask.mjs request <run> <message-id> --process ID
+//   bun ontology-ask.mjs respond <run> <message-id> <prompt-id> answer|clarify|approve|decline [--text-file FILE]
 //   bun ontology-ask.mjs check <run>
 import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -19,12 +23,21 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
 import { openerCommand } from "./adr-impl-review-open.mjs";
+import { alignmentPage } from "./ontology-align-session.mjs";
+import {
+  approvedProposal,
+  confirmPrompt,
+  dialogueFor,
+  preparePrompt,
+  userResponse,
+} from "./ontology-align-dialog.mjs";
 import { parseMermaidAll, parseMermaid } from "../skills/report-writer/scripts/mermaid.mjs";
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
@@ -33,6 +46,7 @@ const MAX_TEXT = 4000;
 const MAX_BODY = 32 * 1024;
 const MAX_DIAGRAM = 20000;
 const VERDICTS = new Set(["stated", "inferred", "conflicting", "unconfirmed"]);
+const ALIGNMENT_OUTCOMES = new Set(["passed", "failed", "blocked", "unverified"]);
 const MERMAID = path.join(HERE, "../skills/report-writer/scripts/vendor/mermaid.min.js");
 
 /** A diagram is Mermaid source with an optional caption; returns an error text or null. */
@@ -100,8 +114,29 @@ export function parseQuestions(text) {
     return { ok: false, error: `questions.json is not JSON: ${error.message}` };
   }
   const fail = (error) => ({ ok: false, error });
+  if (doc?.alignment !== undefined && doc.questions === undefined) doc.questions = [];
   if (!doc || doc.version !== 1 || !Array.isArray(doc.questions))
     return fail("questions.json needs version 1 and a questions array");
+  if (doc.alignment !== undefined) {
+    if (!Array.isArray(doc.alignment?.processes)) return fail("alignment needs a processes array");
+    const processes = new Set();
+    for (const process of doc.alignment.processes) {
+      if (typeof process?.id !== "string" || !process.id.trim() || processes.has(process.id))
+        return fail("alignment processes need distinct nonempty ids");
+      processes.add(process.id);
+      if (!Array.isArray(process.criteria)) return fail(`process ${process.id} needs criteria`);
+      const criteria = new Set();
+      for (const item of process.criteria) {
+        if (
+          typeof item?.criterion !== "string" ||
+          !item.criterion.trim() ||
+          criteria.has(item.criterion)
+        )
+          return fail(`process ${process.id} needs distinct nonempty criterion ids`);
+        criteria.add(item.criterion);
+      }
+    }
+  }
   const top = diagramError(doc.diagram, "session");
   if (top) return fail(top);
   const seen = new Set();
@@ -163,7 +198,7 @@ export function readEvents(file) {
 function appendEvent(file, event, reuse = () => null) {
   return withLock(`${file}.lock`, () => {
     const events = readEvents(file);
-    const existing = reuse(events);
+    const existing = reuse(events, event);
     if (existing) return existing;
     const seq = events.length + 1;
     const record = { ...event, seq, at: new Date().toISOString() };
@@ -176,7 +211,7 @@ const LOCK_WAIT_MS = 15_000;
 const LOCK_STALE_MS = 10_000;
 
 /** Run `fn` holding a directory lock; a lock left by a writer that died is stale after a while. */
-function withLock(lock, fn) {
+export function withLock(lock, fn) {
   const deadline = Date.now() + LOCK_WAIT_MS;
   for (;;) {
     try {
@@ -211,6 +246,23 @@ export function readSession(run) {
   } catch {
     return null;
   }
+}
+
+/** Only a live, open alignment session can be shared between terminal launches. */
+export function activeAlignmentSession(run) {
+  const session = readSession(run);
+  if (
+    !session?.alignment ||
+    !Number.isInteger(session.pid) ||
+    session.pid <= 0 ||
+    !session.url ||
+    !alive(session.pid)
+  )
+    return null;
+  const lifecycle = readEvents(sessionFiles(run).answers).findLast(
+    (event) => event.type === "open" || event.type === "close",
+  );
+  return lifecycle?.type === "open" ? session : null;
 }
 
 /** Latest answer per question, which web answers still wait for delivery, and closure. */
@@ -261,14 +313,19 @@ function discussionError(message, status = 400) {
 }
 
 /** Store a user question separately from candidate answers, reusing its retry identity. */
-export function recordDiscussionMessage(run, { messageId, text, questionId = null }) {
+export function recordDiscussionMessage(
+  run,
+  { messageId, text, questionId = null },
+  scope = null,
+  channel = "web",
+) {
   const files = sessionFiles(run);
   const doc = loadQuestions(files);
   if (!doc.ok) throw discussionError(doc.error);
   if (typeof messageId !== "string" || !ID.test(messageId))
     throw discussionError("invalid message identity");
   if (typeof text !== "string" || !text.trim()) throw discussionError("empty question");
-  if (text.length > MAX_TEXT) throw discussionError("question too long");
+  if (!scope && text.length > MAX_TEXT) throw discussionError("question too long");
   const q = questionId === null ? null : doc.value.questions.find((q) => q.id === questionId);
   const question = text.trim();
   return appendEvent(
@@ -278,6 +335,7 @@ export function recordDiscussionMessage(run, { messageId, text, questionId = nul
       messageId,
       text: question,
       context: q ? { questionId: q.id, text: q.text, detail: q.detail ?? "" } : null,
+      ...(scope ? { scope, channel } : {}),
     },
     (events) => {
       const prior = events.find(
@@ -286,9 +344,82 @@ export function recordDiscussionMessage(run, { messageId, text, questionId = nul
       if (prior && (prior.text !== question || (prior.context?.questionId ?? null) !== questionId))
         throw discussionError("message identity already has different content", 409);
       if (!prior && questionId !== null && !q) throw discussionError("unknown question context");
+      if (Boolean(doc.value.alignment) !== Boolean(scope))
+        throw discussionError("request does not match this session");
+      if (!prior && scope) {
+        const process = doc.value.alignment.processes.find((p) => p.id === scope.process);
+        if (!process) throw discussionError("unknown process");
+        const criteria = new Set(process.criteria.map((item) => item.criterion));
+        if (scope.criteria.some((id) => !criteria.has(id)))
+          throw discussionError("unknown criterion for this process");
+      }
       return prior;
     },
   );
+}
+
+/** A click requests only the named catalogue scope; empty criteria mean the entire process. */
+function recordVerification(run, body, channel = "web") {
+  if (
+    Object.keys(body).some((key) => !["messageId", "process", "criteria"].includes(key)) ||
+    typeof body.process !== "string" ||
+    !body.process.trim() ||
+    !Array.isArray(body.criteria) ||
+    body.criteria.some((id) => typeof id !== "string" || !id)
+  )
+    throw discussionError("expected messageId, process and a list of criterion ids");
+  const scope = { process: body.process, criteria: [...new Set(body.criteria)].sort() };
+  return recordDiscussionMessage(
+    run,
+    { messageId: body.messageId, text: JSON.stringify(scope) },
+    scope,
+    channel,
+  );
+}
+
+/** Agent prompts are local CLI operations. The browser may only answer the displayed revision. */
+export function publishAlignmentPrompt(run, id, input) {
+  const files = sessionFiles(run);
+  const doc = loadQuestions(files);
+  if (!doc.ok || !doc.value.alignment) throw discussionError("Alignment session required");
+  const event = preparePrompt(readEvents(files.answers), doc.value, id, input);
+  return appendEvent(files.answers, event, (events) => confirmPrompt(events, event));
+}
+
+function recordAlignmentResponse(run, body, channel = "web") {
+  const files = sessionFiles(run);
+  const doc = loadQuestions(files);
+  if (!doc.ok || !doc.value.alignment) throw discussionError("Alignment session required");
+  return appendEvent(files.answers, {}, (events, event) => {
+    const { existing, event: response } = userResponse(events, body, doc.value);
+    if (existing) return existing;
+    Object.assign(event, response, { channel });
+  });
+}
+
+function alignmentResult(text) {
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw discussionError("alignment reply must be JSON");
+  }
+  if (
+    !ALIGNMENT_OUTCOMES.has(value?.outcome) ||
+    typeof value.evidence !== "string" ||
+    !value.evidence.trim() ||
+    typeof value.nextAction !== "string" ||
+    !value.nextAction.trim() ||
+    Object.keys(value).some((key) => !["outcome", "evidence", "nextAction"].includes(key))
+  )
+    throw discussionError(
+      "alignment reply needs outcome (passed, failed, blocked or unverified), evidence and nextAction",
+    );
+  return {
+    outcome: value.outcome,
+    evidence: value.evidence.trim(),
+    nextAction: value.nextAction.trim(),
+  };
 }
 
 /** Only the local authoring agent can publish a reply; the browser has no reply endpoint. */
@@ -297,20 +428,45 @@ export function recordDiscussionReply(run, messageId, text) {
   if (typeof messageId !== "string" || !ID.test(messageId))
     throw discussionError("invalid message identity");
   if (typeof text !== "string" || !text.trim()) throw discussionError("empty reply");
-  if (text.length > MAX_TEXT) throw discussionError("reply too long");
-  const reply = text.trim();
-  return appendEvent(
-    files.answers,
-    { type: "discussion-reply", messageId, text: reply },
-    (events) => {
-      if (!events.some((e) => e.type === "discussion-question" && e.messageId === messageId))
-        throw discussionError("unknown discussion message");
-      const prior = events.find((e) => e.type === "discussion-reply" && e.messageId === messageId);
-      if (prior && prior.text !== reply)
-        throw discussionError("message already has a different reply", 409);
-      return prior;
-    },
-  );
+  const reply = { type: "discussion-reply", messageId, text: text.trim() };
+  return appendEvent(files.answers, reply, (events) => {
+    const question = events.find(
+      (e) => e.type === "discussion-question" && e.messageId === messageId,
+    );
+    if (!question) throw discussionError("unknown discussion message");
+    if (text.length > (question.scope ? MAX_BODY : MAX_TEXT))
+      throw discussionError("reply too long");
+    if (question.scope) {
+      reply.result = alignmentResult(text);
+      reply.text = JSON.stringify(reply.result);
+      const dialogue = dialogueFor(events, messageId);
+      const turn = dialogue.findLast((item) => item.kind === "proposal");
+      if (dialogue.some((item) => item.current && !item.response))
+        throw discussionError("A user decision is pending", 409);
+      if (
+        ["decline", "stale", "clarify"].includes(turn?.response?.decision) &&
+        reply.result.outcome === "passed"
+      )
+        throw discussionError(
+          "The last proposal has no approval; this request cannot be marked passed",
+          409,
+        );
+    }
+    const prior = events.find((e) => e.type === "discussion-reply" && e.messageId === messageId);
+    if (prior && prior.text !== reply.text)
+      throw discussionError("message already has a different reply", 409);
+    return prior;
+  });
+}
+
+function discussionPayload(e) {
+  return {
+    messageId: e.messageId,
+    text: e.text,
+    context: e.context,
+    at: e.at,
+    ...(e.scope ? { scope: e.scope } : {}),
+  };
 }
 
 const readJson = (file) => {
@@ -335,16 +491,17 @@ function discussionState(files, events) {
     available,
     messages: events
       .filter((e) => e.type === "discussion-question")
-      .map((e) => ({
-        messageId: e.messageId,
-        text: e.text,
-        context: e.context,
-        at: e.at,
-        delivered: e.seq <= cursor,
-        reply: replies.has(e.messageId)
-          ? { text: replies.get(e.messageId).text, at: replies.get(e.messageId).at }
-          : null,
-      })),
+      .map((e) => {
+        const reply = replies.get(e.messageId);
+        return {
+          ...discussionPayload(e),
+          ...(e.scope ? { dialogue: dialogueFor(events, e.messageId) } : {}),
+          delivered: e.seq <= cursor,
+          reply: reply
+            ? { text: reply.text, at: reply.at, ...(reply.result ? { result: reply.result } : {}) }
+            : null,
+        };
+      }),
   };
 }
 
@@ -366,11 +523,12 @@ function answerPayload(doc, events, ids) {
 // ---- open: the session server ----------------------------------------------------------
 export function startServer(
   run,
-  { lang = "ko", idleMinutes = 120, port = 0, onClose = () => {} } = {},
+  { lang = "ko", idleMinutes = 120, port = 0, onClose = () => {}, refreshAlignment } = {},
 ) {
   const files = sessionFiles(run);
   const first = loadQuestions(files);
   if (!first.ok) throw new Error(first.error);
+  const alignment = Boolean(first.value.alignment);
   let good = first.value;
   let goodMtime = statSync(files.questions).mtimeMs;
   let warning = null;
@@ -378,7 +536,9 @@ export function startServer(
     const mtime = statSync(files.questions).mtimeMs;
     if (mtime !== goodMtime) {
       const next = loadQuestions(files);
-      if (next.ok) [good, warning] = [next.value, null];
+      if (next.ok && Boolean(next.value.alignment) !== alignment)
+        warning = "session mode cannot change while open";
+      else if (next.ok) [good, warning] = [next.value, null];
       else warning = next.error; // keep showing the last valid questions
       goodMtime = mtime;
     }
@@ -411,9 +571,29 @@ export function startServer(
       headers: { ...headers, "Content-Type": type },
     });
 
+  let refreshedThrough = 0;
   const state = () => {
-    const doc = current();
+    let doc = current();
     const events = readEvents(files.answers);
+    const latestReply =
+      alignment && refreshAlignment && events.findLast((e) => e.type === "discussion-reply");
+    if (latestReply && latestReply.seq > refreshedThrough) {
+      try {
+        const updated = { ...doc, alignment: refreshAlignment() };
+        const tmp = files.questions + ".refresh";
+        writeFileSync(tmp, JSON.stringify(updated), { mode: 0o600 });
+        renameSync(tmp, files.questions);
+        doc = good = updated;
+        goodMtime = statSync(files.questions).mtimeMs;
+        warning = null;
+      } catch {
+        warning =
+          lang === "ko"
+            ? "저장된 모델을 다시 읽지 못했습니다. 표시된 상태는 이전 조회 결과입니다."
+            : "Could not refresh the model. The displayed status is from the earlier snapshot.";
+      }
+      refreshedThrough = latestReply.seq;
+    }
     const s = summarize(doc, events);
     const working = Boolean(s.lastDeliver && Date.parse(s.lastDeliver.at) > goodMtime);
     return {
@@ -421,6 +601,7 @@ export function startServer(
       intro: doc.intro ?? "",
       diagram: doc.diagram ?? null,
       agent: doc.agent ?? null,
+      ...(alignment ? { alignment: doc.alignment } : {}),
       lang,
       questions: s.questions,
       sequence: events.at(-1)?.seq ?? 0,
@@ -450,13 +631,21 @@ export function startServer(
     const route = url.pathname.slice(prefix.length) || "/";
     if (req.method === "GET") {
       if (route === "/")
-        return new Response(page(lang, prefix), {
+        return new Response(alignment ? alignmentPage(lang, prefix) : page(lang, prefix), {
           headers: { ...headers, "Content-Type": "text/html; charset=utf-8" },
         });
       if (route === "/app.js")
-        return asset("ontology-ask-client.js", "text/javascript; charset=utf-8");
-      if (route === "/app.css") return asset("ontology-ask.css", "text/css; charset=utf-8");
-      if (route === "/mermaid.js") return asset(MERMAID, "text/javascript; charset=utf-8");
+        return asset(
+          alignment ? "ontology-align-session-client.js" : "ontology-ask-client.js",
+          "text/javascript; charset=utf-8",
+        );
+      if (route === "/app.css")
+        return asset(
+          alignment ? "ontology-align-session.css" : "ontology-ask.css",
+          "text/css; charset=utf-8",
+        );
+      if (!alignment && route === "/mermaid.js")
+        return asset(MERMAID, "text/javascript; charset=utf-8");
       if (route === "/api/state") return json(state());
       return deny(404, "not found");
     }
@@ -475,6 +664,19 @@ export function startServer(
     if (!body || typeof body !== "object" || Array.isArray(body))
       return deny(400, "object required");
     if (state().closed) return deny(409, "closed");
+    if (route === "/api/close") {
+      shutdown("user");
+      return json({ closed: true });
+    }
+    if (alignment) {
+      if (route !== "/api/respond") return deny(404, "not found");
+      try {
+        recordAlignmentResponse(run, body);
+        return json(state());
+      } catch (error) {
+        return deny(error.status ?? 500, error.message);
+      }
+    }
     if (route === "/api/answer") {
       const doc = current();
       const q = doc.questions.find((x) => x.id === body.questionId);
@@ -508,10 +710,6 @@ export function startServer(
       if (ids.length) appendEvent(files.answers, { type: "deliver", questionIds: ids });
       return json(state());
     }
-    if (route === "/api/close") {
-      shutdown("user");
-      return json({ closed: true });
-    }
     return deny(404, "not found");
   }
   const serve = (p) => Bun.serve({ hostname: "127.0.0.1", port: p, fetch: handle });
@@ -526,7 +724,7 @@ export function startServer(
   writeFileSync(
     files.session,
     JSON.stringify(
-      { url, port: server.port, pid: process.pid, startedAt: new Date().toISOString() },
+      { url, port: server.port, pid: process.pid, alignment, startedAt: new Date().toISOString() },
       null,
       2,
     ),
@@ -540,6 +738,7 @@ export function startServer(
   idle.unref?.();
   return {
     url,
+    alignment,
     server,
     stop: (reason = "stopped") => {
       clearInterval(idle);
@@ -571,9 +770,6 @@ const alive = (pid) => {
 /** Deliver candidate answers and model questions separately; never treat discussion as approval. */
 export async function waitForAnswers(run, { timeoutSeconds = 0, pollMs = 300 } = {}) {
   const files = sessionFiles(run);
-  const cursor = existsSync(files.cursor)
-    ? (JSON.parse(readFileSync(files.cursor, "utf8")).seq ?? 0)
-    : 0;
   const deadline = timeoutSeconds > 0 ? Date.now() + timeoutSeconds * 1000 : Infinity;
   const waiter = randomBytes(12).toString("hex");
   try {
@@ -587,9 +783,12 @@ export async function waitForAnswers(run, { timeoutSeconds = 0, pollMs = 300 } =
           until: Date.now() + Math.max(1500, pollMs * 3),
         }),
       );
+      const cursor = readJson(files.cursor)?.seq ?? 0;
       const events = readEvents(files.answers);
       const fresh = events.filter(
-        (e) => e.seq > cursor && ["deliver", "discussion-question", "close"].includes(e.type),
+        (e) =>
+          e.seq > cursor &&
+          ["deliver", "discussion-question", "alignment-response", "close"].includes(e.type),
       );
       const session = existsSync(files.session)
         ? JSON.parse(readFileSync(files.session, "utf8"))
@@ -602,23 +801,24 @@ export async function waitForAnswers(run, { timeoutSeconds = 0, pollMs = 300 } =
           fresh.filter((e) => e.type === "deliver").flatMap((e) => e.questionIds),
         );
         const doc = loadQuestions(files);
+        const responses = fresh.filter((e) => e.type === "alignment-response");
         const result = {
           answers: doc.ok ? answerPayload(doc.value, events, ids) : [],
-          messages: fresh
-            .filter((e) => e.type === "discussion-question")
-            .map((e) => ({
-              messageId: e.messageId,
-              text: e.text,
-              context: e.context,
-              at: e.at,
-            })),
+          messages: fresh.filter((e) => e.type === "discussion-question").map(discussionPayload),
+          ...(responses.length || doc.value?.alignment ? { responses } : {}),
           closed: Boolean(closed || stopped),
           ...(closed ? { reason: closed.reason } : stopped ? { reason: "server stopped" } : {}),
         };
-        writeFileSync(
-          files.cursor,
-          JSON.stringify({ seq: Math.max(cursor, ...fresh.map((e) => e.seq)) }),
-        );
+        // Overlapping waits share a delivery cursor. A retry that lost the
+        // claim must wait for a new request instead of running this one twice.
+        if (fresh.length) {
+          const claimed = withLock(`${files.cursor}.lock`, () => {
+            if ((readJson(files.cursor)?.seq ?? 0) !== cursor) return false;
+            writeFileSync(files.cursor, JSON.stringify({ seq: fresh.at(-1).seq }));
+            return true;
+          });
+          if (!claimed) continue;
+        }
         return result;
       }
       if (Date.now() > deadline) return { answers: [], messages: [], closed: false, timeout: true };
@@ -699,17 +899,17 @@ async function main(argv) {
       alive(running.pid) &&
       closedLast?.type === "open"
     ) {
-      console.log(`ASK_SESSION ${running.url}`);
+      console.log(`${running.alignment ? "ALIGN_SESSION" : "ASK_SESSION"} ${running.url}`);
       console.log("ALREADY_OPEN");
       return;
     }
     const lang = flag("--lang", "ko");
-    const { url, stop } = startServer(run, {
+    const { url, stop, alignment } = startServer(run, {
       lang,
       idleMinutes: Number(flag("--idle-minutes", "120")),
       onClose: () => process.exit(0),
     });
-    console.log(`ASK_SESSION ${url}`);
+    console.log(`${alignment ? "ALIGN_SESSION" : "ASK_SESSION"} ${url}`);
     for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => stop("stopped"));
     if (!rest.includes("--no-open")) {
       const opener = openerCommand(url, process.platform, flag("--browser"));
@@ -732,6 +932,45 @@ async function main(argv) {
   }
   if (command === "answers") return console.log(JSON.stringify(allAnswers(run), null, 2));
   if (command === "messages") return console.log(JSON.stringify(discussionMessages(run), null, 2));
+  if (command === "request") {
+    recordVerification(
+      run,
+      {
+        messageId: rest[0],
+        process: flag("--process"),
+        criteria: JSON.parse(flag("--criteria", "[]")),
+      },
+      "chat",
+    );
+    console.log(`REQUESTED ${rest[0]}`);
+    return;
+  }
+  if (command === "respond") {
+    const [requestId, promptId, decision] = rest;
+    const file = flag("--text-file");
+    recordAlignmentResponse(
+      run,
+      { requestId, promptId, decision, text: file ? readFileSync(file, "utf8") : "" },
+      "chat",
+    );
+    console.log(`RECORDED ${requestId} ${promptId}`);
+    return;
+  }
+  if (command === "prompt") {
+    const file = flag("--file");
+    if (!file || !rest[0]) usage("prompt needs a request id and --file");
+    const e = publishAlignmentPrompt(run, rest[0], JSON.parse(readFileSync(file, "utf8")));
+    console.log(`PUBLISHED ${e.requestId} ${e.promptId}`);
+    return;
+  }
+  if (command === "approved") {
+    const doc = loadQuestions(files);
+    if (!doc.ok || !doc.value.alignment) usage("Alignment session required");
+    console.log(
+      JSON.stringify(approvedProposal(readEvents(files.answers), doc.value, rest[0], rest[1])),
+    );
+    return;
+  }
   if (command === "reply") {
     const [messageId] = rest;
     if (!messageId) usage("reply needs a message id");

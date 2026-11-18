@@ -6,6 +6,8 @@ argument-hint: "[--include-retired]"
 
 # ontology-view
 
+Use [next-action guidance](../../references/next-action.md) in each user-facing reply.
+
 This view is a navigation screen, not a review, evaluation or analysis report:
 the report-writing contract does not apply, only its delivery rules. The view
 never edits the model, the ADR index or ADRs, and it has no saving behavior.
@@ -28,8 +30,8 @@ bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs view [--include-retired] [--lang 
 - By default the file is written to a fresh, Git-ignored `.adr-review/` run
   directory and opened once in the default browser. Honor a request not to open
   it (`--no-open`) or to use a specific browser (`--browser <name>`).
-- Without model documents the command creates no view; say that the repository
-  has no business ontology. An explicit `--draft DIR` previews an unadopted model
+- Without model documents the command creates no view; for a saved-model request
+  offer [first-model setup](../../references/first-model.md). An explicit `--draft DIR` previews an unadopted model
   without saving it. Use `--mapping FILE` for its proposed realization links.
 - Use `--board FILE` for supplied, validated business evidence. When the
   requested detail exceeds the saved model, follow

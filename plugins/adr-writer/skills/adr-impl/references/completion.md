@@ -46,6 +46,10 @@ when that workflow selects it.
    - Keep a custom current index selected: the script honors `ALPS_ADR_MAPPING`,
      or pass `--index FILE` explicitly (`--adr-dir DIR` selects `DIR/.mapping.json`).
      Explicit selection overrides the environment; relative paths use `--root` or the current repository.
+   - For a batch handed over by Ontology Writer, return the last implemented
+     ADR to the existing handoff with the full approved process scope. The
+     ontology owner checks every affected process, including those unrelated
+     to this last ADR's category. Keep per-process outcomes distinct.
    - If the target entered the cycle as `Accepted` and its decision and requirement contract remained unchanged, do not run the transition script. Keep the existing dated `Accepted` Status and verify body/index lockstep with `adr-structure-lint`.
    - If several ADRs in one category were implemented together, transition only the `Proposed` targets and only after each one's completion review passes; retain unchanged `Accepted` targets as-is.
    - Run `adr-structure-lint` once more after any transition, or after an unchanged-`Accepted` completion, to verify the dated Status format and body/index lockstep.

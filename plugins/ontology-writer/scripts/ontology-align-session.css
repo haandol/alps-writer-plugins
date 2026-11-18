@@ -1,0 +1,129 @@
+:root {
+  color-scheme: light;
+  font:
+    16px/1.55 system-ui,
+    sans-serif;
+  color: #192e31;
+  background: #f4f7f5;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+header,
+footer {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px max(5vw, 20px);
+  background: #fff;
+  border-bottom: 1px solid #cddad5;
+}
+header strong {
+  color: #00675c;
+}
+header output {
+  margin-left: auto;
+  color: #49635c;
+  font-size: 0.85rem;
+}
+main {
+  max-width: 1000px;
+  margin: 0 auto;
+  min-height: 78vh;
+}
+article {
+  padding: clamp(22px, 4vw, 60px);
+  min-width: 0;
+}
+h1 {
+  font-size: clamp(1.7rem, 3.5vw, 2.65rem);
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+  margin: 12px 0;
+}
+h3 {
+  font-size: 1rem;
+}
+p {
+  margin: 7px 0;
+}
+small,
+code {
+  overflow-wrap: anywhere;
+  color: #48645d;
+}
+input,
+button {
+  font: inherit;
+}
+button {
+  border: 1px solid #9aada7;
+  border-radius: 7px;
+  background: white;
+  color: inherit;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #00675c;
+  outline-offset: 2px;
+}
+label {
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid #dfe7e3;
+  padding: 11px 0;
+  cursor: pointer;
+}
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: #08765d;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.result {
+  border-top: 1px solid #dfe7e3;
+  padding: 14px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.align-turn {
+  margin: 12px 0;
+  padding: 14px;
+  border-left: 3px solid #317c67;
+  background: #f4f8f5;
+}
+.align-turn textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 4rem;
+  padding: 0.6rem;
+  font: inherit;
+}
+.align-turn button {
+  margin: 8px 8px 0 0;
+}
+.align-turn .change {
+  padding: 8px 0;
+  border-bottom: 1px solid #cedbd6;
+}
+footer {
+  justify-content: flex-end;
+  border-top: 1px solid #cddad5;
+}
+@media (max-width: 720px) {
+  header {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  article {
+    padding: 20px;
+  }
+}

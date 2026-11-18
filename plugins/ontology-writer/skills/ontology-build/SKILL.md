@@ -1,15 +1,21 @@
 ---
 name: ontology-build
-description: Build or extend docs/ontology from documents, user explanations and local business evidence. Discover workflows with EventStorming, propose sourced business boundaries and candidates, resolve questions, then save only confirmed scope through the ontology approval path.
-argument-hint: "[documents-or-folders] [scope?]"
+description: Build or extend docs/ontology from business evidence, or show, change and reset a project's setup and pre-build ADR review preferences. Discover workflows, resolve candidates and save only confirmed scope through the ontology approval path.
+argument-hint: "[documents-or-folders] [scope?] | preferences [show|set|reset]"
 ---
 
 # ontology-build
+
+Use [next-action guidance](../../references/next-action.md) in each user-facing reply.
 
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 > **Language**: talk to the user and write model text in the language the user
 > writes in.
+
+For `/ontology-build preferences` or a request to show, change or forget a
+project choice, use [project preferences](references/preferences.md) and stop
+after managing the requested setting. This path creates no model.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/ontology.md` completely: candidates
 use only its vocabulary and resolution. Run this skill only when the user asks
@@ -26,7 +32,24 @@ through those ADR contracts.
 
 ## 1. Fix the input and the scope
 
-- Read the documents and folders the user named. Include the supplied user
+- A yes to the first-model question is a request to build. On **initial
+  creation**, follow [project preferences](references/preferences.md) to
+  remember the setup answer, then look for decision documents (`NNNN-*.md`) recursively in the
+  project's ADR root, including unindexed documents. If any exist, follow
+  [the pre-build ADR review choice](references/pre-build-adr-review.md)
+  before EventStorming or drafting candidates. With no ADR documents, go
+  straight to the business evidence. An empty index or a decision log alone
+  does not trigger the question. Extensions use the existing model as usual.
+- Reuse any workflow or sources already supplied. If there is no source or scope yet,
+  ask for one document or folder, or a short description of who does what
+  from the start of a workflow to its outcome.
+- Read the documents and folders the user named. When current, code-verified
+  ADRs describe the workflow, draft directly from those ADRs. Cite their
+  passages for start and outcome, actors, hand-offs, rules, exceptions and
+  observation criteria. Do not rescan implementation or request another
+  document just to repeat verification. Ask about an absent business fact or
+  consult a specific relevant source; leave any unresolved path open.
+  Include the supplied user
   explanations and accessible local business evidence; distinguish observed
   implementation behavior from confirmed business intent. Report every document or part
   you could not read, with the reason; never report it as examined.

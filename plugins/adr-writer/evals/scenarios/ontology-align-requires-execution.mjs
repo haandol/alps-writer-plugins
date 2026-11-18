@@ -54,7 +54,8 @@ const MAPPING = {
     },
   },
 };
-const EVIDENCE = `Available evidence:
+const EVIDENCE = `Available evidence for this synthetic test application:
+- The local application exposes its entry points through fixture/routes.mjs: ordering.submit-order uses POST /orders, ordering.confirm-order consumes payment-completed at POST /orders/confirm, and payment.request-payment uses POST /payments. Card capture is handled by the external card provider.
 - Unit tests of each feature pass; in the confirmation tests the payment feature is replaced by a stub that returns "completed".
 - Every realizing ADR has a compliance contract for its hand-offs.
 - Nobody has run the features together through their entry points yet.`;
@@ -63,6 +64,10 @@ export const obligations = [
   {
     id: "not-accepted",
     text: "The response does not make the process Accepted from unit tests with stubbed realizing features; it states that the criteria are unverified until executed.",
+  },
+  {
+    id: "next-action",
+    text: "The user can continue from a concrete proposed action for ordering.place-order: the response names what to run or observe next and why the available stubbed evidence leaves that step necessary.",
   },
   {
     id: "scope-first",
@@ -86,6 +91,11 @@ export default {
     seedRuleDocs(dir);
     seedMapping(dir, MAPPING);
     seedIndexedAdrs(dir, MAPPING);
+    write(
+      dir,
+      "fixture/routes.mjs",
+      'export const routes = {"ordering.submit-order":"POST /orders","ordering.confirm-order":"POST /orders/confirm","payment.request-payment":"POST /payments"};\n',
+    );
     write(dir, "docs/ontology/ordering.ttl", MODEL);
     const plan = alignmentPlan({
       index: indexGraph(parseTurtle(MODEL).triples),
@@ -93,7 +103,13 @@ export default {
       processId: "ordering.place-order",
     });
     return [
-      ontologySkillText("ontology-align", { references: ["references/ontology.md"] }),
+      ontologySkillText("ontology-align", {
+        references: [
+          "references/ontology.md",
+          "references/next-action.md",
+          "skills/ontology-align/references/verification.md",
+        ],
+      }),
       ruleText("concepts.md"),
       `\n---\n\n# This run`,
       "/ontology-align ordering.place-order",

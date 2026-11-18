@@ -6,6 +6,8 @@ argument-hint: "[change request]"
 
 # ontology-edit
 
+Use [next-action guidance](../../references/next-action.md) in each user-facing reply.
+
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 > **Language**: talk to the user and write model text in the language the user
@@ -19,6 +21,8 @@ a code change never changes the model.
 
 A repository without `docs/ontology/*.ttl` has no model. Start one only when the
 user asks for it; `/ontology-build` builds a first model from documents.
+Offer [first-model setup](../../references/first-model.md) with the workflow or
+source already named in the change request.
 `/feature-to-adr` and `/adr-import` never change the model themselves; they raise
 proposals that come here.
 

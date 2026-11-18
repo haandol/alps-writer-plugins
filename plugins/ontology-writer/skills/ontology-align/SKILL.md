@@ -6,21 +6,37 @@ argument-hint: "[process-id]"
 
 # ontology-align
 
+Use [next-action guidance](../../references/next-action.md) in each user-facing reply.
+
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/ontology.md` completely. The
-alignment review sees what per-feature implementation reviews cannot: whether the
+The alignment review checks whether the
 features realizing a process work together. `Proposed` is the approved target
 business; only a passing review makes a process `Accepted`, and it does so
 without another confirmation.
 
 ## When it runs
 
+If the project has no saved ontology, offer [first-model setup](../../references/first-model.md).
+A missing process in a saved model needs the correct process or a scoped extension.
+
 - Right after the last ADR affected by an ontology change becomes `Accepted`, or
   right after an approved change with no affected ADR is applied.
 - Right after the last realizing ADR of a `Proposed` process becomes `Accepted`
   (`/adr-impl` hands over to this skill then).
 - When the user asks.
+
+Start `/ontology-align <process>` in the terminal conversation. Run the
+mechanical plan and actual verification below. When the user must make a
+decision, open or reuse the [decision session](references/session.md) and
+collect the outstanding questions or changes there. Continue the original
+terminal task after the user responds. Report the results in the terminal
+and return any result tied to a decision to the same screen.
+
+Use the plan for the selected process. Load the relevant parts of
+[the model reference](../../references/ontology.md) when interpreting its
+relations or diagnosing a gap. Use the named ADRs and criteria to scope the
+evidence.
 
 For a completeness/readiness-only request, use `/ontology-sync`'s read-only
 review path and `${CLAUDE_PLUGIN_ROOT}/references/workflow-readiness.md`;
@@ -46,47 +62,11 @@ scope contains no system step (`executesNoSystemStep: true`), because its
 evidence could only be unverified. Use `--together` only for another `Proposed`
 process this same review verifies; otherwise its steps stay deferred.
 
-## 2. Compliance contracts and contradictions
+## 2–3. Verify contracts and execution
 
-For each entry of the plan's `compliance` list, read the named features' ADRs:
-
-- a **hand-off** needs a compliance contract in the ADRs of both the emitting
-  step and the reacting step;
-- a **policy** needs one in the ADR of each step it starts;
-- a **business rule** needs one in the ADR of each system step it reaches.
-
-A compliance contract states, at feature resolution, the inputs the feature
-accepts and the events it emits for that relation, rejection and failure
-behavior, values and conditions. Then check that no realizing ADR contract —
-including context-level ADRs the features follow — contradicts the model's flow,
-hand-offs, policies, rules or actor responsibilities: a different event promised
-on either side, a contract breaking a rule, a permission that stops the model's
-performer from performing its step. Report each gap or contradiction with the
-ADR and the model element. Any of them fails the review.
-
-## 3. Execution evidence
-
-Create a run directory under `.adr-review/` following
-[review artifact storage](../report-writer/references/review-artifacts.md).
-For every criterion, **write the execution scope into the evidence before
-running**: the system steps from its start condition to its business result,
-the steps of other processes that emit or react to the events it passes through
-(only when that process is `Accepted` or verified together), and each step's real
-entry point. Before running anything, read `${CLAUDE_PLUGIN_ROOT}/references/execution-boundary.md`
-completely: real entry points run in the repository's local or test environment,
-and a criterion only a live environment could show stays unverified.
-
-- Create the start condition, run every in-scope system step through its
-  realizing feature's real entry point, and observe the business result.
-- Use a double only for an outside organization or system you declare in the
-  evidence. A realizing feature replaced by a double, an undeclared double, a
-  skipped in-scope step or its result fabricated as data leaves the criterion
-  unverified, and so does evidence that executes no realizing feature at all.
-- An outside-system step may be replaced by giving its result as input; record
-  the input.
-- For each hand-off with a current counterpart, execute one criterion passing
-  through it with both sides. A hand-off whose counterpart is still `Proposed` is
-  deferred; it runs in the review that makes that counterpart current.
+For a runnable plan, follow [contract and execution verification](references/verification.md).
+Match the realizing ADRs to the model and run the observation criteria through
+their real entry points within the local execution boundary.
 
 ## 4. Verdict
 

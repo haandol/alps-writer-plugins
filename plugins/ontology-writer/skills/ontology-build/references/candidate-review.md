@@ -79,9 +79,17 @@ evidence; this build does not establish execution success.
   layers complete while those gaps remain. Pass the same scope to `apply`.
 - Absence from the documents is never absence from the business; it stays a
   question or open scope.
-- After drafting the questions, try to answer each one again from the
-  repository before asking: documents, ADRs and their decision logs, and the
-  harness (agent instructions, skills, hooks, contracts, tests and evaluations).
+- Reuse a scoped ADR-to-code verification for the same revision. Ground an
+  ADR-only map in the business meaning of the clauses; preserve normal
+  flow, exceptions and hand-offs across ADRs. The category tree and the
+  Accepted label alone cannot establish these relationships. Draft modeled
+  facts with their ADR sources and keep any human or external path absent from
+  those sources unconfirmed. Model saving retains the usual approval.
+- For a remaining question, look for a relevant source that can settle it,
+  such as an ADR and its decision log, a business document, or a specific
+  implementation observation. For a project whose product is a harness,
+  its instructions, skills, hooks, contracts and evaluations may be sources
+  on that specific question. Reuse facts already resolved in the same scope.
   A question is resolved only when a current authority states the answer — a
   newer or `Accepted` decision, or one that explicitly replaces the earlier
   statement. Show a resolved question as resolved, with its sources, instead of

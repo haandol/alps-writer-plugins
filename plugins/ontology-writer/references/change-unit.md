@@ -31,6 +31,16 @@ and write nothing. A change that affects no ADR continues without it.
   new ones included, apply the ADR admission gate and the decision identity check
   and present an existing-ADR update or a new ADR candidate, or the reason there
   is none.
+- **New realizing ADR.** Prepare the exact Proposed ADR body in a disposable
+  `<run>/adr-drafts/` directory with the same category and filename as its
+  destination under the ADR root (for example, `adr-drafts/dispatch/0001-release.md`).
+  Put its Proposed record and step links in the proposed index. Pass both
+  `--mapping <draft mapping> --adr-drafts <run>/adr-drafts` to `impact` and
+  `apply`. Preview reads these bodies in place of the new files, binds their
+  exact text and reports `newAdrs`. The approved save publishes the model,
+  links and new ADRs in one change unit and refuses to replace an existing ADR.
+  Present this single save in the approval summary. Existing revisions use
+  the edit-in-place path below.
 - **Index links.** Prepare the `.mapping.json` change: every `linkChanges`
   entry — a link to a removed step or to a step of a retiring process — removed
   or moved, links of new realizing features added.
@@ -67,12 +77,26 @@ lines; and any Turtle comments the rewrite drops. Approving it approves exactly
 the shown ontology change and ADR revisions; do not ask again for the same
 revision in `/adr-impl`.
 
+Name the outcome for each of the four ADR sections, including a section whose
+meaning stays unchanged. For each proposed revision state how a later
+implementer can rebuild the behavior and distinguish success from failure.
+Tell the user how the base hash protects this approval. If the model, index,
+draft, glossary, log or an affected ADR changed, preserve the new contents,
+rerun the comparison and obtain approval for the changed range before saving.
+In the body of the summary, before the single closing approval question,
+explain the approved handoff: save the model and its links, save each approved
+ADR revision in place as Proposed, finish `/adr-impl` in prerequisite order,
+then run `/ontology-align`. The process remains Proposed until real criteria
+pass. If there are no revisions, proceed to alignment at the existing handoff.
+Keep that sequence in the explanation; the one next action here is deciding
+whether to approve the exact change unit.
+
 ## Apply the approved change unit
 
 ```bash
 bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs apply --draft <draft> \
   --base-hash <hash from impact> [--same-meaning <id>=<property>]... \
-  [--mapping <draft mapping>] [--glossary <draft glossary>] \
+  [--mapping <draft mapping>] [--adr-drafts <new ADR drafts>] [--glossary <draft glossary>] \
   [--log "<id>: <change> — <reason>"]... [--allow-comment-removal]
 ```
 
@@ -84,10 +108,16 @@ Run `impact` for the summary with the drafted `--mapping` and `--glossary`, and
 pass `apply` the base hash of that run with exactly its `--mapping`,
 `--glossary` and `--same-meaning`: the hash binds those drafts and the ADRs of
 every feature whose links they change, so an existing ADR offered as a
-realizing candidate is bound too. `apply` checks the whole unit before the
+realizing candidate is bound too. When its published files are unchanged by
+other writers, `apply` checks the whole unit before the
 first write, then writes the model in canonical form, sets every process whose
 composition changed to `Proposed`, and writes the index, the glossary and the
 change-log lines together; if a write fails, it restores every file it touched.
+It rechecks the approval after staging and compares each file before replacing
+or restoring it. If another writer has edited a published file, the failure
+report names the file it preserved. Inspect it before retrying the change.
+
+The approval recheck takes place before publication.
 When it refuses because the bound state changed after the summary — the model,
 index, glossary, change log, draft, an affected ADR or the confirmations —
 nothing was written: compare each affected ADR with the version the draft
@@ -110,6 +140,13 @@ locally — because a lifecycle edit made by hand could not be told from an appr
 one: make HEAD's model readable as the refusal says first.
 
 ## Cascade and report
+
+Carry the complete set of processes from the approved change summary into
+the implementation handoff as temporary task context. When the last revised
+ADR reaches Accepted, inspect every process in that set, including a sibling
+whose own feature finished earlier. A deferred cross-process hand-off in one
+review does not discharge the other process's own alignment review. Account
+for each process with its actual outcome or concrete outstanding blocker.
 
 - Run adr-writer's `/adr-impl` for the revised ADRs in prerequisite order. No revised ADR is
   reported complete before its prerequisites. An unrevised affected ADR keeps its

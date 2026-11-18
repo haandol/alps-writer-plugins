@@ -204,7 +204,7 @@ flowchart TB
 | R9. 모델이 있는 저장소에서도 ADR category 키는 문서 분류로서 기존 업무 경계 규칙을 따른다.                                                                                                                                  | category 키를 바꿔도 모델이 바뀌지 않는다.                                                                                                               |
 | R10. Ontology Writer만으로 모델을 작성하고 검증할 수 있다.                                                                                                                                                                  | ADR Writer가 없는 설치에서도 모델을 만들고 검증할 수 있다.                                                                                               |
 | R11. 모델 문서와 ADR 색인 연결이 모두 없는 저장소에서 모델은 ADR 사이클에 관여하지 않는다.                                                                                                                                  | 검증과 ADR 작성·구현·리뷰·동기화가 모델을 읽거나 요구하지 않는다.                                                                                        |
-| R43. 업무 온톨로지의 스킬과 업무 맥락 조회 지시는 Ontology Writer에만 있다.                                                                                                                                                 | ADR Writer만 설치하면 온톨로지 스킬이 없고, 모델이 없는 저장소의 세션 지침에 모델에 관한 줄이 없다.                                                      |
+| R43. 업무 온톨로지의 스킬과 업무 맥락 조회 지시는 Ontology Writer에만 있다.                                                                                                                                                 | ADR Writer 단독 설치에서는 온톨로지 스킬과 최초 구축 안내가 없고, 모델이 없는 저장소에 업무 맥락 조회 지시가 없다.                                       |
 
 **어휘**
 
@@ -347,6 +347,6 @@ flowchart TB
 - [ADR 상호작용은 Decision Digest와 semantic diff를 우선 표시](../adr-authoring/decision-presentation/0001-present-decision-digest-and-semantic-diff.md)
 - [기존 프로젝트의 기능과 계약을 ADR에 정리](../adr-authoring/project-import/0001-import-existing-project-decisions.md)
 - [에이전트의 업무 맥락 조회와 세션 지침](./0002-retrieve-business-context-for-agents.md)
-- [온톨로지 변경의 승인과 하위 전파](./0003-govern-ontology-lifecycle-and-cascade.md)
+- [온톨로지 변경의 승인과 하위 전파](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
 - [문서 묶음에서 모델 후보 구축](./0004-build-ontology-from-documents.md)
 - [읽기 전용 탐색 화면](./0005-render-read-only-ontology-views.md)

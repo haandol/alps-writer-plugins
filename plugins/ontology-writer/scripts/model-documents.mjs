@@ -1,5 +1,5 @@
 // Filesystem discovery only. Session hooks check presence without reading model content.
-import { readdirSync, realpathSync, statSync } from "node:fs";
+import { lstatSync, readdirSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 
 function* documentsIn(dir, seen, onUnreadable) {
@@ -7,7 +7,9 @@ function* documentsIn(dir, seen, onUnreadable) {
   try {
     real = realpathSync(dir);
   } catch (error) {
-    if (error.code !== "ENOENT") onUnreadable?.(dir, error);
+    // A dangling directory link is evidence of a model location we cannot read.
+    if (onUnreadable && (error.code !== "ENOENT" || lstatSync(dir, { throwIfNoEntry: false })))
+      onUnreadable(dir, error);
     return;
   }
   if (seen.has(real)) return;
@@ -53,6 +55,6 @@ export function findModelDocuments(ontologyDir, onUnreadable) {
   return [...documentsIn(ontologyDir, new Set(), onUnreadable)].sort();
 }
 
-export function hasModel(ontologyDir) {
-  return !documentsIn(ontologyDir, new Set()).next().done;
+export function hasModel(ontologyDir, onUnreadable) {
+  return !documentsIn(ontologyDir, new Set(), onUnreadable).next().done;
 }

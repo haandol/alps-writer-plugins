@@ -3,6 +3,7 @@
 // Writer's own paths use the business context is tested in that plugin.
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readdirSync } from "node:fs";
 import { has, runHook, withTmp, write } from "./helpers.mjs";
 import { read, workflowText, EXAMPLE } from "./ontology-guidance-helpers.mjs";
 
@@ -18,6 +19,32 @@ const BUILD = workflowText("ontology-build");
 
 const STORM = read("skills/ontology-build/references/agentstorm.md");
 
+test("a fresh session asks whether to build without creating files or requiring an ADR index", () => {
+  withTmp((dir) => {
+    const offer = runHook(dir);
+    assert.match(offer, /first user-facing response/);
+    assert.match(offer, /Would you like to create a business ontology for this project now\?/);
+    assert.match(offer, /\/ontology-build/);
+    assert.match(offer, /document or folder/);
+    assert.match(offer, /On yes or an existing request to build, start \/ontology-build/);
+    assert.match(offer, /On no, later, or no answer, continue their request/);
+    assert.match(offer, /Saving the draft requires separate approval/);
+    assert.deepEqual(readdirSync(dir), []);
+    for (const source of ["resume", "clear", "compact"]) {
+      assert.deepEqual(runHook(dir, { raw: true, source }), {});
+    }
+    write(dir, "docs/adr/.mapping.json", JSON.stringify({ categories: {} }));
+    write(dir, "docs/ontology/notes.md", "This is a note.");
+    assert.equal(runHook(dir), offer);
+    write(dir, "docs/ontology/billing/model.ttl", EXAMPLE);
+    assert.doesNotMatch(runHook(dir), /\/ontology-build/);
+    const options = { env: { ALPS_ADR_MAPPING: "design/adr/custom.json" } };
+    assert.equal(runHook(dir, options), offer);
+    write(dir, "design/ontology/model.ttl", EXAMPLE);
+    assert.equal(runHook(dir, options), "");
+  });
+});
+
 test("the session directive asks for the business context only when the index and a model both exist", () => {
   withTmp((dir) => {
     write(
@@ -30,13 +57,13 @@ test("the session directive asks for the business context only when the index an
     assert.equal(
       runHook(dir, { raw: true }).hookSpecificOutput,
       undefined,
-      "an index alone adds nothing",
+      "dangling realization links need repair, not first-time setup",
     );
     write(dir, "docs/ontology/notes.md", "# notes\n");
     assert.equal(
       runHook(dir, { raw: true }).hookSpecificOutput,
       undefined,
-      "a non-Turtle document is not a model",
+      "adding notes does not repair dangling links",
     );
 
     write(dir, "docs/ontology/ordering.ttl", EXAMPLE);

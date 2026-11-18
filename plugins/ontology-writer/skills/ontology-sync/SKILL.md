@@ -6,11 +6,16 @@ argument-hint: "[process-id?] [completeness/readiness review request?]"
 
 # ontology-sync
 
+Use [next-action guidance](../../references/next-action.md) in each user-facing reply.
+After describing the checked scope, close with a single actionable sentence:
+one target, one next operation and its immediate outcome.
+
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 A direct edit is a change the user wrote in the Turtle documents; confirm it the
 same way `/ontology-edit` confirms a requested change, without overwriting it.
-Without `docs/ontology/*.ttl` there is nothing to sync; say so and stop.
+If the project has no saved model, offer [first-model setup](../../references/first-model.md)
+so the user can build the workflow they wanted to review.
 
 Choose the requested path before loading mutation or history-recovery details.
 An alignment difference without a model change belongs to the ADRs or code and

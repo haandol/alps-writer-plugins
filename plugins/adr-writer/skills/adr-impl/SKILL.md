@@ -6,6 +6,8 @@ argument-hint: "[adr-path-or-category]"
 
 # adr-impl
 
+Reach Accepted by implementing the approved contract, clearing prerequisites, testing real behavior and passing final review. When evidence is missing, name the next action that can establish it. Follow the [acceptance and next-action guidance](../../references/non-invasive-harness.md#acceptance-and-the-next-action).
+
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Land an edited implemented contract and its code on the shared branch together

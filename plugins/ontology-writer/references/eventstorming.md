@@ -12,9 +12,10 @@ dependencies of realizing features and code through their ADR contracts.
 
 ## From evidence to an event map
 
-Use the requested business/system scope. Read the supplied documents, user
-explanations and accessible local evidence such as code, tests and sample
-records. Code and records show observed behavior, not automatically intended
+Use the requested business/system scope. Current, verified ADRs alone can
+supply the map when they cover the workflow. Use the supplied documents and
+user explanations, and consult targeted local evidence such as code, tests
+or sample records for a material gap. Code and records show observed behavior, not automatically intended
 policy. Do not access live systems merely to fill a map. State unavailable
 sources and distinguish the covered scope from the whole requested system.
 

@@ -5,6 +5,8 @@ description: Build, refresh, show, correct or delete the per-project reader prof
 
 # Reader profile
 
+For acceptance-related reports, the profile helps the reader understand a verdict and the outstanding evidence. Profile management changes only the requested personal settings and never promotes a decision or process.
+
 Follow [reader profile](../report-writer/references/reader-profile.md) with its
 script `../report-writer/scripts/reader-profile.mjs`. This skill owns the
 explicit requests. Report-writer asks before building a missing profile.
