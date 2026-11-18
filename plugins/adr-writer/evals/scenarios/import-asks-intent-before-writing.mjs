@@ -21,6 +21,7 @@ export default {
     return [
       skillText("adr-import", {
         references: [
+          "skills/adr-import/references/discovery.md",
           "references/feature-boundaries.md",
           "references/decision-reconciliation.md",
           "references/decision-questions.md",
