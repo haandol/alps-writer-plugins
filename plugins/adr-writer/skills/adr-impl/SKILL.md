@@ -11,13 +11,10 @@ argument-hint: "[adr-path-or-category]"
 Land an edited implemented contract and its code on the shared branch together
 (`authoring-rules.md` "change unit").
 
-Read the context's own `docs/adr/<context>/glossary.md` and the root
-`docs/adr/glossary.md` only when the selected ADRs need a term definition.
-Its absence is normal; preserve it as supporting material, not an indexed ADR.
-When this workflow permits ADR writing and a definition needs creation or change,
-or ADR content relies on a business term where `docs/ontology/` holds Turtle
-documents, apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing
-approval boundary. Review-only work reports unclear or conflicting meanings without editing.
+Use the context glossary, then the root glossary, for terms needed to implement
+the ADR. If an authorized change needs a definition, or ADR content relies on a business term
+where `docs/ontology/` holds Turtle documents, follow `${CLAUDE_PLUGIN_ROOT}/references/glossary.md`
+under the existing approval. Keep requirements in the ADR.
 
 When `docs/ontology/` holds Turtle documents, read
 `${CLAUDE_PLUGIN_ROOT}/references/business-context.md` before planning an ADR

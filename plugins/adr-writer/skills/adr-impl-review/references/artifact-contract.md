@@ -40,7 +40,10 @@ language, editorial review and layout. The human-facing order is prose first,
 evidence second. Native sections are complete audit inputs, not a flat final-page
 outline. Keep all `contractCoverage`, `implementationChoices`, findings, code/test
 proof and source identifiers, including clause-level gaps and verification limits.
-The schema's `At a glance` anchor supplies the displayed Abstract.
+The native `At a glance` anchor supplies the final report's core answer. Both
+composition routes place Purpose and Context before it, then an Overview that
+connects the reviewed capabilities, followed by behavior, findings and evidence.
+Keep the original Markdown anchors and any selected controls in the audit package.
 
 Build the optional related-ADR comparison under the schema's bounded candidate
 reads. Follow [visualization](visualization.md) for diagram questions, placement,

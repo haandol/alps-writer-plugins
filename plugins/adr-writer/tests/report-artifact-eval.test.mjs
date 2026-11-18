@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { checkReportArtifact, REPORT_OUTPUT } from "../evals/skills/report-artifact-checks.mjs";
 
@@ -6,7 +7,15 @@ const source = "A published revision remains visible when notification fails.";
 const document = () => ({
   title: "Publication",
   language: "en",
+  purpose: ["Decide whether a failed notice affects publication."],
+  background: ["The source describes publication and notification separately."],
   summary: [source],
+  overview: {
+    paragraphs: [
+      "Publication determines visibility. Notification tells readers about the published revision.",
+    ],
+  },
+  comprehensionCheck: { excluded: "No quiz." },
   requiredEvidenceIds: ["S1"],
   review: { status: "reviewed", basis: "Source comparison only", limitations: "No live checks" },
   sections: [
@@ -38,6 +47,42 @@ const failures = (input) => checkReportArtifact(input).filter((c) => !c.pass);
 
 test("a real saved document with completed reads and resolvable evidence passes artifact checks", () => {
   assert.deepEqual(failures(fixture()), []);
+});
+
+test("new saved reports require purpose, context and the whole before detail", () => {
+  for (const field of ["purpose", "background", "overview"]) {
+    const doc = document();
+    delete doc[field];
+    assert.ok(
+      failures(fixture(doc)).some(
+        (c) => c.label === "native document format" && c.detail.includes(field),
+      ),
+    );
+  }
+});
+
+test("a missing quiz without an exclusion fails new-report artifact validation", () => {
+  const doc = document();
+  delete doc.comprehensionCheck;
+  assert.ok(
+    failures(fixture(doc)).some(
+      (c) => c.label === "native document format" && c.detail.includes("comprehensionCheck"),
+    ),
+  );
+});
+
+test("the saved artifact follows the request to omit questions", () => {
+  const doc = document();
+  const example = new URL(
+    "../skills/report-writer/references/examples/report-with-quiz.json",
+    import.meta.url,
+  );
+  doc.comprehensionCheck = JSON.parse(readFileSync(example, "utf8")).comprehensionCheck;
+  for (const q of doc.comprehensionCheck.questions) q.sectionId = "publication";
+  assert.deepEqual(
+    failures(fixture(doc)).map((c) => c.label),
+    ["requested quiz exclusion preserved"],
+  );
 });
 
 test("self-reported success cannot replace a missing file, successful read or write", () => {

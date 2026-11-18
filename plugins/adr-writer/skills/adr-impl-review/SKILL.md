@@ -10,10 +10,7 @@ argument-hint: "[adr-path-or-category] [--base <ref>] [--mode standard|full]"
 
 Read the context's own `docs/adr/<context>/glossary.md` and the root
 `docs/adr/glossary.md` only when the selected ADRs need a term definition.
-Its absence is normal; preserve it as supporting material, not an indexed ADR.
-When this workflow permits ADR writing and a definition needs creation or change,
-apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
-boundary. Review-only work reports unclear or conflicting meanings without editing.
+Missing glossaries are normal. Review-only work reports unclear or conflicting meanings without editing.
 
 When `docs/ontology/` holds Turtle documents, apply
 `${CLAUDE_PLUGIN_ROOT}/references/business-context.md` for the selected feature:

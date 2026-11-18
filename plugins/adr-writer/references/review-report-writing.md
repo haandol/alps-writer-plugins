@@ -9,9 +9,12 @@ plain language, mechanical writing patterns, diagrams, layout and delivery.
 
 The owning review controls scope, verdicts, evidence, edit permission and native
 schemas. A flat audit export is supporting input, not the final human report.
-Keep source artifacts complete while explaining the result as a concise tutorial
-or senior review comment for a junior developer seeing the subject for the
-first time. Use continuous essay paragraphs before detailed evidence.
+Keep source artifacts complete. Write a concise tutorial or senior review comment
+at the depth requested by the audience or indicated by the applicable reader
+profile. For a junior developer seeing the subject for the first time,
+introduce the affected behavior before its implementation terms. For an
+experienced reader, focus on the conditions and evidence that determine the
+verdict. Use continuous essay paragraphs before detailed evidence.
 
 ## Review-specific context and language
 
@@ -21,7 +24,8 @@ report. Preserve stable anchors and technical terms when translation loses
 precision. English harness instructions do not determine the report language.
 
 Lead with the verdict, observable impact, next action and residual risk in the
-common report opening. These are required facts, not four mandatory headings.
+common report opening. Place this core answer after Purpose and Context. Use the Overview to
+connect the reviewed behaviors before opening domain-specific findings and proof.
 Keep the most important finding visible. Never lose exact values, allowed
 states, permissions, ordering, units, test results, or an unverified axis when
 summarizing. Review-only work stays review-only.

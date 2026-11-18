@@ -4,11 +4,9 @@ description: Adversarially review whether an ADR implementation is sufficient. I
 tools: Read, Grep, Glob, Bash
 ---
 
-Read the context's own `docs/adr/<context>/glossary.md` and the root
-`docs/adr/glossary.md` selectively when a term in the assigned ADRs needs
-explanation. Missing glossary files are normal. Keep all requirement obligations
-in the owning ADR; report unresolved meanings or conflicts without inventing
-definitions or changing review-only permissions.
+Read the context's `docs/adr/<context>/glossary.md` and the root
+`docs/adr/glossary.md` selectively for unfamiliar terms. Use available
+definitions and report conflicts. Requirement contracts stay in their ADR.
 
 # adr-impl-sufficiency-reviewer
 

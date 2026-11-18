@@ -5,7 +5,6 @@ import { pathToFileURL } from "node:url";
 import { parseMermaid, parseMermaidAll, renderMermaid, mermaidRuntime } from "./mermaid.mjs";
 import { parseCodeDiff, renderCodeDiff, diffCss } from "./code-diff.mjs";
 import {
-  questionLimit,
   validateQuestions,
   renderQuestion,
   quizLabels,
@@ -166,10 +165,16 @@ function diagramSources(doc) {
  * Validate observable hierarchy and coverage, never claim to grade prose quality.
  * `requireQuiz` enforces the report contract's mandatory quiz; the CLI always sets it.
  */
-export function validateReport(doc, { requireQuiz = false } = {}) {
+export function validateReport(doc, { requireQuiz = false, requireOpening = false } = {}) {
   if (doc && typeof doc === "object" && !Array.isArray(doc)) rejectPlaceholders(doc);
   if (!doc || !nonempty(doc.title) || !["en", "ko"].includes(doc.language))
     throw new Error("A report needs title and language en|ko");
+  if (requireOpening) {
+    const missing = ["purpose", "background", "overview"].filter(
+      (field) => doc[field] === undefined,
+    );
+    if (missing.length) throw new Error(`New report is missing: ${missing.join(", ")}`);
+  }
   // Warm the parser cache in one process; a failed batch leaves each figure to its own parse.
   parseMermaidAll(diagramSources(doc));
   keys(
@@ -298,7 +303,7 @@ export function validateReport(doc, { requireQuiz = false } = {}) {
   visit(doc.sections, "report");
   if (requireQuiz && doc.comprehensionCheck === undefined)
     throw new Error(
-      `A report needs comprehensionCheck with 1 to ${questionLimit()} questions, or { "excluded": "<the user's request>" } when the user excluded the quiz`,
+      `A report needs comprehensionCheck with questions within the reader level limit, or { "excluded": "<the user's request>" } when the user excluded the quiz`,
     );
   if (doc.comprehensionCheck !== undefined && doc.comprehensionCheck?.excluded !== undefined) {
     keys(doc.comprehensionCheck, ["excluded"], "comprehensionCheck");
@@ -403,8 +408,8 @@ const startsOpen = (node, depth) =>
   depth < COLLAPSED_FROM_DEPTH ? node.expanded !== false : node.expanded === true;
 
 /** Render one standalone HTML page; data and evidence text cannot execute markup. */
-export function renderHtml(doc) {
-  return renderValidatedHtml(doc, validateReport(doc));
+export function renderHtml(doc, options) {
+  return renderValidatedHtml(doc, validateReport(doc, options));
 }
 
 function renderValidatedHtml(doc, result) {
@@ -523,8 +528,8 @@ function fenced(text, language) {
   return [fence + language, text, fence, ""];
 }
 /** Markdown keeps the same domain tree and complete sources as the HTML view. */
-export function renderMarkdown(doc) {
-  validateReport(doc);
+export function renderMarkdown(doc, options) {
+  validateReport(doc, options);
   return renderValidatedMarkdown(doc);
 }
 
@@ -620,20 +625,22 @@ function renderValidatedMarkdown(doc) {
 
 function main(args) {
   const input = args.shift();
+  let requireOpening = false;
   let out,
     format = "html";
   while (args.length) {
     const flag = args.shift();
     if (flag === "--out") out = args.shift();
+    else if (flag === "--new-report") requireOpening = true;
     else if (flag === "--format") format = args.shift();
     else throw new Error(`Unknown argument: ${flag}`);
   }
   if (!input || !out || !["html", "markdown"].includes(format))
     throw new Error(
-      "Usage: render-report.mjs report.json --out report.html [--format html|markdown]",
+      "Usage: render-report.mjs report.json [--new-report] --out report.html [--format html|markdown]",
     );
   const doc = JSON.parse(readFileSync(input, "utf8"));
-  const result = validateReport(doc, { requireQuiz: true });
+  const result = validateReport(doc, { requireQuiz: true, requireOpening });
   const output =
     format === "html" ? renderValidatedHtml(doc, result) : renderValidatedMarkdown(doc);
   writeFileSync(out, output);

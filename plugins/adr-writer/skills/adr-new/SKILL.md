@@ -12,7 +12,7 @@ topology, then use bounded contexts and vertical user stories by default.
 
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
-Author an ADR directly. Works without an ALPS PRD — this is the plugin's canonical ADR authoring path, while `/feature-to-adr` is "the helper that auto-converts an ALPS Section 7 feature when one already exists."
+Author a decision directly from the user’s intent and the repository evidence. A handoff from another workflow uses the same admission, drafting and approval steps.
 
 When qualifying jargon or an unclear acronym appears — or, where `docs/ontology/`
 holds Turtle documents, a business term the ADR defines or relies on — read

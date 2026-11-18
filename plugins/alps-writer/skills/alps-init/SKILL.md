@@ -14,8 +14,6 @@ Before classifying features, read
 `${CLAUDE_PLUGIN_ROOT}/references/feature-boundaries.md`: inspect existing project
 topology, then use bounded contexts and vertical user stories by default.
 
-Start authoring an ALPS (PRD).
-
 Preserve intent because later agents must judge details the specification does
 not enumerate. Use the existing problem, User Story, scope, and success fields
 to explain whose outcome matters and which stated priorities bound acceptable
@@ -23,14 +21,9 @@ choices. When interpreting missing or delegated choices, read the plugin-local
 `references/requirement-delegation.md`. Propose details that serve that intent
 within the existing approval boundary; do not invent policy or extra non-goals.
 
-When jargon, an uncommon term/acronym, or an expression that cannot be written out
-plainly appears, apply the overview's optional glossary rules throughout authoring.
-Require the user's meaning at first use when it is not already supplied; do not
-finalize dependent content while it is unclear. Read `alps_glossary(action: 'read', doc_path)` as needed
-and save confirmed definitions with `alps_glossary(action: 'save', doc_path, term, definition)` under the current
-section approval. The appendix is last and exists only when needed. Do not add a
-glossary interview, separate approval, or extra domain-classification exercise.
-Check missing definitions before completion; keep all nine numbered sections.
+Use the Full overview’s optional glossary rules. Clarify an unfamiliar term
+at first use when its meaning is missing, and include its definition in the
+current section approval. Check for missing definitions before completion.
 
 > **Language**: this skill and every other harness prompt are written in English, but talk to the user and write the document content in the language the user writes in. Any user-facing phrasing below is a guide, not a literal string.
 
@@ -42,6 +35,9 @@ Check missing definitions before completion; keep all nine numbered sections.
 
 1. Use the user's request to choose a new document or an existing `.alps.xml`; ask only when that choice is unclear.
 2. Call `alps_document(action: 'init', profile: 'full', project_name, output_path)` or `alps_document(action: 'load', doc_path)`.
+   On resume, use the profile detected from the file. For a Lite document,
+   continue with [lite-alps-init](../lite-alps-init/SKILL.md) if it is the intended target.
+   Resolve a conflicting target before saving.
 3. Call `alps_template(action: 'overview', profile: 'full')` to fetch the authoring guide for all nine sections.
 4. Select the confirmation mode:
    - **Atomic is the default**: discuss, present, confirm, and save one section at a time.
@@ -69,8 +65,7 @@ Check missing definitions before completion; keep all nine numbered sections.
    and errors. Reuse a review request or an answered choice already in the current
    conversation. Do not start research on an unanswered invitation; declining or
    deferring leaves completion unchanged. If requested, follow
-   [alps-research](../alps-research/SKILL.md): built-in deep research first, otherwise
-   available web search, with DuckDuckGo MCP when web search is unavailable or fails.
-   Findings become document edits only through the existing approval boundary.
+   [alps-research](../alps-research/SKILL.md) for source selection and fallbacks.
+   Apply any resulting edits through the existing approval boundary.
 
 **Rule**: atomic confirmation is the default. Batch confirmation requires explicit opt-in or a complete structured source and still preserves separate section/Feature drafts and save calls. Never skip an incomplete unit or save without user confirmation.

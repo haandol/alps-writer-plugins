@@ -5,6 +5,20 @@ description: Create or revise reports, or manage the project's reader profile on
 
 # Report writing
 
+Give the reader an answer they can use from the opening alone. Each branch
+explains a part of that answer in more detail.
+
+1. **Purpose and Context.** Open with separate Purpose and Context sections,
+   in that order, before the answer. State what the reader should be able to
+   decide or do, then the situation that makes the question matter.
+2. **Core answer.** Give the outcome and any condition that changes it.
+3. **Overview.** Show the subject as a whole: which responsibilities matter
+   and how they work together. Name them in terms the reader can recognize
+   again in the sections below.
+4. **Drill down.** Open one of those responsibilities. Explain how it works,
+   then a concrete case or exception. Place source evidence beside the claim
+   it verifies. Stop where the evidence ends.
+
 ## Reader profile requests
 
 When the user asks to build, refresh, show, correct or delete the reader profile,
@@ -38,10 +52,8 @@ A review-only request does not authorize changes to the subject.
 Write model-facing instructions in English and the report in the user's language.
 Keep the report self-contained, preserve exact evidence and the caller's scope,
 and use stable terms whose definitions connect to their examples and later uses.
-Open with separate Purpose and Context sections, in that order, before the answer.
-Every report follows the same fixed reading order: title, Purpose, Context, the
-core answer, Overview, then subject-named sections; the renderer localizes the
-fixed headings.
+Use the reading order above in HTML and Markdown. The renderer localizes the
+fixed headings. Give the sections below the Overview subject-specific names.
 
 The template owns the structure: which regions exist, their order and the
 abstraction level each one carries. You own what goes inside each section: its
@@ -72,7 +84,8 @@ Write in this order; do not start prose before the plan holds:
 3. **Write the content.** Apply [writing style](references/writing-style.md):
    one register (the Korean plain declarative form), one claim per sentence, each
    paragraph led by its point, and a visual form wherever it explains better.
-4. **Render.** Produce HTML and Markdown only through `scripts/render-report.mjs`
+4. **Render.** Produce HTML and Markdown through `scripts/render-report.mjs`
+   with `--new-report` for new or recomposed reports
    ([document contract](references/report-document.md)). Never hand-write the
    page shell or its styles; the renderer embeds the shared template and stylesheet
    and rejects unfilled placeholders.
@@ -82,11 +95,8 @@ Before rendering, fill the template's `comprehensionCheck` with the effective
 explicitly excluded the quiz for this report, replace it with
 `{ "excluded": "<the user's request>" }`; the renderer refuses anything else.
 
-Build from the reader's relevant known context to an understandable whole, then
-open the same subject's responsibilities, relationships and concrete behavior.
-Preserve evidenced domain boundaries while letting the reader's question guide
-the route through them. Use this principle for reviews and comparisons as well
-as concept explanations. Lead each explanatory section with its answer in one or
+Preserve evidenced domain boundaries in reviews, comparisons and concept
+explanations. Lead each explanatory section with its answer in one or
 two sentences, including conditions that change it. Use visualization as far
 as it helps understanding: give the Overview and sections explaining flows,
 data paths, classifications or decisions focused figures, and present
@@ -129,6 +139,10 @@ not additional required reading for every report.
 ## Review and deliver
 
 Review the latest whole output with the applicable editorial and format guidance.
+Read the opening on its own, then follow one part of the Overview down to its
+behavior and evidence. Fix a missing relationship or a repeated summary at the
+level where the reader needs it. The renderer checks field presence and order. Assess meaning and continuity
+by reading the result.
 Correct confirmed in-scope problems and recheck; for review-only work, describe
 corrections without editing the subject. Honor limits on redrawing or rephrasing.
 Never invent verification, weaken findings, or add paid calls or publication to

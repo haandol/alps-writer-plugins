@@ -9,7 +9,7 @@ import { validateModel } from "../scripts/ontology-lib.mjs";
 import { renderView } from "../scripts/ontology-view.mjs";
 import { EXAMPLE } from "../tests/ontology-helpers.mjs";
 import { MAPPING } from "../tests/ontology-query-helpers.mjs";
-import { launch, offline } from "./view-pages.mjs";
+import { launch, offline, whilePageHidden } from "./browser.mjs";
 
 let browser, page, dir, files, baseline;
 const errors = [],
@@ -359,12 +359,12 @@ test("leaving the knowledge workspace or hiding its tab ends effects and preserv
     () => document.getElementById("kw-space").dataset.scope === "ordering",
   );
   await page.click("#kw-home");
-  const other = await browser.newPage();
-  await other.bringToFront();
-  await page.waitForFunction(() => document.hidden);
-  assert.equal(await page.$eval("#ks-world", (e) => e.getAnimations({ subtree: true }).length), 0);
-  await other.close();
-  await page.bringToFront();
+  await whilePageHidden(page, async () => {
+    assert.equal(
+      await page.$eval("#ks-world", (e) => e.getAnimations({ subtree: true }).length),
+      0,
+    );
+  });
   assert.equal(await page.$eval("#kw-space", (e) => e.dataset.scope), "contexts");
 });
 

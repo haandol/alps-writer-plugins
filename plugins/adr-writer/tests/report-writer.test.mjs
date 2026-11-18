@@ -561,6 +561,55 @@ test("the fixed Overview follows the answer and maps every top-level section", (
   assert.match(renderHtml(doc), /<h2>Overview<\/h2>/);
 });
 
+test("the authoring CLI requires a complete opening in HTML and Markdown and preserves earlier output on failure", () => {
+  const temp = mkdtempSync(path.join(os.tmpdir(), "new-report-"));
+  try {
+    const cli = path.join(
+      ROOT,
+      "plugins/adr-writer/skills/report-writer/scripts/render-report.mjs",
+    );
+    const input = path.join(temp, "source.json");
+    const output = path.join(temp, "report");
+    for (const format of ["html", "markdown"]) {
+      const run = () =>
+        spawnSync(
+          process.execPath,
+          [cli, input, "--new-report", "--format", format, "--out", output],
+          { encoding: "utf8" },
+        );
+      const doc = JSON.parse(
+        read("shared/report-writer/references/examples/report-with-quiz.json"),
+      );
+      writeFileSync(input, JSON.stringify(doc));
+      const result = run();
+      assert.equal(result.status, 0, result.stderr);
+      const rendered = readFileSync(output, "utf8");
+      const parts = [
+        doc.purpose[0],
+        doc.background[0],
+        doc.summary[0],
+        doc.overview.paragraphs[0],
+        doc.sections[0].title,
+      ];
+      let pos = -1;
+      for (const part of parts) {
+        const next = rendered.indexOf(part, pos + 1);
+        assert.ok(next > pos, `missing or out of order: ${part}`);
+        pos = next;
+      }
+
+      delete doc.overview;
+      writeFileSync(input, JSON.stringify(doc));
+      const rejected = run();
+      assert.equal(rejected.status, 2);
+      assert.match(rejected.stderr, /missing: overview/);
+      assert.equal(readFileSync(output, "utf8"), rendered);
+    }
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});
+
 test("legacy reports without an Overview keep their link bar, and the anchor is reserved", () => {
   const legacy = sample();
   assert.match(renderHtml(legacy), /<nav aria-label="Domains">/);
@@ -653,7 +702,10 @@ test("the CLI requires a quiz unless the user excluded it, and renders the exclu
     delete missing.comprehensionCheck;
     const refused = run(missing);
     assert.equal(refused.status, 2);
-    assert.match(refused.stderr, /needs comprehensionCheck with 1 to 6 questions/);
+    assert.match(
+      refused.stderr,
+      /needs comprehensionCheck with questions within the reader level limit/,
+    );
     assert.doesNotThrow(() => validateReport(missing), "the API leaves enforcement to callers");
     const blank = sample();
     blank.comprehensionCheck = { excluded: "  " };

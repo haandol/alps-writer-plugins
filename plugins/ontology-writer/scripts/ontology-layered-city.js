@@ -71,7 +71,7 @@
       textMasks = [];
     let motionEnabled = false,
       pauseReason = "paused",
-      inView = true,
+      inView = false,
       pendingFrame = 0,
       lastTick = null,
       elapsed = 0,
@@ -426,8 +426,7 @@
     }
     function drawPorts() {
       for (const port of ports) {
-        const [x, y] = port.point,
-          info = scene.endpoints[port.id];
+        const [x, y] = port.point;
         g.beginPath();
         g.arc(x, y, 11, 0, Math.PI * 2);
         g.fillStyle = "#173952";
@@ -441,7 +440,7 @@
         g.fillText(port.number, x, y + 3);
         textMasks.push({ x: x - 12, y: y - 12, w: 24, h: 24 });
         caption(
-          info?.name ?? port.id,
+          scene.nameOf(port.id),
           port.incoming ? 40 : width - 170,
           y - 24,
           Math.min(155, width * 0.43),
@@ -450,7 +449,7 @@
             align: "left",
             avoid: true,
             anchor: port.point,
-            note: info?.inScope
+            note: Object.hasOwn(scene.structure.numbers, port.id)
               ? scene.structure.language === "ko"
                 ? "다른 페이지"
                 : "Another page"
@@ -871,9 +870,6 @@
       width = canvas.clientWidth;
       height = canvas.clientHeight;
       if (!width || !height) return;
-      const rect = canvas.getBoundingClientRect();
-      inView =
-        rect.bottom > 0 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
         canvas.width = Math.round(width * dpr);
@@ -1002,6 +998,10 @@
           focused = id;
           draw();
         }
+        return projected.find((item) => item.id === id);
+      },
+      get visibleLabelCount() {
+        return labelIds.length;
       },
       visibility({ labels: mode, links }) {
         labelMode = mode;

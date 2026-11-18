@@ -1,25 +1,16 @@
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { before, after, test } from "node:test";
-import { browserPath } from "./browser.mjs";
+import { launch } from "./browser.mjs";
 import { questionSession, QUESTIONS } from "../tests/ontology-ask-helpers.mjs";
 import { allAnswers, discussionMessages, waitForAnswers } from "../scripts/ontology-ask.mjs";
 
-const require = createRequire(import.meta.url);
-const cliRequire = createRequire(require.resolve("@mermaid-js/mermaid-cli"));
-const { default: puppeteer } = await import(cliRequire.resolve("puppeteer"));
 let browser, profileDir;
 before(async () => {
   profileDir = mkdtempSync(path.join(tmpdir(), "ontology-question-browser-"));
-  browser = await puppeteer.launch({
-    headless: true,
-    executablePath: browserPath(),
-    userDataDir: path.join(profileDir, "question-review-session"),
-    args: process.env.CI ? ["--no-sandbox"] : [],
-  });
+  browser = await launch(path.join(profileDir, "question-review-session"));
 });
 after(async () => {
   await browser?.close();

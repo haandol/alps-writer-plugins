@@ -60,7 +60,9 @@ checks. Do not manufacture historical rationale or hide an `Unverified risk`.
 ## Write the narrative source
 
 Use `## At a glance` as the Markdown artifact anchor; the HTML renderer displays
-it as Abstract. The materializer owns generated sections and tables. Do not
+it as Abstract in the audit view. Compose the final human report in the
+[common reading order](../skills/report-writer/references/reading-path.md),
+using this verdict as the core answer. The materializer owns generated sections and tables. Do not
 rename anchors or manually copy coverage, choices, Code evidence or hidden quiz
 data into Markdown. Use this source skeleton, repeating Hills as needed:
 

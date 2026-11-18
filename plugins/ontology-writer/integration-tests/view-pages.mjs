@@ -2,18 +2,15 @@
 // them offline, a faster page clock, and the ways a reader moves through a page.
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { browserPath } from "./browser.mjs";
 import { MODEL, ONTO, RDFS, validateModel } from "../scripts/ontology-lib.mjs";
 import { renderView } from "../scripts/ontology-view.mjs";
 import { manyProcesses } from "../tests/ontology-view-helpers.mjs";
 
-const require = createRequire(import.meta.url);
-const cliRequire = createRequire(require.resolve("@mermaid-js/mermaid-cli"));
-const { default: puppeteer } = await import(cliRequire.resolve("puppeteer"));
+import { offline } from "./browser.mjs";
+export { launch, offline } from "./browser.mjs";
 
 const EXAMPLE = readFileSync(new URL("../templates/ontology/example.ttl", import.meta.url), "utf8");
 // A model with no hand-offs between processes, so no lights move in its city.
@@ -75,25 +72,6 @@ export function writeViews() {
   );
   writeFileSync(views.plain, plain.html);
   return views;
-}
-
-/** A headless browser on this machine's Chrome. */
-export const launch = () =>
-  puppeteer.launch({
-    headless: true,
-    executablePath: browserPath(),
-    args: process.env.CI ? ["--no-sandbox"] : [],
-  });
-
-/** Abort and record in `requests` every request that would leave the machine: the view opens offline. */
-export async function offline(p, requests) {
-  await p.setRequestInterception(true);
-  p.on("request", (request) => {
-    if (/^https?:/.test(request.url())) {
-      requests.push(request.url());
-      request.abort();
-    } else request.continue();
-  });
 }
 
 /**

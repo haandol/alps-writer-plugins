@@ -518,8 +518,16 @@ test("compact standard preserves exact contract and code evidence through direct
     assert.ok(html.includes("count &lt; 2"));
     assert.ok(html.includes("test/admission.test.mjs"));
     assert.doesNotMatch(html, /Component C1/);
-    assert.match(html, /Purpose/);
-    assert.match(html, /Context/);
+    const headings = [
+      "<h2>Purpose</h2>",
+      "<h2>Context</h2>",
+      'class="report-answer"',
+      "<h2>Overview</h2>",
+      'id="behavior"',
+    ];
+    const offsets = headings.map((heading) => html.indexOf(heading));
+    assert.ok(offsets.every((offset, i) => offset >= 0 && (i === 0 || offset > offsets[i - 1])));
+    assert.ok(html.includes(data.reviewHike.context.summary));
   });
 });
 

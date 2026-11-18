@@ -1696,7 +1696,7 @@ test("review artifact validator accepts PASS without metrics or explanation when
 
 test("review artifact validator requires a quiz unless the user excluded it", () => {
   for (const [check, pattern] of [
-    [undefined, /comprehensionCheck is required: 1 to 6 questions/],
+    [undefined, /comprehensionCheck is required: questions within the reader level limit/],
     [{ excluded: " " }, /excluded must state the user's exclusion request/],
     [{ excluded: "no quiz", questions: [] }, /excluded cannot be combined with questions/],
   ])

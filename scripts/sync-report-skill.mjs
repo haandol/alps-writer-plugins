@@ -9,7 +9,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SKILLS = {
   "report-writer":
     '\nargument-hint: "[report-topic-or-source] [format] | profile <build|refresh|show|correct|delete>"\n---\n',
-  "reader-profile": '\nargument-hint: "[build|refresh|show|delete]"\n---\n',
+  "reader-profile": '\nargument-hint: "[build|refresh|show|correct|delete]"\n---\n',
 };
 if (process.argv.slice(2).some((arg) => !["--check", "--global"].includes(arg)))
   throw new Error("Usage: sync-report-skill.mjs [--check] [--global]");

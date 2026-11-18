@@ -42,60 +42,8 @@ import {
   compareCodePoints,
 } from "./ontology-lib.mjs";
 
-/**
- * List the Turtle documents of a model directory, recursively and sorted.
- * Symbolic links are followed (a directory link once), and a dangling `.ttl`
- * link is listed so that reading it reports the failure. Other files (a
- * change log, notes) are not part of the model.
- *
- * @param {string} ontologyDir Model directory, usually docs/ontology.
- * @param {(directory: string, error: Error) => void} [onUnreadable] Strict readers
- * report inaccessible scopes rather than treating them as an empty model.
- * @returns {string[]} absolute paths; empty when the directory is absent.
- */
-export function findModelDocuments(ontologyDir, onUnreadable) {
-  const out = [];
-  const seen = new Set();
-  const walk = (dir) => {
-    try {
-      const real = realpathSync(dir);
-      if (seen.has(real)) return;
-      seen.add(real);
-    } catch (error) {
-      if (error.code !== "ENOENT") onUnreadable?.(dir, error);
-      return;
-    }
-    let entries;
-    try {
-      entries = readdirSync(dir, { withFileTypes: true });
-    } catch (error) {
-      onUnreadable?.(dir, error);
-      return;
-    }
-    for (const e of entries) {
-      if (e.name.startsWith(".")) continue;
-      const full = path.join(dir, e.name);
-      let kind = e.isDirectory() ? "dir" : e.isFile() ? "file" : null;
-      if (e.isSymbolicLink()) {
-        try {
-          const target = statSync(full);
-          kind = target.isDirectory() ? "dir" : target.isFile() ? "file" : null;
-        } catch {
-          kind = "file"; // dangling: reading it reports the failure
-        }
-      }
-      if (kind === "dir") walk(full);
-      else if (kind === "file" && e.name.endsWith(".ttl")) out.push(full);
-    }
-  };
-  walk(ontologyDir);
-  return out.sort();
-}
-
-/** True when the repository has a business ontology: one or more Turtle documents. */
-export function hasModel(ontologyDir) {
-  return findModelDocuments(ontologyDir).length > 0;
-}
+import { findModelDocuments, hasModel } from "./model-documents.mjs";
+export { findModelDocuments, hasModel };
 
 /**
  * Read one model document as strict UTF-8. A document that cannot be read or
@@ -830,7 +778,7 @@ function readTreeFiles(
   const folderHere = (file) => {
     try {
       const at = path.join(top, file);
-      return statSync(at).isDirectory() && findModelDocuments(at).length > 0;
+      return statSync(at).isDirectory() && hasModel(at);
     } catch {
       return false;
     }

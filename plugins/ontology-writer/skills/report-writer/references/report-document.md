@@ -19,11 +19,13 @@ the run directory prepared through [review artifact storage](review-artifacts.md
 for both the source document and rendered output:
 
 ```sh
-bun <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --out <run-directory>/report.html
-bun <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --out <run-directory>/report.md --format markdown
+bun <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --new-report --out <run-directory>/report.html
+bun <skill-directory>/scripts/render-report.mjs <run-directory>/report.json --new-report --out <run-directory>/report.md --format markdown
 ```
 
-The CLI defaults to HTML and never opens a browser itself. After verification,
+New and recomposed reports use `--new-report` to check the complete opening.
+When reproducing a legacy report as saved, omit the flag to preserve its
+original fields. The CLI defaults to HTML and never opens a browser itself. After verification,
 follow [final delivery](format-and-layout.md#final-delivery).
 
 ## Document fields

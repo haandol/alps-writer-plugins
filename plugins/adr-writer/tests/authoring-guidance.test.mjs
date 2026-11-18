@@ -50,6 +50,11 @@ test("authoring guidance synchronization repairs drift and its check never mutat
       "scripts/sync-authoring-guidance.mjs",
       readFileSync(path.join(root, "scripts/sync-authoring-guidance.mjs")),
     );
+    write(
+      dir,
+      "scripts/lib/sync-files.mjs",
+      readFileSync(path.join(root, "scripts/lib/sync-files.mjs")),
+    );
     for (const name of [...names, "execution-boundary.md"])
       write(
         dir,

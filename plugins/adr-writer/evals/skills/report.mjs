@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
-import { renderHtml, validateReport } from "../../skills/report-writer/scripts/render-report.mjs";
+import { renderHtml } from "../../skills/report-writer/scripts/render-report.mjs";
 import { summarize, summarizeRouting, comparePairs } from "./metrics.mjs";
 import { sha, confined } from "../regression/workspace.mjs";
 import { summarizeReportAxes } from "./report-evaluation.mjs";
@@ -283,9 +283,11 @@ function insert(parent, parts, leaf) {
 }
 
 /** Describe conditional rates with their denominators and keep skipped/error requests visible. */
-function summaryText(runs) {
+function summaryText(runs, { includeResources = true } = {}) {
   const s = summarize(runs);
-  return `요청 ${s.requested}회 · 채점 완료 ${s.scored}회 · 충족 ${s.passed}회 · 미충족·미검증 ${s.notProven}회 · 오류 ${s.errors}회 · 미실행 ${s.notRun}회. 채점 완료 중 충족률 ${rate(s.successRate)}. 알려진 비용 $${s.knownCostUSD.toFixed(4)}, 금액 미측정 호출 ${s.unpricedCalls}회. 누적 실행 시간 ${(s.elapsedMs / 1000).toFixed(1)}초.`;
+  const counts = `요청 ${s.requested}회 · 채점 완료 ${s.scored}회 · 충족 ${s.passed}회 · 미충족·미검증 ${s.notProven}회 · 오류 ${s.errors}회 · 미실행 ${s.notRun}회. 채점 완료 중 충족률 ${rate(s.successRate)}.`;
+  if (!includeResources) return counts;
+  return `${counts} 알려진 비용 $${s.knownCostUSD.toFixed(4)}, 금액 미측정 호출 ${s.unpricedCalls}회. 누적 실행 시간 ${(s.elapsedMs / 1000).toFixed(1)}초.`;
 }
 
 /** Reject incomplete, duplicate, or malformed saved results rather than displaying a deceptively green report. */
@@ -340,13 +342,19 @@ export function saveSkillsReport(directory, report) {
     const cases = report.cases.filter((c) => c.type === type);
     if (!cases.length) continue;
     const section = node(labels[type], type);
+    section.preview =
+      type === "classification"
+        ? "시나리오에 대한 답변과 해당 사례가 요구한 결과물을 확인한다."
+        : type === "routing"
+          ? "스킬의 이름과 설명으로 필요한 스킬을 고를 수 있는지 확인한다."
+          : "도구 호출과 실제 문서 변경을 승인 조건 및 요구된 결과와 대조한다.";
     section.paragraphs = [
       summaryText(report.runs.filter((r) => r.type === type)),
       type === "classification"
-        ? "기존 시나리오의 분류 응답 검사입니다. 일부 결과물 검사도 포함하지만 이 비율을 실제 작업 완료율로 표시하지 않습니다."
+        ? "응답 충족률로 실제 작업 완료율을 판단할 수 없다."
         : type === "routing"
-          ? "배포된 이름·설명에서 필요한 Skill을 고르는 통제된 평가입니다. 실제 클라이언트의 설치·자동 호출 검증은 포함하지 않습니다."
-          : "실제 문서 변경과 도구 사건을 고정된 의무에 대조합니다. 승인 전 변경 후 되돌리기 같은 중간 행동도 증거에 보존됩니다.",
+          ? "통제된 선택 과제에서 배포된 스킬 이름과 설명을 사용했다. 실제 클라이언트의 설치·자동 호출은 검증 범위 밖이다."
+          : "승인 전에 문서를 변경했다가 되돌렸다면 원상 복구 후에도 그 도구 호출을 평가 근거에 포함한다.",
     ];
     if (type === "classification" && cases.some((c) => c.semanticObligations)) {
       section.paragraphs.push(
@@ -421,6 +429,7 @@ export function saveSkillsReport(directory, report) {
     title: "실행 조건과 해석",
     domain: "평가 운영",
     scope: "원본 결과의 재현과 한계",
+    preview: "반복 횟수와 모델·실행 조건을 확인해 비교 가능한 결과를 구분한다.",
     paragraphs: [
       `평가 시각 ${report.generatedAt}. 선택 ${JSON.stringify(report.selection)}. 반복 ${report.runsPerCase}회. ${summaryText(report.runs)}`,
       ...(report.sourceReport
@@ -440,23 +449,30 @@ export function saveSkillsReport(directory, report) {
         "준비 모드는 실행·채점을 생략합니다. 저장된 결과를 다시 보는 경로는 모델을 호출하지 않습니다.",
     },
   };
+  const testedBehaviors = sections.map((section) => section.title).join(" · ");
   sections.push(conditions);
   evidence.push("raw");
   const doc = {
     title: "Skill 평가 결과",
     language: "ko",
+    purpose: ["선택한 사례에서 어떤 스킬 동작이 확인됐고 무엇을 더 검증해야 하는지 판단한다."],
     background: [
-      "이 보고서는 기록된 Skill 평가 결과를 읽고, 선택한 사례와 실행 조건 안에서 어떤 동작이 확인됐는지 판단하기 위한 자료입니다. 원본 판정과 검증 한계를 함께 제공합니다.",
+      `평가 대상은 ${report.cases.length}개 사례다. 각 사례의 요청과 실행 기록을 기준으로 결과를 집계했다.`,
     ],
     summary: [
-      summaryText(report.runs),
-      "분류 응답, Skill 선택, 실제 수행을 구분해 읽으세요. 사례를 펼치면 반복별 판정과 원본 증거에 접근할 수 있습니다.",
-      ...(report.cases.some((item) => item.reportEvaluation)
-        ? [
-            "보고서 사례는 실행 종료 시 최종 저장본을 기준으로 용어·출처·도표·구성과 전달을 나누어 표시합니다. 항목별 결과는 진단용이며, 종합 통과에는 모든 필수 의미 판정과 로컬 검사가 필요합니다. 과거 결과에 세부 판정이 없으면 추정하지 않습니다.",
-          ]
-        : []),
+      summaryText(report.runs, { includeResources: false }),
+      "결과는 선택한 사례와 실행 조건에 한정된다. 실제 클라이언트의 설치와 자동 호출은 별도 검증 대상이다.",
     ],
+    overview: {
+      paragraphs: [
+        `이번 평가에서 다룬 동작은 ${testedBehaviors}이다. 각 동작의 집계는 개별 사례를 반복한 결과에서 나온다. 실행 조건은 어떤 결과끼리 비교할 수 있는지 정한다.`,
+        ...(report.cases.some((item) => item.reportEvaluation)
+          ? [
+              "보고서 사례는 최종 저장본의 용어, 출처, 도표, 구성을 평가한다. 종합 통과에는 필수 의미 판정과 로컬 검사가 모두 필요하다. 과거 결과에서 확인할 수 있는 항목만 표시한다.",
+            ]
+          : []),
+      ],
+    },
     sections,
     requiredEvidenceIds: evidence,
     review: {
@@ -503,9 +519,9 @@ export function saveSkillsReport(directory, report) {
       ],
     },
   };
-  validateReport(doc);
+  const html = renderHtml(doc, { requireOpening: true, requireQuiz: true });
   writeFileSync(path.join(directory, "report.json"), JSON.stringify(doc, null, 2));
-  writeFileSync(path.join(directory, "index.html"), renderHtml(doc));
+  writeFileSync(path.join(directory, "index.html"), html);
   return path.join(directory, "index.html");
 }
 

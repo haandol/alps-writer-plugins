@@ -33,6 +33,17 @@ done
 
 PUSH_UPDATES="$(cat)"
 
+# A topic-branch deletion publishes no new code. Mixed or unrecognised updates
+# take the normal path, as do deletions of main and tags.
+if printf '%s\n' "$PUSH_UPDATES" | awk '
+  NF != 4 || $1 != "(delete)" || $2 !~ /^0+$/ || (length($2) != 40 && length($2) != 64) { exit 1 }
+  $3 !~ /^refs\/heads\/.+/ || $3 == "refs/heads/main" { exit 1 }
+  length($4) != length($2) || $4 !~ /^[[:xdigit:]]+$/ || $4 ~ /^0+$/ { exit 1 }
+'; then
+  echo "[pre-push] Deleting topic branches only."
+  exit 0
+fi
+
 fail() {
   echo ""
   echo "[pre-push] ✗ $1"

@@ -173,7 +173,7 @@ test("question caps, distinct choices, one answer, evidence and revisit boundari
   delete noQuiz.comprehensionCheck;
   assert.doesNotThrow(
     () => renderHtml(noQuiz),
-    "new and legacy reports may omit a quiz without an omission record",
+    "legacy API calls can reproduce a report saved without a quiz",
   );
   const sameScope = report();
   sameScope.comprehensionCheck.questions = Array.from({ length: 5 }, (_, i) => question(i + 1));

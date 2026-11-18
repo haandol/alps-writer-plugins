@@ -3,7 +3,7 @@
 // its callers, the seeded rule docs, and a lint that checks only the shape of the
 // index's `realizes` links and never reads the model.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, symlinkSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { has, parseLint, PLUGIN_ROOT, runHook, seedRuleDocs, withTmp, write } from "./helpers.mjs";
@@ -35,6 +35,23 @@ test("the session directive notes a business ontology without reading it", () =>
     assert.doesNotMatch(lines.at(-1), /ordering|ontology\.mjs/, "no model content or query path");
   });
 });
+
+test(
+  "a Turtle-named device is not a model, but a dangling document stays discoverable",
+  { skip: process.platform === "win32" },
+  () => {
+    withTmp((dir) => {
+      write(dir, "docs/adr/.mapping.json", JSON.stringify({ categories: {} }));
+      const plain = runHook(dir);
+      const model = path.join(dir, "docs/ontology");
+      mkdirSync(model);
+      symlinkSync("/dev/null", path.join(model, "device.ttl"));
+      assert.equal(runHook(dir), plain);
+      symlinkSync("missing", path.join(model, "document.ttl"));
+      assert.match(runHook(dir), /Business ontology present/);
+    });
+  },
+);
 
 test("the lint checks only the shape of realizes and never reads the model", () => {
   const fixture = (dir, realizes) => {

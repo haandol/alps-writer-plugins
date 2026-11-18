@@ -10,7 +10,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
-import { hasModel } from "../scripts/ontology-fs.mjs";
+import { hasModel } from "../scripts/model-documents.mjs";
 
 const QUERY_CLI = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
