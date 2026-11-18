@@ -4,6 +4,7 @@
   const ko = data.language === "ko";
   const t = (kr, en) => (ko ? kr : en);
   const $ = (id) => document.getElementById(id);
+  const readingArea = document.querySelector(".app-shell");
   const esc = (value) =>
     String(value ?? "").replace(
       /[&<>"']/g,
@@ -180,7 +181,7 @@
   }
 
   function remember() {
-    state.scroll = window.scrollY;
+    state.scroll = readingArea.scrollTop;
     historyEntries.set(historyId, clone(state));
     savedScopes.set(scopeKey(state), clone(state));
   }
@@ -199,7 +200,7 @@
     render({ animate });
     if (focus)
       $(state.detail || state.adr ? "detail-title" : "scope-title").focus({ preventScroll: true });
-    window.scrollTo({ top: state.scroll, behavior: "instant" });
+    readingArea.scrollTop = state.scroll;
   }
 
   function restoreScope(patch) {
@@ -486,9 +487,6 @@
     $("domain-filter").value = state.domain;
     for (const toggle of document.querySelectorAll("button[data-view]"))
       toggle.setAttribute("aria-pressed", String(toggle.dataset.view === mode));
-    document.querySelector('[data-camera="rotate"]').disabled = mode !== "structure";
-    $("city-options").hidden = mode !== "structure";
-    $("city-hud").hidden = mode !== "structure";
     $("city-layer-title").textContent = `${titles[level]} · ${$("scope-title").textContent}`;
     $("city-layer-hint").textContent = [
       t(
@@ -739,17 +737,7 @@
         flatWidth: flatSize.width,
         cameraWidth: $("layer-viewport").clientWidth,
         structure: cityScope,
-        endpoints: Object.fromEntries(
-          relations
-            .flatMap((edge) => [edge.from, edge.to])
-            .map((id) => [
-              id,
-              {
-                name: nameOf(id),
-                inScope: cityScope.groups.some((group) => group.ids.includes(id)),
-              },
-            ]),
-        ),
+        nameOf,
       });
       $("city-list-title").textContent =
         `${titles[levels.indexOf(state.level)]} · ${currentNodes.length}`;
@@ -775,7 +763,7 @@
   function cityReadout() {
     if (!city || mode !== "structure") return;
     $("city-visibility").textContent =
-      `${t("지도 이름", "Map names")} ${city.snapshot().labelIds.length}/${currentNodes.length} · ${t("전체 이름은 옆 목록에서 확인", "Every name is available in the list")}`;
+      `${t("지도 이름", "Map names")} ${city.visibleLabelCount}/${currentNodes.length} · ${t("전체 이름은 옆 목록에서 확인", "Every name is available in the list")}`;
   }
 
   function cityMotion({ reason, count }) {
@@ -1105,15 +1093,15 @@
     paintCamera();
   });
 
-  $("city-labels").addEventListener("change", () => {
+  function applyCityVisibility() {
     city?.visibility({ labels: $("city-labels").value, links: cityLinks });
-    paintCamera();
-  });
+    cityReadout();
+  }
+  $("city-labels").addEventListener("change", applyCityVisibility);
   $("city-links").addEventListener("click", () => {
     cityLinks = !cityLinks;
     $("city-links").setAttribute("aria-pressed", String(cityLinks));
-    city?.visibility({ labels: $("city-labels").value, links: cityLinks });
-    paintCamera();
+    applyCityVisibility();
   });
 
   const viewport = $("layer-viewport");
@@ -1245,10 +1233,9 @@
     viewport.scrollLeft = 0;
     viewport.scrollTop = 0;
     if (mode === "structure") {
-      city?.focus(node.dataset.layerNode);
+      const item = city?.focus(node.dataset.layerNode);
       cityHint(node.dataset.layerNode);
       if (city) {
-        const item = city.snapshot().drawn.find((item) => item.id === node.dataset.layerNode);
         if (item && !item.onScreen) {
           state.camera.x += $("layer-city").clientWidth / 2 - item.roof[0];
           state.camera.y += $("layer-city").clientHeight / 2 - item.roof[1];
@@ -1313,7 +1300,7 @@
     historyId = event.state?.ontologyLayered ?? ++serial;
     state = clone(remembered ?? parseAddress());
     render();
-    window.scrollTo({ top: state.scroll, behavior: "instant" });
+    readingArea.scrollTop = state.scroll;
   });
   window.addEventListener("hashchange", () => {
     if (address(state) === location.hash) return;

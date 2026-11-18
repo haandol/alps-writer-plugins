@@ -93,9 +93,6 @@ code {
   gap: 15px;
   border-bottom: 1px solid var(--line);
   background: #fffefb;
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 .brand {
   display: flex;
@@ -145,7 +142,19 @@ code {
 .app-shell {
   display: grid;
   grid-template-columns: 236px minmax(0, 1fr);
-  min-height: calc(100vh - 76px);
+}
+/* The header has its own row, including when its buttons wrap. Native focus
+   and scrollIntoView position controls within the unobstructed reading area. */
+@media screen {
+  .layered-app {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100dvh;
+  }
+  .app-shell {
+    overflow: auto;
+    container-type: size;
+  }
 }
 .outline {
   border-right: 1px solid var(--line);
@@ -793,11 +802,11 @@ body[data-view="structure"] #scope-summary {
 body[data-view="structure"] #layer-relations {
   order: 8;
 }
-@media (min-width: 1021px) {
+@media screen and (min-width: 1021px) {
   body[data-view="structure"] .outline {
     position: sticky;
-    top: 76px;
-    height: calc(100vh - 76px);
+    top: 0;
+    height: 100cqh;
     overflow: auto;
     align-self: start;
   }
@@ -895,7 +904,7 @@ body[data-view="structure"] #layer-relations {
   border-radius: 12px;
   padding: 24px;
   margin: 25px 0 0;
-  scroll-margin-top: 100px;
+  scroll-margin-top: 1rem;
 }
 .panel-title {
   display: flex;

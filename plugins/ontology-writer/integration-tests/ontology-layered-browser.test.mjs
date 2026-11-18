@@ -14,7 +14,7 @@ import {
   writeLayeredFixture,
 } from "../tests/ontology-layered-helpers.mjs";
 import { commitAll, git, initRepo, write } from "../tests/helpers.mjs";
-import { launch, offline } from "./view-pages.mjs";
+import { launch, offline, whilePageHidden } from "./browser.mjs";
 
 let dir, browser, url, largeUrl, collaborationUrl, snapshot;
 const issues = [],
@@ -80,24 +80,24 @@ after(async () => {
 
 async function withPage(run, { at = url, width = 1440, reduced = false, beforeLoad = null } = {}) {
   const page = await browser.newPage();
-  page.setDefaultTimeout(10000);
-  page.on("pageerror", (error) => issues.push(error.message));
-  await offline(page, requests);
-  await page.setViewport({ width, height: 1040 });
-  if (reduced)
-    await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
-  if (beforeLoad) await page.evaluateOnNewDocument(beforeLoad);
-  await page.evaluateOnNewDocument(() => {
-    window.storageWrites = [];
-    const original = Storage.prototype.setItem;
-    Storage.prototype.setItem = function (...args) {
-      window.storageWrites.push(args[0]);
-      return original.apply(this, args);
-    };
-  });
-  await page.goto(at, { waitUntil: "load" });
-  await page.waitForFunction(() => window.ontologyLayered);
   try {
+    page.setDefaultTimeout(10000);
+    page.on("pageerror", (error) => issues.push(error.message));
+    await offline(page, requests);
+    await page.setViewport({ width, height: 1040 });
+    if (reduced)
+      await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
+    if (beforeLoad) await page.evaluateOnNewDocument(beforeLoad);
+    await page.evaluateOnNewDocument(() => {
+      window.storageWrites = [];
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (...args) {
+        window.storageWrites.push(args[0]);
+        return original.apply(this, args);
+      };
+    });
+    await page.goto(at, { waitUntil: "load" });
+    await page.waitForFunction(() => window.ontologyLayered);
     await run(page);
     assert.deepEqual(await page.evaluate(() => window.storageWrites), []);
   } finally {
@@ -106,6 +106,16 @@ async function withPage(run, { at = url, width = 1440, reduced = false, beforeLo
 }
 const state = (page) => page.evaluate(() => window.ontologyLayered.state());
 const visible = (page) => page.evaluate(() => window.ontologyLayered.visible());
+async function assertFitsViewport(page) {
+  const fits = await page.evaluate(() => {
+    const area = document.querySelector(".app-shell");
+    return (
+      document.documentElement.scrollWidth <= innerWidth + 1 &&
+      area.scrollWidth <= area.clientWidth + 1
+    );
+  });
+  assert.ok(fits, "the page and its reading area fit without horizontal scrolling");
+}
 async function pick(page, id, { keyboard = false } = {}) {
   const selector = `[data-layer-node=${JSON.stringify(id)}]`;
   await page.focus(selector);
@@ -246,8 +256,17 @@ test("multiword and short Korean searches, finite pages, camera and selection su
     assert.equal((await state(page)).query, "이미지");
     assert.equal((await state(page)).selected, "studio.image");
     assert.deepEqual((await state(page)).camera, prior.camera);
-    await pick(page, "studio.image");
+    await page.$eval('[data-layer-node="studio.image"]', (node) => {
+      node.scrollIntoView({ block: "center" });
+      node.focus({ preventScroll: true });
+    });
+    const readingPosition = () => page.$eval(".app-shell", (area) => area.scrollTop);
+    const position = await readingPosition();
+    assert.ok(position > 0, "the selected process is reached after scrolling");
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(() => window.ontologyLayered.state().level === "adrs");
     await page.goBack();
+    assert.equal(await readingPosition(), position, "Back restores the reading position");
     assert.equal((await state(page)).query, "이미지");
     assert.equal((await state(page)).level, "containers");
     await page.$eval("#layer-search", (input) => {
@@ -400,18 +419,12 @@ test("active layer transitions are cancelled when hidden and consecutive clicks 
       document.querySelector('[data-layer-node="billing"]').click();
     });
     assert.equal((await state(page)).context, "billing");
-    const other = await browser.newPage();
-    try {
-      await other.bringToFront();
-      await page.waitForFunction(() => document.hidden);
+    await whilePageHidden(page, async () => {
       assert.equal(
         await page.evaluate(() => document.getElementById("layer-nodes").getAnimations().length),
         0,
       );
-    } finally {
-      await other.close();
-      await page.bringToFront();
-    }
+    });
     assert.equal((await state(page)).context, "billing");
     await page.click("#motion-toggle");
     await page.click("#go-up");
@@ -429,20 +442,14 @@ test("the scoped event board pauses when hidden and a sequence-only process has 
     await page.click('[data-action="workflow"]');
     let frame = await (await page.waitForSelector("#workflow-frame-host iframe")).contentFrame();
     await frame.waitForFunction(() => document.querySelector(".event-timeline")?.timeline);
-    const other = await browser.newPage();
-    try {
-      await other.bringToFront();
-      await page.waitForFunction(() => document.hidden);
+    await whilePageHidden(page, async () => {
       assert.equal(
         await frame.evaluate(
           () => document.querySelector(".event-timeline").timeline.flow().running,
         ),
         false,
       );
-    } finally {
-      await other.close();
-      await page.bringToFront();
-    }
+    });
     await page.click("#go-up");
     await pick(page, "studio.animation");
     await page.click('[data-action="workflow"]');
@@ -483,19 +490,13 @@ test("a narrow screen and keyboard reach all three layers and the same readable 
       await pick(page, ADR_PATH, { keyboard: true });
       assert.equal((await state(page)).adr, ADR_PATH);
       assert.match(await page.$eval(".adr-document", (node) => node.textContent), /at most once/);
-      assert.equal(
-        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
-        true,
-      );
+      await assertFitsViewport(page);
       await changeView(page, "structure");
       assert.equal((await state(page)).adr, ADR_PATH);
       await page.click("#detail-body > details > summary");
       await page.click('#detail-body [data-action="element"][data-id="studio.animate"]');
       assert.equal((await state(page)).detail, "studio.animate");
-      assert.equal(
-        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
-        true,
-      );
+      await assertFitsViewport(page);
     },
     { width: 390 },
   ));
@@ -615,6 +616,28 @@ test("village visibility choices preserve identity, relationships, search, page 
     { at: largeUrl },
   ));
 
+for (const width of [1440, 390]) {
+  test(`city controls remain reachable below the header at ${width}px`, async () =>
+    withPage(
+      async (page) => {
+        await changeView(page, "structure");
+        const selector = "#city-links";
+        const hit = await page.$eval(selector, (button) => {
+          button.scrollIntoView({ block: "start" });
+          const rect = button.getBoundingClientRect();
+          return document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)?.id;
+        });
+        assert.equal(hit, "city-links", "the connection toggle receives the pointer");
+        await page.click(selector);
+        assert.equal((await cityState(page)).links, false);
+        await page.keyboard.press("Space");
+        assert.equal((await cityState(page)).links, true);
+        assert.equal(await page.$eval(selector, (el) => el.getAttribute("aria-pressed")), "true");
+      },
+      { width },
+    ));
+}
+
 test("automatic city names avoid overlap while keyboard focus reveals a hidden name without changing scope", async () =>
   withPage(
     async (page) => {
@@ -721,10 +744,7 @@ test("city pan, zoom and rotation change the actual projected buildings without 
 test("city rendering stops while hidden and a returning tab draws the latest requested layer", async () =>
   withPage(async (page) => {
     await changeView(page, "structure");
-    const other = await browser.newPage();
-    try {
-      await other.bringToFront();
-      await page.waitForFunction(() => document.hidden);
+    await whilePageHidden(page, async () => {
       const frames = (await cityState(page)).frames;
       await page.evaluate(() => {
         document.querySelector('[data-layer-node="studio"]').click();
@@ -734,10 +754,7 @@ test("city rendering stops while hidden and a returning tab draws the latest req
       assert.equal((await state(page)).context, "billing");
       assert.equal((await cityState(page)).frames, frames);
       assert.equal(await page.$eval("#layer-world", (node) => node.getAnimations().length), 0);
-    } finally {
-      await other.close();
-      await page.bringToFront();
-    }
+    });
     await page.waitForFunction(() =>
       window.ontologyLayered.city().drawn.every((node) => node.kind === "Process"),
     );
@@ -797,10 +814,7 @@ test("the narrow city keeps all requested names legible and reaches the same ADR
       await page.select("#city-labels", "all");
       const city = await cityState(page);
       assert.equal(city.labelIds.length, city.nodeIds.length);
-      assert.equal(
-        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
-        true,
-      );
+      await assertFitsViewport(page);
       await page.$eval("#layer-search", (input) => {
         input.value = "애니메이션";
         input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -1022,27 +1036,20 @@ test("a hidden document and an offscreen map suspend flow animation without chan
     await changeView(page, "structure");
     await page.$eval("#layer-viewport", (node) => node.scrollIntoView({ block: "center" }));
     await movingFlow(page);
-    const other = await browser.newPage();
-    try {
-      await other.bringToFront();
-      await page.waitForFunction(
-        () => document.hidden && window.ontologyLayered.city().flow.reason === "hidden",
-      );
+    await whilePageHidden(page, async () => {
+      await page.waitForFunction(() => window.ontologyLayered.city().flow.reason === "hidden");
       const stopped = (await cityState(page)).flow.frames;
       await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 100)));
       assert.equal((await cityState(page)).flow.frames, stopped);
       assert.equal((await cityState(page)).flow.running, false);
-    } finally {
-      await other.close();
-      await page.bringToFront();
-    }
+    });
     await movingFlow(page);
     const before = await state(page);
     await page.evaluate(() => {
       const spacer = document.createElement("div");
       spacer.style.height = "200vh";
-      document.body.append(spacer);
-      window.scrollTo(0, document.body.scrollHeight);
+      document.getElementById("workspace").append(spacer);
+      spacer.scrollIntoView({ block: "end" });
     });
     await page.waitForFunction(() => window.ontologyLayered.city().flow.reason === "outside");
     assert.equal((await cityState(page)).flow.running, false);
