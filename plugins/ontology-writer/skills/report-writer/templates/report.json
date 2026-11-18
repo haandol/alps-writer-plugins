@@ -12,7 +12,7 @@
   ],
   "overview": {
     "paragraphs": [
-      "{{The whole subject as the parts the sections below open (at most four), and how those parts connect to produce the answer above. Name the parts by responsibility, not by implementation.}}"
+      "{{Explain which responsibilities produce the outcome and how they connect. Use the same names when the sections open those parts. Keep any limit that changes the answer visible here.}}"
     ],
     "diagram": {
       "source": "{{Mermaid source showing only the parts and their relationships. Delete this diagram object when evidence or format cannot support a figure.}}",

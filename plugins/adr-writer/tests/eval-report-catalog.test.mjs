@@ -38,6 +38,11 @@ test("the complete catalog retains every scenario inside bounded report groups",
       "ordinary evaluation results also start expanded",
     );
     const doc = JSON.parse(readFileSync(path.join(dir, "report.json"), "utf8"));
+    assert.ok(doc.purpose.length && doc.background.length && doc.overview.paragraphs.length);
+    assert.match(
+      html,
+      /class="report-purpose"[\s\S]+class="report-background"[\s\S]+class="report-answer"[\s\S]+class="report-overview"[\s\S]+class="report-node"/,
+    );
     const leaves = [];
     const visit = (nodes) => {
       assert.ok(nodes.length <= 4);

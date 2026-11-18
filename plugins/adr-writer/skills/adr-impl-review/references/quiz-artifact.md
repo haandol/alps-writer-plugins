@@ -12,17 +12,15 @@ audit section. Only when the user explicitly excluded the quiz, set
 quiz section.
 The fields below adapt that common quiz to this review's native audit schema.
 
-Set `comprehensionCheck.readerLevel` to the effective level from report-writer. The whole report permits up to 10 questions for `beginner`, 6 for `intermediate`, or 5 for `expert`.
+Set `comprehensionCheck.readerLevel` to the effective level from the common
+workflow and apply its whole-report question limit.
 
-`comprehensionCheck.questions` contains one or more questions with
-non-empty `id`, `question`, exactly four `options`, one boolean `revisit`, one
-`correctOptionId`, `explanation`, and `evidence`. Never generate free-response
-primary questions or filler to reach six. For each question, keep:
+For each question, keep these native fields:
 
 - `id` — `Q1` onward in order
 - `question` — the visible application prompt
 - `options` — exactly four `{ "id": "A".."D", "text": "...", "feedback": "..." }` objects
-- `revisit` — boolean; exactly one or two questions are marked for later re-check
+- `revisit` — boolean; mark one or two questions for later re-check (the sole question when there is just one)
 - `correctOptionId` — the one correct option id
 - `explanation` — why the correct option follows from the contract and evidence
 - `evidence` — the ADR, code, or test evidence used to grade it
@@ -42,14 +40,10 @@ questions. Do not infer permission to start an interactive quiz from gate
 selection; interactive mode still requires an explicit request. Keep this
 guidance in the existing field, without adding a progress or approval registry.
 
-Exactly one or two questions have `revisit: true`; when the check contains one
-question, that question is marked. Do not manually put hidden feedback, the
-correct option, explanation, or evidence in Markdown. The materializer writes
-only the visible prompts and four options.
-
-The HTML uses the common staged self-check controls and never sets PR
-comprehension readiness. Preserve the shared question, recall, teach-back,
-revisit and neutral-feedback behavior when composing the review page.
+The materializer writes the PR guidance to Markdown. For each question it writes
+only the visible prompts and four options. Keep hidden feedback, answers and grading evidence in `findings.json`.
+HTML uses the common recall, teach-back, revisit and neutral feedback controls.
+Its self-check cannot establish PR comprehension readiness.
 
 Use a white page background for both screen and print. The handout prints the
 main narrative, diagrams, and comprehension questions with all four choices.
@@ -58,13 +52,6 @@ controls. Keep detailed audit evidence in the HTML. Use print margins, fit
 figures to page width, and avoid splitting a question/choice group that fits on
 one page. Screen answer disclosure remains unchanged.
 
-Do not manually copy the hidden quiz data into Markdown. Keep the PR guidance,
-visible questions and options, revisit marker, correct option, neutral option
-feedback, explanation, and ADR/code/test evidence in `findings.json`. The
-materializer writes only the guidance, prompts, and choices. In HTML, show the
-question and recall cue before options, reveal choices only on request, then
-show a non-graded one-sentence teach-back cue after selection and before
-self-check. Revisit guidance asks the reader to reopen the report later without
-timers, notifications, completion state, or persisted progress. Hidden feedback
-stays unavailable until self-check. Never output scores, grades, celebration,
-praise, ability judgments, or gamification.
+Revisit guidance can invite the reader back without scheduling reminders or
+persisting progress. Feedback stays hidden until self-check. Do not add scores,
+praise, grades, or judgments of ability.

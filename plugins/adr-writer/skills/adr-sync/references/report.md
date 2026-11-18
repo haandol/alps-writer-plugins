@@ -8,6 +8,10 @@ Before writing the human-facing report or chat summary, read
 `${CLAUDE_PLUGIN_ROOT}/references/review-report-writing.md` completely and apply
 it.
 
+Use the fields below as review evidence. For the human report, place the
+At a glance result in the core answer and use the Overview to connect the
+affected decisions before expanding each finding.
+
 ```
 ## ADR Sync Results (mode: deep|quick)
 

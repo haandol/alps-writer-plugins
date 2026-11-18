@@ -28,16 +28,16 @@ option length or tone. Read all four choices against the report to rule out
 ambiguous or multiple correct answers. Review topical importance and difficulty
 semantically; schema validation cannot establish them.
 
-A PASS verdict neither requires nor rules out a quiz. Choose it for what the
-reader needs to understand, not the verdict label.
+Choose the subject of each question from what the reader needs to understand,
+including when the review verdict is PASS.
 
 ## Place questions with their explanation
 
 Place each question after the explanation needed to answer it, including child
 explanations, and before the owning domain's detailed evidence in every format.
 If those explanations can be collapsed, provide a route back to them. Questions
-are supporting material, not extra explanation branches: apply the one-to-six
-question limit across the whole report separately from the four-child limit.
+support the owning explanation. Apply the reader level’s limit once across
+the report. Questions do not use the four slots for child explanations.
 Assign questions by actual subject, not arbitrary numbered batches.
 
 Keep question identifiers, four choices, the single correct choice, neutral
@@ -84,7 +84,8 @@ not in an ADR, mapping, repository, or other authoritative registry.
 
 ## Structured quiz data
 
-Add `comprehensionCheck: { "questions": [...] }` to the shared report document.
+Set `comprehensionCheck.readerLevel` and add the questions to
+`comprehensionCheck.questions` in a newly authored report.
 Each question contains:
 
 - `id`: `Q1` onward in order; `sectionId`: the existing node after whose

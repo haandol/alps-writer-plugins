@@ -466,7 +466,11 @@ test("report artifacts use actual capture plus GEval and cannot hide format fail
           content: JSON.stringify({
             title: "Document results",
             language: "en",
+            purpose: ["Decide when the document can be downloaded."],
+            background: ["Only the query result is documented."],
             summary: ["Internal stages are unspecified."],
+            overview: { paragraphs: ["An available result connects the query to the download."] },
+            comprehensionCheck: { excluded: "No quiz." },
             requiredEvidenceIds: valid ? ["S1"] : [],
             review: { status: "draft", basis: "Fixture stub", limitations: "No semantic claim" },
             sections: [

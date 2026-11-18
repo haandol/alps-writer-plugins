@@ -1,20 +1,18 @@
 # Explicitly requested interactive comprehension check
 
-Read only for an explicit request to run the conversational check. Load the
+Only when the user explicitly asks to run the comprehension check, load the
 prepared quiz artifact and [quiz contract](quiz-artifact.md); if no questions
 exist, prepare them under that contract before asking the first question. A quiz
 in the report or an opt-in publishing gate alone does not select this module.
 
-Only when the user explicitly asks to run the comprehension check, load the
-prepared artifact and ask one primary question at a time with all four choices.
-Do not reveal the correct option, feedback, explanation, or evidence first.
+Ask one prepared question at a time with all four choices. Keep the correct
+option, feedback, explanation, and evidence hidden until the user answers.
 
 - On a correct selection, state the supporting concept and ask the next question
   without praise, celebration, scoring, grading, or ability judgment.
 - On an incorrect selection, state that the PR is not
   comprehension-ready, explain the missing concept with the stored evidence,
-  and let the reader retry the same question. A retry does not create a sixth
-  primary question.
+  and let the reader retry the same question without adding to the prepared set.
 - If a question is skipped or the session ends before all questions pass, keep
   PR comprehension readiness unverified.
 - Only after every prepared question passes may the response say the PR is

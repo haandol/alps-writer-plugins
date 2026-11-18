@@ -46,13 +46,19 @@ export function checkReportArtifact({ files, events, source }) {
     return checks;
   }
   try {
-    const result = validateReport(doc);
+    const result = validateReport(doc, { requireOpening: true, requireQuiz: true });
     check("native document format", true);
     const html = renderHtml(doc);
     check("native HTML renders", html.length > 0, result.warnings.join("; "));
   } catch (error) {
     check("native document format", false, error.message);
   }
+  // Both saved-report fixtures explicitly request a quiz-free deliverable.
+  check(
+    "requested quiz exclusion preserved",
+    typeof doc?.comprehensionCheck?.excluded === "string" &&
+      Boolean(doc.comprehensionCheck.excluded.trim()),
+  );
   const evidence = [];
   function walk(nodes) {
     if (!Array.isArray(nodes)) return;

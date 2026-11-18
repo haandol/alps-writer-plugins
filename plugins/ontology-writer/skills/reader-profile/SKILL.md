@@ -1,7 +1,7 @@
 ---
 name: reader-profile
 description: Build, refresh, show, correct or delete the per-project reader profile that report-writer uses to pitch explanations at the user's level. It reads only the user's own typed messages from this project's Claude Code and Codex sessions, with personal and business identifiers removed, and stores a short per-area profile outside the repository. Use when the user asks to create or update their profile or understanding level for reports, or agrees when report-writer asks.
-argument-hint: "[build|refresh|show|delete]"
+argument-hint: "[build|refresh|show|correct|delete]"
 ---
 
 # Reader profile

@@ -77,7 +77,7 @@ export function assertShippedPrompt(scenario, prompt) {
       /abstraction ladder|requirement gate|admission gate|Regeneration|decision ledger/i,
     );
   }
-  // and the machine-readable tail the scorer depends on
+  // Raw legacy scenario fixtures keep the transport trailer; semantic runs strip it before inference.
   assert.match(prompt, /EVAL-VERDICT/);
   assert.match(prompt, /EVAL-FINDINGS/);
 }

@@ -698,7 +698,7 @@ function validateReviewDiagnostics(diagnostics, errors) {
 function validateComprehensionCheck(check, errors) {
   if (check === undefined) {
     errors.push(
-      'findings.json comprehensionCheck is required: 1 to 6 questions, or { "excluded": "<the user\'s request>" }',
+      'findings.json comprehensionCheck is required: questions within the reader level limit, or { "excluded": "<the user\'s request>" }',
     );
     return;
   }

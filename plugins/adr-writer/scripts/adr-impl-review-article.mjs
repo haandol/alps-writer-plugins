@@ -34,9 +34,8 @@ export function standardArticle(data, inputPath) {
       excerpt: typeof value === "string" ? value : JSON.stringify(value, null, 2),
     };
   }
-  const context = Object.values(data.reviewHike.context).filter(
-    (value) => typeof value === "string" && value.trim(),
-  );
+  const context = data.reviewHike.context;
+  const capabilities = hills.map((hill) => hill.title).join(ko ? " · " : ", ");
   const status = ko ? COVERAGE_STATUS_LABELS.ko : {};
   const behavior = hills.map((hill, index) => {
     const rows = hill.contractIds.map((id) =>
@@ -82,18 +81,30 @@ export function standardArticle(data, inputPath) {
         ? "검토한 구현이 계약을 지키는지, 어떤 증거가 있고 무엇이 남았는지 판단한다."
         : "Assess whether the reviewed implementation honors its contract, using the recorded evidence and remaining gaps.",
     ],
-    background: context,
+    background: [
+      context.intent ||
+        (ko ? `검토 대상은 ${capabilities}이다.` : `The review covers ${capabilities}.`),
+    ],
     summary: [
       `${data.verdict}. ${data.atAGlance.impact}`,
       `${data.atAGlance.action} ${data.atAGlance.risk}`,
     ],
+    overview: {
+      paragraphs: [
+        ...new Set([
+          context.summary || context.contracts,
+          ...hills.map((hill) => hill.container?.interactions || hill.claim),
+        ]),
+      ],
+    },
     sections: [
       {
         id: "behavior",
         title: ko ? "동작과 검증" : "Behavior and verification",
         domain: "Implementation",
         scope: "Contract-grounded behavior",
-        paragraphs: context.length ? [context[0]] : [],
+        preview: capabilities,
+        paragraphs: [context.preconditions, context.summary && context.contracts].filter(Boolean),
         children: behavior,
       },
       {
@@ -101,6 +112,7 @@ export function standardArticle(data, inputPath) {
         title: ko ? "발견 사항" : "Findings",
         domain: "Implementation",
         scope: "Findings and required action",
+        preview: data.atAGlance.action,
         paragraphs: findings.length ? findings : [ko ? "발견 사항 없음." : "No findings."],
         evidence: [
           evidence("findings", ko ? "발견 사항 원문" : "Original findings", data.findings),
@@ -111,11 +123,13 @@ export function standardArticle(data, inputPath) {
         title: ko ? "범위와 근거" : "Scope and evidence",
         domain: "Review",
         scope: "Evidence boundaries",
-        paragraphs: [data.atAGlance.risk, ...comparison],
+        preview: data.atAGlance.risk,
+        paragraphs: [data.atAGlance.risk, context.scopeAndRisk, ...comparison].filter(Boolean),
         evidence: [evidence("native", ko ? "전체 검토 원본" : "Complete review source", data)],
       },
     ],
     requiredEvidenceIds: ids,
+    comprehensionCheck: data.comprehensionCheck,
     review: {
       status: "reviewed",
       basis: ko
@@ -144,7 +158,10 @@ function main() {
     { stdio: "pipe" },
   );
   const data = JSON.parse(readFileSync(source, "utf8"));
-  writeFileSync(destination, renderHtml(standardArticle(data, source)));
+  writeFileSync(
+    destination,
+    renderHtml(standardArticle(data, source), { requireOpening: true, requireQuiz: true }),
+  );
   process.stdout.write(`wrote ${destination}\n`);
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

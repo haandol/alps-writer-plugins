@@ -222,12 +222,11 @@ same packaged guidance through both direct authoring and Feature handoff.
      `PROVEN` obligations must produce `PASS` with no new architecture approval.
      Both lead with ADR intent, use subject-specific narrative headings ordered
      by importance, keep answer criteria hidden, and mark PR comprehension
-     readiness false before the quiz while leaving the code verdict unchanged. Both
-     scenarios require complete per-obligation rows, ADR-intent fit for material
-     implementation discretion, findings before detailed evidence, no invented
-     code paths, and no per-row approval. Their scorers also turn the visible reply
-     into a real review artifact, then run the shipped artifact validator and
-     HTML renderer so a prompt-only success cannot hide a broken report path.
+     readiness false before the quiz while leaving the code verdict unchanged. The PASS case specifies an expert reader and an explicit
+     pre-PR quiz gate. The INCONCLUSIVE case specifies a beginner reader and
+     no publishing gate. Both use the same seeded ADR and review guidance.
+     GEval checks the requested narrative, contract coverage and visible choice
+     evidence. The review artifact integration tests exercise the validator and HTML renderer.
    - `impl-review-completion-does-not-auto-quiz` checks the normal completion
      boundary: even when the HTML contains Q1, the main-session response returns
      only verdict, tests, and report path unless the user explicitly requests

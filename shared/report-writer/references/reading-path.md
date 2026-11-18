@@ -11,7 +11,8 @@ it in your scratch reasoning or a throwaway outline, never as a report section,
 companion file or approval record.
 
 1. **Reader and goal.** Who reads this, and what should they be able to
-   understand, decide or do afterwards? This becomes Purpose.
+   understand, decide or do afterwards? This becomes Purpose. Identify the
+   confirmed situation that makes that goal relevant for the separate Context section.
 2. **Core message.** Write the answer as one sentence a reader could repeat.
    If it needs "and" between unrelated claims, the report has two subjects;
    choose the one the reader asked about and attach the other where it changes
@@ -23,8 +24,9 @@ companion file or approval record.
    [reuse the business ontology](diagrams.md#reuse-the-business-ontology). This becomes the Overview and the top-level
    sections, in the order a reader needs them.
 4. **Each part's question.** For every section, write the question it answers
-   and what it deliberately leaves to a lower level. A part whose question you
-   cannot state is a topic list, not an explanation; merge or drop it.
+   and what it deliberately leaves to a lower level. Trace that question to a
+   part or relationship named in the Overview. A child should explain a rule, mechanism, or case the parent leaves open.
+   When the source gives no deeper mechanism, keep the explanation shallow.
 5. **Paragraph flow.** For each section, list the paragraphs by role: lead
    answer, then mechanism or relationship, then condition, example or exception.
    Note how each paragraph connects to the one before it.

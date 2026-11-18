@@ -2,7 +2,7 @@
 const shared = [
   {
     id: "whole",
-    text: "The report first gives a coherent whole-process view answering the reader question before internal detail. Its essential responsibilities and their connections are understandable. Honor the task-specific diagram request or exclusion and keep material limits visible in the overview.",
+    text: "The opening states the reader's goal, the confirmed context and the supported answer. Before internal detail, the overview explains how the essential responsibilities connect to produce that answer. Follow one of those responsibilities into a section that adds a supported rule or case. Headings or a list of links alone do not establish that relationship. Honor figure exclusions and keep conclusion-changing limits visible.",
   },
   {
     id: "descent",

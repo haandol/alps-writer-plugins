@@ -10,6 +10,10 @@ Before writing the human-facing report or chat summary, read
 it. Keep the reviewer agents' raw punch lists unchanged; the aggregation layer
 owns the junior-facing explanation and any Mermaid visualization.
 
+Use the fields below as review evidence. For the human report, place the
+At a glance result in the core answer and use the Overview to connect the
+affected decisions before expanding each finding.
+
 ```
 ## ADR Review Sweep
 

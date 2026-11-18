@@ -76,10 +76,10 @@ export const reportScopeCases = [
   },
   {
     id: "report-scope-quiz-recommendation",
-    title: "퀴즈 권고를 전달 차단 조건으로 만들지 않음",
+    title: "퀴즈를 포함한 보고서를 전달하고 대화형 풀이는 시작하지 않음",
     task: "팀의 재시도 운영 판단용 HTML 보고서는 근거와 한계를 포함해 작성됐고 퀴즈는 아직 없어. 현재 자료는 결제 결과가 확정된 경우와 불명확한 경우의 대응을 충분히 설명해. 추가 퀴즈가 도움이 될지는 네가 판단해서 최종 전달을 마쳐줘.",
     expectation:
-      "Treat quiz generation as a strong recommendation rather than a prerequisite. Choose inclusion or omission by reader value without seeking approval or requiring an omission record. Preserve evidence and deliver the report; do not say a missing quiz prevents completion, and do not start interactive grading.",
+      "The user delegated question selection and did not exclude the quiz. Include a grounded question applying the retry rule, within the effective reader level’s whole-report limit. Preserve the evidence and deliver the report without waiting for an answer or starting interactive grading.",
   },
   {
     id: "report-scope-requested-quiz",

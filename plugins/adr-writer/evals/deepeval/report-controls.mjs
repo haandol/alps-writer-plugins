@@ -27,7 +27,15 @@ function document(text, diagram) {
   return {
     title: "Illustrative report for evaluator calibration",
     language: "en",
+    purpose: ["Determine which claims in the explanation are supported by the supplied source."],
+    background: ["This calibration case supplies a fixed source and a report excerpt."],
     summary: [text],
+    overview: {
+      paragraphs: [
+        "The explanation makes claims about the source. The linked original supplies the evidence for checking each claim.",
+      ],
+    },
+    comprehensionCheck: { excluded: "No quiz." },
     requiredEvidenceIds: ["S1"],
     review: {
       status: "draft",
