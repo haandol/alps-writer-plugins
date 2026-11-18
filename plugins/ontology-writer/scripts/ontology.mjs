@@ -130,6 +130,7 @@ import {
   sameKeys,
   sameMeaningKeys,
   serializeTurtle,
+  sourceTrace,
   tripleKey,
   unionGraph,
   validateModel,
@@ -1574,6 +1575,14 @@ function apply(opts) {
   const result = indexGraph(unionGraph([{ triples: finalTriples }]));
 
   const problems = [];
+  // The change log is business language: it never names an input document's file or page.
+  for (const line of opts.logs) {
+    const trace = sourceTrace(line);
+    if (trace)
+      problems.push(
+        `[ontology-log-source] change-log line ${JSON.stringify(line)}\n    ${trace}; describe the change in business language and keep sources in the report`,
+      );
+  }
   // The index that results must resolve, and keep no link to a retired process's steps.
   for (const f of checkRealizes(mapping, result, rel(mappingPath)))
     problems.push(`[${f.code}] ${f.where}\n    ${f.msg}`);

@@ -114,7 +114,8 @@ the model here or deriving business boundaries from existing ADR categories.
   criteria; propose feature-level contracts for relevant normal, exception,
   rejection and hand-off paths. In implementation, map approved contracts to
   business scenarios and tests. In review, check those scenarios against the
-  contracts and actual evidence. If the category query omits criteria, query
+  contracts and actual evidence, and name for each the evidence checked or why
+  its business observation remains unverified. If the category query omits criteria, query
   the connected process through ontology-writer; never read the model here.
   A model-only obligation missing from an ADR is an alignment issue, while
   missing behavior or tests for an approved ADR row follows the existing
@@ -151,6 +152,8 @@ the model here or deriving business boundaries from existing ADR categories.
   contradiction with the context reports it in its completion report — as an
   alignment issue (the model and the realizing ADR contract differ) or as an
   ontology change proposal. Completion is still judged by ADR contract rows only.
+  Before coding, a contradiction is not implemented by default: pause the
+  affected part for the user's ADR-first choice.
 - **Not settled.** When the context shows validation errors, uncommitted model
   edits, unsynced direct edits or a lifecycle edit of an `Accepted` process,
   report that and do not treat that part as a settled reference. Propose
@@ -172,4 +175,5 @@ the model here or deriving business boundaries from existing ADR categories.
   exist; do not turn it back into a question. Never use it to drop a failure
   guarantee inside a step.
 - The business context is never an implementation obligation or completion
-  condition by itself; only ADR contract rows are.
+  condition by itself; only ADR contract rows are. An open path or other
+  model-only content never becomes a Status or promotion condition.

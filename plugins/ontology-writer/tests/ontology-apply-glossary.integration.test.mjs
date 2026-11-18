@@ -373,3 +373,19 @@ test("a context's own glossary that still defines a business term the model owns
     assert.match(validate, /owns the business term "Refund"/);
   });
 });
+
+test("a change-log line that names an input document's file or page is refused before anything is written", () => {
+  withTmp((dir) => {
+    repo(dir);
+    draft(dir, ACCEPTED.replace('"The order has no payment yet."', '"The order is unpaid."'));
+    const summary = impact(dir);
+    for (const line of ["주문정책서.pdf 반영", "결제 정책 12쪽 반영"]) {
+      const refused = apply(dir, summary.baseHash, ["--log", line]);
+      assert.equal(refused.code, 1, refused.out);
+      assert.match(refused.out, /\[ontology-log-source\]/);
+      assert.equal(read(dir, "docs/ontology/model.ttl"), ACCEPTED);
+    }
+    const applied = apply(dir, summary.baseHash, ["--log", "미결제 주문 표현을 다듬었다"]);
+    assert.equal(applied.code, 0, applied.out);
+  });
+});

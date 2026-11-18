@@ -133,6 +133,91 @@ test("a save draft that leaves out an unconfirmed path cannot claim the process 
   });
 });
 
+test("a save draft never carries an input document's name, file, page or quoted passage into the model", () => {
+  withTmp((dir) => {
+    const c = structuredClone(FIXTURE);
+    const rule = c.rules[0];
+    rule.evidence = [{ source: "영업 회의록", detail: "3행" }];
+    rule.basis = {
+      kind: "operating-policy",
+      text: '주문정책서.pdf 12쪽: "결제가 끝난 주문만 확정한다"',
+    };
+    rule.comment = ["영업 회의록에서 확인한 규칙"];
+    c.steps[0].definition = "고객 주문을 접수한다 (p. 4 참고).";
+    project(dir, c);
+    const save = run(dir, "prepare", "candidates.json", "--run", "run", "--confirmed-only");
+    assert.equal(save.status, 1, save.stdout + save.stderr);
+    for (const why of [
+      `rules\\[0\\] \\(${rule.id}\\) basis: names the file 주문정책서\\.pdf`,
+      `rules\\[0\\] \\(${rule.id}\\) comment: names the input document "영업 회의록"`,
+      `steps\\[0\\] \\(${c.steps[0].id}\\) definition: cites the page "p\\. 4"`,
+    ])
+      assert.match(save.stdout, new RegExp(why));
+
+    // A review draft shows the same problems as warnings; the user still sees the candidates.
+    assert.equal(run(dir, "prepare", "candidates.json", "--run", "review").status, 0);
+    const summary = readFileSync(path.join(dir, "review/candidates-summary.json"), "utf8");
+    assert.match(summary, /names the file 주문정책서\.pdf/);
+
+    // A short sentence naming a regulation and its article is a basis, not a source trace.
+    rule.basis = { kind: "regulation", text: '전자상거래법 제17조의 "청약 철회" 규정을 따른다.' };
+    rule.comment = [];
+    c.steps[0].definition = "고객 주문을 접수한다.";
+    project(dir, c);
+    const clean = run(dir, "prepare", "candidates.json", "--run", "clean", "--confirmed-only");
+    assert.equal(clean.status, 0, clean.stdout + clean.stderr);
+    rule.basis.text = '"결제가 끝난 주문만 확정한다"는 문장을 따른다.';
+    project(dir, c);
+    const quoted = run(dir, "prepare", "candidates.json", "--run", "quoted", "--confirmed-only");
+    assert.equal(quoted.status, 1);
+    assert.match(quoted.stdout, /basis: quotes a source passage/);
+  });
+});
+
+test("the save index draft adds only confirmed realization links, while the review draft shows them all", () => {
+  withTmp((dir) => {
+    const c = structuredClone(FIXTURE);
+    c.links.push({
+      category: "ordering",
+      step: "ordering.confirm-order",
+      reason: "The same feature may also confirm orders.",
+      verdict: "unconfirmed",
+      evidence: [],
+      confirmed: false,
+    });
+    project(dir, c);
+    assert.equal(run(dir, "prepare", "candidates.json", "--run", "review").status, 0);
+    const save = run(dir, "prepare", "candidates.json", "--run", "save", "--confirmed-only");
+    assert.equal(save.status, 0, save.stdout + save.stderr);
+    const realizes = (file) =>
+      JSON.parse(readFileSync(path.join(dir, file), "utf8")).categories.ordering.realizes;
+    assert.deepEqual(realizes("review/mapping.draft.json"), [
+      "ordering.submit-order",
+      "ordering.confirm-order",
+    ]);
+    assert.deepEqual(realizes("save/mapping.save.json"), ["ordering.submit-order"]);
+    // The project's index itself is untouched by either draft.
+    assert.equal(
+      JSON.parse(readFileSync(path.join(dir, "docs/adr/.mapping.json"), "utf8")).categories.ordering
+        .realizes,
+      undefined,
+    );
+  });
+});
+
+test("link candidates in a project without an ADR index are reported, not silently dropped", () => {
+  withTmp((dir) => {
+    writeFileSync(path.join(dir, "candidates.json"), JSON.stringify(FIXTURE));
+    const out = run(dir, "prepare", "candidates.json", "--run", "run");
+    assert.equal(out.status, 0, out.stdout + out.stderr);
+    assert.match(
+      out.stdout,
+      /links: 1 realization link candidate\(s\) not drafted, because the project has no ADR index/,
+    );
+    assert.ok(!existsSync(path.join(dir, "run/mapping.draft.json")));
+  });
+});
+
 test("rebuilding from the same candidates changes nothing, and a wording change needs `changes`", () => {
   withTmp((dir) => {
     project(dir);

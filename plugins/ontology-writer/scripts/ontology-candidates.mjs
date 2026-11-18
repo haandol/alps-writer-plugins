@@ -38,6 +38,7 @@ import {
   isValidElementId,
   parseDocument,
   serializeTurtle,
+  sourceTrace,
 } from "./ontology-lib.mjs";
 
 const VERDICTS = ["stated", "inferred", "conflicting", "unconfirmed"];
@@ -460,6 +461,59 @@ function noOpenScopeWithCutPaths(triples, cutPaths) {
   return [...out];
 }
 
+/** The text a candidate would save into the model, by the attribute that holds it. */
+function savedTexts(item) {
+  const texts = [];
+  for (const field of [
+    "label",
+    "definition",
+    "coreLogic",
+    "startCondition",
+    "businessOutcome",
+    "summary",
+    "condition",
+    "observedResult",
+  ])
+    if (nonEmpty(item[field])) texts.push([field, item[field]]);
+  for (const c of list(item.comment)) if (nonEmpty(c)) texts.push(["comment", c]);
+  if (nonEmpty(item.basis?.text)) texts.push(["basis", item.basis.text]);
+  for (const s of list(item.openScope)) if (nonEmpty(s?.text)) texts.push(["openScope", s.text]);
+  return texts;
+}
+
+// A passage in quotation marks long enough to be copied wording rather than a quoted term.
+const QUOTED_PASSAGE = /["“‘']([^"”’']{10,})["”’']/u;
+
+/**
+ * Where the candidates to save carry their input documents into the model: an evidence
+ * source's name or path, another file name or a page in any saved text, or a quoted passage in
+ * a basis. Sources and wording stay in the one-off report; the basis is a kind and a sentence.
+ */
+export function sourceTraces(doc, { confirmedOnly = false } = {}) {
+  const sources = new Set();
+  for (const { item } of allCandidates(doc))
+    for (const e of list(item?.evidence)) {
+      const source = typeof e?.source === "string" ? e.source.trim() : "";
+      if (source.length >= 3) sources.add(source).add(path.basename(source));
+    }
+  const traces = [];
+  for (const { item, where } of allCandidates(doc)) {
+    if (!item || typeof item !== "object" || (confirmedOnly && item.confirmed !== true)) continue;
+    for (const [field, text] of savedTexts(item)) {
+      const named = [...sources].find((s) => s.length >= 3 && text.includes(s));
+      const why =
+        (named && `names the input document ${JSON.stringify(named)}`) ||
+        sourceTrace(text) ||
+        (field === "basis" && QUOTED_PASSAGE.test(text) && "quotes a source passage");
+      if (why)
+        traces.push(
+          `${where} (${item.id}) ${field}: ${why}; keep sources in the report and save a short business sentence`,
+        );
+    }
+  }
+  return traces;
+}
+
 // ── board, index, questions and summary ────────────────────────────────────
 
 const labelOf = (doc, current, id) => {
@@ -755,7 +809,15 @@ function main(argv) {
     ),
   ];
 
-  const errors = [...undecided];
+  // A save draft refuses what would carry an input document into the model; a review draft says so.
+  const traces = sourceTraces(doc, { confirmedOnly });
+  if (!confirmedOnly) warnings.push(...traces);
+  const errors = [...undecided, ...(confirmedOnly ? traces : [])];
+  // Without an index there is nowhere to draft realization links; say so rather than drop them.
+  if (!mapping && list(doc.links).length)
+    warnings.push(
+      `links: ${list(doc.links).length} realization link candidate(s) not drafted, because the project has no ADR index`,
+    );
   if (mapping) {
     const m = candidateMapping(doc, mapping, { confirmedOnly });
     errors.push(...m.errors);

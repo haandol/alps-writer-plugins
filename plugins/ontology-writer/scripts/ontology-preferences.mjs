@@ -14,6 +14,12 @@ const choices = {
 const usage =
   "Use show [setup|adr-review], set setup build|skip|later, set adr-review review-first|build-direct, or reset setup|adr-review.";
 
+/**
+ * Where this user's choices for the project live: outside the repository, under one key per
+ * project. The key is the Git common root, so every linked worktree and both Codex and Claude
+ * Code share one choice; another user, or another project, has its own.
+ * `ONTOLOGY_WRITER_PREFERENCES_DIR` moves the base for tests and isolated runs.
+ */
 function directory(cwd) {
   const { root } = resolveProject(realpathSync(cwd));
   const key = createHash("sha256").update(root).digest("hex");
@@ -36,6 +42,11 @@ function readChoice(dir, key) {
   return value;
 }
 
+/**
+ * The saved first-model setup choice (`build`, `skip` or `later`), or null when none was made.
+ * A stored value outside that set throws instead of reading as "no choice", so a damaged
+ * preference never re-asks or silently skips the question: callers report it and point to reset.
+ */
 export function setupPreference(cwd = process.cwd()) {
   return readChoice(directory(cwd), "setup");
 }

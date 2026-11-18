@@ -22,8 +22,8 @@ after(async () => {
   if (profileDir) rmSync(profileDir, { recursive: true, force: true });
 });
 
-async function inQuestionPage(fn) {
-  const s = questionSession();
+async function inQuestionPage(fn, questions = QUESTIONS) {
+  const s = questionSession(questions);
   const page = await browser.newPage();
   const errors = [],
     external = [];
@@ -39,7 +39,7 @@ async function inQuestionPage(fn) {
   try {
     await page.setViewport({ width: 1440, height: 1000 });
     await page.goto(s.url, { waitUntil: "load" });
-    await page.waitForSelector("#q-Q1 input[type=radio]");
+    await page.waitForSelector("#q-Q1");
     await fn(s, page, (next) => {
       intercept = next;
     });
@@ -62,6 +62,157 @@ const saved = (page, question, text) =>
 const selected = (page, question) =>
   page.$$eval(`#q-${question} input:checked`, (inputs) => inputs.map((i) => i.value));
 const textOf = (page, selector) => page.$eval(selector, (input) => input.value);
+
+test("collected answers wait for submission, a sent answer shows the agent working, and a follow-up appears in place", async () => {
+  await inQuestionPage(async (s, page) => {
+    const deliveries = () => readEvents(s.files.answers).filter((e) => e.type === "deliver");
+    const status = () => page.$eval(".status", (n) => n.textContent);
+    assert.equal(
+      await page.$eval('.mode[aria-pressed="true"]', (b) => b.textContent),
+      "Send now",
+      "sending each answer at once is the default",
+    );
+
+    await page.click(".mode:nth-child(2)");
+    await choose(page, "Q1", "yes");
+    await saved(page, "Q1", "Keep");
+    assert.equal(deliveries().length, 0, "a collected answer does not reach the agent");
+    assert.equal((await waitForAnswers(s.run, { timeoutSeconds: 0.3, pollMs: 50 })).timeout, true);
+    await page.waitForFunction(() => !document.querySelector(".submit-all").disabled);
+    await page.click(".submit-all");
+    await page.waitForFunction(() =>
+      /applying your answers/.test(document.querySelector(".status").textContent),
+    );
+    assert.deepEqual(deliveries().at(-1).questionIds, ["Q1"]);
+
+    // The agent rewrites the questions: the screen shows the follow-up without a reload.
+    const before = await page.evaluate(() => performance.timeOrigin);
+    writeFileSync(
+      s.files.questions,
+      JSON.stringify({
+        ...QUESTIONS,
+        questions: [...QUESTIONS.questions, { id: "Q3", text: "And after approval?" }],
+      }),
+    );
+    await page.waitForSelector("#q-Q3");
+    assert.equal(await page.evaluate(() => performance.timeOrigin), before, "no reload");
+    await page.waitForFunction(
+      () => !/applying your answers/.test(document.querySelector(".status").textContent),
+    );
+    assert.doesNotMatch(await status(), /applying your answers/);
+
+    await page.click(".mode:nth-child(1)");
+    await choose(page, "Q2", "no");
+    await saved(page, "Q2", "Replace");
+    assert.deepEqual(deliveries().at(-1).questionIds, ["Q2"], "sending now delivers that answer");
+  });
+});
+
+test("a question shows its flow and each option's result as drawn diagrams, its evidence with verdicts, and an undrawable diagram as source and error", async () => {
+  const visual = {
+    version: 1,
+    title: "Boundary review",
+    questions: [
+      {
+        id: "Q1",
+        text: "Which hand-off applies?",
+        diagram: { source: "flowchart LR\n  Order --> Payment" },
+        evidence: [
+          { source: "docs/orders.md", detail: "Hand-off section", verdict: "stated" },
+          { source: "docs/payments.md", detail: "Another account", verdict: "conflicting" },
+        ],
+        options: [
+          { id: "a", label: "Pay first", diagram: { source: "flowchart LR\n  Pay --> Ship" } },
+          { id: "b", label: "Ship first", diagram: { source: "flowchart LR\n  Ship --> " } },
+        ],
+      },
+    ],
+  };
+  await inQuestionPage(async (s, page) => {
+    await page.waitForSelector('#q-Q1 > figure[data-rendered="true"] svg');
+    await page.waitForSelector('#q-Q1 .option:nth-child(1) figure[data-rendered="true"] svg');
+    assert.equal(
+      await page.$eval("#q-Q1 .options", (n) => n.classList.contains("options--visual")),
+      true,
+    );
+    await page.waitForFunction(
+      () => !document.querySelector("#q-Q1 .option:nth-child(2) .diagram__status").hidden,
+    );
+    const broken = await page.$eval("#q-Q1 .option:nth-child(2) figure", (f) => ({
+      status: f.querySelector(".diagram__status").textContent,
+      open: f.querySelector(".diagram__source").open,
+      source: f.querySelector(".diagram__source pre").textContent,
+      svg: Boolean(f.querySelector("svg")),
+    }));
+    assert.match(broken.status, /^The diagram could not be drawn: /);
+    assert.deepEqual(
+      [broken.open, broken.source, broken.svg],
+      [true, "flowchart LR\n  Ship --> ", false],
+    );
+    const evidence = await page.$$eval("#q-Q1 .evidence li", (items) =>
+      items.map((li) => [
+        li.querySelector(".verdict")?.textContent,
+        li.querySelector("code").textContent,
+      ]),
+    );
+    assert.deepEqual(evidence, [
+      ["Stated", "docs/orders.md"],
+      ["Conflicting", "docs/payments.md"],
+    ]);
+  }, visual);
+});
+
+test("a question the repository settles is listed as resolved with its source, and the user's different answer counts", async () => {
+  const settledByAdr = {
+    version: 1,
+    title: "Build questions",
+    questions: [
+      { id: "Q1", text: "Who approves a quote?", options: [{ id: "manager", label: "A manager" }] },
+      {
+        id: "Q2",
+        text: "Does a returned quote go back to sales?",
+        resolved: { summary: "Yes — the accepted quote decision says so.", optionId: "yes" },
+        evidence: [
+          { source: "docs/decisions/quote-approval.md", detail: "Decision", verdict: "stated" },
+        ],
+        options: [
+          { id: "yes", label: "Back to sales" },
+          { id: "no", label: "Closed" },
+        ],
+      },
+    ],
+  };
+  await inQuestionPage(async (s, page) => {
+    await page.waitForSelector(".resolved-box #q-Q2");
+    // The asked list is the workspace's own; the resolved list sits inside the resolved box.
+    assert.equal(
+      await page.$(".answers-workspace > section.questions #q-Q2"),
+      null,
+      "a settled question is not asked",
+    );
+    assert.ok(await page.$(".answers-workspace > section.questions #q-Q1"));
+    assert.match(
+      await page.$eval(".resolved-box summary", (n) => n.textContent),
+      /^1 questions? resolved from repository sources/,
+    );
+    const card = await page.$eval("#q-Q2", (c) => ({
+      resolution: c.querySelector(".resolution").textContent,
+      source: c.querySelector(".evidence code").textContent,
+    }));
+    assert.match(card.resolution, /the accepted quote decision says so/);
+    assert.equal(card.source, "docs/decisions/quote-approval.md");
+
+    await page.click(".resolved-box > summary");
+    await page.click("#q-Q2 .override > summary");
+    await choose(page, "Q2", "no");
+    await saved(page, "Q2", "Closed");
+    assert.equal(
+      allAnswers(s.run).questions[1].answer.optionId,
+      "no",
+      "the user's answer overrides",
+    );
+  }, settledByAdr);
+});
 
 test("typing, paste and composition replace only that card's option and survive question refresh", async () => {
   await inQuestionPage(async (s, page) => {

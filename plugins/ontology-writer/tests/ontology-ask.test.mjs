@@ -229,10 +229,17 @@ test("a partly resolved question stays asked, and a bad partial flag is refused"
         id: "Q1",
         text: "Only the rest?",
         resolved: { summary: "The first half is settled.", partial: true },
+        evidence: [{ source: "docs/adr/x.md", detail: "Decision", verdict: "stated" }],
       },
     ],
   };
   assert.equal(parseQuestions(JSON.stringify(doc)).ok, true);
+  const unsourced = structuredClone(doc);
+  delete unsourced.questions[0].evidence;
+  assert.match(
+    parseQuestions(JSON.stringify(unsourced)).error,
+    /resolved needs the source that settles it in evidence/,
+  );
   doc.questions[0].resolved.partial = "yes";
   assert.match(
     parseQuestions(JSON.stringify(doc)).error,

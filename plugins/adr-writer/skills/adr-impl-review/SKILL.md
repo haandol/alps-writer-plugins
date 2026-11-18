@@ -17,9 +17,14 @@ Missing glossaries are normal. Review-only work reports unclear or conflicting m
 When `docs/ontology/` holds Turtle documents, apply
 `${CLAUDE_PLUGIN_ROOT}/references/business-context.md` for the selected feature:
 query its workflow and relevant observation criteria through ontology-writer,
-connect the business scenarios to ADR rows and execution evidence, and report
-model/ADR alignment gaps separately from the implementation verdict. Remain
-report-only; a model-only obligation is not a code violation or a new gate.
+connect the business scenarios to ADR rows and execution evidence — naming, for
+each, the evidence checked or why its observation remains unverified — and report
+each model/ADR alignment gap separately from the implementation verdict, with the
+owning route that resolves it: an ADR change, or the business model through
+ontology-writer. Remain
+report-only; neither a model-only obligation nor a business fact found only in
+code is a code violation, a new gate or a promotion condition: propose the fact
+through its owning approval path and judge completion by the ADR rows.
 
 The quiz is required: one or more questions within the effective reader level’s limit, or `comprehensionCheck.excluded`
 only when the user explicitly excluded it. Follow

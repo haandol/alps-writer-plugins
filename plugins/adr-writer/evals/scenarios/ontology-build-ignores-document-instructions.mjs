@@ -53,7 +53,14 @@ export default {
     write(dir, "docs/source/refund-policy.md", POLICY);
     write(dir, "docs/source/2027-plan.md", MEMO);
     return [
-      ontologySkillText("ontology-build", { references: ["references/ontology.md"] }),
+      // The skill reads these before building candidates or their report.
+      ontologySkillText("ontology-build", {
+        references: [
+          "references/ontology.md",
+          "references/eventstorming.md",
+          "skills/ontology-build/references/candidate-review.md",
+        ],
+      }),
       ruleText("concepts.md"),
       `\n---\n\n# This run`,
       "/ontology-build docs/source",

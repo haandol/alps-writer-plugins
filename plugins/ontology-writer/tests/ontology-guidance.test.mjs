@@ -807,3 +807,48 @@ test("ontology-build writes one candidate file and names new elements from their
     "ontology-candidates.mjs prepare <run>/candidates.json --run <run> --confirmed-only",
   );
 });
+
+test("a first build offers an ADR review once, reuses the saved route and never takes it as approval", () => {
+  const review = read("skills/ontology-build/references/pre-build-adr-review.md");
+  const preferences = read("skills/ontology-build/references/preferences.md");
+  has(
+    review,
+    "Reuse current findings within that scope. If they settle the requested check, go straight to the ADRs",
+    "Otherwise use `review-first` or `build-direct` without repeating the question.",
+    "Remember an explicit answer unless it applies only this time. Do not record a route when there are no ADRs.",
+    "A saved review preference grants no editing permission.",
+    "Apply only approved edits to the ADR that owns the decision through ADR Writer's authoring workflow.",
+    "The user approves model saving after reviewing the candidates.",
+  );
+  has(
+    preferences,
+    "A one-time request overrides the saved choice for that run only. Silence, missing ADRs and unavailable tools are not answers.",
+    "Use the saved review route only during a currently requested first build with existing ADRs.",
+    "Actual review findings, ADR edits and model saves follow the current workflow and its approvals.",
+  );
+});
+
+test("a build maps the whole event flow before deriving contexts and subdomains from it", () => {
+  const storm = read("references/eventstorming.md");
+  has(
+    storm,
+    "Build a big-picture map of business events, named as things that happened.",
+    "Show temporal order separately from causation; do not invent a cause from adjacency.",
+    "Identify subdomains as business problem areas and explain their relationship to those contexts; neither a service, an existing functional ADR category nor a repository folder proves either boundary.",
+    "Core/supporting/generic classification needs business evidence and may remain unconfirmed.",
+    "Present the whole event map before opening its context-level details.",
+    "A context list without this map does not establish that the system's business process was discovered.",
+  );
+});
+
+test("a question an authoritative source answers is shown resolved with its sources, and code never resolves one", () => {
+  const review = read("skills/ontology-build/references/candidate-review.md");
+  has(
+    review,
+    "A question is resolved only when a current authority states the answer",
+    "Show a resolved question as resolved, with its sources, instead of asking it; the user can still answer it, and that answer wins.",
+    "Ask only what no source answers, what sources of equal authority still contradict, and what needs a choice of business intent.",
+    "Code alone shows observed behavior and never resolves a question.",
+    "Reuse a scoped ADR-to-code verification for the same revision.",
+  );
+});

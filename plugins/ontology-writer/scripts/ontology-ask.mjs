@@ -165,6 +165,9 @@ export function parseQuestions(text) {
       const r = q.resolved;
       if (!r || typeof r.summary !== "string" || !r.summary.trim())
         return fail(`question ${q.id} resolved needs a summary`);
+      // The screen shows what settled it, so the user can judge whether to answer anyway.
+      if (!Array.isArray(q.evidence) || !q.evidence.length)
+        return fail(`question ${q.id} resolved needs the source that settles it in evidence`);
       if (r.optionId && !optIds.has(r.optionId))
         return fail(`question ${q.id} resolved names unknown option ${r.optionId}`);
       // A partly resolved question shows the settled part and still asks the rest.

@@ -1655,6 +1655,22 @@ export function serializeTurtle(triples) {
   return blocks.length ? `${header}\n\n${blocks.join("\n\n")}\n` : "";
 }
 
+// An input document stays in the one-off report: saved model text and change-log lines
+// never name its file or a page of it. A regulation, contract or policy may still be named
+// with its article ("전자상거래법 제17조"), which neither pattern matches.
+const SOURCE_FILE =
+  /[\p{L}\p{N}_-][\p{L}\p{N}_.-]*\.(?:pdf|docx?|xlsx?|pptx?|hwpx?|md|markdown|txt|csv|rtf|odt|ods|odp|key|pages|numbers|html?)(?![\p{L}\p{N}])/iu;
+const SOURCE_PAGE = /\d+\s*(?:쪽|페이지)|(?<!\p{L})pp?\.\s?\d+|(?<!\p{L})pages?\s+\d+/iu;
+
+/** Why saved text cites an input document — a file name or a page — or null when it does not. */
+export function sourceTrace(text) {
+  const value = String(text ?? "");
+  const file = SOURCE_FILE.exec(value);
+  if (file) return `names the file ${file[0]}`;
+  const page = SOURCE_PAGE.exec(value);
+  return page ? `cites the page "${page[0]}"` : null;
+}
+
 /** Code-point order, the one ordering ids, paths and names share across the scripts. */
 export const compareCodePoints = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 /** Distinct values in code-point order. */
