@@ -1849,7 +1849,7 @@ test("review artifact validator enforces an intent-first subject-specific explan
   });
 });
 
-test("review artifact validator requires one to six hidden-answer comprehension questions", () => {
+test("review artifact validator enforces the reader quiz limit and hides answers", () => {
   withArtifacts((dir) => {
     writeFileSync(path.join(dir, "explanation.md"), validExplanation());
     const findings = validFindings(dir);
@@ -1870,10 +1870,14 @@ test("review artifact validator requires one to six hidden-answer comprehension 
       path.join(dir, "implementation-review.md"),
       validReport().replace(
         "1. Q1 — Why must settlement record completion only once?",
-        `1. Q1 — Why must settlement record completion only once?\n\n${findings.comprehensionCheck.questions
-          .slice(1)
-          .map((question, index) => `${index + 2}. ${question.id} — ${question.question}`)
-          .join("\n")}`,
+        findings.comprehensionCheck.questions
+          .map((question, index) =>
+            [
+              `${index + 1}. ${question.id} — ${question.question}`,
+              ...question.options.map(({ id, text }) => `   - ${id}. ${text}`),
+            ].join("\n"),
+          )
+          .join("\n"),
       ),
     );
     writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
@@ -1881,6 +1885,15 @@ test("review artifact validator requires one to six hidden-answer comprehension 
     const result = validate(dir);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /must contain 1 to 6 questions/);
+
+    findings.comprehensionCheck.readerLevel = "beginner";
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+    const beginner = validate(dir);
+    assert.equal(beginner.status, 0, beginner.stderr);
+
+    findings.comprehensionCheck.readerLevel = "expert";
+    writeFileSync(path.join(dir, "findings.json"), JSON.stringify(findings, null, 2));
+    assert.match(validate(dir).stderr, /must contain 1 to 5 questions/);
   });
 
   withArtifacts((dir) => {

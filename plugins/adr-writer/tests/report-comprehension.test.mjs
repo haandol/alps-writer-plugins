@@ -77,6 +77,25 @@ test("a report carries one or five questions under their actual explanation with
   assert.ok(markdown.includes(doc.comprehensionCheck.questions[0].options[0].feedback));
 });
 
+test("report quiz limits follow the effective reader level", () => {
+  for (const [readerLevel, limit] of [
+    ["beginner", 10],
+    ["intermediate", 6],
+    ["expert", 5],
+  ]) {
+    const doc = report();
+    doc.comprehensionCheck.readerLevel = readerLevel;
+    doc.comprehensionCheck.questions = Array.from({ length: limit }, (_, i) => question(i + 1));
+    assert.doesNotThrow(() => validateReport(doc));
+    doc.comprehensionCheck.questions.push(question(limit + 1));
+    assert.throws(() => validateReport(doc), new RegExp(`1 to ${limit} questions`));
+  }
+
+  const doc = report();
+  doc.comprehensionCheck.readerLevel = "unknown";
+  assert.throws(() => validateReport(doc), /readerLevel must be/);
+});
+
 test("question caps, distinct choices, one answer, evidence and revisit boundaries reject invalid reports", () => {
   for (const [mutate, error] of [
     [

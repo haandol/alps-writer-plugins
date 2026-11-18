@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 import { parseMermaid, parseMermaidAll, renderMermaid, mermaidRuntime } from "./mermaid.mjs";
 import { parseCodeDiff, renderCodeDiff, diffCss } from "./code-diff.mjs";
 import {
-  MAX_QUESTIONS,
+  questionLimit,
   validateQuestions,
   renderQuestion,
   quizLabels,
@@ -298,7 +298,7 @@ export function validateReport(doc, { requireQuiz = false } = {}) {
   visit(doc.sections, "report");
   if (requireQuiz && doc.comprehensionCheck === undefined)
     throw new Error(
-      `A report needs comprehensionCheck with 1 to ${MAX_QUESTIONS} questions, or { "excluded": "<the user's request>" } when the user excluded the quiz`,
+      `A report needs comprehensionCheck with 1 to ${questionLimit()} questions, or { "excluded": "<the user's request>" } when the user excluded the quiz`,
     );
   if (doc.comprehensionCheck !== undefined && doc.comprehensionCheck?.excluded !== undefined) {
     keys(doc.comprehensionCheck, ["excluded"], "comprehensionCheck");
@@ -308,8 +308,8 @@ export function validateReport(doc, { requireQuiz = false } = {}) {
     const check = doc.comprehensionCheck;
     if (!check || typeof check !== "object" || Array.isArray(check))
       throw new Error("comprehensionCheck must be an object");
-    keys(check, ["questions"], "comprehensionCheck");
-    validateQuestions(check.questions);
+    keys(check, ["questions", "readerLevel"], "comprehensionCheck");
+    validateQuestions(check.questions, check.readerLevel);
     for (const question of check.questions) {
       keys(
         question,

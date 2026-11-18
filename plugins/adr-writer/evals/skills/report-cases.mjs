@@ -52,6 +52,57 @@ Report under review: "모든 10회 요청이 성공해 성공률은 100%다. 운
       },
     ],
   },
+  {
+    id: "report-slop-hidden-actors",
+    title: "퇴고가 재시도의 행위자와 동작을 드러냄",
+    source:
+      "Fixture: After a gateway timeout, the scheduler retries the request once. The gateway can still reject the retry.",
+    task: 'Rewrite this Korean report excerpt in chat, without tools or a quiz: "게이트웨이 시간 초과 후 요청 재시도의 수행이 이루어진다. 재시도 요청에 대한 거부 가능성이 존재한다."',
+    semanticObligations: [
+      {
+        id: "actors",
+        text: "The rewrite names the scheduler as the retrying actor and the gateway as the possible rejecting actor, using direct verbs instead of action nouns.",
+      },
+      {
+        id: "conditions",
+        text: "The rewrite preserves the timeout trigger, exactly one retry, and the possibility of rejection without claiming rejection was observed.",
+      },
+    ],
+  },
+  {
+    id: "report-slop-vague-references",
+    title: "퇴고가 모호한 지시어와 명사 결합을 풀어 씀",
+    source:
+      "Fixture: The worker checks that the invoice exists before publishing its payment event. If the invoice is missing, the worker publishes nothing and records the error.",
+    task: 'Rewrite this Korean report excerpt in chat, without tools or a quiz: "이것의 선행 존재성 검사 경계가 이벤트 발행 흐름에 위치한다. 없으면 이를 남긴다."',
+    semanticObligations: [
+      {
+        id: "referents",
+        text: "The rewrite identifies the invoice, payment event, and error explicitly and describes how the worker handles them without ambiguous pronouns or invented compound labels.",
+      },
+      {
+        id: "order",
+        text: "The invoice check precedes publication. A missing invoice suppresses publication and causes the worker to record the error.",
+      },
+    ],
+  },
+  {
+    id: "report-slop-buried-result",
+    title: "퇴고가 검증 결과와 한계를 앞에 두고 빈 문장을 걷어냄",
+    source:
+      "Fixture: All three local duplicate-payment tests returned the original receipt. Production was not checked.",
+    task: 'Rewrite the opening answer of a Korean report in chat, without tools or a quiz: "검증 결과의 의미를 먼저 짚어 볼 필요가 있다. 이번 결과는 중요한 시사점을 준다. 운영 환경에 대해서는 별도로 고려해야 할 부분이 있다. 로컬 세 건에서는 모두 기존 영수증을 반환했다."',
+    semanticObligations: [
+      {
+        id: "emphasis",
+        text: "The opening sentence states the observed result and 3/3 local scope; the production verification limit appears immediately after it. Empty lead-ins and judgments are removed.",
+      },
+      {
+        id: "evidence",
+        text: "The answer preserves which receipt was returned and does not infer production behavior, guaranteed duplicate prevention, or wider coverage.",
+      },
+    ],
+  },
   ...drilldownCases,
   ...abstractionCases,
   ...overviewCases,
@@ -71,6 +122,9 @@ Report under review: "모든 10회 요청이 성공해 성공률은 100%다. 운
         references: [
           "skills/report-writer/references/explanation-design.md",
           "skills/report-writer/references/editorial-review.md",
+          ...(item.id.startsWith("report-slop-")
+            ? ["skills/report-writer/references/writing-style.md"]
+            : []),
           "skills/report-writer/references/abstraction-and-analogy.md",
           "skills/report-writer/references/diagrams.md",
           "skills/report-writer/references/quantitative-claims.md",

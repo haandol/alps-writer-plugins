@@ -105,6 +105,15 @@ when rereading sentences, paragraphs, sections, tables, figures, and translation
 For an illustration of missing categories and misleading renaming, consult the
 [ontology terminology example](examples/terminology.md) when needed.
 
+### Check for the three clarity faults
+
+On the latest whole report, apply the [AI slop checks](writing-style.md#remove-ai-slop-that-obscures-meaning)
+to prose, captions, table labels, and question text. Can the reader tell who
+does what, resolve each reference, and find the point on a quick read? When
+rewriting, compare against the source to preserve conditions, scope, reported
+outcomes, and uncertainty. If the source leaves a fact unspecified, leave the
+gap visible.
+
 ### Omit obvious commentary and excessive elaboration
 
 Do not explain an example's purpose after its framing already makes that purpose

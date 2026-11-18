@@ -136,8 +136,8 @@ Read the relevant module only when authoring or checking that content:
 - **Code diffs:** [code evidence](code-evidence.md#diff-data-example) owns
   `kind: "diff"`, complete patch hunks and their presentation.
 - **Quizzes:** [comprehension support](comprehension.md#structured-quiz-data)
-  owns `comprehensionCheck`, question rules and staged disclosure. Include one to six
-  questions, or the user's explicit exclusion for this report.
+  owns `comprehensionCheck`, question rules and staged disclosure. Include the effective `readerLevel` and its permitted
+  question count, or the user's explicit exclusion for this report.
 
 ## Compatibility with specialized reports
 
@@ -198,6 +198,7 @@ content and verification. A quiz-free report requires the user's explicit exclus
     "Distinguish verified retry behavior from provider recovery that still needs evidence."
   ],
   "comprehensionCheck": {
+    "readerLevel": "beginner",
     "questions": [
       {
         "id": "Q1",

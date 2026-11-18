@@ -4,6 +4,10 @@ This document is the **major decision-change history** of the reporting/domain-n
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-11-18 — 독자 수준에 따른 퀴즈 문항 상한
+
+입문 독자는 핵심 조건을 여러 상황에 적용해 볼 수 있도록 10개까지, 중간 독자는 기존과 같이 6개까지, 숙련 독자는 5개까지 제공한다.
+
 ## 2026-11-12 — 온톨로지의 BC 구조를 리포트 개요 그림에 재사용
 
 - **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)

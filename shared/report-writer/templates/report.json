@@ -70,11 +70,12 @@
     "limitations": "{{What remains unverified, or an empty string}}"
   },
   "comprehensionCheck": {
+    "readerLevel": "beginner",
     "questions": [
       {
         "id": "Q1",
         "sectionId": "part-one",
-        "question": "{{Required quiz, 1 to 6 questions: a medium-difficulty question applying this section's core rule to a situation. Add Q2..Q6 as the core content needs. Replace comprehensionCheck with { \"excluded\": \"<the user's request>\" } only when the user explicitly excluded the quiz.}}",
+        "question": "{{Required quiz within the reader level limit: a medium-difficulty question applying this section's core rule to a situation. Add further questions as the core content needs. Replace comprehensionCheck with { \"excluded\": \"<the user's request>\" } only when the user explicitly excluded the quiz.}}",
         "options": [
           {
             "id": "A",
