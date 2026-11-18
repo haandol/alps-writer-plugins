@@ -59,6 +59,8 @@ For in-scope behavior, use [discovery](references/discovery.md) to establish
 workflow evidence, boundaries, decision candidates and prerequisites. Reuse
 current evidence and deepen only the paths that affect a candidate.
 If sources conflict, use [decision reconciliation](../../references/decision-reconciliation.md).
+If the prerequisite graph has a cycle or grouping distorts an edge, use
+[cycle resolution](../../references/import-cycle-resolution.md).
 
 ## Ask once through the report
 

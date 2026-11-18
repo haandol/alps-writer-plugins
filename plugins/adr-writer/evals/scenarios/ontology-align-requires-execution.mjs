@@ -104,7 +104,11 @@ export default {
     });
     return [
       ontologySkillText("ontology-align", {
-        references: ["references/ontology.md", "references/next-action.md"],
+        references: [
+          "references/ontology.md",
+          "references/next-action.md",
+          "skills/ontology-align/references/verification.md",
+        ],
       }),
       ruleText("concepts.md"),
       `\n---\n\n# This run`,
