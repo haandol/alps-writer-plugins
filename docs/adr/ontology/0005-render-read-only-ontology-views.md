@@ -206,5 +206,5 @@ ADR 본문을 포함할 때는 색인에 명시된 ADR 문서 범위만 읽는�
 
 - [업무 온톨로지를 ADR 위의 RDFS-lite 레벨로 도입](./0001-introduce-business-ontology-level.md)
 - [에이전트의 업무 맥락 조회와 세션 지침](./0002-retrieve-business-context-for-agents.md)
-- [온톨로지 변경의 승인과 하위 전파](./0003-govern-ontology-lifecycle-and-cascade.md)
+- [온톨로지 변경의 승인과 하위 전파](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
 - [도메인 우선 리포트 탐색](../reporting/domain-navigation/0001-domain-first-report-navigation.md)

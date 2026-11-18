@@ -68,6 +68,7 @@
     },
     "alps-authoring/spec-handoff": {
       "feature": "Admission-aware PRD to ADR handoff",
+      "realizes": ["feature-handoff.assess-contract", "feature-handoff.transfer-contract"],
       "adrs": [
         {
           "path": "docs/adr/alps-authoring/spec-handoff/0001-admission-aware-feature-handoff.md",
@@ -251,11 +252,6 @@
           "summary": "BC 조망과 상세 관계를 보존하면서 색인 없이 현재 원본에서 다중어·한글 검색, 관련도와 원문 근거를 제공한다"
         },
         {
-          "path": "docs/adr/ontology/0003-govern-ontology-lifecycle-and-cascade.md",
-          "status": "Proposed",
-          "summary": "승인된 업무 변경을 ADR·코드로 전파하고 읽기 전용 완전성·준비 상태 점검과 실제 실행 정렬 검토를 구별한다"
-        },
-        {
           "path": "docs/adr/ontology/0004-build-ontology-from-documents.md",
           "status": "Proposed",
           "summary": "근거 기반 이벤트 스토밍으로 후보를 만들고, 선택지와 직접 답변을 구분하며 같은 확인 화면의 에이전트 질의응답과 별도 저장 승인을 보존한다"
@@ -264,6 +260,24 @@
           "path": "docs/adr/ontology/0005-render-read-only-ontology-views.md",
           "status": "Accepted (2026-11-10)",
           "summary": "업무 모델의 도메인·BC → 프로세스 업무 단위 → 실현 기능 ADR을 두 표현의 공통 계층으로 탐색하고 코드 전에서 멈춘다"
+        }
+      ],
+      "dependsOn": [
+        "adr-authoring/decision-boundary",
+        "document-authoring/domain-organization",
+        "adr-authoring/decision-presentation",
+        "delivery/development-flow",
+        "reporting/domain-navigation"
+      ]
+    },
+    "ontology/change-approval": {
+      "feature": "Ontology change approval and cascade",
+      "realizes": ["feature-handoff.decide-model-change"],
+      "adrs": [
+        {
+          "path": "docs/adr/ontology/change-approval/0003-govern-ontology-lifecycle-and-cascade.md",
+          "status": "Proposed",
+          "summary": "승인된 업무 변경을 ADR·코드로 전파하고 읽기 전용 완전성·준비 상태 점검과 실제 실행 정렬 검토를 구별한다"
         }
       ],
       "dependsOn": [

@@ -10,7 +10,7 @@ optional for understanding the current decision.
 
 ## 2026-11-09 — 갱신이 필요한 영향 ADR만 갱신
 
-- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./0003-govern-ontology-lifecycle-and-cascade.md)
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
 - **Change type**: requirement rule change
 - **What**: 승인 요약은 영향 ADR마다 갱신 여부와 근거를 보이고, 갱신하는 ADR만 semantic diff를 보인 뒤 `Proposed`로 구현한다. 현재 계약이 바뀐 업무 의미를 이미 담고 있는 영향 ADR은 내용과 Status를 유지하고, 그 판단의 기준 revision은 승인 요약에 묶인다(R31·R36).
 - **Why**: 문서 기반 첫 구축에서 연결만 새로 생긴 기능 21개의 ADR 128개가 모두 갱신·재구현 대상이 되어, 계약이 바뀌지 않는 기능까지 재구현 범위가 커졌다.
@@ -101,7 +101,7 @@ ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축
 
 ## 2026-11-02 — 업무 온톨로지 레벨을 별도 플러그인 Ontology Writer로 나눔
 
-- **Current ADR**: [introduce-business-ontology-level](./0001-introduce-business-ontology-level.md), [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md), [govern-ontology-lifecycle-and-cascade](./0003-govern-ontology-lifecycle-and-cascade.md), [build-ontology-from-documents](./0004-build-ontology-from-documents.md), [render-read-only-ontology-views](./0005-render-read-only-ontology-views.md)
+- **Current ADR**: [introduce-business-ontology-level](./0001-introduce-business-ontology-level.md), [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md), [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md), [build-ontology-from-documents](./0004-build-ontology-from-documents.md), [render-read-only-ontology-views](./0005-render-read-only-ontology-views.md)
 - **Change type**: architecture
 - **What**: ADR Writer가 업무 온톨로지 레벨까지 맡던 결정 → 별도 플러그인 Ontology Writer가 어휘, 모델의 작성·검증·저장, 업무 맥락 조회와 그 세션 지침, 변경 승인과 하위 전파, 문서에서 모델 구축과 화면을 맡고, ADR Writer는 ADR과 ADR 색인(실현 기능 기록의 형식 포함)을 맡는다. 모델 변경과 색인 연결은 Ontology Writer가 같은 변경 단위로 쓰고, 영향 ADR이 있는 변경에는 두 플러그인이 함께 있어야 한다. 모델 문서가 있으면 ADR Writer의 세션 지침은 업무 맥락을 Ontology Writer로 확인하고 확인하지 못했으면 그 사실을 밝히라는 한 줄을 더하며, ADR 작업을 막지 않는다.
 - **Why**: 모델을 쓰지 않는 사용자도 세션마다 온톨로지 스킬 다섯 개의 설명을 싣고 있었고, 그 분량은 나머지 ADR 스킬 설명을 모두 합친 것과 비슷했다. 사용자가 PRD, 업무 모델과 ADR 계층마다 플러그인을 나누기로 정했다(사용자 결정, 2026-11-02).
@@ -117,7 +117,7 @@ ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축
 
 ## 2026-10-31 — 읽을 수 없는 커밋이 이어진 구간에서 Status가 바뀌었을 수 있는 `Accepted` 프로세스는 미확인으로 보고하고 사용자 확인으로 정리
 
-- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./0003-govern-ontology-lifecycle-and-cascade.md)
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
 - **Change type**: requirement rule change
 - **What**: 이 경우를 정하지 않던 규칙 → `Accepted` 프로세스가 마지막으로 `Accepted`가 된 곳까지의 이력에 모델을 읽을 수 없는 커밋이 두 개 이상 이어지고 그 안에서 그 프로세스의 Status가 바뀌었다가 돌아왔을 수 있으면, 온톨로지 동기화는 그 프로세스를 미확인으로 보고하고 사용자에게 그 구간에서 업무 구성이 바뀌었는지 묻는다. 바뀌지 않았다고 확인하면 `Accepted` 날짜를 다시 기록하고, 확인하지 않으면 `Proposed`로 표시해 정렬 검토를 받게 한다. 허용 전이와 생명주기 전이 목록, 실패한 정렬 검토의 보고도 이 확인과 표시를 따른다.
 - **Why**: 그 구간 안에서 Status가 바뀌었다가 돌아왔을 수 있지만 그때의 업무 구성은 이력으로 볼 수 없다. 그런 프로세스를 모두 업무 구성 변경으로 다뤄 정렬 검토로 보내는 대신, 사용자의 확인으로 정하기로 했다(사용자 결정, 2026-10-31).
@@ -125,7 +125,7 @@ ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축
 
 ## 2026-10-31 — 용어집 표에서 다른 내용일 수 있는 칸의 이름은 묻고 저장을 막지 않음
 
-- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./0003-govern-ontology-lifecycle-and-cascade.md)
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
 - **Change type**: requirement rule change
 - **What**: 용어집 표의 칸마다 헤더로 정의 항목인지 정해 같은 이름이 있으면 정리 전까지 저장을 막던 규칙 → 헤더가 용어·이름·언어를 뜻하는 열(그런 열이 없으면 첫 열)의 이름만 정의 항목으로 보고 정리 전까지 저장을 막는다. 다른 열(정의·설명 열 제외)의 같은 이름은 그 칸이 정의인지 사용자에게 묻고 저장을 막지 않는다.
 - **Why**: 헤더만으로는 열이 그 용어의 이름을 담는지 문맥·분류·관계 같은 다른 내용을 담는지 확정할 수 없어, 놓침과 과잉 판정이 번갈아 생겼다. 사용자가 분명한 칸만 막고 나머지는 묻기로 정했다(사용자 결정, 2026-10-31).
@@ -133,7 +133,7 @@ ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축
 
 ## 2026-10-31 — 커밋되지 않은 `Proposed` 위의 같은 날이나 이른 날의 승격은 알리고 커밋 뒤로 미룸
 
-- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./0003-govern-ontology-lifecycle-and-cascade.md)
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
 - **Change type**: requirement rule change
 - **What**: 정렬 검토를 통과하면 언제나 바로 `Accepted (날짜)`가 되던 규칙 → 마지막으로 커밋된 모델이 그 프로세스를 검토 날짜와 같거나 그보다 늦은 날짜의 `Accepted`로 가진 채 그 프로세스를 `Proposed`로 만든 변경이 커밋되지 않았으면, ADR Writer는 승격하지 않았다는 것과 그 이유를 알리고 그 변경이 커밋된 뒤 승격한다.
 - **Why**: 승인 기록을 두지 않고 Status를 날짜 단위로 기록하므로, 그대로 승격하면 커밋 뒤 이력이 검토를 거친 승격을 같은 값(동기화 전 직접 편집)이나 이른 날짜로의 손 재기록으로 읽기 때문이다. 같은 날 확인의 한계(2026-10-30)와 같은 근거다(사용자 결정, 2026-10-31).
@@ -141,7 +141,7 @@ ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축
 
 ## 2026-10-30 — 현재 `Accepted` 날짜와 같은 날의 확인은 다시 기록하지 않고 알림
 
-- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./0003-govern-ontology-lifecycle-and-cascade.md), [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md), [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
 - **Change type**: requirement rule change
 - **What**: 업무 구성을 바꾸지 않는 편집을 확인하면 언제나 그 확인이 다음 비교의 기준이 된다고 하던 규칙 → 확인한 날짜가 그 프로세스의 현재 `Accepted` 날짜와 같으면 Status를 다시 기록하지 않고, ADR Writer가 그 사실과 이유를 알리며, 그 편집은 날짜가 바뀐 뒤의 확인 전까지 동기화 전 직접 편집으로 표시된다. 다시 기록한 `Accepted`는 커밋된 뒤에 비교 기준이 된다.
 - **Why**: Status가 날짜 단위이고 별도 승인 기록을 두지 않아, 같은 날의 확인은 저장소 이력에 새 기준을 남길 수 없기 때문이다(사용자 결정, 2026-10-30: 날짜 단위를 유지하고 한계를 명시).
@@ -149,7 +149,7 @@ ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축
 
 ## 2026-10-30 — 업무 구성을 바꾸지 않는 편집의 확인이 `Accepted` 날짜를 다시 기록
 
-- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./0003-govern-ontology-lifecycle-and-cascade.md), [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md), [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
 - **Change type**: requirement rule change
 - **What**: 미정 범위만의 변경이나 같은 뜻으로 확인한 문구 수정이 `Accepted` 프로세스의 Status를 전혀 바꾸지 않던 규칙 → 승인 저장이나 온톨로지 동기화가 그런 편집을 확인하면, 기계 게이트가 유지될 때 확인한 날짜의 `Accepted`로 다시 기록한다(`Accepted`→`Accepted` 날짜 갱신). 조회는 그 이전의 편집을 표시하지 않고, 변경 표시를 판정할 수 없는 범위는 이유와 함께 보이며 ADR 작성과 구현은 그 범위를 동기화 전 직접 편집이 있을 수 있는 것으로 다룬다.
 - **Why**: 승인 기록을 두지 않는 상태에서 확인한 비의미 편집이 다음 비교에서 다시 직접 편집으로 표시되고 같은 확인을 매번 다시 묻게 되었기 때문이다(사용자 결정, 2026-10-30).
@@ -157,7 +157,7 @@ ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축
 
 ## 2026-10-29 — 준수 계약 배치와 Status 연쇄를 규칙이 닿는 단계와 업무 구성 기준으로 변경
 
-- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./0003-govern-ontology-lifecycle-and-cascade.md)
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
 - **Change type**: requirement rule change
 - **What**: 규칙이 제약하는 상태를 바꾸는 단계에 두던 준수 계약 → 규칙이 닿는 단계에 둔다. 공유 요소를 참조하는 모든 프로세스를 `Proposed`로 만들던 연쇄 → 업무 구성(미정 범위 제외)이 바뀐 프로세스만 `Proposed`가 된다. 관찰 기준의 실행 범위는 기준이 지나는 단계와 경유 사건의 다른 프로세스 단계로 정하고, 다른 프로세스의 단계는 현행이거나 함께 검증할 때만 넣는다. `Accepted` 프로세스의 커밋된 직접 편집은 마지막 `Accepted` 뒤의 저장소 이력으로 찾는다. 목표 프로세스 때문에 미룬 인계는 그 프로세스가 현행이 되는 검토에서 실행하고, 모델이 정의를 갖게 되는 업무 용어의 기존 용어집 항목은 같은 승인 요약에서 한 결정으로 정리한다.
 - **Why**: 모델에서 업무 상태를 빼기로 한 해상도 결정을 따르고, 문서 리뷰가 지적한 대로 다른 프로세스의 목표 변경이 운영 중인 현행 프로세스를 목표로 되돌리지 않게 하기 위해서다.

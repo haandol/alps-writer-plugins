@@ -283,11 +283,11 @@ Status로 구분되고, 주요 의미 변경의 이유는 모델 디렉터리의
 
 ## Related
 
-- [업무 온톨로지를 ADR 위의 RDFS-lite 레벨로 도입](./0001-introduce-business-ontology-level.md)
-- [에이전트의 업무 맥락 조회와 세션 지침](./0002-retrieve-business-context-for-agents.md)
-- [문서 묶음에서 모델 후보 구축](./0004-build-ontology-from-documents.md)
-- [ADR 상호작용은 Decision Digest와 semantic diff를 우선 표시](../adr-authoring/decision-presentation/0001-present-decision-digest-and-semantic-diff.md)
-- [안전하고 비례적인 개발 워크플로우](../delivery/development-flow/0001-safe-proportional-development-gates.md)
-- [하나의 결정은 하나의 현재 상태 ADR로 유지](../adr-authoring/current-state/0001-record-only-the-final-decision-state.md)
-- [PRD 기능 계약의 소유권을 ADR로 이전](../alps-authoring/spec-handoff/0001-admission-aware-feature-handoff.md)
-- [기존 프로젝트의 기능과 계약을 ADR에 정리](../adr-authoring/project-import/0001-import-existing-project-decisions.md)
+- [업무 온톨로지를 ADR 위의 RDFS-lite 레벨로 도입](../0001-introduce-business-ontology-level.md)
+- [에이전트의 업무 맥락 조회와 세션 지침](../0002-retrieve-business-context-for-agents.md)
+- [문서 묶음에서 모델 후보 구축](../0004-build-ontology-from-documents.md)
+- [ADR 상호작용은 Decision Digest와 semantic diff를 우선 표시](../../adr-authoring/decision-presentation/0001-present-decision-digest-and-semantic-diff.md)
+- [안전하고 비례적인 개발 워크플로우](../../delivery/development-flow/0001-safe-proportional-development-gates.md)
+- [하나의 결정은 하나의 현재 상태 ADR로 유지](../../adr-authoring/current-state/0001-record-only-the-final-decision-state.md)
+- [PRD 기능 계약의 소유권을 ADR로 이전](../../alps-authoring/spec-handoff/0001-admission-aware-feature-handoff.md)
+- [기존 프로젝트의 기능과 계약을 ADR에 정리](../../adr-authoring/project-import/0001-import-existing-project-decisions.md)

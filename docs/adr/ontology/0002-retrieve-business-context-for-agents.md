@@ -317,6 +317,6 @@ HNSW와 같은 근사 벡터 검색은 유사한 후보 탐색을 도울 수 있
 ## Related
 
 - [업무 온톨로지를 ADR 위의 RDFS-lite 레벨로 도입](./0001-introduce-business-ontology-level.md)
-- [온톨로지 변경의 승인과 하위 전파](./0003-govern-ontology-lifecycle-and-cascade.md)
+- [온톨로지 변경의 승인과 하위 전파](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
 - [안전하고 비례적인 개발 워크플로우](../delivery/development-flow/0001-safe-proportional-development-gates.md)
 - [PRD 기능 계약의 소유권을 ADR로 이전](../alps-authoring/spec-handoff/0001-admission-aware-feature-handoff.md)
