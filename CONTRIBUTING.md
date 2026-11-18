@@ -289,7 +289,7 @@ Do not delete or weaken a test to make it pass — fix the code instead.
 
 ### Project Structure
 
-bun run workspace. The MCP server (npm package `alps-writer`) lives in `plugins/alps-writer/`; the adr-writer plugin in `plugins/adr-writer/`. See [AGENTS.md](./AGENTS.md#repository-structure) for the full tree.
+Bun workspace. The MCP server lives in `plugins/alps-writer/`. The [repository structure](./docs/development/repository-and-contracts.md#repository-structure) shows all three plugins.
 
 ```
 plugins/alps-writer/src/
