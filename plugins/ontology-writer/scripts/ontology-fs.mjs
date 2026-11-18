@@ -1817,7 +1817,7 @@ export function changeFlags(
     if (!isAccepted(head, p)) continue;
     const id = elementId(p);
     // An appearance that only undoes a hand edit is no baseline; the earlier one is.
-    const settled = processAudit(h, p, (input) => alignmentPlan(input)).settled();
+    const settled = processAudit(h, p).settled();
     const { commits: appearances, cut, unread } = settled;
     // A shallow clone cut the history off where the Status may have appeared earlier.
     if (cut) {
@@ -1888,10 +1888,7 @@ export function changeFlags(
     flags.baseline.set(id, h.graphAt(at));
   }
   // Committed lifecycle edits Ontology Writer's transitions do not explain, per process.
-  flags.lifecycleEdits = Map.groupBy(
-    lifecycleHistoryFindings(h, (input) => alignmentPlan(input)),
-    (f) => f.element,
-  );
+  flags.lifecycleEdits = Map.groupBy(lifecycleHistoryFindings(h), (f) => f.element);
   return flags;
 }
 
@@ -1948,11 +1945,7 @@ export function acceptedBaselines(history) {
   if (!head) return out;
   for (const p of head.ofType("Process")) {
     if (!isAccepted(head, p)) continue;
-    const baseline = acceptedBaselineOf(
-      history,
-      p,
-      processAudit(history, p, (input) => alignmentPlan(input)).settled(),
-    );
+    const baseline = acceptedBaselineOf(history, p, processAudit(history, p).settled());
     if (baseline) out.set(p, baseline);
   }
   return out;
@@ -1973,7 +1966,7 @@ const INVALID = Symbol("index that does not parse");
  * `unreached` say, as `appearancesOf` does, whether that value first shows right
  * after commits history cannot read, and whether one of them it cannot reach.
  */
-function processAudit(history, p, gates) {
+function processAudit(history, p) {
   const id = elementId(p);
   const value = lifecycleValue(p);
   const readableParents = readableParentsOf(history, (q) => Boolean(history.graphAt(q)));
@@ -2031,7 +2024,7 @@ function processAudit(history, p, gates) {
       // else it cannot read, and only the rest leaves them unknown. Without a readable
       // index, the gates the model alone decides are still judged.
       const read = history.errorsAt(at, mapping ?? null) ?? { errors: [], unread: true };
-      plan ??= gates({
+      plan ??= alignmentPlan({
         index: after,
         mapping: mapping ?? null,
         processId: id,
@@ -2150,14 +2143,14 @@ function processAudit(history, p, gates) {
  * hold at that commit. A promotion whose gates held is indistinguishable from a
  * reviewed one and is not reported.
  *
+ * A promotion is judged by the alignment plan at its commit (`modelOnly` where history
+ * cannot read the index there).
+ *
  * @param {object} history From `readModelHistory` with the mapping path.
- * @param {(input: {index: object, mapping: object|null, processId: string, errors: object[], modelOnly: boolean}) => {blocking: string[]}} gates
- *   The alignment plan used to judge a promotion at its commit (`modelOnly` where
- *   history cannot read the index there).
  * @returns {object[]} findings `{level, code, where, element, msg}`.
  */
-export function lifecycleHistoryFindings(history, gates) {
-  return lifecycleHistoryAudit(history, gates).findings;
+export function lifecycleHistoryFindings(history) {
+  return lifecycleHistoryAudit(history).findings;
 }
 
 /**
@@ -2170,7 +2163,7 @@ export function lifecycleHistoryFindings(history, gates) {
  *
  * @returns {{findings: object[], unjudged: {process: string, reason: string}[]}}
  */
-export function lifecycleHistoryAudit(history, gates) {
+export function lifecycleHistoryAudit(history) {
   const findings = [];
   const unjudged = [];
   if (!history.available || !history.history?.available || !history.head)
@@ -2180,7 +2173,7 @@ export function lifecycleHistoryAudit(history, gates) {
   const short = (c) => c.slice(0, 12);
   for (const p of head.ofType("Process")) {
     const id = elementId(p);
-    const audit = processAudit(history, p, gates);
+    const audit = processAudit(history, p);
     const { commits, cut, unread, unreached, gaps, runs } = audit.settled();
     // Where a shallow clone cut the history off, or history cannot reach the model, what
     // came before is unknown. Right after documents that do not parse, the change is

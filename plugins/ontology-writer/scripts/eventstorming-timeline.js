@@ -52,8 +52,6 @@
     }
     const camera = { x: 0, y: 0, zoom: 1 };
     let initialized = false,
-      drag = null,
-      moved = false,
       selected = null,
       selectedRoute = null,
       frame = 0;
@@ -176,7 +174,8 @@
     }
     function perspective(mode) {
       host.querySelector(".story-projection").hidden = mode !== "story";
-      host.querySelector(".event-landscape").hidden = mode !== "landscape";
+      const areas = host.querySelector(".event-landscape");
+      if (areas) areas.hidden = mode !== "landscape";
       host.querySelectorAll("[data-event-perspective]").forEach((button) => {
         button.setAttribute("aria-pressed", String(button.dataset.eventPerspective === mode));
       });
@@ -346,10 +345,10 @@
     host.addEventListener(
       "click",
       (e) => {
-        if (moved && viewport.contains(e.target)) {
+        if (gesture.moved && viewport.contains(e.target)) {
           e.preventDefault();
           e.stopPropagation();
-          moved = false;
+          gesture.moved = false;
           return;
         }
         const button = e.target.closest("[data-story-select], [data-story-reveal]");
@@ -387,84 +386,14 @@
       highlight();
       viewport.focus({ preventScroll: true });
     });
-    host.querySelectorAll("[data-story-camera]").forEach((button) =>
-      button.addEventListener("click", () => {
-        if (button.dataset.storyCamera === "fit") fit();
-        else zoom(button.dataset.storyCamera === "in" ? 1.2 : 1 / 1.2);
-      }),
-    );
-    viewport.addEventListener("pointerdown", (e) => {
-      if (e.button !== 0 || e.target.closest("summary, a")) return;
-      drag = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: camera.x, cy: camera.y };
-      moved = false;
-    });
-    viewport.addEventListener("pointermove", (e) => {
-      if (!drag || drag.id !== e.pointerId) return;
-      const dx = e.clientX - drag.x,
-        dy = e.clientY - drag.y;
-      if (!moved && Math.hypot(dx, dy) < 5) return;
-      moved = true;
-      viewport.dataset.dragging = "true";
-      viewport.setPointerCapture(e.pointerId);
-      camera.x = drag.cx + dx;
-      camera.y = drag.cy + dy;
-      e.preventDefault();
-      paint();
-    });
-    const end = (e) => {
-      if (drag?.id !== e.pointerId) return;
-      drag = null;
-      delete viewport.dataset.dragging;
-      if (viewport.hasPointerCapture(e.pointerId)) viewport.releasePointerCapture(e.pointerId);
-    };
-    viewport.addEventListener("pointerup", end);
-    viewport.addEventListener("pointercancel", (e) => {
-      end(e);
-      moved = false;
-    });
-    viewport.addEventListener(
-      "wheel",
-      (e) => {
-        e.preventDefault();
-        const b = viewport.getBoundingClientRect();
-        zoom(Math.exp(-e.deltaY * 0.0015), e.clientX - b.left, e.clientY - b.top);
-      },
-      { passive: false },
-    );
-    host.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !inspector.hidden) {
-        e.preventDefault();
-        close();
-        return;
-      }
-      if (e.target !== viewport) return;
-      if (["+", "="].includes(e.key)) zoom(1.2);
-      else if (e.key === "-") zoom(1 / 1.2);
-      else if (e.key === "0") fit();
-      else if (e.key.startsWith("Arrow")) {
-        if (e.key === "ArrowLeft") camera.x += 40;
-        if (e.key === "ArrowRight") camera.x -= 40;
-        if (e.key === "ArrowUp") camera.y += 40;
-        if (e.key === "ArrowDown") camera.y -= 40;
-        paint();
-      } else return;
-      e.preventDefault();
-    });
-    // Tab focus keeps a card reachable after panning without selecting or mutating it.
-    viewport.addEventListener("focusin", (e) => {
-      if (!e.target.matches("button, summary, a")) return;
-      const rect = e.target.getBoundingClientRect(),
-        view = viewport.getBoundingClientRect();
-      if (
-        rect.left < view.left ||
-        rect.right > view.right ||
-        rect.top < view.top ||
-        rect.bottom > view.bottom
-      ) {
-        camera.x += view.left + 24 - rect.left;
-        camera.y += view.top + 24 - rect.top;
-        paint();
-      }
+    const gesture = attachCanvasCamera(host, viewport, {
+      camera,
+      button: "data-story-camera",
+      zoom,
+      fit,
+      paint,
+      inspector,
+      close,
     });
     new ResizeObserver(schedule).observe(world);
     new ResizeObserver(schedule).observe(viewport);

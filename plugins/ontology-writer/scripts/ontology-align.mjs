@@ -500,6 +500,7 @@ export function alignmentPlan({
   }
 
   // What each criterion executes, written into the evidence before running.
+  const own = steps.filter((s) => isSystemStep(index, s));
   const criteria = sorted(index.into(p, "criterionOf"))
     .filter((c) => index.typeOf(c) === "ObservationCriterion")
     .map((c) => {
@@ -510,7 +511,6 @@ export function alignmentPlan({
           ...index.out(e, "triggers").flatMap((x) => index.out(x, "starts")),
         ]),
       ).filter((s) => index.typeOf(s) === "Step");
-      const own = steps.filter((s) => isSystemStep(index, s));
       const crossProcess = eventSteps.filter(
         (s) => processOfStep(index, s) !== p && !isRetired(index, processOfStep(index, s) ?? s),
       );

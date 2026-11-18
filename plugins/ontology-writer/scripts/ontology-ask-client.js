@@ -19,6 +19,7 @@
         answered: "저장된 답",
         draft: "작성 중인 답 · 아직 저장하지 않았습니다.",
         submitting: "이 답을 저장하는 중입니다…",
+        answerFailed: "이 답을 저장하지 못했습니다 · 같은 답을 다시 보낼 수 있습니다.",
         pending: "보내기 전",
         sent: "전달됨",
         chat: "대화에서 답함",
@@ -76,6 +77,7 @@
         answered: "Saved answer",
         draft: "Editing an answer · not saved yet.",
         submitting: "Saving this answer…",
+        answerFailed: "This answer was not saved · send the same answer again.",
         pending: "Not sent",
         sent: "Delivered",
         chat: "Answered in chat",
@@ -466,6 +468,7 @@
       optionId: null,
       revision: 0,
       sending: null,
+      failed: null,
       queue: Promise.resolve(),
     };
     c.root.id = `q-${q.id}`;
@@ -505,8 +508,11 @@
     c.override = el("details", "override");
     c.override.append(el("summary", null, T.override));
     // Free text replaces the option; a pending older save cannot own this draft.
+    // A chosen option whose save failed is sent again unchanged.
     c.send.addEventListener("click", () => {
-      if (c.input.value.trim() && c.sending !== c.revision) save(c, q.id, null, c.input.value);
+      if (c.sending === c.revision) return;
+      if (c.input.value.trim()) save(c, q.id, null, c.input.value);
+      else if (retryOption(c)) save(c, q.id, c.optionId, "");
     });
     c.input.addEventListener("input", () => {
       c.revision++;
@@ -541,6 +547,7 @@
     const revision = c.revision;
     const deliver = mode === "immediate";
     c.sending = revision;
+    let saved = false;
     update(
       c,
       state.questions.find((item) => item.id === questionId),
@@ -550,6 +557,7 @@
       .then(() =>
         act(async () => {
           const next = await post("answer", { questionId, optionId, text, deliver });
+          saved = true;
           if (c.revision === revision) {
             c.editing = false;
             c.input.value = "";
@@ -559,11 +567,16 @@
       )
       .finally(() => {
         if (c.sending === revision) c.sending = null;
+        // A failed save keeps the draft and says so on the card until it is sent or replaced.
+        if (c.revision === revision) c.failed = saved ? null : revision;
         const current = state.questions.find((item) => item.id === questionId);
         if (current) update(c, current);
       });
     return c.queue;
   };
+
+  const failedDraft = (c) => c.editing && c.failed === c.revision;
+  const retryOption = (c) => failedDraft(c) && c.mode === "option" && Boolean(c.optionId);
 
   const markChosen = (c) => {
     for (const l of c.options.children)
@@ -666,9 +679,11 @@
     c.toggle.hidden = !closed;
     for (const n of c.root.querySelectorAll("input, textarea, button"))
       if (n !== c.toggle) n.disabled = closed;
-    c.send.disabled = closed || !c.input.value.trim() || c.sending === c.revision;
+    c.send.disabled =
+      closed || c.sending === c.revision || !(c.input.value.trim() || retryOption(c));
     c.draft.hidden = !c.editing;
-    c.draft.textContent = c.sending === c.revision ? T.submitting : T.draft;
+    c.draft.textContent =
+      c.sending === c.revision ? T.submitting : failedDraft(c) ? T.answerFailed : T.draft;
     c.send.textContent = mode === "immediate" ? T.send : T.save;
     c.badge.textContent = q.answer ? (q.pending ? T.pending : "✓") : "";
     c.badge.className = `badge${q.answer ? (q.pending ? " is-pending" : " is-sent") : ""}`;

@@ -10,10 +10,12 @@
       svg.setAttribute("width", board.scrollWidth);
       svg.setAttribute("height", board.scrollHeight);
       const rect = board.getBoundingClientRect();
+      // The first stage with an id is the one a link reaches, as a document-order find would.
+      const stages = new Map();
+      for (const s of board.querySelectorAll(".event-stage"))
+        if (!stages.has(s.dataset.stage)) stages.set(s.dataset.stage, s);
       for (const link of board.querySelectorAll(".event-next")) {
-        const target = [...board.querySelectorAll(".event-stage")].find(
-          (s) => s.dataset.stage === link.dataset.to,
-        );
+        const target = stages.get(link.dataset.to);
         if (!target) continue;
         const a = link.getBoundingClientRect();
         const b = target.querySelector(".command").getBoundingClientRect();

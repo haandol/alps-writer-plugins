@@ -50,7 +50,6 @@ h3 {
 p {
   margin: 7px 0;
 }
-small,
 code {
   overflow-wrap: anywhere;
   color: #48645d;
@@ -79,8 +78,7 @@ label {
   padding: 11px 0;
   cursor: pointer;
 }
-input[type="checkbox"],
-input[type="radio"] {
+input[type="checkbox"] {
   accent-color: #08765d;
 }
 button:disabled {

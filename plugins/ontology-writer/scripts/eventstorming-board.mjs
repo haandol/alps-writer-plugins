@@ -10,7 +10,7 @@ import {
   escapeHtml as esc,
 } from "./ontology-lib.mjs";
 import { queryContext, implementationState, realizersByStep } from "./ontology-query.mjs";
-import { renderEventTimeline } from "./eventstorming-timeline.mjs";
+import { linkSources, renderEventTimeline } from "./eventstorming-timeline.mjs";
 
 export const BOARD_CSS =
   readFileSync(new URL("./eventstorming-board.css", import.meta.url), "utf8") +
@@ -364,7 +364,7 @@ export function modelEventBoard({
         const id = `${elementId(p)}/${s.step.id}/${e?.id ?? "no-event"}`;
         const policies = (e?.reactions ?? []).map(
           (r) =>
-            `${r.policy.label ?? r.policy.id}${literal(elementIri(r.policy.id), "reactionCondition") ? " · " + literal(elementIri(r.policy.id), "reactionCondition") : ""}`,
+            `${r.policy.label ?? r.policy.id}${r.policy.reactionCondition ? " · " + r.policy.reactionCondition : ""}`,
         );
         stages.push({
           id,
@@ -416,7 +416,7 @@ export function modelEventBoard({
               from: id,
               step: n.id,
               label: r.policy.label ?? r.policy.id,
-              condition: literal(elementIri(r.policy.id), "reactionCondition") || null,
+              condition: r.policy.reactionCondition || null,
               verdict: "stated",
               evidence: source(r.policy.id),
             });
@@ -480,7 +480,7 @@ export function modelEventBoard({
 }
 
 /** Render the board as cards and native SVG connectors, without Mermaid or external resources. */
-export function renderEventBoard(board, { lang = "en", modelLink = null } = {}) {
+export function renderEventBoard(board, { lang = "en", modelLink = null, landscape = true } = {}) {
   const errors = validateEventBoard(board);
   if (errors.length) throw new Error(errors.join("\n"));
   const t = terms[lang] ?? terms.en;
@@ -493,10 +493,10 @@ export function renderEventBoard(board, { lang = "en", modelLink = null } = {}) 
   // Position alone never asserts an unrecorded relation.
   const ordered = [];
   const remaining = new Set(board.stages.map((s) => s.id));
+  const sources = linkSources(board.links);
   while (remaining.size) {
     const next = board.stages.find(
-      (s) =>
-        remaining.has(s.id) && !board.links.some((l) => l.to === s.id && remaining.has(l.from)),
+      (s) => remaining.has(s.id) && !sources(s.id).some((from) => remaining.has(from)),
     );
     if (!next) {
       ordered.push(...board.stages.filter((s) => remaining.has(s.id)));
@@ -537,7 +537,7 @@ export function renderEventBoard(board, { lang = "en", modelLink = null } = {}) 
         )
         .join("") || `<li>${esc(t.none)}</li>`
     }</ul></div>${s.rules?.length ? `<div class="event-card event-rules"><h4>${lang === "ko" ? "관련 업무 규칙" : "Related business rules"}</h4>${s.rules.map((r) => `<p><strong>${esc(r.name)}</strong></p><p>${esc(r.description)}</p><p>${esc(r.scope)}</p>${evidence(r)}`).join("")}</div>` : ""}</article>`;
-  return `<section class="event-workbench" id="eventstorming"><div class="event-header"><div><p class="event-eyebrow">${lang === "ko" ? "업무 흐름 탐색" : "Business flow explorer"}</p><h2>${esc(board.title)}</h2></div><button type="button" class="event-expand" aria-pressed="false" data-expand="${lang === "ko" ? "보드 넓게 보기" : "Expand board"}" data-close="${lang === "ko" ? "보드 닫기" : "Close board"}">${lang === "ko" ? "보드 넓게 보기" : "Expand board"}</button></div><div class="event-meta"><span class="event-origin">${board.origin === "model" ? (lang === "ko" ? "모델에서 재구성" : "From the current model") : lang === "ko" ? "검토 중인 후보" : "Candidate for review"}</span><p>${esc(board.scope)}</p><a class="event-readiness-link" href="#workflow-readiness">${lang === "ko" ? "준비 상태 검토 ↗" : "Review readiness ↗"}</a></div><details class="event-source-info"><summary>${lang === "ko" ? "자료와 해석 범위" : "Source and interpretation"}</summary><p>${esc(t[board.origin])}</p></details>${renderEventTimeline(board, { lang, esc, evidence, tabbed: Boolean(modelLink) })}<h3 id="event-flat-cards">${lang === "ko" ? "업무 카드와 근거" : "Business cards and evidence"}</h3><div class="event-board" tabindex="0" role="region" aria-label="${esc(t.title)}"><svg class="event-connections" aria-hidden="true"></svg>${ordered.length ? `<div class="event-stages">${ordered.map((s) => `<section class="event-lane"><h3>${esc(s.context)}</h3>${stage(s)}</section>`).join("")}</div>` : `<p>${esc(t.noStages)}</p>`}</div><details class="event-subdomains"><summary>${esc(t.subdomains)}</summary>${board.subdomains?.length ? board.subdomains.map((s) => `<p><strong>${esc(s.name)}</strong> — ${esc(s.responsibility)}</p>${evidence(s)}`).join("") : `<p>${esc(t.noSubdomains)}</p>`}</details></section>`;
+  return `<section class="event-workbench" id="eventstorming"><div class="event-header"><div><p class="event-eyebrow">${lang === "ko" ? "업무 흐름 탐색" : "Business flow explorer"}</p><h2>${esc(board.title)}</h2></div><button type="button" class="event-expand" aria-pressed="false" data-expand="${lang === "ko" ? "보드 넓게 보기" : "Expand board"}" data-close="${lang === "ko" ? "보드 닫기" : "Close board"}">${lang === "ko" ? "보드 넓게 보기" : "Expand board"}</button></div><div class="event-meta"><span class="event-origin">${board.origin === "model" ? (lang === "ko" ? "모델에서 재구성" : "From the current model") : lang === "ko" ? "검토 중인 후보" : "Candidate for review"}</span><p>${esc(board.scope)}</p><a class="event-readiness-link" href="#workflow-readiness">${lang === "ko" ? "준비 상태 검토 ↗" : "Review readiness ↗"}</a></div><details class="event-source-info"><summary>${lang === "ko" ? "자료와 해석 범위" : "Source and interpretation"}</summary><p>${esc(t[board.origin])}</p></details>${renderEventTimeline(board, { lang, esc, evidence, tabbed: Boolean(modelLink), landscape })}<h3 id="event-flat-cards">${lang === "ko" ? "업무 카드와 근거" : "Business cards and evidence"}</h3><div class="event-board" tabindex="0" role="region" aria-label="${esc(t.title)}"><svg class="event-connections" aria-hidden="true"></svg>${ordered.length ? `<div class="event-stages">${ordered.map((s) => `<section class="event-lane"><h3>${esc(s.context)}</h3>${stage(s)}</section>`).join("")}</div>` : `<p>${esc(t.noStages)}</p>`}</div><details class="event-subdomains"><summary>${esc(t.subdomains)}</summary>${board.subdomains?.length ? board.subdomains.map((s) => `<p><strong>${esc(s.name)}</strong> — ${esc(s.responsibility)}</p>${evidence(s)}`).join("") : `<p>${esc(t.noSubdomains)}</p>`}</details></section>`;
 }
 
 export function eventBoardPage(board, { lang = "en" } = {}) {
@@ -571,11 +571,13 @@ export function renderWorkflowReadiness({
           includeRetired,
         });
       if (!q.found) return "";
+      // A step outside the model namespace has no id to read its facts by, as on the board.
+      const known = q.steps.filter((s) => s.step.id !== null);
       const scope = [
         ...q.openScope,
-        ...q.steps.flatMap((s) => openScopeOf(index, elementIri(s.step.id)).items),
+        ...known.flatMap((s) => openScopeOf(index, elementIri(s.step.id)).items),
       ].filter((s) => s.kind !== "none");
-      const steps = q.steps.filter((s) => isSystemStep(index, elementIri(s.step.id)));
+      const steps = known.filter((s) => isSystemStep(index, elementIri(s.step.id)));
       const missing = steps.filter((s) => !realization.get(s.step.id)?.length);
       const unimplemented = steps.filter((s) =>
         (realization.get(s.step.id) ?? []).some((f) => !implementationState(f.adrs).implemented),

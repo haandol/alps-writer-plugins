@@ -139,3 +139,94 @@ const createEventSignals = (
     }),
   };
 };
+
+/**
+ * Pan and zoom a board canvas the same way everywhere: the camera buttons named by the
+ * `button` attribute (`in`, `out`, `fit`), pointer drag, wheel, + - 0 and the arrow keys
+ * on the canvas, Escape to close an open inspector, and a focused card panned into view.
+ * A drag sets `gesture.moved`, so the caller's click handler can tell it from a selection.
+ */
+const attachCanvasCamera = (
+  host,
+  viewport,
+  { camera, button, zoom, fit, paint, inspector, close },
+) => {
+  const gesture = { drag: null, moved: false };
+  host.querySelectorAll(`[${button}]`).forEach((control) =>
+    control.addEventListener("click", () => {
+      const action = control.getAttribute(button);
+      if (action === "fit") fit();
+      else zoom(action === "in" ? 1.2 : 1 / 1.2);
+    }),
+  );
+  viewport.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || e.target.closest("summary, a")) return;
+    gesture.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: camera.x, cy: camera.y };
+    gesture.moved = false;
+  });
+  viewport.addEventListener("pointermove", (e) => {
+    const drag = gesture.drag;
+    if (!drag || drag.id !== e.pointerId) return;
+    const dx = e.clientX - drag.x,
+      dy = e.clientY - drag.y;
+    if (!gesture.moved && Math.hypot(dx, dy) < 5) return;
+    gesture.moved = true;
+    viewport.dataset.dragging = "true";
+    viewport.setPointerCapture(e.pointerId);
+    camera.x = drag.cx + dx;
+    camera.y = drag.cy + dy;
+    e.preventDefault();
+    paint();
+  });
+  const end = (e) => {
+    if (gesture.drag?.id !== e.pointerId) return;
+    gesture.drag = null;
+    delete viewport.dataset.dragging;
+    if (viewport.hasPointerCapture(e.pointerId)) viewport.releasePointerCapture(e.pointerId);
+  };
+  viewport.addEventListener("pointerup", end);
+  viewport.addEventListener("pointercancel", (e) => {
+    end(e);
+    gesture.moved = false;
+  });
+  viewport.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
+      const r = viewport.getBoundingClientRect();
+      zoom(Math.exp(-e.deltaY * 0.0015), e.clientX - r.left, e.clientY - r.top);
+    },
+    { passive: false },
+  );
+  host.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !inspector.hidden) {
+      e.preventDefault();
+      close();
+      return;
+    }
+    if (e.target !== viewport) return;
+    if (["+", "="].includes(e.key)) zoom(1.2);
+    else if (e.key === "-") zoom(1 / 1.2);
+    else if (e.key === "0") fit();
+    else if (e.key.startsWith("Arrow")) {
+      if (e.key === "ArrowLeft") camera.x += 40;
+      if (e.key === "ArrowRight") camera.x -= 40;
+      if (e.key === "ArrowUp") camera.y += 40;
+      if (e.key === "ArrowDown") camera.y -= 40;
+      paint();
+    } else return;
+    e.preventDefault();
+  });
+  // Tab focus keeps a card reachable after panning without selecting or mutating it.
+  viewport.addEventListener("focusin", (e) => {
+    if (!e.target.matches("button, summary, a")) return;
+    const r = e.target.getBoundingClientRect(),
+      v = viewport.getBoundingClientRect();
+    if (r.left < v.left || r.right > v.right || r.top < v.top || r.bottom > v.bottom) {
+      camera.x += v.left + 24 - r.left;
+      camera.y += v.top + 24 - r.top;
+      paint();
+    }
+  });
+  return gesture;
+};

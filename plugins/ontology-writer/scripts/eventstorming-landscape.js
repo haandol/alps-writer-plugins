@@ -26,8 +26,6 @@
     });
     let initialized = false,
       frame = 0,
-      drag = null,
-      moved = false,
       selected = null,
       selectedRoute = null;
     const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
@@ -158,10 +156,10 @@
     host.addEventListener(
       "click",
       (e) => {
-        if (moved && viewport.contains(e.target)) {
+        if (gesture.moved && viewport.contains(e.target)) {
           e.preventDefault();
           e.stopPropagation();
-          moved = false;
+          gesture.moved = false;
           return;
         }
         const stage = e.target.closest("[data-land-stage]");
@@ -184,78 +182,14 @@
       true,
     );
     host.querySelector(".land-close").addEventListener("click", close);
-    host.querySelectorAll("[data-land-camera]").forEach((button) =>
-      button.addEventListener("click", () => {
-        if (button.dataset.landCamera === "fit") fit();
-        else zoom(button.dataset.landCamera === "in" ? 1.2 : 1 / 1.2);
-      }),
-    );
-    viewport.addEventListener("pointerdown", (e) => {
-      if (e.button !== 0 || e.target.closest("summary, a")) return;
-      drag = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: camera.x, cy: camera.y };
-      moved = false;
-    });
-    viewport.addEventListener("pointermove", (e) => {
-      if (!drag || drag.id !== e.pointerId) return;
-      const dx = e.clientX - drag.x,
-        dy = e.clientY - drag.y;
-      if (!moved && Math.hypot(dx, dy) < 5) return;
-      moved = true;
-      viewport.dataset.dragging = "true";
-      viewport.setPointerCapture(e.pointerId);
-      camera.x = drag.cx + dx;
-      camera.y = drag.cy + dy;
-      e.preventDefault();
-      paint();
-    });
-    const end = (e) => {
-      if (drag?.id !== e.pointerId) return;
-      drag = null;
-      delete viewport.dataset.dragging;
-      if (viewport.hasPointerCapture(e.pointerId)) viewport.releasePointerCapture(e.pointerId);
-    };
-    viewport.addEventListener("pointerup", end);
-    viewport.addEventListener("pointercancel", (e) => {
-      end(e);
-      moved = false;
-    });
-    viewport.addEventListener(
-      "wheel",
-      (e) => {
-        e.preventDefault();
-        const r = viewport.getBoundingClientRect();
-        zoom(Math.exp(-e.deltaY * 0.0015), e.clientX - r.left, e.clientY - r.top);
-      },
-      { passive: false },
-    );
-    host.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !inspector.hidden) {
-        e.preventDefault();
-        close();
-        return;
-      }
-      if (e.target !== viewport) return;
-      if (["+", "="].includes(e.key)) zoom(1.2);
-      else if (e.key === "-") zoom(1 / 1.2);
-      else if (e.key === "0") fit();
-      else if (e.key.startsWith("Arrow")) {
-        if (e.key === "ArrowLeft") camera.x += 40;
-        if (e.key === "ArrowRight") camera.x -= 40;
-        if (e.key === "ArrowUp") camera.y += 40;
-        if (e.key === "ArrowDown") camera.y -= 40;
-        paint();
-      } else return;
-      e.preventDefault();
-    });
-    viewport.addEventListener("focusin", (e) => {
-      if (!e.target.matches("button, summary, a")) return;
-      const r = e.target.getBoundingClientRect(),
-        v = viewport.getBoundingClientRect();
-      if (r.left < v.left || r.right > v.right || r.top < v.top || r.bottom > v.bottom) {
-        camera.x += v.left + 24 - r.left;
-        camera.y += v.top + 24 - r.top;
-        paint();
-      }
+    const gesture = attachCanvasCamera(host, viewport, {
+      camera,
+      button: "data-land-camera",
+      zoom,
+      fit,
+      paint,
+      inspector,
+      close,
     });
     new ResizeObserver(schedule).observe(world);
     new ResizeObserver(schedule).observe(viewport);

@@ -2,8 +2,14 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { gzipSync } from "node:zlib";
 
 const cache = new Map();
+const ENGINE = new URL("./vendor/mermaid.min.js", import.meta.url);
+let packed = null;
+/** The engine gzip-compressed as base64, made once per process. */
+const packedEngine = () =>
+  (packed ??= gzipSync(readFileSync(ENGINE), { level: 9 }).toString("base64"));
 const CACHE_LIMIT = 128;
 const PARSER = fileURLToPath(new URL("./vendor/mermaid-parser.mjs", import.meta.url));
 /** Keep one parse result, dropping the oldest beyond the limit. */
@@ -122,12 +128,15 @@ export function renderMermaid(source, ui = {}) {
  * with the figures near view at load. `ui.lazy.ahead`, a CSS length, also draws the
  * figures that close to view one at a time while the page is idle. A figure marked
  * `data-draw="on-request"` is drawn only when asked for.
+ *
+ * With `ui.packed` the engine is embedded gzip-compressed, about a third of its size, and
+ * unpacked by the browser when the first figure is drawn, so a page that draws no figure
+ * never unpacks it. The engine and its behavior are the same either way.
  */
 export function mermaidRuntime(ui = {}) {
-  const engine = readFileSync(new URL("./vendor/mermaid.min.js", import.meta.url), "utf8").replace(
-    /<\/script/gi,
-    "<\\/script",
-  );
+  const engine = ui.packed
+    ? `window.reportMermaidPacked = "${packedEngine()}";`
+    : readFileSync(ENGINE, "utf8").replace(/<\/script/gi, "<\\/script");
   const failure = JSON.stringify(ui.diagramFallback || "Diagram not rendered").replace(
     /</g,
     "\\u003c",
@@ -137,7 +146,23 @@ export function mermaidRuntime(ui = {}) {
   ).replace(/</g, "\\u003c");
   return `<script data-mermaid-engine>${engine}</script><script data-mermaid-runtime>
 window.reportDiagramsReady = (async () => {
-  mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"default",flowchart:{htmlLabels:false},suppressErrorRendering:true});
+  // A packed engine is unpacked and run once, before the first figure is drawn.
+  let engine = null;
+  const ready = () => (engine ??= (async () => {
+    const packed = window.reportMermaidPacked;
+    if (packed) {
+      window.reportMermaidPacked = null;
+      const binary = atob(packed);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+      const script = document.createElement('script');
+      script.textContent = await new Response(stream).text();
+      document.head.append(script);
+      script.remove();
+    }
+    mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"default",flowchart:{htmlLabels:false},suppressErrorRendering:true});
+  })());
   const figures = [...document.querySelectorAll('figure[data-mermaid]')];
   const results = [];
   const drawing = new Map();
@@ -146,6 +171,7 @@ window.reportDiagramsReady = (async () => {
     const source = figure.querySelector('.diagram-source code').textContent;
     const status = figure.querySelector('.diagram-status');
     try {
+      await ready();
       const {svg} = await mermaid.render(figure.dataset.mermaid + '-' + index, source);
       figure.querySelector('.diagram__viewport').innerHTML = svg;
       const image = figure.querySelector('.diagram__viewport svg');

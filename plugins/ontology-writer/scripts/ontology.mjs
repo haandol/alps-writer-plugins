@@ -130,7 +130,7 @@ import {
   sameKeys,
   sameMeaningKeys,
   serializeTurtle,
-  termKey,
+  tripleKey,
   unionGraph,
   validateModel,
 } from "./ontology-lib.mjs";
@@ -433,20 +433,14 @@ function format(opts) {
     return 0;
   }
   const documents = files.map((file) => ({ file, doc: rel(file), ...readDocument(file) }));
-  const check = validateModel(documents, { modelDir: rel(opts.ontologyDir) });
-  const parseErrors = check.findings.filter(
-    (f) => f.level === "error" && f.code !== "ontology-not-validated" && !check.index,
-  );
-  if (parseErrors.length) {
-    for (const e of parseErrors) process.stdout.write(`✗ [${e.code}] ${e.where}\n    ${e.msg}\n`);
-    return 1;
-  }
+  // Formatting needs the parse only; the model checks belong to validate.
+  const parsedDocs = documents.map(parseDocument);
+  if (printParseErrors(parsedDocs)) return 1;
   const changed = [];
   const blocked = [];
   const canonicalOf = new Map();
-  // Every document parsed: validation's parse of each is the one to serialize.
   for (const [i, d] of documents.entries()) {
-    const parsed = check.parsed[i];
+    const parsed = parsedDocs[i];
     const canonical = serializeTurtle(parsed.triples);
     if (canonical === d.text) continue;
     changed.push(d.doc);
@@ -514,17 +508,10 @@ function revision(ref, ontologyDir) {
 
 function diff(opts) {
   const before = revision(opts.base, opts.ontologyDir);
-  const after = validateModel(
-    findModelDocuments(opts.ontologyDir).map((f) => ({ doc: rel(f), ...readDocument(f) })),
-  ).parsed;
-  const failed = [...before.parsed, ...after].flatMap((p) => p.errors);
-  if (failed.length) {
-    for (const e of failed)
-      process.stdout.write(
-        `✗ [ontology-${e.code === "syntax" ? "parse" : e.code}] ${e.doc}:${e.line}:${e.col}\n    ${e.message}\n`,
-      );
-    return 1;
-  }
+  const after = findModelDocuments(opts.ontologyDir).map((f) =>
+    parseDocument({ doc: rel(f), ...readDocument(f) }),
+  );
+  if (printParseErrors([...before.parsed, ...after])) return 1;
   const result = diffGraphs(before.triples, unionGraph(after));
   if (opts.json)
     process.stdout.write(JSON.stringify({ base: opts.base, ...result }, null, 2) + "\n");
@@ -651,23 +638,34 @@ function readText(file) {
   }
 }
 
-/** Parse every model document of a directory; null documents mean a parse failure was printed. */
+/** Print every parse error of the parsed documents; true when there was one. */
+function printParseErrors(parsedDocs) {
+  const failed = parsedDocs.flatMap((p) => p.errors);
+  for (const e of failed)
+    process.stdout.write(
+      `✗ [ontology-${e.code === "syntax" ? "parse" : e.code}] ${e.doc}:${e.line}:${e.col}\n    ${e.message}\n`,
+    );
+  return failed.length > 0;
+}
+
+/**
+ * Parse every model document of a directory; null documents mean a parse failure was printed.
+ * The commands that load a model run their own checks, so a model that parses is only indexed.
+ */
 function loadModel(dir) {
   const docs = findModelDocuments(dir).map((f) => ({ file: f, ...readDocument(f) }));
-  const check = validateModel(
-    docs.map((d) => ({ ...d, doc: rel(d.file) })),
-    { modelDir: rel(dir) },
-  );
-  if (!check.index) {
+  const labelled = docs.map((d) => ({ ...d, doc: rel(d.file) }));
+  const parsed = labelled.map(parseDocument);
+  if (parsed.some((p) => p.errors.length)) {
+    const check = validateModel(labelled, { modelDir: rel(dir), parsed });
     for (const e of check.findings.filter((f) => f.level === "error"))
       process.stdout.write(`✗ [${e.code}] ${e.where}\n    ${e.msg}\n`);
     return null;
   }
   return {
     dir,
-    docs: docs.map((d, i) => ({ ...d, parsed: check.parsed[i] })),
-    index: check.index,
-    findings: check.findings,
+    docs: docs.map((d, i) => ({ ...d, parsed: parsed[i] })),
+    index: indexGraph(unionGraph(parsed)),
   };
 }
 
@@ -1235,11 +1233,7 @@ function documentsToWrite(
   const byPath = new Map(current.docs.map((d) => [rel(d.file), d]));
   const byEntry = new Map(current.docs.map((d) => [entryOf(d.file), d]));
   byEntry.delete(null);
-  const key = (triples) =>
-    triples
-      .map((t) => `${t.s}\0${t.p}\0${termKey(t.o)}`)
-      .sort()
-      .join("\n");
+  const key = (triples) => triples.map(tripleKey).sort().join("\n");
   const out = [];
   const kept = new Set();
   const linkedStepType = (t) =>
@@ -1632,7 +1626,7 @@ function apply(opts) {
       level: audit?.level ?? null,
     }),
     ...(direct && lifecycleHistory.available
-      ? lifecycleHistoryFindings(lifecycleHistory, (input) => alignmentPlan(input)).filter(
+      ? lifecycleHistoryFindings(lifecycleHistory).filter(
           (f) => !opts.process || f.element === opts.process,
         )
       : []),
@@ -1756,12 +1750,8 @@ function apply(opts) {
   process.stdout.write(
     `✓ applied; processes this save marked Proposed: ${[...propose].sort().join(", ") || "none"}${renewed.size ? `; Accepted renewed: ${[...renewed].sort().join(", ")}` : ""}\n`,
   );
-  writeSavedNextAction(opts, [...propose].sort(), [
-    ...new Set([
-      ...summary.affectedAdrs,
-      ...relinked(currentMapping, opts.mappingFile ? mapping : null).adrs,
-    ]),
-  ]);
+  // The ADRs the approval bound are the ones to advise.
+  writeSavedNextAction(opts, [...propose].sort(), [...new Set(hashInputs.adrs)]);
   for (const [id, why] of [...notRenewed].sort())
     process.stdout.write(`⚠ Accepted date of ${id} not renewed: ${why}\n`);
   if (!lifecycleHistory.available && lifecycleHistory.noHistory)
@@ -2147,8 +2137,7 @@ function lifecycleAudit(
       promotion,
     }),
     ...(committed && history?.available
-      ? (historyAudit?.findings ??
-        lifecycleHistoryFindings(history, (input) => alignmentPlan(input)))
+      ? (historyAudit?.findings ?? lifecycleHistoryFindings(history))
       : []),
   ];
 }
@@ -2457,9 +2446,7 @@ function lifecycle(opts) {
   // The base's change log, read through the model directory's links as its documents are.
   const baseLog = before.changeLog;
   // One audit of history serves the findings and the note on what it could not judge.
-  const historyAudit = history?.available
-    ? lifecycleHistoryAudit(history, (input) => alignmentPlan(input))
-    : null;
+  const historyAudit = history?.available ? lifecycleHistoryAudit(history) : null;
   const findings = lifecycleAudit(
     opts,
     current.index,
@@ -2534,21 +2521,29 @@ function view(opts) {
     if (!opts.draft) process.stdout.write(`${firstModelHelp(opts.lang, findings)}\n`);
     return 1;
   }
-  const html = renderLayeredView({
-    index,
-    mapping,
-    findings,
-    changes:
-      index && !opts.draft
-        ? changeFlags(opts.ontologyDir, index, { mappingPath: mappingPathOf(opts) })
-        : null,
-    includeRetired: opts.includeRetired,
-    lang: opts.lang === "ko" ? "ko" : "en",
-    adrRoot: opts.adrDir,
-    metadata,
-    sourceKind: opts.draft ? "draft" : "model",
-  });
+  // ADR file links are relative to where the view is saved; outside the repository it gets none.
   const run = allocateRunDirectory(process.cwd(), "ontology-view");
+  let html;
+  try {
+    html = renderLayeredView({
+      index,
+      mapping,
+      findings,
+      changes:
+        index && !opts.draft
+          ? changeFlags(opts.ontologyDir, index, { mappingPath: mappingPathOf(opts) })
+          : null,
+      includeRetired: opts.includeRetired,
+      lang: opts.lang === "ko" ? "ko" : "en",
+      adrRoot: opts.adrDir,
+      metadata,
+      sourceKind: opts.draft ? "draft" : "model",
+      linkBase: run.ignored ? run.dir : null,
+    });
+  } catch (error) {
+    rmSync(run.dir, { recursive: true, force: true }); // only the empty folder just made
+    throw error;
+  }
   const file = path.resolve(run.dir, "ontology-view.html");
   writeFileSync(file, html);
   if (run.note) process.stdout.write(`note: ${run.note}\n`);

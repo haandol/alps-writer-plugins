@@ -47,7 +47,10 @@ can render the final shared-report HTML directly from validated native artifacts
 rules, and dependency-free report helper. Mermaid syntax is checked with a vendored official parser;
 HTML embeds the official browser engine and reports pending, rendered or failed
 status honestly. The parser needs no runtime package installation, and the embedded engine loads
-without network access. `scripts/sync-report-skill.mjs` copies the skill into
+without network access. `mermaidRuntime({ packed: true })` embeds the same engine
+gzip-compressed (about a third of its size) and unpacks it with the browser's
+`DecompressionStream` before the first figure is drawn; the ontology views use it, reports keep
+the plain engine. `scripts/sync-report-skill.mjs` copies the skill into
 adr-writer and ontology-writer; the ADR diagram module and the process view use that same
 implementation.
 Edit the canonical source, then synchronize. `report-skill:check` rejects drift.

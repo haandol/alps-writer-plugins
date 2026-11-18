@@ -340,6 +340,7 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
   const added = [];
   const kept = [];
   const dropped = [];
+  const cutPaths = []; // [confirmed end, dropped description] of each workflow path left out
   for (const { kind, item } of chosen) {
     const isNew = !current.index.typeOf(iri(item.id));
     const changes = new Set(
@@ -350,7 +351,9 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
       const other =
         t.s !== iri(item.id) ? elementId(t.s) : t.o.type === "iri" ? elementId(t.o.value) : null;
       if (other && !exists(other)) {
-        dropped.push(`${item.id} ${t.p.replace(ONTO, "")} ${other}`);
+        const what = `${item.id} ${t.p.replace(ONTO, "")} ${other}`;
+        dropped.push(what);
+        if (PATH_RELATIONS.has(t.p)) cutPaths.push([iri(item.id), what]);
         continue;
       }
       if (seen.has(tripleKey(t))) continue;
@@ -366,6 +369,13 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
       added.push(t);
     }
   }
+  // Only a save draft claims what the saved model holds; the review draft shows the gaps itself.
+  const undecided = confirmedOnly
+    ? noOpenScopeWithCutPaths(
+        [...current.triples.filter((t) => !removed.has(t)), ...added],
+        cutPaths,
+      )
+    : [];
   // Place each subject's triples in its document; only touched documents are rewritten.
   const place = documentPlacer(doc, current);
   const byDoc = new Map();
@@ -388,7 +398,66 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
   for (const [name, ts] of byDoc)
     if (!current.docs.some((d) => d.doc === name))
       documents.push({ doc: name, text: serializeTurtle(ts), rewritten: true, created: true });
-  return { documents, kept, dropped };
+  return { documents, kept, dropped, undecided };
+}
+
+// The relations that carry a process's work from its start to its outcome.
+const PATH_RELATIONS = new Set(
+  ["hasStep", "flowsTo", "emits", "triggers", "starts"].map((p) => ONTO + p),
+);
+
+/**
+ * A process whose path lost an unconfirmed part still has an undecided path, so the save
+ * draft cannot declare that it has none. One message per such process and left-out path.
+ */
+function noOpenScopeWithCutPaths(triples, cutPaths) {
+  if (!cutPaths.length) return [];
+  const into = (p) => {
+    const map = new Map();
+    for (const t of triples)
+      if (t.p === ONTO + p && t.o.type === "iri") {
+        if (!map.has(t.o.value)) map.set(t.o.value, []);
+        map.get(t.o.value).push(t.s);
+      }
+    return map;
+  };
+  const processesOfStep = into("hasStep");
+  const emitters = into("emits");
+  const triggers = into("triggers");
+  // A process whose every step is left out has no hasStep left, so its type identifies it.
+  const processes = new Set(
+    triples.filter((t) => t.p === RDF + "type" && t.o.value === ONTO + "Process").map((t) => t.s),
+  );
+  const starts = new Map();
+  for (const t of triples)
+    if (t.p === ONTO + "starts" && t.o.type === "iri") {
+      if (!starts.has(t.s)) starts.set(t.s, []);
+      starts.get(t.s).push(t.o.value);
+    }
+  const ofStep = (s) => processesOfStep.get(s) ?? [];
+  const ofEvent = (e) => (emitters.get(e) ?? []).flatMap(ofStep);
+  // The confirmed end is a process, a step, an event or a policy.
+  const processesOf = (x) =>
+    processes.has(x)
+      ? [x]
+      : [
+          ...ofStep(x),
+          ...ofEvent(x),
+          ...(starts.get(x) ?? []).flatMap(ofStep),
+          ...(triggers.get(x) ?? []).flatMap(ofEvent),
+        ];
+  const claimsNone = (p) => {
+    const scopes = triples.filter((t) => t.s === p && t.p === ONTO + "openScope");
+    return scopes.length > 0 && scopes.every((t) => t.o.datatype === ONTO + "NoOpenScope");
+  };
+  const out = new Set();
+  for (const [end, what] of cutPaths)
+    for (const p of new Set(processesOf(end)))
+      if (claimsNone(p))
+        out.add(
+          `${elementId(p)} openScope: "none" cannot be saved while ${what} is left out; record that path as an open-path item, or confirm it too`,
+        );
+  return [...out];
 }
 
 // ── board, index, questions and summary ────────────────────────────────────
@@ -671,7 +740,7 @@ function main(argv) {
     return target;
   };
 
-  const { documents, kept, dropped } = mergeDraft(doc, current, { confirmedOnly });
+  const { documents, kept, dropped, undecided } = mergeDraft(doc, current, { confirmedOnly });
   const draftDir = confirmedOnly ? "save-draft" : "draft";
   for (const d of documents) write(path.join(draftDir, d.doc), d.text);
   wrote.draft = path.join(run, draftDir);
@@ -686,7 +755,7 @@ function main(argv) {
     ),
   ];
 
-  const errors = [];
+  const errors = [...undecided];
   if (mapping) {
     const m = candidateMapping(doc, mapping, { confirmedOnly });
     errors.push(...m.errors);

@@ -27,7 +27,8 @@ open scope and the conditions on renewing an `Accepted` date.
 - Unconfirmed paths are not saved. When they belong to one of the three axes,
   record them as open paths on the saved process or step; an axis the user says
   the business does not have becomes not applicable. Show these open-scope items
-  in the scope confirmation.
+  in the scope confirmation. `prepare --confirmed-only` refuses a process that
+  keeps `none` while one of its hand-offs or steps is left out.
 - A saved basis holds its kind and a short sentence only — a regulation,
   contract or policy may be named with its article, but never a quote or an input
   file name, path or page. A rule or policy the user confirmed without a document

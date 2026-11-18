@@ -29,7 +29,7 @@ function writeView(name, text) {
     },
   };
   const file = path.join(dir, `${name}.html`);
-  writeFileSync(file, renderView({ index: v.index, findings: v.findings, mapping }));
+  writeFileSync(file, renderView({ index: v.index, findings: v.findings, mapping, linkBase: dir }));
   return file;
 }
 async function load(file = files.base) {
@@ -131,10 +131,13 @@ test("BC and element selection work with keyboard and preserve the BC's search w
   await page.waitForSelector("#kw-detail article");
   assert.match(await page.$eval("#kw-detail", (e) => e.textContent), /Confirm the order/);
   assert.equal(await page.evaluate(() => document.activeElement.tagName), "H3");
-  const adr = await page.$eval('#kw-detail a[href^="file:"]', (a) => ({
+  const adr = await page.$eval('#kw-detail a[href$="ordering.md"]', (a) => ({
+    attribute: a.getAttribute("href"),
     href: a.href,
     text: a.textContent,
   }));
+  // The link is written relative to the saved view and still opens the same file.
+  assert.equal(adr.attribute, "ordering.md");
   assert.equal(adr.href, pathToFileURL(path.join(dir, "ordering.md")).href);
   await page.click("#kw-close-detail");
   await page.click("#kw-home");
