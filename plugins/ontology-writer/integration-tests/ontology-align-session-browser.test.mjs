@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -59,6 +59,28 @@ test("decision screen shows pending questions across processes and keeps verific
     assert.ok(
       reused.stdout.toString().includes(`ALIGN_SESSION ${url}\nALIGN_RUN ${run}\nALREADY_OPEN`),
     );
+    if (process.platform !== "win32") {
+      const indexAlias = path.join("docs", "adr", "index-alias.json");
+      symlinkSync(".mapping.json", path.join(project, indexAlias));
+      const alias = Bun.spawnSync(
+        [
+          process.execPath,
+          CLI,
+          "align",
+          "--ui",
+          "--no-open",
+          "--process",
+          "ordering.place-order",
+          "--index",
+          indexAlias,
+        ],
+        { cwd: project, timeout: 5000 },
+      );
+      assert.equal(alias.exitCode, 0, alias.stderr.toString());
+      assert.ok(
+        alias.stdout.toString().includes(`ALIGN_SESSION ${url}\nALIGN_RUN ${run}\nALREADY_OPEN`),
+      );
+    }
     browser = await launch(path.join(dir, "isolated-browser"));
     const page = await browser.newPage();
     page.setDefaultTimeout(6000);

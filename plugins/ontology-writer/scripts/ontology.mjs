@@ -2326,7 +2326,12 @@ async function alignSession(opts, level) {
     await import("./ontology-ask.mjs");
   const key = createHash("sha256")
     .update(
-      JSON.stringify([realpathSync(process.cwd()), first.adrIndex, path.resolve(opts.ontologyDir)]),
+      JSON.stringify([
+        realName(process.cwd()),
+        realName(first.adrIndex),
+        realName(opts.adrDir),
+        realName(opts.ontologyDir),
+      ]),
     )
     .digest("hex");
   const { uid, username } = userInfo();

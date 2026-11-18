@@ -276,7 +276,7 @@
       "adrs": [
         {
           "path": "docs/adr/ontology/change-approval/0003-govern-ontology-lifecycle-and-cascade.md",
-          "status": "Proposed",
+          "status": "Accepted (2026-11-18)",
           "summary": "승인된 업무 변경을 ADR·코드로 전파하고, 터미널에서 정렬을 실행하고 결정 화면의 답변과 승인에 따라 실제 변경과 재검증을 수행한다"
         }
       ],
