@@ -8,13 +8,10 @@ argument-hint: "[category?] [--quick]"
 
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
-Read the context's own `docs/adr/<context>/glossary.md` and the root
-`docs/adr/glossary.md` only when the selected ADRs need a term definition.
-Its absence is normal; preserve it as supporting material, not an indexed ADR.
-When this workflow permits ADR writing and a definition needs creation or change,
-or ADR content relies on a business term where `docs/ontology/` holds Turtle
-documents, apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing
-approval boundary. Review-only work reports unclear or conflicting meanings without editing.
+Consult the context glossary, then the root glossary, for meanings needed in
+the comparison. Report conflicts on read-only paths. If a definition change is authorized,
+or ADR content relies on a business term where `docs/ontology/` holds Turtle documents, follow
+`${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval.
 
 When `docs/ontology/` holds Turtle documents, read
 `${CLAUDE_PLUGIN_ROOT}/references/business-context.md` before changing an ADR
@@ -101,6 +98,7 @@ skips this module and all actual moves.
 Apply `${CLAUDE_PLUGIN_ROOT}/references/review-report-writing.md` and
 [result presentation](references/report.md) for the complete result fields and
 evidence boundary.
+For the chat summary:
 Lead with At a glance, then the semantic diff of each changed Decision and Requirement contract.
 New ADR needed findings must pass the ADR admission gate.
 `Unchanged` means that axis was inspected and still matches.

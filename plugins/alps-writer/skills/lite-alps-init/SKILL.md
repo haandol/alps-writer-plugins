@@ -24,14 +24,10 @@ contribution, and optional exclusions; do not add an intent section or invent
 exclusions. Read the plugin-local `references/requirement-delegation.md` for
 missing or delegated choices and retain the existing Section approval boundary.
 
-Apply the overview's optional glossary rules throughout authoring, including
-proposal-led Sections 2 and 4. Require a clear user meaning for jargon, uncommon
-terms/acronyms, or expressions that cannot be written out plainly; reuse supplied
-definitions and ask before finalizing content that depends on an unclear meaning.
-Read `alps_glossary(action: 'read', doc_path)` as needed and use `alps_glossary(action: 'save', doc_path, term, definition)` under the
-current Section approval. Check missing definitions before completion. The appendix
-comes after the four Sections only when needed, without a glossary interview,
-separate approval, or extra domain-classification exercise.
+Use the Lite overview’s optional glossary rules, including in proposal-led
+Sections 2 and 4. Resolve unclear terms before approving dependent content,
+save their definitions under the current Section approval, and check for missing
+definitions before completion.
 
 > **Language**: talk to the user and write the document in the language the user uses. The skill,
 > templates, and guides are written in English only as agent instructions.
@@ -54,6 +50,9 @@ implementation readiness.
    `.lite.alps.xml`; ask only when that choice is unclear.
 2. Call `alps_document(action: 'init', profile: 'lite', project_name, output_path)` or
    `alps_document(action: 'load', doc_path)`.
+   On resume, use the profile detected from the file. For a Full document,
+   continue with [alps-init](../alps-init/SKILL.md) if it is the intended target.
+   Resolve a conflicting target before saving.
 3. Call `alps_template(action: 'overview', profile: 'lite')`.
 4. Select the confirmation mode:
    - Atomic is the default: discuss, approve, and save one Section at a time.
@@ -135,9 +134,8 @@ implementation readiness.
     Unwritten optional Section 3 does not block this invitation. Reuse a review request
     or an answered choice already in the current conversation; an unanswered invitation,
     decline, or deferral does not start research or change completion. If requested,
-    follow [alps-research](../alps-research/SKILL.md): built-in deep research first,
-    otherwise available web search, with DuckDuckGo MCP when web search is unavailable
-    or fails. Findings become edits only through the existing Section approval boundary.
+    follow [alps-research](../alps-research/SKILL.md) for source selection and fallbacks.
+    Apply any resulting edits through the existing Section approval boundary.
 
 **Rule**: Lite uses Full ALPS's conversation-led authoring behavior with fewer Sections. Do not
 auto-complete a Section before asking for missing context or add persona-selection and

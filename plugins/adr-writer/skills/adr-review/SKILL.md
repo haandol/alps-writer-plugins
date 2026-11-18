@@ -10,10 +10,7 @@ argument-hint: "[category-or-adr-path?]"
 
 Read the context's own `docs/adr/<context>/glossary.md` and the root
 `docs/adr/glossary.md` only when the selected ADRs need a term definition.
-Its absence is normal; preserve it as supporting material, not an indexed ADR.
-When this workflow permits ADR writing and a definition needs creation or change,
-apply `${CLAUDE_PLUGIN_ROOT}/references/glossary.md` under the existing approval
-boundary. Review-only work reports unclear or conflicting meanings without editing.
+Missing glossaries are normal. Review-only work reports unclear or conflicting meanings without editing.
 
 Review ADRs that already exist **as documents** and return a punch list. With no argument it sweeps every ADR; with an argument it narrows to one category or a single ADR. Each ADR receives an R19 intent-completeness and provability check: whether its obligations and observable criteria suffice to judge completion. This is not proof of implementation or an Accepted Status.
 
