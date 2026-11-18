@@ -9,10 +9,18 @@ export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 
 /**
  * @param {Array<{source: string, targets: string[]}>} pairs Repository-relative paths.
- * @param {{script: string, drift: string, fix: string, done: (check: boolean) => string}} labels
+ * @param {{script: string, drift: string, fix: string, done: (check: boolean) => string, usageExitCode?: number}} labels
  */
-export function syncFiles(pairs, { script, drift, fix, done }, args = process.argv.slice(2)) {
-  if (args.some((arg) => arg !== "--check")) throw new Error(`Usage: ${script} [--check]`);
+export function syncFiles(
+  pairs,
+  { script, drift, fix, done, usageExitCode = 1 },
+  args = process.argv.slice(2),
+) {
+  if (args.some((arg) => arg !== "--check")) {
+    console.error(`Usage: ${script} [--check]`);
+    process.exitCode = usageExitCode;
+    return;
+  }
   const check = args.includes("--check");
   let mismatch = false;
   for (const { source, targets } of pairs) {

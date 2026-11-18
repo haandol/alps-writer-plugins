@@ -9,7 +9,9 @@
 // nor the index content is rendered.
 
 import path from "node:path";
-import { readFileSync, existsSync, readdirSync, realpathSync, statSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
+
+import { hasModel } from "../scripts/model-documents.mjs";
 
 const MAPPING_PATH = process.env.ALPS_ADR_MAPPING || "docs/adr/.mapping.json";
 
@@ -29,40 +31,6 @@ function loadJSON(p) {
   } catch {
     return null;
   }
-}
-
-/**
- * Whether `dir` holds a business ontology document: a `.ttl` file at any depth,
- * outside hidden entries, the way Ontology Writer finds model documents.
- */
-function hasModelDocument(dir, seen = new Set()) {
-  try {
-    const real = realpathSync(dir);
-    if (seen.has(real)) return false;
-    seen.add(real);
-  } catch {
-    return false;
-  }
-  let entries;
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return false;
-  }
-  for (const e of entries) {
-    if (e.name.startsWith(".")) continue;
-    const full = path.join(dir, e.name);
-    let isDir = e.isDirectory();
-    if (e.isSymbolicLink()) {
-      try {
-        isDir = statSync(full).isDirectory();
-      } catch {
-        isDir = false;
-      }
-    }
-    if (isDir ? hasModelDocument(full, seen) : e.name.endsWith(".ttl")) return true;
-  }
-  return false;
 }
 
 function main() {
@@ -106,7 +74,7 @@ function main() {
   ];
   // The business ontology sits above ADRs. Ontology Writer owns it and its
   // query; without that plugin the context goes unchecked, and the work says so.
-  if (hasModelDocument(path.join(path.dirname(path.dirname(mappingFile)), "ontology")))
+  if (hasModel(path.join(path.dirname(path.dirname(mappingFile)), "ontology")))
     directive.push(
       "Business ontology present: check business context through the Ontology Writer plugin before an ADR decision or contract changes; if it is unavailable, state that the business context was not checked.",
     );

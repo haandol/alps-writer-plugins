@@ -45,6 +45,8 @@ export const IMPACT_RULES = [
       "plugins/adr-writer/references/business-context.md",
       "plugins/ontology-writer/references/ontology.md",
       "plugins/ontology-writer/scripts/ontology",
+      "plugins/ontology-writer/scripts/model-documents.mjs",
+      "plugins/adr-writer/scripts/model-documents.mjs",
       "plugins/ontology-writer/templates/ontology/",
     ],
     scenarioPrefixes: ["author-checks-business-", "impl-reports-business-", "ontology-"],

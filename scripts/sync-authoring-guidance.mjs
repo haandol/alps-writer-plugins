@@ -1,15 +1,6 @@
 #!/usr/bin/env bun
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { syncFiles } from "./lib/sync-files.mjs";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const args = process.argv.slice(2);
-if (args.some((arg) => arg !== "--check")) {
-  console.error("Usage: sync-authoring-guidance.mjs [--check]");
-  process.exit(2);
-}
-const check = args.includes("--check");
 // Guidance owned by adr-writer, copied into each plugin that installs alone and reads it.
 const copies = {
   "alps-writer": [
@@ -20,22 +11,18 @@ const copies = {
   ],
   "ontology-writer": ["execution-boundary.md"],
 };
-let drift = false;
-for (const [plugin, name] of Object.entries(copies).flatMap(([p, names]) =>
-  names.map((n) => [p, n]),
-)) {
-  const source = path.join(root, "plugins/adr-writer/references", name);
-  const target = path.join(root, "plugins", plugin, "references", name);
-  const content = readFileSync(source);
-  if (check) {
-    if (!existsSync(target) || !readFileSync(target).equals(content)) {
-      console.error(`Authoring guidance drift: ${path.relative(root, target)}`);
-      drift = true;
-    }
-  } else {
-    mkdirSync(path.dirname(target), { recursive: true });
-    writeFileSync(target, content);
-  }
-}
-if (drift) process.exitCode = 1;
-else console.log(`${check ? "Verified" : "Synchronized"} shared authoring guidance.`);
+syncFiles(
+  Object.entries(copies).flatMap(([plugin, names]) =>
+    names.map((name) => ({
+      source: `plugins/adr-writer/references/${name}`,
+      targets: [`plugins/${plugin}/references/${name}`],
+    })),
+  ),
+  {
+    script: "sync-authoring-guidance.mjs",
+    usageExitCode: 2,
+    drift: "Authoring guidance drift",
+    fix: "bun run authoring-guidance:sync",
+    done: (check) => `${check ? "Verified" : "Synchronized"} shared authoring guidance.`,
+  },
+);
