@@ -166,7 +166,8 @@ explanation structure. Both modes retain the complete contract coverage.
 For standard mode, a short Context plus each vertical capability’s claim,
 contract rows and direct evidence suffice. Read [explanation depth](references/explanation.md)
 for full mode or when the reader needs a separate explanation or detailed zoom.
-Use [Review Hiking](references/review-hiking.md) for detailed zooms.
+Use [Review Hiking](references/review-hiking.md) for detailed zooms and
+[visualization](references/visualization.md) when diagrams help the reader.
 
 ## Standard mode
 
