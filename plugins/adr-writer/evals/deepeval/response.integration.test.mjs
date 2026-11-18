@@ -155,6 +155,9 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     "report-scope-required-artifact",
     "report-scope-simple-definition",
     "report-scope-static-verification",
+    "report-slop-buried-result",
+    "report-slop-hidden-actors",
+    "report-slop-vague-references",
     "report-terminology-introduction",
     "report-terminology-review-control",
     "report-terminology-source-hierarchy",
@@ -209,6 +212,13 @@ test("every shipped classification probe has a fixed GEval contract and prepares
       assert.match(input.prompt, /Synthetic domain model/);
       assert.match(input.prompt, /Duck inherits Animal/);
       assert.match(input.prompt, /No separate type allowlist exists/);
+      const item = selected.find((c) => c.id === run.caseId);
+      for (const obligation of item.semanticObligations)
+        assert.ok(!input.prompt.includes(obligation.text), obligation.id);
+    } else if (run.caseId.startsWith("report-slop-")) {
+      assert.match(input.prompt, /## Remove AI slop that obscures meaning/);
+      assert.match(input.prompt, /Fixture:/);
+      assert.doesNotMatch(input.prompt, /USD 0.48/);
       const item = selected.find((c) => c.id === run.caseId);
       for (const obligation of item.semanticObligations)
         assert.ok(!input.prompt.includes(obligation.text), obligation.id);
