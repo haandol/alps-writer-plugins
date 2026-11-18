@@ -5,7 +5,12 @@ import path from "node:path";
 import { before, after, test } from "node:test";
 import { launch } from "./browser.mjs";
 import { questionSession, QUESTIONS } from "../tests/ontology-ask-helpers.mjs";
-import { allAnswers, discussionMessages, waitForAnswers } from "../scripts/ontology-ask.mjs";
+import {
+  allAnswers,
+  discussionMessages,
+  readEvents,
+  waitForAnswers,
+} from "../scripts/ontology-ask.mjs";
 
 let browser, profileDir;
 before(async () => {
@@ -258,6 +263,59 @@ test("the browser asks its author and receives a CLI reply without changing cand
         path: path.join(evidenceDir, "question-discussion-mobile.png"),
         fullPage: true,
       });
+  });
+});
+
+test("a failed answer save says so on its card and sends the same answer again once", async () => {
+  await inQuestionPage(async (s, page, intercept) => {
+    const sent = [];
+    let fail = true;
+    intercept((request) => {
+      if (!request.url().endsWith("/api/answer")) return request.continue();
+      const body = JSON.parse(request.postData());
+      sent.push(body.optionId ?? body.text);
+      if (!fail) return request.continue();
+      fail = false;
+      return request.abort("failed");
+    });
+    const failure = (id) =>
+      page.waitForFunction(
+        (id) =>
+          /send the same answer again/.test(
+            document.querySelector(`#q-${id} .answer-draft`).textContent,
+          ),
+        {},
+        id,
+      );
+    const answers = () => readEvents(s.files.answers).filter((e) => e.type === "answer");
+
+    await choose(page, "Q1", "yes");
+    await failure("Q1");
+    assert.deepEqual(await selected(page, "Q1"), ["yes"]);
+    assert.equal(
+      allAnswers(s.run).questions[0].answer,
+      null,
+      "a failed save is not shown as saved",
+    );
+    await page.click("#q-Q1 .send");
+    await saved(page, "Q1", "Keep");
+    assert.deepEqual(sent, ["yes", "yes"]);
+    assert.deepEqual(
+      answers().map((e) => e.optionId),
+      ["yes"],
+    );
+
+    fail = true;
+    await page.type("#q-Q2 textarea", "A written basis");
+    await page.click("#q-Q2 .send");
+    await failure("Q2");
+    assert.equal(await textOf(page, "#q-Q2 textarea"), "A written basis");
+    await page.click("#q-Q2 .send");
+    await saved(page, "Q2", "A written basis");
+    assert.deepEqual(
+      answers().map((e) => e.optionId ?? e.text),
+      ["yes", "A written basis"],
+    );
   });
 });
 

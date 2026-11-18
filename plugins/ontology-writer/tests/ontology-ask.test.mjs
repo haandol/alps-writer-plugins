@@ -1,5 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -255,6 +264,35 @@ test("answers recorded by separate processes at once never share a sequence numb
       seqs.map((_, i) => i + 1),
     );
     assert.equal(seqs.length, 11, "the open event, six recorded and four web answers");
+  } finally {
+    s.done();
+  }
+});
+
+test("a writer that died mid-line never swallows the next recorded answer", async () => {
+  const s = session();
+  try {
+    await s.post("answer", { questionId: "Q1", optionId: "yes" });
+    appendFileSync(s.files.answers, '{"type":"answer","channel":"web","questionId":"Q1","opt');
+    const later = recordChatAnswer(s.run, "Q1", { text: "decide later" });
+    const next = recordChatAnswer(s.run, "Q2", { text: "the written basis" });
+    assert.deepEqual(
+      allAnswers(s.run).questions.map((q) => q.answer?.text || q.answer?.optionId),
+      ["decide later", "the written basis"],
+    );
+    assert.equal(next.seq, later.seq + 1, "a recorded sequence number is never issued twice");
+  } finally {
+    s.done();
+  }
+});
+
+test("the session address stays private, and a half-written session file does not stop a wait", async () => {
+  const s = session();
+  try {
+    if (process.platform !== "win32") assert.equal(statSync(s.files.session).mode & 0o777, 0o600);
+    writeFileSync(s.files.session, "");
+    const result = await waitForAnswers(s.run, { timeoutSeconds: 0.3, pollMs: 50 });
+    assert.equal(result.timeout, true);
   } finally {
     s.done();
   }

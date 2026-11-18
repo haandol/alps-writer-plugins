@@ -97,10 +97,10 @@ export function projectNavigation(index, { target, includeRetired = false, searc
     memberships.set(iri, value);
     return value;
   };
-  const add = (key, row, sources) => {
+  const add = (key, row, sources, { keep = false } = {}) => {
     for (const iri of sources) scope.add(iri);
     const best = bestSearchHit(sources.map((iri) => hits.get(iri)));
-    if (search && !best) return;
+    if (search && !best && !keep) return;
     rows.set(key, { key, ...row, ...(best ? { searchMatch: best } : {}) });
   };
   const contextCard = (iri) => ({
@@ -240,6 +240,13 @@ export function projectNavigation(index, { target, includeRetired = false, searc
       row.observedResult = text(iri, "observedResult");
     }
     add(`0-element:${iri}`, row, [iri]);
+    // A search that finds any part of a process keeps what that process leaves undecided.
+    const owner = type === "Step" ? processOfStep(index, iri) : iri;
+    const keep = Boolean(
+      search &&
+      owner &&
+      [owner, ...index.out(owner, "hasStep").filter(visible)].some((x) => hits.has(x)),
+    );
     for (const o of index.literal(iri, "openScope"))
       add(
         `1-open-scope:${JSON.stringify([iri, o.value, o.datatype])}`,
@@ -250,6 +257,7 @@ export function projectNavigation(index, { target, includeRetired = false, searc
           scopeKind: o.datatype?.replace(ONTO, ""),
         },
         [iri],
+        { keep },
       );
   }
   for (const t of index.triples) {
@@ -261,12 +269,20 @@ export function projectNavigation(index, { target, includeRetired = false, searc
       criteria.has(t.s) ||
       (processes.has(t.s) && t.p === `${ONTO}hasStep`);
     if (!relevant || !visible(t.s) || !visible(t.o.value)) continue;
+    const external = !members.has(t.s) || !members.has(t.o.value);
     add(
       `2-relation:${JSON.stringify([t.s, t.p, t.o.value])}`,
       {
         kind: "relation",
         ...relationRow(t),
-        external: !members.has(t.s) || !members.has(t.o.value),
+        external,
+        // Which BCs each end belongs to, so a boundary hand-off names its counterpart.
+        ...(external
+          ? {
+              fromContexts: contextsOf(t.s).map(elementId),
+              toContexts: contextsOf(t.o.value).map(elementId),
+            }
+          : {}),
       },
       [t.s, t.o.value],
     );

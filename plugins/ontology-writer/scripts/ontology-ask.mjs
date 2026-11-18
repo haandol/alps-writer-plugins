@@ -178,8 +178,11 @@ export function parseQuestions(text) {
 }
 
 export function readEvents(file) {
-  if (!existsSync(file)) return [];
-  return readFileSync(file, "utf8")
+  return existsSync(file) ? parseEvents(readFileSync(file, "utf8")) : [];
+}
+
+function parseEvents(text) {
+  return text
     .split("\n")
     .filter(Boolean)
     .flatMap((line) => {
@@ -197,12 +200,15 @@ export function readEvents(file) {
  */
 function appendEvent(file, event, reuse = () => null) {
   return withLock(`${file}.lock`, () => {
-    const events = readEvents(file);
+    const text = existsSync(file) ? readFileSync(file, "utf8") : "";
+    const events = parseEvents(text);
     const existing = reuse(events, event);
     if (existing) return existing;
     const seq = events.length + 1;
     const record = { ...event, seq, at: new Date().toISOString() };
-    appendFileSync(file, `${JSON.stringify(record)}\n`);
+    // A writer that died mid-line leaves a torn tail; start on a new line so this record survives.
+    const separator = text && !text.endsWith("\n") ? "\n" : "";
+    appendFileSync(file, `${separator}${JSON.stringify(record)}\n`);
     return record;
   });
 }
@@ -239,13 +245,7 @@ export function withLock(lock, fn) {
 
 /** The recorded session, or null. */
 export function readSession(run) {
-  const file = sessionFiles(run).session;
-  if (!existsSync(file)) return null;
-  try {
-    return JSON.parse(readFileSync(file, "utf8"));
-  } catch {
-    return null;
-  }
+  return readJson(sessionFiles(run).session);
 }
 
 /** Only a live, open alignment session can be shared between terminal launches. */
@@ -721,14 +721,18 @@ export function startServer(
     server = serve(0); // the earlier port is taken, so the address changes
   }
   const url = `http://127.0.0.1:${server.port}${prefix}/`;
+  // The address carries the session token: keep it private, and never let a reader see half of it.
+  const sessionTmp = `${files.session}.${process.pid}.tmp`;
   writeFileSync(
-    files.session,
+    sessionTmp,
     JSON.stringify(
       { url, port: server.port, pid: process.pid, alignment, startedAt: new Date().toISOString() },
       null,
       2,
     ),
+    { mode: 0o600 },
   );
+  renameSync(sessionTmp, files.session);
   const idle = setInterval(() => {
     if (Date.now() - lastSeen > idleMinutes * 60_000) {
       clearInterval(idle);
@@ -790,9 +794,8 @@ export async function waitForAnswers(run, { timeoutSeconds = 0, pollMs = 300 } =
           e.seq > cursor &&
           ["deliver", "discussion-question", "alignment-response", "close"].includes(e.type),
       );
-      const session = existsSync(files.session)
-        ? JSON.parse(readFileSync(files.session, "utf8"))
-        : null;
+      // Read like every other session reader: a session being (re)started is not a crash.
+      const session = readSession(run);
       const lifecycle = events.findLast((e) => e.type === "open" || e.type === "close");
       const closed = lifecycle?.type === "close" ? lifecycle : null;
       const stopped = !fresh.length && session && !alive(session.pid);
@@ -887,7 +890,6 @@ async function main(argv) {
   const files = sessionFiles(run);
   if (!existsSync(files.questions)) usage(`missing ${files.questions}`);
   if (command === "open") {
-    mkdirSync(files.dir, { recursive: true });
     // A second server would race the first on the same answers; point at the running one.
     const running = readSession(run);
     const closedLast = readEvents(files.answers).findLast(

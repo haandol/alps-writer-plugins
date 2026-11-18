@@ -24,8 +24,11 @@ test("a fresh session asks whether to build without creating files or requiring 
     const offer = runHook(dir);
     assert.match(offer, /first user-facing response/);
     assert.match(offer, /Would you like to create a business ontology for this project now\?/);
-    assert.match(offer, /\/ontology-build/);
-    assert.match(offer, /document or folder/);
+    // The first response itself names the command and an input example, not only after a yes.
+    assert.match(
+      offer,
+      /first user-facing response: "Would you like[^"]*" In that same response, name the \/ontology-build command and one input example: a document or folder, or one workflow/,
+    );
     assert.match(offer, /On yes or an existing request to build, start \/ontology-build/);
     assert.match(offer, /On no, later, or no answer, continue their request/);
     assert.match(offer, /Saving the draft requires separate approval/);

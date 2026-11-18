@@ -57,8 +57,9 @@ function main() {
     return [
       "Ontology Writer is installed and this project has no saved business ontology.",
       'If the user has not already chosen, ask once in their language in your first user-facing response: "Would you like to create a business ontology for this project now?"',
+      "In that same response, name the /ontology-build command and one input example: a document or folder, or one workflow such as who submits and approves a quote.",
       `After an explicit yes, no or later, run bun ${quote(preferencesCli)} set setup <choice> in the project directory with build, skip or later respectively. With no answer or a one-time choice, write nothing.`,
-      "On yes or an existing request to build, start /ontology-build with their input. Its first-build flow asks about reviewing existing ADRs before drafting. A document or folder, or one workflow such as who submits and approves a quote, can supply the business evidence.",
+      "On yes or an existing request to build, start /ontology-build with their input. Its first-build flow asks about reviewing existing ADRs before drafting.",
       "On no, later, or no answer, continue their request without starting setup or asking again in this conversation. Saving the draft requires separate approval.",
     ].join(" ");
   }

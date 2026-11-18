@@ -142,6 +142,26 @@ test("BC navigation keeps internal actors, policies, rules, criteria and externa
   assert.equal(rule.basis, "Store accounting policy.");
 });
 
+test("a BC search keeps what each process it finds leaves undecided, and boundary relations name their counterpart BC", () => {
+  const all = allPages({ kind: "context", id: "payment" }).items;
+  const searched = allPages({ kind: "context", id: "payment" }, { search: "capture" }).items;
+  const openScopes = (items) =>
+    items.filter((i) => i.kind === "open-scope").map((i) => [i.element.id, i.scopeKind, i.value]);
+  assert.ok(searched.some((i) => i.id === "payment.capture-payment" && i.searchMatch));
+  assert.ok(!searched.some((i) => i.kind === "element" && i.id === "payment.take-payment"));
+  assert.deepEqual(openScopes(searched), openScopes(all));
+  assert.ok(openScopes(searched).some(([, kind]) => kind === "OpenPath"));
+
+  const boundary = allPages({ kind: "context", id: "ordering" }).items.filter(
+    (i) => i.kind === "relation" && i.external,
+  );
+  assert.ok(boundary.length);
+  for (const row of boundary)
+    assert.ok([...row.fromContexts, ...row.toContexts].includes("payment"), JSON.stringify(row));
+  const handOff = boundary.find((i) => i.from.id === "payment.payment-completed");
+  assert.deepEqual([handOff.fromContexts, handOff.toContexts], [["payment"], ["ordering"]]);
+});
+
 test("a process crossing BCs retains participation and exposes external step references without their details", () => {
   const text = EXAMPLE.replace(
     "onto:emits m:ordering.order-confirmed ;\n    onto:uses m:ordering.order ;\n    onto:inContext m:ordering",

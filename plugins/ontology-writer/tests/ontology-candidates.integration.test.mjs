@@ -94,6 +94,45 @@ test("the save draft holds only confirmed candidates and names every relation it
   });
 });
 
+test("a save draft that leaves out an unconfirmed path cannot claim the process has no open scope", () => {
+  withTmp((dir) => {
+    const c = structuredClone(FIXTURE);
+    c.steps[2].confirmed = false;
+    c.processes[0].openScope = [{ kind: "none" }];
+    project(dir, c);
+    const out = run(dir, "prepare", "candidates.json", "--run", "run", "--confirmed-only");
+    assert.equal(out.status, 1, out.stdout + out.stderr);
+    assert.match(
+      out.stdout,
+      /ordering\.place-order openScope: "none" cannot be saved while ordering\.place-order hasStep ordering\.confirm-order is left out/,
+    );
+    // A path left out through an event or a policy names the same process.
+    assert.match(
+      out.stdout,
+      /while ordering\.on-payment-completed-confirm-order starts ordering\.confirm-order is left out/,
+    );
+
+    // With every step left out, no hasStep remains to find the process by.
+    const allCut = structuredClone(c);
+    for (const step of allCut.steps) step.confirmed = false;
+    project(dir, allCut);
+    const none = run(dir, "prepare", "candidates.json", "--run", "run-all", "--confirmed-only");
+    assert.equal(none.status, 1, none.stdout + none.stderr);
+    assert.match(none.stdout, /ordering\.place-order openScope: "none" cannot be saved/);
+
+    c.processes[0].openScope = [
+      { kind: "open-path", text: "Confirming an order is not settled yet." },
+    ];
+    project(dir, c);
+    const recorded = run(dir, "prepare", "candidates.json", "--run", "run2", "--confirmed-only");
+    assert.equal(recorded.status, 0, recorded.stdout + recorded.stderr);
+    // The review draft shows the same candidates without refusing them.
+    c.processes[0].openScope = [{ kind: "none" }];
+    project(dir, c);
+    assert.equal(run(dir, "prepare", "candidates.json", "--run", "run3").status, 0);
+  });
+});
+
 test("rebuilding from the same candidates changes nothing, and a wording change needs `changes`", () => {
   withTmp((dir) => {
     project(dir);
