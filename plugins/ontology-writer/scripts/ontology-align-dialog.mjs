@@ -193,6 +193,8 @@ export function approvedProposal(events, doc, requestId, promptId) {
 
 export function dialogueFor(events, requestId) {
   const turns = prompts(events, requestId);
+  const latest = latestProposal(turns);
+  const open = !finished(events, requestId);
   return turns.map((p) => ({
     promptId: p.promptId,
     kind: p.kind,
@@ -204,7 +206,7 @@ export function dialogueFor(events, requestId) {
           baseline: { files: p.files, fingerprint: p.baseHash },
         }
       : {}),
-    current: (p.kind === "question" || p === latestProposal(turns)) && !finished(events, requestId),
+    current: (p.kind === "question" || p === latest) && open,
     response: responses(events, requestId, p.promptId)[0] ?? null,
   }));
 }

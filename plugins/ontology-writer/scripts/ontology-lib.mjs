@@ -521,18 +521,29 @@ export function termKey(term) {
     : `"${term.value}"@${term.lang ?? ""}^^${term.datatype}`;
 }
 
-const tripleKey = (t) => `${t.s}\u0000${t.p}\u0000${termKey(t.o)}`;
+/** The identity of one triple: subject, predicate and the exact object term. */
+export const tripleKey = (t) => `${t.s}\u0000${t.p}\u0000${termKey(t.o)}`;
+
+/** Triples by key across the lists, in order; the first occurrence of each key wins. */
+function keyedTriples(lists) {
+  const seen = new Map();
+  for (const triples of lists)
+    for (const t of triples) {
+      const key = tripleKey(t);
+      if (!seen.has(key)) seen.set(key, t);
+    }
+  return seen;
+}
 
 /**
  * Merge parsed documents into one graph. Identical triples from several
  * documents collapse into one; the first occurrence keeps its position.
  */
 export function unionGraph(parsedDocs) {
-  const seen = new Map();
-  for (const d of parsedDocs)
-    for (const t of d.triples) if (!seen.has(tripleKey(t))) seen.set(tripleKey(t), t);
-  return [...seen.values()];
+  return [...keyedTriples(parsedDocs.map((d) => d.triples)).values()];
 }
+
+const dedupe = (triples) => [...keyedTriples([triples]).values()];
 
 /** Index a graph by subject for validation, queries and serialization. */
 export function indexGraph(triples) {
@@ -1644,12 +1655,6 @@ export function serializeTurtle(triples) {
   return blocks.length ? `${header}\n\n${blocks.join("\n\n")}\n` : "";
 }
 
-function dedupe(triples) {
-  const seen = new Map();
-  for (const t of triples) if (!seen.has(tripleKey(t))) seen.set(tripleKey(t), t);
-  return [...seen.values()];
-}
-
 /** Code-point order, the one ordering ids, paths and names share across the scripts. */
 export const compareCodePoints = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 /** Distinct values in code-point order. */
@@ -1672,8 +1677,8 @@ export const escapeHtml = (value) =>
  * @returns {{same: boolean, elements: object[]}} one entry per changed element.
  */
 export function diffGraphs(beforeTriples, afterTriples) {
-  const before = new Map(dedupe(beforeTriples).map((t) => [tripleKey(t), t]));
-  const after = new Map(dedupe(afterTriples).map((t) => [tripleKey(t), t]));
+  const before = keyedTriples([beforeTriples]);
+  const after = keyedTriples([afterTriples]);
   const changes = new Map();
   const bucket = (s) => {
     if (!changes.has(s)) changes.set(s, { added: [], removed: [] });
@@ -2279,8 +2284,7 @@ export function majorChangeCandidates(beforeTriples, afterTriples, { sameMeaning
       out.push({ id: e.id, type: e.type, change: e.change });
       continue;
     }
-    const confirmed = (p) =>
-      sameMeaning?.has(`${elementIri(e.id)}\u0000${propertyIri(p.property)}`);
+    const confirmed = (p) => sameMeaning?.has(sameMeaningKey(e.id, p.property));
     const props = e.properties.filter(
       (p) =>
         !confirmed(p) &&

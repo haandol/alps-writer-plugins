@@ -347,6 +347,8 @@ export function realizationOf(
  * @param {object|null} input.changes Change flags (uncommitted / unsynced Accepted edits).
  * @param {boolean} [input.includeRetired]
  * @param {"en"|"ko"} [input.lang]
+ * @param {string|null} [input.linkBase] The folder the view is saved in; ADR file links are
+ *   relative to it (the working directory when unset), and `null` makes none.
  * @returns {{t: object, lang: string, body: string, diagrams: boolean, app: object|null}}
  *   Shared model projection and inert detail markup for either presentation shell.
  */
@@ -359,6 +361,7 @@ export function prepareView({
   lang = "en",
   initialView = "contexts",
   includeWorkbench = true,
+  linkBase,
 }) {
   const t = UI[lang] ?? UI.en;
   const errors = findings.filter((f) => f.level === "error");
@@ -1245,6 +1248,7 @@ ${flowSections}
     findings,
     includeRetired,
     lang,
+    linkBase,
     elements,
     flowOrders: processes.map((p) => ({ id: keyOf(p), steps: floorsOf(p) })),
     stateLabels: t.short,
@@ -1329,7 +1333,7 @@ function page(t, lang, body, diagrams, app = null) {
     return `${head}
 <body class="plain"><header><h1>${esc(t.title)}</h1><p>${esc(t.intro)}</p></header>
 <main>${body}</main>
-${diagrams ? NAVIGATION + mermaidRuntime({ diagramFallback: t.fallback }) : ""}
+${diagrams ? NAVIGATION + mermaidRuntime({ diagramFallback: t.fallback, packed: true }) : ""}
 </body></html>
 `;
   // "<" is escaped, so no model text can end the data element.
@@ -1352,7 +1356,7 @@ ${CLIENT}
   };
 })();
 </script>
-${diagrams ? NAVIGATION + mermaidRuntime({ diagramFallback: t.fallback, lazy: { root: ".document", ahead: "2400px" } }) : ""}
+${diagrams ? NAVIGATION + mermaidRuntime({ diagramFallback: t.fallback, packed: true, lazy: { root: ".document", ahead: "2400px" } }) : ""}
 <script data-knowledge-navigation>${KNOWLEDGE_CLIENT}</script>
 </body></html>
 `;

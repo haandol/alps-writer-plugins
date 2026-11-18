@@ -1,5 +1,6 @@
 // Offline navigation through business contexts, their processes and realizing decisions.
 import { readFileSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 import { escapeHtml as esc } from "./ontology-lib.mjs";
 import { prepareView, renderView } from "./ontology-view.mjs";
 import { buildLayeredData, readAdrDocument } from "./ontology-layered-data.mjs";
@@ -156,16 +157,31 @@ window.addEventListener('message', (event) => {
 });
 `;
 
-function workflowDocument(board, data) {
-  const ko = data.language === "ko";
+/**
+ * The frame document every process board shares, in the order the browser joins it:
+ * `head`, the process's board, `script`, the process's external stage ids, `end`.
+ * The page carries this shell once instead of once per process.
+ */
+function workflowShell(language) {
+  const ko = language === "ko";
+  return {
+    head: `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'"><style>${BOARD_CSS}
+body{margin:0;background:#faf9f5;color:#28312e;font-family:system-ui,sans-serif}.event-workbench{margin:0;padding:18px}.event-perspectives,.event-header,.event-readiness-link,.event-subdomains{display:none}.story-viewport{height:580px}.external-stage{border:2px dashed #ad7854!important}.external-label{font:600 12px system-ui;color:#955629}.event-flat-cards{scroll-margin-top:20px}.frame-note{margin:16px 20px;line-height:1.7}</style></head><body data-model-view="events"><p class="frame-note">${ko ? "선택한 업무와 직접 연결된 인계입니다. 점선 테두리는 연결된 다른 프로세스의 활동입니다. 사건·조건을 선택해 경로와 근거를 읽고, 업무 이름을 선택해 모델 원문을 엽니다." : "This process and its direct hand-offs. Dashed borders mark activities in another process. Select events or conditions for paths and evidence; select an action name for its model facts."}</p>`,
+    script: `<script>${BOARD_CLIENT}\n${FRAME_BRIDGE}\nfor(const element of document.querySelectorAll('[data-stage],[data-story-node]')) if(`,
+    end: `.includes(element.dataset.stage || element.dataset.storyNode)){element.classList.add('external-stage');const label=document.createElement('p');label.className='external-label';label.textContent=${json(ko ? "연결된 외부 프로세스" : "Connected external process")};element.prepend(label);}</script></body></html>`,
+  };
+}
+
+/** One process's part of its frame document: the board and its stages in other processes. */
+function workflowPart(board, data) {
+  // The frame hides the perspective switch, so it carries no business-areas map.
   const content = renderEventBoard(board, {
     lang: data.language,
+    landscape: false,
     modelLink: (id, name) =>
       `<a href="#business-detail" data-model-target="${esc(id)}">${esc(name)}</a>`,
   });
-  const external = json(board.external);
-  return `<!doctype html><html lang="${data.language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'"><style>${BOARD_CSS}
-body{margin:0;background:#faf9f5;color:#28312e;font-family:system-ui,sans-serif}.event-workbench{margin:0;padding:18px}.event-perspectives,.event-header,.event-readiness-link,.event-subdomains{display:none}.story-viewport{height:580px}.external-stage{border:2px dashed #ad7854!important}.external-label{font:600 12px system-ui;color:#955629}.event-flat-cards{scroll-margin-top:20px}.frame-note{margin:16px 20px;line-height:1.7}</style></head><body data-model-view="events"><p class="frame-note">${ko ? "선택한 업무와 직접 연결된 인계입니다. 점선 테두리는 연결된 다른 프로세스의 활동입니다. 사건·조건을 선택해 경로와 근거를 읽고, 업무 이름을 선택해 모델 원문을 엽니다." : "This process and its direct hand-offs. Dashed borders mark activities in another process. Select events or conditions for paths and evidence; select an action name for its model facts."}</p>${content}<script>${BOARD_CLIENT}\n${FRAME_BRIDGE}\nfor(const element of document.querySelectorAll('[data-stage],[data-story-node]')) if(${external}.includes(element.dataset.stage || element.dataset.storyNode)){element.classList.add('external-stage');const label=document.createElement('p');label.className='external-label';label.textContent=${json(ko ? "연결된 외부 프로세스" : "Connected external process")};element.prepend(label);}</script></body></html>`;
+  return { content, external: json(board.external) };
 }
 
 /** Generate the normal offline view; the browser has no source-file or write capability. */
@@ -215,12 +231,17 @@ export function renderLayeredView(options) {
   if (!prepared.app) return renderView({ ...options, findings });
   const data = buildLayeredData({ prepared, index, mapping, metadata, cwd, adrRoot, sourceKind });
   const board = modelEventBoard({ ...options, findings });
-  const workflows = data.containers
-    .map((process) => {
-      const scoped = scopedEventBoard(board, process, { metadata, sourceKind });
-      return `<template data-workflow="${esc(process.id)}">${esc(workflowDocument(scoped, data))}</template>`;
-    })
-    .join("");
+  // Every process's frame document, packed once: the browser unpacks it when a flow opens.
+  const boards = Object.fromEntries(
+    data.containers.map((process) => [
+      process.id,
+      workflowPart(scopedEventBoard(board, process, { metadata, sourceKind }), data),
+    ]),
+  );
+  const workflows = `<template id="workflow-documents" data-encoding="gzip+base64">${gzipSync(
+    JSON.stringify({ shell: workflowShell(data.language), boards }),
+    { level: 9 },
+  ).toString("base64")}</template>`;
   const adrBodies = Object.values(data.adrs)
     .map(
       (adr) =>
@@ -246,5 +267,5 @@ export function renderLayeredView(options) {
 <section id="detail-panel" class="detail-panel" hidden aria-labelledby="detail-title"><div class="panel-title"><h3 id="detail-title" tabindex="-1"></h3><button type="button" id="detail-close">${word("상세 닫기", "Close detail")}</button></div><div class="document" id="detail-body"></div></section>
 <section class="guidance-panel" id="help-panel" hidden><h3>${word("지도를 읽는 방법", "How to read this map")}</h3><p>${word("BC는 같은 업무 언어와 규칙을 소유하는 바운디드 컨텍스트입니다. BC를 누르면 실제 업무 프로세스가, 프로세스를 누르면 실현 기능 ADR이 열립니다. 두 표현은 같은 업무·선택·검색 위치를 유지합니다. ADR은 아키텍처 결정을 기록한 문서이며, 여기에서 탐색을 마칩니다.", "A bounded context owns a business language and rules. Select it for actual business processes, then select a process for its realizing architectural decision records (ADRs). Both representations keep the same work, selection and search position. Navigation ends at the ADR.")}</p><p>${word("3D는 도메인 소속, BC의 참여 업무와 실현 ADR의 공유 범위를 보여 줍니다. 내려가도 상위 경계와 전체에서의 위치가 남습니다. 지도 번호를 옆 목록의 이름과 함께 읽으세요. 연결은 기본 표시하며, 화살표와 움직이는 빛은 기록된 사건 인계의 출발·도착을 나타냅니다. 일반선은 방향 없는 협업입니다. 호버로 관련 연결을 더 강조하고 움직임 버튼으로 효과를 멈출 수 있습니다. 드래그·화살표로 이동하고 +/−로 확대하며, 회전 모드와 Home 초기화를 사용할 수 있습니다. 높이·거리는 업무량이나 사건 순서를 뜻하지 않습니다.", "The 3D map shows domain membership, BC participation and shared ADR realization. Ancestor boundaries and location in the whole remain visible as you descend. Match map numbers to the readable list. Connections are always shown; arrows and moving light follow recorded event hand-offs, while plain lines show undirected collaboration. Hover to emphasize related connections and use Motion to pause the effect. Drag or use arrows to pan, +/− to zoom, rotation mode to turn, and Home to reset. Height and distance do not measure workload or event order.")}</p><p>${word("구현됨 표시는 ADR Status에서 계산한 결과입니다. 업무 완전성 검토와 실제 실행 검증은 별도로 확인해야 합니다.", "Implementation labels are computed from ADR Status. Business completeness and actual execution require separate evidence.")}</p><div id="readiness-guide"></div></section>
 <section class="guidance-panel" id="diagnostics-panel" hidden></section><noscript>${word("이 화면의 탐색에는 JavaScript가 필요합니다.", "This view requires JavaScript for navigation.")}</noscript></main></div>
-<template id="business-source">${prepared.body}</template>${adrBodies}${workflows}<script type="application/json" id="layered-data">${json(data)}</script><script>${CLIENT}</script>${prepared.diagrams ? mermaidRuntime({ diagramFallback: prepared.t.fallback, lazy: { root: "#detail-body", ahead: "500px" } }) : ""}</body></html>`;
+<template id="business-source">${prepared.body}</template>${adrBodies}${workflows}<script type="application/json" id="layered-data">${json(data)}</script><script>${CLIENT}</script>${prepared.diagrams ? mermaidRuntime({ diagramFallback: prepared.t.fallback, packed: true, lazy: { root: "#detail-body", ahead: "500px" } }) : ""}</body></html>`;
 }

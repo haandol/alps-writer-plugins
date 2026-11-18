@@ -1,7 +1,6 @@
 // The authored BC layer and the membership index for the offline knowledge UI.
 // Internal rows come from the same scoped projection as the command-line query.
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 import {
   ATTRIBUTES,
   CLASSES,
@@ -152,6 +151,18 @@ const words = {
 };
 
 /** Build projections without adding business facts or treating shared work as one BC's property. */
+/**
+ * A link from the saved view to a recorded ADR file, relative to the folder the view is
+ * saved in (`linkBase`, the working directory when unset), so the file names no local
+ * absolute path. `linkBase: null` makes no link: the path stays visible as text.
+ */
+function adrHref(file, linkBase) {
+  if (linkBase === null) return null;
+  const relative = path.relative(path.resolve(linkBase ?? "."), path.resolve(file));
+  if (!relative || path.isAbsolute(relative)) return null;
+  return relative.split(path.sep).map(encodeURIComponent).join("/");
+}
+
 export function knowledgeViewData({
   index,
   mapping,
@@ -163,6 +174,7 @@ export function knowledgeViewData({
   changeSummary,
   flowOrders,
   stateLabels,
+  linkBase,
 }) {
   const t = words[lang] ?? words.en;
   const known = new Set(elements.map((e) => e.k));
@@ -230,7 +242,7 @@ export function knowledgeViewData({
             adrs.push({
               path: a.path,
               status: a.status ?? null,
-              url: untrusted ? null : pathToFileURL(path.resolve(a.path)).href,
+              url: untrusted ? null : adrHref(a.path, linkBase),
             });
           }
         }

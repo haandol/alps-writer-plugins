@@ -3,7 +3,7 @@
 // queries, with realization computed from the ADR index at generation time.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { chmodSync, existsSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync, readdirSync, realpathSync, rmSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
@@ -97,6 +97,34 @@ test("the CLI writes one ignored file, opens it on request, and creates nothing 
       /NOT_OPENED \/\S+ontology-view\.html — /,
       "the absolute path and the actual reason are reported",
     );
+  });
+});
+
+test("a saved view links realizing ADRs relative to its own folder and names no absolute path", () => {
+  withTmp((dir) => {
+    initRepo(dir);
+    const mapping = { categories: { checkout: MAPPING.categories.checkout } };
+    write(dir, "docs/adr/.mapping.json", JSON.stringify(mapping, null, 2));
+    write(
+      dir,
+      "docs/adr/checkout/0001-a.md",
+      "# ADR 0001: a\n\n## Status\n\nAccepted (2020-01-01)\n",
+    );
+    write(dir, "docs/ontology/model.ttl", EXAMPLE);
+    commitAll(dir, "model");
+    const out = cli(dir, ["view", "--no-open"]);
+    const file = /NOT_OPENED (\S+) — opening was not requested/.exec(out.out)?.[1];
+    assert.ok(file, out.out);
+    const page = readFileSync(file, "utf8");
+    const link = "../../docs/adr/checkout/0001-a.md";
+    assert.equal(
+      path.resolve(path.dirname(file), link),
+      path.join(realpathSync(dir), "docs/adr/checkout/0001-a.md"),
+    );
+    assert.ok(page.includes(`"url":"${link}"`), "the ADR link is relative to the view's folder");
+    for (const root of new Set([dir, realpathSync(dir)]))
+      assert.ok(!page.includes(root), `the saved view names no absolute path: ${root}`);
+    assert.doesNotMatch(page, /file:\/\//);
   });
 });
 

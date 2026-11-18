@@ -29,12 +29,25 @@
       node,
     ]),
   );
-  const workflows = new Map(
-    [...document.querySelectorAll("template[data-workflow]")].map((node) => [
-      node.dataset.workflow,
-      node.content.textContent,
-    ]),
-  );
+  // The frame documents are packed into one gzip block and unpacked when a flow is first
+  // opened. Each joins the shell they share with its process's own board.
+  let packedWorkflows = null;
+  const workflowParts = () =>
+    (packedWorkflows ??= (async () => {
+      const binary = atob($("workflow-documents")?.content.textContent ?? "");
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+      return JSON.parse(await new Response(stream).text());
+    })());
+  const workflowDocument = async (key) => {
+    const { shell, boards } = await workflowParts();
+    const board = Object.hasOwn(boards, key) ? boards[key] : null;
+    return board
+      ? shell.head + board.content + shell.script + board.external + shell.end
+      : undefined;
+  };
+  let workflowRequest = 0;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const PAGE = 9;
   history.scrollRestoration = "manual";
@@ -412,15 +425,25 @@
     };
   }
 
+  // The saved model never changes, so each node's search text is normalized once, not per keystroke.
+  const preparedUnits = new Map();
+  const preparedUnit = (node) => {
+    const key = `${node.kind}\u0000${node.id}`;
+    if (!preparedUnits.has(key))
+      preparedUnits.set(
+        key,
+        prepareSearchUnit({ ...node.searchUnit, id: node.id, identifier: node.id }),
+      );
+    return preparedUnits.get(key);
+  };
+
   function filteredNodes() {
     const nodes = nodesInScope();
     try {
       const terms = parseSearchQuery(state.query);
       if (!terms.length) return { nodes, error: null };
       const records = new Map(nodes.map((node) => [node.id, node]));
-      const units = nodes.map((node) =>
-        prepareSearchUnit({ ...node.searchUnit, id: node.id, identifier: node.id }),
-      );
+      const units = nodes.map(preparedUnit);
       return {
         nodes: rankSearchUnits(units, terms).map((hit) => ({
           ...records.get(hit.id),
@@ -868,17 +891,31 @@
     }
   }
 
-  function renderWorkflow() {
+  /** `reveal` brings the flow into view again once its frame is in place. */
+  function renderWorkflow({ reveal = false } = {}) {
     const key = state.workflow ? state.container : null;
     $("business-workflow").hidden = key === null;
     if (key === frameKey) return;
     frameKey = key;
+    const request = ++workflowRequest;
     $("workflow-frame-host").replaceChildren();
     if (!key) return;
+    // A flow opened or closed meanwhile wins over this one.
+    workflowDocument(key).then(
+      (html) => request === workflowRequest && showWorkflow(key, html, reveal),
+      (error) => {
+        if (request === workflowRequest)
+          $("workflow-frame-host").textContent =
+            `${t("사건 흐름을 열지 못했습니다", "The event flow could not be opened")}: ${error.message}`;
+      },
+    );
+  }
+
+  function showWorkflow(key, html, reveal) {
     const frame = document.createElement("iframe");
     frame.title = `${t("업무 사건 흐름", "Business event flow")}: ${nameOf(key)}`;
     frame.setAttribute("sandbox", "allow-scripts");
-    frame.srcdoc = workflows.get(key);
+    frame.srcdoc = html;
     frame.addEventListener("load", () => {
       if (!effects)
         frame.contentWindow.postMessage(
@@ -891,6 +928,7 @@
         );
     });
     $("workflow-frame-host").append(frame);
+    if (reveal) $("business-workflow").scrollIntoView({ block: "start", behavior: "instant" });
   }
 
   function refreshMotion() {
@@ -939,7 +977,7 @@
       if (action.dataset.action === "element") openElement(id);
       if (action.dataset.action === "workflow") {
         state.workflow = true;
-        renderWorkflow();
+        renderWorkflow({ reveal: true });
         remember();
         $("business-workflow").scrollIntoView({ block: "start", behavior: "instant" });
       }
