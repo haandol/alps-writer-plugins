@@ -73,7 +73,7 @@ function main() {
   return [
     `[Business-context directive] Ontology: before creating or changing an ADR decision or contract, first check the feature's business context (bun "${QUERY_CLI}" query --step <id>${where}).`,
     "Before changing code of a feature linked to a process step, query its business context; use it to catch contradictions, never as new obligations.",
-    "Business structure guides ADRs and code. For ontology replies, propose the next action.",
+    "For ontology status, give one concrete next action.",
     "Find: --overview then --context <id> --search <text>. Known: --step/--process; feature: --category.",
   ].join("\n");
 }
