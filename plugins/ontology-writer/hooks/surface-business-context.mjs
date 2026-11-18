@@ -1,16 +1,12 @@
 #!/usr/bin/env bun
-// SessionStart — when the repository has both an ADR index and a business ontology,
-// ask for the business-context query before ADR decisions or contracts change
-// and before code of a feature linked to a process step changes.
-//
-// startup/resume/clear/compact cover the points where session context is created
-// or replaced. Neither the model nor the index content is rendered: the query
-// returns what a change needs when it runs.
+// Ask about initial setup on startup. Restore the business-context directive whenever
+// the host creates or replaces session context in a project with a linked index.
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { hasModel } from "../scripts/model-documents.mjs";
+import { setupPreference } from "../scripts/ontology-preferences.mjs";
 
 const QUERY_CLI = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -22,59 +18,68 @@ const QUERY_CLI = path.join(
 // The same setting ADR Writer's hook reads, so both find the same index.
 const MAPPING_PATH = process.env.ALPS_ADR_MAPPING || "docs/adr/.mapping.json";
 
-// Drain stdin so Claude Code never sees a broken pipe.
-function drainStdin() {
-  try {
-    readFileSync(0);
-  } catch {
-    /* ignore */
-  }
-}
+const quote = (value) => `"${value.replace(/[\\"$`]/g, "\\$&")}"`;
 
-function quiet() {
-  process.stdout.write("{}\n");
-  process.exit(0);
+function sessionEvent() {
+  try {
+    return JSON.parse(readFileSync(0, "utf8")) ?? {};
+  } catch {
+    return {};
+  }
 }
 
 function main() {
-  drainStdin();
-  const eventCwd = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-  const mappingFile = path.isAbsolute(MAPPING_PATH)
-    ? MAPPING_PATH
-    : path.join(eventCwd, MAPPING_PATH);
-  // Without an index there are no ADR changes to precede; an index that does not
-  // parse is ADR Writer's to report.
-  if (!existsSync(mappingFile)) quiet();
+  const event = sessionEvent();
+  const eventCwd = process.env.CLAUDE_PROJECT_DIR || event.cwd || process.cwd();
+  const mappingFile = path.resolve(eventCwd, MAPPING_PATH);
+  let mapping;
   try {
-    JSON.parse(readFileSync(mappingFile, "utf8"));
-  } catch {
-    quiet();
+    mapping = JSON.parse(readFileSync(mappingFile, "utf8"));
+  } catch (error) {
+    if (error.code !== "ENOENT") return;
   }
-  // The model lives beside the index found here, wherever that index lives.
-  if (!hasModel(path.join(path.dirname(path.dirname(mappingFile)), "ontology"))) quiet();
+  const ontologyDir = path.join(path.dirname(path.dirname(mappingFile)), "ontology");
+  let unreadable = false;
+  const present = hasModel(ontologyDir, () => {
+    unreadable = true;
+  });
+  if (!present) {
+    if (event.source !== "startup" || unreadable) return;
+    if (Object.values(mapping?.categories ?? {}).some((category) => category?.realizes?.length)) {
+      return;
+    }
+    const preferencesCli = path.join(path.dirname(QUERY_CLI), "ontology-preferences.mjs");
+    try {
+      if (setupPreference(eventCwd)) return;
+    } catch {
+      return "Ontology Writer could not read this project's setup preference. Skip the automatic first-model question. If asked, inspect or reset the setup preference through /ontology-build preferences.";
+    }
+    return [
+      "Ontology Writer is installed and this project has no saved business ontology.",
+      'If the user has not already chosen, ask once in their language in your first user-facing response: "Would you like to create a business ontology for this project now?"',
+      `After an explicit yes, no or later, run bun ${quote(preferencesCli)} set setup <choice> in the project directory with build, skip or later respectively. With no answer or a one-time choice, write nothing.`,
+      "On yes or an existing request to build, start /ontology-build with their input. Its first-build flow asks about reviewing existing ADRs before drafting. A document or folder, or one workflow such as who submits and approves a quote, can supply the business evidence.",
+      "On no, later, or no answer, continue their request without starting setup or asking again in this conversation. Saving the draft requires separate approval.",
+    ].join(" ");
+  }
+  if (!mapping) return;
   const adrDir = path.dirname(MAPPING_PATH);
-  const quote = (value) => `"${value.replace(/[\\"$`]/g, "\\$&")}"`;
   const where =
     path.basename(MAPPING_PATH) !== ".mapping.json"
       ? ` --index ${quote(MAPPING_PATH)}`
       : path.normalize(adrDir) === path.normalize("docs/adr")
         ? ""
         : ` --adr-dir ${quote(adrDir)}`;
-  const directive = [
+  return [
     `[Business-context directive] Ontology: before creating or changing an ADR decision or contract, first check the feature's business context (bun "${QUERY_CLI}" query --step <id>${where}).`,
     "Before changing code of a feature linked to a process step, query its business context; use it to catch contradictions, never as new obligations.",
-    "Business structure guides ADRs and code.",
-    "Unlocated: --overview then --context <id> --search <text>. Known: --step/--process; feature-wide: --category. Expand as needed.",
-  ];
-  process.stdout.write(
-    JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: "SessionStart",
-        additionalContext: directive.join("\n"),
-      },
-    }) + "\n",
-  );
-  process.exit(0);
+    "Business structure guides ADRs and code. For ontology replies, propose the next action.",
+    "Find: --overview then --context <id> --search <text>. Known: --step/--process; feature: --category.",
+  ].join("\n");
 }
 
-main();
+const additionalContext = main();
+const output = additionalContext
+  ? { hookSpecificOutput: { hookEventName: "SessionStart", additionalContext } }
+  : {};
+process.stdout.write(JSON.stringify(output) + "\n");

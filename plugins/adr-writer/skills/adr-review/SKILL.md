@@ -6,6 +6,8 @@ argument-hint: "[category-or-adr-path?]"
 
 # adr-review
 
+Assess whether this document can guide implementation and a defensible acceptance verdict. Name the contract gap or next implementation step within the document-only review boundary. Follow the [acceptance and next-action guidance](../../references/non-invasive-harness.md#acceptance-and-the-next-action).
+
 > **Review results**: Apply [report-writer](../report-writer/SKILL.md), including when the user asks only for an ADR review.
 
 Read the context's own `docs/adr/<context>/glossary.md` and the root

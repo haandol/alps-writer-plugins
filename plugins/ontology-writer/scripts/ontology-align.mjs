@@ -25,6 +25,170 @@ import {
   sortedUnique as sorted,
 } from "./ontology-lib.mjs";
 import { currentAdrPaths, implementationState, realizersByStep } from "./ontology-query.mjs";
+import { classifyStatus } from "./adr-lint-lib.mjs";
+
+// Follow only the selected feature's declared prerequisites. The implementation
+// workflow still checks the index against the ADR bodies before starting work.
+function firstPendingDecision(categories, category, visited = new Set(), visiting = new Set()) {
+  if (visited.has(category)) return null;
+  const entry = Object.hasOwn(categories, category) ? categories[category] : null;
+  if (
+    visiting.has(category) ||
+    !Array.isArray(entry?.adrs) ||
+    (entry.dependsOn !== undefined && !Array.isArray(entry.dependsOn))
+  )
+    return { category };
+  visiting.add(category);
+  for (const dependency of entry.dependsOn ?? []) {
+    const next = firstPendingDecision(categories, dependency, visited, visiting);
+    if (next) return next;
+  }
+  visiting.delete(category);
+  visited.add(category);
+  const state = implementationState(entry.adrs);
+  if (state.implemented) return null;
+  const record = entry.adrs.find((adr) => classifyStatus(adr?.status).value === "Proposed");
+  return { category, path: state.invalid ? undefined : record?.path };
+}
+
+/** A suggestion for a conversation, derived from a read-only plan. Never a lifecycle gate. */
+export function nextProcessAction({ plan, index, mapping, errors = [], changes, lang }) {
+  const { id, status } = plan.process;
+  const message = (ko, en) => (lang === "ko" ? ko : en);
+  const sync = `/ontology-sync ${id}`;
+  if (errors.length) {
+    const { code, where } = errors[0];
+    return {
+      command: sync,
+      reason: message(
+        `${where}의 ${code} 오류를 먼저 확인하세요.`,
+        `Inspect ${code} at ${where} before continuing.`,
+      ),
+    };
+  }
+  if (
+    changes?.lifecycleEdits?.length ||
+    changes?.unsyncedAccepted?.length ||
+    changes?.unsyncedUnknown?.length ||
+    changes?.uncommitted?.length ||
+    changes?.uncommittedDocuments?.length
+  ) {
+    return {
+      command: sync,
+      reason: message(
+        "범위 안의 모델 변경과 그 영향을 먼저 확인하세요.",
+        "Check the in-scope model edits and their impact first.",
+      ),
+    };
+  }
+  if (
+    status?.startsWith("Accepted") &&
+    changes &&
+    (!changes.available || changes.committedUnavailable || changes.unsyncedUnknownElsewhere?.length)
+  ) {
+    return {
+      command: sync,
+      reason: message(
+        "채택 이후의 변경 이력을 확인할 수 없어 업무의 현재 상태를 먼저 검토해야 합니다.",
+        "Check the process history to establish whether the accepted flow is still current.",
+      ),
+    };
+  }
+  const process = elementIri(id);
+  if (isRetired(index, process)) {
+    const replacement = index.out(process, "replacedBy")[0];
+    if (replacement)
+      return {
+        command: `/ontology-view ${elementId(replacement)}`,
+        reason: message(
+          "이 업무를 대체한 프로세스를 확인할 수 있습니다.",
+          "Inspect the recorded replacement process.",
+        ),
+      };
+    return {
+      command: "/ontology-view --include-retired",
+      reason: message(
+        "종료된 프로세스입니다. 필요하면 보존된 업무 흐름을 확인하세요.",
+        "This process is retired. Its recorded flow is available for inspection.",
+      ),
+    };
+  }
+  const step = plan.realization.unrealizedSystemSteps[0];
+  if (step)
+    return {
+      command: `/ontology-edit ${id}`,
+      reason: message(
+        `시스템 단계 ${step}을 담당하는 기능을 확인하고 연결을 제안하세요.`,
+        `Identify the feature responsible for system step ${step} and propose its realization link.`,
+      ),
+    };
+  const feature = plan.realization.categories.find((item) => !item.ok);
+  if (feature) {
+    const next = firstPendingDecision(mapping?.categories ?? {}, feature.category);
+    if (next?.path) {
+      const reason =
+        next.category === feature.category
+          ? message(
+              `${feature.category}의 ADR이 Proposed입니다. 이 계약의 구현과 검토를 마치세요.`,
+              `The ADR for ${feature.category} is Proposed. Complete its implementation and review.`,
+            )
+          : message(
+              `${feature.category}에 필요한 ${next.category} ADR이 Proposed입니다. 이 선행 결정부터 구현하고 검토하세요.`,
+              `${feature.category} depends on the Proposed ADR in ${next.category}. Implement and review that prerequisite first.`,
+            );
+      return { command: `/adr-impl ${next.path}`, reason };
+    }
+    const target = next?.category ?? feature.category;
+    return {
+      command: sync,
+      reason: message(
+        `${target}의 현행 ADR과 선행 관계가 색인에서 유효한지 확인하세요.`,
+        `Check the current ADRs and prerequisite links for ${target} in the index.`,
+      ),
+    };
+  }
+  const missingCoverage = plan.handoffs.find((handoff) => !handoff.criteria.length);
+  if (missingCoverage)
+    return {
+      command: `/ontology-edit ${id}`,
+      reason: message(
+        `${missingCoverage.event} 인계를 관찰할 기준을 제안하세요.`,
+        `Propose an observation criterion covering the ${missingCoverage.event} hand-off.`,
+      ),
+    };
+  const unverified = plan.criteria.find((criterion) => criterion.executesNoSystemStep);
+  if (unverified)
+    return {
+      command: sync,
+      reason: message(
+        `${unverified.criterion}의 결과를 실제로 관찰할 수 있는 시스템 단계와 진입점을 확인하세요.`,
+        `Identify a real system step and entry point for observing ${unverified.criterion}.`,
+      ),
+    };
+  if (plan.blocking.length)
+    return {
+      command: sync,
+      reason: message(
+        `다음 검증 조건을 먼저 검토하세요. ${plan.blocking[0]}`,
+        `Review the outstanding condition: ${plan.blocking[0]}`,
+      ),
+    };
+  if (status === "Proposed")
+    return {
+      command: `/ontology-align ${id}`,
+      reason: message(
+        `기계적 조건을 충족했습니다. 준수 계약과 관찰 기준 ${plan.criteria.length}개의 실제 실행 결과를 검증하세요.`,
+        `Mechanical gates are clear. Verify the compliance contracts and execute the ${plan.criteria.length} observation criteria.`,
+      ),
+    };
+  return {
+    command: `/ontology-view ${id}`,
+    reason: message(
+      "이미 Accepted인 업무입니다. 필요하면 업무 단계와 실현 ADR을 살펴보세요.",
+      "This process is already Accepted. Inspect its steps and realizing ADRs if useful.",
+    ),
+  };
+}
 
 /** Steps connected to one changed element: the features realizing them are directly affected. */
 function stepsTouchedBy(index, iri) {

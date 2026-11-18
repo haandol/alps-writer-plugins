@@ -8,6 +8,69 @@ The current Purpose, all still-valid Decision Drivers, adopted choice, rationale
 and requirement contract remain together in the ADR body. Reading this log is
 optional for understanding the current decision.
 
+## 2026-11-18 — 터미널에서 정렬하고 화면에서 결정
+
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
+- **Change type**: requirement rule change
+- **What**: 정렬은 터미널에서 시작하고, 화면은 프로세스 전체에 걸친 질문과 변경안을 모아 답변과 승인을 받는다.
+- **Why**: 사용자가 실제로 판단할 부분을 모아 보고 검증 실행은 에이전트에게 맡기기 위해서다.
+
+## 2026-11-18 — 검증된 ADR의 업무 근거 재사용
+
+- **Current ADR**: [build-ontology-from-documents](./0004-build-ontology-from-documents.md)
+- **Change type**: requirement rule change
+- **What**: 현재 구현과의 일치가 확인된 ADR에 대상 업무가 충분히 기록돼 있으면 그 문서만으로 후보를 만든다. 변경·충돌·자료 누락만 추가로 확인한다.
+- **Why**: 코드 일치 검사를 구축 때마다 반복하는 비용을 없애면서, 문서에 없는 사람의 업무와 인계는 미확인으로 남긴다.
+
+## 2026-11-18 — 저장 직전 충돌 감지의 보장 범위
+
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
+- **Change type**: requirement rule change
+- **What**: R48의 동시 편집 보호 범위를 명시한다. 감지한 변경은 보존하고 재승인하며, 독립 편집기의 마지막 비교·교체 사이 쓰기는 보장 범위 밖이다.
+- **Why**: 지원 플랫폼과 일반 IDE의 저장 방법을 제한하지 않으면서 검증 가능한 동시 편집 보호 경계를 분명히 한다.
+
+## 2026-11-18 — 정렬 화면에서 업무 의도 확인부터 수정·재검증까지 수행
+
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
+- **Change type**: requirement rule change
+- **What**: 전체 정렬 중 발견한 차이는 같은 요청에서 질문하고, 별도로 승인한 변경만 적용한 뒤 원래 업무를 다시 검증한다.
+- **Why**: 차단 사유와 명령만 전달하면 사용자가 모델·ADR·코드 수정과 재정렬을 직접 이어야 했다.
+
+## 2026-11-18 — 화면에서 정렬 검증을 요청하고 결과를 확인
+
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
+- **Change type**: requirement rule change
+- **What**: 사용자가 화면에서 프로세스·관찰 기준을 선택해 에이전트에 검증을 요청하고 같은 화면에서 근거와 결과를 확인한다.
+- **Why**: 모델을 살펴본 사용자가 검증 대상을 명령줄에 다시 입력하지 않고 다음 작업으로 이어갈 수 있어야 한다.
+
+## 2026-11-18 — 프로세스 상태에서 다음 행동으로 연결
+
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
+- **Change type**: requirement rule change
+- **What**: 온톨로지 대화에서 현재 결과와 함께 대상·이유가 있는 다음 행동을 제안한다.
+- **Why**: 같은 `Proposed` 상태에서도 단계 연결, 선행 결정 구현, 실행 검증 중 먼저 필요한 작업이 다르다.
+
+## 2026-11-18 — 사용자가 프로젝트별로 선택한 최초 구축 방식 기억
+
+- **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md), [build-ontology-from-documents](./0004-build-ontology-from-documents.md)
+- **Change type**: requirement rule change
+- **What**: 명시한 구축 여부와 ADR 리뷰 방식을 각각 기억한다. 현재 요청과 항목별 초기화로 방식을 바꿀 수 있다.
+- **Why**: 새 세션이나 다른 워크트리에서 같은 질문에 다시 답하는 수고를 줄이면서 변경·저장 승인은 해당 작업에서 받는다.
+
+## 2026-11-18 — 첫 구축 전 기존 ADR 리뷰 선택
+
+- **Current ADR**: [build-ontology-from-documents](./0004-build-ontology-from-documents.md)
+- **Change type**: requirement rule change
+- **What**: 첫 구축을 요청한 사용자는 기존 ADR을 먼저 리뷰하고 필요한 수정을 선택하거나 현재 자료로 바로 시작할 수 있다.
+- **Why**: 업무 후보의 근거로 사용할 결정에서 모호한 요구사항을 발견하면, 그 결정을 먼저 정리할 기회가 필요하다.
+
+## 2026-11-18 — 모델이 없는 프로젝트의 첫 구축 안내
+
+- **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Change type**: requirement rule change
+- **What**: Ontology Writer가 설치된 새 세션은 모델이 없으면 구축할지 한 번 직접 묻는다. 수락하면 문서나 업무 설명으로 초안을 만들고, 거절하거나 답이 없으면 원래 작업을 계속한다.
+- **Why**: 모델과 ADR 색인이 모두 있어야 보이던 지침만으로는 처음 설치한 사용자가 구축을 시작할 방법을 발견하기 어려웠다.
+
 ## 2026-11-09 — 갱신이 필요한 영향 ADR만 갱신
 
 - **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)

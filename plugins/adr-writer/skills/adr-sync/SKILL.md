@@ -6,6 +6,8 @@ argument-hint: "[category?] [--quick]"
 
 # adr-sync
 
+Reconcile evidence, contract and recorded Status. Route an outstanding implementation or verification gap to its owner; synchronization alone cannot establish implementation acceptance. Follow the [acceptance and next-action guidance](../../references/non-invasive-harness.md#acceptance-and-the-next-action).
+
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Consult the context glossary, then the root glossary, for meanings needed in

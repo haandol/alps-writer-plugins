@@ -100,6 +100,32 @@ test("the CLI writes one ignored file, opens it on request, and creates nothing 
   });
 });
 
+test("first-model help is actionable in an empty project and distinguishes a missing draft", () => {
+  withTmp((dir) => {
+    for (const args of [
+      ["view", "--no-open"],
+      ["align", "--process", "quote"],
+      ["query", "--overview"],
+    ]) {
+      const result = cli(dir, args);
+      assert.equal(result.code, args[0] === "query" ? 0 : 1);
+      assert.match(result.out, /\/ontology-build/);
+      assert.match(
+        result.out,
+        /Would you like to create a business ontology for this project now\?/,
+      );
+      assert.match(result.out, /document or folder/);
+      assert.match(result.out, /quote/);
+    }
+    const korean = cli(dir, ["view", "--lang", "ko", "--no-open"]);
+    assert.match(korean.out, /지금 이 프로젝트의 업무 온톨로지를 만들까요\?/);
+    assert.match(korean.out, /견적/);
+    const draft = cli(dir, ["view", "--draft", "missing-draft", "--no-open"]);
+    assert.doesNotMatch(draft.out, /\/ontology-build/);
+    assert.deepEqual(readdirSync(dir), []);
+  });
+});
+
 test("the CLI view says why change flags are unavailable when the committed model cannot be parsed", () => {
   withTmp((dir) => {
     initRepo(dir);

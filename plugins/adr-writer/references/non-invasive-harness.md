@@ -4,6 +4,18 @@ The plugin is a removable management layer over durable project artifacts. Its
 skills, hooks, reviewers, reports, and evals help a model apply the workflow;
 they are not an additional source of product or implementation truth.
 
+## Acceptance and the next action
+
+Help the user reach justified ADR acceptance within the current skill's
+authority. Whenever you report a Proposed ADR, explain what still prevents
+Accepted. Finish the reply with one action the user or agent can take now.
+Name the ADR or prerequisite and what the action will establish. Give a
+runnable invocation with the real target or ask the specific pending
+question. When several ADRs or gaps were discussed, choose one actionable
+prerequisite, repair or verification. If the authorized action is ready, do
+it and report the remaining step. A recommendation grants no new approval.
+When the work is complete, say so and make any follow-up optional.
+
 ## Durable context survives the plugin
 
 - Product intent remains in the PRD while it owns planning.

@@ -10,6 +10,18 @@ or weakening approval, validation or failure guarantees. Keep operation-specific
 detail in selectively loaded, plugin-local references. ADR Writer handles reader
 profile requests through `report-writer profile`.
 
+## Acceptance intent across ADR Writer and Ontology Writer
+
+Every public skill contributes within its own authority to a justified outcome
+for the user's decision or business process. Choose the next action from the
+current contract, prerequisites, missing evidence and user intent. An implemented
+ADR reaches `Accepted` through implementation, tests and the completion review.
+An approved business process reaches `Accepted` through its realizing contracts
+and real execution of its observation criteria. Keep unresolved, declined,
+retired and already completed work visible in its proper state. Search, review,
+views, reports and reader preferences support the user's decision within their
+existing permissions. Preserve the plugins' independent installation boundaries.
+
 ## The design principle — an abstraction ladder, C4-style
 
 C4 shows the same system at different resolutions, from its external context to

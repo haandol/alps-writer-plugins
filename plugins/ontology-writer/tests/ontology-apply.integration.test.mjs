@@ -774,6 +774,81 @@ test("impact refuses link records that are not lists of step ids, as the save it
   });
 });
 
+test("a new realization link must agree with the ADR bodies in its feature's folder before approval or save", () => {
+  withTmp((dir) => {
+    repo(dir, ACCEPTED, UNLINKED);
+    draft(dir);
+    const args = ["--mapping", "mapping.next.json"];
+    const mappingFile = "docs/adr/.mapping.json";
+    const payment = MAPPING.categories.payments.adrs[0].path;
+    const validBody = read(dir, payment);
+    const originalIndex = read(dir, mappingFile);
+    write(dir, "mapping.next.json", JSON.stringify(MAPPING));
+    const { baseHash } = impact(dir, args);
+
+    for (const [code, body] of [
+      ["ontology-adr-status-mismatch", validBody.replace("Accepted (2020-01-01)", "Proposed")],
+      ["ontology-adr-identifier", validBody + "\nUses `payment.request-payment`.\n"],
+      ["ontology-adr-missing", null],
+    ]) {
+      if (body === null) rmSync(path.join(dir, payment));
+      else write(dir, payment, body);
+      const preview = cli(dir, ["impact", "--draft", "draft", ...args]);
+      assert.equal(preview.code, 1, preview.out);
+      assert.ok(preview.out.includes(code) && preview.out.includes(payment), preview.out);
+      assert.doesNotMatch(preview.out, /base hash/);
+      assert.equal(apply(dir, baseHash, args).code, 1);
+      assert.equal(read(dir, mappingFile), originalIndex);
+      assert.equal(read(dir, "docs/ontology/model.ttl"), ACCEPTED);
+    }
+
+    write(dir, payment, validBody);
+    const extra = "docs/adr/payments/0002-c.md";
+    write(dir, extra, "# ADR 0002: Another payment decision\n\n## Status\n\nProposed\n");
+    // This new file was not one of the paths bound by the approval hash.
+    const refused = apply(dir, baseHash, args);
+    assert.equal(refused.code, 1, refused.out);
+    assert.match(refused.out, /ontology-adr-unindexed/);
+    assert.ok(refused.out.includes(extra), refused.out);
+    assert.equal(read(dir, mappingFile), originalIndex);
+    assert.equal(read(dir, "docs/ontology/model.ttl"), ACCEPTED);
+
+    // The draft index can register the file while adding the link.
+    const repaired = structuredClone(MAPPING);
+    repaired.categories.payments.adrs.push({ path: extra, status: "Proposed", summary: "s" });
+    write(dir, "mapping.next.json", JSON.stringify(repaired));
+    const saved = apply(dir, impact(dir, args).baseHash, args);
+    assert.equal(saved.code, 0, saved.out);
+    assert.deepEqual(JSON.parse(read(dir, mappingFile)), repaired);
+    exits(dir, ["validate"], 0);
+  });
+});
+
+test("realization checks use the proposed model identifiers and allow moving a link off a broken feature", () => {
+  withTmp((dir) => {
+    repo(dir);
+    const original = "payment.request-payment";
+    const replacement = "payment.collect-payment";
+    draft(dir, ACCEPTED.replaceAll(original, replacement));
+    const args = ["--mapping", "mapping.next.json"];
+    const next = structuredClone(MAPPING);
+    next.categories.payments.realizes = [replacement];
+    write(dir, "mapping.next.json", JSON.stringify(next));
+    const payment = next.categories.payments.adrs[0].path;
+    write(dir, payment, read(dir, payment) + "\nImplements `payment.collect-payment`.\n");
+    const preview = cli(dir, ["impact", "--draft", "draft", ...args]);
+    assert.equal(preview.code, 1, preview.out);
+    assert.match(preview.out, /ontology-adr-identifier/);
+    assert.ok(preview.out.includes(replacement), preview.out);
+    next.categories.payments.realizes = [];
+    next.categories.checkout.realizes.push(replacement);
+    write(dir, "mapping.next.json", JSON.stringify(next));
+    const saved = apply(dir, impact(dir, args).baseHash, args);
+    assert.equal(saved.code, 0, saved.out);
+    exits(dir, ["validate"], 0);
+  });
+});
+
 test("the summary judges links as the index draft saves them, and its text names every ADR the approval binds", () => {
   withTmp((dir) => {
     repo(dir, ACCEPTED, UNLINKED);

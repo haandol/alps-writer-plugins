@@ -6,6 +6,8 @@ argument-hint: "[process-id]"
 
 # ontology-align
 
+Use [next-action guidance](../../references/next-action.md) in each user-facing reply.
+
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/ontology.md` completely. The
@@ -16,11 +18,21 @@ without another confirmation.
 
 ## When it runs
 
+If the project has no saved ontology, offer [first-model setup](../../references/first-model.md).
+A missing process in a saved model needs the correct process or a scoped extension.
+
 - Right after the last ADR affected by an ontology change becomes `Accepted`, or
   right after an approved change with no affected ADR is applied.
 - Right after the last realizing ADR of a `Proposed` process becomes `Accepted`
   (`/adr-impl` hands over to this skill then).
 - When the user asks.
+
+Start `/ontology-align <process>` in the terminal conversation. Run the
+mechanical plan and actual verification below. When the user must make a
+decision, open or reuse the [decision session](references/session.md) and
+collect the outstanding questions or changes there. Continue the original
+terminal task after the user responds. Report the results in the terminal
+and return any result tied to a decision to the same screen.
 
 For a completeness/readiness-only request, use `/ontology-sync`'s read-only
 review path and `${CLAUDE_PLUGIN_ROOT}/references/workflow-readiness.md`;
@@ -82,6 +94,10 @@ and a criterion only a live environment could show stays unverified.
   evidence. A realizing feature replaced by a double, an undeclared double, a
   skipped in-scope step or its result fabricated as data leaves the criterion
   unverified, and so does evidence that executes no realizing feature at all.
+  At the test boundary, distinguish the feature handling the business event
+  from its external provider. For example, run the actual payment feature; an
+  external card provider may supply declared test input. Declaring a stub for
+  the payment feature itself still leaves its contract and hand-off unverified.
 - An outside-system step may be replaced by giving its result as input; record
   the input.
 - For each hand-off with a current counterpart, execute one criterion passing

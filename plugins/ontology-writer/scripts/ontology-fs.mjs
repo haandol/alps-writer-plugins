@@ -281,6 +281,48 @@ export function adrRecordFindings({
   return findings;
 }
 
+/** Check the ADR files that would realize steps in a saved or proposed model and index. */
+export function workingAdrRecordFindings({
+  categories,
+  index,
+  inScope,
+  ontologyDir,
+  adrRoot,
+  rel,
+  cwd = process.cwd(),
+  readAdr,
+}) {
+  return adrRecordFindings({
+    categories,
+    index,
+    inScope,
+    at: (p) => path.resolve(cwd, p),
+    folderOf: (key) => path.resolve(cwd, adrRoot, ...key.split("/")),
+    join: path.join,
+    read: (file) => {
+      if (readAdr) return readAdr(file);
+      try {
+        return readFileSync(file, "utf8");
+      } catch {
+        return null;
+      }
+    },
+    list: (dir) => {
+      try {
+        return readdirSync(dir);
+      } catch {
+        return [];
+      }
+    },
+    label: rel,
+    inModel: (file, target) =>
+      linksInto(path.resolve(path.dirname(file), target), path.resolve(cwd, ontologyDir), {
+        fold: foldsAt(path.resolve(cwd, ontologyDir)),
+        sep: path.sep,
+      }),
+  });
+}
+
 /**
  * Collect the ontology-level findings for a repository: model validation, index
  * links, model references inside realizing ADR bodies and glossary terms the
@@ -349,34 +391,15 @@ export function ontologyFindings({
   }
   if (index) {
     findings.push(
-      ...adrRecordFindings({
+      ...workingAdrRecordFindings({
         categories,
         index,
         inScope,
-        at: (p) => path.resolve(cwd, p),
-        folderOf: (key) => path.resolve(cwd, adrRoot, ...key.split("/")),
-        join: path.join,
-        read: (file) => {
-          if (readAdr) return readAdr(file);
-          try {
-            return readFileSync(file, "utf8");
-          } catch {
-            return null;
-          }
-        },
-        list: (dir) => {
-          try {
-            return readdirSync(dir);
-          } catch {
-            return [];
-          }
-        },
-        label: rel,
-        inModel: (file, target) =>
-          linksInto(path.resolve(path.dirname(file), target), path.resolve(cwd, ontologyDir), {
-            fold: foldsAt(path.resolve(cwd, ontologyDir)),
-            sep: path.sep,
-          }),
+        adrRoot,
+        ontologyDir,
+        rel,
+        cwd,
+        readAdr,
       }),
     );
     // The root glossary and each context's own glossary (`<context>/glossary.md`) may
@@ -469,6 +492,11 @@ function git(args, cwd) {
     stdio: ["pipe", "pipe", "pipe"],
     maxBuffer: GIT_BUFFER,
   });
+}
+
+/** Resolve a comparison ref again without loading or parsing its model tree. */
+export function resolveComparisonCommit(ref, cwd = process.cwd()) {
+  return git(["rev-parse", "--verify", "-q", `${ref}^{commit}`], cwd).trim();
 }
 
 /** The blob ids of the ADR index as each read commit resolves it. */
@@ -1490,7 +1518,7 @@ export function modelDocumentsAt(ref, ontologyDir, { cwd = process.cwd() } = {})
   const top = git(["rev-parse", "--show-toplevel"], cwd).trim();
   const dir = repositoryName(top, realpathSync(cwd), ontologyDir);
   if (dir === null) throw new Error("the model directory lies outside the repository");
-  const sha = git(["rev-parse", "--verify", "-q", `${ref}^{commit}`], top).trim();
+  const sha = resolveComparisonCommit(ref, top);
   const logRel = `${dir}/${CHANGE_LOG}`;
   const reads = readTreeFiles(top, [sha], dir, logRel, sha.length / 2);
   const { files, skipped, logUnseen } = reads.get(sha);

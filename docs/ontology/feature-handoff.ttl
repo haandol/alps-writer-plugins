@@ -40,7 +40,7 @@ m:feature-handoff a onto:Process ;
     onto:startCondition "사용자가 기획한 기능의 계약을 결정 기록으로 옮기도록 요청했다." ;
     onto:businessOutcome "인계가 끝난 기능은 결정 기록만으로 구현할 수 있고, 뜻이 확정되지 않은 기능은 기획 문서에 남아 인계를 기다린다." ;
     onto:openScope "인계가 끝난 기능의 기획이 바뀐 뒤 사용자가 다시 인계를 요청하는 경우."^^onto:OpenPath ;
-    onto:status "Proposed" ;
+    onto:status "Accepted (2026-11-18)" ;
     onto:hasStep m:feature-handoff.assess-contract, m:feature-handoff.decide-model-change, m:feature-handoff.transfer-contract .
 
 m:feature-handoff.assess-contract a onto:Step ;

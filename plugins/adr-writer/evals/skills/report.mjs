@@ -77,7 +77,8 @@ const groups = [
   ["결정 관리", "동기화와 통합", "표현과 검증", ["sync-rewrites-", "sync-stays-"]],
   ["결정 관리", "동기화와 통합", "통합 범위", ["rollup-"]],
   ["결정 관리", "동기화와 통합", "세션 분류", ["hook-"]],
-  ["결정 관리", "업무 온톨로지", ["ontology-"]],
+  ["결정 관리", "업무 온톨로지", "모델 구축과 변경 승인", ["ontology-build-", "ontology-edit-"]],
+  ["결정 관리", "업무 온톨로지", "준비 상태와 실행 정렬", ["ontology-sync-", "ontology-align-"]],
   ["구현 보장", "의존성과 계획", "선행 상태와 계획", ["impl-blocks-", "impl-plans-"]],
   ["구현 보장", "의존성과 계획", "의도와 기본값 판단", ["impl-resolves-", "impl-uses-intent-"]],
   [

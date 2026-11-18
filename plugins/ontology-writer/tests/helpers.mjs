@@ -102,11 +102,11 @@ export function commitAll(dir, msg = "init") {
 
 // Run the SessionStart hook against a fixture and return the parsed
 // additionalContext string (or the whole JSON when raw=true).
-export function runHook(dir, { raw = false, env = {} } = {}) {
+export function runHook(dir, { raw = false, env = {}, source = "startup" } = {}) {
   const out = execFileSync(process.execPath, [HOOK], {
     cwd: dir,
     env: { ...process.env, CLAUDE_PROJECT_DIR: dir, ...env },
-    input: JSON.stringify({ hook_event_name: "SessionStart", source: "startup" }),
+    input: JSON.stringify({ hook_event_name: "SessionStart", source }),
     encoding: "utf8",
   });
   const parsed = JSON.parse(out);

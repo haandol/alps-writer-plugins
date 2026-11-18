@@ -11,15 +11,16 @@
 //   bun ontology.mjs query (--category KEY | --process ID | --step ID | --concept ID | --event ID)
 //                                [--include-retired] [--adr-dir DIR] [--json]
 //   bun ontology.mjs impact (--draft DIR | --base REF [--also-base REF]...) [--process ID]
-//                                [--same-meaning ID=PROPERTY]... [--mapping FILE] [--glossary FILE] [--json]
+//                                [--same-meaning ID=PROPERTY]... [--mapping FILE] [--adr-drafts DIR] [--glossary FILE] [--json]
 //   bun ontology.mjs changes [--json]
 //   bun ontology.mjs apply (--draft DIR | --base REF [--also-base REF]... [--process ID]) --base-hash HASH
 //                                [--same-meaning ID=PROPERTY]...
-//                                [--mapping FILE] [--glossary FILE]
+//                                [--mapping FILE] [--adr-drafts DIR] [--glossary FILE]
 //                                [--log TEXT]... [--allow-comment-removal]
 //   bun ontology.mjs transition --process ID --to Accepted|Proposed [--date YYYY-MM-DD]
 //                                [--same-meaning ID=PROPERTY]... [--unread-unchanged]
 //   bun ontology.mjs align --process ID [--together ID,ID] [--json]
+//   bun ontology.mjs align --ui [--process ID] [--lang en|ko] [--no-open | --browser NAME]
 //   bun ontology.mjs lifecycle [--base REF] [--json]
 //   bun ontology.mjs view [--include-retired] [--lang en|ko] [--no-open | --browser NAME]
 //                         [--draft DIR] [--mapping FILE] [--board FILE]
@@ -90,6 +91,7 @@
 import { createHash } from "node:crypto";
 import {
   existsSync,
+  linkSync,
   lstatSync,
   mkdirSync,
   readFileSync,
@@ -103,8 +105,11 @@ import {
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
+import { tmpdir, userInfo } from "node:os";
+import { spawnSync } from "node:child_process";
 import {
   ONTO,
+  RDF,
   TRANSITIONS,
   addedLines,
   businessComposition,
@@ -130,7 +135,9 @@ import {
   validateModel,
 } from "./ontology-lib.mjs";
 import { validateMappingShape } from "./adr-lint-lib.mjs";
-import { alignmentPlan, impactSummary } from "./ontology-align.mjs";
+import { newAdrDrafts } from "./ontology-adr-drafts.mjs";
+import { alignmentPlan, impactSummary, nextProcessAction } from "./ontology-align.mjs";
+import { setupPreference } from "./ontology-preferences.mjs";
 import {
   CHANGE_LOG,
   acceptedBaselines,
@@ -144,12 +151,19 @@ import {
   readDocument,
   readModelHistory,
   recordedAdrFiles,
+  resolveComparisonCommit,
+  workingAdrRecordFindings,
 } from "./ontology-fs.mjs";
-import { openReviewReport } from "./adr-impl-review-open.mjs";
+import { openReviewReport, openerCommand } from "./adr-impl-review-open.mjs";
 import { renderLayeredView } from "./ontology-layered-view.mjs";
 import { readAdrDocument } from "./ontology-layered-data.mjs";
 import { validateEventBoard } from "./eventstorming-board.mjs";
-import { currentAdrPaths, queryContext, renderContext } from "./ontology-query.mjs";
+import {
+  currentAdrPaths,
+  queryContext,
+  realizersByStep,
+  renderContext,
+} from "./ontology-query.mjs";
 import { navigationOptions } from "./ontology-navigation.mjs";
 
 const rel = (p) => path.relative(process.cwd(), p).split(path.sep).join("/");
@@ -191,6 +205,7 @@ function parseArgs(argv) {
     draft: null,
     baseHash: null,
     mappingFile: null,
+    adrDrafts: null,
     boardFile: null,
     glossaryFile: null,
     logs: [],
@@ -216,6 +231,7 @@ function parseArgs(argv) {
         usage("--index requires a file path");
     } else if (a === "--base") opts.base = value();
     else if (a === "--json") opts.json = true;
+    else if (a === "--ui" && command === "align") opts.ui = true;
     else if (a === "--write") opts.write = true;
     else if (a === "--check") opts.write = false;
     else if (a === "--allow-comment-removal") opts.allowCommentRemoval = true;
@@ -227,6 +243,8 @@ function parseArgs(argv) {
     else if (a === "--draft") opts.draft = value().replace(/\/+$/, "");
     else if (a === "--base-hash") opts.baseHash = value();
     else if (a === "--mapping") opts.mappingFile = value();
+    else if (a === "--adr-drafts" && ["impact", "apply"].includes(command))
+      opts.adrDrafts = value();
     else if (a === "--board" && command === "view") opts.boardFile = value();
     else if (a === "--glossary") opts.glossaryFile = value();
     else if (a === "--log") opts.logs.push(value());
@@ -295,11 +313,16 @@ function parseArgs(argv) {
   if (command === "impact" && !opts.draft && !argv.includes("--base"))
     usage("impact needs --draft DIR or --base REF");
   if (command === "apply" && !opts.baseHash) usage("apply needs --base-hash from impact");
+  if (opts.adrDrafts && !opts.mappingFile) usage("--adr-drafts requires the proposed --mapping");
   if (opts.alsoBase.length && (opts.draft || !argv.includes("--base")))
     usage("--also-base adds bases to a --base comparison of a direct edit");
   if ((command === "impact" || command === "apply") && opts.draft && opts.process)
     usage("--process limits a --base comparison; a draft is summarized whole");
-  if ((command === "transition" || command === "align") && !opts.process)
+  if (opts.ui && (opts.json || opts.together.length))
+    usage(
+      "--ui opens a selection session; use the headless alignment plan for --json or --together",
+    );
+  if ((command === "transition" || (command === "align" && !opts.ui)) && !opts.process)
     usage(`${command} needs --process ID`);
   if (command === "transition" && !opts.to) usage("transition needs --to STATE");
   if (adrDirProvided && opts.indexFile) usage("give --adr-dir or --index, not both");
@@ -517,6 +540,80 @@ function diff(opts) {
   return result.same ? 0 : 1;
 }
 
+function firstModelHelp(lang, findings) {
+  if (findings.length) return findings.map((f) => `[${f.code}] ${f.where}: ${f.msg}`).join("\n");
+  try {
+    if (setupPreference())
+      return lang === "ko"
+        ? "저장된 구축 선호를 따릅니다. 필요할 때 /ontology-build로 시작하거나 /ontology-build preferences로 선택을 바꿀 수 있습니다."
+        : "Your project setup choice is saved. Use /ontology-build when ready, or /ontology-build preferences to change it.";
+  } catch {
+    return lang === "ko"
+      ? "구축 선호를 읽을 수 없습니다. /ontology-build preferences로 설정을 확인하거나 초기화할 수 있습니다."
+      : "The setup preference could not be read. Use /ontology-build preferences to inspect or reset it.";
+  }
+  return lang === "ko"
+    ? "지금 이 프로젝트의 업무 온톨로지를 만들까요? /ontology-build에 업무 문서·폴더를 지정하거나 ‘영업 담당자가 견적을 올리면 팀장이 승인하거나 반려합니다’처럼 업무 하나를 설명해 주세요. 초안을 검토하고 승인한 범위만 저장합니다."
+    : "Would you like to create a business ontology for this project now? Start with /ontology-build and a document or folder, or describe one workflow, e.g. sales submits a quote and a manager approves or returns it. Review the draft before saving.";
+}
+
+// Expose recommendations only on interactive reads and save receipts. Lifecycle
+// gates and their historical replay continue to use the mechanical plan alone.
+function processPlan({ index, mapping, findings }, processId, lang, { changes, together } = {}) {
+  const errors = findings.filter((finding) => finding.level === "error");
+  const plan = alignmentPlan({ index, mapping, processId, errors, together });
+  if (!plan.error) {
+    plan.nextAction = nextProcessAction({ plan, index, mapping, errors, changes, lang });
+  }
+  return plan;
+}
+
+function nextActionText(action, lang) {
+  return `${lang === "ko" ? "다음 행동" : "Next action"}: ${action.reason}${action.command ? ` ${action.command}` : ""}\n`;
+}
+
+function writeSavedNextAction(opts, ids, affectedAdrs = []) {
+  const [id] = ids;
+  if (!id) return;
+  const saved = levelFindings(opts);
+  const plan = saved.index && processPlan(saved, id, opts.lang);
+  const action = plan?.nextAction ?? {
+    reason:
+      saved.findings[0]?.msg ??
+      (opts.lang === "ko" ? "저장된 프로세스를 확인하세요." : "Inspect the saved process."),
+    command: `/ontology-sync ${id}`,
+  };
+  const revision =
+    plan?.realization?.categories
+      .flatMap(({ category }) => saved.mapping?.categories?.[category]?.adrs ?? [])
+      .find(({ path }) => affectedAdrs.includes(path))?.path ?? affectedAdrs[0];
+  if (revision && action.command === `/ontology-align ${id}`) {
+    // The caller holds the approved summary and knows which revisions it authorizes.
+    const reason =
+      opts.lang === "ko"
+        ? `${id}의 정렬에 앞서 승인 요약에서 ${revision}의 개정 결정을 확인하세요.`
+        : `Check the approved revision decision for ${revision} before aligning ${id}.`;
+    process.stdout.write(nextActionText({ reason }, opts.lang));
+    return;
+  }
+  process.stdout.write(nextActionText(action, opts.lang));
+}
+
+/** Use the same scoped history for process advice at the query and alignment entry points. */
+function workingContext(opts, level, target) {
+  return queryContext({
+    ...level,
+    changes: level.index
+      ? changeFlags(opts.ontologyDir, level.index, { mappingPath: mappingPathOf(opts) })
+      : null,
+    target,
+    includeRetired: opts.includeRetired,
+    search: opts.search,
+    limit: opts.limit,
+    offset: opts.offset,
+  });
+}
+
 function query(opts) {
   const { model, findings, index, mapping } = levelFindings(opts);
   if (!model) {
@@ -524,25 +621,20 @@ function query(opts) {
       kind: opts.target.kind,
       id: opts.target.id,
       model: false,
-      note: `no ontology in ${opts.ontologyDir}; the business ontology level does not apply`,
+      note: `no ontology in ${opts.ontologyDir}; the business ontology level does not apply\n${firstModelHelp(opts.lang, findings)}`,
     };
     process.stdout.write(opts.json ? JSON.stringify(none, null, 2) + "\n" : `${none.note}\n`);
     return 0;
   }
-  const result = queryContext({
-    index,
-    mapping,
-    findings,
-    changes: index
-      ? changeFlags(opts.ontologyDir, index, { mappingPath: mappingPathOf(opts) })
-      : null,
-    target: opts.target,
-    includeRetired: opts.includeRetired,
-    search: opts.search,
-    limit: opts.limit,
-    offset: opts.offset,
-  });
+  const result = workingContext(opts, { index, mapping, findings }, opts.target);
+  if (result.kind === "process" && result.found && index) {
+    result.nextAction = processPlan({ index, mapping, findings }, result.id, opts.lang, {
+      changes: result.changes,
+    }).nextAction;
+  }
   process.stdout.write(opts.json ? JSON.stringify(result, null, 2) + "\n" : renderContext(result));
+  if (!opts.json && result.nextAction)
+    process.stdout.write(nextActionText(result.nextAction, opts.lang));
   return result.found && result.complete ? 0 : 1;
 }
 
@@ -659,6 +751,10 @@ function draftDocuments(draft, ontologyDir) {
         `draft document ${rel(f)} is a model document under another name (a link or a hard link), so an edit made through it has already changed the model; a draft holds copies (cp -RL, or write the text), never links`,
       );
   }
+  return readDraftFiles(draft, files);
+}
+
+function readDraftFiles(draft, files = findModelDocuments(draft)) {
   return files.map((f) => ({
     doc: path.relative(draft, f).split(path.sep).join("/"),
     ...readDocument(f),
@@ -677,6 +773,7 @@ function baseHash(
   {
     drafts = [],
     adrs = [],
+    newAdrs = new Map(),
     sameMeaning = [],
     scope = null,
     mappingDraft = null,
@@ -686,6 +783,7 @@ function baseHash(
   } = {},
 ) {
   const h = createHash("sha256");
+  for (const [file, text] of newAdrs) h.update(`new-adr\0${rel(file)}\0${text}\0`);
   for (const f of findModelDocuments(opts.ontologyDir))
     h.update(`${rel(f)}\0${readText(f) ?? ""}\0`);
   for (const f of [
@@ -725,6 +823,31 @@ function relinked(current, draft) {
       ...currentAdrPaths(current?.categories?.[k]),
     ]);
   return { categories, adrs: [...new Set(adrs)].sort() };
+}
+
+// A new realization depends on the feature's actual ADRs. Existing drift can be
+// reconciled independently, including by removing its last link in this draft.
+function newRealizationFindings(opts, current, draft, index, newAdrs) {
+  return workingAdrRecordFindings({
+    categories: draft?.categories ?? {},
+    index,
+    inScope: (key) => {
+      const previous = current?.categories?.[key]?.realizes;
+      return (
+        (newAdrs.size &&
+          Array.isArray(draft.categories[key].adrs) &&
+          draft.categories[key].adrs.some(
+            (r) => typeof r?.path === "string" && newAdrs.has(path.resolve(r.path)),
+          )) ||
+        !Array.isArray(previous) ||
+        draft.categories[key].realizes.some((step) => !previous.includes(step))
+      );
+    },
+    adrRoot: opts.adrDir,
+    ontologyDir: opts.ontologyDir,
+    rel,
+    readAdr: (file) => newAdrs.get(file) ?? readText(file),
+  });
 }
 
 /**
@@ -903,7 +1026,13 @@ function impact(opts) {
       `${shapes.map((f) => `[${f.code}] ${f.where}: ${f.msg}`).join("; ")}; fix the ADR index before a change approval`,
     );
   const relink = relinked(mapping, draftIndex);
-  const check = validateModelChange(documents, before, mapping, opts);
+  let newAdrs;
+  try {
+    newAdrs = newAdrDrafts(opts, mapping, draftIndex);
+  } catch (error) {
+    return fail(error.message);
+  }
+  const check = validateModelChange(documents, before, draftIndex ?? mapping, opts);
   if (
     opts.process &&
     before.typeOf(elementIri(opts.process)) !== "Process" &&
@@ -920,6 +1049,14 @@ function impact(opts) {
     return fail(
       `${unresolved.map((f) => `[${f.code}] ${f.where}: ${f.msg}`).join("; ")}; fix the index draft before a change approval`,
     );
+  if (draftIndex && check.index) {
+    const adrErrors = newRealizationFindings(opts, mapping, draftIndex, check.index, newAdrs);
+    if (adrErrors.length)
+      return refuse([
+        ...adrErrors.map((f) => `[${f.code}] ${f.where}: ${f.msg}`),
+        "fix the realizing ADRs or their draft index links before a change approval",
+      ]);
+  }
   // The summary judges links as the index will be after the save: the draft when there is one.
   const over = check.index
     ? summaryOverBases(opts, before, check.index, {
@@ -939,6 +1076,7 @@ function impact(opts) {
     baseHash: baseHash(opts, {
       drafts: opts.draft ? documents : [],
       adrs: [...(summary?.affectedAdrs ?? []), ...relink.adrs],
+      newAdrs,
       sameMeaning: opts.sameMeaning,
       scope: opts.process,
       mappingDraft,
@@ -947,6 +1085,7 @@ function impact(opts) {
       alsoBases: over.alsoBases ?? [],
     }),
     draftValid: check.ok,
+    ...(newAdrs.size ? { newAdrs: [...newAdrs.keys()].map(rel) } : {}),
     findings: check.findings,
     commentsDroppedOnRewrite: commented,
     sameMeaning: [...opts.sameMeaning].sort(),
@@ -999,6 +1138,7 @@ function impact(opts) {
       show("features of processes that become Proposed", summary.categoriesOfProposedProcesses);
       show("features whose index links change", out.relinkedCategories);
       show("affected ADRs", out.affectedAdrs);
+      if (out.newAdrs) show("new Proposed ADRs", out.newAdrs);
       // Reasons only when they tell more than "every ADR is bound for one reason".
       const reasonKinds = new Set(Object.values(out.affectedAdrReasons).flat());
       if (reasonKinds.size > 1)
@@ -1085,7 +1225,13 @@ function savedModel(current, writes) {
  * rewritten under its own name. A document whose graph did not change keeps its
  * text.
  */
-function documentsToWrite(current, parsedDraft, documents, statusOverride = () => null) {
+function documentsToWrite(
+  current,
+  parsedDraft,
+  documents,
+  statusOverride = () => null,
+  realizers = new Map(),
+) {
   const byPath = new Map(current.docs.map((d) => [rel(d.file), d]));
   const byEntry = new Map(current.docs.map((d) => [entryOf(d.file), d]));
   byEntry.delete(null);
@@ -1096,6 +1242,8 @@ function documentsToWrite(current, parsedDraft, documents, statusOverride = () =
       .join("\n");
   const out = [];
   const kept = new Set();
+  const linkedStepType = (t) =>
+    t.p === RDF + "type" && t.o.value === ONTO + "Step" && realizers.has(elementId(t.s));
   parsedDraft.forEach((pd, i) => {
     const named = rel(path.join(current.dir, documents[i].doc));
     const existing = byPath.get(named) ?? byEntry.get(entryOf(named));
@@ -1103,7 +1251,16 @@ function documentsToWrite(current, parsedDraft, documents, statusOverride = () =
     const triples = pd.triples.map((t) => statusOverride(t) ?? t);
     kept.add(target);
     if (existing && key(existing.parsed.triples) === key(triples)) return;
-    out.push({ file: target, text: serializeTurtle(triples), current: existing ?? null });
+    // The index can still point to a step whose declaration moves to another
+    // document. Keep its type here until every destination has been installed.
+    const declared = new Set(triples.filter(linkedStepType).map((t) => t.s));
+    const moved = existing?.parsed.triples.filter((t) => linkedStepType(t) && !declared.has(t.s));
+    out.push({
+      file: target,
+      text: serializeTurtle(triples),
+      bridgeText: moved?.length ? serializeTurtle([...triples, ...moved]) : null,
+      current: existing ?? null,
+    });
   });
   for (const [p, d] of byPath) if (!kept.has(p)) out.push({ file: p, text: null, current: d });
   return out;
@@ -1112,7 +1269,8 @@ function documentsToWrite(current, parsedDraft, documents, statusOverride = () =
 /**
  * Write a change unit completely or not at all: stage every file as a temporary
  * sibling, then move them into place in the given order; if any step fails,
- * restore every file already touched. A symlinked file is written through to its
+ * restore files still holding this unit's writes, preserving concurrent edits.
+ * A symlinked file is written through to its
  * target, as `format` does, but removing one removes the link, never its target;
  * a document reached through a linked directory is never removed, and a unit that
  * would write one file under two names is refused.
@@ -1120,7 +1278,7 @@ function documentsToWrite(current, parsedDraft, documents, statusOverride = () =
  * @param {{file: string, text: string|null}[]} ops in write order; `text: null` deletes.
  * @returns {{ok: true} | {ok: false, error: string}}
  */
-function writeUnit(ops, { modelDir = null } = {}) {
+function writeUnit(ops, { modelDir = null, checkApproval } = {}) {
   const staged = [];
   // Where a model document is really kept: the model directory itself may be a link.
   const modelReal = modelDir ? realName(modelDir) : null;
@@ -1129,7 +1287,7 @@ function writeUnit(ops, { modelDir = null } = {}) {
     (dir === path.resolve(modelDir) || dir.startsWith(path.resolve(modelDir) + path.sep))
       ? path.join(modelReal, path.relative(path.resolve(modelDir), dir))
       : dir;
-  // The index is written twice on purpose; two names of one file are not.
+  // An intermediate and a final version may target one name, never two aliases.
   const names = Map.groupBy(
     ops.filter((op) => op.text !== null),
     (op) => realName(op.file),
@@ -1153,8 +1311,10 @@ function writeUnit(ops, { modelDir = null } = {}) {
         error: `${rel(op.file)} lives in a linked directory (${rel(realOf(dir))}); remove it there, not through the model; nothing was written`,
       };
   }
+  const expected = new Map();
   try {
     for (const op of ops) {
+      if (!expected.has(op.file)) expected.set(op.file, entryContents(op.file));
       if (op.text === null) continue;
       mkdirSync(path.dirname(op.file), { recursive: true });
       const tmp = `${op.file}.tmp-${process.pid}-${staged.length}`;
@@ -1170,43 +1330,75 @@ function writeUnit(ops, { modelDir = null } = {}) {
   }
   const done = [];
   const tmpOf = new Map(staged.map((s) => [s.op, s.tmp]));
+  const changed = (file) =>
+    new Error(
+      `${rel(file)} changed during the save; rerun impact and present the changed range again`,
+    );
   try {
+    if (checkApproval && !checkApproval())
+      throw new Error(
+        "the inputs changed after the approval summary; rerun impact and present the changed range again",
+      );
     for (const op of ops) {
       // A removed link is restored as the link it was.
-      const original = isLink(op.file)
-        ? { link: readlinkSync(op.file) }
-        : existsSync(op.file)
-          ? { bytes: readFileSync(op.file) }
-          : null;
+      const original = entryContents(op.file);
+      if (!sameContents(original, expected.get(op.file))) throw changed(op.file);
+      if (original === NON_FILE) throw new Error(`${rel(op.file)} is not a file`);
       if (op.text === null) {
-        if (original?.link !== undefined) unlinkSync(op.file);
+        if (typeof original === "string") unlinkSync(op.file);
         else rmSync(op.file, { force: true });
-      } else renameSync(tmpOf.get(op), op.file);
-      done.push({ file: op.file, original });
+      } else if (op.create) linkSync(tmpOf.get(op), op.file);
+      else renameSync(tmpOf.get(op), op.file);
+      const written = op.text === null ? null : Buffer.from(op.text);
+      expected.set(op.file, written);
+      done.push({ file: op.file, original, written });
+      if (op.create) unlinkSync(tmpOf.get(op));
     }
+    for (const [file, written] of expected)
+      if (!sameContents(entryContents(file), written)) throw changed(file);
     return { ok: true };
   } catch (error) {
     const unrestored = [];
+    const preserved = new Set();
     for (const d of done.reverse()) {
       try {
+        if (preserved.has(d.file)) continue;
+        if (!sameContents(entryContents(d.file), d.written)) {
+          preserved.add(d.file);
+          continue;
+        }
         if (d.original === null) rmSync(d.file, { force: true });
-        else if (d.original.link !== undefined) {
+        else if (typeof d.original === "string") {
           rmSync(d.file, { force: true });
-          symlinkSync(d.original.link, d.file);
-        } else writeFileSync(d.file, d.original.bytes);
+          symlinkSync(d.original, d.file);
+        } else writeFileSync(d.file, d.original);
       } catch {
         unrestored.push(d.file); // keep restoring the others; the report names this one
       }
     }
     for (const s of staged) rmSync(s.tmp, { force: true });
-    return {
-      ok: false,
-      error: unrestored.length
-        ? `writing failed (${error.code ?? error.message}) and these files could not be restored: ${unrestored.join(", ")}`
-        : `writing failed (${error.code ?? error.message}); every file already written was restored`,
-    };
+    let message = `writing failed (${error.code ?? error.message})`;
+    if (unrestored.length)
+      message += ` and these files could not be restored: ${unrestored.join(", ")}`;
+    else if (!done.length) message += "; nothing was written";
+    else if (!preserved.size) message += "; every file already written was restored";
+    if (preserved.size)
+      message += `; newer edits were preserved in ${[...preserved].map(rel).join(", ")}`;
+    return { ok: false, error: message };
   }
 }
+
+const NON_FILE = Symbol("non-file entry");
+
+/** Snapshot an entry without following a user-replaced link or reading a device. */
+function entryContents(file) {
+  const stat = lstatSync(file, { throwIfNoEntry: false });
+  if (!stat) return null;
+  if (stat.isSymbolicLink()) return readlinkSync(file);
+  return stat.isFile() ? readFileSync(file) : NON_FILE;
+}
+
+const sameContents = (a, b) => a === b || (Buffer.isBuffer(a) && Buffer.isBuffer(b) && a.equals(b));
 
 function changeLogText(ontologyDir, lines, date) {
   const existing = readText(path.join(ontologyDir, CHANGE_LOG)) ?? CHANGE_LOG_HEAD;
@@ -1300,20 +1492,27 @@ function apply(opts) {
   });
   if (over.error) return refuse([`nothing was written: ${over.error}`]);
   const { summary } = over;
-  const hash = baseHash(opts, {
+  let newAdrs;
+  try {
+    newAdrs = newAdrDrafts(opts, currentMapping, mapping);
+  } catch (error) {
+    return refuse([error.message, "nothing was written"]);
+  }
+  const hashInputs = {
     drafts: direct ? [] : documents,
     adrs: [
       ...summary.affectedAdrs,
       ...relinked(currentMapping, opts.mappingFile ? mapping : null).adrs,
     ],
+    newAdrs,
     sameMeaning: opts.sameMeaning,
     scope: direct ? opts.process : null,
     mappingDraft: mappingText,
     glossaryDraft: glossaryText,
     base,
     alsoBases: over.alsoBases,
-  });
-  if (hash !== opts.baseHash)
+  };
+  if (baseHash(opts, hashInputs) !== opts.baseHash)
     return refuse([
       "the model, index, glossary, change log, a draft, the compared revision, an affected ADR or the same-meaning confirmations changed after the approval summary; nothing was written. Rerun impact, keep the newer edits and present only the changed range again",
     ]);
@@ -1384,6 +1583,9 @@ function apply(opts) {
   // The index that results must resolve, and keep no link to a retired process's steps.
   for (const f of checkRealizes(mapping, result, rel(mappingPath)))
     problems.push(`[${f.code}] ${f.where}\n    ${f.msg}`);
+  if (opts.mappingFile)
+    for (const f of newRealizationFindings(opts, currentMapping, mapping, result, newAdrs))
+      problems.push(`[${f.code}] ${f.where}\n    ${f.msg}`);
   // A concept or context the change adds or renames is never defined twice.
   const resultingGlossary = glossaryText ?? currentGlossary;
   const owned = new Set(
@@ -1453,7 +1655,9 @@ function apply(opts) {
         f.code !== "ontology-lifecycle-needs-approval"
       )
         problems.push(`[${f.code}] ${f.element}: ${f.msg}`);
-  const writes = direct ? [] : documentsToWrite(current, check.parsed, documents, statusOverride);
+  const writes = direct
+    ? []
+    : documentsToWrite(current, check.parsed, documents, statusOverride, realizersByStep(mapping));
   const commented = writes.filter((w) => w.current?.parsed.comments.length);
   if (commented.length && !opts.allowCommentRemoval)
     problems.push(
@@ -1481,6 +1685,13 @@ function apply(opts) {
   const ops = [];
   if (opts.mappingFile) {
     const bridge = structuredClone(mapping);
+    // New records and their links belong to the final approved index.
+    for (const file of newAdrs.keys()) {
+      const key = path.relative(opts.adrDir, path.dirname(file)).split(path.sep).join("/");
+      if (currentMapping?.categories?.[key])
+        bridge.categories[key] = structuredClone(currentMapping.categories[key]);
+      else delete bridge.categories[key];
+    }
     for (const entry of Object.values(bridge.categories ?? {}))
       if (Array.isArray(entry?.realizes))
         entry.realizes = entry.realizes.filter(
@@ -1495,19 +1706,62 @@ function apply(opts) {
       file: path.join(opts.adrDir, "glossary.md"),
       text: glossaryText.trim() ? glossaryText : null,
     });
-  for (const w of writes.filter((x) => x.text !== null)) ops.push({ file: w.file, text: w.text });
+  for (const w of writes.filter((x) => x.text !== null))
+    ops.push({ file: w.file, text: w.bridgeText ?? w.text });
+  for (const w of writes.filter((x) => x.bridgeText)) ops.push({ file: w.file, text: w.text });
   for (const w of writes.filter((x) => x.text === null)) ops.push({ file: w.file, text: null });
   if (opts.mappingFile) ops.push({ file: mappingPath, text: mappingText });
+  for (const [file, text] of newAdrs) ops.push({ file, text, create: true });
   if (opts.logs.length)
     ops.push({
       file: path.join(opts.ontologyDir, CHANGE_LOG),
       text: changeLogText(opts.ontologyDir, opts.logs, today()),
     });
-  const written = writeUnit(ops, { modelDir: opts.ontologyDir });
+  const written = writeUnit(ops, {
+    modelDir: opts.ontologyDir,
+    checkApproval: () => {
+      // A moved or deleted ref changes a direct edit's comparison even if
+      // that commit happened to hold identical model files.
+      if (direct) {
+        try {
+          if (
+            resolveComparisonCommit(opts.base) !== hashInputs.base ||
+            opts.alsoBase.some((ref, i) => resolveComparisonCommit(ref) !== hashInputs.alsoBases[i])
+          )
+            return false;
+        } catch {
+          return false;
+        }
+      }
+      const stagedAdrs = newAdrDrafts(opts, currentMapping, mapping);
+      // A new file in a realizing category is not among the ADR paths in the
+      // original hash. Recheck the same inventory that admitted the new links.
+      if (
+        opts.mappingFile &&
+        newRealizationFindings(opts, currentMapping, mapping, result, stagedAdrs).length
+      )
+        return false;
+      return (
+        baseHash(opts, {
+          ...hashInputs,
+          newAdrs: stagedAdrs,
+          drafts: direct ? [] : readDraftFiles(opts.draft),
+          mappingDraft: opts.mappingFile ? readText(opts.mappingFile) : null,
+          glossaryDraft: opts.glossaryFile ? readText(opts.glossaryFile) : null,
+        }) === opts.baseHash
+      );
+    },
+  });
   if (!written.ok) return refuse([written.error]);
   process.stdout.write(
     `✓ applied; processes this save marked Proposed: ${[...propose].sort().join(", ") || "none"}${renewed.size ? `; Accepted renewed: ${[...renewed].sort().join(", ")}` : ""}\n`,
   );
+  writeSavedNextAction(opts, [...propose].sort(), [
+    ...new Set([
+      ...summary.affectedAdrs,
+      ...relinked(currentMapping, opts.mappingFile ? mapping : null).adrs,
+    ]),
+  ]);
   for (const [id, why] of [...notRenewed].sort())
     process.stdout.write(`⚠ Accepted date of ${id} not renewed: ${why}\n`);
   if (!lifecycleHistory.available && lifecycleHistory.noHistory)
@@ -1848,6 +2102,7 @@ function transition(opts) {
   const written = writeUnit(ops);
   if (!written.ok) return fail(written.error);
   process.stdout.write(`✓ ${opts.process}: ${from.state} → ${value}\n`);
+  writeSavedNextAction(opts, [opts.process]);
   return 0;
 }
 
@@ -2018,16 +2273,146 @@ function changes(opts) {
     : 0;
 }
 
+/** Rebuild the read-only plan after the handling agent publishes evidence. */
+function alignmentCatalogue(opts, level) {
+  const { index, findings } = level;
+  const ids = index
+    ? [...index.ofType("Process")]
+        .filter((iri) => !/^(Deprecated|Superseded)\b/.test(processStatus(index, iri) ?? ""))
+        .sort()
+    : [];
+  const changes =
+    index && changeFlags(opts.ontologyDir, index, { mappingPath: mappingPathOf(opts) });
+  const processes = ids.map((iri) => {
+    const id = elementId(iri);
+    const context = queryContext({ ...level, target: { kind: "process", id }, changes });
+    const plan = processPlan(level, id, opts.lang, { changes: context.changes });
+    return {
+      id,
+      label: context.process?.label ?? id,
+      status: plan.process.status,
+      outcome: context.businessOutcome,
+      blocking: plan.blocking,
+      nextAction: plan.nextAction,
+      criteria: plan.criteria.map((c) => ({
+        criterion: c.criterion,
+        label: context.criteria?.find((row) => row.id === c.criterion)?.label ?? c.criterion,
+        startCondition: c.startCondition,
+        observedResult: c.observedResult,
+      })),
+    };
+  });
+  return {
+    initialProcess: opts.process,
+    projectRoot: process.cwd(),
+    processes,
+    findings: findings.map(({ code, where, msg }) => ({ code, where, msg })),
+    adrIndex: path.resolve(mappingPathOf(opts)),
+  };
+}
+
+/** Open a disposable selection session; the host agent owns execution and promotion. */
+async function alignSession(opts, level) {
+  const first = alignmentCatalogue(opts, level);
+  if (opts.process && !first.processes.some((p) => p.id === opts.process))
+    return fail(`no active process "${opts.process}"`);
+  if (!first.processes.length)
+    return fail(
+      opts.lang === "ko"
+        ? "등록된 프로세스가 없습니다. /ontology-build로 업무 흐름을 먼저 확인하세요."
+        : "No active processes. Use /ontology-build to identify a workflow first.",
+    );
+  const { activeAlignmentSession, readSession, sessionFiles, startServer, withLock } =
+    await import("./ontology-ask.mjs");
+  const key = createHash("sha256")
+    .update(
+      JSON.stringify([realpathSync(process.cwd()), first.adrIndex, path.resolve(opts.ontologyDir)]),
+    )
+    .digest("hex");
+  const { uid, username } = userInfo();
+  const userKey = createHash("sha256")
+    .update(JSON.stringify([uid, username]))
+    .digest("hex");
+  const runtime = path.join(tmpdir(), `ontology-align-${userKey}`);
+  mkdirSync(runtime, { recursive: true, mode: 0o700 });
+  const entry = lstatSync(runtime);
+  if (!entry.isDirectory() || (uid >= 0 && (entry.uid !== uid || entry.mode & 0o077)))
+    return fail("Alignment session directory must be private");
+  const pointer = path.join(runtime, key);
+  const { run, url, created } = withLock(pointer + ".lock", () => {
+    const existing = readText(pointer)?.trim();
+    const active = existing && activeAlignmentSession(existing);
+    if (active) return { run: { dir: existing }, url: active.url, created: false };
+
+    const run = allocateRunDirectory(process.cwd(), "ontology-align");
+    const files = sessionFiles(run.dir);
+    mkdirSync(files.dir, { recursive: true, mode: 0o700 });
+    writeFileSync(
+      files.questions,
+      JSON.stringify({ version: 1, questions: [], alignment: first }),
+      { mode: 0o600 },
+    );
+    const { url, stop } = startServer(run.dir, {
+      lang: opts.lang,
+      onClose: () => {
+        withLock(pointer + ".lock", () => {
+          if (readText(pointer)?.trim() === run.dir && readSession(run.dir)?.pid === process.pid)
+            rmSync(pointer, { force: true });
+        });
+        process.exit(0);
+      },
+      refreshAlignment: () => alignmentCatalogue(opts, levelFindings(opts)),
+    });
+    writeFileSync(pointer, run.dir, { mode: 0o600 });
+    for (const sig of ["SIGINT", "SIGTERM"]) process.once(sig, () => stop("stopped"));
+    return { run, url, created: true };
+  });
+  process.stdout.write(`ALIGN_SESSION ${url}\nALIGN_RUN ${run.dir}\n`);
+  if (run.note) process.stdout.write(`note: ${run.note}\n`);
+  if (!created) {
+    process.stdout.write("ALREADY_OPEN\n");
+    return 0;
+  }
+  if (opts.open) {
+    const opener = openerCommand(url, process.platform, opts.browser);
+    const opened =
+      opener && spawnSync(opener.command, opener.args, { stdio: "ignore" }).status === 0;
+    process.stdout.write(`${opened ? "OPENED" : "NOT_OPENED"} ${url}\n`);
+  }
+  return 0;
+}
+
 function align(opts) {
-  const current = loadModel(opts.ontologyDir);
-  if (!current) return 1;
-  const { findings, mapping } = levelFindings(opts);
-  const plan = alignmentPlan({
-    index: current.index,
-    mapping,
-    processId: opts.process,
+  const level = levelFindings(opts);
+  const { model, findings, index } = level;
+  if (!model)
+    return fail(`no ontology in ${opts.ontologyDir}\n${firstModelHelp(opts.lang, findings)}`);
+  if (!index) {
+    const diagnostic = {
+      process: { id: opts.process },
+      errors: findings.filter((f) => f.level === "error"),
+      nextAction: {
+        command: opts.process ? `/ontology-sync ${opts.process}` : "/ontology-sync",
+        reason:
+          opts.lang === "ko"
+            ? "모델을 읽을 수 없는 위치를 확인하고 다시 검토하세요."
+            : "Restore the unreadable model input and retry the review.",
+      },
+    };
+    if (opts.json) process.stdout.write(JSON.stringify(diagnostic, null, 2) + "\n");
+    else
+      process.stdout.write(
+        diagnostic.errors.map((f) => `[${f.code}] ${f.where}: ${f.msg}`).join("\n") +
+          "\n" +
+          nextActionText(diagnostic.nextAction, opts.lang),
+      );
+    return 1;
+  }
+  if (opts.ui) return alignSession(opts, level);
+  const context = workingContext(opts, level, { kind: "process", id: opts.process });
+  const plan = processPlan(level, opts.process, opts.lang, {
+    changes: context.changes,
     together: opts.together,
-    errors: findings.filter((f) => f.level === "error"),
   });
   if (plan.error) return fail(plan.error);
   if (opts.json) process.stdout.write(JSON.stringify(plan, null, 2) + "\n");
@@ -2046,6 +2431,7 @@ function align(opts) {
       process.stdout.write(
         `hand-off ${h.event} ${h.from} → ${h.to}: ${h.execute ? "execute now" : `deferred until ${h.counterpart} is verified`} (criteria ${h.criteria.join(", ") || "none"})\n`,
       );
+    process.stdout.write(nextActionText(plan.nextAction, opts.lang));
   }
   return plan.blocking.length ? 1 : 0;
 }
@@ -2135,7 +2521,12 @@ function view(opts) {
   }
   const { model, findings, index, mapping } = levelFindings(selected);
   if (!model) {
-    process.stdout.write(`no ontology in ${selected.ontologyDir}; no view was created\n`);
+    const message =
+      opts.lang === "ko"
+        ? `${selected.ontologyDir}에 온톨로지 문서가 없어 뷰를 만들 수 없습니다.`
+        : `no ontology in ${selected.ontologyDir}; no view was created`;
+    process.stdout.write(`${message}\n`);
+    if (!opts.draft) process.stdout.write(`${firstModelHelp(opts.lang, findings)}\n`);
     return 1;
   }
   const html = renderLayeredView({
@@ -2169,7 +2560,7 @@ function view(opts) {
 
 const opts = parseArgs(process.argv.slice(2));
 // The exit code, not an exit: a pipe still receiving the output would be cut off.
-process.exitCode = {
+process.exitCode = await {
   validate,
   format,
   diff,

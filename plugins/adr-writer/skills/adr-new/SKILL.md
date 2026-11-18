@@ -6,11 +6,17 @@ argument-hint: "<category> [title?]"
 
 # adr-new
 
+Give the approved decision observable completion criteria. After saving a Proposed ADR, identify the first prerequisite or implementation step for that exact owner. Follow the [acceptance and next-action guidance](../../references/non-invasive-harness.md#acceptance-and-the-next-action).
+
 Before classifying features, read
 `${CLAUDE_PLUGIN_ROOT}/references/feature-boundaries.md`: inspect existing project
 topology, then use bounded contexts and vertical user stories by default.
 
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
+
+Determine model presence by file discovery. Obtain its contents only through
+Ontology Writer's scoped query. If the query is unavailable, report that limit.
+An existing empty ADR index is still an index.
 
 Author a decision directly from the user’s intent and the repository evidence. A handoff from another workflow uses the same admission, drafting and approval steps.
 

@@ -106,7 +106,13 @@ export default {
       glossary: null,
     });
     return [
-      ontologySkillText("ontology-edit", { references: ["references/ontology.md"] }),
+      ontologySkillText("ontology-edit", {
+        references: [
+          "references/ontology.md",
+          "references/change-unit.md",
+          "references/next-action.md",
+        ],
+      }),
       ruleText("concepts.md"),
       `\n---\n\n# This run`,
       "/ontology-edit 스토어 적립금으로 전액 결제되는 주문은 결제 요청 없이 진행하도록 바꿔 줘.",
@@ -115,6 +121,12 @@ export default {
       "```json",
       JSON.stringify(impact, null, 2),
       "```",
+      "Current ADR documents in the fixture:",
+      ...Object.values(MAPPING.categories).flatMap((category) =>
+        category.adrs.map(
+          (record) => record.path + "\n" + readFileSync(path.join(dir, record.path), "utf8"),
+        ),
+      ),
       "Do not call tools or write files. Show only the approval summary you would present.",
       "In the tail use SEMANTIC_DIFF, AFFECTED_FEATURE, LINK_CHANGE, BECOMES_PROPOSED, ADR_DIFF and NOT_YET_WRITTEN tags. Put each tag exactly to the left of the | separator.",
       TAIL_SPEC,

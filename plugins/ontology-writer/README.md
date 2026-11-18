@@ -22,6 +22,56 @@ realize it. ADRs stay the only implementation authority.
 Before an ADR decision or the code of a linked feature changes, the session
 directive asks the agent to query the business context first.
 
+When you ask about a process, the reply explains its status and suggests a
+concrete next action. For example, a `Proposed` process with a pending ADR
+points to that ADR for implementation and review. Once its mechanical gates
+are clear, the next step is `/ontology-align <process>` to verify the contracts
+and exercise the observation criteria. The process query and alignment plan
+also return the recommendation in `nextAction`.
+
+### Verification and decisions
+
+Start `/ontology-align <process>` in the terminal. The agent opens a shared
+decision screen when it needs an answer or approval. The screen gathers
+questions and proposals across processes with their targets and evidence.
+After you respond, the agent applies any approved changes and verifies the
+original scope. Only a passing whole-process alignment can promote a process.
+Use `ontology.mjs align --process <id> --json` for the mechanical plan.
+
+### Build your first model
+
+When a project has no saved model and you have not chosen a setup preference, the first reply of a new session asks,
+“Would you like to create a business ontology for this project now?” This also
+works without an ADR index. Answer yes to start the build or no to continue
+with your original task. Give `/ontology-build` a relevant document or folder,
+or describe who does the work, what starts it and how you know it is complete.
+For example, if a sales representative submits a quote and a manager approves
+or returns it, enter:
+
+```text
+/ontology-build Model quote approval. Sales submits a quote. A manager approves it or returns it to sales for revision.
+```
+
+If the project already has ADRs, Ontology Writer uses your preferred review
+route or asks whether to review them first or start with the current documents. Use `/adr-review` for document quality and `/adr-impl-review` for
+implementation conformance. When current verification already covers the
+selected contracts and the ADRs describe the whole requested workflow, build
+from those ADRs alone. Check just the missing or conflicting facts, such as
+a manual approval that the ADRs do not describe. You can select findings to address through the ADR change
+workflow or continue with the documents as they stand. With no existing
+ADRs, the build proceeds directly.
+
+Your explicit setup answer (yes, no or later) and ADR review choice are saved
+independently for your user and project, outside the repository. “Later”
+silences the prompt until you request a build or reset the choice. The same
+settings apply in Codex, Claude Code and linked Git worktrees. Use
+`/ontology-build preferences` to see them, or ask to change or reset either
+choice. A one-time instruction overrides the default for the current run.
+
+Ontology Writer proposes the steps and responsibilities from that evidence and
+asks about gaps. Review the draft and approve the scope you want to save. Then
+use `/ontology-view` to see the saved workflow.
+
 ## The saved view
 
 `/ontology-view` writes one read-only HTML file and opens it. Explore the same
@@ -259,9 +309,9 @@ Model documents use the closed vocabulary in `templates/ontology/vocabulary.ttl`
 
 ## Hook
 
-| Hook           | When it fires                          | Role                                                                                                                                                                 |
-| -------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SessionStart` | Startup, resume, clear, and compaction | With an ADR index and a business ontology, ask for the business-context query before an ADR decision or contract changes and before code of a linked feature changes |
+| Hook           | When it fires                          | Role                                                                                                                                                                                                   |
+| -------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SessionStart` | Startup, resume, clear, and compaction | On fresh startup with no model or saved setup choice, ask whether to create one. With an ADR index and a saved model, request the business-context query before ADR decisions and linked code changes. |
 
 The directive names the query command and renders neither the model nor the index. Claude Code discovers `hooks/hooks.json` automatically; Codex registers the same file through its manifest.
 

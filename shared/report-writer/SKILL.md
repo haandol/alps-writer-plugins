@@ -5,6 +5,8 @@ description: Create or revise reports, or manage the project's reader profile on
 
 # Report writing
 
+For a decision or process acceptance task, make the current verdict, supporting evidence and next appropriate action clear. Close the delivery of an acceptance-related report with one recommended action and its target. Report or profile delivery never changes lifecycle Status. For unrelated reporting tasks, stay with the requested subject.
+
 Give the reader an answer they can use from the opening alone. Each branch
 explains a part of that answer in more detail.
 

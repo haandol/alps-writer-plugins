@@ -6,6 +6,8 @@ argument-hint: "[adr-path-or-category] [--base <ref>] [--mode standard|full]"
 
 # adr-impl-review
 
+Give the implementation owner an evidence-backed completion verdict and the first unresolved repair or verification step. Only the implementation workflow promotes the ADR. Follow the [acceptance and next-action guidance](../../references/non-invasive-harness.md#acceptance-and-the-next-action).
+
 > **Review results**: Apply [report-writer](../report-writer/SKILL.md).
 
 Read the context's own `docs/adr/<context>/glossary.md` and the root

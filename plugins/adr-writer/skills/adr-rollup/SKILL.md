@@ -7,6 +7,8 @@ disable-model-invocation: true
 
 # adr-rollup
 
+Preserve the evidence and contracts of adopted decisions during consolidation. Keep pending work visible and refer it to the owning completion workflow. Follow the [acceptance and next-action guidance](../../references/non-invasive-harness.md#acceptance-and-the-next-action).
+
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Read the context's own `docs/adr/<context>/glossary.md` and the root

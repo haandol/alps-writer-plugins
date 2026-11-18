@@ -6,6 +6,8 @@ argument-hint: "[project-path-or-feature-scope]"
 
 # adr-import
 
+Use existing evidence to identify decisions and their approval scope. For an imported Proposed decision, identify the next implementation prerequisite or verification step; import itself does not establish completion. Follow the [acceptance and next-action guidance](../../references/non-invasive-harness.md#acceptance-and-the-next-action).
+
 Bring an existing project into the ADR workflow without requiring a product
 planning document. Discover features from repository evidence, ask for the
 intent code cannot establish, and record confirmed contracts through the
@@ -14,6 +16,9 @@ implement, refactor, deploy, or operate it.
 
 Talk to the user and write documents in their language. Keep source evidence,
 inferred candidates and confirmed requirements distinguishable throughout.
+
+Distinguish an existing empty index from a missing one when describing the
+starting point. Use Ontology Writer's query for model facts.
 
 ## Discover the project and scope
 

@@ -22,8 +22,10 @@ names or a valid link alone do not establish that business structure reached cod
 
 Structure validation proves only the checks it implements. An `openScope` value
 of `none` is a model assertion to review, not proof of semantic completeness.
-Respect user-confirmed not-applicable paths and preserve unknown scope. Partial
-coverage must not be reported as whole-system completeness. A Proposed ADR may
+State which workflow and hand-offs the review covered. Name any relevant workflow
+or system area the sources explicitly exclude, and any requested source that
+could not be read, so readers can see where the evidence ends. Respect
+user-confirmed not-applicable paths. A Proposed ADR may
 have a sufficiently specified contract for implementation; it is not implemented
 and cannot satisfy the separate execution/alignment gates.
 

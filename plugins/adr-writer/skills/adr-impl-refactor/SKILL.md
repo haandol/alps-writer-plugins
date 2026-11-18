@@ -6,6 +6,8 @@ argument-hint: "[adr-path-or-category] [--base <ref>]"
 
 # adr-impl-refactor
 
+Keep the implemented contract intact and return verified improvements and remaining risks to the implementation owner for final tests and review. Follow the [acceptance and next-action guidance](../../references/non-invasive-harness.md#acceptance-and-the-next-action).
+
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Refactor an ADR implementation conservatively before it is declared complete. One or more model-selected review passes find opportunities; the main session applies only candidates that pass every safety gate. The final `/adr-impl-review` remains report-only and reviews the resulting code.

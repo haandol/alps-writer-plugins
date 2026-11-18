@@ -6,6 +6,8 @@ argument-hint: "[query] [category]"
 
 # Search local decisions
 
+Locate the current owner and Status so the caller can inspect its contract and choose the next evidence-backed step. Keep the lookup read-only. Follow the [acceptance and next-action guidance](../../references/non-invasive-harness.md#acceptance-and-the-next-action).
+
 Run the plugin-local search with Bun 1.4.2 or later. No package installation,
 database server or model call is needed.
 
