@@ -85,8 +85,10 @@ fixes that restore intended behavior and behavior-preserving refactors do not.
 
 ![Report from the bundled example](./docs/images/report-writer.webp)
 
-Reports work offline. Self-check questions are optional, and
-the ordinary main-session completion response never prints Q1 or starts grading.
+Reports work offline. Readers can skip answering the self-check questions.
+The ordinary main-session completion response never prints Q1 or starts grading.
+Use `report-writer profile correct` to edit the project’s reader profile,
+including role, focus, and explanation order.
 More screenshots are in the [ontology-writer](./plugins/ontology-writer/README.md#the-saved-view)
 and [adr-writer](./plugins/adr-writer/README.md#reports-you-can-read) READMEs.
 

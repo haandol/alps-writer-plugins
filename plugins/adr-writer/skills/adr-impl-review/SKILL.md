@@ -22,7 +22,7 @@ connect the business scenarios to ADR rows and execution evidence, and report
 model/ADR alignment gaps separately from the implementation verdict. Remain
 report-only; a model-only obligation is not a code violation or a new gate.
 
-The quiz is required: one to six questions, or `comprehensionCheck.excluded`
+The quiz is required: one or more questions within the effective reader level’s limit, or `comprehensionCheck.excluded`
 only when the user explicitly excluded it. Follow
 report-writer's [comprehension workflow](../report-writer/references/comprehension.md);
 preserve verdicts, native audit fields and PR-specific readiness.

@@ -243,7 +243,7 @@ test("status, save and delete keep one checked profile outside the repository", 
     const old = new Date();
     old.setUTCMonth(old.getUTCMonth() - 4);
     writeFileSync(saved.json.profilePath, profile(old.toISOString().slice(0, 10)));
-    assert.equal(f.run(["status"]).json.action, "ask-to-refresh");
+    assert.equal(f.run(["status"]).json.action, "use", "profile age does not trigger a refresh");
     assert.equal(f.run(["delete"]).json.deleted, true);
     assert.equal(f.run(["status"]).json.exists, false);
   } finally {

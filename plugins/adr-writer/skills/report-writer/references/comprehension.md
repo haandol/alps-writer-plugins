@@ -1,6 +1,6 @@
 # Comprehension support
 
-Every report includes a quiz of one to six questions on its core content. The
+Every report includes a quiz of at least one question on its core content. The
 only exception is a user's explicit exclusion for that report: record it as
 `comprehensionCheck: { "excluded": "<the user's request>" }` instead of questions.
 Chat answers that are not reports carry no quiz. Generating questions or
@@ -10,9 +10,10 @@ reduction, and an unanswered quiz never blocks the original task.
 ## Select the core content
 
 After the report's explanation is grounded and coherent, select the concepts
-the reader needs to understand its conclusion or use it correctly. Generate one
-to six questions for the whole report, not per domain. Use fewer when that
-covers the material; never add filler to reach six.
+the reader needs to understand its conclusion or use it correctly. Set `comprehensionCheck.readerLevel` on new reports to the effective reader level.
+The whole report has one limit: `beginner` 10, `intermediate` 6, or `expert` 5.
+If areas use different levels, choose the least advanced one. Include only the
+questions the core content needs.
 
 Questions have medium difficulty: ask the reader to apply a central concept,
 causal relationship, condition, boundary, or important choice in a small
@@ -86,7 +87,7 @@ not in an ADR, mapping, repository, or other authoritative registry.
 Add `comprehensionCheck: { "questions": [...] }` to the shared report document.
 Each question contains:
 
-- `id`: `Q1` through `Q6` in order; `sectionId`: the existing node after whose
+- `id`: `Q1` onward in order; `sectionId`: the existing node after whose
   explanation the question belongs; `question`: its visible prompt.
 - `options`: exactly four objects with `id` (`A` through `D` in order), `text`,
   and neutral `feedback`; `correctOptionId`: exactly one of those option IDs.

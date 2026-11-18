@@ -25,6 +25,32 @@ supplied reference passage, overrides these defaults for that report.
 - Prefer concrete words to abstract nouns: "the request waits 30 seconds" rather
   than "latency considerations apply".
 
+## Remove AI slop that obscures meaning
+
+During drafting and rereading, look for three clarity faults described by
+[Zonder Labs](https://zonderlabs.com/slop).
+
+- **Hidden actors and actions.** Identify who or what does the work and what
+  it does. Make that actor the subject and put the action in the verb when
+  doing so makes the sentence easier to follow. Keep passive voice when it
+  serves the emphasis or the evidence leaves the actor unknown.
+- **Vague wording.** Resolve an ambiguous “this” or “it” by naming its referent.
+  Unpack stacked nouns and awkward word combinations into the actual action
+  or relationship. Use the project's established terms and keep precise
+  technical terms where they carry meaning.
+- **Empty statements and misplaced emphasis.** Put the result, decision, or
+  condition the reader came for first. Cut announcements, inflated judgments,
+  and recaps that add no facts or orientation. Keep any premise, transition,
+  exception, or evidence limit the reader needs to interpret the claim.
+
+For example, “Upon validation of the retry's completed key, retrieval of the
+stored result is performed by the service” becomes “The service validates the
+retry's completed key, then retrieves the stored result.” The rewrite preserves
+the actor, condition, and sequence.
+
+Judge the sentence by the effort it takes to recover its meaning. A word list,
+punctuation pattern, or AI detector cannot establish whether the writing is clear.
+
 ## Paragraphs
 
 - Each paragraph has one point and states it in its first sentence; the rest

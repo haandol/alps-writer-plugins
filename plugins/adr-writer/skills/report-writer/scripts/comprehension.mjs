@@ -7,16 +7,28 @@ const esc = (value) =>
   );
 const encoded = (value) => Buffer.from(value, "utf8").toString("base64");
 
-/** Every report carries one to six questions unless the user excluded the quiz. */
-export const MAX_QUESTIONS = 6;
+const QUESTION_LIMITS = new Map([
+  ["beginner", 10],
+  ["intermediate", 6],
+  ["expert", 5],
+]);
+
+// Older report inputs omitted the level and used the six-question limit.
+export function questionLimit(readerLevel = "intermediate") {
+  const limit = QUESTION_LIMITS.get(readerLevel);
+  if (limit === undefined)
+    throw new Error("comprehensionCheck.readerLevel must be beginner, intermediate, or expert");
+  return limit;
+}
 
 /**
  * Reject incomplete or ambiguous quiz data before rendering. Section ownership is
  * checked by the report adapter; question count and answer shape are shared.
  */
-export function validateQuestions(questions) {
-  if (!Array.isArray(questions) || questions.length < 1 || questions.length > MAX_QUESTIONS)
-    throw new Error(`comprehensionCheck.questions must contain 1 to ${MAX_QUESTIONS} questions`);
+export function validateQuestions(questions, readerLevel) {
+  const maxQuestions = questionLimit(readerLevel);
+  if (!Array.isArray(questions) || questions.length < 1 || questions.length > maxQuestions)
+    throw new Error(`comprehensionCheck.questions must contain 1 to ${maxQuestions} questions`);
   let revisitCount = 0;
   for (const [index, question] of questions.entries()) {
     const name = `comprehensionCheck.questions[${index}]`;

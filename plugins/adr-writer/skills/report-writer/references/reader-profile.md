@@ -3,7 +3,8 @@
 A reader profile records, per business area of one project, how far the user
 understands it: an explanation level, what they already know (starting points
 for analogies) and what they do not (terms to unpack). Reports read it to set
-their starting level; explicit profile requests build and maintain it. Use
+their starting level and use the overall role, focus and explanation order
+to tailor the presentation. Use
 `scripts/reader-profile.mjs` for every step that touches sessions or the file.
 
 ## Use it when writing a report
@@ -13,28 +14,50 @@ their starting level; explicit profile requests build and maintain it. Use
    is the area the report's topic belongs to (the BC `id` when the topic comes
    from the ontology), falling back to `Overall`. When a report spans
    areas, explain each part at its own area's level.
-3. If `action` is `ask-to-create` or `ask-to-refresh` (missing, or last updated
-   more than three months ago), ask the user once whether to build or refresh it
-   now. Treat a profile whose `areaBasis` is not `bounded-context` as
-   `ask-to-refresh` when the project now has a business ontology, so its areas
-   move to the bounded contexts. Continue independent work while waiting. If they agree, follow
-   [build or refresh](#build-or-refresh) and then write the report. If they
-   decline or do not answer, write at a plain general level and do not ask again
+3. If `action` is `ask-to-create`, briefly describe the levels below and ask
+   once whether to build the profile. Continue independent work while waiting.
+   If they agree, follow [build or refresh](#build-or-refresh). If they decline
+   or do not answer, use `beginner` and do not ask again
    in this session. Never read sessions without that answer.
 
-Apply the level to the explanation, not to the facts:
+Use `beginner` when neither the request nor the profile supplies a level.
 
-| Level          | How to explain                                                                                     |
-| -------------- | -------------------------------------------------------------------------------------------------- |
-| `beginner`     | Unpack every project term and acronym at first use, add the missing background, lean on analogies. |
-| `intermediate` | Unpack the terms listed under `unfamiliar`; connect new parts to what `knows` lists.               |
-| `expert`       | Skip known basics; spend depth on the unfamiliar boundary and exact conditions.                    |
+| Level          | How to explain                                                                       |
+| -------------- | ------------------------------------------------------------------------------------ |
+| `beginner`     | Explain the background and unpack project terms and acronyms at first use.           |
+| `intermediate` | Unpack the terms listed under `unfamiliar`; connect new parts to what `knows` lists. |
+| `expert`       | Skip known basics and explain exact conditions and exceptions.                       |
 
 Start analogies from what `knows` lists for that area, and explain what
 `unfamiliar` lists where it first appears. The current request's stated audience
 and preferences override the profile. Do not apply the user's profile to a
 report written for someone else. Never quote the profile or mention the reader's
 level in the report.
+
+## Overall reporting preferences
+
+Use these three axes alongside the topic's explanation level. An absent or
+`unknown` axis leaves the choice to the current request and its evidence.
+
+| Field               | Values                                                                          | How it shapes the report                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `role`              | `pm`, `po`, `backend`, `frontend`, `full-stack`, `designer`, `other`, `unknown` | Choose examples relevant to the inferred work. A role alone supplies neither expertise nor preference.                                              |
+| `focus`             | `product-outcomes`, `architecture`, `code-behavior`, `unknown`                  | Give the preferred subject prominence in the explanation.                                                                                           |
+| `explanation-order` | `examples-first`, `structure-first`, `unknown`                                  | Start the explanation with a concrete case or observation, or with the system's structure and principles. Keep the report's required opening order. |
+
+Infer the main role first from evidence of the work the user does. Judge focus
+and explanation order independently from repeated requests or stated
+preferences. Use `unknown` when evidence is thin.
+
+## Update from a report revision
+
+Use an existing profile regardless of its age. During a revision for the user,
+save a change only when the current request or conversation shows a preference
+that should carry over to future reports. Update only supported fields and the
+date through `reader-profile.mjs save`. Preserve the other fields and area
+basis. Do not scan past sessions, infer a lasting preference from a one-off
+edit, or apply someone else's audience requirements to the user's profile.
+Create or fully refresh a profile only through the explicit workflow below.
 
 ## Build or refresh
 
@@ -71,7 +94,8 @@ Run only after the user asked for it or agreed to the question above.
    How to run these steps (in the current conversation or otherwise) is the
    agent's choice and does not depend on a particular client or model.
 
-3. **Judge each area.** From the questions and requests, infer what the user
+3. **Judge the overall axes and each area.** First set the three overall axes.
+   Then assess each area. From the questions and requests, infer what the user
    already reasons about fluently (`knows`), what they asked to have explained
    or got wrong (`unfamiliar`), and a `level`. Base a level on several messages,
    not one. Skip areas without evidence rather than guessing.
@@ -79,7 +103,9 @@ Run only after the user asked for it or agreed to the question above.
    `reader-profile.mjs save`, which checks it and writes it outside the
    repository only when the check passes. Fix every finding and save again.
 
-Keep each area to the three lines below, a few short phrases each. Record no
+Keep each area to its level, known concepts and unfamiliar concepts. Add the
+three reporting axes in `Overall` when building or explicitly refreshing a
+profile. Older profiles with missing axes can still be used. Record no
 names of people, organizations or customers, contact details, accounts or
 identifiers, secrets, internal hosts or addresses, business figures, incident
 details, quotations of the user's messages, judgments of personality or
@@ -97,6 +123,9 @@ area-basis: adr-category
 
 ## Overall
 
+- role: backend
+- focus: architecture
+- explanation-order: examples-first
 - level: intermediate
 - knows: REST APIs, relational databases, code review workflow
 - unfamiliar: event sourcing, idempotency keys

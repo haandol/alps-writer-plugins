@@ -12,12 +12,14 @@ audit section. Only when the user explicitly excluded the quiz, set
 quiz section.
 The fields below adapt that common quiz to this review's native audit schema.
 
-`comprehensionCheck.questions` contains one to six questions with
+Set `comprehensionCheck.readerLevel` to the effective level from report-writer. The whole report permits up to 10 questions for `beginner`, 6 for `intermediate`, or 5 for `expert`.
+
+`comprehensionCheck.questions` contains one or more questions with
 non-empty `id`, `question`, exactly four `options`, one boolean `revisit`, one
 `correctOptionId`, `explanation`, and `evidence`. Never generate free-response
 primary questions or filler to reach six. For each question, keep:
 
-- `id` — `Q1` through `Q6` in order
+- `id` — `Q1` onward in order
 - `question` — the visible application prompt
 - `options` — exactly four `{ "id": "A".."D", "text": "...", "feedback": "..." }` objects
 - `revisit` — boolean; exactly one or two questions are marked for later re-check

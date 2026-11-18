@@ -8,8 +8,7 @@ argument-hint: "[build|refresh|show|delete]"
 
 Follow [reader profile](../report-writer/references/reader-profile.md) with its
 script `../report-writer/scripts/reader-profile.mjs`. This skill owns the
-explicit requests; report-writer reads the profile and asks before a missing or
-stale one is built.
+explicit requests. Report-writer asks before building a missing profile.
 
 - **Build or refresh:** run the [build or refresh](../report-writer/references/reader-profile.md#build-or-refresh)
   steps. Run them only when the user asked for it or agreed to report-writer's
@@ -19,8 +18,9 @@ stale one is built.
   `save`; the check must pass before anything is written.
 - **Delete:** run `delete`.
 
-The profile records only each area's `level`, what the user `knows` and what is
-`unfamiliar`. It never contains personal data, business-sensitive details,
+The profile records the user's overall role, focus and explanation order, plus
+each area's `level`, what the user `knows` and what is `unfamiliar`.
+It never contains personal data, business-sensitive details,
 quotations of messages or judgments of the person. The extracted messages stay
 in context only and are never written to a file. Report what was saved or
 deleted and the profile path; do not echo extracted messages back.

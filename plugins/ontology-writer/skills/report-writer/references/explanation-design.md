@@ -13,8 +13,10 @@ instructions and the stated audience take precedence over remembered preferences
 A remembered project name alone does not establish knowledge of its internals.
 Use the relevant known concept or experience to explain a relationship in the
 subject; mentioning the reader's background without changing the explanation is
-insufficient. When familiarity is unknown, use a plain account of the problem,
+insufficient. When familiarity is unknown, use the beginner level and explain the problem,
 actors and outcome. Do not invent familiarity or repeat a background interview.
+Use the overall focus to choose which consequences or behavior to foreground
+and the preferred explanation order within the required report structure.
 Build or change the reader profile only as [reader profile](reader-profile.md)
 allows, and never look up personal data for any other purpose.
 

@@ -26,7 +26,6 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 /** A profile older than this many calendar months prompts a refresh question. */
-export const STALE_AFTER_MONTHS = 3;
 export const LEVELS = ["beginner", "intermediate", "expert"];
 export const AREA_BASES = ["bounded-context", "adr-category", "project-area"];
 /** Only interactive Codex sessions carry text a person typed; exec, MCP and subagents do not. */
@@ -82,16 +81,6 @@ function parseDate(text) {
   return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== text ? null : date;
 }
 const today = () => new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z");
-function addMonths(date, months) {
-  const next = new Date(date);
-  const day = next.getUTCDate();
-  next.setUTCDate(1);
-  next.setUTCMonth(next.getUTCMonth() + months);
-  const last = new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate();
-  next.setUTCDate(Math.min(day, last));
-  return next;
-}
-
 /** Frontmatter is a flat `key: value` block; the body is Markdown sections. */
 export function parseProfile(text) {
   const match = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(text.replace(/\r\n/g, "\n"));
@@ -111,8 +100,6 @@ export function status(cwd) {
     profilePath: project.profilePath,
     exists: existsSync(project.profilePath),
     updated: null,
-    stale: true,
-    staleAfterMonths: STALE_AFTER_MONTHS,
     areaBasis: null,
   };
   if (!result.exists) return { ...result, action: "ask-to-create" };
@@ -120,8 +107,7 @@ export function status(cwd) {
   const updated = parseDate(meta?.updated);
   result.updated = updated ? meta.updated : null;
   result.areaBasis = meta?.["area-basis"] ?? null;
-  result.stale = !updated || addMonths(updated, STALE_AFTER_MONTHS) < today();
-  return { ...result, action: result.stale ? "ask-to-refresh" : "use" };
+  return { ...result, action: "use" };
 }
 
 /** Ordered replacements: each removes one kind of personal, secret or business identifier. */
@@ -502,6 +488,12 @@ const MAX_LINE = 240;
 const MAX_TOTAL = 8000;
 const MAX_SECTIONS = 30;
 
+const OVERALL_AXES = {
+  role: ["pm", "po", "backend", "frontend", "full-stack", "designer", "other", "unknown"],
+  focus: ["product-outcomes", "architecture", "code-behavior", "unknown"],
+  "explanation-order": ["examples-first", "structure-first", "unknown"],
+};
+
 /** Deterministic shape and privacy check; it cannot detect names, so authoring rules still apply. */
 export function checkProfile(text) {
   const findings = [];
@@ -543,12 +535,20 @@ export function checkProfile(text) {
     if (!level) findings.push(`## ${section[1]}: missing "- level:" line`);
     else if (!LEVELS.includes(level[1]))
       findings.push(`## ${section[1]}: level must be one of ${LEVELS.join(", ")}`);
+    const seen = new Set();
     for (const line of block.split("\n").slice(1)) {
       if (!line.trim()) continue;
-      if (!/^- (?:level|knows|unfamiliar):\s/.test(line))
-        findings.push(
-          `## ${section[1]}: only "- level:", "- knows:" and "- unfamiliar:" lines are allowed`,
-        );
+      const field = /^- ([a-z-]+):[ \t]*(.*)$/.exec(line);
+      const key = field?.[1];
+      if (heading === "Overall" && Object.hasOwn(OVERALL_AXES, key)) {
+        if (seen.has(key)) findings.push(`## Overall: duplicate "${key}"`);
+        const values = OVERALL_AXES[key];
+        if (!values.includes(field[2].trim()))
+          findings.push(`## Overall: ${key} must be one of ${values.join(", ")}`);
+        seen.add(key);
+      } else if (!field || !["level", "knows", "unfamiliar"].includes(key)) {
+        findings.push(`## ${heading}: unexpected profile field`);
+      }
       if (line.length > MAX_LINE)
         findings.push(`## ${section[1]}: a line exceeds ${MAX_LINE} characters`);
     }

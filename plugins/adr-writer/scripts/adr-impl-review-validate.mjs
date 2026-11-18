@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { questionLimit } from "../skills/report-writer/scripts/comprehension.mjs";
 import { reviewCodeGroups } from "./adr-impl-review-prose.mjs";
 
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
@@ -693,7 +694,7 @@ function validateReviewDiagnostics(diagnostics, errors) {
   }
 }
 
-/** The quiz is mandatory: 1 to 6 questions, or the user's explicit exclusion. */
+/** The quiz is mandatory unless the user explicitly excluded it. */
 function validateComprehensionCheck(check, errors) {
   if (check === undefined) {
     errors.push(
@@ -726,8 +727,14 @@ function validateComprehensionCheck(check, errors) {
     errors.push("findings.json comprehensionCheck.questions must be an array");
     return;
   }
-  if (check.questions.length < 1 || check.questions.length > 6) {
-    errors.push("findings.json comprehensionCheck.questions must contain 1 to 6 questions");
+  try {
+    const maxQuestions = questionLimit(check.readerLevel);
+    if (check.questions.length < 1 || check.questions.length > maxQuestions)
+      errors.push(
+        `findings.json comprehensionCheck.questions must contain 1 to ${maxQuestions} questions`,
+      );
+  } catch (error) {
+    errors.push(error.message);
   }
 
   const seen = new Set();

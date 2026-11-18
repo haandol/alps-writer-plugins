@@ -81,7 +81,7 @@ test("a profile saves only with the contract's fields and no forbidden content",
         "- unfamiliar: event sourcing",
         "- unfamiliar: event sourcing\n- note: asked twice",
       ),
-      /only "- level:"/,
+      /unexpected profile field/,
     ],
     [valid.replace("event sourcing", "event sourcing (ask lee@example.com)"), /email/],
     [valid.replace("event sourcing", "the dashboard at https://ops.example"), /URL/],
@@ -109,10 +109,33 @@ test("a profile saves only with the contract's fields and no forbidden content",
     );
 });
 
+test("overall reporting axes accept controlled values and reject area overrides", () => {
+  const profile = valid.replace(
+    "## Overall",
+    [
+      "## Overall",
+      "",
+      "- role: po",
+      "- focus: product-outcomes",
+      "- explanation-order: structure-first",
+    ].join("\n"),
+  );
+  assert.deepEqual(checkProfile(profile), []);
+  assert.match(
+    checkProfile(profile.replace("- role: po", "- role: pm\n- role: po")).join(),
+    /duplicate "role"/,
+  );
+  assert.match(
+    checkProfile(profile.replace("product-outcomes", "anything")).join(),
+    /focus must be one of/,
+  );
+  assert.match(checkProfile(profile + "\n- role: backend\n").join(), /unexpected profile field/);
+});
+
 test("report guidance reads the profile, asks before building it and never discloses it", () => {
   const skill = read("shared/report-writer/SKILL.md");
   assert.match(skill, /Calibrate to the reader/);
-  assert.match(skill, /older than three months, ask once/);
+  assert.match(skill, /If it is missing, ask once/);
   assert.match(skill, /report-writer profile <build\|refresh\|show\|correct\|delete>/);
   assert.match(skill, /do not create a report, open a browser or add a quiz/);
   assert.match(
@@ -128,7 +151,7 @@ test("report guidance reads the profile, asks before building it and never discl
     /never write it to a file/,
     /no business ontology but ontology-writer is available, first ask the user\s+once/,
     /never infer bounded contexts without it/,
-    /areaBasis` is not `bounded-context` as\s+`ask-to-refresh` when the project now has a business ontology/,
+    /Use an existing profile regardless of its age/,
   ])
     assert.match(reference, phrase);
   assert.deepEqual(

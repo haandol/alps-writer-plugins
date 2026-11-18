@@ -57,8 +57,9 @@ Write in this order; do not start prose before the plan holds:
 0. **Calibrate to the reader.** Run `scripts/reader-profile.mjs status` and follow
    [reader profile](references/reader-profile.md): use the profile section for the
    report's area to set the starting level, analogies and which terms to unpack.
-   If it is missing or older than three months, ask once whether to build it;
-   on no answer or a decline, write at a plain general level.
+   If it is missing, ask once whether to build it;
+   on no answer or a decline, write at the `beginner` level. For revisions,
+   follow the profile reference before saving any durable preference.
 1. **Plan the reading path.** Following [reading path](references/reading-path.md),
    fix the reader's goal, a one-sentence core message, the parts (at most four)
    that produce it, each section's question and its paragraph flow. Keep the plan
@@ -77,8 +78,8 @@ Write in this order; do not start prose before the plan holds:
    page shell or its styles; the renderer embeds the shared template and stylesheet
    and rejects unfilled placeholders.
 
-Before rendering, fill the template's `comprehensionCheck` with one to six
-questions on the core content; the quiz is required. Only when the user
+Before rendering, fill the template's `comprehensionCheck` with the effective
+`readerLevel` and core questions within that level's limit. The quiz is required. Only when the user
 explicitly excluded the quiz for this report, replace it with
 `{ "excluded": "<the user's request>" }`; the renderer refuses anything else.
 
