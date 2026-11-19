@@ -399,6 +399,63 @@ test("a step whose open path this save records keeps its process from claiming n
   });
 });
 
+test("on an extension, a new step open path is refused under a none process, and an old one is left alone", () => {
+  withTmp((dir) => {
+    const first = structuredClone(FIXTURE);
+    first.processes[0].openScope = [{ kind: "none" }];
+    first.links = [];
+    project(dir, first);
+    assert.equal(
+      run(dir, "prepare", "candidates.json", "--run", "first", "--confirmed-only").status,
+      0,
+    );
+    mkdirSync(path.join(dir, "docs/ontology"));
+    for (const d of draftDocs(dir, "first/save-draft"))
+      writeFileSync(path.join(dir, "docs/ontology", d.doc), d.text);
+    const stepPath = (text) => ({
+      version: 1,
+      title: "extension",
+      scope: "주문 제출",
+      language: "ko",
+      steps: [
+        {
+          id: "ordering.submit-order",
+          verdict: "stated",
+          evidence: [{ source: "x.md", detail: "1행" }],
+          confirmed: true,
+          openScope: [{ kind: "open-path", text }],
+        },
+      ],
+    });
+    // This save gives an existing step an open path while its process keeps "none".
+    project(dir, stepPath("0원 주문의 처리는 확인되지 않았다."));
+    const refused = run(dir, "prepare", "candidates.json", "--run", "ext", "--confirmed-only");
+    assert.equal(refused.status, 1, refused.stdout + refused.stderr);
+    assert.match(refused.stdout, /its step ordering\.submit-order records an open path/);
+    // A model that already holds that combination still accepts an unrelated save.
+    const held = draftDocs(dir, "first/save-draft").map((d) =>
+      d.doc === "ordering.ttl"
+        ? {
+            ...d,
+            text: d.text.replace(
+              /(m:ordering\.submit-order a onto:Step ;)/,
+              '$1\n    onto:openScope "취소 경로는 확인되지 않았다."^^onto:OpenPath ;',
+            ),
+          }
+        : d,
+    );
+    assert.ok(held.find((d) => d.doc === "ordering.ttl").text.includes("onto:OpenPath"));
+    for (const d of held) writeFileSync(path.join(dir, "docs/ontology", d.doc), d.text);
+    const rule = structuredClone(FIXTURE.rules[0]);
+    rule.id = "ordering.confirm-orders-once";
+    rule.label = "주문은 한 번만 확정";
+    rule.definition = "같은 주문을 두 번 확정하지 않는다.";
+    project(dir, { version: 1, title: "rule", scope: "주문 확정", language: "ko", rules: [rule] });
+    const untouched = run(dir, "prepare", "candidates.json", "--run", "rule", "--confirmed-only");
+    assert.equal(untouched.status, 0, untouched.stdout + untouched.stderr);
+  });
+});
+
 test('one candidate cannot mix "none" with other open-scope items', () => {
   withTmp((dir) => {
     const c = structuredClone(FIXTURE);
@@ -436,6 +493,7 @@ test("an extension's review draft repeats current elements by id and still gets 
       policies: [
         {
           id: "ordering.on-payment-completed-confirm-order",
+          trigger: "payment.payment-completed",
           verdict: "stated",
           evidence: [],
           confirmed: false,
@@ -473,13 +531,21 @@ test("an extension's review draft repeats current elements by id and still gets 
     assert.deepEqual(validateEventBoard(board), []);
     const stage = board.stages.find((x) => x.id === "payment.request-payment");
     assert.ok(stage.event.description, "the current event's definition fills its description");
-    assert.ok(!stage.policies.some((p) => p.startsWith("undefined")), stage.policies.join("; "));
+    // The repeated policy reads its label and reaction condition from the current model.
+    assert.equal(stage.policies.length, 1, JSON.stringify(stage));
+    assert.match(stage.policies[0], /^\S.*: \S/, stage.policies[0]);
+    assert.ok(!stage.policies[0].startsWith("undefined"), stage.policies[0]);
     // Q1 asks about a current step no candidate repeats: it stays in the session, off the board.
     assert.deepEqual(
       board.questions.map((q) => q.id),
       ["Q2"],
     );
-    assert.ok(existsSync(path.join(dir, "review/ask/questions.json")));
+    const session = JSON.parse(readFileSync(path.join(dir, "review/ask/questions.json"), "utf8"));
+    assert.deepEqual(
+      session.questions.map((q) => q.id),
+      ["Q1", "Q2"],
+      "both questions stay in the session",
+    );
   });
 });
 
