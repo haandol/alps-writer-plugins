@@ -18,7 +18,7 @@ export default {
   obligations,
   build(dir) {
     seedRuleDocs(dir);
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     return [
       skillText("adr-new", { references: ["references/business-context.md"] }),
       `\n---\n\n# This run`,

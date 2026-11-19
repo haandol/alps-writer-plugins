@@ -6,67 +6,22 @@ import {
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { commitFixture, ontologyQuery, SETTLED_MODEL } from "../lib/ontology-fixtures.mjs";
+import {
+  commitFixture,
+  ontologyQuery,
+  recordedMapping,
+  SETTLED_MODEL,
+  TAKE_PAYMENTS_ADR,
+} from "../lib/ontology-fixtures.mjs";
 
-const record = (path, summary) => ({ path, status: "Accepted (2026-10-01)", summary });
-const MAPPING = {
-  categories: {
-    checkout: {
-      feature: "Checkout",
-      adrs: [record("docs/adr/checkout/0001-submit-orders.md", "orders are submitted")],
-      realizes: ["ordering.submit-order"],
-      dependsOn: [],
-    },
-    confirmation: {
-      feature: "Order confirmation",
-      adrs: [record("docs/adr/confirmation/0001-confirm-paid.md", "paid orders are confirmed")],
-      realizes: ["ordering.confirm-order"],
-      dependsOn: [],
-    },
-    payments: {
-      feature: "Payments",
-      adrs: [record("docs/adr/payments/0001-take-payments.md", "orders are paid by card")],
-      realizes: ["payment.request-payment", "payment.capture-payment"],
-      dependsOn: [],
-    },
+const MAPPING = recordedMapping();
+MAPPING.categories.payments.adrs = [
+  {
+    path: "docs/adr/payments/0001-take-payments.md",
+    status: "Accepted (2026-10-01)",
+    summary: "orders are paid by card",
   },
-};
-
-const EXISTING = `# ADR 0001: Take card payments for orders
-
-Date: 2026-10-01
-
-## Status
-
-Accepted (2026-10-01)
-
-## Purpose
-
-Customers pay for an order by card.
-
-## Decision Drivers
-
-- One order is charged at most once.
-
-## Decision
-
-Charge the order total by card through the payment provider.
-
-### Requirement contract
-
-- An order is charged at most once.
-
-## Alternatives
-
-1. **Pay on delivery** — not offered.
-2. **Card payment (chosen)**.
-
-## Consequences
-
-### Positive
-
-- Customers pay at checkout.
-`;
+];
 
 export const obligations = [
   {
@@ -91,7 +46,7 @@ export default {
   build(dir) {
     seedRuleDocs(dir);
     seedMapping(dir, MAPPING);
-    seedIndexedAdrs(dir, MAPPING, { "docs/adr/payments/0001-take-payments.md": EXISTING });
+    seedIndexedAdrs(dir, MAPPING, { "docs/adr/payments/0001-take-payments.md": TAKE_PAYMENTS_ADR });
     write(dir, "docs/ontology/ordering.ttl", SETTLED_MODEL);
     commitFixture(dir);
     const feature = ontologyQuery(dir, ["--category", "payments"]);
@@ -105,7 +60,7 @@ export default {
       "",
       "docs/adr/payments/0001-take-payments.md:",
       "```markdown",
-      EXISTING,
+      TAKE_PAYMENTS_ADR,
       "```",
       "The business-context query for `payments` returned:",
       "```text",

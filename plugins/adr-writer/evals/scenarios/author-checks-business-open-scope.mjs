@@ -6,36 +6,14 @@ import {
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { commitFixture, ontologyQuery, SETTLED_MODEL } from "../lib/ontology-fixtures.mjs";
+import {
+  commitFixture,
+  ontologyQuery,
+  recordedMapping,
+  SETTLED_MODEL,
+} from "../lib/ontology-fixtures.mjs";
 
-const record = (path, summary) => ({ path, status: "Accepted (2026-10-01)", summary });
-const MAPPING = {
-  categories: {
-    checkout: {
-      feature: "Checkout",
-      adrs: [record("docs/adr/checkout/0001-submit-orders.md", "orders are submitted")],
-      realizes: ["ordering.submit-order"],
-      dependsOn: [],
-    },
-    confirmation: {
-      feature: "Order confirmation",
-      adrs: [record("docs/adr/confirmation/0001-confirm-paid.md", "paid orders are confirmed")],
-      realizes: ["ordering.confirm-order"],
-      dependsOn: [],
-    },
-    payments: {
-      feature: "Payments",
-      adrs: [
-        record(
-          "docs/adr/payments/0001-card-capture.md",
-          "card payments are captured once per order",
-        ),
-      ],
-      realizes: ["payment.request-payment", "payment.capture-payment"],
-      dependsOn: [],
-    },
-  },
-};
+const MAPPING = recordedMapping();
 const PAYMENTS = `# ADR 0001: Capture card payments once per order
 
 Date: 2026-10-01

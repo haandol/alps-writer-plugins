@@ -1,4 +1,5 @@
-import { ontologySkillText, ruleText, seedMapping, TAIL_SPEC, write } from "../lib/harness.mjs";
+import { seedMapping, write } from "../lib/harness.mjs";
+import { buildPrompt } from "../lib/ontology-fixtures.mjs";
 
 const ADR_PATH = "docs/adr/sales/quotes/0001-quote-approval.md";
 const ADR = `# ADR 0001: A sales manager decides submitted quotes
@@ -68,15 +69,11 @@ export default {
     write(dir, "src/quotes/expire.ts", CODE);
     write(dir, "docs/sales-handbook.md", "할인율이 10% 이상이면 영업팀장이 승인한다.");
     write(dir, "docs/finance-handbook.md", "할인율이 10% 이상이면 재무팀이 승인한다.");
-    return [
-      ontologySkillText("ontology-build", {
-        references: [
-          "skills/ontology-build/references/ask-session.md",
-          "skills/ontology-build/references/candidate-review.md",
-        ],
-      }),
-      ruleText("concepts.md"),
-      "# This run",
+    return buildPrompt(
+      [
+        "skills/ontology-build/references/ask-session.md",
+        "skills/ontology-build/references/candidate-review.md",
+      ],
       "This project has no saved ontology. The user chose to build directly from the current documents. The sources you read:",
       `${ADR_PATH}:`,
       "```markdown",
@@ -89,7 +86,6 @@ export default {
       "docs/finance-handbook.md: 할인율이 10% 이상이면 재무팀이 승인한다.",
       "Your open points for the quote workflow: who receives a returned quote, whether a sent quote expires, and who approves a large discount.",
       "Do not call tools. Show the questions file (questions.json) you would open the question session with.",
-      TAIL_SPEC,
-    ].join("\n\n");
+    );
   },
 };

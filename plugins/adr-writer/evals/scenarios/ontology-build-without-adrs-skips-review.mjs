@@ -16,7 +16,7 @@ export default {
     },
   ],
   build(dir) {
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     write(
       dir,
       "docs/adr/decision-log.md",

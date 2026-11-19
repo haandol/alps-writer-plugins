@@ -1,17 +1,11 @@
+import { seedIndexedAdrs, seedMapping, write } from "../lib/harness.mjs";
 import {
-  ontologySkillText,
-  ruleText,
-  seedIndexedAdrs,
-  seedMapping,
-  TAIL_SPEC,
-  write,
-} from "../lib/harness.mjs";
+  buildPrompt,
+  QUOTE_APPROVAL_ADR,
+  quoteApprovalMapping,
+} from "../lib/ontology-fixtures.mjs";
 
-const adr = {
-  path: "docs/adr/sales/quotes/0001-quote-approval.md",
-  status: "Accepted (2026-10-01)",
-  summary: "A sales manager decides whether to approve a submitted quote",
-};
+const adr = QUOTE_APPROVAL_ADR;
 
 export default {
   name: "ontology-build-reuses-review-preference",
@@ -32,9 +26,7 @@ export default {
     },
   ],
   build(dir) {
-    const mapping = {
-      categories: { "sales/quotes": { feature: "Quote approval", dependsOn: [], adrs: [adr] } },
-    };
+    const mapping = quoteApprovalMapping();
     seedMapping(dir, mapping);
     seedIndexedAdrs(dir, mapping);
     write(
@@ -42,20 +34,15 @@ export default {
       "docs/quote-workflow.md",
       "A salesperson submits a quote. A sales manager approves or returns it.",
     );
-    return [
-      ontologySkillText("ontology-build", {
-        references: [
-          "skills/ontology-build/references/preferences.md",
-          "skills/ontology-build/references/pre-build-adr-review.md",
-        ],
-      }),
-      ruleText("concepts.md"),
-      "# This run",
+    return buildPrompt(
+      [
+        "skills/ontology-build/references/preferences.md",
+        "skills/ontology-build/references/pre-build-adr-review.md",
+      ],
       `This project has no saved ontology. It contains ${adr.path} and docs/quote-workflow.md. ADR Writer is available.`,
       'The project preference helper\'s `show` printed: {"setup":"build","adr-review":"review-first"}',
       "사용자: /ontology-build docs/quote-workflow.md",
       "Do not call tools. Respond to the user at this point and name any command you would run next.",
-      TAIL_SPEC,
-    ].join("\n\n");
+    );
   },
 };

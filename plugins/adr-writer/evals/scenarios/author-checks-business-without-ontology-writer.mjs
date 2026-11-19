@@ -23,7 +23,7 @@ export default {
   obligations,
   build(dir) {
     seedRuleDocs(dir);
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     write(dir, "docs/ontology/ordering.ttl", EXAMPLE_MODEL);
     return [
       skillText("adr-new", { references: ["references/business-context.md"] }),

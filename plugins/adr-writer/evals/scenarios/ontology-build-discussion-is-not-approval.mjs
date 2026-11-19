@@ -18,7 +18,7 @@ export default {
     },
   ],
   build(dir) {
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     return buildPrompt(
       [
         "skills/ontology-build/references/candidate-review.md",

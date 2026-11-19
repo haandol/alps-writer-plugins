@@ -6,91 +6,21 @@ import {
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { commitFixture, ontologyQuery, SETTLED_MODEL } from "../lib/ontology-fixtures.mjs";
+import {
+  ANNOUNCE_PAYMENT_ADR,
+  commitFixture,
+  ontologyQuery,
+  recordedMapping,
+  SETTLED_MODEL,
+} from "../lib/ontology-fixtures.mjs";
 
-const record = (path, status, summary) => ({ path, status, summary });
-const MAPPING = {
-  categories: {
-    checkout: {
-      feature: "Checkout",
-      adrs: [
-        record(
-          "docs/adr/checkout/0001-submit-orders.md",
-          "Accepted (2026-10-01)",
-          "orders are submitted",
-        ),
-      ],
-      realizes: ["ordering.submit-order"],
-      dependsOn: [],
-    },
-    confirmation: {
-      feature: "Order confirmation",
-      adrs: [
-        record(
-          "docs/adr/confirmation/0001-confirm-paid.md",
-          "Accepted (2026-10-01)",
-          "paid orders are confirmed",
-        ),
-      ],
-      realizes: ["ordering.confirm-order"],
-      dependsOn: [],
-    },
-    payments: {
-      feature: "Payments",
-      adrs: [
-        record(
-          "docs/adr/payments/0001-card-capture.md",
-          "Accepted (2026-10-01)",
-          "card payments are captured once per order",
-        ),
-        record(
-          "docs/adr/payments/0002-announce-payment.md",
-          "Proposed",
-          "a successful capture announces Payment completed once",
-        ),
-      ],
-      realizes: ["payment.request-payment", "payment.capture-payment"],
-      dependsOn: [],
-    },
-  },
-};
-const ADR = `# ADR 0002: Announce a completed payment once
-
-Date: 2026-11-01
-
-## Status
-
-Proposed
-
-## Purpose
-
-Order confirmation must learn about a completed payment exactly once, so an order is never confirmed twice or left waiting.
-
-## Decision Drivers
-
-- One announcement per paid order.
-
-## Decision
-
-After a successful capture, announce Payment completed with the order id. A declined card announces nothing.
-
-### Requirement contract
-
-- A successful capture announces Payment completed once, carrying the order id.
-- A repeated capture of the same order announces nothing new.
-- A declined card announces nothing.
-
-## Alternatives
-
-1. **Confirm the order directly** — couples payments to ordering data.
-2. **Announce the event (chosen)**.
-
-## Consequences
-
-### Positive
-
-- Confirmation reacts without knowing payment internals.
-`;
+const MAPPING = recordedMapping();
+MAPPING.categories.payments.adrs.push({
+  path: "docs/adr/payments/0002-announce-payment.md",
+  status: "Proposed",
+  summary: "a successful capture announces Payment completed once",
+});
+const ADR = ANNOUNCE_PAYMENT_ADR;
 const CODE = `// payments/announce.ts
 export function onCaptured(order: Order, capture: Capture, bus: Bus) {
   if (capture.status !== "succeeded") return; // a declined card announces nothing

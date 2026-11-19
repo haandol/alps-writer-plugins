@@ -44,7 +44,7 @@ export default {
     },
   ],
   build(dir) {
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     write(dir, "docs/business/order-flow.md", FLOW);
     return buildPrompt(
       REPORT_REFERENCES,

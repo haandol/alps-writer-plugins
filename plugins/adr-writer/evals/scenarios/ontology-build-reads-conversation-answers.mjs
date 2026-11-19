@@ -41,7 +41,7 @@ export default {
     },
   ],
   build(dir) {
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     return buildPrompt(
       ["skills/ontology-build/references/ask-session.md"],
       "You are building a first model of returns. Your run directory is .adr-review/20261119-returns-build and its web question session is open with this questions.json:",

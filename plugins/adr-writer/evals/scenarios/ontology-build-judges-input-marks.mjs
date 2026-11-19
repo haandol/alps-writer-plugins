@@ -45,7 +45,7 @@ export default {
     },
   ],
   build(dir) {
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     write(dir, "docs/sales/workshop-summary.md", WORKSHOP);
     write(dir, "docs/sales/quote-policy.md", POLICY);
     return buildPrompt(

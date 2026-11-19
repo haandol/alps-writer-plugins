@@ -228,3 +228,103 @@ export async function capture(order) {
   }
   return markPaid(order.id);
 }`;
+
+/** The one Accepted quote-approval ADR of the pre-build review-route scenarios. */
+export const QUOTE_APPROVAL_ADR = {
+  path: "docs/adr/sales/quotes/0001-quote-approval.md",
+  status: "Accepted (2026-10-01)",
+  summary: "A sales manager decides whether to approve a submitted quote",
+};
+
+/** An index whose only feature is quote approval, realized by that ADR. */
+export const quoteApprovalMapping = () => ({
+  categories: {
+    "sales/quotes": { feature: "Quote approval", dependsOn: [], adrs: [{ ...QUOTE_APPROVAL_ADR }] },
+  },
+});
+
+/**
+ * The settled index as the first business-context scenarios recorded it: its checkout summary is
+ * shorter, and the fixture commit (and so the query text) depends on every byte of it.
+ */
+export function recordedMapping() {
+  const mapping = settledMapping();
+  mapping.categories.checkout.adrs[0].summary = "orders are submitted";
+  return mapping;
+}
+
+/** A payments ADR that takes card payments, before any compliance contract. */
+export const TAKE_PAYMENTS_ADR = `# ADR 0001: Take card payments for orders
+
+Date: 2026-10-01
+
+## Status
+
+Accepted (2026-10-01)
+
+## Purpose
+
+Customers pay for an order by card.
+
+## Decision Drivers
+
+- One order is charged at most once.
+
+## Decision
+
+Charge the order total by card through the payment provider.
+
+### Requirement contract
+
+- An order is charged at most once.
+
+## Alternatives
+
+1. **Pay on delivery** — not offered.
+2. **Card payment (chosen)**.
+
+## Consequences
+
+### Positive
+
+- Customers pay at checkout.
+`;
+
+/** A Proposed payments ADR announcing a completed payment, implemented in the review scenarios. */
+export const ANNOUNCE_PAYMENT_ADR = `# ADR 0002: Announce a completed payment once
+
+Date: 2026-11-01
+
+## Status
+
+Proposed
+
+## Purpose
+
+Order confirmation must learn about a completed payment exactly once, so an order is never confirmed twice or left waiting.
+
+## Decision Drivers
+
+- One announcement per paid order.
+
+## Decision
+
+After a successful capture, announce Payment completed with the order id. A declined card announces nothing.
+
+### Requirement contract
+
+- A successful capture announces Payment completed once, carrying the order id.
+- A repeated capture of the same order announces nothing new.
+- A declined card announces nothing.
+
+## Alternatives
+
+1. **Confirm the order directly** — couples payments to ordering data.
+2. **Announce the event (chosen)**.
+
+## Consequences
+
+### Positive
+
+- Confirmation reacts without knowing payment internals.
+`;

@@ -36,7 +36,7 @@ export default {
     },
   ],
   build(dir) {
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     write(dir, "docs/adr/glossary.md", GLOSSARY);
     write(dir, "docs/product/preorder.md", DOC);
     return buildPrompt(

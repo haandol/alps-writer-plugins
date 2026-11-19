@@ -1,4 +1,5 @@
-import { ontologySkillText, ruleText, seedMapping, TAIL_SPEC, write } from "../lib/harness.mjs";
+import { seedMapping, write } from "../lib/harness.mjs";
+import { buildPrompt } from "../lib/ontology-fixtures.mjs";
 
 const POLICY = `# 환불 정책 (고객지원팀, 2026-09 개정)
 
@@ -34,25 +35,20 @@ export default {
     },
   ],
   build(dir) {
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     write(dir, "docs/policies/refund-policy.md", POLICY);
-    return [
-      ontologySkillText("ontology-build", {
-        references: [
-          "skills/ontology-build/references/candidate-review.md",
-          "skills/ontology-build/references/candidates.md",
-          "skills/ontology-build/references/save.md",
-        ],
-      }),
-      ruleText("concepts.md"),
-      "# This run",
+    return buildPrompt(
+      [
+        "skills/ontology-build/references/candidate-review.md",
+        "skills/ontology-build/references/candidates.md",
+        "skills/ontology-build/references/save.md",
+      ],
       "This project has no saved ontology and no ADRs. The user asked for a first model of refunds from docs/policies/refund-policy.md:",
       "```markdown",
       POLICY,
       "```",
       "사용자: 문서에는 없지만, 환불은 모두 고객지원팀장이 승인하는 걸로 우리가 정했어.",
       "Do not call tools. Show the `rules` entries of the candidates file you would write, and the change-log line you would propose for saving them.",
-      TAIL_SPEC,
-    ].join("\n\n");
+    );
   },
 };

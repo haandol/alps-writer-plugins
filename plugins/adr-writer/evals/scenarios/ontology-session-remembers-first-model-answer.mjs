@@ -18,7 +18,7 @@ export default {
     "After the user defers the first-model question, the agent records 'later' once and continues the original request without asking again.",
   obligations,
   build(dir) {
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     write(dir, "README.md", "# Quotes\n\nSales can recieve a quote request and send a quote.\n");
     const directive = ontologyDirective(dir);
     if (!/set setup <choice>/.test(directive))

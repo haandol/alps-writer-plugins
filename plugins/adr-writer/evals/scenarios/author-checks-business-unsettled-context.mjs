@@ -6,41 +6,19 @@ import {
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { commitFixture, ontologyQuery, SETTLED_MODEL } from "../lib/ontology-fixtures.mjs";
+import {
+  commitFixture,
+  ontologyQuery,
+  recordedMapping,
+  SETTLED_MODEL,
+} from "../lib/ontology-fixtures.mjs";
 
 // A hand edit nobody committed or approved: the rule the request relies on is not settled.
 const EDITED = SETTLED_MODEL.replace(
   '"The collected amount equals the amount of the order it pays for."',
   '"The collected amount may be lower than the order amount when a coupon covers the rest."',
 );
-const record = (path, summary) => ({ path, status: "Accepted (2026-10-01)", summary });
-const MAPPING = {
-  categories: {
-    checkout: {
-      feature: "Checkout",
-      adrs: [record("docs/adr/checkout/0001-submit-orders.md", "orders are submitted")],
-      realizes: ["ordering.submit-order"],
-      dependsOn: [],
-    },
-    confirmation: {
-      feature: "Order confirmation",
-      adrs: [record("docs/adr/confirmation/0001-confirm-paid.md", "paid orders are confirmed")],
-      realizes: ["ordering.confirm-order"],
-      dependsOn: [],
-    },
-    payments: {
-      feature: "Payments",
-      adrs: [
-        record(
-          "docs/adr/payments/0001-card-capture.md",
-          "card payments are captured once per order",
-        ),
-      ],
-      realizes: ["payment.request-payment", "payment.capture-payment"],
-      dependsOn: [],
-    },
-  },
-};
+const MAPPING = recordedMapping();
 
 export const obligations = [
   {

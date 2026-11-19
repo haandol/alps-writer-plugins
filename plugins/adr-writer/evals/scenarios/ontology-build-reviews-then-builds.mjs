@@ -1,21 +1,7 @@
 import { seedIndexedAdrs, seedMapping } from "../lib/harness.mjs";
-import { buildPrompt } from "../lib/ontology-fixtures.mjs";
+import { buildPrompt, quoteApprovalMapping } from "../lib/ontology-fixtures.mjs";
 
-const MAPPING = {
-  categories: {
-    "sales/quotes": {
-      feature: "Quote approval",
-      dependsOn: [],
-      adrs: [
-        {
-          path: "docs/adr/sales/quotes/0001-quote-approval.md",
-          status: "Accepted (2026-10-01)",
-          summary: "A sales manager decides whether to approve a submitted quote",
-        },
-      ],
-    },
-  },
-};
+const MAPPING = quoteApprovalMapping();
 const FINDINGS = `/adr-review docs/adr/sales/quotes — 2 findings
 - F1 (fix). R6: the contract row "A returned quote can be resubmitted" has no observable criterion.
 - F2 (fix). R11: the Purpose calls the approver "sales lead" while the contract says "sales manager".`;

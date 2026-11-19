@@ -22,7 +22,7 @@ export default {
     "A new session in a project with no business ontology asks once whether to build one, naming the command and an input example.",
   obligations,
   build(dir) {
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     write(dir, "README.md", "# Quotes\n\nSales can recieve a quote request and send a quote.\n");
     const directive = ontologyDirective(dir);
     if (!/Would you like to create a business ontology/.test(directive))

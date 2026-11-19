@@ -32,7 +32,7 @@ export default {
     },
   ],
   build(dir) {
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     write(dir, "docs/returns/notes.md", NOTES);
     return buildPrompt(
       [...REPORT_REFERENCES, "skills/ontology-build/references/save.md"],

@@ -1,21 +1,7 @@
 import { seedIndexedAdrs, seedMapping } from "../lib/harness.mjs";
-import { buildPrompt } from "../lib/ontology-fixtures.mjs";
+import { buildPrompt, quoteApprovalMapping } from "../lib/ontology-fixtures.mjs";
 
-const MAPPING = {
-  categories: {
-    "sales/quotes": {
-      feature: "Quote approval",
-      dependsOn: [],
-      adrs: [
-        {
-          path: "docs/adr/sales/quotes/0001-quote-approval.md",
-          status: "Accepted (2026-10-01)",
-          summary: "A sales manager decides whether to approve a submitted quote",
-        },
-      ],
-    },
-  },
-};
+const MAPPING = quoteApprovalMapping();
 
 export default {
   name: "ontology-build-unanswered-review-choice",

@@ -1,4 +1,5 @@
-import { ontologySkillText, ruleText, seedMapping, TAIL_SPEC, write } from "../lib/harness.mjs";
+import { seedMapping, write } from "../lib/harness.mjs";
+import { buildPrompt } from "../lib/ontology-fixtures.mjs";
 
 const NOTES = `# 주문 처리 업무 메모
 
@@ -29,26 +30,18 @@ export default {
     },
   ],
   build(dir) {
-    seedMapping(dir, { categories: {} });
+    seedMapping(dir);
     write(dir, "docs/order-notes.md", NOTES);
     for (const service of ["order-api", "payment-worker", "notification"])
       write(dir, `services/${service}/README.md`, `# ${service}\n`);
-    return [
-      ontologySkillText("ontology-build", {
-        references: [
-          "references/eventstorming.md",
-          "skills/ontology-build/references/candidate-review.md",
-        ],
-      }),
-      ruleText("concepts.md"),
-      "# This run",
+    return buildPrompt(
+      ["references/eventstorming.md", "skills/ontology-build/references/candidate-review.md"],
       "This project has no saved ontology and no ADRs. Its folders are services/order-api, services/payment-worker and services/notification. docs/order-notes.md:",
       "```markdown",
       NOTES,
       "```",
       "사용자: /ontology-build docs/order-notes.md 주문 처리 업무로 첫 모델 초안을 보여 줘.",
       "Do not call tools. Show the report you would present before writing candidates.",
-      TAIL_SPEC,
-    ].join("\n\n");
+    );
   },
 };
