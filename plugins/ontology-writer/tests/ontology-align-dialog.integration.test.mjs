@@ -167,7 +167,8 @@ test("a whole-process request keeps Q&A, explicit approval and re-verification i
     writeFileSync(files.code, approved.changes.find((c) => c.layer === "code").after);
     assert.equal(actual("submitted"), "pending");
     assert.equal(actual("received"), "credited");
-    const date = new Date().toISOString().slice(0, 10);
+    // The transition records the local calendar date, as every save does.
+    const date = new Date().toLocaleDateString("sv-SE");
     adrStatus(`Accepted (${date})`);
     const plan = JSON.parse(ontology("align", "--process", "returns", "--json"));
     assert.deepEqual(plan.blocking, []);

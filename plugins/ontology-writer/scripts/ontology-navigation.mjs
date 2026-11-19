@@ -30,6 +30,10 @@ const NAVIGATION_NOTE =
   "Navigation only: summaries, search matches and pages are not complete business-contract evidence. Follow the next page and relevant boundary/detail queries; no match is not evidence that no business rule applies. Read realizing ADRs for implementation obligations.";
 
 /** Bounded collection defaults are replaceable presentation choices, not model facts. */
+/** The line that marks model documents differing from HEAD when they cannot compare by element. */
+export const uncommittedDocumentsLine = (documents) =>
+  `UNCOMMITTED model documents differ from HEAD (not a settled reference): ${documents.join(", ")}`;
+
 export function navigationOptions({ limit = null, offset = 0, search = "" } = {}) {
   if (limit !== null && (!Number.isSafeInteger(limit) || limit < 1 || limit > 100))
     throw new Error("navigation --limit must be an integer from 1 to 100");
@@ -86,8 +90,12 @@ export function projectNavigation(index, { target, includeRetired = false, searc
         .out(iri, "performs")
         .filter((s) => index.typeOf(s) === "Step" && visible(s))
         .flatMap(contextsOf);
+    // A rule belongs where it reaches and where it directly constrains, as a BC's own list has it.
     else if (type === "BusinessRule")
-      contexts = stepsOfRule(iri).filter(visible).flatMap(contextsOf);
+      contexts = [
+        ...stepsOfRule(iri).filter(visible).flatMap(contextsOf),
+        ...index.out(iri, "constrains").filter(visible).flatMap(contextsOf),
+      ];
     else if (type === "ObservationCriterion")
       contexts = index
         .out(iri, "criterionOf")
@@ -352,7 +360,10 @@ function overviewDiagnostics(errors, changes) {
     changeSummary: changes
       ? {
           available: changes.available,
-          uncommittedElements: changes.uncommitted?.length ?? null,
+          // When the committed model cannot be read by element, only whole documents compare.
+          ...(changes.uncommittedDocuments
+            ? { uncommittedElements: null, uncommittedDocuments: changes.uncommittedDocuments }
+            : { uncommittedElements: changes.uncommitted?.length ?? null }),
           unsyncedProcesses: changes.unsyncedAccepted?.length ?? null,
           uncertainProcesses: changes.unsyncedUnknown?.length ?? null,
           lifecycleEdits: changes.lifecycleEdits?.length ?? null,
@@ -428,6 +439,8 @@ export function renderNavigation(result) {
     lines.push(
       `Validation sample: ${JSON.stringify(result.validationSample)}; ${result.diagnosticDetails}`,
     );
+  if (result.changeSummary?.uncommittedDocuments?.length)
+    lines.push(uncommittedDocumentsLine(result.changeSummary.uncommittedDocuments));
   if (result.changeSummary)
     lines.push(
       `Change summary: ${JSON.stringify(result.changeSummary)}; query the selected BC before relying on its knowledge.`,

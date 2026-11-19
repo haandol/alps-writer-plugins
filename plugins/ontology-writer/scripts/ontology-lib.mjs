@@ -1655,6 +1655,49 @@ export function serializeTurtle(triples) {
   return blocks.length ? `${header}\n\n${blocks.join("\n\n")}\n` : "";
 }
 
+// An input document stays in the one-off report: saved model text and change-log lines
+// never name its file or a page of it. A regulation, contract or policy may still be named
+// with its article ("전자상거래법 제17조"), which neither pattern matches. A Korean particle
+// may follow the extension directly ("회의록.docx에서"); only Latin letters or digits extend it.
+const SOURCE_FILE =
+  /[\p{L}\p{N}_-][\p{L}\p{N}_.-]*\.(?:pdf|docx?|xlsx?|pptx?|hwpx?|md|markdown|txt|csv|rtf|odt|ods|odp|key|pages|numbers|html?)(?![\p{Script=Latin}\p{N}])/iu;
+// A page may be written 12쪽, 12페이지, p. 12, page 12, or without a dot as a lowercase 12p or
+// p12. "P1 장애", "4P 분석" and "P2P" are business wording; "12면" is left out because "3면 포장"
+// is too.
+const SOURCE_PAGE = /\d+\s*(?:쪽|페이지)|(?<!\p{L})pp?\.\s?\d+|(?<!\p{L})pages?\s+\d+/iu;
+const SOURCE_PAGE_SHORT =
+  /(?<![\p{L}\p{N}.])\d{2,}pp?(?![\p{Script=Latin}\p{N}])|(?<!\p{L})pp?\d{2,}(?![\p{Script=Latin}\p{N}])/u;
+
+// A passage in quotation marks long enough to be copied wording rather than a quoted term.
+const QUOTED_PASSAGE = /["“‘']([^"”’']{10,})["”’']/u;
+
+/**
+ * Why text saved under `property` (a local name such as "basis") carries an input document —
+ * one of the evidence `sources` by name or path, a file name, a page, or in a basis a quoted
+ * passage — or null. A basis may name a regulation, contract or policy even when an input
+ * document has that title, so there only a source path counts.
+ */
+export function savedTextTrace(property, text, { sources = [] } = {}) {
+  const value = String(text ?? "");
+  const basis = property === "basis";
+  const named = sources.find(
+    (s) => s.length >= 3 && value.includes(s) && (!basis || /[\\/]/.test(s)),
+  );
+  if (named) return `names the input document ${JSON.stringify(named)}`;
+  return (
+    sourceTrace(value) ?? (basis && QUOTED_PASSAGE.test(value) ? "quotes a source passage" : null)
+  );
+}
+
+/** Why saved text cites an input document — a file name or a page — or null when it does not. */
+export function sourceTrace(text) {
+  const value = String(text ?? "");
+  const file = SOURCE_FILE.exec(value);
+  if (file) return `names the file ${file[0]}`;
+  const page = SOURCE_PAGE.exec(value) ?? SOURCE_PAGE_SHORT.exec(value);
+  return page ? `cites the page "${page[0]}"` : null;
+}
+
 /** Code-point order, the one ordering ids, paths and names share across the scripts. */
 export const compareCodePoints = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 /** Distinct values in code-point order. */

@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { makeTools } from "../evals/regression/workspace.mjs";
 import {
   scratchDirs,
   scratch,
@@ -59,6 +60,21 @@ test("every scenario exports the shape the runner requires", async () => {
     assert.match(s.name, /^[a-z0-9-]+$/, `${file}: name must be kebab-case`);
     assert.ok(s.description?.length > 20, `${file}: needs a real description`);
     assert.equal(typeof s.build, "function", `${file}: build must be a function`);
+    // The fixture tool server must accept the scenario's report paths and draft root, or the
+    // agent would run without any tools.
+    const root = scratch("scenario-tools-");
+    try {
+      makeTools({
+        root,
+        pluginRoot: PLUGIN_ROOT,
+        logPath: path.join(root, "events.jsonl"),
+        turn: 1,
+        artifactPaths: s.artifactPaths ?? [],
+        draftRoot: s.draftRoot,
+      });
+    } catch (error) {
+      assert.fail(`${file}: the fixture tool server would not start: ${error.message}`);
+    }
     // Behavioral meaning is judged by the configured LLM, not scenario word scorers.
   }
 });

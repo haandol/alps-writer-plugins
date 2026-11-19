@@ -9,6 +9,7 @@ import {
   pageNavigation,
   projectNavigation,
   renderNavigation,
+  uncommittedDocumentsLine,
 } from "./ontology-navigation.mjs";
 import {
   ONTO,
@@ -693,11 +694,7 @@ export function renderContext(r) {
           0,
           `Committed-edit flags unavailable: ${c.committedUnavailable} — treat Accepted processes in this scope as possibly edited directly; confirm with ontology sync before relying on them`,
         );
-      if (c.uncommittedDocuments?.length)
-        say(
-          0,
-          `UNCOMMITTED model documents differ from HEAD (not a settled reference): ${c.uncommittedDocuments.join(", ")}`,
-        );
+      if (c.uncommittedDocuments?.length) say(0, uncommittedDocumentsLine(c.uncommittedDocuments));
       for (const u of c.unsyncedUnknown ?? [])
         say(
           0,
@@ -805,6 +802,13 @@ export function renderContext(r) {
       say(
         0,
         `Realized steps: ${r.steps.length} in ${groups.length} process(es) — ${groups.map(([p, list]) => `${p || "no single process"} (${list.length})`).join(", ")}`,
+      );
+    // Observation criteria belong to a process; name the queries that list them.
+    const processes = groups.map(([p]) => p).filter(Boolean);
+    if (processes.length)
+      say(
+        0,
+        `Observation criteria are listed by process: ${processes.map((p) => `query --process ${p}`).join(", ")}`,
       );
     for (const [, list] of groups) for (const s of inFlowOrder(list)) stepBlock(s, 0);
   } else if (r.kind === "process") {

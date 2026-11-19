@@ -21,14 +21,14 @@ under the existing approval. Keep requirements in the ADR.
 When `docs/ontology/` holds Turtle documents, read
 `${CLAUDE_PLUGIN_ROOT}/references/business-context.md` before planning an ADR
 change or code of a feature linked to a process step. Name the checked context in
-the plan and connect its business scenarios to approved ADR rows and tests;
-completion is judged by ADR rows only. Without them, skip it.
-Use that module's scoped retrieval route: enter at a known target and expand
-only for business questions or dependencies the change still needs to resolve.
+the plan, connect its business scenarios to approved ADR rows and tests, and name
+any observation the change cannot establish, with why. Only ADR rows judge
+completion and Status: ask about an open path separately, never as a
+precondition. Without them, skip it. Use its scoped retrieval route.
 
 Implements the specified ADR in code. Once implementation, tests, the verified refactor pass, and final implementation review pass, it automatically updates a `Proposed` target to `Accepted`; an existing `Accepted` target whose decision and requirement contract remain unchanged stays `Accepted` throughout. **If no ADR exists, apply the ADR admission gate first.** Write an ADR with `/adr-new <category>` only for a durable requirement or architectural decision; implement replaceable libraries, SDKs, frameworks, credential/auth wiring, and other code-level choices without creating one. If an ALPS Section 7 feature already exists, batch-convert with `/feature-to-adr`.
 
-> Status semantics: `Proposed` means "the ADR has been proposed but is not implemented", `Accepted` means "implementation complete". This command transitions only a `Proposed` target after completion; it never cycles an unchanged `Accepted` target through `Proposed`.
+> Status semantics: `Proposed` means "the ADR has been proposed but is not implemented", `Accepted` means "implementation complete". This command transitions only a `Proposed` target after completion.
 
 > **Language**: this skill and every other harness prompt are written in English, but talk to the user and write the ADR body in the language the user writes in (`authoring-rules.md` "Conventions"). Any user-facing phrasing below is a guide, not a literal string.
 

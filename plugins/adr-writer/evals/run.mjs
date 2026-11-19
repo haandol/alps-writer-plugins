@@ -214,7 +214,13 @@ export async function runOnce(scenario, opts, injected = {}) {
       ? await injected.target(prompt, { cmd: opts.cmd, cwd: dir, config })
       : opts.cmd
         ? runAgent(prompt, { cmd: opts.cmd, cwd: dir })
-        : await (injected.invokeClaude ?? invokeClaude)({ prompt, cwd: dir, config }).then((r) => ({
+        : await (injected.invokeClaude ?? invokeClaude)({
+            prompt,
+            cwd: dir,
+            config,
+            // A scenario whose answer is a whole report may need longer than the default.
+            ...(scenario.agentTimeoutMs ? { timeoutMs: scenario.agentTimeoutMs } : {}),
+          }).then((r) => ({
             ok: true,
             stdout: r.text,
             stderr: "",

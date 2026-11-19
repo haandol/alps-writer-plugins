@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { validateModel } from "../scripts/ontology-lib.mjs";
 import { queryContext } from "../scripts/ontology-query.mjs";
 import { EXAMPLE } from "./ontology-helpers.mjs";
-import { MAPPING } from "./ontology-query-helpers.mjs";
+import { HEAD, MAPPING } from "./ontology-query-helpers.mjs";
 
 const EXTRA =
   '\nm:ordering.search-case a onto:Step ; rdfs:label "Search example" ; onto:definition "결제가 완료되면 주문을 확정한다. Quarantine the parcel marker." ; onto:stepKind "system" ; onto:inContext m:ordering .\nm:ordering.place-order onto:hasStep m:ordering.search-case .\nm:customer onto:performs m:ordering.search-case .\n';
@@ -92,4 +92,57 @@ test("retired text stays opt-in and current model-only descriptions do not becom
     }).itemCount > 0,
   );
   assert.equal(invoke(model, "description-only-marker").itemCount, 0);
+});
+
+test("a whole-model search lists every BC whose own view holds the matching rule", () => {
+  const cases = [
+    // A rule on an Ordering concept that also constrains Payment's concept.
+    `${HEAD}m:ordering.line-limit a onto:BusinessRule ; rdfs:label "Line quantity cap" ;
+  onto:definition "Zebra marker applies to each order line." ; onto:basisKind "operating-policy" ;
+  onto:basis "Warehouse handling policy." ; onto:constrains m:ordering.order-line, m:payment.payment .
+`,
+    // A rule on an Ordering policy that starts a Payment step.
+    `${HEAD}m:ordering.notify-payment a onto:Policy ; rdfs:label "Notify payment" ;
+  onto:definition "Ordering asks payment to start." ; onto:reactionCondition "An order exists." ;
+  onto:basisKind "operating-policy" ; onto:basis "Store policy." ; onto:inContext m:ordering ;
+  onto:starts m:payment.request-payment .
+m:ordering.order-placed onto:triggers m:ordering.notify-payment .
+m:ordering.notify-rule a onto:BusinessRule ; rdfs:label "Notification wording" ;
+  onto:definition "Zebra phrase governs the ordering notification policy." ; onto:basisKind "operating-policy" ;
+  onto:basis "Store policy." ; onto:constrains m:ordering.notify-payment, m:payment.capture-payment .
+`,
+  ];
+  for (const extra of cases) {
+    const model = validateModel([
+      { doc: "model.ttl", text: EXAMPLE },
+      { doc: "extra.ttl", text: extra },
+    ]);
+    assert.deepEqual(
+      model.findings.filter((f) => f.level === "error"),
+      [],
+    );
+    const query = (target) =>
+      queryContext({
+        index: model.index,
+        mapping: MAPPING,
+        findings: model.findings,
+        target,
+        search: "zebra",
+      });
+    const candidates = query({ kind: "overview" })
+      .items.filter((i) => i.kind === "context")
+      .map((i) => i.id)
+      .sort();
+    const holding = ["ordering", "payment"].filter((bc) =>
+      query({ kind: "context", id: bc }).items.some(
+        (i) => i.kind === "element" && i.type === "BusinessRule",
+      ),
+    );
+    assert.deepEqual(
+      candidates,
+      holding,
+      "the overview's candidates are the BCs whose views list the rule",
+    );
+    assert.ok(candidates.includes("ordering"));
+  }
 });

@@ -373,3 +373,49 @@ test("a context's own glossary that still defines a business term the model owns
     assert.match(validate, /owns the business term "Refund"/);
   });
 });
+
+test("a change-log line that names an input document's file or page is refused before anything is written", () => {
+  withTmp((dir) => {
+    repo(dir);
+    draft(dir, ACCEPTED.replace('"The order has no payment yet."', '"The order is unpaid."'));
+    const summary = impact(dir);
+    for (const line of ["주문정책서.pdf 반영", "결제 정책 12쪽 반영"]) {
+      const refused = apply(dir, summary.baseHash, ["--log", line]);
+      assert.equal(refused.code, 1, refused.out);
+      assert.match(refused.out, /\[ontology-log-source\]/);
+      assert.equal(read(dir, "docs/ontology/model.ttl"), ACCEPTED);
+    }
+    const applied = apply(dir, summary.baseHash, ["--log", "미결제 주문 표현을 다듬었다"]);
+    assert.equal(applied.code, 0, applied.out);
+  });
+});
+
+test("saved text that names an input document's file or page is listed by the preview and refused by the save", () => {
+  withTmp((dir) => {
+    repo(dir);
+    for (const basis of [
+      '"주문정책서.pdf 12쪽: 결제가 끝난 주문만 확정한다"',
+      '"결제 정책 12쪽을 따른다."',
+      // A quoted source passage in a basis is a trace on every save path, not only in prepare.
+      '"\\"결제가 끝난 주문만 확정한다\\"는 문장을 따른다."',
+    ]) {
+      draft(dir, ACCEPTED.replace('"Store accounting policy."', basis));
+      // The preview still shows its diff, so a review draft's report keeps its comparison.
+      const preview = cli(dir, ["impact", "--draft", "draft"]);
+      assert.equal(preview.code, 1, preview.out);
+      assert.match(preview.out, /\[ontology-text-source\] payment\.amount-matches-order basis/);
+      assert.match(preview.out, /^semantic change: 1 element/m);
+      const summary = impact(dir);
+      assert.equal(summary.draftValid, false);
+      const refused = apply(dir, summary.baseHash);
+      assert.equal(refused.code, 1, refused.out);
+      assert.match(refused.out, /\[ontology-text-source\]/);
+      assert.equal(read(dir, "docs/ontology/model.ttl"), ACCEPTED, "nothing was written");
+    }
+    // A regulation and its article remain a basis sentence.
+    draft(dir, ACCEPTED.replace('"Store accounting policy."', '"전자상거래법 제17조를 따른다."'));
+    const applied = apply(dir, impact(dir).baseHash);
+    assert.equal(applied.code, 0, applied.out);
+    assert.match(read(dir, "docs/ontology/model.ttl"), /전자상거래법 제17조를 따른다/);
+  });
+});

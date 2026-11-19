@@ -64,6 +64,9 @@ Every element has `id`, `label`, `definition`, `verdict` (`stated`, `inferred`,
 none was found) and optionally `planned`, `confirmed`, `comment` and `changes`.
 An element whose id is already in the model keeps its current wording; list in
 `changes` the attributes a document states a change of (for example `["label"]`).
+A document that only describes an element differently, stating no change, is a
+conflict: mark it `conflicting`, leave `changes` empty and ask. The diff then
+shows no change for it until the user decides.
 Relations are listed on their element:
 
 | List        | Fields beyond the common ones                                                                                                                                 |
@@ -88,7 +91,9 @@ written `Proposed`.
 candidates: `{ "category", "step", "reason", "verdict", "evidence", "confirmed" }`.
 `questions` use the web session's question form plus optional `stages` (step
 ids), `scope` and `scopeType` for the board. `notHeld` lists what the model does
-not hold (`{ "text", "source" }`) for the report's transfer section.
+not hold (`{ "text", "source" }`) for the report's transfer section. For each
+ADR-level item, add a question whether to pass it to ADR authoring at all —
+keeping it out is an answer — and name where it would go if passed.
 
 Name ids from business meaning under [candidate review](candidate-review.md); `check` warns about ids
 such as `rule-01`.

@@ -114,7 +114,8 @@ the model here or deriving business boundaries from existing ADR categories.
   criteria; propose feature-level contracts for relevant normal, exception,
   rejection and hand-off paths. In implementation, map approved contracts to
   business scenarios and tests. In review, check those scenarios against the
-  contracts and actual evidence. If the category query omits criteria, query
+  contracts and actual evidence, and name for each the evidence checked or why
+  its business observation remains unverified. If the category query omits criteria, query
   the connected process through ontology-writer; never read the model here.
   A model-only obligation missing from an ADR is an alignment issue, while
   missing behavior or tests for an approved ADR row follows the existing
@@ -143,14 +144,19 @@ the model here or deriving business boundaries from existing ADR categories.
   exact values and conditions, and guarantees such as duplicate delivery. Report
   other realizing ADRs missing the same contract as alignment issues. In the
   context of a `Proposed` process, first check model meaning no realizing ADR
-  reflects yet, and fold the compliance contracts it needs into that process's
-  change approval summary so they are asked once. `/adr-sync` never adds a
+  reflects yet. The compliance contracts that meaning needs belong to the
+  ontology change approval of that process — ontology-writer's `/ontology-sync`
+  propagation, which drafts the affected ADR edits in its one approval summary —
+  so they are asked once there, not in this ADR's own approval, and are not saved
+  to the ADR before it. `/adr-sync` never adds a
   compliance contract itself; it reports the gap as an alignment issue for
   `/ontology-sync`.
 - **Report contradictions.** An ADR or code change that learns of a
   contradiction with the context reports it in its completion report — as an
   alignment issue (the model and the realizing ADR contract differ) or as an
   ontology change proposal. Completion is still judged by ADR contract rows only.
+  Before coding, a contradiction is not implemented by default: pause the
+  affected part for the user's ADR-first choice.
 - **Not settled.** When the context shows validation errors, uncommitted model
   edits, unsynced direct edits or a lifecycle edit of an `Accepted` process,
   report that and do not treat that part as a settled reference. Propose
@@ -172,4 +178,5 @@ the model here or deriving business boundaries from existing ADR categories.
   exist; do not turn it back into a question. Never use it to drop a failure
   guarantee inside a step.
 - The business context is never an implementation obligation or completion
-  condition by itself; only ADR contract rows are.
+  condition by itself; only ADR contract rows are. An open path or other
+  model-only content never becomes a Status or promotion condition.

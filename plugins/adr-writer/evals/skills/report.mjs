@@ -45,13 +45,65 @@ const groups = [
     "소유권과 승인",
     ["author-delegation-", "author-routes-", "author-review-", "author-defers-model-"],
   ],
-  [
-    "결정 관리",
-    "작성",
-    "업무 경계",
-    "경계 발견",
-    ["author-groups-", "author-discovers-", "author-checks-business-"],
-  ],
+  ["결정 관리", "작성", "업무 경계", "경계 발견", ["author-groups-", "author-discovers-"]],
+  ...[
+    [
+      "업무 맥락 확인",
+      "작성 경로",
+      [
+        "author-checks-business-context",
+        "author-checks-business-recorded-",
+        "author-checks-business-without-",
+        "author-checks-business-scenarios",
+      ],
+    ],
+    [
+      "업무 맥락 확인",
+      "준수 계약과 제안",
+      [
+        "author-checks-business-compliance-",
+        "author-checks-business-proposed-",
+        "author-checks-business-rejected-",
+        "author-checks-business-confirm-",
+      ],
+    ],
+    [
+      "업무 맥락 확인",
+      "동기화·가져오기·통합",
+      [
+        "author-checks-business-sync-body",
+        "author-checks-business-sync-revert",
+        "author-checks-business-import",
+        "author-checks-business-rollup",
+      ],
+    ],
+    [
+      "업무 맥락 확인",
+      "범주와 생명주기",
+      [
+        "author-checks-business-split-",
+        "author-checks-business-supersede",
+        "author-checks-business-deprecate-",
+        "author-checks-business-no-model",
+      ],
+    ],
+    [
+      "조회 착수와 기준 상태",
+      "조회 착수",
+      ["author-starts-business-", "author-sync-starts-", "author-scenarios-queries-"],
+    ],
+    ["조회 착수와 기준 상태", "확인된 빈 기록", ["author-records-confirmed-"]],
+    [
+      "조회 착수와 기준 상태",
+      "확정되지 않은 맥락",
+      [
+        "author-checks-business-unsettled-",
+        "author-checks-business-unsynced-",
+        "author-checks-business-history-",
+        "author-checks-business-open-",
+      ],
+    ],
+  ].map((group) => ["결정 관리", "작성", "업무 경계", ...group]),
   [
     "결정 관리",
     "작성",
@@ -77,8 +129,66 @@ const groups = [
   ["결정 관리", "동기화와 통합", "표현과 검증", ["sync-rewrites-", "sync-stays-"]],
   ["결정 관리", "동기화와 통합", "통합 범위", ["rollup-"]],
   ["결정 관리", "동기화와 통합", "세션 분류", ["hook-"]],
-  ["결정 관리", "업무 온톨로지", "모델 구축과 변경 승인", ["ontology-build-", "ontology-edit-"]],
+  ...[
+    [
+      "구축 진입과 ADR 검토",
+      "첫 구축 진입",
+      ["ontology-build-offers-", "ontology-build-reuses-review-", "ontology-build-one-time-"],
+    ],
+    [
+      "구축 진입과 ADR 검토",
+      "리뷰 방식 기록",
+      ["ontology-build-unanswered-review-", "ontology-build-remembers-review-"],
+    ],
+    [
+      "구축 진입과 ADR 검토",
+      "ADR 검토 경로와 검증 재사용",
+      [
+        "ontology-build-reviews-then-",
+        "ontology-build-without-adrs-",
+        "ontology-build-checks-beyond-",
+        "ontology-build-reuses-verified-",
+      ],
+    ],
+    [
+      "자료와 범위",
+      "범위와 출처",
+      [
+        "ontology-build-anchors-to-",
+        "ontology-build-judges-input-",
+        "ontology-build-ignores-",
+        "ontology-build-keeps-sources-",
+      ],
+    ],
+    [
+      "자료와 범위",
+      "사건 지도와 부분 결과",
+      ["ontology-build-maps-events-", "ontology-build-reports-partial-"],
+    ],
+    [
+      "후보 보고와 질문",
+      "필수 항목과 기존 모델",
+      [
+        "ontology-build-fills-required-",
+        "ontology-build-diffs-current-",
+        "ontology-build-glossary-",
+      ],
+    ],
+    [
+      "후보 보고와 질문",
+      "질문 해소와 질의응답",
+      ["ontology-build-resolves-", "ontology-build-discussion-"],
+    ],
+    [
+      "후보 보고와 질문",
+      "질문 세션의 답 반영",
+      ["ontology-build-posts-follow-", "ontology-build-reads-conversation-"],
+    ],
+    ["저장 승인", "승인 요약", ["ontology-build-hands-off-"]],
+  ].map((group) => ["결정 관리", "업무 온톨로지", "모델 구축", ...group]),
+  ["결정 관리", "업무 온톨로지", "변경 승인", ["ontology-edit-"]],
   ["결정 관리", "업무 온톨로지", "준비 상태와 실행 정렬", ["ontology-sync-", "ontology-align-"]],
+  ["결정 관리", "업무 온톨로지", "세션 안내와 맥락 조회", ["ontology-session-", "ontology-query-"]],
   ["구현 보장", "의존성과 계획", "선행 상태와 계획", ["impl-blocks-", "impl-plans-"]],
   ["구현 보장", "의존성과 계획", "의도와 기본값 판단", ["impl-resolves-", "impl-uses-intent-"]],
   [
@@ -87,7 +197,24 @@ const groups = [
     "사전 검증과 완료",
     ["impl-completes-", "impl-requires-", "impl-provability"],
   ],
-  ["구현 보장", "완료와 검증", "평가와 증거", ["impl-distinguishes-", "impl-reports-business-"]],
+  ["구현 보장", "완료와 검증", "평가와 증거", ["impl-distinguishes-"]],
+  [
+    "구현 보장",
+    "완료와 검증",
+    "업무 맥락과 검증 연결",
+    [
+      "impl-reports-business-context-",
+      "impl-reports-business-scenarios-",
+      "impl-reports-business-alignment-",
+      "impl-reports-business-unsettled-",
+    ],
+  ],
+  [
+    "구현 보장",
+    "완료와 검증",
+    "업무 맥락과 상태 전이",
+    ["impl-reports-business-auto-", "impl-reports-business-pending-"],
+  ],
   ["구현 보장", "규모와 전달", ["impl-high-", "impl-offers-", "impl-lands-"]],
   ["구현 보장", "실행 수단", ["refactor-", "bedrock-"]],
   [

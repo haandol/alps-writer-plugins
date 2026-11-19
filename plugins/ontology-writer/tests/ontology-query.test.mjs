@@ -186,6 +186,15 @@ test("results contain only connected elements and are deterministic", () => {
   assert.equal(renderContext(r), renderContext(run({ kind: "category", id: "fulfilment" })));
 });
 
+test("a category result names the process queries that list observation criteria", () => {
+  const category = renderContext(run({ kind: "category", id: "ordering" }));
+  assert.match(
+    category,
+    /^Observation criteria are listed by process: query --process ordering\.place-order$/m,
+  );
+  assert.doesNotMatch(category, /criterion /, "the criteria themselves stay in the process result");
+});
+
 test("the text follows each process's flow, states its open scope and each rule once, and marks steps outside the system", () => {
   const process = renderContext(run({ kind: "process", id: "ordering.place-order" }));
   // Submitting flows into confirming, though "confirm" sorts first by id.

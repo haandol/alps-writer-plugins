@@ -36,8 +36,10 @@ import {
   elementIri,
   indexGraph,
   isValidElementId,
+  openScopeOf,
   parseDocument,
   serializeTurtle,
+  savedTextTrace,
 } from "./ontology-lib.mjs";
 
 const VERDICTS = ["stated", "inferred", "conflicting", "unconfirmed"];
@@ -135,6 +137,9 @@ export function checkCandidates(doc, current = { index: indexGraph([]) }) {
     for (const s of list(item.openScope))
       if (!OPEN_KIND_TO_DATATYPE[s?.kind] || (s.kind !== "none" && !nonEmpty(s.text)))
         err(where, "openScope items are {kind: open-path | not-applicable, text} or {kind: none}");
+    const scopeKinds = list(item.openScope).map((s) => s?.kind);
+    if (scopeKinds.includes("none") && scopeKinds.length > 1)
+      err(where, 'openScope "none" stands alone; list open-path or not-applicable items instead');
     if (kind === "policies" || kind === "rules") {
       if (!item.basis && !existing)
         warn(where, "no basis was found; ask for its basis before saving");
@@ -323,40 +328,41 @@ function documentPlacer(doc, current) {
   };
 }
 
+const tripleKey = (t) => `${t.s}\0${t.p}\0${t.o.value}\0${t.o.datatype ?? ""}`;
+
 /**
- * Merge the candidates into the current model. A current element keeps its wording unless
- * the candidate lists the attribute in `changes` (a document states the change), so the same
- * documents and model produce the same draft. Returns the documents to write and what was kept.
+ * The triples the given candidates add to the current model: a current element keeps its
+ * wording unless the candidate lists the attribute in `changes`, and a relation to an element
+ * neither the model nor these candidates hold is left out (`dropped`).
  */
-export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
-  const chosen = allCandidates(doc).filter(({ item }) => !confirmedOnly || item.confirmed === true);
-  const chosenIds = new Set(chosen.map((c) => c.item.id));
-  const exists = (id) => Boolean(current.index.typeOf(iri(id))) || chosenIds.has(id);
-  const tripleKey = (t) => `${t.s}\0${t.p}\0${t.o.value}\0${t.o.datatype ?? ""}`;
+function mergeTriples(candidates, current) {
+  const ids = new Set(candidates.map((c) => c.item.id));
+  const exists = (id) => Boolean(current.index.typeOf(iri(id))) || ids.has(id);
   const single = new Map(); // `${s}\0${p}` → the current triple of a single-valued attribute
   for (const t of current.triples) if (SINGLE.has(t.p)) single.set(`${t.s}\0${t.p}`, t);
   const removed = new Set();
   const seen = new Set(current.triples.map(tripleKey));
   const added = [];
   const kept = [];
-  const dropped = [];
-  const cutPaths = []; // [confirmed end, dropped description] of each workflow path left out
-  for (const { kind, item } of chosen) {
+  const dropped = []; // [description, triple]
+  for (const { kind, item } of candidates) {
     const isNew = !current.index.typeOf(iri(item.id));
     const changes = new Set(
       list(item.changes).map((c) => (c === "label" ? RDFS + "label" : ONTO + c)),
     );
     for (const t of candidateTriples(kind, item, { isNew })) {
-      // A relation to an element the draft does not hold (unconfirmed) is left out.
       const other =
         t.s !== iri(item.id) ? elementId(t.s) : t.o.type === "iri" ? elementId(t.o.value) : null;
       if (other && !exists(other)) {
-        const what = `${item.id} ${t.p.replace(ONTO, "")} ${other}`;
-        dropped.push(what);
-        if (PATH_RELATIONS.has(t.p)) cutPaths.push([iri(item.id), what]);
+        dropped.push([`${item.id} ${t.p.replace(ONTO, "")} ${other}`, t]);
         continue;
       }
       if (seen.has(tripleKey(t))) continue;
+      // An open-path or not-applicable item the user confirms replaces the element's saved
+      // "none", which can stand only alone: this is how a left-out path gets recorded.
+      if (!isNew && t.p === ONTO + "openScope" && t.o.datatype !== OPEN_KIND_TO_DATATYPE.none)
+        for (const c of current.index.subjects.get(t.s)?.props.get(t.p) ?? [])
+          if (c.o.datatype === OPEN_KIND_TO_DATATYPE.none) removed.add(c);
       const old = !isNew && SINGLE.has(t.p) ? single.get(`${t.s}\0${t.p}`) : null;
       if (old) {
         if (!changes.has(t.p)) {
@@ -369,13 +375,40 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
       added.push(t);
     }
   }
+  return { added, removed, kept, dropped };
+}
+
+/**
+ * Merge the candidates into the current model. A current element keeps its wording unless
+ * the candidate lists the attribute in `changes` (a document states the change), so the same
+ * documents and model produce the same draft. Returns the documents to write and what was kept.
+ */
+export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
+  const all = allCandidates(doc);
+  const chosen = confirmedOnly ? all.filter(({ item }) => item.confirmed === true) : all;
+  const { added, removed, kept, dropped } = mergeTriples(chosen, current);
+  const triples = [...current.triples.filter((t) => !removed.has(t)), ...added];
   // Only a save draft claims what the saved model holds; the review draft shows the gaps itself.
-  const undecided = confirmedOnly
-    ? noOpenScopeWithCutPaths(
-        [...current.triples.filter((t) => !removed.has(t)), ...added],
-        cutPaths,
-      )
-    : [];
+  // A workflow path the candidates declare but the confirmed draft does not hold is left out,
+  // whichever candidate declared it: it is cut at both of its ends.
+  const unconfirmed = [];
+  let undecided = [];
+  if (confirmedOnly) {
+    const held = new Set(triples.map(tripleKey));
+    const droppedKeys = new Set(dropped.map(([, t]) => tripleKey(t)));
+    const cut = mergeTriples(all, current).added.filter(
+      (t) => PATH_RELATIONS.has(t.p) && !held.has(tripleKey(t)),
+    );
+    const cutPaths = cut.flatMap((t) => {
+      const what = `${elementId(t.s)} ${t.p.replace(ONTO, "")} ${elementId(t.o.value)}`;
+      if (!droppedKeys.has(tripleKey(t))) unconfirmed.push(what);
+      return [
+        [t.s, what],
+        [t.o.value, what],
+      ];
+    });
+    undecided = noOpenScopeWithCutPaths(triples, cutPaths, added);
+  }
   // Place each subject's triples in its document; only touched documents are rewritten.
   const place = documentPlacer(doc, current);
   const byDoc = new Map();
@@ -398,7 +431,7 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
   for (const [name, ts] of byDoc)
     if (!current.docs.some((d) => d.doc === name))
       documents.push({ doc: name, text: serializeTurtle(ts), rewritten: true, created: true });
-  return { documents, kept, dropped, undecided };
+  return { documents, kept, dropped: dropped.map(([what]) => what), unconfirmed, undecided };
 }
 
 // The relations that carry a process's work from its start to its outcome.
@@ -407,48 +440,30 @@ const PATH_RELATIONS = new Set(
 );
 
 /**
- * A process whose path lost an unconfirmed part still has an undecided path, so the save
- * draft cannot declare that it has none. One message per such process and left-out path.
+ * A process saved as having no open scope must have none left: no workflow path of it left out
+ * (`cutPaths`), and — for the processes this save touches — no step that records an open path.
+ * One message per such process and path.
  */
-function noOpenScopeWithCutPaths(triples, cutPaths) {
-  if (!cutPaths.length) return [];
-  const into = (p) => {
-    const map = new Map();
-    for (const t of triples)
-      if (t.p === ONTO + p && t.o.type === "iri") {
-        if (!map.has(t.o.value)) map.set(t.o.value, []);
-        map.get(t.o.value).push(t.s);
-      }
-    return map;
-  };
-  const processesOfStep = into("hasStep");
-  const emitters = into("emits");
-  const triggers = into("triggers");
-  // A process whose every step is left out has no hasStep left, so its type identifies it.
-  const processes = new Set(
-    triples.filter((t) => t.p === RDF + "type" && t.o.value === ONTO + "Process").map((t) => t.s),
-  );
-  const starts = new Map();
-  for (const t of triples)
-    if (t.p === ONTO + "starts" && t.o.type === "iri") {
-      if (!starts.has(t.s)) starts.set(t.s, []);
-      starts.get(t.s).push(t.o.value);
-    }
-  const ofStep = (s) => processesOfStep.get(s) ?? [];
-  const ofEvent = (e) => (emitters.get(e) ?? []).flatMap(ofStep);
+function noOpenScopeWithCutPaths(triples, cutPaths, added) {
+  const scoped = added.filter((t) => t.p === ONTO + "openScope" || t.p === ONTO + "hasStep");
+  if (!cutPaths.length && !scoped.length) return [];
+  const index = indexGraph(triples);
+  const ofStep = (step) => index.into(step, "hasStep");
+  const ofEvent = (event) => index.into(event, "emits").flatMap(ofStep);
   // The confirmed end is a process, a step, an event or a policy.
   const processesOf = (x) =>
-    processes.has(x)
+    // A process whose every step is left out has no hasStep left, so its type identifies it.
+    index.typeOf(x) === "Process"
       ? [x]
       : [
           ...ofStep(x),
           ...ofEvent(x),
-          ...(starts.get(x) ?? []).flatMap(ofStep),
-          ...(triggers.get(x) ?? []).flatMap(ofEvent),
+          ...index.out(x, "starts").flatMap(ofStep),
+          ...index.into(x, "triggers").flatMap(ofEvent),
         ];
   const claimsNone = (p) => {
-    const scopes = triples.filter((t) => t.s === p && t.p === ONTO + "openScope");
-    return scopes.length > 0 && scopes.every((t) => t.o.datatype === ONTO + "NoOpenScope");
+    const { items } = openScopeOf(index, p);
+    return items.length > 0 && items.every((i) => i.kind === "none");
   };
   const out = new Set();
   for (const [end, what] of cutPaths)
@@ -457,21 +472,72 @@ function noOpenScopeWithCutPaths(triples, cutPaths) {
         out.add(
           `${elementId(p)} openScope: "none" cannot be saved while ${what} is left out; record that path as an open-path item, or confirm it too`,
         );
+  // A step's open path is an open path of its process; a pre-existing combination the save
+  // does not touch is left for the model's own review.
+  const touched = new Set(
+    scoped.flatMap((t) => (index.typeOf(t.s) === "Process" ? [t.s] : ofStep(t.s))),
+  );
+  for (const p of touched)
+    if (claimsNone(p))
+      for (const step of index.out(p, "hasStep"))
+        if (openScopeOf(index, step).open)
+          out.add(
+            `${elementId(p)} openScope: "none" cannot be saved while its step ${elementId(step)} records an open path; record that path on the process too`,
+          );
   return [...out];
+}
+
+/** The text a candidate would save into the model, by the model attribute that holds it. */
+const savedTexts = (kind, item) =>
+  candidateTriples(kind, item, { isNew: true })
+    .filter((t) => t.o.type === "literal")
+    .map((t) => [t.p.replace(ONTO, "").replace(RDFS, ""), t.o.value]);
+
+/**
+ * Where the candidates to save carry their input documents into the model: an evidence
+ * source's name or path, another file name or a page in any saved text, or a quoted passage in
+ * a basis. Sources and wording stay in the one-off report; the basis is a kind and a sentence.
+ */
+function sourceTraces(doc, { confirmedOnly = false } = {}) {
+  const names = new Set();
+  for (const { item } of allCandidates(doc))
+    for (const e of list(item.evidence)) {
+      const source = typeof e?.source === "string" ? e.source.trim() : "";
+      names.add(source).add(path.basename(source));
+    }
+  const sources = [...names];
+  const traces = [];
+  for (const { kind, item, where } of allCandidates(doc)) {
+    if (confirmedOnly && item.confirmed !== true) continue;
+    for (const [field, text] of savedTexts(kind, item)) {
+      const why = savedTextTrace(field, text, { sources });
+      if (why)
+        traces.push(
+          `${where} (${item.id}) ${field}: ${why}; keep sources in the report and save a short business sentence`,
+        );
+    }
+  }
+  return traces;
 }
 
 // ── board, index, questions and summary ────────────────────────────────────
 
-const labelOf = (doc, current, id) => {
-  const c = allCandidates(doc).find((x) => x.item.id === id);
-  if (c?.item.label) return c.item.label;
-  const label = current.index.subjects.get(iri(id))?.props.get(RDFS + "label")?.[0]?.o.value;
-  return label ?? id;
-};
+const described = (text) => (nonEmpty(text) ? { description: text } : {});
 
 /** The EventStorming board: one stage per candidate step, links from flows and policies. */
 export function candidateBoard(doc, current) {
   const ko = (doc.language ?? "ko") === "ko";
+  // Candidates by id (the first entry wins); an element repeated by id reads the model's values.
+  const byId = new Map();
+  for (const { item } of allCandidates(doc)) if (!byId.has(item.id)) byId.set(item.id, item);
+  const modelText = (id, property) => current.index.literal(iri(id), property)[0]?.value;
+  const labelOf = (id) => byId.get(id)?.label || (modelText(id, RDFS + "label") ?? id);
+  const textOf = (id, field, property = ONTO + field) =>
+    nonEmpty(byId.get(id)?.[field]) ? byId.get(id)[field] : modelText(id, property);
+  const policyView = (p) => ({
+    label: labelOf(p.id),
+    condition: textOf(p.id, "condition", ONTO + "reactionCondition"),
+  });
   const steps = list(doc.steps);
   const stepIds = new Set(steps.map((s) => s.id));
   const contextOfStep = (s) => {
@@ -490,16 +556,15 @@ export function candidateBoard(doc, current) {
   const stages = steps.map((s) => {
     const ctx = contextOfStep(s);
     const event = list(s.emits)[0];
-    const eventItem = list(doc.events).find((e) => e.id === event);
     return {
       id: s.id,
-      context: ctx ? labelOf(doc, current, ctx) : ko ? "경계 미확인" : "Boundary unknown",
+      context: ctx ? labelOf(ctx) : ko ? "경계 미확인" : "Boundary unknown",
       contextId: ctx ?? null,
       actor:
         list(s.performers)
-          .map((a) => labelOf(doc, current, a))
+          .map((a) => labelOf(a))
           .join(", ") || undefined,
-      action: s.label ?? labelOf(doc, current, s.id),
+      action: s.label ?? labelOf(s.id),
       businessStatus: s.planned
         ? "planned"
         : s.verdict === "unconfirmed"
@@ -507,14 +572,20 @@ export function candidateBoard(doc, current) {
           : "current",
       entities: list(s.entities),
       event: event
-        ? { name: labelOf(doc, current, event), description: eventItem?.definition ?? "" }
+        ? {
+            name: labelOf(event),
+            ...described(textOf(event, "definition")),
+          }
         : null,
-      policies: policiesFrom(s).map((p) => `${p.label}: ${p.condition ?? ""}`.trim()),
+      policies: policiesFrom(s).map((p) => {
+        const { label, condition } = policyView(p);
+        return `${label}: ${condition ?? ""}`.trim();
+      }),
       rules: list(doc.rules)
         .filter((r) => list(r.constrains).includes(s.id))
         .map((r) => ({
-          name: r.label,
-          description: r.definition,
+          name: labelOf(r.id),
+          ...described(textOf(r.id, "definition")),
           scope: ko ? "이 단계를 제약" : "constrains this step",
           verdict: r.verdict,
           evidence: list(r.evidence),
@@ -542,9 +613,9 @@ export function candidateBoard(doc, current) {
           links.push({
             from: s.id,
             to,
-            label: p.label,
+            label: policyView(p).label,
             relation: "causal",
-            condition: p.condition ?? null,
+            condition: policyView(p).condition ?? null,
             verdict: p.verdict,
             evidence: list(p.evidence),
           });
@@ -557,22 +628,24 @@ export function candidateBoard(doc, current) {
     ...(doc.domain ? { domain: doc.domain } : {}),
     contexts: list(doc.contexts).map((c) => ({
       id: c.id,
-      name: c.label ?? labelOf(doc, current, c.id),
-      description: c.definition ?? "",
+      name: c.label ?? labelOf(c.id),
+      ...described(textOf(c.id, "definition")),
       verdict: c.verdict,
       evidence: list(c.evidence),
     })),
     subdomains: list(doc.subdomains),
     stages,
     links,
+    // A question about a current step that no candidate repeats stays in the session, off the board.
     questions: list(doc.questions)
-      .filter((q) => list(q.stages).length)
-      .map((q) => ({
+      .map((q) => ({ q, onBoard: list(q.stages).filter((id) => stepIds.has(id)) }))
+      .filter(({ onBoard }) => onBoard.length)
+      .map(({ q, onBoard }) => ({
         id: q.id,
         text: q.text,
-        scope: q.scope ?? list(q.stages)[0],
+        scope: q.scope ?? onBoard[0],
         scopeType: q.scopeType ?? "step",
-        stages: list(q.stages),
+        stages: onBoard,
         verdict: q.verdict ?? "unconfirmed",
         evidence: list(q.evidence),
       })),
@@ -662,7 +735,8 @@ export function candidateSummary(doc, check) {
     e.verdicts[item.verdict] = (e.verdicts[item.verdict] ?? 0) + 1;
     if (item.planned) e.planned.push(item.id);
     if ((kind === "policies" || kind === "rules") && !item.basis) e.basisGaps.push(item.id);
-    if (item.verdict !== "stated" && item.confirmed !== true) e.needsConfirmation.push(item.id);
+    // A stated claim is still the document's, not the user's: it needs confirmation as well.
+    if (item.confirmed !== true) e.needsConfirmation.push(item.id);
   }
   return {
     title: doc.title,
@@ -740,45 +814,61 @@ function main(argv) {
     return target;
   };
 
-  const { documents, kept, dropped, undecided } = mergeDraft(doc, current, { confirmedOnly });
-  const draftDir = confirmedOnly ? "save-draft" : "draft";
-  for (const d of documents) write(path.join(draftDir, d.doc), d.text);
-  wrote.draft = path.join(run, draftDir);
+  const { documents, kept, dropped, unconfirmed, undecided } = mergeDraft(doc, current, {
+    confirmedOnly,
+  });
   const warnings = [
     ...check.warnings,
     ...dropped.map(
       (d) => `${d}: left out, because that element is not in this draft (confirm it too)`,
     ),
+    ...unconfirmed.map((d) => `${d}: left out, because the user has not confirmed it`),
     ...kept.map(
       (k) =>
         `${k}: kept the current wording (list it in changes when a document states the change)`,
     ),
   ];
 
+  // A save draft refuses what would carry an input document into the model; a review draft says so.
   const errors = [...undecided];
-  if (mapping) {
-    const m = candidateMapping(doc, mapping, { confirmedOnly });
-    errors.push(...m.errors);
-    wrote.mapping = write(
-      confirmedOnly ? "mapping.save.json" : "mapping.draft.json",
-      `${JSON.stringify(m.mapping, null, 2)}\n`,
+  (confirmedOnly ? errors : warnings).push(...sourceTraces(doc, { confirmedOnly }));
+  // Without an index there is nowhere to draft realization links; say so rather than drop them.
+  if (!mapping && list(doc.links).length)
+    warnings.push(
+      `links: ${list(doc.links).length} realization link candidate(s) not drafted, because the project has no ADR index`,
     );
-  }
+  const index = mapping ? candidateMapping(doc, mapping, { confirmedOnly }) : null;
+  if (index) errors.push(...index.errors);
+  let board = null;
+  let questions = null;
   if (!confirmedOnly) {
-    const board = candidateBoard(doc, current);
-    const boardErrors = validateEventBoard(board);
-    errors.push(...boardErrors.map((e) => `board ${e}`));
-    wrote.board = write("board.json", `${JSON.stringify(board, null, 2)}\n`);
+    board = candidateBoard(doc, current);
+    errors.push(...validateEventBoard(board).map((e) => `board ${e}`));
     if (list(doc.questions).length) {
-      const questions = candidateQuestions(doc, board, current);
+      questions = candidateQuestions(doc, board, current);
       const parsed = parseQuestions(JSON.stringify(questions));
       if (!parsed.ok) errors.push(`questions: ${parsed.error}`);
-      else wrote.questions = write("ask/questions.json", `${JSON.stringify(questions, null, 2)}\n`);
     }
-    wrote.summary = write(
-      "candidates-summary.json",
-      `${JSON.stringify(candidateSummary(doc, { warnings }), null, 2)}\n`,
-    );
+  }
+
+  // Unusable candidates write nothing, so a refused draft can never reach impact or apply.
+  if (!errors.length) {
+    const draftDir = confirmedOnly ? "save-draft" : "draft";
+    for (const d of documents) write(path.join(draftDir, d.doc), d.text);
+    wrote.draft = path.join(run, draftDir);
+    if (index)
+      wrote.mapping = write(
+        confirmedOnly ? "mapping.save.json" : "mapping.draft.json",
+        `${JSON.stringify(index.mapping, null, 2)}\n`,
+      );
+    if (board) wrote.board = write("board.json", `${JSON.stringify(board, null, 2)}\n`);
+    if (questions)
+      wrote.questions = write("ask/questions.json", `${JSON.stringify(questions, null, 2)}\n`);
+    if (!confirmedOnly)
+      wrote.summary = write(
+        "candidates-summary.json",
+        `${JSON.stringify(candidateSummary(doc, { warnings }), null, 2)}\n`,
+      );
   }
   say({ errors, warnings, wrote });
   process.exit(errors.length ? 1 : 0);

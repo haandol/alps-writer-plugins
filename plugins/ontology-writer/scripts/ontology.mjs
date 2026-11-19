@@ -130,6 +130,8 @@ import {
   sameKeys,
   sameMeaningKeys,
   serializeTurtle,
+  savedTextTrace,
+  sourceTrace,
   tripleKey,
   unionGraph,
   validateModel,
@@ -669,15 +671,41 @@ function loadModel(dir) {
   };
 }
 
+/**
+ * Text a change adds to the model that names an input document's file or page, as error
+ * findings. Sources stay in the one-off report; a basis may still name a regulation, contract
+ * or policy. The approval preview lists them with its diff, and the save refuses them.
+ */
+function addedSourceTraces(before, triples) {
+  const held = new Set(before.triples.map(tripleKey));
+  return triples.flatMap((t) => {
+    const property = t.p.replace(/^.*[#/:]/, "");
+    const trace =
+      t.o.type === "literal" && !held.has(tripleKey(t)) && savedTextTrace(property, t.o.value);
+    return trace
+      ? [
+          {
+            level: "error",
+            code: "ontology-text-source",
+            where: `${elementId(t.s)} ${property}`,
+            msg: `${JSON.stringify(t.o.value)} ${trace}; save a short business sentence and keep sources in the report`,
+          },
+        ]
+      : [];
+  });
+}
+
 /** The approval preview and save validate the same model and construction scope. */
 function validateModelChange(documents, before, mapping, opts) {
-  return validateModel(documents, {
+  const check = validateModel(documents, {
     categoryKeys: Object.keys(mapping?.categories ?? {}),
     modelDir: rel(opts.draft ?? opts.ontologyDir),
     requireKnowledgeLayers: opts.requireLayers && !opts.layerContexts.length,
     requiredContexts: new Set(opts.layerContexts.map(elementIri)),
     previousContexts: new Set(before.ofType("BoundedContext")),
   });
+  const traces = check.index ? addedSourceTraces(before, check.index.triples) : [];
+  return traces.length ? { ...check, ok: false, findings: [...check.findings, ...traces] } : check;
 }
 
 /**
@@ -1574,6 +1602,14 @@ function apply(opts) {
   const result = indexGraph(unionGraph([{ triples: finalTriples }]));
 
   const problems = [];
+  // The change log is business language: it never names an input document's file or page.
+  for (const line of opts.logs) {
+    const trace = sourceTrace(line);
+    if (trace)
+      problems.push(
+        `[ontology-log-source] change-log line ${JSON.stringify(line)}\n    ${trace}; describe the change in business language and keep sources in the report`,
+      );
+  }
   // The index that results must resolve, and keep no link to a retired process's steps.
   for (const f of checkRealizes(mapping, result, rel(mappingPath)))
     problems.push(`[${f.code}] ${f.where}\n    ${f.msg}`);

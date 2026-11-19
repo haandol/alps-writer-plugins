@@ -9,9 +9,13 @@ import {
   recordChatAnswer,
   recordDiscussionReply,
   startServer,
+  summarize,
   waitForAnswers,
 } from "../scripts/ontology-ask.mjs";
 import { questionSession, QUESTIONS } from "./ontology-ask-helpers.mjs";
+
+// The latest saved answer as the screen reads it; `answers` withholds one the user has not sent.
+const latest = (s) => summarize(QUESTIONS, readEvents(s.files.answers)).questions[0].answer;
 
 test("new answers use one input mode in either direction and reject combined input without a write", async () => {
   const s = questionSession();
@@ -37,11 +41,11 @@ test("new answers use one input mode in either direction and reject combined inp
       (await s.post("answer", { questionId: "Q1", text: "A different boundary" })).status,
       200,
     );
-    assert.equal(allAnswers(s.run).questions[0].answer.optionId, null);
-    assert.equal(allAnswers(s.run).questions[0].answer.text, "A different boundary");
+    assert.equal(latest(s).optionId, null);
+    assert.equal(latest(s).text, "A different boundary");
     await s.post("answer", { questionId: "Q1", optionId: "no" });
-    assert.equal(allAnswers(s.run).questions[0].answer.optionId, "no");
-    assert.equal(allAnswers(s.run).questions[0].answer.text, "");
+    assert.equal(latest(s).optionId, "no");
+    assert.equal(latest(s).text, "");
   } finally {
     s.done();
   }
@@ -62,10 +66,10 @@ test("historical option-plus-note answers remain readable without contaminating 
         at: new Date().toISOString(),
       }) + "\n",
     );
-    assert.equal(allAnswers(s.run).questions[0].answer.text, "Historical note");
-    assert.equal(allAnswers(s.run).questions[0].answer.optionId, "yes");
+    assert.equal(latest(s).text, "Historical note");
+    assert.equal(latest(s).optionId, "yes");
     await s.post("answer", { questionId: "Q1", optionId: "no" });
-    assert.equal(allAnswers(s.run).questions[0].answer.text, "");
+    assert.equal(latest(s).text, "");
     assert.equal(readEvents(s.files.answers)[1].text, "Historical note");
   } finally {
     s.done();

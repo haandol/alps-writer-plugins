@@ -208,7 +208,7 @@ test("the business context bounds choices and raises proposals but never becomes
   has(CONTEXT, "Report other realizing ADRs missing the same contract as alignment issues.");
   has(
     CONTEXT,
-    "In the context of a `Proposed` process, first check model meaning no realizing ADR reflects yet, and fold the compliance contracts it needs into that process's change approval summary so they are asked once.",
+    "In the context of a `Proposed` process, first check model meaning no realizing ADR reflects yet. The compliance contracts that meaning needs belong to the ontology change approval of that process — ontology-writer's `/ontology-sync` propagation, which drafts the affected ADR edits in its one approval summary — so they are asked once there, not in this ADR's own approval, and are not saved to the ADR before it.",
   );
   has(
     CONTEXT,

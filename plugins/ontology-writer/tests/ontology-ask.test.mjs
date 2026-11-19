@@ -209,16 +209,23 @@ test("questions carry diagrams, evidence and resolved answers, and bad diagram s
 
 test("ontology-build opens the web session for its questions and keeps approval in the conversation", async () => {
   const { readFileSync } = await import("node:fs");
-  const { workflowText } = await import("./ontology-guidance-helpers.mjs");
   const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
   assert.match(read("skills/ontology-build/SKILL.md"), /references\/ask-session\.md/);
   const guide = read("skills/ontology-build/references/ask-session.md");
   assert.match(guide, /approval summary\s+and the save approval stay in the conversation/);
   assert.match(guide, /ontology-ask\.mjs wait <run>/);
+});
+
+test("every evidence item behind a question names its source and its verdict", () => {
+  const doc = (evidence) =>
+    JSON.stringify({ version: 1, questions: [{ id: "Q1", text: "Which?", evidence }] });
+  assert.equal(parseQuestions(doc([{ source: "docs/a.md", verdict: "inferred" }])).ok, true);
+  assert.match(parseQuestions(doc([{ source: "docs/a.md" }])).error, /evidence needs a verdict/);
   assert.match(
-    workflowText("ontology-build"),
-    /Code alone shows observed behavior and never\s+resolves a question/,
+    parseQuestions(doc([{ source: "docs/a.md", verdict: "maybe" }])).error,
+    /evidence needs a verdict/,
   );
+  assert.match(parseQuestions(doc([{ verdict: "stated" }])).error, /evidence needs a source/);
 });
 
 test("a partly resolved question stays asked, and a bad partial flag is refused", () => {
@@ -229,10 +236,17 @@ test("a partly resolved question stays asked, and a bad partial flag is refused"
         id: "Q1",
         text: "Only the rest?",
         resolved: { summary: "The first half is settled.", partial: true },
+        evidence: [{ source: "docs/adr/x.md", detail: "Decision", verdict: "stated" }],
       },
     ],
   };
   assert.equal(parseQuestions(JSON.stringify(doc)).ok, true);
+  const unsourced = structuredClone(doc);
+  delete unsourced.questions[0].evidence;
+  assert.match(
+    parseQuestions(JSON.stringify(unsourced)).error,
+    /resolved needs the source that settles it in evidence/,
+  );
   doc.questions[0].resolved.partial = "yes";
   assert.match(
     parseQuestions(JSON.stringify(doc)).error,
@@ -296,4 +310,26 @@ test("the session address stays private, and a half-written session file does no
   } finally {
     s.done();
   }
+});
+
+test("a diagram's syntax never keeps a session from opening; the screen removes its links when drawn", () => {
+  const base = {
+    version: 1,
+    questions: [{ id: "Q1", text: "Which flow?", options: [{ id: "a", label: "A" }] }],
+  };
+  const withDiagram = (place, source) => {
+    const doc = structuredClone(base);
+    if (place === "session") doc.diagram = { source };
+    if (place === "question") doc.questions[0].diagram = { source };
+    if (place === "option") doc.questions[0].options[0].diagram = { source };
+    return parseQuestions(JSON.stringify(doc));
+  };
+  for (const place of ["session", "question", "option"])
+    for (const source of [
+      'flowchart LR\n  A --> B\n  click A href "https://example.com"',
+      "sequenceDiagram\n  call->>agent: 상담 연결",
+      'classDiagram\n  class Order\n  link Order "https://example.com"',
+    ])
+      assert.equal(withDiagram(place, source).ok, true, `${place}: ${source}`);
+  assert.equal(withDiagram("question", "").ok, false, "a diagram still needs its source");
 });

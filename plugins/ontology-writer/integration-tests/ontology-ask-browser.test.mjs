@@ -22,8 +22,8 @@ after(async () => {
   if (profileDir) rmSync(profileDir, { recursive: true, force: true });
 });
 
-async function inQuestionPage(fn) {
-  const s = questionSession();
+async function inQuestionPage(fn, questions = QUESTIONS) {
+  const s = questionSession(questions);
   const page = await browser.newPage();
   const errors = [],
     external = [];
@@ -39,7 +39,7 @@ async function inQuestionPage(fn) {
   try {
     await page.setViewport({ width: 1440, height: 1000 });
     await page.goto(s.url, { waitUntil: "load" });
-    await page.waitForSelector("#q-Q1 input[type=radio]");
+    await page.waitForSelector("#q-Q1");
     await fn(s, page, (next) => {
       intercept = next;
     });
@@ -62,6 +62,267 @@ const saved = (page, question, text) =>
 const selected = (page, question) =>
   page.$$eval(`#q-${question} input:checked`, (inputs) => inputs.map((i) => i.value));
 const textOf = (page, selector) => page.$eval(selector, (input) => input.value);
+
+test("collected answers wait for submission, a sent answer shows the agent working once taken, and a follow-up appears in place", async () => {
+  await inQuestionPage(async (s, page) => {
+    const deliveries = () => readEvents(s.files.answers).filter((e) => e.type === "deliver");
+    const status = () => page.$eval(".status", (n) => n.textContent);
+    assert.equal(
+      await page.$eval('.mode[aria-pressed="true"]', (b) => b.textContent),
+      "Send now",
+      "sending each answer at once is the default",
+    );
+
+    await page.click(".mode:nth-child(2)");
+    await choose(page, "Q1", "yes");
+    await saved(page, "Q1", "Keep");
+    assert.equal(deliveries().length, 0, "a collected answer does not reach the agent");
+    assert.equal((await waitForAnswers(s.run, { timeoutSeconds: 0.3, pollMs: 50 })).timeout, true);
+    assert.equal(allAnswers(s.run).questions[0].answer, null, "nor is it read before it is sent");
+    assert.equal(allAnswers(s.run).questions[0].pending, true);
+    await page.waitForFunction(() => !document.querySelector(".submit-all").disabled);
+    await page.click(".submit-all");
+    // No agent is listening: the answer is sent, not shown as being applied or delivered.
+    await page.waitForFunction(() =>
+      /waiting for the agent to pick them up/.test(document.querySelector(".status").textContent),
+    );
+    assert.match(await status(), /tell the agent in the main conversation/);
+    await saved(page, "Q1", "Sent · waiting for the agent");
+    assert.deepEqual(deliveries().at(-1).questionIds, ["Q1"]);
+    // Once a wait takes it, the screen shows the agent working and the answer delivered.
+    const taken = await waitForAnswers(s.run, { timeoutSeconds: 2, pollMs: 20 });
+    assert.deepEqual(
+      taken.answers.map((a) => a.questionId),
+      ["Q1"],
+    );
+    await page.waitForFunction(() =>
+      /applying your answers/.test(document.querySelector(".status").textContent),
+    );
+    await saved(page, "Q1", "(Delivered)");
+
+    // The agent rewrites the questions: the screen shows the follow-up without a reload.
+    const before = await page.evaluate(() => performance.timeOrigin);
+    writeFileSync(
+      s.files.questions,
+      JSON.stringify({
+        ...QUESTIONS,
+        questions: [...QUESTIONS.questions, { id: "Q3", text: "And after approval?" }],
+      }),
+    );
+    await page.waitForSelector("#q-Q3");
+    assert.equal(await page.evaluate(() => performance.timeOrigin), before, "no reload");
+    await page.waitForFunction(
+      () => !/applying your answers/.test(document.querySelector(".status").textContent),
+    );
+
+    await page.click(".mode:nth-child(1)");
+    await choose(page, "Q2", "no");
+    await saved(page, "Q2", "Replace");
+    assert.deepEqual(deliveries().at(-1).questionIds, ["Q2"], "sending now delivers that answer");
+  });
+});
+
+test("a question shows its flow and each option's result as drawn diagrams, its evidence with verdicts, and an undrawable diagram as source and error", async () => {
+  const visual = {
+    version: 1,
+    title: "Boundary review",
+    questions: [
+      {
+        id: "Q1",
+        text: "Which hand-off applies?",
+        diagram: { source: "flowchart LR\n  Order --> Payment" },
+        evidence: [
+          { source: "docs/orders.md", detail: "Hand-off section", verdict: "stated" },
+          { source: "docs/payments.md", detail: "Another account", verdict: "conflicting" },
+        ],
+        options: [
+          { id: "a", label: "Pay first", diagram: { source: "flowchart LR\n  Pay --> Ship" } },
+          { id: "b", label: "Ship first", diagram: { source: "flowchart LR\n  Ship --> " } },
+        ],
+      },
+    ],
+  };
+  await inQuestionPage(async (s, page) => {
+    await page.waitForSelector('#q-Q1 > figure[data-rendered="true"] svg');
+    await page.waitForSelector('#q-Q1 .option:nth-child(1) figure[data-rendered="true"] svg');
+    assert.equal(
+      await page.$eval("#q-Q1 .options", (n) => n.classList.contains("options--visual")),
+      true,
+    );
+    await page.waitForFunction(
+      () => !document.querySelector("#q-Q1 .option:nth-child(2) .diagram__status").hidden,
+    );
+    const broken = await page.$eval("#q-Q1 .option:nth-child(2) figure", (f) => ({
+      status: f.querySelector(".diagram__status").textContent,
+      open: f.querySelector(".diagram__source").open,
+      source: f.querySelector(".diagram__source pre").textContent,
+      svg: Boolean(f.querySelector("svg")),
+    }));
+    assert.match(broken.status, /^The diagram could not be drawn: /);
+    assert.deepEqual(
+      [broken.open, broken.source, broken.svg],
+      [true, "flowchart LR\n  Ship --> ", false],
+    );
+    const evidence = await page.$$eval("#q-Q1 .evidence li", (items) =>
+      items.map((li) => [
+        li.querySelector(".verdict")?.textContent,
+        li.querySelector("code").textContent,
+      ]),
+    );
+    assert.deepEqual(evidence, [
+      ["Stated", "docs/orders.md"],
+      ["Conflicting", "docs/payments.md"],
+    ]);
+  }, visual);
+});
+
+test("every Mermaid link syntax draws as a plain shape, and a participant named call still draws", async () => {
+  const linked = {
+    version: 1,
+    title: "Linked diagrams",
+    diagram: {
+      source: 'flowchart LR\n  A[주문] --> B[결제]\n  click A href "https://example.com/flow"',
+    },
+    questions: [
+      {
+        id: "Q1",
+        text: "Which class?",
+        diagram: {
+          source: 'classDiagram\n  class Order\n  link Order "https://example.com/class"',
+        },
+        options: [
+          {
+            id: "a",
+            label: "A",
+            diagram: {
+              source:
+                "sequenceDiagram\n  participant Alice\n  participant Bob\n  link Alice: Dashboard @ https://example.com/seq\n  Alice->>Bob: Pay",
+            },
+          },
+        ],
+      },
+      {
+        id: "Q2",
+        text: "Who answers?",
+        diagram: { source: "sequenceDiagram\n  call->>agent: 상담 연결" },
+        options: [{ id: "b", label: "B" }],
+      },
+    ],
+  };
+  await inQuestionPage(async (s, page) => {
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll('figure[data-rendered="true"] svg').length === 4 &&
+        !document.querySelector('figure[data-rendered="false"]'),
+    );
+    const figures = await page.$$eval('figure[data-rendered="true"] svg', (svgs) =>
+      svgs.map((svg) => ({
+        anchors: svg.querySelectorAll("a").length,
+        links: [svg, ...svg.querySelectorAll("*")].filter((n) =>
+          [...n.attributes].some((a) => /^on/i.test(a.name) || /(^|:)href$/i.test(a.name)),
+        ).length,
+        text: svg.textContent.replace(/\s+/g, " ").trim(),
+      })),
+    );
+    assert.equal(figures.length, 4);
+    for (const f of figures) assert.deepEqual([f.anchors, f.links], [0, 0], f.text);
+    assert.ok(
+      figures.some((f) => /상담 연결/.test(f.text)),
+      "the call participant's message is drawn",
+    );
+    for (const svg of await page.$$('figure[data-rendered="true"] svg')) await svg.click();
+    assert.equal(new URL(page.url()).origin, s.origin, "the page did not navigate");
+  }, linked);
+});
+
+test("a drawn diagram carries no working link, embedded HTML or event handler from document wording", async () => {
+  const hostile = {
+    version: 1,
+    title: "Hostile wording",
+    questions: [
+      {
+        id: "Q1",
+        text: "Which flow?",
+        diagram: {
+          source:
+            'flowchart LR\n  A["<img src=x onerror=window.__ontologyAskInjected=1> Pay"] --> B["<a href=https://example.com/x>Ship</a>"]',
+        },
+        options: [{ id: "a", label: "A" }],
+      },
+    ],
+  };
+  await inQuestionPage(async (s, page) => {
+    await page.waitForSelector('#q-Q1 > figure[data-rendered="true"] svg');
+    const found = await page.$eval("#q-Q1 > figure svg", (svg) => ({
+      active: svg.querySelectorAll("a, img, foreignObject, script, iframe").length,
+      handlers: [svg, ...svg.querySelectorAll("*")].filter((n) =>
+        [...n.attributes].some((a) => /^on/i.test(a.name) || /(^|:)href$/i.test(a.name)),
+      ).length,
+      text: svg.textContent,
+    }));
+    assert.deepEqual([found.active, found.handlers], [0, 0]);
+    assert.match(found.text, /Pay/);
+    await page.click("#q-Q1 > figure svg");
+    assert.equal(
+      await page.evaluate(() => window.__ontologyAskInjected ?? null),
+      null,
+      "nothing ran",
+    );
+    assert.equal(new URL(page.url()).origin, s.origin, "the page did not navigate");
+  }, hostile);
+});
+
+test("a question the repository settles is listed as resolved with its source, and the user's different answer counts", async () => {
+  const settledByAdr = {
+    version: 1,
+    title: "Build questions",
+    questions: [
+      { id: "Q1", text: "Who approves a quote?", options: [{ id: "manager", label: "A manager" }] },
+      {
+        id: "Q2",
+        text: "Does a returned quote go back to sales?",
+        resolved: { summary: "Yes — the accepted quote decision says so.", optionId: "yes" },
+        evidence: [
+          { source: "docs/decisions/quote-approval.md", detail: "Decision", verdict: "stated" },
+        ],
+        options: [
+          { id: "yes", label: "Back to sales" },
+          { id: "no", label: "Closed" },
+        ],
+      },
+    ],
+  };
+  await inQuestionPage(async (s, page) => {
+    await page.waitForSelector(".resolved-box #q-Q2");
+    // The asked list is the workspace's own; the resolved list sits inside the resolved box.
+    assert.equal(
+      await page.$(".answers-workspace > section.questions #q-Q2"),
+      null,
+      "a settled question is not asked",
+    );
+    assert.ok(await page.$(".answers-workspace > section.questions #q-Q1"));
+    assert.match(
+      await page.$eval(".resolved-box summary", (n) => n.textContent),
+      /^1 questions? resolved from repository sources/,
+    );
+    const card = await page.$eval("#q-Q2", (c) => ({
+      resolution: c.querySelector(".resolution").textContent,
+      source: c.querySelector(".evidence code").textContent,
+    }));
+    assert.match(card.resolution, /the accepted quote decision says so/);
+    assert.equal(card.source, "docs/decisions/quote-approval.md");
+
+    await page.click(".resolved-box > summary");
+    await page.click("#q-Q2 .override > summary");
+    await choose(page, "Q2", "no");
+    await saved(page, "Q2", "Closed");
+    assert.equal(
+      allAnswers(s.run).questions[1].answer.optionId,
+      "no",
+      "the user's answer overrides",
+    );
+  }, settledByAdr);
+});
 
 test("typing, paste and composition replace only that card's option and survive question refresh", async () => {
   await inQuestionPage(async (s, page) => {

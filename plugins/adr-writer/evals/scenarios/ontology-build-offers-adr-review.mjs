@@ -6,12 +6,9 @@ import {
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
+import { QUOTE_APPROVAL_ADR, quoteApprovalMapping } from "../lib/ontology-fixtures.mjs";
 
-const adr = {
-  path: "docs/adr/sales/quotes/0001-quote-approval.md",
-  status: "Accepted (2026-10-01)",
-  summary: "A sales manager decides whether to approve a submitted quote",
-};
+const adr = QUOTE_APPROVAL_ADR;
 
 export default {
   name: "ontology-build-offers-adr-review",
@@ -28,9 +25,7 @@ export default {
     },
   ],
   build(dir) {
-    const mapping = {
-      categories: { "sales/quotes": { feature: "Quote approval", dependsOn: [], adrs: [adr] } },
-    };
+    const mapping = quoteApprovalMapping();
     seedMapping(dir, mapping);
     seedIndexedAdrs(dir, mapping);
     write(

@@ -218,6 +218,26 @@ test("legacy default invocation uses isolated fixture tools and retains their ac
   assert.ok(result.checks.every((c) => c.pass));
 });
 
+test("a scenario's own agent timeout reaches the isolated agent; others keep the default", async () => {
+  const seen = [];
+  const item = (agentTimeoutMs) => ({
+    name: "timeout-probe",
+    description: "Answer.",
+    ...(agentTimeoutMs ? { agentTimeoutMs } : {}),
+    build: () => "Answer.",
+  });
+  const injected = {
+    invokeClaude: async ({ timeoutMs }) => (seen.push(timeoutMs), { text: "ok", ms: 1 }),
+    evaluate: async () => ({
+      verdict: "PASS",
+      obligationJudgments: [{ id: "meaning", verdict: "PASS", reason: "transport test" }],
+    }),
+  };
+  await runScenario(item(600_000), { dryRun: false }, injected);
+  await runScenario(item(), { dryRun: false }, injected);
+  assert.deepEqual(seen, [600_000, undefined]);
+});
+
 test("legacy CLI reports untagged semantic results with complete timing and unknown judging cost", async () => {
   const { main } = await import("../evals/run.mjs");
   const dir = scratch("untagged-cli-");

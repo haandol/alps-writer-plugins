@@ -44,7 +44,10 @@ function main() {
     unreadable = true;
   });
   if (!present) {
+    // The question is for a new session only; a resumed or compacted one keeps the earlier
+    // answer. An unreadable model folder is not a missing model: its scope is unknown.
     if (event.source !== "startup" || unreadable) return;
+    // Realization links without a model point at a lost or moved model to repair, not a first build.
     if (Object.values(mapping?.categories ?? {}).some((category) => category?.realizes?.length)) {
       return;
     }

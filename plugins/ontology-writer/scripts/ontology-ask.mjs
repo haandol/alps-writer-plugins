@@ -49,7 +49,10 @@ const VERDICTS = new Set(["stated", "inferred", "conflicting", "unconfirmed"]);
 const ALIGNMENT_OUTCOMES = new Set(["passed", "failed", "blocked", "unverified"]);
 const MERMAID = path.join(HERE, "../skills/report-writer/scripts/vendor/mermaid.min.js");
 
-/** A diagram is Mermaid source with an optional caption; returns an error text or null. */
+/**
+ * A diagram is Mermaid source with an optional caption; returns an error text or null. Its
+ * links and handlers are removed when the screen draws it, so any diagram syntax is accepted.
+ */
 function diagramError(d, where) {
   if (d === undefined) return null;
   if (!d || typeof d.source !== "string" || !d.source.trim() || d.source.length > MAX_DIAGRAM)
@@ -65,8 +68,8 @@ function evidenceError(list, where) {
   for (const e of list) {
     if (!e || typeof e.source !== "string" || !e.source.trim())
       return `${where} evidence needs a source`;
-    if (e.verdict !== undefined && !VERDICTS.has(e.verdict))
-      return `${where} evidence verdict must be one of ${[...VERDICTS].join(", ")}`;
+    if (!VERDICTS.has(e.verdict))
+      return `${where} evidence needs a verdict, one of ${[...VERDICTS].join(", ")}`;
   }
   return null;
 }
@@ -165,6 +168,9 @@ export function parseQuestions(text) {
       const r = q.resolved;
       if (!r || typeof r.summary !== "string" || !r.summary.trim())
         return fail(`question ${q.id} resolved needs a summary`);
+      // The screen shows what settled it, so the user can judge whether to answer anyway.
+      if (!Array.isArray(q.evidence) || !q.evidence.length)
+        return fail(`question ${q.id} resolved needs the source that settles it in evidence`);
       if (r.optionId && !optIds.has(r.optionId))
         return fail(`question ${q.id} resolved names unknown option ${r.optionId}`);
       // A partly resolved question shows the settled part and still asks the rest.
@@ -265,8 +271,11 @@ export function activeAlignmentSession(run) {
   return lifecycle?.type === "open" ? session : null;
 }
 
-/** Latest answer per question, which web answers still wait for delivery, and closure. */
-export function summarize(doc, events) {
+/**
+ * Latest answer per question, which web answers the user has not sent yet (`pending`), which
+ * sent ones no `wait` has taken past `cursor` (`awaitingAgent`), and closure.
+ */
+export function summarize(doc, events, { cursor = Infinity } = {}) {
   const latest = new Map();
   const delivered = new Map();
   let lastDeliver = null;
@@ -282,6 +291,7 @@ export function summarize(doc, events) {
   const questions = (doc?.questions ?? []).map((q) => {
     const a = latest.get(q.id) ?? null;
     const pending = Boolean(a && a.channel === "web" && (delivered.get(q.id) ?? 0) < a.seq);
+    const awaitingAgent = Boolean(a?.channel === "web" && !pending && delivered.get(q.id) > cursor);
     const option = a?.optionId ? (q.options ?? []).find((o) => o.id === a.optionId) : null;
     return {
       ...q,
@@ -293,6 +303,7 @@ export function summarize(doc, events) {
         at: a.at,
       },
       pending,
+      awaitingAgent,
     };
   });
   return { questions, lastDeliver, closed };
@@ -477,13 +488,15 @@ const readJson = (file) => {
   }
 };
 
+/** How far a `wait` has taken the session's events. */
+const cursorSeq = (files) => readJson(files.cursor)?.seq ?? 0;
+
 /** A live wait command establishes availability; a question-file message does not. */
-function discussionState(files, events) {
+function discussionState(files, events, cursor = cursorSeq(files)) {
   const listener = readJson(files.listener);
   const available = Boolean(
     listener?.waiting && listener.until > Date.now() && alive(listener.pid),
   );
-  const cursor = readJson(files.cursor)?.seq ?? 0;
   const replies = new Map(
     events.filter((e) => e.type === "discussion-reply").map((e) => [e.messageId, e]),
   );
@@ -594,8 +607,11 @@ export function startServer(
       }
       refreshedThrough = latestReply.seq;
     }
-    const s = summarize(doc, events);
-    const working = Boolean(s.lastDeliver && Date.parse(s.lastDeliver.at) > goodMtime);
+    // Sent answers show the agent working only once a wait took them; until then they await it.
+    const cursor = cursorSeq(files);
+    const s = summarize(doc, events, { cursor });
+    const sentSince = Boolean(s.lastDeliver && Date.parse(s.lastDeliver.at) > goodMtime);
+    const taken = Boolean(s.lastDeliver && s.lastDeliver.seq <= cursor);
     return {
       title: doc.title ?? "",
       intro: doc.intro ?? "",
@@ -606,8 +622,9 @@ export function startServer(
       questions: s.questions,
       sequence: events.at(-1)?.seq ?? 0,
       questionRevision: goodMtime,
-      discussion: discussionState(files, events),
-      working,
+      discussion: discussionState(files, events, cursor),
+      working: sentSince && taken,
+      awaitingAgent: sentSince && !taken,
       warning,
       closed: Boolean(s.closed),
     };
@@ -787,7 +804,7 @@ export async function waitForAnswers(run, { timeoutSeconds = 0, pollMs = 300 } =
           until: Date.now() + Math.max(1500, pollMs * 3),
         }),
       );
-      const cursor = readJson(files.cursor)?.seq ?? 0;
+      const cursor = cursorSeq(files);
       const events = readEvents(files.answers);
       const fresh = events.filter(
         (e) =>
@@ -816,7 +833,7 @@ export async function waitForAnswers(run, { timeoutSeconds = 0, pollMs = 300 } =
         // claim must wait for a new request instead of running this one twice.
         if (fresh.length) {
           const claimed = withLock(`${files.cursor}.lock`, () => {
-            if ((readJson(files.cursor)?.seq ?? 0) !== cursor) return false;
+            if (cursorSeq(files) !== cursor) return false;
             writeFileSync(files.cursor, JSON.stringify({ seq: fresh.at(-1).seq }));
             return true;
           });
@@ -839,10 +856,11 @@ export function allAnswers(run) {
   if (!doc.ok) throw new Error(doc.error);
   const s = summarize(doc.value, readEvents(files.answers));
   return {
+    // A collected answer reaches the agent only when the user sends it, so its content waits.
     questions: s.questions.map((q) => ({
       id: q.id,
       text: q.text,
-      answer: q.answer,
+      answer: q.pending ? null : q.answer,
       pending: q.pending,
     })),
     closed: Boolean(s.closed),

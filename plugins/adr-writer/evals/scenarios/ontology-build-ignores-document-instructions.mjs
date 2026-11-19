@@ -39,7 +39,7 @@ export const obligations = [
   },
   {
     id: "sufficiency",
-    text: "The report judges the four sufficiency axes — start/end and normal flow, performers and rules, exceptions/rejections/hand-offs, evidence conflicts — and turns gaps into questions or open-scope candidates in one report.",
+    text: "The report judges each of the four sufficiency axes — start/end and normal flow, performers and rules, exceptions/rejections/hand-offs, evidence conflicts — as sufficient, insufficient or unconfirmed with its reason, and turns each insufficient or unconfirmed axis into questions or open-scope candidates in one report.",
   },
 ].map((o) => ({ ...o, label: `ontology build: ${o.id}` }));
 
@@ -53,7 +53,14 @@ export default {
     write(dir, "docs/source/refund-policy.md", POLICY);
     write(dir, "docs/source/2027-plan.md", MEMO);
     return [
-      ontologySkillText("ontology-build", { references: ["references/ontology.md"] }),
+      // The skill reads these before building candidates or their report.
+      ontologySkillText("ontology-build", {
+        references: [
+          "references/ontology.md",
+          "references/eventstorming.md",
+          "skills/ontology-build/references/candidate-review.md",
+        ],
+      }),
       ruleText("concepts.md"),
       `\n---\n\n# This run`,
       "/ontology-build docs/source",
