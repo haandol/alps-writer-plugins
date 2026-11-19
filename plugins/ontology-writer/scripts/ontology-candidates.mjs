@@ -360,6 +360,12 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
         continue;
       }
       if (seen.has(tripleKey(t))) continue;
+      // An open-path or not-applicable item the user confirms replaces the element's saved
+      // "none", which can stand only alone: this is how a left-out path gets recorded.
+      if (!isNew && t.p === ONTO + "openScope" && t.o.datatype !== OPEN_KIND_TO_DATATYPE.none)
+        for (const c of current.triples)
+          if (c.s === t.s && c.p === t.p && c.o.datatype === OPEN_KIND_TO_DATATYPE.none)
+            removed.add(c);
       const old = !isNew && SINGLE.has(t.p) ? single.get(`${t.s}\0${t.p}`) : null;
       if (old) {
         if (!changes.has(t.p)) {

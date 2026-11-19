@@ -263,6 +263,40 @@ test("an extension's unconfirmed new hand-off on an existing step keeps the proc
         /ordering\.place-order openScope: "none" cannot be saved while ordering\.submit-order flowsTo ordering\.close-zero-amount-order is left out/,
       );
     }
+
+    // Recording that path as an open path (or the axis as not applicable) replaces the saved
+    // "none", and the save draft is a valid model that no longer claims it.
+    for (const kind of ["open-path", "not-applicable"]) {
+      const c = structuredClone(toNew);
+      c.processes = [
+        {
+          id: "ordering.place-order",
+          verdict: "stated",
+          evidence: [{ source: "zero.md", detail: "1행" }],
+          confirmed: true,
+          openScope: [{ kind, text: "0원 주문의 종결 경로는 확인되지 않았다." }],
+        },
+      ];
+      project(dir, c);
+      const out = run(
+        dir,
+        "prepare",
+        "candidates.json",
+        "--run",
+        `scope-${kind}`,
+        "--confirmed-only",
+      );
+      assert.equal(out.status, 0, out.stdout + out.stderr);
+      const docs = draftDocs(dir, `scope-${kind}/save-draft`);
+      const ordering = docs.find((d) => d.doc === "ordering.ttl").text;
+      assert.doesNotMatch(ordering, /NoOpenScope/, kind);
+      assert.match(ordering, /0원 주문의 종결 경로는 확인되지 않았다/, kind);
+      assert.deepEqual(
+        validateModel(docs).findings.filter((f) => f.level === "error"),
+        [],
+        kind,
+      );
+    }
   });
 });
 
