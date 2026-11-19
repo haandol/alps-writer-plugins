@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { validateEventBoard } from "../scripts/eventstorming-board.mjs";
 import { parseQuestions } from "../scripts/ontology-ask.mjs";
 import { checkCandidates, readCurrentModel } from "../scripts/ontology-candidates.mjs";
-import { diffGraphs, parseTurtle, validateModel } from "../scripts/ontology-lib.mjs";
+import { diffGraphs, parseTurtle, sourceTrace, validateModel } from "../scripts/ontology-lib.mjs";
 import { PLUGIN_ROOT, withTmp } from "./helpers.mjs";
 
 const SCRIPT = path.join(PLUGIN_ROOT, "scripts/ontology-candidates.mjs");
@@ -163,6 +163,61 @@ test("an unconfirmed hand-off policy cuts the path it declares, though every ste
       recorded.stdout,
       /ordering\.on-payment-completed-confirm-order starts ordering\.confirm-order: left out/,
     );
+  });
+});
+
+test("an extension's unconfirmed new hand-off on an existing step keeps the process from claiming no open scope", () => {
+  withTmp((dir) => {
+    // A first model whose process claims it has no open scope.
+    const first = structuredClone(FIXTURE);
+    first.processes[0].openScope = [{ kind: "none" }];
+    first.links = [];
+    project(dir, first);
+    assert.equal(
+      run(dir, "prepare", "candidates.json", "--run", "first", "--confirmed-only").status,
+      0,
+    );
+    mkdirSync(path.join(dir, "docs/ontology"));
+    for (const d of draftDocs(dir, "first/save-draft"))
+      writeFileSync(path.join(dir, "docs/ontology", d.doc), d.text);
+    // A new document adds a path between two existing steps; the user confirms only a rule.
+    const ext = {
+      version: 1,
+      title: "extension",
+      scope: "주문 제출부터 확정까지",
+      language: "ko",
+      steps: [
+        {
+          id: "ordering.submit-order",
+          verdict: "stated",
+          evidence: [{ source: "zero.md", detail: "1행" }],
+          confirmed: false,
+          flowsTo: ["payment.request-payment", "ordering.confirm-order"],
+        },
+      ],
+      rules: [
+        {
+          id: "ordering.confirm-orders-once",
+          label: "주문은 한 번만 확정",
+          definition: "같은 주문을 두 번 확정하지 않는다.",
+          verdict: "stated",
+          evidence: [{ source: "zero.md", detail: "2행" }],
+          confirmed: true,
+          basis: { kind: "operating-policy", text: "주문 운영 정책을 따른다." },
+          constrains: ["ordering.submit-order", "ordering.confirm-order"],
+        },
+      ],
+    };
+    project(dir, ext);
+    const out = run(dir, "prepare", "candidates.json", "--run", "ext", "--confirmed-only");
+    assert.equal(out.status, 1, out.stdout + out.stderr);
+    assert.match(
+      out.stdout,
+      /ordering\.place-order openScope: "none" cannot be saved while ordering\.submit-order flowsTo ordering\.confirm-order is left out/,
+    );
+    // The relation the model already holds is not a left-out path.
+    assert.doesNotMatch(out.stdout, /submit-order flowsTo payment\.request-payment is left out/);
+    assert.ok(!existsSync(path.join(dir, "ext")), "a refused save draft writes nothing");
   });
 });
 
@@ -453,6 +508,19 @@ test("every candidate, bounded contexts included, carries a source verdict and i
     c.contexts[0].verdict = "unconfirmed";
     assert.deepEqual(checkCandidates(c, readCurrentModel(path.join(dir, "none"))).errors, []);
   });
+});
+
+test("a page is a source trace however it is written, while business wording is not", () => {
+  for (const text of ["주문 정책서 12p의 기준", "정책 p12 참조", "p. 4 참고", "page 3", "12쪽"])
+    assert.match(sourceTrace(text) ?? "", /cites the page/, text);
+  for (const text of [
+    "P2P 결제는 지원하지 않는다",
+    "12pt 글꼴",
+    "전자상거래법 제17조",
+    "3면 접착 포장",
+    "1080 원",
+  ])
+    assert.equal(sourceTrace(text), null, text);
 });
 
 test("the run directory may not be the model directory", () => {

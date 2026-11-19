@@ -49,16 +49,14 @@ const VERDICTS = new Set(["stated", "inferred", "conflicting", "unconfirmed"]);
 const ALIGNMENT_OUTCOMES = new Set(["passed", "failed", "blocked", "unverified"]);
 const MERMAID = path.join(HERE, "../skills/report-writer/scripts/vendor/mermaid.min.js");
 
-/** A diagram is Mermaid source with an optional caption; returns an error text or null. */
-// Diagrams carry document wording; an interaction directive would make it a working link or call.
-const DIAGRAM_INTERACTION = /^\s*(?:click|call|href)\b/im;
-
+/**
+ * A diagram is Mermaid source with an optional caption; returns an error text or null. Its
+ * links and handlers are removed when the screen draws it, so any diagram syntax is accepted.
+ */
 function diagramError(d, where) {
   if (d === undefined) return null;
   if (!d || typeof d.source !== "string" || !d.source.trim() || d.source.length > MAX_DIAGRAM)
     return `${where} diagram needs Mermaid source of at most ${MAX_DIAGRAM} characters`;
-  if (DIAGRAM_INTERACTION.test(d.source))
-    return `${where} diagram must not contain click, call or href directives; show the flow as text`;
   if (d.caption !== undefined && typeof d.caption !== "string")
     return `${where} diagram caption must be text`;
   return null;
@@ -70,8 +68,8 @@ function evidenceError(list, where) {
   for (const e of list) {
     if (!e || typeof e.source !== "string" || !e.source.trim())
       return `${where} evidence needs a source`;
-    if (e.verdict !== undefined && !VERDICTS.has(e.verdict))
-      return `${where} evidence verdict must be one of ${[...VERDICTS].join(", ")}`;
+    if (!VERDICTS.has(e.verdict))
+      return `${where} evidence needs a verdict, one of ${[...VERDICTS].join(", ")}`;
   }
   return null;
 }

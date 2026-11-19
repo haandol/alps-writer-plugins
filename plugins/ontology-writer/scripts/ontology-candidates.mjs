@@ -342,6 +342,7 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
   const added = [];
   const kept = [];
   const dropped = [];
+  const unconfirmed = []; // paths an unconfirmed candidate itself declares
   const cutPaths = []; // [confirmed end, dropped description] of each workflow path left out
   for (const { kind, item } of chosen) {
     const isNew = !current.index.typeOf(iri(item.id));
@@ -372,17 +373,20 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
     }
   }
   // An unconfirmed candidate cuts the path it declares itself, too: a policy states its own
-  // trigger and start, so no confirmed candidate names the hand-off it would carry.
+  // trigger and start, and an existing step's new hand-off is listed only on its own entry.
   if (confirmedOnly)
     for (const { kind, item } of allCandidates(doc)) {
-      if (exists(item.id)) continue;
-      for (const t of candidateTriples(kind, item, { isNew: true })) {
-        if (!PATH_RELATIONS.has(t.p)) continue;
-        const end = t.s === iri(item.id) ? t.o.value : t.s;
-        if (!exists(elementId(end))) continue;
+      if (chosenIds.has(item.id)) continue;
+      const self = iri(item.id);
+      const held = Boolean(current.index.typeOf(self));
+      for (const t of candidateTriples(kind, item, { isNew: !held })) {
+        if (!PATH_RELATIONS.has(t.p) || seen.has(tripleKey(t))) continue;
+        const other = t.s === self ? t.o.value : t.s;
+        if (!exists(elementId(other))) continue;
         const what = `${elementId(t.s)} ${t.p.replace(ONTO, "")} ${elementId(t.o.value)}`;
-        if (!dropped.includes(what)) dropped.push(what);
-        cutPaths.push([end, what]);
+        if (!dropped.includes(what) && !unconfirmed.includes(what)) unconfirmed.push(what);
+        cutPaths.push([other, what]);
+        if (held) cutPaths.push([self, what]);
       }
     }
   // Only a save draft claims what the saved model holds; the review draft shows the gaps itself.
@@ -414,7 +418,7 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
   for (const [name, ts] of byDoc)
     if (!current.docs.some((d) => d.doc === name))
       documents.push({ doc: name, text: serializeTurtle(ts), rewritten: true, created: true });
-  return { documents, kept, dropped, undecided };
+  return { documents, kept, dropped, unconfirmed, undecided };
 }
 
 // The relations that carry a process's work from its start to its outcome.
@@ -780,12 +784,15 @@ function main(argv) {
     return target;
   };
 
-  const { documents, kept, dropped, undecided } = mergeDraft(doc, current, { confirmedOnly });
+  const { documents, kept, dropped, unconfirmed, undecided } = mergeDraft(doc, current, {
+    confirmedOnly,
+  });
   const warnings = [
     ...check.warnings,
     ...dropped.map(
       (d) => `${d}: left out, because that element is not in this draft (confirm it too)`,
     ),
+    ...unconfirmed.map((d) => `${d}: left out, because the user has not confirmed it`),
     ...kept.map(
       (k) =>
         `${k}: kept the current wording (list it in changes when a document states the change)`,

@@ -82,9 +82,9 @@ verdicts (`stated`, `inferred`, `conflicting`, `unconfirmed`) for the sources
 behind the question; conflicting evidence opens by default. A session-level
 `diagram` gives an overview, such as the bounded contexts the questions touch.
 Mermaid renders in the page from the bundled engine with strict security, and
-the drawn diagram keeps no link, embedded HTML or event handler; a diagram it
-cannot draw shows its source and the error. A diagram with a `click`, `call` or
-`href` directive is refused when the session opens: show the flow as text.
+the drawn diagram keeps no link, embedded HTML or event handler — a `click` or
+`link` directive draws as a plain shape; a diagram it cannot draw shows its
+source and the error.
 
 Before asking, apply the resolve-before-asking pass in
 [candidate review](candidate-review.md#sufficiency-and-unresolved-questions). A question a

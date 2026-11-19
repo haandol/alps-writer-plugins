@@ -196,6 +196,11 @@ test("the text follows each process's flow, states its open scope and each rule 
   );
   const category = renderContext(run({ kind: "category", id: "ordering" }));
   assert.match(category, /^Realized steps: 2 in 1 process\(es\) — ordering\.place-order \(2\)$/m);
+  // A category result holds no criteria; it names the process query that lists them.
+  assert.match(
+    category,
+    /^Observation criteria are listed by process: query --process ordering\.place-order$/m,
+  );
   assert.ok(
     category.indexOf("Step ordering.submit-order ") <
       category.indexOf("Step ordering.confirm-order "),

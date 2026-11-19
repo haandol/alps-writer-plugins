@@ -390,7 +390,7 @@ test("a change-log line that names an input document's file or page is refused b
   });
 });
 
-test("saved text that names an input document's file or page is refused before the approval, whichever step drafted it", () => {
+test("saved text that names an input document's file or page is listed by the preview and refused by the save", () => {
   withTmp((dir) => {
     repo(dir);
     for (const basis of [
@@ -398,10 +398,17 @@ test("saved text that names an input document's file or page is refused before t
       '"결제 정책 12쪽을 따른다."',
     ]) {
       draft(dir, ACCEPTED.replace('"Store accounting policy."', basis));
-      const refused = cli(dir, ["impact", "--draft", "draft"]);
+      // The preview still shows its diff, so a review draft's report keeps its comparison.
+      const preview = cli(dir, ["impact", "--draft", "draft"]);
+      assert.equal(preview.code, 1, preview.out);
+      assert.match(preview.out, /\[ontology-text-source\] payment\.amount-matches-order basis/);
+      assert.match(preview.out, /payment\.amount-matches-order/);
+      const summary = impact(dir);
+      assert.equal(summary.draftValid, false);
+      const refused = apply(dir, summary.baseHash);
       assert.equal(refused.code, 1, refused.out);
-      assert.match(refused.out, /\[ontology-text-source\] payment\.amount-matches-order basis/);
-      assert.doesNotMatch(refused.out, /base hash/, "no approval exists to save it with");
+      assert.match(refused.out, /\[ontology-text-source\]/);
+      assert.equal(read(dir, "docs/ontology/model.ttl"), ACCEPTED, "nothing was written");
     }
     // A regulation and its article remain a basis sentence.
     draft(dir, ACCEPTED.replace('"Store accounting policy."', '"전자상거래법 제17조를 따른다."'));

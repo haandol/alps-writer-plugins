@@ -1661,7 +1661,10 @@ export function serializeTurtle(triples) {
 // may follow the extension directly ("회의록.docx에서"); only Latin letters or digits extend it.
 const SOURCE_FILE =
   /[\p{L}\p{N}_-][\p{L}\p{N}_.-]*\.(?:pdf|docx?|xlsx?|pptx?|hwpx?|md|markdown|txt|csv|rtf|odt|ods|odp|key|pages|numbers|html?)(?![\p{Script=Latin}\p{N}])/iu;
-const SOURCE_PAGE = /\d+\s*(?:쪽|페이지)|(?<!\p{L})pp?\.\s?\d+|(?<!\p{L})pages?\s+\d+/iu;
+// A page may be written 12쪽, 12페이지, 12p, p12, p. 12 or page 12; "P2P" is no page, and
+// "12면" is left out because "3면 포장" is ordinary business wording.
+const SOURCE_PAGE =
+  /\d+\s*(?:쪽|페이지)|(?<![\p{L}\p{N}.])\d+\s?pp?\.?(?![\p{Script=Latin}\p{N}])|(?<!\p{L})pp?\.?\s?\d+(?![\p{Script=Latin}\p{N}])|(?<!\p{L})pages?\s+\d+/iu;
 
 /** Why saved text cites an input document — a file name or a page — or null when it does not. */
 export function sourceTrace(text) {

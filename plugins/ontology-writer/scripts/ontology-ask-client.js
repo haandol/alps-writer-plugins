@@ -164,10 +164,13 @@
    * navigate, run or embed HTML. Links are unwrapped to their text, embedded HTML and
    * scripts are dropped, and event and link attributes are removed.
    */
+  // The HTML parser reads SVG as foreign content and binds `xlink:href`, which Mermaid's
+  // output uses without declaring its namespace — the XML parser would reject it.
   const inertSvg = (markup) => {
-    const doc = new DOMParser().parseFromString(markup, "image/svg+xml");
-    const root = doc.documentElement;
-    if (root.nodeName !== "svg") throw new Error("Mermaid returned no SVG");
+    const doc = new DOMParser().parseFromString(markup, "text/html");
+    const root = doc.body.firstElementChild;
+    if (root?.namespaceURI !== "http://www.w3.org/2000/svg" || root.localName !== "svg")
+      throw new Error("Mermaid returned no SVG");
     for (const node of root.querySelectorAll("script, foreignObject, iframe, object, embed, img"))
       node.remove();
     for (const link of root.querySelectorAll("a")) link.replaceWith(...link.childNodes);

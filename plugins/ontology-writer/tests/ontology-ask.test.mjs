@@ -209,16 +209,23 @@ test("questions carry diagrams, evidence and resolved answers, and bad diagram s
 
 test("ontology-build opens the web session for its questions and keeps approval in the conversation", async () => {
   const { readFileSync } = await import("node:fs");
-  const { workflowText } = await import("./ontology-guidance-helpers.mjs");
   const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
   assert.match(read("skills/ontology-build/SKILL.md"), /references\/ask-session\.md/);
   const guide = read("skills/ontology-build/references/ask-session.md");
   assert.match(guide, /approval summary\s+and the save approval stay in the conversation/);
   assert.match(guide, /ontology-ask\.mjs wait <run>/);
+});
+
+test("every evidence item behind a question names its source and its verdict", () => {
+  const doc = (evidence) =>
+    JSON.stringify({ version: 1, questions: [{ id: "Q1", text: "Which?", evidence }] });
+  assert.equal(parseQuestions(doc([{ source: "docs/a.md", verdict: "inferred" }])).ok, true);
+  assert.match(parseQuestions(doc([{ source: "docs/a.md" }])).error, /evidence needs a verdict/);
   assert.match(
-    workflowText("ontology-build"),
-    /Code alone shows observed behavior and never\s+resolves a question/,
+    parseQuestions(doc([{ source: "docs/a.md", verdict: "maybe" }])).error,
+    /evidence needs a verdict/,
   );
+  assert.match(parseQuestions(doc([{ verdict: "stated" }])).error, /evidence needs a source/);
 });
 
 test("a partly resolved question stays asked, and a bad partial flag is refused", () => {
@@ -305,7 +312,7 @@ test("the session address stays private, and a half-written session file does no
   }
 });
 
-test("a diagram with a click, call or href directive is refused, wherever it appears", () => {
+test("a diagram's syntax never keeps a session from opening; the screen removes its links when drawn", () => {
   const base = {
     version: 1,
     questions: [{ id: "Q1", text: "Which flow?", options: [{ id: "a", label: "A" }] }],
@@ -318,16 +325,11 @@ test("a diagram with a click, call or href directive is refused, wherever it app
     return parseQuestions(JSON.stringify(doc));
   };
   for (const place of ["session", "question", "option"])
-    for (const directive of [
-      'click A href "https://example.com"',
-      "  click A callback",
-      "call open()",
-      'href A "https://example.com"',
-    ]) {
-      const parsed = withDiagram(place, `flowchart LR\n  A --> B\n${directive}`);
-      assert.equal(parsed.ok, false, `${place}: ${directive}`);
-      assert.match(parsed.error, /must not contain click, call or href directives/);
-    }
-  // A node that merely names a click in its label is business wording, not a directive.
-  assert.equal(withDiagram("question", 'flowchart LR\n  A["Customer clicks pay"] --> B').ok, true);
+    for (const source of [
+      'flowchart LR\n  A --> B\n  click A href "https://example.com"',
+      "sequenceDiagram\n  call->>agent: 상담 연결",
+      'classDiagram\n  class Order\n  link Order "https://example.com"',
+    ])
+      assert.equal(withDiagram(place, source).ok, true, `${place}: ${source}`);
+  assert.equal(withDiagram("question", "").ok, false, "a diagram still needs its source");
 });

@@ -178,6 +178,65 @@ test("a question shows its flow and each option's result as drawn diagrams, its 
   }, visual);
 });
 
+test("every Mermaid link syntax draws as a plain shape, and a participant named call still draws", async () => {
+  const linked = {
+    version: 1,
+    title: "Linked diagrams",
+    diagram: {
+      source: 'flowchart LR\n  A[주문] --> B[결제]\n  click A href "https://example.com/flow"',
+    },
+    questions: [
+      {
+        id: "Q1",
+        text: "Which class?",
+        diagram: {
+          source: 'classDiagram\n  class Order\n  link Order "https://example.com/class"',
+        },
+        options: [
+          {
+            id: "a",
+            label: "A",
+            diagram: {
+              source:
+                "sequenceDiagram\n  participant Alice\n  participant Bob\n  link Alice: Dashboard @ https://example.com/seq\n  Alice->>Bob: Pay",
+            },
+          },
+        ],
+      },
+      {
+        id: "Q2",
+        text: "Who answers?",
+        diagram: { source: "sequenceDiagram\n  call->>agent: 상담 연결" },
+        options: [{ id: "b", label: "B" }],
+      },
+    ],
+  };
+  await inQuestionPage(async (s, page) => {
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll('figure[data-rendered="true"] svg').length === 4 &&
+        !document.querySelector('figure[data-rendered="false"]'),
+    );
+    const figures = await page.$$eval('figure[data-rendered="true"] svg', (svgs) =>
+      svgs.map((svg) => ({
+        anchors: svg.querySelectorAll("a").length,
+        links: [svg, ...svg.querySelectorAll("*")].filter((n) =>
+          [...n.attributes].some((a) => /^on/i.test(a.name) || /(^|:)href$/i.test(a.name)),
+        ).length,
+        text: svg.textContent.replace(/\s+/g, " ").trim(),
+      })),
+    );
+    assert.equal(figures.length, 4);
+    for (const f of figures) assert.deepEqual([f.anchors, f.links], [0, 0], f.text);
+    assert.ok(
+      figures.some((f) => /상담 연결/.test(f.text)),
+      "the call participant's message is drawn",
+    );
+    for (const svg of await page.$$('figure[data-rendered="true"] svg')) await svg.click();
+    assert.equal(new URL(page.url()).origin, s.origin, "the page did not navigate");
+  }, linked);
+});
+
 test("a drawn diagram carries no working link, embedded HTML or event handler from document wording", async () => {
   const hostile = {
     version: 1,

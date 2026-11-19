@@ -806,6 +806,13 @@ export function renderContext(r) {
         0,
         `Realized steps: ${r.steps.length} in ${groups.length} process(es) — ${groups.map(([p, list]) => `${p || "no single process"} (${list.length})`).join(", ")}`,
       );
+    // Observation criteria belong to a process; name the queries that list them.
+    const processes = groups.map(([p]) => p).filter(Boolean);
+    if (processes.length)
+      say(
+        0,
+        `Observation criteria are listed by process: ${processes.map((p) => `query --process ${p}`).join(", ")}`,
+      );
     for (const [, list] of groups) for (const s of inFlowOrder(list)) stepBlock(s, 0);
   } else if (r.kind === "process") {
     say(
