@@ -253,7 +253,7 @@
         },
         {
           "path": "docs/adr/ontology/0004-build-ontology-from-documents.md",
-          "status": "Proposed",
+          "status": "Accepted (2026-11-19)",
           "summary": "첫 구축 전 프로젝트별 리뷰 선호와 구현 일치 근거를 재사용하고, 충분한 ADR만으로도 근거 기반 이벤트 스토밍으로 후보를 만들고, 선택지·직접 답변·질의응답과 모델 저장 승인을 구분한다"
         },
         {
