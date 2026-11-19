@@ -59,6 +59,13 @@ test("every scenario exports the shape the runner requires", async () => {
     assert.match(s.name, /^[a-z0-9-]+$/, `${file}: name must be kebab-case`);
     assert.ok(s.description?.length > 20, `${file}: needs a real description`);
     assert.equal(typeof s.build, "function", `${file}: build must be a function`);
+    // The fixture tool server starts only with report paths under .adr-review/.
+    for (const report of s.artifactPaths ?? [])
+      assert.match(
+        report,
+        /^\.adr-review\/.+\.(md|json|html)$/,
+        `${file}: artifactPaths ${report}`,
+      );
     // Behavioral meaning is judged by the configured LLM, not scenario word scorers.
   }
 });

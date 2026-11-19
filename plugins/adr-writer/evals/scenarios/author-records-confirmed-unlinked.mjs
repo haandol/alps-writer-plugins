@@ -43,7 +43,8 @@ export default {
   description:
     "Once the user confirms an unlinked feature is unrelated, the approved save records its empty realization record.",
   obligations,
-  artifactPaths: ["docs/adr/.mapping.json", ADR_PATH],
+  // The approved save writes fixture documents (docs/adr), which an execution case may do.
+  type: "execution",
   build(dir) {
     seedRuleDocs(dir);
     seedMapping(dir, MAPPING);

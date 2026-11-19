@@ -108,7 +108,7 @@ test("a declined card announces nothing", ...);                                 
 export const obligations = [
   {
     id: "model-only",
-    text: "The business context's Payment covers the order rule (the collected amount equals the order amount) is not in this ADR. The review reports it as a model/ADR alignment gap to resolve in an ADR or the model, and does not classify it as a Spec violation, test gap or other implementation defect.",
+    text: "The business context's Payment covers the order rule (the collected amount equals the order amount) is not in this ADR. The review reports it, separately from the implementation verdict, as a model-only obligation the ADRs lack (a model/ADR alignment gap), and does not classify it as a Spec violation, test gap or other implementation defect.",
   },
   {
     id: "verdict",

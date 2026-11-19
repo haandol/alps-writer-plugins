@@ -69,7 +69,7 @@ const CONFIRMATION = adr(
 export const obligations = [
   {
     id: "compliance",
-    text: "The draft proposes, for approval, a compliance contract in the payments ADR for the Payment completed hand-off that order confirmation reacts to: when the event is announced (only after a successful capture, never for a declined card), which order it identifies, and the duplicate guarantee (one announcement per order, or repeats safe to receive).",
+    text: "The draft proposes, for approval, a compliance contract in the payments ADR for the Payment completed hand-off that order confirmation reacts to: when the event is announced (only after a successful capture, never for a declined card), which order it identifies, and its duplicate guarantee — proposed (one announcement per order, or repeats safe to receive) or put to the user as an explicit choice in the same approval.",
   },
   {
     id: "other-adr",

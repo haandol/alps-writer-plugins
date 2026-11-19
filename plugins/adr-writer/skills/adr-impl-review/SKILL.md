@@ -21,7 +21,8 @@ connect the business scenarios to ADR rows and execution evidence — naming, fo
 each, the evidence checked or why its observation remains unverified — and report
 each model/ADR alignment gap separately from the implementation verdict, with the
 owning route that resolves it: an ADR change, or the business model through
-ontology-writer. Remain
+ontology-writer. A rule, hand-off or criterion on the feature's steps that no
+ADR states is such a gap, not something outside the review. Remain
 report-only; neither a model-only obligation nor a business fact found only in
 code is a code violation, a new gate or a promotion condition: propose the fact
 through its owning approval path and judge completion by the ADR rows.
