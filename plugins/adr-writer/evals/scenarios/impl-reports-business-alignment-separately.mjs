@@ -120,7 +120,7 @@ export const obligations = [
   },
   {
     id: "scenarios",
-    text: "The review connects the business flow — capture of the payment, the Payment completed hand-off to Confirm once paid in order confirmation, the declined-card path — to the ADR rows and to the test evidence, and says which business observation it could not verify.",
+    text: "The review connects the business flow — capture of the payment, the Payment completed hand-off to Confirm once paid in order confirmation, the declined-card path — to the ADR rows and to the test evidence, and says which business observation it could not verify, with the reason.",
   },
 ].map((o) => ({ ...o, label: `impl alignment: ${o.id}` }));
 

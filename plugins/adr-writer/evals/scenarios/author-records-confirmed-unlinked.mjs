@@ -39,7 +39,6 @@ export const obligations = [
 
 export default {
   name: "author-records-confirmed-unlinked",
-  agentTimeoutMs: 600_000, // writing and checking the approved ADR and index takes several tool calls
   description:
     "Once the user confirms an unlinked feature is unrelated, the approved save records its empty realization record.",
   obligations,

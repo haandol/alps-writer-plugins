@@ -89,9 +89,15 @@ const groups = [
     ],
     [
       "조회 착수와 기준 상태",
-      "조회 착수와 빈 기록",
-      ["author-starts-business-", "author-queries-connected-", "author-records-confirmed-"],
+      "조회 착수",
+      [
+        "author-starts-business-",
+        "author-sync-starts-",
+        "author-queries-connected-",
+        "author-scenarios-queries-",
+      ],
     ],
+    ["조회 착수와 기준 상태", "확인된 빈 기록", ["author-records-confirmed-"]],
     [
       "조회 착수와 기준 상태",
       "확정되지 않은 맥락",
