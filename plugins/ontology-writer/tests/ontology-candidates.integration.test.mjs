@@ -376,6 +376,113 @@ test("an existing step's unconfirmed hand-off into another process is cut at the
   });
 });
 
+test("a step whose open path this save records keeps its process from claiming no open scope", () => {
+  withTmp((dir) => {
+    // A first build: the process claims none while one of its steps records an open path.
+    const c = structuredClone(FIXTURE);
+    c.processes[0].openScope = [{ kind: "none" }];
+    c.steps[0].openScope = [{ kind: "open-path", text: "주문 취소 경로는 확인되지 않았다." }];
+    project(dir, c);
+    const out = run(dir, "prepare", "candidates.json", "--run", "run", "--confirmed-only");
+    assert.equal(out.status, 1, out.stdout + out.stderr);
+    assert.match(
+      out.stdout,
+      /ordering\.place-order openScope: "none" cannot be saved while its step ordering\.submit-order records an open path/,
+    );
+    // Recorded on the process as well, the same path saves.
+    c.processes[0].openScope = [{ kind: "open-path", text: "주문 취소 경로는 확인되지 않았다." }];
+    project(dir, c);
+    assert.equal(
+      run(dir, "prepare", "candidates.json", "--run", "run2", "--confirmed-only").status,
+      0,
+    );
+  });
+});
+
+test('one candidate cannot mix "none" with other open-scope items', () => {
+  withTmp((dir) => {
+    const c = structuredClone(FIXTURE);
+    c.processes[0].openScope = [{ kind: "none" }, { kind: "open-path", text: "취소는 미정이다." }];
+    const { errors } = checkCandidates(c, readCurrentModel(path.join(dir, "none")));
+    assert.ok(
+      errors.some((e) => /openScope "none" stands alone/.test(e)),
+      errors.join("; "),
+    );
+  });
+});
+
+test("an extension's review draft repeats current elements by id and still gets a valid board", () => {
+  withTmp((dir) => {
+    const first = structuredClone(FIXTURE);
+    first.links = [];
+    project(dir, first);
+    assert.equal(
+      run(dir, "prepare", "candidates.json", "--run", "first", "--confirmed-only").status,
+      0,
+    );
+    mkdirSync(path.join(dir, "docs/ontology"));
+    for (const d of draftDocs(dir, "first/save-draft"))
+      writeFileSync(path.join(dir, "docs/ontology", d.doc), d.text);
+    // A new step emits a current event; current elements are repeated by id only.
+    const ext = {
+      version: 1,
+      title: "extension",
+      scope: "결제 뒤 영수증",
+      language: "ko",
+      contexts: [{ id: "payment", verdict: "stated", evidence: [], confirmed: false }],
+      events: [
+        { id: "payment.payment-completed", verdict: "stated", evidence: [], confirmed: false },
+      ],
+      policies: [
+        {
+          id: "ordering.on-payment-completed-confirm-order",
+          verdict: "stated",
+          evidence: [],
+          confirmed: false,
+        },
+      ],
+      steps: [
+        {
+          id: "payment.request-payment",
+          verdict: "stated",
+          evidence: [],
+          confirmed: false,
+          emits: ["payment.payment-completed"],
+        },
+        {
+          id: "payment.send-receipt",
+          label: "영수증 발송",
+          definition: "결제가 끝나면 영수증을 보낸다.",
+          context: "payment",
+          kind: "system",
+          emits: ["payment.payment-completed"],
+          verdict: "stated",
+          evidence: [{ source: "receipt.md", detail: "1행" }],
+          confirmed: false,
+        },
+      ],
+      questions: [
+        { id: "Q1", text: "영수증은 확정 전에도 보내나요?", stages: ["ordering.confirm-order"] },
+        { id: "Q2", text: "영수증은 이메일로만 보내나요?", stages: ["payment.send-receipt"] },
+      ],
+    };
+    project(dir, ext);
+    const out = run(dir, "prepare", "candidates.json", "--run", "review");
+    assert.equal(out.status, 0, out.stdout + out.stderr);
+    const board = JSON.parse(readFileSync(path.join(dir, "review/board.json"), "utf8"));
+    assert.deepEqual(validateEventBoard(board), []);
+    const stage = board.stages.find((x) => x.id === "payment.request-payment");
+    assert.ok(stage.event.description, "the current event's definition fills its description");
+    assert.ok(!stage.policies.some((p) => p.startsWith("undefined")), stage.policies.join("; "));
+    // Q1 asks about a current step no candidate repeats: it stays in the session, off the board.
+    assert.deepEqual(
+      board.questions.map((q) => q.id),
+      ["Q2"],
+    );
+    assert.ok(existsSync(path.join(dir, "review/ask/questions.json")));
+  });
+});
+
 test("the review summary lists every candidate the user has not confirmed, stated ones included", () => {
   withTmp((dir) => {
     const c = structuredClone(FIXTURE);

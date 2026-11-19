@@ -137,6 +137,9 @@ export function checkCandidates(doc, current = { index: indexGraph([]) }) {
     for (const s of list(item.openScope))
       if (!OPEN_KIND_TO_DATATYPE[s?.kind] || (s.kind !== "none" && !nonEmpty(s.text)))
         err(where, "openScope items are {kind: open-path | not-applicable, text} or {kind: none}");
+    const scopeKinds = list(item.openScope).map((s) => s?.kind);
+    if (scopeKinds.includes("none") && scopeKinds.length > 1)
+      err(where, 'openScope "none" stands alone; list open-path or not-applicable items instead');
     if (kind === "policies" || kind === "rules") {
       if (!item.basis && !existing)
         warn(where, "no basis was found; ask for its basis before saving");
@@ -403,6 +406,12 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
     ? noOpenScopeWithCutPaths(
         [...current.triples.filter((t) => !removed.has(t)), ...added],
         cutPaths,
+        added
+          .filter(
+            (t) =>
+              t.p === ONTO + "openScope" && t.o.datatype === OPEN_KIND_TO_DATATYPE["open-path"],
+          )
+          .map((t) => t.s),
       )
     : [];
   // Place each subject's triples in its document; only touched documents are rewritten.
@@ -439,8 +448,8 @@ const PATH_RELATIONS = new Set(
  * A process whose path lost an unconfirmed part still has an undecided path, so the save
  * draft cannot declare that it has none. One message per such process and left-out path.
  */
-function noOpenScopeWithCutPaths(triples, cutPaths) {
-  if (!cutPaths.length) return [];
+function noOpenScopeWithCutPaths(triples, cutPaths, openElements = []) {
+  if (!cutPaths.length && !openElements.length) return [];
   const index = indexGraph(triples);
   const ofStep = (step) => index.into(step, "hasStep");
   const ofEvent = (event) => index.into(event, "emits").flatMap(ofStep);
@@ -466,6 +475,14 @@ function noOpenScopeWithCutPaths(triples, cutPaths) {
         out.add(
           `${elementId(p)} openScope: "none" cannot be saved while ${what} is left out; record that path as an open-path item, or confirm it too`,
         );
+  // An open path this save records on a step still leaves its process with an open path.
+  for (const element of openElements)
+    if (index.typeOf(element) === "Step")
+      for (const p of ofStep(element))
+        if (claimsNone(p))
+          out.add(
+            `${elementId(p)} openScope: "none" cannot be saved while its step ${elementId(element)} records an open path; record that path on the process too`,
+          );
   return [...out];
 }
 
@@ -521,6 +538,14 @@ const labelOf = (doc, current, id) => {
   return label ?? id;
 };
 
+/** A candidate's text field, or the current model's when the candidate repeats an element by id. */
+const textOf = (doc, current, id, field, property = ONTO + field) => {
+  const c = allCandidates(doc).find((x) => x.item.id === id);
+  if (nonEmpty(c?.item[field])) return c.item[field];
+  return current.index.subjects.get(iri(id))?.props.get(property)?.[0]?.o.value;
+};
+const described = (text) => (nonEmpty(text) ? { description: text } : {});
+
 /** The EventStorming board: one stage per candidate step, links from flows and policies. */
 export function candidateBoard(doc, current) {
   const ko = (doc.language ?? "ko") === "ko";
@@ -542,7 +567,6 @@ export function candidateBoard(doc, current) {
   const stages = steps.map((s) => {
     const ctx = contextOfStep(s);
     const event = list(s.emits)[0];
-    const eventItem = list(doc.events).find((e) => e.id === event);
     return {
       id: s.id,
       context: ctx ? labelOf(doc, current, ctx) : ko ? "경계 미확인" : "Boundary unknown",
@@ -559,14 +583,19 @@ export function candidateBoard(doc, current) {
           : "current",
       entities: list(s.entities),
       event: event
-        ? { name: labelOf(doc, current, event), description: eventItem?.definition ?? "" }
+        ? {
+            name: labelOf(doc, current, event),
+            ...described(textOf(doc, current, event, "definition")),
+          }
         : null,
-      policies: policiesFrom(s).map((p) => `${p.label}: ${p.condition ?? ""}`.trim()),
+      policies: policiesFrom(s).map((p) =>
+        `${labelOf(doc, current, p.id)}: ${textOf(doc, current, p.id, "condition", ONTO + "reactionCondition") ?? ""}`.trim(),
+      ),
       rules: list(doc.rules)
         .filter((r) => list(r.constrains).includes(s.id))
         .map((r) => ({
-          name: r.label,
-          description: r.definition,
+          name: labelOf(doc, current, r.id),
+          ...described(textOf(doc, current, r.id, "definition")),
           scope: ko ? "이 단계를 제약" : "constrains this step",
           verdict: r.verdict,
           evidence: list(r.evidence),
@@ -594,9 +623,9 @@ export function candidateBoard(doc, current) {
           links.push({
             from: s.id,
             to,
-            label: p.label,
+            label: labelOf(doc, current, p.id),
             relation: "causal",
-            condition: p.condition ?? null,
+            condition: textOf(doc, current, p.id, "condition", ONTO + "reactionCondition") ?? null,
             verdict: p.verdict,
             evidence: list(p.evidence),
           });
@@ -610,21 +639,23 @@ export function candidateBoard(doc, current) {
     contexts: list(doc.contexts).map((c) => ({
       id: c.id,
       name: c.label ?? labelOf(doc, current, c.id),
-      description: c.definition ?? "",
+      ...described(textOf(doc, current, c.id, "definition")),
       verdict: c.verdict,
       evidence: list(c.evidence),
     })),
     subdomains: list(doc.subdomains),
     stages,
     links,
+    // A question about a current step that no candidate repeats stays in the session, off the board.
     questions: list(doc.questions)
-      .filter((q) => list(q.stages).length)
-      .map((q) => ({
+      .map((q) => ({ q, onBoard: list(q.stages).filter((id) => stepIds.has(id)) }))
+      .filter(({ onBoard }) => onBoard.length)
+      .map(({ q, onBoard }) => ({
         id: q.id,
         text: q.text,
-        scope: q.scope ?? list(q.stages)[0],
+        scope: q.scope ?? onBoard[0],
         scopeType: q.scopeType ?? "step",
-        stages: list(q.stages),
+        stages: onBoard,
         verdict: q.verdict ?? "unconfirmed",
         evidence: list(q.evidence),
       })),
