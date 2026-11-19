@@ -382,10 +382,13 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
       for (const t of candidateTriples(kind, item, { isNew: !held })) {
         if (!PATH_RELATIONS.has(t.p) || seen.has(tripleKey(t))) continue;
         const other = t.s === self ? t.o.value : t.s;
-        if (!exists(elementId(other))) continue;
+        // A new element's path reaches the draft only through an end the draft holds; an
+        // existing element's new path is cut at that element, wherever its other end is.
+        const reached = exists(elementId(other));
+        if (!reached && !held) continue;
         const what = `${elementId(t.s)} ${t.p.replace(ONTO, "")} ${elementId(t.o.value)}`;
         if (!dropped.includes(what) && !unconfirmed.includes(what)) unconfirmed.push(what);
-        cutPaths.push([other, what]);
+        if (reached) cutPaths.push([other, what]);
         if (held) cutPaths.push([self, what]);
       }
     }

@@ -1661,17 +1661,19 @@ export function serializeTurtle(triples) {
 // may follow the extension directly ("회의록.docx에서"); only Latin letters or digits extend it.
 const SOURCE_FILE =
   /[\p{L}\p{N}_-][\p{L}\p{N}_.-]*\.(?:pdf|docx?|xlsx?|pptx?|hwpx?|md|markdown|txt|csv|rtf|odt|ods|odp|key|pages|numbers|html?)(?![\p{Script=Latin}\p{N}])/iu;
-// A page may be written 12쪽, 12페이지, 12p, p12, p. 12 or page 12; "P2P" is no page, and
-// "12면" is left out because "3면 포장" is ordinary business wording.
-const SOURCE_PAGE =
-  /\d+\s*(?:쪽|페이지)|(?<![\p{L}\p{N}.])\d+\s?pp?\.?(?![\p{Script=Latin}\p{N}])|(?<!\p{L})pp?\.?\s?\d+(?![\p{Script=Latin}\p{N}])|(?<!\p{L})pages?\s+\d+/iu;
+// A page may be written 12쪽, 12페이지, p. 12, page 12, or without a dot as a lowercase 12p or
+// p12. "P1 장애", "4P 분석" and "P2P" are business wording; "12면" is left out because "3면 포장"
+// is too.
+const SOURCE_PAGE = /\d+\s*(?:쪽|페이지)|(?<!\p{L})pp?\.\s?\d+|(?<!\p{L})pages?\s+\d+/iu;
+const SOURCE_PAGE_SHORT =
+  /(?<![\p{L}\p{N}.])\d{2,}pp?(?![\p{Script=Latin}\p{N}])|(?<!\p{L})pp?\d{2,}(?![\p{Script=Latin}\p{N}])/u;
 
 /** Why saved text cites an input document — a file name or a page — or null when it does not. */
 export function sourceTrace(text) {
   const value = String(text ?? "");
   const file = SOURCE_FILE.exec(value);
   if (file) return `names the file ${file[0]}`;
-  const page = SOURCE_PAGE.exec(value);
+  const page = SOURCE_PAGE.exec(value) ?? SOURCE_PAGE_SHORT.exec(value);
   return page ? `cites the page "${page[0]}"` : null;
 }
 

@@ -402,7 +402,7 @@ test("saved text that names an input document's file or page is listed by the pr
       const preview = cli(dir, ["impact", "--draft", "draft"]);
       assert.equal(preview.code, 1, preview.out);
       assert.match(preview.out, /\[ontology-text-source\] payment\.amount-matches-order basis/);
-      assert.match(preview.out, /payment\.amount-matches-order/);
+      assert.match(preview.out, /^semantic change: 1 element/m);
       const summary = impact(dir);
       assert.equal(summary.draftValid, false);
       const refused = apply(dir, summary.baseHash);

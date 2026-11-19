@@ -217,7 +217,128 @@ test("an extension's unconfirmed new hand-off on an existing step keeps the proc
     );
     // The relation the model already holds is not a left-out path.
     assert.doesNotMatch(out.stdout, /submit-order flowsTo payment\.request-payment is left out/);
+    assert.match(
+      out.stdout,
+      /ordering\.submit-order flowsTo ordering\.confirm-order: left out, because the user has not confirmed it/,
+    );
     assert.ok(!existsSync(path.join(dir, "ext")), "a refused save draft writes nothing");
+
+    // The new path may also lead to a new, unconfirmed step, listed or not on the process.
+    const toNew = structuredClone(ext);
+    toNew.steps[0].flowsTo = ["payment.request-payment", "ordering.close-zero-amount-order"];
+    toNew.steps.push({
+      id: "ordering.close-zero-amount-order",
+      label: "0원 주문 종결",
+      definition: "결제할 금액이 없는 주문을 바로 끝낸다.",
+      context: "ordering",
+      kind: "system",
+      verdict: "stated",
+      evidence: [{ source: "zero.md", detail: "1행" }],
+      confirmed: false,
+    });
+    for (const listed of [false, true]) {
+      const c = structuredClone(toNew);
+      if (listed)
+        c.processes = [
+          {
+            id: "ordering.place-order",
+            verdict: "stated",
+            evidence: [{ source: "zero.md", detail: "1행" }],
+            confirmed: false,
+            steps: [...first.processes[0].steps, "ordering.close-zero-amount-order"],
+          },
+        ];
+      project(dir, c);
+      const cut = run(
+        dir,
+        "prepare",
+        "candidates.json",
+        "--run",
+        `new-${listed}`,
+        "--confirmed-only",
+      );
+      assert.equal(cut.status, 1, cut.stdout + cut.stderr);
+      assert.match(
+        cut.stdout,
+        /ordering\.place-order openScope: "none" cannot be saved while ordering\.submit-order flowsTo ordering\.close-zero-amount-order is left out/,
+      );
+    }
+  });
+});
+
+test("an existing step's unconfirmed hand-off into another process is cut at the step's own process", () => {
+  withTmp((dir) => {
+    const first = structuredClone(FIXTURE);
+    first.processes[0].openScope = [{ kind: "none" }];
+    first.links = [];
+    project(dir, first);
+    assert.equal(
+      run(dir, "prepare", "candidates.json", "--run", "first", "--confirmed-only").status,
+      0,
+    );
+    mkdirSync(path.join(dir, "docs/ontology"));
+    for (const d of draftDocs(dir, "first/save-draft"))
+      writeFileSync(path.join(dir, "docs/ontology", d.doc), d.text);
+    // A confirmed returns process whose step the order flow would now hand work to.
+    const ext = {
+      version: 1,
+      title: "returns",
+      scope: "주문 확정 뒤 반품",
+      language: "ko",
+      contexts: [
+        {
+          id: "returns",
+          label: "반품",
+          definition: "고객이 돌려보낸 상품을 처리한다.",
+          coreLogic: "반품을 받고 환불을 요청한다.",
+          verdict: "stated",
+          evidence: [{ source: "returns.md", detail: "1행" }],
+          confirmed: true,
+        },
+      ],
+      processes: [
+        {
+          id: "returns.handle-return",
+          label: "반품 처리",
+          definition: "반품을 받아 처리한다.",
+          context: "returns",
+          startCondition: "고객이 반품을 요청했다.",
+          businessOutcome: "반품이 처리되었다.",
+          steps: ["returns.receive-return"],
+          openScope: [{ kind: "open-path", text: "환불 경로는 확인되지 않았다." }],
+          verdict: "stated",
+          evidence: [{ source: "returns.md", detail: "1행" }],
+          confirmed: true,
+        },
+      ],
+      steps: [
+        {
+          id: "returns.receive-return",
+          label: "반품 접수",
+          definition: "고객의 반품을 접수한다.",
+          context: "returns",
+          kind: "outside-system",
+          performers: ["customer"],
+          verdict: "stated",
+          evidence: [{ source: "returns.md", detail: "2행" }],
+          confirmed: true,
+        },
+        {
+          id: "ordering.confirm-order",
+          verdict: "inferred",
+          evidence: [{ source: "returns.md", detail: "3행" }],
+          confirmed: false,
+          flowsTo: ["returns.receive-return"],
+        },
+      ],
+    };
+    project(dir, ext);
+    const out = run(dir, "prepare", "candidates.json", "--run", "ext", "--confirmed-only");
+    assert.equal(out.status, 1, out.stdout + out.stderr);
+    assert.match(
+      out.stdout,
+      /ordering\.place-order openScope: "none" cannot be saved while ordering\.confirm-order flowsTo returns\.receive-return is left out/,
+    );
   });
 });
 
@@ -515,6 +636,10 @@ test("a page is a source trace however it is written, while business wording is 
     assert.match(sourceTrace(text) ?? "", /cites the page/, text);
   for (const text of [
     "P2P 결제는 지원하지 않는다",
+    "P1 장애는 바로 알린다",
+    "P2 등급 고객",
+    "4P 분석",
+    "p1 장애 대응",
     "12pt 글꼴",
     "전자상거래법 제17조",
     "3면 접착 포장",
