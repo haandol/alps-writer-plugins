@@ -6,43 +6,15 @@ import {
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { commitFixture, EXAMPLE_MODEL, ontologyQuery } from "../lib/ontology-fixtures.mjs";
+import {
+  commitFixture,
+  ontologyQuery,
+  SETTLED_MODEL,
+  settledMapping,
+} from "../lib/ontology-fixtures.mjs";
 
 // Every process is Accepted with all its features Accepted, so the context is settled.
-const MODEL = EXAMPLE_MODEL.replaceAll(
-  'onto:status "Proposed"',
-  'onto:status "Accepted (2026-10-01)"',
-);
-const record = (path, summary) => ({ path, status: "Accepted (2026-10-01)", summary });
-const MAPPING = {
-  categories: {
-    checkout: {
-      feature: "Checkout",
-      adrs: [
-        record("docs/adr/checkout/0001-submit-orders.md", "orders are submitted from the cart"),
-      ],
-      realizes: ["ordering.submit-order"],
-      dependsOn: [],
-    },
-    confirmation: {
-      feature: "Order confirmation",
-      adrs: [record("docs/adr/confirmation/0001-confirm-paid.md", "paid orders are confirmed")],
-      realizes: ["ordering.confirm-order"],
-      dependsOn: [],
-    },
-    payments: {
-      feature: "Payments",
-      adrs: [
-        record(
-          "docs/adr/payments/0001-card-capture.md",
-          "card payments are captured once per order",
-        ),
-      ],
-      realizes: ["payment.request-payment", "payment.capture-payment"],
-      dependsOn: [],
-    },
-  },
-};
+const MAPPING = settledMapping();
 const adr = (title, purpose, decision, rows) => `# ADR 0001: ${title}
 
 Date: 2026-10-01
@@ -121,7 +93,7 @@ export default {
       "docs/adr/payments/0001-card-capture.md": PAYMENTS,
       "docs/adr/confirmation/0001-confirm-paid.md": CONFIRMATION,
     });
-    write(dir, "docs/ontology/ordering.ttl", MODEL);
+    write(dir, "docs/ontology/ordering.ttl", SETTLED_MODEL);
     commitFixture(dir);
     const context = ontologyQuery(dir, ["--category", "payments"]);
     return [

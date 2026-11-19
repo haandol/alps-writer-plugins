@@ -6,14 +6,10 @@ import {
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { commitFixture, EXAMPLE_MODEL, ontologyQuery } from "../lib/ontology-fixtures.mjs";
+import { commitFixture, ontologyQuery, SETTLED_MODEL } from "../lib/ontology-fixtures.mjs";
 
-const SETTLED = EXAMPLE_MODEL.replaceAll(
-  'onto:status "Proposed"',
-  'onto:status "Accepted (2026-10-01)"',
-);
 // A hand edit nobody committed or approved: the rule the request relies on is not settled.
-const EDITED = SETTLED.replace(
+const EDITED = SETTLED_MODEL.replace(
   '"The collected amount equals the amount of the order it pays for."',
   '"The collected amount may be lower than the order amount when a coupon covers the rest."',
 );
@@ -70,7 +66,7 @@ export default {
     seedRuleDocs(dir);
     seedMapping(dir, MAPPING);
     seedIndexedAdrs(dir, MAPPING);
-    write(dir, "docs/ontology/ordering.ttl", SETTLED);
+    write(dir, "docs/ontology/ordering.ttl", SETTLED_MODEL);
     commitFixture(dir);
     write(dir, "docs/ontology/ordering.ttl", EDITED);
     const context = ontologyQuery(dir, ["--category", "payments"]);

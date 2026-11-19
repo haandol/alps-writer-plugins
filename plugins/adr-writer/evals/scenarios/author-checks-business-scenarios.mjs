@@ -6,12 +6,8 @@ import {
   TAIL_SPEC,
   write,
 } from "../lib/harness.mjs";
-import { commitFixture, EXAMPLE_MODEL, ontologyQuery } from "../lib/ontology-fixtures.mjs";
+import { commitFixture, ontologyQuery, SETTLED_MODEL } from "../lib/ontology-fixtures.mjs";
 
-const MODEL = EXAMPLE_MODEL.replaceAll(
-  'onto:status "Proposed"',
-  'onto:status "Accepted (2026-10-01)"',
-);
 const record = (path, summary) => ({ path, status: "Accepted (2026-10-01)", summary });
 const MAPPING = {
   categories: {
@@ -96,7 +92,7 @@ export default {
     seedRuleDocs(dir);
     seedMapping(dir, MAPPING);
     seedIndexedAdrs(dir, MAPPING, { "docs/adr/payments/0001-take-payments.md": EXISTING });
-    write(dir, "docs/ontology/ordering.ttl", MODEL);
+    write(dir, "docs/ontology/ordering.ttl", SETTLED_MODEL);
     commitFixture(dir);
     const feature = ontologyQuery(dir, ["--category", "payments"]);
     const process = ontologyQuery(dir, ["--process", "payment.take-payment"]);

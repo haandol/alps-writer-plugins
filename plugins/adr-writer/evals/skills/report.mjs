@@ -88,7 +88,12 @@ const groups = [
       ],
     ],
     [
-      "업무 맥락의 기준 상태",
+      "조회 착수와 기준 상태",
+      "조회 착수와 빈 기록",
+      ["author-starts-business-", "author-queries-connected-", "author-records-confirmed-"],
+    ],
+    [
+      "조회 착수와 기준 상태",
       "확정되지 않은 맥락",
       [
         "author-checks-business-unsettled-",
@@ -126,13 +131,13 @@ const groups = [
   ...[
     [
       "구축 진입과 ADR 검토",
-      "첫 구축 진입과 선호",
-      [
-        "ontology-build-offers-",
-        "ontology-build-reuses-review-",
-        "ontology-build-one-time-",
-        "ontology-build-unanswered-review-",
-      ],
+      "첫 구축 진입",
+      ["ontology-build-offers-", "ontology-build-reuses-review-", "ontology-build-one-time-"],
+    ],
+    [
+      "구축 진입과 ADR 검토",
+      "리뷰 방식 기록",
+      ["ontology-build-unanswered-review-", "ontology-build-remembers-review-"],
     ],
     [
       "구축 진입과 ADR 검토",
@@ -172,6 +177,11 @@ const groups = [
       "후보 보고와 질문",
       "질문 해소와 질의응답",
       ["ontology-build-resolves-", "ontology-build-discussion-"],
+    ],
+    [
+      "후보 보고와 질문",
+      "질문 세션의 답 반영",
+      ["ontology-build-posts-follow-", "ontology-build-reads-conversation-"],
     ],
     ["저장 승인", "승인 요약", ["ontology-build-hands-off-"]],
   ].map((group) => ["결정 관리", "업무 온톨로지", "모델 구축", ...group]),
