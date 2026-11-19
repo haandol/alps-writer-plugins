@@ -37,7 +37,11 @@ scripts for them.
   (documents disagree) or unconfirmed (no supporting statement). An input's own
   inferred or unconfirmed mark stays so; its confirmed mark never replaces the
   user's confirmation; an input that names its original source gives that
-  location.
+  location. Bounded contexts, their core logic and collaborations are candidates
+  too: give them source locations and verdicts, not only reasons.
+- A document that only reports one thing after another in time ("the next
+  day …") states no cause. Keep that link a sequence on the map and a question;
+  never make it a stated policy or trigger.
 - Name each new candidate from its business meaning, never from a sequence
   number or the order documents list it in: a step or concept by what it is
   (`<context>.<meaning>`), a policy by its trigger and reaction

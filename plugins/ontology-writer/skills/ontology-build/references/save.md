@@ -16,6 +16,8 @@ open scope and the conditions on renewing an `Accepted` date.
   approval summary asks only for affected ADR revisions, index-link changes,
   existing processes that become `Proposed`, realizing candidates for unrealized
   system steps, ADR candidates for transferred content and glossary cleanup.
+  A transferred item's values and policy details are settled later in ADR
+  authoring; the summary names its target ADR without asking them.
 - When the report compared an existing model, keep its draft and the base hash
   its `impact` returned, and rerun that `impact` unchanged at save time. A
   different hash means the model, index, glossary, change log or an affected ADR

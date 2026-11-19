@@ -144,8 +144,11 @@ the model here or deriving business boundaries from existing ADR categories.
   exact values and conditions, and guarantees such as duplicate delivery. Report
   other realizing ADRs missing the same contract as alignment issues. In the
   context of a `Proposed` process, first check model meaning no realizing ADR
-  reflects yet, and fold the compliance contracts it needs into that process's
-  change approval summary so they are asked once. `/adr-sync` never adds a
+  reflects yet. The compliance contracts that meaning needs belong to the
+  ontology change approval of that process — ontology-writer's `/ontology-sync`
+  propagation, which drafts the affected ADR edits in its one approval summary —
+  so they are asked once there, not in this ADR's own approval, and are not saved
+  to the ADR before it. `/adr-sync` never adds a
   compliance contract itself; it reports the gap as an alignment issue for
   `/ontology-sync`.
 - **Report contradictions.** An ADR or code change that learns of a

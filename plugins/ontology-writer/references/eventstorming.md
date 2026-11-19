@@ -44,10 +44,11 @@ unconfirmed. Do not force a one-to-one subdomain/context relationship or move
 existing ADR categories without authorization. Preserve confirmed boundaries;
 additional evidence proposes only the material changes it supports.
 When presenting the areas, record explicit context identities and subdomain
-memberships with their evidence. One context may span several subdomains; show
-it once with those memberships. An external performer alone never establishes
-an external bounded context. Domain name, classification and membership stay
-unconfirmed where evidence is missing.
+memberships with their evidence: source locations, or the fact that none was
+found. One context may span several subdomains; show it once with those
+memberships. An external performer alone never establishes an external bounded
+context. Domain name, classification and membership stay unconfirmed where
+evidence is missing.
 
 Present the whole event map before opening its context-level details. Explain
 each proposed boundary with the events, concepts and responsibility it owns,
