@@ -248,7 +248,7 @@
         },
         {
           "path": "docs/adr/ontology/0002-retrieve-business-context-for-agents.md",
-          "status": "Proposed",
+          "status": "Accepted (2026-11-19)",
           "summary": "모델이 없는 프로젝트의 첫 응답에서 미정인 구축 여부만 묻고 명시한 선택을 기억하며, 기존 모델은 BC 조망과 상세 관계를 보존하며 색인 없이 다중어·한글 검색과 원문 근거를 제공한다"
         },
         {
