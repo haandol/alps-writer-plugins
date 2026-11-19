@@ -1,7 +1,7 @@
 // Browser side of the ontology question session. Question text, evidence and
 // diagram sources are written as text nodes, so text taken from documents never
-// runs as markup. The only markup inserted is the SVG Mermaid produces with its
-// strict security level, which sanitizes labels.
+// runs as markup. The only markup inserted is the SVG Mermaid draws, after
+// `inertSvg` removes every link, embedded HTML and event attribute from it.
 (() => {
   const app = document.getElementById("app");
   const ko = app.dataset.lang === "ko";
@@ -15,6 +15,8 @@
         progress: (a, t, p, r) =>
           `답한 질문 ${a}/${t}${p ? ` · 보내기 전 ${p}` : ""}${r ? ` · 내부 해소 ${r}` : ""}`,
         working: "에이전트가 답을 반영하는 중입니다…",
+        awaitingAgent: "보낸 답이 에이전트에게 전달되기를 기다리는 중입니다.",
+        answerHandoff: "자동으로 이어지지 않으면 주 대화에서 답을 보냈다고 알려 주세요.",
         idle: "답을 기다리는 중입니다.",
         answered: "저장된 답",
         draft: "작성 중인 답 · 아직 저장하지 않았습니다.",
@@ -22,6 +24,7 @@
         answerFailed: "이 답을 저장하지 못했습니다 · 같은 답을 다시 보낼 수 있습니다.",
         pending: "보내기 전",
         sent: "전달됨",
+        sentWaiting: "보냄 · 전달 대기",
         chat: "대화에서 답함",
         closedQ: "닫힌 질문",
         expand: "펼치기",
@@ -73,6 +76,9 @@
         progress: (a, t, p, r) =>
           `Answered ${a}/${t}${p ? ` · ${p} not sent` : ""}${r ? ` · ${r} resolved` : ""}`,
         working: "The agent is applying your answers…",
+        awaitingAgent: "Your sent answers are waiting for the agent to pick them up.",
+        answerHandoff:
+          "If it does not continue on its own, tell the agent in the main conversation that you sent answers.",
         idle: "Waiting for your answers.",
         answered: "Saved answer",
         draft: "Editing an answer · not saved yet.",
@@ -80,6 +86,7 @@
         answerFailed: "This answer was not saved · send the same answer again.",
         pending: "Not sent",
         sent: "Delivered",
+        sentWaiting: "Sent · waiting for the agent",
         chat: "Answered in chat",
         closedQ: "Closed",
         expand: "Expand",
@@ -148,9 +155,27 @@
       startOnLoad: false,
       securityLevel: "strict",
       theme: dark ? "dark" : "default",
+      htmlLabels: false,
       flowchart: { htmlLabels: false },
       suppressErrorRendering: true,
     });
+  /**
+   * The drawn diagram as inert SVG: a diagram is document material, so nothing in it may
+   * navigate, run or embed HTML. Links are unwrapped to their text, embedded HTML and
+   * scripts are dropped, and event and link attributes are removed.
+   */
+  const inertSvg = (markup) => {
+    const doc = new DOMParser().parseFromString(markup, "image/svg+xml");
+    const root = doc.documentElement;
+    if (root.nodeName !== "svg") throw new Error("Mermaid returned no SVG");
+    for (const node of root.querySelectorAll("script, foreignObject, iframe, object, embed, img"))
+      node.remove();
+    for (const link of root.querySelectorAll("a")) link.replaceWith(...link.childNodes);
+    for (const node of [root, ...root.querySelectorAll("*")])
+      for (const { name } of [...node.attributes])
+        if (/^on/i.test(name) || /(^|:)href$/i.test(name)) node.removeAttribute(name);
+    return root;
+  };
   const drawn = new Map();
   let queue = Promise.resolve();
   let figureNo = 0;
@@ -159,7 +184,7 @@
       const job = queue.then(async () => {
         if (!window.mermaid) throw new Error("Mermaid is not available");
         const { svg } = await window.mermaid.render(`ask-diagram-${++figureNo}`, source);
-        return svg;
+        return inertSvg(svg);
       });
       queue = job.catch(() => {});
       drawn.set(source, job);
@@ -192,7 +217,7 @@
     draw(diagram.source).then(
       (svg) => {
         if (f.source !== diagram.source) return;
-        f.view.innerHTML = svg; // Mermaid output under securityLevel "strict"
+        f.view.replaceChildren(document.importNode(svg, true));
         f.root.dataset.rendered = "true";
       },
       (error) => {
@@ -688,7 +713,14 @@
     c.badge.textContent = q.answer ? (q.pending ? T.pending : "✓") : "";
     c.badge.className = `badge${q.answer ? (q.pending ? " is-pending" : " is-sent") : ""}`;
     if (q.answer) {
-      const tag = q.answer.channel === "chat" ? T.chat : q.pending ? T.pending : T.sent;
+      const tag =
+        q.answer.channel === "chat"
+          ? T.chat
+          : q.pending
+            ? T.pending
+            : q.awaitingAgent
+              ? T.sentWaiting
+              : T.sent;
       const what = [q.answer.optionLabel, q.answer.text].filter(Boolean).join(" — ");
       c.answer.textContent = `${T.answered} (${tag}): ${what}`;
       c.answer.className = `answer ${q.pending ? "is-pending" : "is-sent"}`;
@@ -737,11 +769,16 @@
     intro.textContent = state.intro;
     intro.hidden = !state.intro;
     setFigure(overview, state.diagram);
+    // Without a listening agent, sent answers need the user to hand them over in the conversation.
     status.textContent = state.closed
       ? T.ended
       : state.working
         ? T.working
-        : state.agent?.message || T.idle;
+        : state.awaitingAgent
+          ? state.discussion?.available
+            ? T.awaitingAgent
+            : `${T.awaitingAgent} ${T.answerHandoff}`
+          : state.agent?.message || T.idle;
     status.className = `status${state.working ? " is-working" : ""}${state.closed ? " is-closed" : ""}`;
     warn.textContent = state.warning ? `${T.warning} ${state.warning}` : "";
     warn.hidden = !state.warning;

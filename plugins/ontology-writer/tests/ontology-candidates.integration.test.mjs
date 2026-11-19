@@ -133,6 +133,52 @@ test("a save draft that leaves out an unconfirmed path cannot claim the process 
   });
 });
 
+test("an unconfirmed hand-off policy cuts the path it declares, though every step is confirmed", () => {
+  withTmp((dir) => {
+    const c = structuredClone(FIXTURE);
+    c.policies[0].confirmed = false; // payment completed → confirm the order
+    c.processes[0].openScope = [{ kind: "none" }];
+    project(dir, c);
+    const out = run(dir, "prepare", "candidates.json", "--run", "run", "--confirmed-only");
+    assert.equal(out.status, 1, out.stdout + out.stderr);
+    for (const path of [
+      "payment\\.payment-completed triggers ordering\\.on-payment-completed-confirm-order",
+      "ordering\\.on-payment-completed-confirm-order starts ordering\\.confirm-order",
+    ])
+      assert.match(
+        out.stdout,
+        new RegExp(
+          `ordering\\.place-order openScope: "none" cannot be saved while ${path} is left out`,
+        ),
+      );
+    assert.ok(!existsSync(path.join(dir, "run")), "a refused save draft writes nothing");
+
+    c.processes[0].openScope = [
+      { kind: "open-path", text: "결제 완료 뒤 주문 확정으로 넘어가는 경로가 확인되지 않았다." },
+    ];
+    project(dir, c);
+    const recorded = run(dir, "prepare", "candidates.json", "--run", "run2", "--confirmed-only");
+    assert.equal(recorded.status, 0, recorded.stdout + recorded.stderr);
+    assert.match(
+      recorded.stdout,
+      /ordering\.on-payment-completed-confirm-order starts ordering\.confirm-order: left out/,
+    );
+  });
+});
+
+test("the review summary lists every candidate the user has not confirmed, stated ones included", () => {
+  withTmp((dir) => {
+    const c = structuredClone(FIXTURE);
+    for (const kind of ["steps", "policies", "rules"])
+      for (const item of c[kind]) item.confirmed = false;
+    project(dir, c);
+    assert.equal(run(dir, "prepare", "candidates.json", "--run", "run").status, 0);
+    const summary = JSON.parse(readFileSync(path.join(dir, "run/candidates-summary.json"), "utf8"));
+    const needs = summary.contexts.flatMap((e) => e.needsConfirmation).sort();
+    assert.deepEqual(needs, [...c.steps, ...c.policies, ...c.rules].map((item) => item.id).sort());
+  });
+});
+
 test("a save draft never carries an input document's name, file, page or quoted passage into the model", () => {
   withTmp((dir) => {
     const c = structuredClone(FIXTURE);
@@ -147,6 +193,10 @@ test("a save draft never carries an input document's name, file, page or quoted 
     project(dir, c);
     const save = run(dir, "prepare", "candidates.json", "--run", "run", "--confirmed-only");
     assert.equal(save.status, 1, save.stdout + save.stderr);
+    assert.ok(
+      !existsSync(path.join(dir, "run")),
+      "a refused save draft cannot reach impact or apply",
+    );
     for (const why of [
       `rules\\[0\\] \\(${rule.id}\\) basis: names the file 주문정책서\\.pdf`,
       `rules\\[0\\] \\(${rule.id}\\) comment: names the input document "영업 회의록"`,
@@ -171,6 +221,29 @@ test("a save draft never carries an input document's name, file, page or quoted 
     const quoted = run(dir, "prepare", "candidates.json", "--run", "quoted", "--confirmed-only");
     assert.equal(quoted.status, 1);
     assert.match(quoted.stdout, /basis: quotes a source passage/);
+
+    // A basis may name the policy it follows, even when the input document has that title.
+    rule.evidence = [{ source: "주문 운영 정책", detail: "확정 조건" }];
+    rule.basis = { kind: "operating-policy", text: "주문 운영 정책의 확정 조건을 따른다." };
+    project(dir, c);
+    const named = run(dir, "prepare", "candidates.json", "--run", "named", "--confirmed-only");
+    assert.equal(named.status, 0, named.stdout + named.stderr);
+    // Elsewhere, and as a path, the same source is a trace; so are an open path and a condition.
+    rule.comment = ["주문 운영 정책에서 확인한 규칙"];
+    rule.evidence = [{ source: "policies/주문 운영 정책", detail: "확정 조건" }];
+    rule.basis.text = "policies/주문 운영 정책의 확정 조건을 따른다.";
+    c.processes[0].openScope = [{ kind: "open-path", text: "재시도는 회의록.docx에서 미정이다." }];
+    c.policies[0].condition = "결제가 승인되었다 (5쪽).";
+    project(dir, c);
+    const traced = run(dir, "prepare", "candidates.json", "--run", "traced", "--confirmed-only");
+    assert.equal(traced.status, 1);
+    for (const why of [
+      `rules\\[0\\] \\(${rule.id}\\) comment: names the input document "주문 운영 정책"`,
+      `rules\\[0\\] \\(${rule.id}\\) basis: names the input document "policies/주문 운영 정책"`,
+      `processes\\[0\\] \\(${c.processes[0].id}\\) openScope: names the file 회의록\\.docx`,
+      `policies\\[0\\] \\(${c.policies[0].id}\\) reactionCondition: cites the page "5쪽"`,
+    ])
+      assert.match(traced.stdout, new RegExp(why));
   });
 });
 
@@ -201,6 +274,93 @@ test("the save index draft adds only confirmed realization links, while the revi
       JSON.parse(readFileSync(path.join(dir, "docs/adr/.mapping.json"), "utf8")).categories.ordering
         .realizes,
       undefined,
+    );
+  });
+});
+
+test("a feature with an empty realization record takes a confirmed link candidate; the project's index stays as it is", () => {
+  withTmp((dir) => {
+    const c = structuredClone(FIXTURE);
+    project(dir, c);
+    const index = {
+      categories: {
+        ...MAPPING.categories,
+        notifications: { feature: "Notifications", adrs: [], realizes: [] },
+      },
+    };
+    writeFileSync(path.join(dir, "docs/adr/.mapping.json"), JSON.stringify(index));
+    c.links.push({
+      category: "notifications",
+      step: "ordering.confirm-order",
+      reason: "The notification ADR sends the confirmation the step completes.",
+      verdict: "inferred",
+      evidence: [],
+      confirmed: true,
+    });
+    writeFileSync(path.join(dir, "candidates.json"), JSON.stringify(c));
+    assert.equal(
+      run(dir, "prepare", "candidates.json", "--run", "save", "--confirmed-only").status,
+      0,
+    );
+    const saved = JSON.parse(readFileSync(path.join(dir, "save/mapping.save.json"), "utf8"));
+    assert.deepEqual(saved.categories.notifications.realizes, ["ordering.confirm-order"]);
+    assert.deepEqual(
+      JSON.parse(readFileSync(path.join(dir, "docs/adr/.mapping.json"), "utf8")),
+      index,
+      "the index changes only through the approved save",
+    );
+  });
+});
+
+test("candidates for one process never remove another process or an uncovered step from the draft", () => {
+  withTmp((dir) => {
+    project(dir);
+    mkdirSync(path.join(dir, "docs/ontology"));
+    const draft = (name) => draftDocs(dir, name);
+    // A first model of the order flow, then a second process in its own context.
+    assert.equal(
+      run(dir, "prepare", "candidates.json", "--run", "first", "--confirmed-only").status,
+      0,
+    );
+    for (const d of draft("first/save-draft"))
+      writeFileSync(path.join(dir, "docs/ontology", d.doc), d.text);
+    writeFileSync(
+      path.join(dir, "docs/ontology/returns.ttl"),
+      `${draft("first/save-draft")[0]
+        .text.split("\n")
+        .filter((l) => l.startsWith("@prefix"))
+        .join("\n")}
+m:returns a onto:BoundedContext ;
+    rdfs:label "Returns" ;
+    onto:coreLogic "Takes back what customers return." .
+m:returns.handle-return a onto:Process ;
+    rdfs:label "Handle a return" ;
+    onto:inContext m:returns ;
+    onto:status "Proposed" .
+`,
+    );
+    const before = triplesOf(
+      readdirSync(path.join(dir, "docs/ontology"))
+        .sort()
+        .map((f) => ({ doc: f, text: readFileSync(path.join(dir, "docs/ontology", f), "utf8") })),
+    );
+    assert.ok(before.some((t) => t.s.endsWith(":returns.handle-return")));
+    assert.ok(before.some((t) => t.s.endsWith(":payment.request-payment")));
+    // The new document covers only the order flow, and not its payment request step.
+    const c = structuredClone(FIXTURE);
+    c.steps = c.steps.filter((step) => step.id !== "payment.request-payment");
+    c.processes[0].steps = c.processes[0].steps.filter((id) => id !== "payment.request-payment");
+    c.questions = [];
+    project(dir, c);
+    const out = run(dir, "prepare", "candidates.json", "--run", "second");
+    assert.equal(out.status, 0, out.stdout + out.stderr);
+    const after = triplesOf(draft("second/draft"));
+    const key = (t) => `${t.s} ${t.p} ${t.o.value}`;
+    const kept = new Set(after.map(key));
+    assert.deepEqual(
+      before.filter((t) => !kept.has(key(t))).map(key),
+      [],
+      "every current element and relation stays in the draft",
     );
   });
 });
@@ -262,6 +422,36 @@ test("the check names serial ids, missing bases, unknown references and type cla
     project(dir, c);
     assert.equal(run(dir, "prepare", "candidates.json", "--run", "run").status, 1);
     assert.ok(!existsSync(path.join(dir, "run")), "unusable candidates write nothing");
+  });
+});
+
+test("every candidate, bounded contexts included, carries a source verdict and its evidence list", () => {
+  withTmp((dir) => {
+    for (const kind of [
+      "contexts",
+      "actors",
+      "events",
+      "processes",
+      "steps",
+      "policies",
+      "rules",
+      "criteria",
+    ]) {
+      for (const field of ["verdict", "evidence"]) {
+        const c = structuredClone(FIXTURE);
+        delete c[kind][0][field];
+        const { errors } = checkCandidates(c, readCurrentModel(path.join(dir, "none")));
+        assert.ok(
+          errors.some((e) => e.startsWith(`${kind}[0]`) && e.includes(field)),
+          `${kind} without ${field}: ${errors.join("; ")}`,
+        );
+      }
+    }
+    // An empty evidence list is the explicit mark that no source location was found.
+    const c = structuredClone(FIXTURE);
+    c.contexts[0].evidence = [];
+    c.contexts[0].verdict = "unconfirmed";
+    assert.deepEqual(checkCandidates(c, readCurrentModel(path.join(dir, "none"))).errors, []);
   });
 });
 

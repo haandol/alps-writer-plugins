@@ -304,3 +304,30 @@ test("the session address stays private, and a half-written session file does no
     s.done();
   }
 });
+
+test("a diagram with a click, call or href directive is refused, wherever it appears", () => {
+  const base = {
+    version: 1,
+    questions: [{ id: "Q1", text: "Which flow?", options: [{ id: "a", label: "A" }] }],
+  };
+  const withDiagram = (place, source) => {
+    const doc = structuredClone(base);
+    if (place === "session") doc.diagram = { source };
+    if (place === "question") doc.questions[0].diagram = { source };
+    if (place === "option") doc.questions[0].options[0].diagram = { source };
+    return parseQuestions(JSON.stringify(doc));
+  };
+  for (const place of ["session", "question", "option"])
+    for (const directive of [
+      'click A href "https://example.com"',
+      "  click A callback",
+      "call open()",
+      'href A "https://example.com"',
+    ]) {
+      const parsed = withDiagram(place, `flowchart LR\n  A --> B\n${directive}`);
+      assert.equal(parsed.ok, false, `${place}: ${directive}`);
+      assert.match(parsed.error, /must not contain click, call or href directives/);
+    }
+  // A node that merely names a click in its label is business wording, not a directive.
+  assert.equal(withDiagram("question", 'flowchart LR\n  A["Customer clicks pay"] --> B').ok, true);
+});

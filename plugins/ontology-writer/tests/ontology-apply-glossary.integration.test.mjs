@@ -389,3 +389,24 @@ test("a change-log line that names an input document's file or page is refused b
     assert.equal(applied.code, 0, applied.out);
   });
 });
+
+test("saved text that names an input document's file or page is refused before the approval, whichever step drafted it", () => {
+  withTmp((dir) => {
+    repo(dir);
+    for (const basis of [
+      '"주문정책서.pdf 12쪽: 결제가 끝난 주문만 확정한다"',
+      '"결제 정책 12쪽을 따른다."',
+    ]) {
+      draft(dir, ACCEPTED.replace('"Store accounting policy."', basis));
+      const refused = cli(dir, ["impact", "--draft", "draft"]);
+      assert.equal(refused.code, 1, refused.out);
+      assert.match(refused.out, /\[ontology-text-source\] payment\.amount-matches-order basis/);
+      assert.doesNotMatch(refused.out, /base hash/, "no approval exists to save it with");
+    }
+    // A regulation and its article remain a basis sentence.
+    draft(dir, ACCEPTED.replace('"Store accounting policy."', '"전자상거래법 제17조를 따른다."'));
+    const applied = apply(dir, impact(dir).baseHash);
+    assert.equal(applied.code, 0, applied.out);
+    assert.match(read(dir, "docs/ontology/model.ttl"), /전자상거래법 제17조를 따른다/);
+  });
+});

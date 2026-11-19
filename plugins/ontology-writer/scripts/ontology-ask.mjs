@@ -50,10 +50,15 @@ const ALIGNMENT_OUTCOMES = new Set(["passed", "failed", "blocked", "unverified"]
 const MERMAID = path.join(HERE, "../skills/report-writer/scripts/vendor/mermaid.min.js");
 
 /** A diagram is Mermaid source with an optional caption; returns an error text or null. */
+// Diagrams carry document wording; an interaction directive would make it a working link or call.
+const DIAGRAM_INTERACTION = /^\s*(?:click|call|href)\b/im;
+
 function diagramError(d, where) {
   if (d === undefined) return null;
   if (!d || typeof d.source !== "string" || !d.source.trim() || d.source.length > MAX_DIAGRAM)
     return `${where} diagram needs Mermaid source of at most ${MAX_DIAGRAM} characters`;
+  if (DIAGRAM_INTERACTION.test(d.source))
+    return `${where} diagram must not contain click, call or href directives; show the flow as text`;
   if (d.caption !== undefined && typeof d.caption !== "string")
     return `${where} diagram caption must be text`;
   return null;
@@ -268,8 +273,11 @@ export function activeAlignmentSession(run) {
   return lifecycle?.type === "open" ? session : null;
 }
 
-/** Latest answer per question, which web answers still wait for delivery, and closure. */
-export function summarize(doc, events) {
+/**
+ * Latest answer per question, which web answers the user has not sent yet (`pending`), which
+ * sent ones no `wait` has taken past `cursor` (`awaitingAgent`), and closure.
+ */
+export function summarize(doc, events, { cursor = Infinity } = {}) {
   const latest = new Map();
   const delivered = new Map();
   let lastDeliver = null;
@@ -285,6 +293,7 @@ export function summarize(doc, events) {
   const questions = (doc?.questions ?? []).map((q) => {
     const a = latest.get(q.id) ?? null;
     const pending = Boolean(a && a.channel === "web" && (delivered.get(q.id) ?? 0) < a.seq);
+    const awaitingAgent = Boolean(a?.channel === "web" && !pending && delivered.get(q.id) > cursor);
     const option = a?.optionId ? (q.options ?? []).find((o) => o.id === a.optionId) : null;
     return {
       ...q,
@@ -296,6 +305,7 @@ export function summarize(doc, events) {
         at: a.at,
       },
       pending,
+      awaitingAgent,
     };
   });
   return { questions, lastDeliver, closed };
@@ -597,8 +607,11 @@ export function startServer(
       }
       refreshedThrough = latestReply.seq;
     }
-    const s = summarize(doc, events);
-    const working = Boolean(s.lastDeliver && Date.parse(s.lastDeliver.at) > goodMtime);
+    // Sent answers show the agent working only once a wait took them; until then they await it.
+    const cursor = readJson(files.cursor)?.seq ?? 0;
+    const s = summarize(doc, events, { cursor });
+    const sentSince = Boolean(s.lastDeliver && Date.parse(s.lastDeliver.at) > goodMtime);
+    const taken = Boolean(s.lastDeliver && s.lastDeliver.seq <= cursor);
     return {
       title: doc.title ?? "",
       intro: doc.intro ?? "",
@@ -610,7 +623,8 @@ export function startServer(
       sequence: events.at(-1)?.seq ?? 0,
       questionRevision: goodMtime,
       discussion: discussionState(files, events),
-      working,
+      working: sentSince && taken,
+      awaitingAgent: sentSince && !taken,
       warning,
       closed: Boolean(s.closed),
     };
@@ -842,10 +856,11 @@ export function allAnswers(run) {
   if (!doc.ok) throw new Error(doc.error);
   const s = summarize(doc.value, readEvents(files.answers));
   return {
+    // A collected answer reaches the agent only when the user sends it, so its content waits.
     questions: s.questions.map((q) => ({
       id: q.id,
       text: q.text,
-      answer: q.answer,
+      answer: q.pending ? null : q.answer,
       pending: q.pending,
     })),
     closed: Boolean(s.closed),

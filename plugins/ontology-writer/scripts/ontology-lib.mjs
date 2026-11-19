@@ -1657,9 +1657,10 @@ export function serializeTurtle(triples) {
 
 // An input document stays in the one-off report: saved model text and change-log lines
 // never name its file or a page of it. A regulation, contract or policy may still be named
-// with its article ("전자상거래법 제17조"), which neither pattern matches.
+// with its article ("전자상거래법 제17조"), which neither pattern matches. A Korean particle
+// may follow the extension directly ("회의록.docx에서"); only Latin letters or digits extend it.
 const SOURCE_FILE =
-  /[\p{L}\p{N}_-][\p{L}\p{N}_.-]*\.(?:pdf|docx?|xlsx?|pptx?|hwpx?|md|markdown|txt|csv|rtf|odt|ods|odp|key|pages|numbers|html?)(?![\p{L}\p{N}])/iu;
+  /[\p{L}\p{N}_-][\p{L}\p{N}_.-]*\.(?:pdf|docx?|xlsx?|pptx?|hwpx?|md|markdown|txt|csv|rtf|odt|ods|odp|key|pages|numbers|html?)(?![\p{Script=Latin}\p{N}])/iu;
 const SOURCE_PAGE = /\d+\s*(?:쪽|페이지)|(?<!\p{L})pp?\.\s?\d+|(?<!\p{L})pages?\s+\d+/iu;
 
 /** Why saved text cites an input document — a file name or a page — or null when it does not. */

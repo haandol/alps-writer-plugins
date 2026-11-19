@@ -63,7 +63,7 @@ const selected = (page, question) =>
   page.$$eval(`#q-${question} input:checked`, (inputs) => inputs.map((i) => i.value));
 const textOf = (page, selector) => page.$eval(selector, (input) => input.value);
 
-test("collected answers wait for submission, a sent answer shows the agent working, and a follow-up appears in place", async () => {
+test("collected answers wait for submission, a sent answer shows the agent working once taken, and a follow-up appears in place", async () => {
   await inQuestionPage(async (s, page) => {
     const deliveries = () => readEvents(s.files.answers).filter((e) => e.type === "deliver");
     const status = () => page.$eval(".status", (n) => n.textContent);
@@ -78,12 +78,28 @@ test("collected answers wait for submission, a sent answer shows the agent worki
     await saved(page, "Q1", "Keep");
     assert.equal(deliveries().length, 0, "a collected answer does not reach the agent");
     assert.equal((await waitForAnswers(s.run, { timeoutSeconds: 0.3, pollMs: 50 })).timeout, true);
+    assert.equal(allAnswers(s.run).questions[0].answer, null, "nor is it read before it is sent");
+    assert.equal(allAnswers(s.run).questions[0].pending, true);
     await page.waitForFunction(() => !document.querySelector(".submit-all").disabled);
     await page.click(".submit-all");
+    // No agent is listening: the answer is sent, not shown as being applied or delivered.
+    await page.waitForFunction(() =>
+      /waiting for the agent to pick them up/.test(document.querySelector(".status").textContent),
+    );
+    assert.match(await status(), /tell the agent in the main conversation/);
+    assert.doesNotMatch(await status(), /applying your answers/);
+    await saved(page, "Q1", "Sent · waiting for the agent");
+    assert.deepEqual(deliveries().at(-1).questionIds, ["Q1"]);
+    // Once a wait takes it, the screen shows the agent working and the answer delivered.
+    const taken = await waitForAnswers(s.run, { timeoutSeconds: 2, pollMs: 20 });
+    assert.deepEqual(
+      taken.answers.map((a) => a.questionId),
+      ["Q1"],
+    );
     await page.waitForFunction(() =>
       /applying your answers/.test(document.querySelector(".status").textContent),
     );
-    assert.deepEqual(deliveries().at(-1).questionIds, ["Q1"]);
+    await saved(page, "Q1", "(Delivered)");
 
     // The agent rewrites the questions: the screen shows the follow-up without a reload.
     const before = await page.evaluate(() => performance.timeOrigin);
@@ -160,6 +176,43 @@ test("a question shows its flow and each option's result as drawn diagrams, its 
       ["Conflicting", "docs/payments.md"],
     ]);
   }, visual);
+});
+
+test("a drawn diagram carries no working link, embedded HTML or event handler from document wording", async () => {
+  const hostile = {
+    version: 1,
+    title: "Hostile wording",
+    questions: [
+      {
+        id: "Q1",
+        text: "Which flow?",
+        diagram: {
+          source:
+            'flowchart LR\n  A["<img src=x onerror=window.__ontologyAskInjected=1> Pay"] --> B["<a href=https://example.com/x>Ship</a>"]',
+        },
+        options: [{ id: "a", label: "A" }],
+      },
+    ],
+  };
+  await inQuestionPage(async (s, page) => {
+    await page.waitForSelector('#q-Q1 > figure[data-rendered="true"] svg');
+    const found = await page.$eval("#q-Q1 > figure svg", (svg) => ({
+      active: svg.querySelectorAll("a, img, foreignObject, script, iframe").length,
+      handlers: [svg, ...svg.querySelectorAll("*")].filter((n) =>
+        [...n.attributes].some((a) => /^on/i.test(a.name) || /(^|:)href$/i.test(a.name)),
+      ).length,
+      text: svg.textContent,
+    }));
+    assert.deepEqual([found.active, found.handlers], [0, 0]);
+    assert.match(found.text, /Pay/);
+    await page.click("#q-Q1 > figure svg");
+    assert.equal(
+      await page.evaluate(() => window.__ontologyAskInjected ?? null),
+      null,
+      "nothing ran",
+    );
+    assert.equal(new URL(page.url()).origin, s.origin, "the page did not navigate");
+  }, hostile);
 });
 
 test("a question the repository settles is listed as resolved with its source, and the user's different answer counts", async () => {

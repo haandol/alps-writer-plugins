@@ -235,3 +235,32 @@ test("invalid query combinations and page values are rejected as usage errors", 
     assert.equal(json(dir, ["query", "--overview"]).model, false);
   });
 });
+
+test("an overview whose committed model cannot be parsed shows the uncommitted documents instead of zero edits", () => {
+  withTmp((dir) => {
+    initRepo(dir);
+    write(dir, "docs/adr/.mapping.json", JSON.stringify({ categories: {} }, null, 2));
+    write(dir, "docs/ontology/model.ttl", `${EXAMPLE}\nm:broken a onto:Step ;\n`);
+    commitAll(dir, "a broken model");
+    write(
+      dir,
+      "docs/ontology/model.ttl",
+      EXAMPLE.replace(
+        /onto:coreLogic "[^"]*"/,
+        'onto:coreLogic "Orders are taken and confirmed by hand."',
+      ),
+    );
+    const overview = json(dir, ["query", "--overview"]);
+    assert.equal(
+      overview.changeSummary.uncommittedElements,
+      null,
+      "element edits cannot be counted",
+    );
+    assert.deepEqual(overview.changeSummary.uncommittedDocuments, ["docs/ontology/model.ttl"]);
+    const text = cli(dir, ["query", "--overview"]).out;
+    assert.match(
+      text,
+      /UNCOMMITTED model documents differ from HEAD \(not a settled reference\): docs\/ontology\/model\.ttl/,
+    );
+  });
+});

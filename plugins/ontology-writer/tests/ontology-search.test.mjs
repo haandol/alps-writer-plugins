@@ -93,3 +93,58 @@ test("retired text stays opt-in and current model-only descriptions do not becom
   );
   assert.equal(invoke(model, "description-only-marker").itemCount, 0);
 });
+
+test("a whole-model search lists every BC whose own view holds the matching rule", () => {
+  const head =
+    "@prefix m: <urn:ontology-writer:model:> .\n@prefix onto: <urn:ontology-writer:vocabulary:> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n\n";
+  const cases = [
+    // A rule on an Ordering concept that also constrains Payment's concept.
+    `${head}m:ordering.line-limit a onto:BusinessRule ; rdfs:label "Line quantity cap" ;
+  onto:definition "Zebra marker applies to each order line." ; onto:basisKind "operating-policy" ;
+  onto:basis "Warehouse handling policy." ; onto:constrains m:ordering.order-line, m:payment.payment .
+`,
+    // A rule on an Ordering policy that starts a Payment step.
+    `${head}m:ordering.notify-payment a onto:Policy ; rdfs:label "Notify payment" ;
+  onto:definition "Ordering asks payment to start." ; onto:reactionCondition "An order exists." ;
+  onto:basisKind "operating-policy" ; onto:basis "Store policy." ; onto:inContext m:ordering ;
+  onto:starts m:payment.request-payment .
+m:ordering.order-placed onto:triggers m:ordering.notify-payment .
+m:ordering.notify-rule a onto:BusinessRule ; rdfs:label "Notification wording" ;
+  onto:definition "Zebra phrase governs the ordering notification policy." ; onto:basisKind "operating-policy" ;
+  onto:basis "Store policy." ; onto:constrains m:ordering.notify-payment, m:payment.capture-payment .
+`,
+  ];
+  for (const extra of cases) {
+    const model = validateModel([
+      { doc: "model.ttl", text: EXAMPLE },
+      { doc: "extra.ttl", text: extra },
+    ]);
+    assert.deepEqual(
+      model.findings.filter((f) => f.level === "error"),
+      [],
+    );
+    const query = (target) =>
+      queryContext({
+        index: model.index,
+        mapping: MAPPING,
+        findings: model.findings,
+        target,
+        search: "zebra",
+      });
+    const candidates = query({ kind: "overview" })
+      .items.filter((i) => i.kind === "context")
+      .map((i) => i.id)
+      .sort();
+    const holding = ["ordering", "payment"].filter((bc) =>
+      query({ kind: "context", id: bc }).items.some(
+        (i) => i.kind === "element" && i.type === "BusinessRule",
+      ),
+    );
+    assert.deepEqual(
+      candidates,
+      holding,
+      "the overview's candidates are the BCs whose views list the rule",
+    );
+    assert.ok(candidates.includes("ordering"));
+  }
+});

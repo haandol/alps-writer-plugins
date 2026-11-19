@@ -36,6 +36,7 @@ import {
   elementIri,
   indexGraph,
   isValidElementId,
+  openScopeOf,
   parseDocument,
   serializeTurtle,
   sourceTrace,
@@ -370,6 +371,20 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
       added.push(t);
     }
   }
+  // An unconfirmed candidate cuts the path it declares itself, too: a policy states its own
+  // trigger and start, so no confirmed candidate names the hand-off it would carry.
+  if (confirmedOnly)
+    for (const { kind, item } of allCandidates(doc)) {
+      if (exists(item.id)) continue;
+      for (const t of candidateTriples(kind, item, { isNew: true })) {
+        if (!PATH_RELATIONS.has(t.p)) continue;
+        const end = t.s === iri(item.id) ? t.o.value : t.s;
+        if (!exists(elementId(end))) continue;
+        const what = `${elementId(t.s)} ${t.p.replace(ONTO, "")} ${elementId(t.o.value)}`;
+        if (!dropped.includes(what)) dropped.push(what);
+        cutPaths.push([end, what]);
+      }
+    }
   // Only a save draft claims what the saved model holds; the review draft shows the gaps itself.
   const undecided = confirmedOnly
     ? noOpenScopeWithCutPaths(
@@ -413,43 +428,23 @@ const PATH_RELATIONS = new Set(
  */
 function noOpenScopeWithCutPaths(triples, cutPaths) {
   if (!cutPaths.length) return [];
-  const into = (p) => {
-    const map = new Map();
-    for (const t of triples)
-      if (t.p === ONTO + p && t.o.type === "iri") {
-        if (!map.has(t.o.value)) map.set(t.o.value, []);
-        map.get(t.o.value).push(t.s);
-      }
-    return map;
-  };
-  const processesOfStep = into("hasStep");
-  const emitters = into("emits");
-  const triggers = into("triggers");
-  // A process whose every step is left out has no hasStep left, so its type identifies it.
-  const processes = new Set(
-    triples.filter((t) => t.p === RDF + "type" && t.o.value === ONTO + "Process").map((t) => t.s),
-  );
-  const starts = new Map();
-  for (const t of triples)
-    if (t.p === ONTO + "starts" && t.o.type === "iri") {
-      if (!starts.has(t.s)) starts.set(t.s, []);
-      starts.get(t.s).push(t.o.value);
-    }
-  const ofStep = (s) => processesOfStep.get(s) ?? [];
-  const ofEvent = (e) => (emitters.get(e) ?? []).flatMap(ofStep);
+  const index = indexGraph(triples);
+  const ofStep = (step) => index.into(step, "hasStep");
+  const ofEvent = (event) => index.into(event, "emits").flatMap(ofStep);
   // The confirmed end is a process, a step, an event or a policy.
   const processesOf = (x) =>
-    processes.has(x)
+    // A process whose every step is left out has no hasStep left, so its type identifies it.
+    index.typeOf(x) === "Process"
       ? [x]
       : [
           ...ofStep(x),
           ...ofEvent(x),
-          ...(starts.get(x) ?? []).flatMap(ofStep),
-          ...(triggers.get(x) ?? []).flatMap(ofEvent),
+          ...index.out(x, "starts").flatMap(ofStep),
+          ...index.into(x, "triggers").flatMap(ofEvent),
         ];
   const claimsNone = (p) => {
-    const scopes = triples.filter((t) => t.s === p && t.p === ONTO + "openScope");
-    return scopes.length > 0 && scopes.every((t) => t.o.datatype === ONTO + "NoOpenScope");
+    const { items } = openScopeOf(index, p);
+    return items.length > 0 && items.every((i) => i.kind === "none");
   };
   const out = new Set();
   for (const [end, what] of cutPaths)
@@ -461,25 +456,11 @@ function noOpenScopeWithCutPaths(triples, cutPaths) {
   return [...out];
 }
 
-/** The text a candidate would save into the model, by the attribute that holds it. */
-function savedTexts(item) {
-  const texts = [];
-  for (const field of [
-    "label",
-    "definition",
-    "coreLogic",
-    "startCondition",
-    "businessOutcome",
-    "summary",
-    "condition",
-    "observedResult",
-  ])
-    if (nonEmpty(item[field])) texts.push([field, item[field]]);
-  for (const c of list(item.comment)) if (nonEmpty(c)) texts.push(["comment", c]);
-  if (nonEmpty(item.basis?.text)) texts.push(["basis", item.basis.text]);
-  for (const s of list(item.openScope)) if (nonEmpty(s?.text)) texts.push(["openScope", s.text]);
-  return texts;
-}
+/** The text a candidate would save into the model, by the model attribute that holds it. */
+const savedTexts = (kind, item) =>
+  candidateTriples(kind, item, { isNew: true })
+    .filter((t) => t.o.type === "literal")
+    .map((t) => [t.p.replace(ONTO, "").replace(RDFS, ""), t.o.value]);
 
 // A passage in quotation marks long enough to be copied wording rather than a quoted term.
 const QUOTED_PASSAGE = /["“‘']([^"”’']{10,})["”’']/u;
@@ -497,10 +478,14 @@ export function sourceTraces(doc, { confirmedOnly = false } = {}) {
       if (source.length >= 3) sources.add(source).add(path.basename(source));
     }
   const traces = [];
-  for (const { item, where } of allCandidates(doc)) {
+  for (const { kind, item, where } of allCandidates(doc)) {
     if (!item || typeof item !== "object" || (confirmedOnly && item.confirmed !== true)) continue;
-    for (const [field, text] of savedTexts(item)) {
-      const named = [...sources].find((s) => s.length >= 3 && text.includes(s));
+    for (const [field, text] of savedTexts(kind, item)) {
+      // A basis may name a regulation, contract or policy even when an input document has
+      // that title; only a path is a document location there (file and page are checked below).
+      const named = [...sources].find(
+        (s) => s.length >= 3 && text.includes(s) && (field !== "basis" || /[\\/]/.test(s)),
+      );
       const why =
         (named && `names the input document ${JSON.stringify(named)}`) ||
         sourceTrace(text) ||
@@ -716,7 +701,8 @@ export function candidateSummary(doc, check) {
     e.verdicts[item.verdict] = (e.verdicts[item.verdict] ?? 0) + 1;
     if (item.planned) e.planned.push(item.id);
     if ((kind === "policies" || kind === "rules") && !item.basis) e.basisGaps.push(item.id);
-    if (item.verdict !== "stated" && item.confirmed !== true) e.needsConfirmation.push(item.id);
+    // A stated claim is still the document's, not the user's: it needs confirmation as well.
+    if (item.confirmed !== true) e.needsConfirmation.push(item.id);
   }
   return {
     title: doc.title,
@@ -795,9 +781,6 @@ function main(argv) {
   };
 
   const { documents, kept, dropped, undecided } = mergeDraft(doc, current, { confirmedOnly });
-  const draftDir = confirmedOnly ? "save-draft" : "draft";
-  for (const d of documents) write(path.join(draftDir, d.doc), d.text);
-  wrote.draft = path.join(run, draftDir);
   const warnings = [
     ...check.warnings,
     ...dropped.map(
@@ -818,29 +801,38 @@ function main(argv) {
     warnings.push(
       `links: ${list(doc.links).length} realization link candidate(s) not drafted, because the project has no ADR index`,
     );
-  if (mapping) {
-    const m = candidateMapping(doc, mapping, { confirmedOnly });
-    errors.push(...m.errors);
-    wrote.mapping = write(
-      confirmedOnly ? "mapping.save.json" : "mapping.draft.json",
-      `${JSON.stringify(m.mapping, null, 2)}\n`,
-    );
-  }
+  const index = mapping ? candidateMapping(doc, mapping, { confirmedOnly }) : null;
+  if (index) errors.push(...index.errors);
+  let board = null;
+  let questions = null;
   if (!confirmedOnly) {
-    const board = candidateBoard(doc, current);
-    const boardErrors = validateEventBoard(board);
-    errors.push(...boardErrors.map((e) => `board ${e}`));
-    wrote.board = write("board.json", `${JSON.stringify(board, null, 2)}\n`);
+    board = candidateBoard(doc, current);
+    errors.push(...validateEventBoard(board).map((e) => `board ${e}`));
     if (list(doc.questions).length) {
-      const questions = candidateQuestions(doc, board, current);
+      questions = candidateQuestions(doc, board, current);
       const parsed = parseQuestions(JSON.stringify(questions));
       if (!parsed.ok) errors.push(`questions: ${parsed.error}`);
-      else wrote.questions = write("ask/questions.json", `${JSON.stringify(questions, null, 2)}\n`);
     }
-    wrote.summary = write(
-      "candidates-summary.json",
-      `${JSON.stringify(candidateSummary(doc, { warnings }), null, 2)}\n`,
-    );
+  }
+
+  // Unusable candidates write nothing, so a refused draft can never reach impact or apply.
+  if (!errors.length) {
+    const draftDir = confirmedOnly ? "save-draft" : "draft";
+    for (const d of documents) write(path.join(draftDir, d.doc), d.text);
+    wrote.draft = path.join(run, draftDir);
+    if (index)
+      wrote.mapping = write(
+        confirmedOnly ? "mapping.save.json" : "mapping.draft.json",
+        `${JSON.stringify(index.mapping, null, 2)}\n`,
+      );
+    if (board) wrote.board = write("board.json", `${JSON.stringify(board, null, 2)}\n`);
+    if (questions)
+      wrote.questions = write("ask/questions.json", `${JSON.stringify(questions, null, 2)}\n`);
+    if (!confirmedOnly)
+      wrote.summary = write(
+        "candidates-summary.json",
+        `${JSON.stringify(candidateSummary(doc, { warnings }), null, 2)}\n`,
+      );
   }
   say({ errors, warnings, wrote });
   process.exit(errors.length ? 1 : 0);

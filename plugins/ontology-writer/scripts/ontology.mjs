@@ -670,6 +670,23 @@ function loadModel(dir) {
   };
 }
 
+/**
+ * Text a change adds to the model that names an input document's file or page. Sources stay
+ * in the one-off report; a basis may still name a regulation, contract or policy. The approval
+ * preview refuses them, so no base hash exists for apply to save them with.
+ */
+function addedSourceTraces(before, triples) {
+  const held = new Set(before.triples.map(tripleKey));
+  return triples.flatMap((t) => {
+    const trace = t.o.type === "literal" && !held.has(tripleKey(t)) && sourceTrace(t.o.value);
+    return trace
+      ? [
+          `[ontology-text-source] ${elementId(t.s)} ${t.p.replace(/^.*[#/:]/, "")} ${JSON.stringify(t.o.value)}\n    ${trace}; save a short business sentence and keep sources in the report`,
+        ]
+      : [];
+  });
+}
+
 /** The approval preview and save validate the same model and construction scope. */
 function validateModelChange(documents, before, mapping, opts) {
   return validateModel(documents, {
@@ -1048,6 +1065,8 @@ function impact(opts) {
     return fail(
       `${unresolved.map((f) => `[${f.code}] ${f.where}: ${f.msg}`).join("; ")}; fix the index draft before a change approval`,
     );
+  const traces = check.index ? addedSourceTraces(before, check.index.triples) : [];
+  if (traces.length) return refuse([...traces, "fix the saved text before a change approval"]);
   if (draftIndex && check.index) {
     const adrErrors = newRealizationFindings(opts, mapping, draftIndex, check.index, newAdrs);
     if (adrErrors.length)

@@ -81,8 +81,10 @@ user compares outcomes side by side. Use `evidence` items with their source
 verdicts (`stated`, `inferred`, `conflicting`, `unconfirmed`) for the sources
 behind the question; conflicting evidence opens by default. A session-level
 `diagram` gives an overview, such as the bounded contexts the questions touch.
-Mermaid renders in the page from the bundled engine with strict security; a
-diagram it cannot draw shows its source and the error.
+Mermaid renders in the page from the bundled engine with strict security, and
+the drawn diagram keeps no link, embedded HTML or event handler; a diagram it
+cannot draw shows its source and the error. A diagram with a `click`, `call` or
+`href` directive is refused when the session opens: show the flow as text.
 
 Before asking, apply the resolve-before-asking pass in
 [candidate review](candidate-review.md#sufficiency-and-unresolved-questions). A question a
@@ -134,10 +136,13 @@ the server alone does not establish an available authoring agent. On each wake-u
 Choosing an option saves the answer at once; free text is saved with its
 button. The user chooses on the screen between sending each answer at once (the
 default) and collecting answers to send together; collected answers do not wake
-the agent until they are sent. If the host cannot notify you when a background
-command finishes, tell the user how to notify you in the main conversation after
-sending an answer or question, then run `wait --timeout 1`, `answers`, or
-`messages` to read it. Preserve the queued message and describe that limitation;
+the agent until they are sent, and `answers` shows one only as `pending`, without
+its content. The screen shows sent answers as being applied only after a `wait`
+has taken them; until then it shows them waiting for the agent and, with no
+`wait` running, how to hand them over in the conversation. If the host cannot
+notify you when a background command finishes, tell the user how to notify you
+in the main conversation after sending an answer or question, then run
+`wait --timeout 1`, `answers`, or `messages` to read it. Preserve the queued message and describe that limitation;
 do not promise an automatic response or start another model/provider as a fallback.
 
 ## Answer model questions
@@ -172,7 +177,8 @@ Answers given in the conversation use the same identifiers. Record them with
 screen shows them. Choose `--option` or a nonempty `--text`, not both. This command
 records an actual candidate answer; it is not the way to answer a model question.
 When a question is answered twice, the latest answer counts.
-`ontology-ask.mjs answers <run>` prints every question with its latest answer.
+`ontology-ask.mjs answers <run>` prints every question with its latest sent or
+recorded answer.
 
 Answers persist in `<run>/ask/answers.jsonl`; reopening the session shows them.
 When the session ends, unanswered questions remain questions of the report and

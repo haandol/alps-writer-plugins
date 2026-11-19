@@ -86,8 +86,12 @@ export function projectNavigation(index, { target, includeRetired = false, searc
         .out(iri, "performs")
         .filter((s) => index.typeOf(s) === "Step" && visible(s))
         .flatMap(contextsOf);
+    // A rule belongs where it reaches and where it directly constrains, as a BC's own list has it.
     else if (type === "BusinessRule")
-      contexts = stepsOfRule(iri).filter(visible).flatMap(contextsOf);
+      contexts = [
+        ...stepsOfRule(iri).filter(visible).flatMap(contextsOf),
+        ...index.out(iri, "constrains").filter(visible).flatMap(contextsOf),
+      ];
     else if (type === "ObservationCriterion")
       contexts = index
         .out(iri, "criterionOf")
@@ -352,7 +356,13 @@ function overviewDiagnostics(errors, changes) {
     changeSummary: changes
       ? {
           available: changes.available,
-          uncommittedElements: changes.uncommitted?.length ?? null,
+          // When the committed model cannot be read by element, only whole documents compare.
+          uncommittedElements: changes.uncommittedDocuments
+            ? null
+            : (changes.uncommitted?.length ?? null),
+          ...(changes.uncommittedDocuments
+            ? { uncommittedDocuments: changes.uncommittedDocuments }
+            : {}),
           unsyncedProcesses: changes.unsyncedAccepted?.length ?? null,
           uncertainProcesses: changes.unsyncedUnknown?.length ?? null,
           lifecycleEdits: changes.lifecycleEdits?.length ?? null,
@@ -427,6 +437,10 @@ export function renderNavigation(result) {
   if (result.validationSample?.length)
     lines.push(
       `Validation sample: ${JSON.stringify(result.validationSample)}; ${result.diagnosticDetails}`,
+    );
+  if (result.changeSummary?.uncommittedDocuments?.length)
+    lines.push(
+      `UNCOMMITTED model documents differ from HEAD (not a settled reference): ${result.changeSummary.uncommittedDocuments.join(", ")}`,
     );
   if (result.changeSummary)
     lines.push(

@@ -647,7 +647,7 @@ test("README is the index and links to concepts.md, which holds the principle", 
 test("the hook command accepts either Codex or Claude plugin-root variables", () => {
   const hooks = JSON.parse(read(path.join(ADR_ROOT, "hooks", "hooks.json")));
   assert.deepEqual(Object.keys(hooks.hooks), ["SessionStart"]);
-  assert.equal(hooks.hooks.SessionStart[0].matcher, "startup|resume|clear|compact");
+  assert.equal(hooks.hooks.SessionStart[0].matcher, "startup|resume|clear|compact|fork");
   const command = hooks.hooks.SessionStart[0].hooks[0].command;
 
   for (const variable of ["PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT"]) {
