@@ -41,7 +41,7 @@ export async function capture(order) {
 export const obligations = [
   {
     id: "query-first",
-    text: "Before proposing any change to the payments ADR body, the response runs ontology-writer's business-context query for the payments feature — the command the session directive names, scoped to the feature's category or to the steps it realizes — and waits for its result. Locating the feature's index record, ADR or code first is allowed.",
+    text: "The response runs ontology-writer's business-context query for the payments feature — the command the session directive names, scoped to the feature's category or to the steps it realizes — before any body change is finalized: the approval summary it plans carries the checked context, and no body change is presented for approval or written before the query result. Finding the drift in the ADR and code first is allowed.",
   },
   {
     id: "no-model-read",

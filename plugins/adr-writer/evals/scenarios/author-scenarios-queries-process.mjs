@@ -71,11 +71,11 @@ Charge the order total by card through the payment provider.
 export const obligations = [
   {
     id: "process-query",
-    text: "The category result lists no observation criteria, so before proposing contract rows the response queries the connected process (Take a payment) through ontology-writer — a process-scoped query such as `--process payment.take-payment` — to check its observation criteria, though the user did not ask about criteria.",
+    text: "The category result lists no observation criteria, so the response queries the connected process (Take a payment) through ontology-writer — a process-scoped query such as `--process payment.take-payment` — to check its observation criteria, though the user did not ask about criteria, and the authoring summary it presents for approval waits for and carries those criteria.",
   },
   {
     id: "no-model-read",
-    text: "It does not read the docs/ontology documents itself, and does not finalize contract rows before that query.",
+    text: "It does not read the docs/ontology documents itself, and presents no contract rows for approval before that query.",
   },
 ].map((o) => ({ ...o, label: `ordinary authoring queries the process: ${o.id}` }));
 
