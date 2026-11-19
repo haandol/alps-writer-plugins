@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { validateModel } from "../scripts/ontology-lib.mjs";
 import { queryContext } from "../scripts/ontology-query.mjs";
 import { EXAMPLE } from "./ontology-helpers.mjs";
-import { MAPPING } from "./ontology-query-helpers.mjs";
+import { HEAD, MAPPING } from "./ontology-query-helpers.mjs";
 
 const EXTRA =
   '\nm:ordering.search-case a onto:Step ; rdfs:label "Search example" ; onto:definition "결제가 완료되면 주문을 확정한다. Quarantine the parcel marker." ; onto:stepKind "system" ; onto:inContext m:ordering .\nm:ordering.place-order onto:hasStep m:ordering.search-case .\nm:customer onto:performs m:ordering.search-case .\n';
@@ -95,16 +95,14 @@ test("retired text stays opt-in and current model-only descriptions do not becom
 });
 
 test("a whole-model search lists every BC whose own view holds the matching rule", () => {
-  const head =
-    "@prefix m: <urn:ontology-writer:model:> .\n@prefix onto: <urn:ontology-writer:vocabulary:> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n\n";
   const cases = [
     // A rule on an Ordering concept that also constrains Payment's concept.
-    `${head}m:ordering.line-limit a onto:BusinessRule ; rdfs:label "Line quantity cap" ;
+    `${HEAD}m:ordering.line-limit a onto:BusinessRule ; rdfs:label "Line quantity cap" ;
   onto:definition "Zebra marker applies to each order line." ; onto:basisKind "operating-policy" ;
   onto:basis "Warehouse handling policy." ; onto:constrains m:ordering.order-line, m:payment.payment .
 `,
     // A rule on an Ordering policy that starts a Payment step.
-    `${head}m:ordering.notify-payment a onto:Policy ; rdfs:label "Notify payment" ;
+    `${HEAD}m:ordering.notify-payment a onto:Policy ; rdfs:label "Notify payment" ;
   onto:definition "Ordering asks payment to start." ; onto:reactionCondition "An order exists." ;
   onto:basisKind "operating-policy" ; onto:basis "Store policy." ; onto:inContext m:ordering ;
   onto:starts m:payment.request-payment .

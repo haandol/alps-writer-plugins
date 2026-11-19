@@ -488,13 +488,15 @@ const readJson = (file) => {
   }
 };
 
+/** How far a `wait` has taken the session's events. */
+const cursorSeq = (files) => readJson(files.cursor)?.seq ?? 0;
+
 /** A live wait command establishes availability; a question-file message does not. */
-function discussionState(files, events) {
+function discussionState(files, events, cursor = cursorSeq(files)) {
   const listener = readJson(files.listener);
   const available = Boolean(
     listener?.waiting && listener.until > Date.now() && alive(listener.pid),
   );
-  const cursor = readJson(files.cursor)?.seq ?? 0;
   const replies = new Map(
     events.filter((e) => e.type === "discussion-reply").map((e) => [e.messageId, e]),
   );
@@ -606,7 +608,7 @@ export function startServer(
       refreshedThrough = latestReply.seq;
     }
     // Sent answers show the agent working only once a wait took them; until then they await it.
-    const cursor = readJson(files.cursor)?.seq ?? 0;
+    const cursor = cursorSeq(files);
     const s = summarize(doc, events, { cursor });
     const sentSince = Boolean(s.lastDeliver && Date.parse(s.lastDeliver.at) > goodMtime);
     const taken = Boolean(s.lastDeliver && s.lastDeliver.seq <= cursor);
@@ -620,7 +622,7 @@ export function startServer(
       questions: s.questions,
       sequence: events.at(-1)?.seq ?? 0,
       questionRevision: goodMtime,
-      discussion: discussionState(files, events),
+      discussion: discussionState(files, events, cursor),
       working: sentSince && taken,
       awaitingAgent: sentSince && !taken,
       warning,
@@ -802,7 +804,7 @@ export async function waitForAnswers(run, { timeoutSeconds = 0, pollMs = 300 } =
           until: Date.now() + Math.max(1500, pollMs * 3),
         }),
       );
-      const cursor = readJson(files.cursor)?.seq ?? 0;
+      const cursor = cursorSeq(files);
       const events = readEvents(files.answers);
       const fresh = events.filter(
         (e) =>
@@ -831,7 +833,7 @@ export async function waitForAnswers(run, { timeoutSeconds = 0, pollMs = 300 } =
         // claim must wait for a new request instead of running this one twice.
         if (fresh.length) {
           const claimed = withLock(`${files.cursor}.lock`, () => {
-            if ((readJson(files.cursor)?.seq ?? 0) !== cursor) return false;
+            if (cursorSeq(files) !== cursor) return false;
             writeFileSync(files.cursor, JSON.stringify({ seq: fresh.at(-1).seq }));
             return true;
           });

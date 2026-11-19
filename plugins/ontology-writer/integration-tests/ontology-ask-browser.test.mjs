@@ -87,7 +87,6 @@ test("collected answers wait for submission, a sent answer shows the agent worki
       /waiting for the agent to pick them up/.test(document.querySelector(".status").textContent),
     );
     assert.match(await status(), /tell the agent in the main conversation/);
-    assert.doesNotMatch(await status(), /applying your answers/);
     await saved(page, "Q1", "Sent · waiting for the agent");
     assert.deepEqual(deliveries().at(-1).questionIds, ["Q1"]);
     // Once a wait takes it, the screen shows the agent working and the answer delivered.
@@ -115,7 +114,6 @@ test("collected answers wait for submission, a sent answer shows the agent worki
     await page.waitForFunction(
       () => !/applying your answers/.test(document.querySelector(".status").textContent),
     );
-    assert.doesNotMatch(await status(), /applying your answers/);
 
     await page.click(".mode:nth-child(1)");
     await choose(page, "Q2", "no");

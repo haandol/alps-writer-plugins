@@ -1668,6 +1668,27 @@ const SOURCE_PAGE = /\d+\s*(?:쪽|페이지)|(?<!\p{L})pp?\.\s?\d+|(?<!\p{L})pag
 const SOURCE_PAGE_SHORT =
   /(?<![\p{L}\p{N}.])\d{2,}pp?(?![\p{Script=Latin}\p{N}])|(?<!\p{L})pp?\d{2,}(?![\p{Script=Latin}\p{N}])/u;
 
+// A passage in quotation marks long enough to be copied wording rather than a quoted term.
+const QUOTED_PASSAGE = /["“‘']([^"”’']{10,})["”’']/u;
+
+/**
+ * Why text saved under `property` (a local name such as "basis") carries an input document —
+ * one of the evidence `sources` by name or path, a file name, a page, or in a basis a quoted
+ * passage — or null. A basis may name a regulation, contract or policy even when an input
+ * document has that title, so there only a source path counts.
+ */
+export function savedTextTrace(property, text, { sources = [] } = {}) {
+  const value = String(text ?? "");
+  const basis = property === "basis";
+  const named = sources.find(
+    (s) => s.length >= 3 && value.includes(s) && (!basis || /[\\/]/.test(s)),
+  );
+  if (named) return `names the input document ${JSON.stringify(named)}`;
+  return (
+    sourceTrace(value) ?? (basis && QUOTED_PASSAGE.test(value) ? "quotes a source passage" : null)
+  );
+}
+
 /** Why saved text cites an input document — a file name or a page — or null when it does not. */
 export function sourceTrace(text) {
   const value = String(text ?? "");

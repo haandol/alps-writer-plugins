@@ -765,6 +765,17 @@
     );
   }
 
+  // Without a listening agent, sent answers need the user to hand them over in the conversation.
+  function statusText() {
+    if (state.closed) return T.ended;
+    if (state.working) return T.working;
+    if (state.awaitingAgent)
+      return state.discussion?.available
+        ? T.awaitingAgent
+        : `${T.awaitingAgent} ${T.answerHandoff}`;
+    return state.agent?.message || T.idle;
+  }
+
   function paint() {
     if (!state) return;
     document.title = state.title || document.title;
@@ -772,16 +783,7 @@
     intro.textContent = state.intro;
     intro.hidden = !state.intro;
     setFigure(overview, state.diagram);
-    // Without a listening agent, sent answers need the user to hand them over in the conversation.
-    status.textContent = state.closed
-      ? T.ended
-      : state.working
-        ? T.working
-        : state.awaitingAgent
-          ? state.discussion?.available
-            ? T.awaitingAgent
-            : `${T.awaitingAgent} ${T.answerHandoff}`
-          : state.agent?.message || T.idle;
+    status.textContent = statusText();
     status.className = `status${state.working ? " is-working" : ""}${state.closed ? " is-closed" : ""}`;
     warn.textContent = state.warning ? `${T.warning} ${state.warning}` : "";
     warn.hidden = !state.warning;

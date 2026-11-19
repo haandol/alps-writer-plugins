@@ -396,6 +396,8 @@ test("saved text that names an input document's file or page is listed by the pr
     for (const basis of [
       '"주문정책서.pdf 12쪽: 결제가 끝난 주문만 확정한다"',
       '"결제 정책 12쪽을 따른다."',
+      // A quoted source passage in a basis is a trace on every save path, not only in prepare.
+      '"\\"결제가 끝난 주문만 확정한다\\"는 문장을 따른다."',
     ]) {
       draft(dir, ACCEPTED.replace('"Store accounting policy."', basis));
       // The preview still shows its diff, so a review draft's report keeps its comparison.

@@ -130,6 +130,7 @@ import {
   sameKeys,
   sameMeaningKeys,
   serializeTurtle,
+  savedTextTrace,
   sourceTrace,
   tripleKey,
   unionGraph,
@@ -678,13 +679,15 @@ function loadModel(dir) {
 function addedSourceTraces(before, triples) {
   const held = new Set(before.triples.map(tripleKey));
   return triples.flatMap((t) => {
-    const trace = t.o.type === "literal" && !held.has(tripleKey(t)) && sourceTrace(t.o.value);
+    const property = t.p.replace(/^.*[#/:]/, "");
+    const trace =
+      t.o.type === "literal" && !held.has(tripleKey(t)) && savedTextTrace(property, t.o.value);
     return trace
       ? [
           {
             level: "error",
             code: "ontology-text-source",
-            where: `${elementId(t.s)} ${t.p.replace(/^.*[#/:]/, "")}`,
+            where: `${elementId(t.s)} ${property}`,
             msg: `${JSON.stringify(t.o.value)} ${trace}; save a short business sentence and keep sources in the report`,
           },
         ]

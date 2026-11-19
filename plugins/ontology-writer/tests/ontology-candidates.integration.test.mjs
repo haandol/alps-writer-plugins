@@ -41,6 +41,15 @@ const draftDocs = (dir, name) =>
     .sort()
     .map((f) => ({ doc: f, text: readFileSync(path.join(dir, name, f), "utf8") }));
 const triplesOf = (docs) => docs.flatMap((d) => parseTurtle(d.text, d.doc).triples);
+/** Save candidates as the project's first model, as an approved first build would. */
+function saveFirstModel(dir, candidates) {
+  project(dir, candidates);
+  const out = run(dir, "prepare", "candidates.json", "--run", "first", "--confirmed-only");
+  assert.equal(out.status, 0, out.stdout + out.stderr);
+  mkdirSync(path.join(dir, "docs/ontology"));
+  for (const d of draftDocs(dir, "first/save-draft"))
+    writeFileSync(path.join(dir, "docs/ontology", d.doc), d.text);
+}
 
 test("a project without a model gets a valid draft, board, index draft and questions", () => {
   withTmp((dir) => {
@@ -172,14 +181,7 @@ test("an extension's unconfirmed new hand-off on an existing step keeps the proc
     const first = structuredClone(FIXTURE);
     first.processes[0].openScope = [{ kind: "none" }];
     first.links = [];
-    project(dir, first);
-    assert.equal(
-      run(dir, "prepare", "candidates.json", "--run", "first", "--confirmed-only").status,
-      0,
-    );
-    mkdirSync(path.join(dir, "docs/ontology"));
-    for (const d of draftDocs(dir, "first/save-draft"))
-      writeFileSync(path.join(dir, "docs/ontology", d.doc), d.text);
+    saveFirstModel(dir, first);
     // A new document adds a path between two existing steps; the user confirms only a rule.
     const ext = {
       version: 1,
@@ -305,14 +307,7 @@ test("an existing step's unconfirmed hand-off into another process is cut at the
     const first = structuredClone(FIXTURE);
     first.processes[0].openScope = [{ kind: "none" }];
     first.links = [];
-    project(dir, first);
-    assert.equal(
-      run(dir, "prepare", "candidates.json", "--run", "first", "--confirmed-only").status,
-      0,
-    );
-    mkdirSync(path.join(dir, "docs/ontology"));
-    for (const d of draftDocs(dir, "first/save-draft"))
-      writeFileSync(path.join(dir, "docs/ontology", d.doc), d.text);
+    saveFirstModel(dir, first);
     // A confirmed returns process whose step the order flow would now hand work to.
     const ext = {
       version: 1,
@@ -404,14 +399,7 @@ test("on an extension, a new step open path is refused under a none process, and
     const first = structuredClone(FIXTURE);
     first.processes[0].openScope = [{ kind: "none" }];
     first.links = [];
-    project(dir, first);
-    assert.equal(
-      run(dir, "prepare", "candidates.json", "--run", "first", "--confirmed-only").status,
-      0,
-    );
-    mkdirSync(path.join(dir, "docs/ontology"));
-    for (const d of draftDocs(dir, "first/save-draft"))
-      writeFileSync(path.join(dir, "docs/ontology", d.doc), d.text);
+    saveFirstModel(dir, first);
     const stepPath = (text) => ({
       version: 1,
       title: "extension",
@@ -456,6 +444,36 @@ test("on an extension, a new step open path is refused under a none process, and
   });
 });
 
+test("a save that declares no open scope for a process whose step already records an open path is refused", () => {
+  withTmp((dir) => {
+    // A first model whose process records nothing about open scope while a step has an open path.
+    const first = structuredClone(FIXTURE);
+    delete first.processes[0].openScope;
+    first.steps[0].openScope = [{ kind: "open-path", text: "주문 취소 경로는 확인되지 않았다." }];
+    first.links = [];
+    saveFirstModel(dir, first);
+    // The user now confirms that the process has no open scope at all.
+    project(dir, {
+      version: 1,
+      title: "scope",
+      scope: "주문",
+      language: "ko",
+      processes: [
+        {
+          id: "ordering.place-order",
+          verdict: "stated",
+          evidence: [{ source: "x.md", detail: "1행" }],
+          confirmed: true,
+          openScope: [{ kind: "none" }],
+        },
+      ],
+    });
+    const out = run(dir, "prepare", "candidates.json", "--run", "none", "--confirmed-only");
+    assert.equal(out.status, 1, out.stdout + out.stderr);
+    assert.match(out.stdout, /its step ordering\.submit-order records an open path/);
+  });
+});
+
 test('one candidate cannot mix "none" with other open-scope items', () => {
   withTmp((dir) => {
     const c = structuredClone(FIXTURE);
@@ -472,14 +490,7 @@ test("an extension's review draft repeats current elements by id and still gets 
   withTmp((dir) => {
     const first = structuredClone(FIXTURE);
     first.links = [];
-    project(dir, first);
-    assert.equal(
-      run(dir, "prepare", "candidates.json", "--run", "first", "--confirmed-only").status,
-      0,
-    );
-    mkdirSync(path.join(dir, "docs/ontology"));
-    for (const d of draftDocs(dir, "first/save-draft"))
-      writeFileSync(path.join(dir, "docs/ontology", d.doc), d.text);
+    saveFirstModel(dir, first);
     // A new step emits a current event; current elements are repeated by id only.
     const ext = {
       version: 1,

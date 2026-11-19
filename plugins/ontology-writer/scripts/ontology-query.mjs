@@ -9,6 +9,7 @@ import {
   pageNavigation,
   projectNavigation,
   renderNavigation,
+  uncommittedDocumentsLine,
 } from "./ontology-navigation.mjs";
 import {
   ONTO,
@@ -693,11 +694,7 @@ export function renderContext(r) {
           0,
           `Committed-edit flags unavailable: ${c.committedUnavailable} — treat Accepted processes in this scope as possibly edited directly; confirm with ontology sync before relying on them`,
         );
-      if (c.uncommittedDocuments?.length)
-        say(
-          0,
-          `UNCOMMITTED model documents differ from HEAD (not a settled reference): ${c.uncommittedDocuments.join(", ")}`,
-        );
+      if (c.uncommittedDocuments?.length) say(0, uncommittedDocumentsLine(c.uncommittedDocuments));
       for (const u of c.unsyncedUnknown ?? [])
         say(
           0,
