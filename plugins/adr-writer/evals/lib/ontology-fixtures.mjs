@@ -202,3 +202,29 @@ export const REPORT_REFERENCES = [
   "skills/ontology-build/references/candidate-review.md",
   "skills/ontology-build/references/candidates.md",
 ];
+
+/**
+ * A payments ADR whose contract the code honours; only a storage detail it names has drifted.
+ */
+export const DRIFTED_PAYMENTS_ADR = adrDocument({
+  title: "Capture card payments once per order",
+  purpose: "Customers must never be charged twice for one order.",
+  decision: "Capture the card charge through the payment provider once per order.",
+  rows: [
+    "An order is captured at most once; a repeated capture request returns the first result.",
+    "A declined card leaves the order unpaid; the decline is written to the `payment_failures` table.",
+  ],
+});
+/** The capture code that honours that contract, writing declines to its own log. */
+export const CAPTURE_CODE = `// payments/capture.ts
+export async function capture(order) {
+  const first = await ledger.find(order.id);
+  if (first) return first; // a repeated request returns the first result
+  const result = await provider.capture(order.id, order.total);
+  await ledger.record(order.id, result);
+  if (result.declined) {
+    await declineLog.append(order.id, result.reason);
+    return keepUnpaid(order.id);
+  }
+  return markPaid(order.id);
+}`;
