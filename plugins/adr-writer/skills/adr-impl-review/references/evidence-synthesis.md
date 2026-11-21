@@ -10,6 +10,13 @@ monitoring is not a required gate.
 
 The main session does not merge the two reviews by vote. Verify findings with these rules.
 
+When reusing a prior execution, its verified clean Git commit and relevant
+source, test and configuration paths can be recorded with its existing test
+evidence. Compare with `scripts/review-changes.mjs <commit-id> <path>...`,
+including owning directories for new files. Reuse only evidence whose
+intent, dependencies, inputs, and environment still match. A clean tree or an
+ADR's Status date alone never supplies a result.
+
 1. Merge the same problem into one, but keep every source in `perspective`.
 2. Do not hide mutually contradictory conclusions — record them as a `Contradiction` finding.
 3. Confirm a high-impact finding only with a test, a reproduction, or an exact code/ADR comparison.
@@ -20,7 +27,11 @@ The main session does not merge the two reviews by vote. Verify findings with th
 5. Distinguish the fact that a test exists from the fact that a test detects the defect.
    Read the assertions and their execution conditions against the obligation.
    A success label, test name, line/branch coverage or mock assumption cannot
-   replace the enforcing path and observed result.
+   replace the enforcing path and observed result. For model behavior, compare
+   the actual prompt, tool permissions and fixture. A scorer-only change can
+   use captured responses and actions with the current checks. Record it as a
+   rejudgment; request a fresh target sample for changed behavior inputs or
+   missing observations.
 6. A necessity PASS means "no unnecessary change was found"; a sufficiency PASS means "no counterexample was found at present and the decision ledger is accounted for."
 7. Normalize coverage independently from findings. `D0` is the Decision; `R1..Rn` follow top-level bullets and table data rows under `### Requirement contract` in source order. Each ID has exactly one `contractId`, `requirement`, `status`, `adrBasis`, `implementation`, `evidence`, and `tests` row. `D0.adrBasis` is `Decision`; preserve each source bullet verbatim, or join a table row's trimmed cells with the literal separator `" | "` (one space on each side of the pipe), excluding its header/separator. Use `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`. `PROVEN` means inspected/executed evidence supports the obligation without a found counterexample, not mathematical proof. Reject omissions, duplicates, and invented IDs.
 8. Before normalizing implementation choices, inspect their externally checkable premises. A premise confirmed by code, tests, configuration, or an authoritative external contract may remain part of the choice's evidence. If the premise is unverified and could violate safety or an ADR contract row when false, create an `Unverified risk`, mark the affected coverage `UNVERIFIED`, and block `PASS`. Do not infer private reasoning.

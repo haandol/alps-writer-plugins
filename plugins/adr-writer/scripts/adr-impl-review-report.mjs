@@ -197,6 +197,7 @@ import {
   reviewCodeGroups,
 } from "./adr-impl-review-prose.mjs";
 import {
+  indexReviewDiagrams,
   renderMermaid,
   mermaidRuntime,
   mermaidBlocks,
@@ -1845,9 +1846,10 @@ function main() {
     const blocks = data.narrativeSections.flatMap((section) =>
       mermaidBlocks(`## ${section.title}\n${section.body}`),
     );
+    const blocksById = indexReviewDiagrams(blocks, data.diagramRequirements);
     for (const requirement of data.diagramRequirements) {
-      const matches = blocks.filter((block) => block.requirementId === requirement.id);
-      if (matches.length !== 1 || !matches[0].closed || parseMermaid(matches[0].source).error) {
+      const matches = blocksById.get(requirement.id);
+      if (matches?.length !== 1 || !matches[0].closed || parseMermaid(matches[0].source).error) {
         die(
           `required diagram ${requirement.id} has invalid Mermaid syntax; repair its source before writing HTML`,
         );

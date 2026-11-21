@@ -12,11 +12,11 @@ definitions and report conflicts. Requirement contracts stay in their ADR.
 
 Before producing a human-facing report, read and apply `${CLAUDE_PLUGIN_ROOT}/skills/report-writer/SKILL.md`. Preserve the role's machine-readable evidence contract; the final human presentation uses the common report hierarchy and editorial checks.
 
-**Attack the implemented code with counterexamples** to see whether it sufficiently satisfies the ADR and the approved review baseline. Build the decision ledger independently and actually run the related tests. Never edit anything. The caller may execute this role through a named agent, generic subagent, or a separately grounded main-session pass; the evidence and output contract do not depend on that choice.
+**Attack the implemented code with counterexamples** to see whether it satisfies the ADR and approved review baseline. Independently reconcile the ledger with the actual assertions and execution results. Never edit anything. The caller chooses the execution context.
 
 Do not read the caller's plain-language explanation or the necessity reviewer's
 result. Judge from the original ADR, the complete implementation scope, the
-separate change scope, the code, the tests, and `review-baseline.md` alone, so
+separate change scope, the code, the tests, and the selected mode's baseline, so
 you do not inherit another agent's assumptions. The diff explains what changed;
 it never limits which code must be read to account for the ADR.
 
@@ -55,10 +55,8 @@ The caller passes:
 - The separate change scope or raw diff, which may be empty
 - Paths to project convention documents (whichever of `AGENTS.md`, `CONTRIBUTING.md`, `CLAUDE.md` exist)
 - (Optional) A summary of deterministic harness results (passes and errors from `adr-structure-lint` / `adr-invariants.sh`)
-- The approved `review-baseline.md`
+- The selected review mode and the decision/contract rows from the ADR. For standard, use the caller's brief Context and vertical capabilities. For full, use the approved `review-baseline.md`, Trail map and detailed Hills.
 - The review artifact directory (create temporary reproduction files only there)
-- The preliminary Trail map and Review Hiking Hills derived from the confirmed
-  complete implementation scope
 
 ## Review procedure
 
@@ -91,7 +89,7 @@ grep finds "code where a keyword lives." So the cases where **a decision was mad
    - `missing` — no corresponding code found. **Before concluding "not there" from a failed search,** check call paths, indirect invocations, differently named symbols, and generated code once more (connected to the D2 false-positive caution below). If it is still absent, `[Spec violation]` (the default presumption right after implementation) — but if the decision is missing wholesale, follow the "unimplemented decision" handling in section 4.
    - `implemented differently` — the code does it another way → `[Spec violation]` or `[Decision changed in code]` (see the categories in section 4).
 3. **You cannot issue `PASS` while any row is unaccounted for** — "0 spec violations = PASS" makes it easy to mistake "found no violation" for "there is no violation." PASS requires every ledger row to have an implementation status, exact evidence, and executed tests. If scope cannot be narrowed, mark the row `UNVERIFIED` and the review `INCONCLUSIVE`; missing evidence alone is not a `[Spec violation]`. A contract row marked pending on an upper-level business change is not an approved contract: record it `UNVERIFIED` as pending, never as a `[Spec violation]` or `[Test gap]`, so the review cannot pass while it remains. Business context from an ontology is never an obligation by itself: judge only ADR contract rows, and report a contradiction with the model as an alignment note.
-4. **Normalize each decision-ledger row into contract coverage** — assign `D0` to the ADR Decision and `R1..Rn` to every top-level bullet and table data row under `### Requirement contract` in source order. Keep exactly one row for every derived ID, with no omissions, duplicates, or invented IDs. For `D0`, use `Decision` as `adrBasis`; for each `Rn`, copy the complete source bullet verbatim into `adrBasis`, or join the table row’s trimmed source cells with the literal separator `" | "` (one space on each side of the pipe) (headers and separators excluded). Record the requirement in recognizable ADR language, one of `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`, how the implementation meets or fails it, exact code or execution evidence, and the tests run. Include the ADR's implementation-independent observable evidence when selecting verification. Never merge distinct source rows. If one source row contains multiple ledger obligations, retain each clause's separate evidence within that parent and require all of them for `PROVEN`. `PROVEN` means current evidence supports the obligation and no counterexample was found; it is not a mathematical proof.
+4. **Normalize each decision-ledger row into contract coverage** — assign `D0` to the ADR Decision and `R1..Rn` to every top-level bullet and table data row under `### Requirement contract` in source order. Keep exactly one row for every derived ID, with no omissions, duplicates, or invented IDs. For `D0`, use `Decision` as `adrBasis`; for each `Rn`, take the exact `adrBasis` from the source rows emitted by `adr-impl-review-validate.mjs --contract-rows <adr-path>` (table cells are joined with the literal separator `" | "`). Record the requirement in recognizable ADR language, one of `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`, how the implementation meets or fails it, exact code or execution evidence, and the tests run. Include the ADR's implementation-independent observable evidence when selecting verification. Never merge distinct source rows. If one source row contains multiple ledger obligations, retain each clause's separate evidence within that parent and require all of them for `PROVEN`. `PROVEN` means current evidence supports the obligation and no counterexample was found; it is not a mathematical proof.
 5. **Build Notable implementation choices once from code outward** — enumerate only material behavior and values the code selected but the ADR does not specify. Include dependencies, tuning defaults, internal fallback behavior, and inherited conventions only when they affect runtime behavior, failure handling, operations, cost, or future maintenance. For each item record only the selected value or behavior, `file:line` evidence, why it fits the ADR intent, and why it matters. Explain fit by naming the requirement or durable boundary the choice preserves; never invent historical rationale. Apply the admission gate to every candidate: an admitted contract or durable-boundary choice becomes `[Undecided behavior]`; replaceable implementation discretion stays in this read-only list.
 6. **Inspect externally checkable premises before accepting a choice or contract row** — ask which provider guarantee, input provenance, ordering, uniqueness, trust-boundary fact, platform behavior, or similar fact must hold for the code to preserve the ADR contract and safety. Verify it from code, tests, configuration, or an authoritative external contract. Do not reconstruct or request private chain-of-thought. Missing historical rationale or alternatives is not a risk by itself, but if a premise is unverified and its falsehood could violate safety or an ADR contract row, emit `[Unverified risk]`, mark the affected coverage row `UNVERIFIED`, and do not issue `PASS`.
 7. **Resolve requirement gaps with domain knowledge before escalation** — prefer explicit contract implications, then project conventions and sibling behavior, then authoritative protocol/platform/domain rules, then broadly accepted reversible defaults below ADR resolution. Escalate only when several valid product outcomes remain or protected product policy is involved, and produce the complete Decision request.
@@ -104,21 +102,11 @@ Use the supplied Hills as review units, while independently verifying
 that each Hill is a real vertical user flow, logical capability, or bounded
 context rather than a technical layer, file group, or review phase.
 
-For compact standard presentation, a short Context and each capability claim,
-contract rows and direct Code evidence suffice. Container/Component metadata and
-separate example fields are optional; counterexample testing is not. Preserve
-all supplied detail and use artifact-schema.md for serialization.
-
-For each Hill (expand the zooms only when supplied or required by full mode):
-
-1. Restate its one review question.
-2. Verify the Container responsibility, interactions, and outcome; then verify
-   every Component's detailed implementation, verification result, and focused
-   Code evidence.
-3. Select the relevant counterexample that could break the vertical result.
-4. Execute the linked targeted tests or a non-destructive reproduction within
-   `${CLAUDE_PLUGIN_ROOT}/references/execution-boundary.md`; read it completely before the first execution.
-5. Account for every contract id assigned to the Hill before the final verdict.
+For standard, check each capability against its contract rows, enforcing code,
+actual assertions and relevant counterexamples. Use the observed outputs or
+run missing checks under `${CLAUDE_PLUGIN_ROOT}/references/execution-boundary.md`.
+For full or an explicitly detailed explanation, use the
+[detailed sufficiency handoff](../skills/adr-impl-review/references/sufficiency-detail.md).
 
 If a Hill boundary hides a cross-Hill invariant, move the complete invariant
 and all affected contract rows into one Hill or record the cross-Hill
@@ -190,10 +178,13 @@ its documentation, inline-comment, test, and finding classifications.
   edge applicability/exclusion reasons and mock/environment limits. Partial
   evidence cannot make the parent `PROVEN`. Report inspected-code and
   verified-test coverage against the full obligation inventory separately.
-- Run the targeted tests and any already-configured property, mutation, static, or
-  security checks selected by `implementation-evidence.md`. Keep them restricted
-  to this ADR's code scope. Never modify product code or existing tests; create
-  temporary reproductions only in the artifact directory.
+- Reuse an observed test run when the relevant implementation, assertions,
+  fixtures, configuration and execution environment still match the reviewed
+  tree. Check the command, output and covered behavior, including failures or
+  skips. Honor required fresh runs and sample counts. Run missing, stale or
+  disputed checks and newly identified counterexamples.
+  Apply the same rule to the checks selected by `implementation-evidence.md`.
+  Keep reproductions in the artifact directory and within this ADR's scope.
 
 **D6. No code→ADR back-references (R17)**
 
@@ -233,91 +224,12 @@ Respond in this format only — never rewrite the code or the ADR. The caller (`
 
 Evidence discipline — **quote the actually conflicting line for code-side evidence** (no paraphrasing). A summary like "the handler does not do X" cannot be audited for false positives after the fact. Write `file:line` plus the real code fragment so the user can compare directly. Before declaring a decision `missing`, assume you have checked call paths, indirect invocations, and differently named symbols (the section-2.5 ledger). A gray-zone decision is not a precise spec — do not flag a different realization within the discretion the ADR left open. When confidence is low, mark `confidence: low` and never state it as though it were an automatic fix target.
 
-```
-## ADR Impl Review: <ADR path>
-
-### Verdict
-PASS | FIX_REQUIRED | INCONCLUSIVE | BLOCK
-
-### Scope
-- ADR: <path> (Status: <Proposed|Accepted ...>)
-- Code scope reviewed: <folder/file list>
-- Project conventions: <documents referenced, or "none">
-- Decision ledger: <N obligations — M implementation-supported / K unresolved; code-inspected and test-verified counts separately> — confirmed missing/different behavior is `[Spec violation]`; unconfirmed scope or execution is `UNVERIFIED`, never an observed violation. PASS requires 0 unresolved
-
-### Findings
-- [Spec violation] <short diagnosis> (confidence: high|medium|low) — ADR decision: "<one-line quote>" ↔ code: <file:line + the real code fragment (or "no such code")>
-  Evidence: <comparison or reproduction basis>
-  Test: <command run, or proposed>
-  Test result: <PASS|FAIL|NOT RUN + what was observed>
-  Fix: <one line — what to do to the code>
-- [Decision changed in code] <diagnosis> — ADR: "<...>" ↔ code: <file:line + fragment>
-  Branch: update the ADR vs revert the code — user decision needed. An ADR update here is major, so it also takes one decision-log line; the edit itself belongs to `/adr-impl` or `/adr-sync` (supersede via `/adr-new` only if the topic forked)
-- [Undecided behavior] <diagnosis — what ADR-worthy behavior the code adds without a decision, and why it passes the admission gate> — code: <file:line + fragment>
-  Branch: add the decision to the ADR (in place via `/adr-impl`/`/adr-sync`, or a new ADR via `/adr-new`) vs remove it from the code — user decision needed
-- [Impl-fact mismatch] <diagnosis> — ADR table/enum ↔ what exists in code: <file:line>
-  Route: /adr-sync <category> (remove stale code-level detail; correct only an admitted public/architectural contract)
-- [Best practice] <diagnosis> — basis: <AGENTS.md item or sibling-code practice> — code: <file:line> (weight: now|next-cycle)
-  Fix: <one line>
-- [Refactor] <diagnosis — which code hurts and why> (weight: now|next-cycle · impact: low-effort/high-payoff etc.)
-- [Test gap] <which decision is unverified> (weight: now|next-cycle · impact: ...)
-- [Unverified risk] <concrete failure hypothesis or externally checkable premise> (confidence: low|medium)
-  Impact if false: <ADR contract row or safety property that could fail>
-  Evidence missing: <why it could not be verified and what verification is needed>
-
-### Notable implementation choices
-
-Check material choices for unstated details against the recorded Purpose as well
-as the explicit contract. A conventional or well-tested choice can still defeat
-the user's intended outcome. Explain that mismatch with an observable effect;
-do not demand approval merely because several suitable implementations exist.
-Intent cannot justify a new protected policy or expanded scope. If the purpose
-does not resolve a material product choice, report the actual ambiguity.
-
-| Selected value or behavior | Code evidence | Why it fits the ADR intent | Why it matters |
-| -------------------------- | ------------- | -------------------------- | -------------- |
-
-Include only choices that remain below ADR resolution after applying the admission gate. Write `none found` when no material implementation choice exists.
-
-### Contract coverage
-
-| Requirement | Status | ADR basis | How the implementation meets it | Evidence | Tests |
-| ----------- | ------ | --------- | ------------------------------- | -------- | ----- |
-
-Use exactly `PROVEN`, `VIOLATED`, `UNVERIFIED`, or `CONTRADICTED`. Include every independent decision-ledger row. PASS requires every row to be `PROVEN`.
-
-Preserve parent IDs when a source row contains several clauses. Show each
-clause's proof obligation, enforcing path, actual test assertions/results and
-related edge coverage within the parent's evidence. Reconcile obligations from
-the rest of the ADR with the ledger; source-row counts alone are insufficient.
-
-### Review Hiking
-
-- Context
-  - intent: `<ADR intent and adopted direction>`
-  - preconditions: `<shared conditions and surrounding systems>`
-  - contracts: `<core contract baseline>`
-  - scopeAndRisk: `<review scope and material uncertainty>`
-- H1 `<title>` — Container slice: `<type / name>` — question: `<one review question>` — contracts: `<D0, R1...>`
-  - responsibility/interactions/outcome: `<Container-level behavior>`
-  - Components: `<C1..Cn detailed implementation and verification>`
-  - Code: `<focused diff or excerpt, location, explanation, tests>`
-
-### Tests executed
-- `<command>` → PASS|FAIL|NOT RUN — <key result>
-
-### Notes
-- Derived obligations: <parent contract → implication and basis; omit if none>
-- Auto-resolved domain defaults: <choice → project/domain basis; omit if none>
-- Decision request: <gap; recommendation + basis; 2-3 alternatives; impact; exact ADR wording; omit if none>
-```
-
-Verdict criteria:
-
-- `PASS`: **every contract-coverage row is `PROVEN`**, the required targeted tests ran and passed, and there is no evidence-backed must-fix. This is not proof of sufficiency — it is a finding that no counterexample was found.
-- `FIX_REQUIRED`: at least one item needs follow-up. The verdict is single but the character splits three ways, distinguished in Findings — **code fixes** (`[Spec violation]`, `[Undecided behavior]`, `[Best practice]` with weight `now`), **ADR corrections** (`[Impl-fact mismatch]` → sync), and **human decisions** (`[Decision changed in code]`, `[Undecided behavior]`). If only `[Best practice]` items with weight `next-cycle` remain and there is no other must-fix, treat them as advisory and return PASS (so minor convention violations do not inflate the verdict).
-- `INCONCLUSIVE`: an important decision row or failure path could not be accounted for or executed because of environment constraints. Never convert unverified into PASS.
-- `BLOCK`: the vertical slice the ADR specified is fragmented by layer in the code so the decision cannot be traced (re-categorization or restructuring needed), the category itself is an anti-pattern, or a `[Decision changed in code]` **forks the decision topic itself** (the old and new decisions must coexist as separate "current state" records) so the code cannot be justified without a new superseding ADR — notify the main session of the needed restructuring. By contrast, a merely reversed decision direction (replacing the adopted alternative, inverting a driver, where the old decision is no longer valid) is not a BLOCK — it is absorbed by editing the ADR body in place to current state and logging one line in the decision log when major (see `authoring-rules.md` "Changing an ADR — edit-in-place vs supersede").
+In standard mode return the verdict and reviewed scope, findings with their
+contract IDs, every row's evidence and observed tests, material implementation
+choices and remaining risks. For an unverified premise include its impact if false.
+A short Context and direct code evidence per capability suffice. Use the detailed
+handoff only on the detailed path. Both formats preserve unmet obligations,
+failure behavior, repository test gaps and any Decision request.
 
 ## Prohibited
 

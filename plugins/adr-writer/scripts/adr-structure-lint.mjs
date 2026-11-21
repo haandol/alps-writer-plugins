@@ -23,10 +23,10 @@
 // against the model, which this plugin does not read.
 //
 // Usage:
-//   bun adr-structure-lint.mjs [--adr-dir docs/adr] [category] [--json]
+//   bun adr-structure-lint.mjs [--adr-dir docs/adr] [category|ADR-file] [--json]
 //                               [--no-invariants | --documents-only] [--warn-as-error]
 //
-//   [category]        limit to one category key (e.g. identity/login)
+//   [category|file]   category subtree or exact numbered ADR under the selected root
 //   --adr-dir DIR     ADR root (default: docs/adr)
 //   --json            emit machine-readable JSON instead of the text report
 //   --no-invariants   skip the adr-invariants.sh (a)/(b) sub-run
@@ -38,7 +38,7 @@
 //
 // Dependency-free: Node built-ins only, mirroring the plugin's zero-dep stance.
 
-import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -70,7 +70,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 function parseArgs(argv) {
   const opts = {
     adrDir: "docs/adr",
-    category: null,
+    target: null,
     json: false,
     invariants: true,
     documentsOnly: false,
@@ -90,7 +90,7 @@ function parseArgs(argv) {
       printHelp();
       process.exit(0);
     } else if (a.startsWith("--")) usage(`unknown flag: ${a}`);
-    else if (!opts.category) opts.category = a;
+    else if (opts.target === null && a) opts.target = a;
     else usage(`unexpected argument: ${a}`);
   }
   if (opts.documentsOnly && !opts.invariants)
@@ -106,7 +106,7 @@ function usage(msg) {
 function printHelp() {
   process.stdout.write(
     `adr-structure-lint — deterministic ADR structure checker\n\n` +
-      `Usage: bun adr-structure-lint.mjs [--adr-dir docs/adr] [category] [--json] [--no-invariants | --documents-only] [--warn-as-error]\n`,
+      `Usage: bun adr-structure-lint.mjs [--adr-dir docs/adr] [category|ADR-file] [--json] [--no-invariants | --documents-only] [--warn-as-error]\n`,
   );
 }
 
@@ -171,48 +171,77 @@ function readSafe(p) {
   }
 }
 
+/** Resolve a category relative to the ADR root, or a numbered ADR by its repository or root-relative path. */
+function documentTarget(adrRoot, target) {
+  if (!target) return { path: adrRoot, file: false, category: null };
+  const file = isAdrFile(path.basename(target));
+  if (!file && target.endsWith(".md")) usage("expected a numbered ADR filename");
+  const root = path.resolve(adrRoot);
+  const fromCwd = path.resolve(target);
+  const candidate =
+    file && fromCwd.startsWith(root + path.sep) ? fromCwd : path.resolve(root, target);
+  const relative = path.relative(root, candidate);
+  const outside = (rel) => rel === ".." || rel.startsWith(".." + path.sep) || path.isAbsolute(rel);
+  if (
+    outside(relative) ||
+    (existsSync(candidate) && outside(path.relative(realpathSync(root), realpathSync(candidate))))
+  )
+    usage("the review target must be inside the ADR directory");
+  return { path: path.join(adrRoot, relative), file, category: relative.split(path.sep).join("/") };
+}
+
 // ── main ──────────────────────────────────────────────────────────────────
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const rep = new Report();
 
   const adrRoot = opts.adrDir;
+  const repository = opts.target && opts.documentsOnly ? new Report() : rep;
   if (!existsSync(adrRoot) || !statSync(adrRoot).isDirectory()) {
     // No ADR tree → nothing to lint. Not an error (a fresh repo hasn't run
     // /adr-new yet); say so and exit clean.
-    finish(rep, opts, `no ADR directory: ${adrRoot} (no ADRs yet)`);
+    if (opts.target)
+      rep.error("target-missing", opts.target, "the selected ADR directory does not exist");
+    finish(rep, opts, `no ADR directory: ${adrRoot} (no ADRs yet)`, repository);
     return;
   }
 
   // ── load mapping ─────────────────────────────────────────────────────
   const mappingPath = path.join(adrRoot, ".mapping.json");
   let mapping = null;
-  let mappingRaw = null;
   if (existsSync(mappingPath)) {
-    mappingRaw = readSafe(mappingPath);
     try {
-      mapping = JSON.parse(mappingRaw);
+      mapping = JSON.parse(readFileSync(mappingPath, "utf8"));
+      for (const issue of validateMappingShape(mapping)) {
+        if (issue.level === "error") repository.error(`map-${issue.code}`, mappingPath, issue.msg);
+        else repository.warn(`map-${issue.code}`, mappingPath, issue.msg);
+      }
     } catch (e) {
-      rep.error("mapping-parse", mappingPath, `failed to parse JSON: ${e.message}`);
+      repository.error("mapping-parse", mappingPath, `failed to parse JSON: ${e.message}`);
     }
   } else {
-    rep.warn(
+    repository.warn(
       "mapping-missing",
       mappingPath,
       "mapping file is absent (proceeding from the ADR directories on disk)",
     );
   }
 
-  // ── mapping shape (R16 + schema subset) ──────────────────────────────
-  if (mapping) {
-    for (const iss of validateMappingShape(mapping)) {
-      if (iss.level === "error") rep.error(`map-${iss.code}`, mappingPath, iss.msg);
-      else rep.warn(`map-${iss.code}`, mappingPath, iss.msg);
-    }
-  }
-
   // ── discover ADR files on disk ────────────────────────────────────────
-  const files = findFiles(adrRoot, isAdrFile);
+  const target = documentTarget(adrRoot, opts.target);
+  const stat = statSync(target.path, { throwIfNoEntry: false });
+  const present = target.file ? stat?.isFile() : stat?.isDirectory();
+  if (!present && opts.target) {
+    // A grouping category may legitimately have an empty index entry and no directory.
+    if (stat || target.file || !Object.hasOwn(mapping?.categories ?? {}, target.category))
+      rep.error("target-missing", target.path, "the selected ADR file or category was not found");
+  }
+  const entries = !present
+    ? []
+    : target.file
+      ? [target.path]
+      : findFiles(target.path, (name) => isAdrFile(name) || isDecisionLog(name));
+  const files = entries.filter((file) => isAdrFile(path.basename(file)));
   // paths relative to repo root (docs/adr/...), forward-slashed for matching
   const relFromRepo = (p) => path.relative(process.cwd(), p).split(path.sep).join("/");
   const diskAdrs = new Set(files.map(relFromRepo));
@@ -235,22 +264,12 @@ function main() {
       }
   }
 
-  // ── category filter ───────────────────────────────────────────────────
-  const inScope = (relPath) => {
-    if (!opts.category) return true;
-    const rel = relPath.replace(new RegExp(`^${escapeRe(adrRoot)}/`), "");
-    const dir = rel.split("/").slice(0, -1).join("/");
-    // a category is either the full dir (context/feature or flat context)
-    return dir === opts.category || dir.startsWith(opts.category + "/");
-  };
-
   // ── per-ADR checks ────────────────────────────────────────────────────
   // (Anti-pattern segments on mapping KEYS are covered by validateMappingShape;
   // the per-ADR loop below independently checks the on-disk DIRECTORY path so a
   // mapping-less repo is still linted.)
   for (const file of files) {
     const rel = relFromRepo(file);
-    if (!inScope(rel)) continue;
     const relFromAdr = path.relative(adrRoot, file).split(path.sep).join("/");
     const where = rel;
     const base = path.basename(file);
@@ -380,7 +399,13 @@ function main() {
       for (const rec of Array.isArray(entry?.adrs) ? entry.adrs : []) {
         const a = rec && typeof rec === "object" ? rec.path : rec;
         if (typeof a !== "string" || !a) continue; // shape errors already reported
-        if (opts.category && !(key === opts.category || key.startsWith(opts.category + "/")))
+        if (target.file && a !== relFromRepo(target.path)) continue;
+        if (
+          !target.file &&
+          target.category &&
+          key !== target.category &&
+          !key.startsWith(target.category + "/")
+        )
           continue;
         if (!diskAdrs.has(a))
           rep.error(
@@ -397,11 +422,9 @@ function main() {
   // flag any category whose NNNN sequence has a hole. This is NOT an error:
   // split, sync and rollup preserve gaps by default. A warning grants no
   // permission to rename files or reopen a settled user choice.
-  {
+  if (!target.file) {
     const byCategory = new Map();
     for (const file of files) {
-      const rel = relFromRepo(file);
-      if (!inScope(rel)) continue;
       const relFromAdr = path.relative(adrRoot, file).split(path.sep).join("/");
       const cat = relFromAdr.split("/").slice(0, -1).join("/") || "(root)";
       if (!byCategory.has(cat)) byCategory.set(cat, []);
@@ -426,9 +449,8 @@ function main() {
   // "<cat>/NNNN" token form while the log links relatively ("./0001-x.md"), and
   // R10 only reads NNNN-*.md bodies. Error, not warning: a log whose pointer is
   // dead has lost the one reference that makes the entry traceable.
-  for (const logFile of findFiles(adrRoot, isDecisionLog)) {
+  for (const logFile of entries.filter((file) => isDecisionLog(path.basename(file)))) {
     const rel = relFromRepo(logFile);
-    if (!inScope(rel)) continue;
     const body = readSafe(logFile);
     if (body === null) continue;
     for (const target of decisionLogLinkTargets(body)) {
@@ -473,7 +495,7 @@ function main() {
         if (compareVersions(seeded, pluginVersion) < 0) stale.push(`${doc} (${seeded})`);
       }
       if (stale.length) {
-        rep.warn(
+        repository.warn(
           "rules-doc-stale",
           `docs/adr`,
           `seeded rule docs trail the installed plugin (${pluginVersion}): ${stale.join(", ")}. ` +
@@ -482,7 +504,7 @@ function main() {
             `local edits you meant to keep.`,
         );
       } else if (present > 0 && stamped === 0) {
-        rep.warn(
+        repository.warn(
           "rules-doc-unstamped",
           `docs/adr`,
           `no rule doc carries an adr-writer:rules-version stamp, so staleness cannot be detected. ` +
@@ -518,7 +540,7 @@ function main() {
       const readmeProse = readmeBody.replace(/^```[\s\S]*?^```/gm, "");
       const leftover = MOVED.filter(([re]) => re.test(readmeProse)).map(([, name]) => name);
       if (conceptsBody === null) {
-        rep.warn(
+        repository.warn(
           "rules-doc-layout-legacy",
           `docs/adr`,
           `concepts.md is missing: this repo predates the README/concepts split. The working model ` +
@@ -533,7 +555,7 @@ function main() {
         // This is worse than the not-yet-migrated case: two copies of the same
         // rule can disagree, and a reader has no way to tell which went stale —
         // the exact duplication the abstraction ladder forbids.
-        rep.warn(
+        repository.warn(
           "rules-doc-layout-duplicated",
           `docs/adr`,
           `README.md still holds sections that concepts.md now owns (${leftover.join(", ")}). ` +
@@ -547,9 +569,9 @@ function main() {
 
   // ── adr-invariants.sh (a)/(b) sub-run ─────────────────────────────────
   let invExit = 0;
-  if (opts.invariants) {
+  if (opts.invariants && (!opts.documentsOnly || present)) {
     const invScript = path.join(HERE, "adr-invariants.sh");
-    const invariantArgs = [invScript, "--adr-dir", adrRoot];
+    const invariantArgs = [invScript, "--adr-dir", opts.documentsOnly ? target.path : adrRoot];
     if (opts.documentsOnly) invariantArgs.push("--prd-only");
     const r = spawnSync("bash", invariantArgs, {
       cwd: process.cwd(),
@@ -577,14 +599,10 @@ function main() {
     }
   }
 
-  finish(rep, opts, files.length === 0 ? "no ADR files to check" : null);
+  finish(rep, opts, files.length === 0 ? "no ADR files to check" : null, repository);
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────
-function escapeRe(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function filenameMsg(fn) {
   const map = {
     "stale-fN-prefix":
@@ -611,35 +629,46 @@ function statusReason(reason) {
   );
 }
 
-function finish(rep, opts, note) {
-  const failed = rep.errors.length > 0 || (opts.warnAsError && rep.warns.length > 0);
+function finish(rep, opts, note, repository) {
+  const passes = (report) => !report.errors.length && !(opts.warnAsError && report.warns.length);
+  const scoped = repository !== rep;
+  const ok = passes(rep) && passes(repository);
+  const errors = [...rep.errors],
+    warnings = [...rep.warns];
+  if (scoped) {
+    errors.push(...repository.errors.map((item) => ({ ...item, scope: "repository" })));
+    warnings.push(...repository.warns.map((item) => ({ ...item, scope: "repository" })));
+  }
+  const scope = scoped
+    ? { target: opts.target, documentsOk: passes(rep), repositoryOk: passes(repository) }
+    : undefined;
   if (opts.json) {
     process.stdout.write(
-      JSON.stringify(
-        { ok: !failed, errors: rep.errors, warnings: rep.warns, note: note || undefined },
-        null,
-        2,
-      ) + "\n",
+      JSON.stringify({ ok, errors, warnings, scope, note: note || undefined }, null, 2) + "\n",
     );
   } else {
-    const lines = [];
-    lines.push(`## ADR Structure Lint`);
+    const lines = ["## ADR Structure Lint"];
+    if (scope)
+      lines.push(
+        `- ${opts.target}: ${scope.documentsOk ? "clean" : "failed"}; repository checks: ${scope.repositoryOk ? "clean" : "failed"}`,
+      );
     if (note) lines.push(`- ${note}`);
-    if (rep.errors.length) {
-      lines.push(`\n### ✗ Errors (${rep.errors.length})`);
-      for (const e of rep.errors) lines.push(`- [${e.rule}] ${e.where}\n    ${e.msg}`);
+    for (const [label, items] of [
+      ["✗ Errors", errors],
+      ["⚠ Warnings", warnings],
+    ]) {
+      if (!items.length) continue;
+      lines.push(`\n### ${label} (${items.length})`);
+      for (const item of items)
+        lines.push(
+          `- [${item.rule}] ${item.where}${item.scope ? " (repository)" : ""}\n    ${item.msg}`,
+        );
     }
-    if (rep.warns.length) {
-      lines.push(`\n### ⚠ Warnings (${rep.warns.length})`);
-      for (const w of rep.warns) lines.push(`- [${w.rule}] ${w.where}\n    ${w.msg}`);
-    }
-    if (!rep.errors.length && !rep.warns.length) lines.push(`\n✓ ADR structure clean`);
-    else if (!rep.errors.length)
-      lines.push(`\n✓ no errors${rep.warns.length ? ` (${rep.warns.length} warning(s))` : ""}`);
+    if (!errors.length && !warnings.length) lines.push("\n✓ ADR structure clean");
+    else if (!errors.length) lines.push(`\n✓ no errors (${warnings.length} warning(s))`);
     process.stdout.write(lines.join("\n") + "\n");
   }
-  // The exit code, not an exit: a pipe still receiving the report would be cut off.
-  process.exitCode = failed ? 1 : 0;
+  process.exitCode = ok ? 0 : 1;
 }
 
 main();

@@ -295,7 +295,7 @@ sequenceDiagram
 ## Related
 
 - [업무 온톨로지를 ADR 위의 RDFS-lite 레벨로 도입](./0001-introduce-business-ontology-level.md)
-- [에이전트의 업무 맥락 조회와 세션 지침](./0002-retrieve-business-context-for-agents.md)
+- [에이전트의 업무 맥락 조회와 세션 지침](./context-retrieval/0002-retrieve-business-context-for-agents.md)
 - [온톨로지 변경의 승인과 하위 전파](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
 - [기존 프로젝트의 기능과 계약을 ADR에 정리](../adr-authoring/project-import/0001-import-existing-project-decisions.md)
 - [결정 요약과 의미 diff 제시](../adr-authoring/decision-presentation/0001-present-decision-digest-and-semantic-diff.md)

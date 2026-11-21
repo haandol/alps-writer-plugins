@@ -247,11 +247,6 @@
           "summary": "온톨로지 지식을 BC 책임·핵심 업무·협업의 상위 레이어와 BC 내부 업무 레이어로 구성하고 정확한 구현 계약은 ADR이 소유한다"
         },
         {
-          "path": "docs/adr/ontology/0002-retrieve-business-context-for-agents.md",
-          "status": "Accepted (2026-11-19)",
-          "summary": "모델이 없는 프로젝트의 첫 응답에서 미정인 구축 여부만 묻고 명시한 선택을 기억하며, 기존 모델은 BC 조망과 상세 관계를 보존하며 색인 없이 다중어·한글 검색과 원문 근거를 제공한다"
-        },
-        {
           "path": "docs/adr/ontology/0004-build-ontology-from-documents.md",
           "status": "Accepted (2026-11-19)",
           "summary": "첫 구축 전 프로젝트별 리뷰 선호와 구현 일치 근거를 재사용하고, 충분한 ADR만으로도 근거 기반 이벤트 스토밍으로 후보를 만들고, 선택지·직접 답변·질의응답과 모델 저장 승인을 구분한다"
@@ -272,12 +267,30 @@
     },
     "ontology/change-approval": {
       "feature": "Ontology change approval and cascade",
-      "realizes": ["feature-handoff.decide-model-change"],
+      "realizes": ["feature-handoff.decide-model-change", "business-change.decide-model-change"],
       "adrs": [
         {
           "path": "docs/adr/ontology/change-approval/0003-govern-ontology-lifecycle-and-cascade.md",
           "status": "Accepted (2026-11-18)",
           "summary": "승인된 업무 변경을 ADR·코드로 전파하고, 터미널에서 정렬을 실행하고 결정 화면의 답변과 승인에 따라 실제 변경과 재검증을 수행한다"
+        }
+      ],
+      "dependsOn": [
+        "adr-authoring/decision-boundary",
+        "document-authoring/domain-organization",
+        "adr-authoring/decision-presentation",
+        "delivery/development-flow",
+        "reporting/domain-navigation"
+      ]
+    },
+    "ontology/context-retrieval": {
+      "feature": "Business context retrieval and session directives",
+      "realizes": ["business-change.classify-change", "business-change.revise-contract"],
+      "adrs": [
+        {
+          "path": "docs/adr/ontology/context-retrieval/0002-retrieve-business-context-for-agents.md",
+          "status": "Proposed",
+          "summary": "기존 모델은 BC 조망·상세 관계와 색인 없는 다중어·한글 검색으로 조회하고, 모델이 소유하는 뜻을 바꾸는 개발 중 변경은 세션 지침에 따라 ADR보다 먼저 모델 승인을 거치며, 모델이 없으면 첫 응답에서 구축 여부만 묻는다"
         }
       ],
       "dependsOn": [

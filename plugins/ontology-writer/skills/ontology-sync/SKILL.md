@@ -27,7 +27,7 @@ When the user asks to review completeness/readiness without reconciling changes,
 read [workflow readiness](../../references/workflow-readiness.md). Report model
 sufficiency, ADR contract readiness and existing execution evidence for the
 requested scope, including unchanged processes. Use its existing read-only
-commands; there is no new CLI flag.
+commands. For a known process use its read-only ADR scope lookup first.
 
 Do not enter transitions, renewal, save, cascade, history fetching or scenario
 execution under this request. Additional information may support the review;

@@ -10,6 +10,7 @@ import {
   VERDICT_NAMES,
 } from "./adr-impl-review-categories.mjs";
 import {
+  indexReviewDiagrams,
   mermaidBlocks,
   parseMermaid,
   proseLines,
@@ -55,7 +56,9 @@ const PASS_ADVISORY_CATEGORIES = new Set(["Refactor"]);
 
 function usage(message) {
   if (message) process.stderr.write(`adr-impl-review-validate: ${message}\n`);
-  process.stderr.write("Usage: bun adr-impl-review-validate.mjs <artifact-dir>\n");
+  process.stderr.write(
+    "Usage: bun adr-impl-review-validate.mjs <artifact-dir> | --contract-rows <adr-path>\n",
+  );
   process.exit(2);
 }
 
@@ -214,7 +217,13 @@ function expectedContractRows(artifactDir, adrValue, errors) {
     return [];
   }
 
-  const source = readFileSync(adrPath, "utf8");
+  let source;
+  try {
+    source = readFileSync(adrPath, "utf8");
+  } catch (error) {
+    errors.push(`cannot read the ADR at ${adrPath}: ${error.message}`);
+    return [];
+  }
   const decision = sectionBody(source, /^## Decision\s*$/i, /^##\s+/);
   const decisionCore = decision.split(/^###\s+/m)[0].trim();
   if (!decisionCore) {
@@ -1192,9 +1201,10 @@ function validateReport(report, data, errors) {
         (requirement) => requirement && typeof requirement === "object",
       )
     : [];
+  const blocksById = indexReviewDiagrams(diagramBlocks, diagramRequirements);
   for (const requirement of diagramRequirements) {
-    const matches = diagramBlocks.filter((block) => block.requirementId === requirement.id);
-    if (matches.length !== 1) {
+    const matches = blocksById.get(requirement.id);
+    if (matches?.length !== 1) {
       errors.push(
         `implementation-review.md must contain exactly one Mermaid fence for ${requirement.id}`,
       );
@@ -1251,6 +1261,16 @@ function validateReport(report, data, errors) {
 
 function main() {
   const artifactDirArg = process.argv[2];
+  if (artifactDirArg === "--contract-rows") {
+    if (process.argv.length !== 4) usage();
+    const errors = [];
+    const rows = expectedContractRows(process.cwd(), process.argv[3], errors);
+    if (errors.length) {
+      process.stderr.write(errors.join("\n") + "\n");
+      process.exitCode = 1;
+    } else process.stdout.write(JSON.stringify(rows, null, 2) + "\n");
+    return;
+  }
   if (!artifactDirArg || process.argv.length !== 3) usage();
 
   const artifactDir = path.resolve(artifactDirArg);

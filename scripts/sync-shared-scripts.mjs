@@ -4,7 +4,12 @@
 // Ontology Writer owns the model file discovery used by both session hooks.
 import { syncFiles } from "./lib/sync-files.mjs";
 
-const FILES = ["adr-lint-lib.mjs", "adr-status-transition.mjs", "adr-impl-review-open.mjs"];
+const FILES = [
+  "adr-lint-lib.mjs",
+  "adr-status-transition.mjs",
+  "adr-impl-review-open.mjs",
+  "review-changes.mjs",
+];
 
 syncFiles(
   [

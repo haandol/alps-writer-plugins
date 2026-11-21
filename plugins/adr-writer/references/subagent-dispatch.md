@@ -31,6 +31,12 @@ The model may use any of these paths, alone or in combination:
 Choose based on risk, context size, available capabilities, latency, and cost.
 Do not create subagents merely to match a prescribed topology.
 
+When the scope is known, prefer overlapping independent read-only reviews and
+checks within available capacity. A common test can supply its actual output to
+multiple reviewers. Sequence work that consumes another result or would
+conflict on a fixture, worktree or external quota. The report's reading order
+does not impose dependencies on execution.
+
 When a subagent is used, pass task inputs separately and require only the role
 file's output contract. Do not request an instruction echo, raw input dump,
 private reasoning, or exploratory transcript. If the child cannot read the

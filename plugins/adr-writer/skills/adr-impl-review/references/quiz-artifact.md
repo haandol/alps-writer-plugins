@@ -25,6 +25,11 @@ For each question, keep these native fields:
 - `explanation` — why the correct option follows from the contract and evidence
 - `evidence` — the ADR, code, or test evidence used to grade it
 
+For direct compact HTML, use the report writer's `sectionId` on each question
+to select the explanation it checks: `flow-1` through the last Hill,
+`behavior`, `findings` or `limits`. Questions without a matching placement
+use the existing rich composition route.
+
 State explicitly in `prGuidance`:
 
 - the code verdict and comprehension readiness are separate;

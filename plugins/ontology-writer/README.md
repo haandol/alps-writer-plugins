@@ -38,6 +38,31 @@ After you respond, the agent applies any approved changes and verifies the
 original scope. Only a passing whole-process alignment can promote a process.
 Use `ontology.mjs align --process <id> --json` for the mechanical plan.
 
+For a process-specific review, `align --process <id> --review-adrs --json` lists
+the current ADR candidates linked through its steps, hand-offs, policies and
+rules, including relevant counterpart steps. The lookup reads the model and
+index without opening ADR bodies. Each path appears once with its category,
+steps and summary. Follow governing context-level decisions as the contracts
+require. Keep unresolved links visible.
+
+Conflicting index statuses for one file leave that path unresolved regardless
+of record order. For a verified Git comparison, `changes.paths` retains every
+observed change. `currentAdrs` names changed current candidates, `scopeInputs`
+names model, index or unindexed ADR changes that can alter the selection, and
+`retiredAdrs` identifies changed retired records for a targeted status check.
+Notes elsewhere in a watched directory do not, by themselves, reopen a contract.
+
+Add `--since <verified-commit-id>` to compare the model directory, selected
+index and candidate feature directories with the current worktree. Git reports
+committed, staged, unstaged and new non-ignored files. Recheck changed model or
+index links against both the old and new scope. For additional relied-on ADRs,
+code, tests or configuration, use the plugin-local
+`scripts/review-changes.mjs <commit-id> <path>...` with the prior evidence's
+complete paths. Ignored or external inputs need separate evidence. An unchanged
+comparison can save a repeated inspection; a change alone does not revise any
+document. Alignment still requires its full mechanical gates and actual
+business observations.
+
 ### Build your first model
 
 When a project has no saved model and you have not chosen a setup preference, the first reply of a new session asks,
@@ -304,14 +329,14 @@ Model documents use the closed vocabulary in `templates/ontology/vocabulary.ttl`
 
 - The ADR index, `docs/adr/.mapping.json`, belongs to adr-writer. A category's `realizes` list is the only link between a feature and the steps it realizes: this plugin writes those links in the same change unit as the model and validates them, and adr-writer checks only their shape and moves them when categories split or merge.
 - A model change that affects ADRs needs adr-writer: the ADR revisions in its approval summary follow `/adr-new`'s draft rules, and `/adr-impl` implements them. Without adr-writer such a change stops before the approval summary; a change that affects no ADR is saved by this plugin alone.
-- With a model present, adr-writer's session directive adds one line saying that business context is checked through this plugin. Without this plugin, ADR work states that the business context was not checked.
+- With a model present, adr-writer's session directive adds one line saying that business context is checked through this plugin and that a change to model-owned business meaning goes through its change approval before the ADR. Without this plugin, ADR work states that the business context was not checked.
 - This plugin carries copies of the adr-writer scripts it runs — reading the ADR index and ADR Status, recording a Status transition, opening a report — and of the shared report-writer and reader-profile skills. Edit the originals; `bun run shared-scripts:sync` and `bun run report-skill:sync` refresh the copies, and CI fails on a stale one.
 
 ## Hook
 
-| Hook           | When it fires                          | Role                                                                                                                                                                                                   |
-| -------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `SessionStart` | Startup, resume, clear, and compaction | On fresh startup with no model or saved setup choice, ask whether to create one. With an ADR index and a saved model, request the business-context query before ADR decisions and linked code changes. |
+| Hook           | When it fires                          | Role                                                                                                                                                                                                                                                                                                                                                 |
+| -------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SessionStart` | Startup, resume, clear, and compaction | On fresh startup with no model or saved setup choice, ask whether to create one. With an ADR index and a saved model, request the business-context query before ADR decisions and linked code changes, and send a requested change to model-owned meaning through `/ontology-edit` before the ADR while values and in-step behavior stay in the ADR. |
 
 The directive names the query command and renders neither the model nor the index. Claude Code discovers `hooks/hooks.json` automatically; Codex registers the same file through its manifest.
 

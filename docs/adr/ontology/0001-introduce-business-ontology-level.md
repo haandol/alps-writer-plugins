@@ -346,7 +346,7 @@ flowchart TB
 - [PRD 기능 계약의 소유권을 ADR로 이전](../alps-authoring/spec-handoff/0001-admission-aware-feature-handoff.md)
 - [ADR 상호작용은 Decision Digest와 semantic diff를 우선 표시](../adr-authoring/decision-presentation/0001-present-decision-digest-and-semantic-diff.md)
 - [기존 프로젝트의 기능과 계약을 ADR에 정리](../adr-authoring/project-import/0001-import-existing-project-decisions.md)
-- [에이전트의 업무 맥락 조회와 세션 지침](./0002-retrieve-business-context-for-agents.md)
+- [에이전트의 업무 맥락 조회와 세션 지침](./context-retrieval/0002-retrieve-business-context-for-agents.md)
 - [온톨로지 변경의 승인과 하위 전파](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
 - [문서 묶음에서 모델 후보 구축](./0004-build-ontology-from-documents.md)
 - [읽기 전용 탐색 화면](./0005-render-read-only-ontology-views.md)

@@ -31,11 +31,15 @@ For every blocking contract issue, return one consolidated **Decision request** 
 ## 3. Derive the two review perspectives independently
 
 Give both perspectives, in common, **only the original ADR, complete
-implementation scope, separate change scope, tests, project rules, and
+implementation scope, separate change scope, tests and their observed outputs, project rules, and
 `review-baseline.md`.** Do not give either perspective `explanation.md` or the
 other perspective's result. That is what keeps them from anchoring on an earlier
 interpretation. The model may run them in parallel or sequentially and may use
 zero, one, or several subagents.
+
+Both perspectives can start as soon as these inputs are available. Share factual
+test output from the reviewed tree; each perspective interprets the assertions
+and counterexamples for its own question. Join the conclusions at synthesis.
 
 ### 3.1 The necessity review
 

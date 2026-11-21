@@ -10,16 +10,24 @@ import { hillNarrativeParagraphs, reviewCodeGroups } from "./adr-impl-review-pro
 /** Compose a local standard review directly; unsupported rich interactions retain their existing route. */
 export function standardArticle(data, inputPath) {
   if (data.reviewMode !== "standard") throw new Error("Direct article requires standard mode");
+  const hills = data.reviewHike.hills;
+  const sections = new Set([
+    "behavior",
+    "findings",
+    "limits",
+    ...hills.map((_, i) => `flow-${i + 1}`),
+  ]);
+  const { comprehensionCheck, ...audit } = data;
+  const { prGuidance, ...quiz } = comprehensionCheck ?? {};
   if (
-    data.comprehensionCheck?.questions?.length ||
+    quiz.questions?.some((q) => !sections.has(q.sectionId)) ||
     data.diagramRequirements?.length ||
     data.findings?.some((finding) => USER_DECISION_CATEGORIES.has(finding.category))
   ) {
     throw new Error(
-      "Use the rich report composition route for selected diagrams, quizzes or decision controls",
+      "Use the rich report composition route for diagrams, unplaced quiz questions or decision controls",
     );
   }
-  const hills = data.reviewHike.hills;
   if (hills.length > 4)
     throw new Error("Use rich report composition to group more than four capabilities by domain");
   const ko = data.language.startsWith("ko");
@@ -124,12 +132,17 @@ export function standardArticle(data, inputPath) {
         domain: "Review",
         scope: "Evidence boundaries",
         preview: data.atAGlance.risk,
-        paragraphs: [data.atAGlance.risk, context.scopeAndRisk, ...comparison].filter(Boolean),
-        evidence: [evidence("native", ko ? "전체 검토 원본" : "Complete review source", data)],
+        paragraphs: [data.atAGlance.risk, context.scopeAndRisk, ...comparison, prGuidance].filter(
+          Boolean,
+        ),
+        // The linked source retains the quiz. Keep its grading key out of visible evidence.
+        evidence: [
+          evidence("native", ko ? "검토 원본" : "Review source", quiz.questions ? audit : data),
+        ],
       },
     ],
     requiredEvidenceIds: ids,
-    comprehensionCheck: data.comprehensionCheck,
+    comprehensionCheck: comprehensionCheck && quiz,
     review: {
       status: "reviewed",
       basis: ko

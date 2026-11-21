@@ -3,6 +3,17 @@
 Step numbers refer to the [parent workflow](../SKILL.md). Read this module only
 when that workflow selects it.
 
+## Deep-mode source rules
+
+Use the repository's rule documents when present; otherwise use the matching
+`${CLAUDE_PLUGIN_ROOT}/templates/adr/` files. Reuse unchanged sections already
+loaded in this context. Load conditional references only on their active path.
+
+- Read `concepts.md` (the abstraction ladder, the gray zone, the dependency model, Status and its automatic transitions), `docs/adr/README.md` (the index and the ADR template), `docs/adr/authoring-rules.md` (authoring rules and the review checklist), and `docs/adr/structure.md` (directory and mapping policy). In a repo seeded before the README/concepts split, all of the concepts material sits inside `README.md` — read it there instead
+  Verify that every ADR in `docs/adr/` matches the repository implementation, including IaC and repository-local configuration. Fix drifted ADRs, resolve contradictions between related ADRs, and synchronize the `.mapping.json` index (the adrs[] path/status/summary).
+
+Alongside verification and correction, **refine each ADR into one self-contained document describing the current admitted decision and requirement contract.** Reconstruct the evolution narration that accumulated mid-body over time ("originally it was X, then changed to Y", "added Z in v2", "changed to B compared with the previous A") into a single current-state description, so reading one ADR conveys its durable decision without code-level implementation facts. Of what you strip out, **harvest major transitions** into the category's `decision-log.md` (Pass 2's step 3-E); **minor** evolutions and individual diffs are preserved by Git, so the ADR body carries no evolution history. (This is cleanup within a single ADR — merging an evolution _chain_ spread across several ADRs into one is `adr-rollup`'s job.)
+
 ### 3. Pass 2 — deep verification (always run in deep mode)
 
 Before starting Pass 2, read `${CLAUDE_PLUGIN_ROOT}/skills/adr-sync/references/repository-hygiene.md` completely and read `${CLAUDE_PLUGIN_ROOT}/skills/adr-sync/references/reconciliation-boundary.md` completely. When accounts conflict, also apply `${CLAUDE_PLUGIN_ROOT}/references/decision-reconciliation.md` to the original passages and local change history. They own repository hygiene and ADR ↔ repository authority respectively. Apply their checks after the per-ADR semantic verification below and before the report.

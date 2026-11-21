@@ -52,8 +52,10 @@ never gates delivery; source fallback or pending figures are not rendered figure
 
 ## 2. Materialize, validate, compose, and open
 
-Materialize and validate both modes. A compact standard report without selected
-diagrams, quizzes or human-decision controls can then create its final HTML directly:
+Materialize and validate both modes. A compact standard report can generate its
+final HTML directly when its quiz questions name their explanatory sections
+and it needs no diagram or human-decision controls. The same route handles an
+explicitly excluded quiz.
 
 ```bash
 bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-materialize.mjs <artifact-dir>

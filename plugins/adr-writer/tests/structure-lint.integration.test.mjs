@@ -9,6 +9,35 @@ import path from "node:path";
 import { withTmp, write, parseLint } from "./helpers.mjs";
 import { seedClean } from "./structure-lint-helpers.mjs";
 
+test("a scoped document review checks only the selected ADR bodies, including planning references", () => {
+  withTmp((dir) => {
+    seedClean(dir);
+    const root = "docs/adr";
+    const first = root + "/identity/login/0001-password-policy.md";
+    const second = root + "/identity/login/0002-rate-limit.md";
+    const check = (...args) => parseLint(dir, ["--documents-only", ...args], { full: true });
+    const addReference = (file) =>
+      write(dir, file, readFileSync(path.join(dir, file), "utf8") + "\nSee product.alps.xml.\n");
+    write(dir, root + "/billing/0001-payment.md", "See outside.alps.xml.\n");
+    assert.equal(check("identity").code, 0);
+    addReference(second);
+    for (const target of [first, path.join(dir, first), "identity/login/0001-password-policy.md"])
+      assert.equal(check(target).code, 0);
+    for (const target of ["identity", "identity/login", second]) {
+      const result = check("--adr-dir", path.join(dir, root), target);
+      assert.equal(result.code, 1);
+      assert.ok(
+        result.errors.some(
+          (err) => err.msg.includes("product.alps.xml") && err.msg.includes("0002-rate-limit.md"),
+        ),
+      );
+      assert.ok(result.errors.every((err) => !err.msg.includes("outside.alps.xml")));
+    }
+    assert.ok(check().errors.some((err) => err.msg.includes("outside.alps.xml")));
+    assert.notEqual(check(root + "/identity/login/0003-missing.md").code, 0);
+  });
+});
+
 test("document-only review ignores code references but still rejects ADR references to planning documents", () => {
   withTmp((dir) => {
     seedClean(dir);
@@ -37,6 +66,22 @@ test("document-only review ignores code references but still rejects ADR referen
       ),
     );
     assert.ok(planningRef.errors.every((item) => !item.msg.includes("src/session.mjs")));
+  });
+});
+
+test("a single ADR reports shared index failure separately and does not infer a sibling numbering gap", () => {
+  withTmp((dir) => {
+    seedClean(dir);
+    const file = "docs/adr/identity/login/0002-rate-limit.md";
+    const mapFile = "docs/adr/.mapping.json";
+    const mapping = JSON.parse(readFileSync(path.join(dir, mapFile), "utf8"));
+    mapping.categories.billing = { adrs: [], dependsOn: ["missing"] };
+    write(dir, mapFile, JSON.stringify(mapping));
+    const result = parseLint(dir, ["--documents-only", file], { full: true });
+    assert.equal(result.code, 1);
+    assert.deepEqual(result.scope, { target: file, documentsOk: true, repositoryOk: false });
+    assert.ok(result.errors.every((error) => error.scope === "repository"));
+    assert.ok(!result.warnings.some((warning) => warning.rule === "numbering-gap"));
   });
 });
 

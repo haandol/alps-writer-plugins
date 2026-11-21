@@ -45,6 +45,30 @@ alignment review establishes execution evidence, not whole-system completeness.
 
 ## 1. Mechanical gates and the plan
 
+For a request to locate contracts or decide what changed, start with the selected
+business process: `ontology.mjs align --process <id> --review-adrs --json`.
+This read-only lookup resolves the model and index without opening ADR bodies.
+It returns current candidate paths once, their realizing steps, the compliance
+relations, observation criteria and unresolved links. The links identify a
+feature; use its summaries and the affected obligation to select the relevant
+ADR(s). Read a context-level decision only when a reviewed contract relies on it.
+
+When prior evidence names a verified clean commit, add `--since <commit-id>`.
+Use `changes.currentAdrs` to revisit current contracts, `scopeInputs` to
+recheck the affected ownership or business relations, and `retiredAdrs` to
+check any change in retirement status. Keep the raw paths and independently
+supplied evidence in scope where relevant. A conflict between index statuses
+leaves the path unresolved until the owner can be identified.
+Changed model or index files prompt a comparison of this process's relations;
+include the former and new owners when a step is relinked. Review a changed
+ADR for its effect on the business meaning; a code-only change or a wording edit
+can leave the ontology intact. New business intent can require a proposal even
+when Git reports no changes. Check any additional context-level contracts and
+non-Git inputs covered by the prior evidence before reusing it. Reuse current
+contract evidence only when its scope, intent and inputs match. Unverified Git
+history or missing links lead back to this process's contracts. For an alignment
+verdict the normal plan below and real execution evidence still apply.
+
 ```bash
 bun ${CLAUDE_PLUGIN_ROOT}/scripts/ontology.mjs align --process <id> --json \
   [--together <other-proposed-process>,...]

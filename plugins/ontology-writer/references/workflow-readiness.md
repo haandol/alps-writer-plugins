@@ -31,6 +31,13 @@ and cannot satisfy the separate execution/alignment gates.
 
 ## Read-only review
 
+For a selected process, start with `ontology.mjs align --process <id> --review-adrs --json`.
+Read the current candidate ADRs relevant to its steps, hand-offs and rules; keep
+missing links visible. Reuse each document across the relations it supports.
+Add `--since <verified-commit-id>` when matching prior evidence is available.
+This lookup does not verify a document or establish execution. Expand to a
+relied-on contract only when the scoped evidence points to it.
+
 Use `ontology.mjs validate`, scoped `query`, `changes` and, when useful, `align`
 to obtain structural findings, relationships, history limits and the mechanical
 execution plan. Read the relevant evidence and realizing ADRs to make the

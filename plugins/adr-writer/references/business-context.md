@@ -116,7 +116,9 @@ the model here or deriving business boundaries from existing ADR categories.
   business scenarios and tests. In review, check those scenarios against the
   contracts and actual evidence, and name for each the evidence checked or why
   its business observation remains unverified. If the category query omits criteria, query
-  the connected process through ontology-writer; never read the model here.
+  the connected process through ontology-writer; never read the model here. An
+  authoring summary waits for that result and does not hand the work to
+  implementation before it.
   A model-only obligation missing from an ADR is an alignment issue, while
   missing behavior or tests for an approved ADR row follows the existing
   implementation-finding categories. Report business alignment separately from
@@ -124,10 +126,11 @@ the model here or deriving business boundaries from existing ADR categories.
   Newly discovered business facts go through the owning approval path before
   becoming model facts, ADR requirements or new test pass/fail conditions.
 - **Choose within the model.** Pick details the ADR leaves open so they do not
-  contradict the model's flow, events, policies, cross-feature rules or terms.
+  contradict the model's flow, events, policies, responsibilities, cross-feature
+  rules or terms.
 - **Propose, do not absorb.** When no such choice exists, or the change needs a
-  different flow, event, policy, cross-feature rule, or a business concept or
-  term the model defines, raise an ontology change proposal through
+  different flow, event, policy, actor responsibility, cross-feature rule, or a
+  business concept or term the model defines, raise an ontology change proposal through
   ontology-writer's `/ontology-edit`. Until it is approved, or while it is rejected, do not finalize
   ADR content that depends on it: save that contract row with a visible pending
   marker and the awaited business change in business language, without the
@@ -135,7 +138,17 @@ the model here or deriving business boundaries from existing ADR categories.
   the ADR `Proposed`, and is reported as pending by implementation review and
   ontology sync. After a rejection, rewrite the row with the model's current
   meaning or keep it pending until the user decides. A PRD handoff leaves that
-  Feature unresolved.
+  Feature unresolved. A user-requested change that itself alters such meaning
+  takes this path before the ADR is drafted; reporting the contradiction never
+  settles it.
+- **Keep ADR-owned changes in the ADR.** A change to an exact value, a state
+  machine, or one step's behavior, permissions or failure handling that leaves
+  the step's performer unchanged needs no ontology proposal and never moves into the model, as long as the meaning of
+  every rule it touches stays the same. When such a value accompanies a model
+  change, the proposal carries only the meaning and the pending ADR row keeps
+  the value. This waives only the proposal: where Ontology Writer is available,
+  the context retrieval, observation-criteria and compliance-contract checks
+  still run before contract rows are proposed.
 - **Compliance contracts.** When an approval-bound authoring path — new ADR,
   edit-in-place, import, PRD handoff — finds that the context's event hand-off,
   policy or business rule has no compliance contract in the realizing ADR,
@@ -156,7 +169,9 @@ the model here or deriving business boundaries from existing ADR categories.
   alignment issue (the model and the realizing ADR contract differ) or as an
   ontology change proposal. Completion is still judged by ADR contract rows only.
   Before coding, a contradiction is not implemented by default: pause the
-  affected part for the user's ADR-first choice.
+  affected part for the user's ADR-first choice. A contradiction the requested
+  change creates is still reported, but it follows **Propose, do not absorb**
+  rather than ending with the report.
 - **Not settled.** When the context shows validation errors, uncommitted model
   edits, unsynced direct edits or a lifecycle edit of an `Accepted` process,
   report that and do not treat that part as a settled reference. Propose

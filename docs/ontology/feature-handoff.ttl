@@ -10,7 +10,7 @@ m:handoff-coordinator a onto:Actor ;
 m:model-change-approver a onto:Actor ;
     rdfs:label "업무 모델 변경 승인자" ;
     onto:definition "업무 용어의 뜻과 기능 사이의 관계에 관한 변경 제안을 검토하고 채택 여부를 결정하는 사용자." ;
-    onto:performs m:feature-handoff.decide-model-change .
+    onto:performs m:business-change.decide-model-change, m:feature-handoff.decide-model-change .
 
 m:feature-handoff.contract-assessed a onto:BusinessEvent ;
     rdfs:label "기능별 인계 내용 검토됨" ;
