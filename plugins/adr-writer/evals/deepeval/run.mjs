@@ -11,7 +11,6 @@ import { prepareCoverageVisuals } from "./coverage-render.mjs";
 import { BEDROCK_DEFAULTS } from "./bedrock.mjs";
 import { cases as currentCases } from "../regression/cases.mjs";
 import { executionChecks } from "../lib/execution-checks.mjs";
-import { capturedChecks } from "../skills/mechanical-checks.mjs";
 import { verifierIdentity } from "../lib/verifier-identity.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -243,19 +242,12 @@ export async function main(args, injected = {}) {
         if (options.live) {
           const currentCase = currentCases.find((c) => c.id === item.id);
           const execution = { ...item, type: "execution" };
-          record.checks = capturedChecks(execution, {
-            before: evidence.before,
-            files: evidence.after,
-            events: evidence.events,
-          });
-          record.checks.push(
-            ...executionChecks(
-              path.join(target, "check-workspace"),
-              execution,
-              currentCase && { ...currentCase, type: "execution" },
-              evidence,
-              path.resolve(HERE, "../.."),
-            ),
+          record.checks = executionChecks(
+            path.join(target, "check-workspace"),
+            execution,
+            currentCase && { ...currentCase, type: "execution" },
+            evidence,
+            path.resolve(HERE, "../.."),
           );
           phase = "deepeval";
           process.stdout.write(

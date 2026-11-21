@@ -13,7 +13,8 @@ import { catalog, PLUGIN } from "./catalog.mjs";
 import { capturedChecks } from "./mechanical-checks.mjs";
 import { confined, sha, listFiles } from "../regression/workspace.mjs";
 import { executionChecks, restore } from "../lib/execution-checks.mjs";
-import { saveSkillsReport } from "./report.mjs";
+import { runPool } from "../lib/run-pool.mjs";
+import { startSkillsReport } from "./report.mjs";
 
 const read = (file) => JSON.parse(readFileSync(file, "utf8"));
 const json = (root, file, data) =>
@@ -78,9 +79,9 @@ export async function rejudge(options, injected = {}) {
       (!options.only || c.id.includes(options.only)),
   );
   if (!cases.length) throw new Error("No captured semantic cases match");
-  const ids = new Set(cases.map((c) => c.id));
-  if (ids.size !== cases.length) throw new Error("Duplicate captured case identity");
-  const runs = original.runs.filter((r) => ids.has(r.caseId));
+  const byId = new Map(cases.map((c) => [c.id, c]));
+  if (byId.size !== cases.length) throw new Error("Duplicate captured case identity");
+  const runs = original.runs.filter((r) => byId.has(r.caseId));
   const identities = new Set();
   for (const run of runs) {
     const key = JSON.stringify([run.caseId, run.repeat, run.variant]);
@@ -134,132 +135,130 @@ export async function rejudge(options, injected = {}) {
       referenceDate: r.referenceDate,
     })),
   };
-  const save = () => {
-    json(output, "results.json", report);
-    return saveSkillsReport(output, report);
-  };
-  save();
-  let next = 0;
-  const worker = async () => {
-    while (next < report.runs.length) {
-      const record = report.runs[next++];
-      const started = Date.now();
-      const item = cases.find((c) => c.id === record.caseId);
-      const folder = path.join(output, record.artifactDirectory);
-      mkdirSync(folder, { recursive: true });
-      try {
-        const sourceFolder = confined(source, record.sourceArtifactDirectory);
-        let evidence;
-        if (existsSync(path.join(sourceFolder, "judge-input-evidence.json")))
-          evidence = read(path.join(sourceFolder, "judge-input-evidence.json"));
+  const progress = startSkillsReport(output, report);
+  await runPool(report.runs, options.jobs, async (slot) => {
+    const record = structuredClone(slot);
+    const started = Date.now();
+    const item = byId.get(record.caseId);
+    const folder = path.join(output, record.artifactDirectory);
+    mkdirSync(folder, { recursive: true });
+    try {
+      const sourceFolder = confined(source, record.sourceArtifactDirectory);
+      let evidence;
+      if (existsSync(path.join(sourceFolder, "judge-input-evidence.json")))
+        evidence = read(path.join(sourceFolder, "judge-input-evidence.json"));
+      else {
+        const captured = read(path.join(sourceFolder, "evidence.json"));
+        if (captured.before && captured.after) evidence = captured;
         else {
-          const captured = read(path.join(sourceFolder, "evidence.json"));
-          if (captured.before && captured.after) evidence = captured;
-          else {
-            const input = read(path.join(sourceFolder, "input.json"));
-            if (!captured.reply || captured.executionError)
-              throw new Error("No completed target reply to rejudge");
-            evidence = {
-              before: input.files,
-              after: captured.files,
-              replies: [captured.reply],
-              turns: [input.prompt],
-              events:
-                typeof captured.events === "string"
-                  ? captured.events.split("\n").filter(Boolean).map(JSON.parse)
-                  : captured.events,
-              referenceDate: record.referenceDate,
-            };
-          }
+          const input = read(path.join(sourceFolder, "input.json"));
+          if (!captured.reply || captured.executionError)
+            throw new Error("No completed target reply to rejudge");
+          evidence = {
+            before: input.files,
+            after: captured.files,
+            replies: [captured.reply],
+            turns: [input.prompt],
+            events:
+              typeof captured.events === "string"
+                ? captured.events.split("\n").filter(Boolean).map(JSON.parse)
+                : captured.events,
+            referenceDate: record.referenceDate,
+          };
         }
-        const definition = {
-          ...item,
-          obligations: item.semanticObligations ?? item.obligations,
-          turns: evidence.turns,
-        };
-        const inputs = deepEvalInput(definition, evidence);
-        json(folder, "judge-input-evidence.json", evidence);
-        json(folder, "test-case.json", inputs);
-        record.inputHash = sha(inputs);
-        record.evidenceHash = sha(evidence);
-        for (const file of ["response.json", "input.json", "evidence.json"])
-          if (existsSync(path.join(sourceFolder, file)))
-            copyFileSync(path.join(sourceFolder, file), path.join(folder, file));
-        if (!options.live) continue;
-        const workspace = path.join(folder, "workspace");
-        mkdirSync(workspace);
+      }
+      const definition = {
+        ...item,
+        obligations: item.semanticObligations ?? item.obligations,
+        turns: evidence.turns,
+      };
+      const inputs = deepEvalInput(definition, evidence);
+      json(folder, "judge-input-evidence.json", evidence);
+      json(folder, "test-case.json", inputs);
+      record.inputHash = sha(inputs);
+      record.evidenceHash = sha(evidence);
+      for (const file of ["response.json", "input.json", "evidence.json"])
+        if (existsSync(path.join(sourceFolder, file)))
+          copyFileSync(path.join(sourceFolder, file), path.join(folder, file));
+      if (!options.live) {
+        Object.assign(slot, record);
+        return;
+      }
+      const workspace = path.join(folder, "workspace");
+      mkdirSync(workspace);
+      const currentCase = current.get(item.id);
+      if (item.type === "execution") {
+        record.checks = executionChecks(workspace, item, currentCase, evidence, PLUGIN);
+      } else {
         record.checks = capturedChecks(item, {
           before: evidence.before,
           files: evidence.after,
           events: evidence.events,
         });
-        const currentCase = current.get(item.id);
-        if (item.type === "execution")
-          record.checks.push(...executionChecks(workspace, item, currentCase, evidence, PLUGIN));
-        else restore(workspace, evidence.after);
-        if (
-          item.artifactPaths?.length &&
-          !currentCase &&
-          !item.artifactPaths.includes(".adr-review/findings.json")
-        )
-          throw new Error("No current structural checker is registered for the captured artifact");
-        if (currentCase?.supplementalChecks && currentCase.score) {
-          const extra = await currentCase.score({
-            dir: workspace,
-            before: evidence.before,
-            files: evidence.after,
-            events: evidence.events,
-            output: evidence.replies.at(-1),
-            tail: { findings: [] },
-          });
-          record.checks.push(...extra);
-        }
-        record.checks.push(...nativeReviewChecks(workspace, item));
-        if (record.checks.some((check) => typeof check.pass !== "boolean"))
-          throw new Error("Invalid mechanical evidence checks");
-        const result = await (injected.evaluate ?? evaluateEvidence)({
-          item: definition,
-          evidence,
-          name: `rejudge/${item.id}/${record.repeat}`,
-          cwd: folder,
-          ...options.judge,
-          timeoutMs: options.timeout * 1000,
-          invoke: injected.judge,
-          onCall(response) {
-            if (
-              !response.models?.length ||
-              response.modelEvidence === "requested-bedrock-inference-profile"
-            )
-              record.modelIdentityIncomplete = true;
-            record.calls.push({
-              stage: "judge",
-              models: response.models,
-              ms: response.ms,
-              usage: response.usage,
-              costUSD: response.costUSD,
-            });
-            record.judgeModels = [...new Set([...record.judgeModels, ...(response.models ?? [])])];
-            json(folder, `judge-response-${record.calls.length}.json`, response);
-          },
-        });
-        Object.assign(record, result);
-        json(folder, "deepeval-result.json", result);
-        if (record.verdict === "PASS" && record.checks.some((c) => !c.pass))
-          record.verdict = "NOT_PROVEN";
-      } catch (error) {
-        record.verdict = "ERROR";
-        record.error = error.message;
+        restore(workspace, evidence.after);
       }
-      record.elapsedMs = Date.now() - started;
-      save();
-      process.stdout.write(`${record.caseId} #${record.repeat}: ${record.verdict}\n`);
+      if (
+        item.artifactPaths?.length &&
+        !currentCase &&
+        !item.artifactPaths.includes(".adr-review/findings.json")
+      )
+        throw new Error("No current structural checker is registered for the captured artifact");
+      if (currentCase?.supplementalChecks && currentCase.score) {
+        const extra = await currentCase.score({
+          dir: workspace,
+          before: evidence.before,
+          files: evidence.after,
+          events: evidence.events,
+          output: evidence.replies.at(-1),
+          tail: { findings: [] },
+        });
+        record.checks.push(...extra);
+      }
+      record.checks.push(...nativeReviewChecks(workspace, item));
+      if (record.checks.some((check) => typeof check.pass !== "boolean"))
+        throw new Error("Invalid mechanical evidence checks");
+      const result = await (injected.evaluate ?? evaluateEvidence)({
+        item: definition,
+        evidence,
+        name: `rejudge/${item.id}/${record.repeat}`,
+        cwd: folder,
+        ...options.judge,
+        timeoutMs: options.timeout * 1000,
+        invoke: injected.judge,
+        onCall(response) {
+          if (
+            !response.models?.length ||
+            response.modelEvidence === "requested-bedrock-inference-profile"
+          )
+            record.modelIdentityIncomplete = true;
+          record.calls.push({
+            stage: "judge",
+            models: response.models,
+            ms: response.ms,
+            usage: response.usage,
+            costUSD: response.costUSD,
+          });
+          record.judgeModels = [...new Set([...record.judgeModels, ...(response.models ?? [])])];
+          json(folder, `judge-response-${record.calls.length}.json`, response);
+        },
+      });
+      Object.assign(record, result);
+      json(folder, "deepeval-result.json", result);
+      if (record.verdict === "PASS" && record.checks.some((c) => !c.pass))
+        record.verdict = "NOT_PROVEN";
+    } catch (error) {
+      record.verdict = "ERROR";
+      record.error = error.message;
     }
-  };
-  await Promise.all(Array.from({ length: options.jobs }, worker));
+    record.elapsedMs = Date.now() - started;
+    Object.assign(slot, record);
+    progress.completed(item);
+    process.stdout.write(`${record.caseId} #${record.repeat}: ${record.verdict}\n`);
+  });
   if (sha(readFileSync(path.join(source, "results.json"))) !== report.sourceReportHash)
     throw new Error("Source results changed during rejudge");
   report.finishedAt = new Date().toISOString();
-  const html = save();
+  const html = progress.finish();
   process.stdout.write(`HTML: ${html}\nResults: ${path.join(output, "results.json")}\n`);
   return {
     status:

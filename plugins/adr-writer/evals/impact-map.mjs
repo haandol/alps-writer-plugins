@@ -4,6 +4,24 @@
 // truth. The scenarios still load shipping prompts and judge observable
 // behaviour; this table only avoids running unrelated live-model scenarios.
 
+// This fixture belongs to the four proposal probes. Other lib/ changes retain
+// the shared-harness fallback. Tests compare this list with the actual imports.
+const paymentProposalScenarios = [
+  "author-checks-business-rule-proposal",
+  "author-checks-business-value-proposal",
+  "hook-business-rule-proposal",
+  "hook-value-change-proposal",
+];
+
+/** Route a private fixture change like edits to its consuming scenarios in either runner. */
+export function evaluationImpactPaths(paths) {
+  return paths.flatMap((path) => {
+    const normalized = path.replaceAll("\\", "/");
+    if (normalized !== "plugins/adr-writer/evals/lib/payment-change.mjs") return [normalized];
+    return paymentProposalScenarios.map((name) => `plugins/adr-writer/evals/scenarios/${name}.mjs`);
+  });
+}
+
 export const IMPACT_RULES = [
   {
     pathPrefixes: [
@@ -41,15 +59,33 @@ export const IMPACT_RULES = [
     scenarioPrefixes: ["author-", "alps-", "lite-alps-", "feature-handoff-", "import-"],
   },
   {
+    // The scenarios that load this reference; eval-impact.test.mjs checks it against
+    // scenario sources.
+    pathPrefixes: ["plugins/adr-writer/references/business-context.md"],
+    scenarioPrefixes: [
+      "author-checks-business-",
+      "impl-reports-business-",
+      "author-records-confirmed-unlinked",
+      "author-scenarios-queries-process",
+      "author-starts-business-query",
+      "author-sync-starts-business-query",
+    ],
+  },
+  {
     pathPrefixes: [
-      "plugins/adr-writer/references/business-context.md",
       "plugins/ontology-writer/references/ontology.md",
       "plugins/ontology-writer/scripts/ontology",
       "plugins/ontology-writer/scripts/model-documents.mjs",
       "plugins/adr-writer/scripts/model-documents.mjs",
       "plugins/ontology-writer/templates/ontology/",
     ],
-    scenarioPrefixes: ["author-checks-business-", "impl-reports-business-", "ontology-"],
+    scenarioPrefixes: [
+      "author-checks-business-",
+      "impl-reports-business-",
+      "ontology-",
+      "hook-business-rule-proposal",
+      "hook-value-change-proposal",
+    ],
   },
   {
     pathPrefixes: ["plugins/ontology-writer/skills/ontology-"],
@@ -93,6 +129,7 @@ export const IMPACT_RULES = [
       "plugins/adr-writer/evals/lib/",
       "plugins/adr-writer/evals/run.mjs",
       "plugins/adr-writer/evals/regression/tool-config.mjs",
+      "plugins/adr-writer/evals/regression/workspace.mjs",
       "plugins/adr-writer/evals/impact-map.mjs",
       "plugins/adr-writer/scripts/adr-lint-lib.mjs",
     ],
@@ -125,8 +162,23 @@ export const IMPACT_RULES = [
     scenarioPrefixes: ["alps-", "lite-alps-"],
   },
   {
-    pathPrefixes: ["plugins/adr-writer/hooks/"],
-    scenarioPrefixes: ["hook-"],
+    // Each hook's output also depends on the model discovery it imports.
+    pathPrefixes: ["plugins/adr-writer/hooks/", "plugins/adr-writer/scripts/model-documents.mjs"],
+    scenarioPrefixes: ["hook-", "ontology-query-chooses-entry-point"],
+  },
+  {
+    pathPrefixes: [
+      "plugins/ontology-writer/hooks/",
+      "plugins/ontology-writer/scripts/model-documents.mjs",
+    ],
+    scenarioPrefixes: [
+      "hook-business-",
+      "hook-value-",
+      "ontology-session-",
+      "author-starts-business-query",
+      "author-sync-starts-business-query",
+      "ontology-query-chooses-entry-point",
+    ],
   },
   {
     pathPrefixes: ["plugins/adr-writer/skills/adr-new/"],
@@ -170,7 +222,7 @@ export const IMPACT_RULES = [
 
 export function scenarioNamesForChangedPaths(changedPaths, scenarios) {
   const names = new Set();
-  const normalized = changedPaths.map((value) => value.replaceAll("\\", "/"));
+  const normalized = evaluationImpactPaths(changedPaths);
 
   for (const scenario of scenarios) {
     const file = scenario.file ?? `${scenario.name}.mjs`;

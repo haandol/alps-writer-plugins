@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { runAgentProcess } from "../lib/agent-process.mjs";
 
 /** Isolate evaluation context and tools while reusing the configured provider credentials privately. */
 export async function invokeClaude({
@@ -62,56 +62,17 @@ export async function invokeClaude({
     ...(model ? ["--model", model] : []),
     ...(schema ? ["--json-schema", JSON.stringify(schema)] : []),
   ];
-  const started = Date.now();
-  const result = await new Promise((resolve) => {
-    const child = spawn(executable, args, {
-      cwd,
-      env: environment,
-      stdio: ["pipe", "pipe", "pipe"],
-      detached: true,
-    });
-    let stdout = "";
-    let stderr = "";
-    let failure = null;
-    function terminate(reason) {
-      failure = reason;
-      try {
-        process.kill(-child.pid, "SIGTERM");
-      } catch {
-        /* already exited */
-      }
-      setTimeout(() => {
-        try {
-          process.kill(-child.pid, "SIGKILL");
-        } catch {
-          /* already exited */
-        }
-      }, 1500);
-    }
-    const timer = setTimeout(() => terminate("agent timeout"), timeoutMs);
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-      if (stdout.length > 8 * 1024 * 1024) terminate("agent output exceeded limit");
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-      if (stderr.length > 2 * 1024 * 1024) terminate("agent stderr exceeded limit");
-    });
-    child.on("error", (error) => {
-      failure = error.message;
-    });
-    child.on("close", (code) => {
-      clearTimeout(timer);
-      // Do not cancel a pending process-group kill after a timeout: an MCP
-      // descendant may still be alive after the CLI process exits.
-      resolve({ code, stdout, stderr, failure, ms: Date.now() - started });
-    });
-    child.stdin.on("error", () => {});
-    child.stdin.end(prompt);
+  const result = await runAgentProcess(executable, args, {
+    cwd,
+    env: environment,
+    input: prompt,
+    timeoutMs,
+    stdoutLimit: 8 * 1024 * 1024,
+    stderrLimit: 2 * 1024 * 1024,
   });
-  if (result.failure || result.code !== 0) {
+  if (!result.ok) {
     throw new Error(
-      `${result.failure ?? `Claude exited ${result.code}`}: ${result.stderr.slice(-1200) || result.stdout.slice(-1200)}`,
+      `${result.error ?? `Claude exited ${result.status}`}: ${result.stderr.slice(-1200) || result.stdout.slice(-1200)}`,
     );
   }
   let json;

@@ -8,6 +8,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, copyFileSync } fro
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { runAgentProcess } from "./agent-process.mjs";
 import { fileURLToPath } from "node:url";
 import { STAMPED_RULE_DOCS } from "../../scripts/adr-lint-lib.mjs";
 
@@ -366,21 +367,12 @@ export function expectLintClean(dir, label = "structure-lint reports no error") 
 export const DEFAULT_CMD = process.env.ADR_EVAL_CMD ?? "claude -p --allowedTools ''";
 
 export function runAgent(prompt, { cmd = DEFAULT_CMD, cwd, timeoutMs = 600_000 } = {}) {
-  const started = performance.now();
-  const r = spawnSync(cmd, {
+  return runAgentProcess(cmd, [], {
+    cwd,
     shell: true,
     input: prompt,
-    cwd,
-    encoding: "utf8",
-    timeout: timeoutMs,
-    maxBuffer: 32 * 1024 * 1024,
+    timeoutMs,
+    stdoutLimit: 32 * 1024 * 1024,
+    stderrLimit: 32 * 1024 * 1024,
   });
-  return {
-    ok: r.status === 0 && !r.error,
-    status: r.status,
-    error: r.error ? String(r.error.message ?? r.error) : null,
-    stdout: r.stdout ?? "",
-    stderr: r.stderr ?? "",
-    ms: performance.now() - started,
-  };
 }

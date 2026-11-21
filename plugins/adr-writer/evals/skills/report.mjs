@@ -1,5 +1,6 @@
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, renameSync, rmSync } from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { renderHtml } from "../../skills/report-writer/scripts/render-report.mjs";
 import { summarize, summarizeRouting, comparePairs } from "./metrics.mjs";
 import { sha, confined } from "../regression/workspace.mjs";
@@ -95,6 +96,11 @@ const groups = [
     ["조회 착수와 기준 상태", "확인된 빈 기록", ["author-records-confirmed-"]],
     [
       "조회 착수와 기준 상태",
+      "조회 후 변경안 작성",
+      ["author-checks-business-rule-proposal", "author-checks-business-value-proposal"],
+    ],
+    [
+      "조회 착수와 기준 상태",
       "확정되지 않은 맥락",
       [
         "author-checks-business-unsettled-",
@@ -128,7 +134,9 @@ const groups = [
   ],
   ["결정 관리", "동기화와 통합", "표현과 검증", ["sync-rewrites-", "sync-stays-"]],
   ["결정 관리", "동기화와 통합", "통합 범위", ["rollup-"]],
-  ["결정 관리", "동기화와 통합", "세션 분류", ["hook-"]],
+  ["결정 관리", "동기화와 통합", "세션 분류", "ADR 작성 대상", ["hook-admission-"]],
+  ["결정 관리", "동기화와 통합", "세션 분류", "업무 규칙 변경", ["hook-business-"]],
+  ["결정 관리", "동기화와 통합", "세션 분류", "요구값 변경", ["hook-value-"]],
   ...[
     [
       "구축 진입과 ADR 검토",
@@ -428,17 +436,17 @@ export function validateResults(report) {
     !Array.isArray(report.runs)
   )
     throw new Error("Expected a skill-evals results document");
-  const ids = new Set();
+  const byId = new Map();
   for (const c of report.cases) {
-    if (!/^[a-z0-9-]+$/.test(c.id) || ids.has(c.id) || !labels[c.type])
+    if (!/^[a-z0-9-]+$/.test(c.id) || byId.has(c.id) || !labels[c.type])
       throw new Error("Invalid or duplicate case");
-    ids.add(c.id);
+    byId.set(c.id, c);
   }
   if (!Number.isInteger(report.runsPerCase) || report.runsPerCase < 1)
     throw new Error("Invalid repeat count");
   const seen = new Set();
   for (const r of report.runs) {
-    const c = report.cases.find((v) => v.id === r.caseId);
+    const c = byId.get(r.caseId);
     if (
       !c ||
       c.type !== r.type ||
@@ -460,10 +468,58 @@ export function validateResults(report) {
   return report;
 }
 
+// Readers can poll progress or regenerate a report while workers are finishing.
+function publish(file, text) {
+  const temporary = `${file}.${randomUUID()}.tmp`;
+  try {
+    writeFileSync(temporary, text, { flag: "wx" });
+    renameSync(temporary, file);
+  } catch (error) {
+    if (error.code !== "EEXIST") rmSync(temporary, { force: true });
+    throw error;
+  }
+}
+
+function saveCase(directory, item, runs) {
+  publish(
+    path.join(directory, "case-results", `${item.id}.json`),
+    JSON.stringify({ case: item, runs }, null, 2),
+  );
+}
+
+/** Keep durable progress per completion. Compose the full HTML initially and at the final join. */
+export function startSkillsReport(directory, report, updateIndex) {
+  validateResults(report);
+  const runs = Map.groupBy(report.runs, (r) => r.caseId);
+  const live = report.mode !== "PREPARED";
+  const saveIndex = () => {
+    updateIndex?.(runs);
+    publish(path.join(directory, "results.json"), JSON.stringify(report, null, 2));
+  };
+  saveIndex();
+  if (live) saveSkillsReport(directory, report, { inProgress: true });
+  return {
+    completed(item) {
+      if (!live) return;
+      saveCase(directory, item, runs.get(item.id));
+      saveIndex();
+    },
+    finish() {
+      saveIndex();
+      return saveSkillsReport(directory, report, { writeCases: !live });
+    },
+  };
+}
+
 /** Render only captured data; no target, judge, telemetry, or cloud upload is involved. */
-export function saveSkillsReport(directory, report) {
+export function saveSkillsReport(
+  directory,
+  report,
+  { writeCases = true, inProgress = false } = {},
+) {
   validateResults(report);
   mkdirSync(path.join(directory, "case-results"), { recursive: true });
+  const runsByCase = Map.groupBy(report.runs, (r) => r.caseId);
   const evidence = [];
   const sections = [];
   for (const type of Object.keys(labels)) {
@@ -506,9 +562,9 @@ export function saveSkillsReport(directory, report) {
       }
     }
     for (const item of cases) {
-      const runs = report.runs.filter((r) => r.caseId === item.id);
+      const runs = runsByCase.get(item.id);
       const source = `case-results/${item.id}.json`;
-      writeFileSync(path.join(directory, source), JSON.stringify({ case: item, runs }, null, 2));
+      if (writeCases) saveCase(directory, item, runs);
       const eid = `case-${item.id}`;
       evidence.push(eid);
       const leaf = {
@@ -588,6 +644,11 @@ export function saveSkillsReport(directory, report) {
       `평가 대상은 ${report.cases.length}개 사례다. 각 사례의 요청과 실행 기록을 기준으로 결과를 집계했다.`,
     ],
     summary: [
+      ...(inProgress
+        ? [
+            "실행 시작 시점의 보고서입니다. 진행 중에는 results.json에서 완료된 결과를 확인할 수 있습니다. 최종 HTML은 실행이 끝나면 갱신됩니다.",
+          ]
+        : []),
       summaryText(report.runs, { includeResources: false }),
       "결과는 선택한 사례와 실행 조건에 한정된다. 실제 클라이언트의 설치와 자동 호출은 별도 검증 대상이다.",
     ],
@@ -648,8 +709,8 @@ export function saveSkillsReport(directory, report) {
     },
   };
   const html = renderHtml(doc, { requireOpening: true, requireQuiz: true });
-  writeFileSync(path.join(directory, "report.json"), JSON.stringify(doc, null, 2));
-  writeFileSync(path.join(directory, "index.html"), html);
+  publish(path.join(directory, "report.json"), JSON.stringify(doc, null, 2));
+  publish(path.join(directory, "index.html"), html);
   return path.join(directory, "index.html");
 }
 

@@ -18,10 +18,12 @@ import { BEDROCK_DEFAULTS } from "../lib/judge-defaults.mjs";
 import { invokeClaude } from "./claude.mjs";
 import { saveReport } from "./report.mjs";
 import { executionChecks } from "../lib/execution-checks.mjs";
-import { capturedChecks } from "../skills/mechanical-checks.mjs";
 import { verifierIdentity } from "../lib/verifier-identity.mjs";
 import { checkRequiredGuidance } from "../lib/required-guidance.mjs";
 import { toolServerConfig } from "./tool-config.mjs";
+
+import { caseRepeats, DEFAULT_JOBS, runPool } from "../lib/run-pool.mjs";
+export { runPool } from "../lib/run-pool.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN = path.resolve(HERE, "../..");
@@ -41,7 +43,14 @@ function validDate(value) {
 }
 
 export function parseArgs(args) {
-  const options = { runs: 1, jobs: 1, timeout: 300, live: false, prepare: false, list: false };
+  const options = {
+    runs: 1,
+    jobs: DEFAULT_JOBS,
+    timeout: 300,
+    live: false,
+    prepare: false,
+    list: false,
+  };
   const valued = new Set([
     "skill",
     "only",
@@ -99,7 +108,7 @@ Without --live, no model is called. --prepare writes fixtures and a NOT_RUN HTML
 --model selects the Claude target. The judge defaults to Bedrock GPT-6.1 Sol,
 profile default, region us-east-1; --judge-model/profile/region are explicit overrides.
 --timeout <seconds> bounds each CLI invocation (default 300).
---jobs <count> runs independent cases concurrently (default 1); each case keeps baseline before candidate.
+--jobs <count> runs independent case repeats concurrently (default up to 4); each repeat keeps baseline before candidate.
 --reference-date <YYYY-MM-DD> freezes the date supplied to both variants; defaults to today's local calendar date.
 --capture-only collects actual target execution evidence without the custom judge (requires --live).
 --out <new-directory> stores index.html, results.json, fixtures and execution evidence.
@@ -220,6 +229,14 @@ ${JSON.stringify(history, null, 2)}
 </conversation>`;
 }
 
+/** The same preflight runs on the workspace about to be prepared or used by the target. */
+export function initialFixtureChecks(tools) {
+  return {
+    policy: tools.call("run_check", { kind: "policy-tests" }),
+    lint: tools.call("run_check", { kind: "structure" }),
+  };
+}
+
 /**
  * Collect observable edits and events, fixing fixture and verifier versions when comparing guidance.
  * Tests may pass `options.invoke` for the model and `options.fixtureChecks`, a Map shared across
@@ -231,7 +248,7 @@ export async function runCase(item, variant, repeat, directory, options) {
   const artifactDir = path.join(directory, relative);
   const root = path.join(artifactDir, "workspace");
   mkdirSync(artifactDir, { recursive: true });
-  createWorkspace(root, item.build(), options.fixturePluginRoot ?? variant.root);
+  createWorkspace(root, options.fixture ?? item.build(), options.fixturePluginRoot ?? variant.root);
   const before = snapshot(root);
   const verifier = verifierIdentity(options.checkerRoot ?? variant.root);
   const result = {
@@ -267,7 +284,18 @@ export async function runCase(item, variant, repeat, directory, options) {
   const history = [];
   const checkpoints = [];
   let phase = "execution";
-  let sources;
+  let evidence;
+  function capture(after = snapshot(root), events = readEvents(logPath)) {
+    const observed = {
+      before,
+      after,
+      events,
+      replies: result.replies,
+      turns: item.turns,
+      referenceDate,
+    };
+    return { ...observed, checkpoints, evidenceSources: evidenceSources(observed) };
+  }
   try {
     const tools = makeTools({
       root,
@@ -285,10 +313,7 @@ export async function runCase(item, variant, repeat, directory, options) {
     const checkKey = options.fixtureChecks && sha({ before, verifier });
     let initial = checkKey && options.fixtureChecks.get(checkKey);
     if (!initial) {
-      initial = {
-        policy: tools.call("run_check", { kind: "policy-tests" }),
-        lint: tools.call("run_check", { kind: "structure" }),
-      };
+      initial = initialFixtureChecks(tools);
       if (checkKey) options.fixtureChecks.set(checkKey, initial);
     }
     const { policy, lint } = initial;
@@ -296,8 +321,10 @@ export async function runCase(item, variant, repeat, directory, options) {
       path.join(artifactDir, "fixture-checks.json"),
       JSON.stringify({ policy, lint }, null, 2),
     );
+    options.onPreflight?.(root, initial);
     if (policy.exitCode !== 0 || lint.exitCode !== 0)
       throw new Error("invalid initial fixture: inspect fixture-checks.json");
+    let events;
     for (const [index, user] of item.turns.entries()) {
       history.push({ role: "user", content: user });
       const config = path.join(artifactDir, `mcp-${index + 1}.json`);
@@ -332,20 +359,14 @@ export async function runCase(item, variant, repeat, directory, options) {
       result.calls.push({ stage: "target", ...response, text: undefined, structured: undefined });
       result.models.push(...response.models);
       history.push({ role: "assistant", content: response.text });
+      events = readEvents(logPath);
       history.push({
         role: "observed-tool-events",
-        content: readEvents(logPath).filter((event) => event.turn === index + 1),
+        content: events.filter((event) => event.turn === index + 1),
       });
       checkpoints.push({ turn: index + 1, files: snapshot(root) });
     }
-    sources = evidenceSources({
-      before,
-      after: snapshot(root),
-      events: readEvents(logPath),
-      replies: result.replies,
-      turns: item.turns,
-      referenceDate,
-    });
+    evidence = capture(checkpoints.at(-1)?.files, events);
     if (options["capture-only"]) {
       result.verdict = "UNSCORED";
     } else {
@@ -353,7 +374,7 @@ export async function runCase(item, variant, repeat, directory, options) {
       result.judgeAttempts = [];
       result.judgment = await gradeEvidence({
         obligations: item.obligations,
-        sources,
+        sources: evidence.evidenceSources,
         invoke: (prompt) =>
           (
             options.judgeInvoke ??
@@ -387,29 +408,13 @@ export async function runCase(item, variant, repeat, directory, options) {
         },
       });
       result.verdict = result.judgment.verdict;
-      const evidence = {
-        before,
-        after: snapshot(root),
-        events: readEvents(logPath),
-        replies: result.replies,
-        turns: item.turns,
-        checkpoints,
-        referenceDate,
-      };
       const currentCase = { ...item, type: "execution" };
-      result.checks = capturedChecks(currentCase, {
-        before,
-        files: evidence.after,
-        events: evidence.events,
-      });
-      result.checks.push(
-        ...executionChecks(
-          path.join(artifactDir, "final-check-workspace"),
-          currentCase,
-          currentCase,
-          evidence,
-          options.checkerRoot ?? variant.root,
-        ),
+      result.checks = executionChecks(
+        path.join(artifactDir, "final-check-workspace"),
+        currentCase,
+        currentCase,
+        evidence,
+        options.checkerRoot ?? variant.root,
       );
       if (result.verdict === "PASS" && result.checks.some((c) => !c.pass)) result.verdict = "FAIL";
     }
@@ -417,52 +422,14 @@ export async function runCase(item, variant, repeat, directory, options) {
     result.verdict = phase === "judge" ? "GRADER_ERROR" : "ERROR";
     result.error = error.message;
   }
-  const after = snapshot(root);
-  const events = readEvents(logPath);
-  sources ??= evidenceSources({
-    before,
-    after,
-    events,
-    replies: result.replies,
-    turns: item.turns,
-    referenceDate,
-  });
-  result.changes = diff(before, after);
+  // A failed target may have changed files before returning its last complete turn.
+  evidence ??= capture();
+  result.changes = diff(before, evidence.after);
   result.models = [...new Set(result.models)];
   result.elapsedMs = Date.now() - started;
-  writeFileSync(
-    path.join(artifactDir, "evidence.json"),
-    JSON.stringify(
-      {
-        before,
-        after,
-        events,
-        turns: item.turns,
-        referenceDate,
-        replies: result.replies,
-        checkpoints,
-        evidenceSources: sources,
-      },
-      null,
-      2,
-    ),
-  );
+  writeFileSync(path.join(artifactDir, "evidence.json"), JSON.stringify(evidence, null, 2));
   writeFileSync(path.join(artifactDir, "result.json"), JSON.stringify(result, null, 2));
   return result;
-}
-
-export async function runPool(items, jobs, action) {
-  let next = 0;
-  const workers = Array.from({ length: Math.min(jobs, items.length) }, async () => {
-    while (next < items.length) {
-      const item = items[next++];
-      await action(item);
-    }
-  });
-  // If one worker fails, let the other owned workers finish before returning.
-  const settled = await Promise.allSettled(workers);
-  const failed = settled.find((result) => result.status === "rejected");
-  if (failed) throw failed.reason;
 }
 
 export async function main(args) {
@@ -520,6 +487,8 @@ export async function main(args) {
       harnessHash: sha(
         [
           "run.mjs",
+          "../lib/run-pool.mjs",
+          "../lib/agent-process.mjs",
           "workspace.mjs",
           "tool-server.mjs",
           "tool-config.mjs",
@@ -562,24 +531,26 @@ export async function main(args) {
       process.stdout.write(`prepared ${item.id}\n`);
     }
   } else {
-    await runPool(selected, options.jobs, async (item) => {
-      for (let repeat = 1; repeat <= options.runs; repeat++) {
-        for (const variant of Object.values(variants).sort((a, b) =>
-          a.name.localeCompare(b.name),
-        )) {
-          process.stdout.write(`running ${item.id} ${variant.name} ${repeat}/${options.runs}\n`);
-          const result = await runCase(item, variant, repeat, directory, {
-            ...options,
-            fixturePluginRoot: candidate.root,
-            checkerRoot: candidate.root,
-            checkerHash: candidate.hash,
-          });
-          report.runs.push(result);
-          saveReport(directory, report);
-          process.stdout.write(
-            `  ${item.id} ${variant.name} ${repeat}: ${result.verdict}${result.error ? `: ${result.error}` : ""}\n`,
-          );
-        }
+    const order = Object.values(variants).sort((a, b) => a.name.localeCompare(b.name));
+    const groups = caseRepeats(selected, options.runs).map((group) => ({
+      ...group,
+      completed: [],
+    }));
+    await runPool(groups, options.jobs, async ({ item, repeat, completed }) => {
+      for (const variant of order) {
+        process.stdout.write(`running ${item.id} ${variant.name} ${repeat}/${options.runs}\n`);
+        const result = await runCase(item, variant, repeat, directory, {
+          ...options,
+          fixturePluginRoot: candidate.root,
+          checkerRoot: candidate.root,
+          checkerHash: candidate.hash,
+        });
+        completed.push(result);
+        report.runs = groups.flatMap((group) => group.completed);
+        saveReport(directory, report);
+        process.stdout.write(
+          `  ${item.id} ${variant.name} ${repeat}: ${result.verdict}${result.error ? `: ${result.error}` : ""}\n`,
+        );
       }
     });
   }

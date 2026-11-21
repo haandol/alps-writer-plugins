@@ -171,3 +171,39 @@ test("the reference-input scenario distinguishes durable constraints from implem
     "a stack inventory copied from the incident must fail the scorer",
   );
 });
+
+// Selection follows actual usage: a scenario that embeds a hook's real output, or loads a
+// shipped reference, must be selected when that file changes, so an edit cannot skip its own
+// evidence. Scenarios come from the runner itself, with the names it selects by.
+test("embedded hook output and loaded references select every scenario that uses them", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { loadScenarios } = await import(path.join(EVALS, "run.mjs"));
+  const { scenarioNamesForChangedPaths } = await import(path.join(EVALS, "impact-map.mjs"));
+  const scenarios = await loadScenarios();
+  const source = ({ file }) => readFileSync(path.join(EVALS, "scenarios", file), "utf8");
+  const dependencies = [
+    [
+      [
+        "plugins/adr-writer/hooks/surface-adr-context.mjs",
+        "plugins/adr-writer/scripts/model-documents.mjs",
+      ],
+      /\bhookContext\(/,
+    ],
+    [
+      [
+        "plugins/ontology-writer/hooks/surface-business-context.mjs",
+        "plugins/ontology-writer/scripts/model-documents.mjs",
+      ],
+      /\bontologyDirective\(/,
+    ],
+    [["plugins/adr-writer/references/business-context.md"], /references\/business-context\.md/],
+  ];
+  for (const [paths, use] of dependencies) {
+    const users = scenarios.filter((scenario) => use.test(source(scenario))).map((s) => s.name);
+    assert.ok(users.length > 0, `${paths[0]}: no scenario uses it`);
+    for (const changed of paths) {
+      const selected = scenarioNamesForChangedPaths([changed], scenarios);
+      for (const name of users) assert.ok(selected.has(name), `${changed}: missing ${name}`);
+    }
+  }
+});

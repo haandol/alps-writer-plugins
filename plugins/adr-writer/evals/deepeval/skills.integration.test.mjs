@@ -8,6 +8,8 @@ import { catalog, skillCatalog, checkReferences, PLUGIN } from "../skills/catalo
 import { routingCases } from "../skills/catalog.mjs";
 import { comparePairs } from "../skills/metrics.mjs";
 import { makeTools } from "../regression/workspace.mjs";
+import { executionOutcome } from "../lib/execution-checks.mjs";
+import { toolServerOptions } from "../regression/tool-config.mjs";
 import { cases } from "../regression/cases.mjs";
 import { renderSavedReport } from "./render-report.mjs";
 
@@ -25,6 +27,108 @@ const noCall = () => {
   throw new Error("A free operation called a model");
 };
 
+test("invalid fixture evidence and an empty registered verifier cannot reach final checks", () => {
+  const tools = { call: noCall };
+  const item = { type: "execution" };
+  const fixture = { "test/policy.test.mjs": "original" };
+  const evidence = { before: fixture, after: { ...fixture }, events: [] };
+  assert.throws(
+    () => executionOutcome(tools, item, evidence, fixture, () => undefined),
+    /Invalid execution evidence checks/,
+  );
+  evidence.after["test/policy.test.mjs"] = "changed";
+  assert.throws(() => executionOutcome(tools, item, evidence, fixture), /immutable fixture/);
+});
+
+test("one preflight on the actual fixture and the same mandatory action checks on execution and replay", async () => {
+  const source = cases.find((c) => c.id === "rollup-encbird-withheld-approval");
+  let builds = 0;
+  const item = {
+    ...source,
+    type: "execution",
+    group: source.skill,
+    build() {
+      builds++;
+      return source.build();
+    },
+  };
+  const evaluate = async () => ({ verdict: "PASS", frameworkResult: { testResults: [] } });
+  const first = await main(["--live", "--suite", "execution", "--runs", "1", "--out", temp()], {
+    cases: [item],
+    evaluate,
+    target: async ({ config }) => {
+      const args = JSON.parse(readFileSync(config, "utf8")).mcpServers.fixture.args.slice(1);
+      const tools = makeTools(toolServerOptions(args));
+      assert.throws(() => tools.call("write_file", { path: "working-notes.md", content: "draft" }));
+      return { text: "No official documents changed.", models: ["local-stub"], costUSD: 0 };
+    },
+  });
+  assert.equal(builds, 1);
+  const run = first.report.runs[0];
+  assert.equal(run.verdict, "NOT_PROVEN");
+  const folder = path.join(first.output, run.artifactDirectory);
+  assert.equal(existsSync(path.join(folder, "prepared")), false);
+  const captured = path.dirname(path.join(first.output, run.capture));
+  const checks = JSON.parse(readFileSync(path.join(captured, "fixture-checks.json"), "utf8"));
+  assert.deepEqual(JSON.parse(readFileSync(path.join(folder, "preflight.json"), "utf8")), [
+    checks.policy,
+    checks.lint,
+  ]);
+  const replay = await main(["--live", "--rejudge", first.output, "--out", temp()], {
+    cases: [item],
+    evaluate,
+    target: noCall,
+  });
+  const other = replay.report.runs[0];
+  assert.equal(other.verdict, run.verdict);
+  const outcomes = (r) => r.checks.map(({ label, pass }) => [label, pass]);
+  assert.deepEqual(outcomes(other), outcomes(run));
+  assert.ok(
+    run.checks.some(
+      (c) => c.label === "mutations remain within fixture task permissions" && !c.pass,
+    ),
+  );
+});
+
+test("an unfinished live evaluation checkpoints the completed case and can render the snapshot offline", async () => {
+  const out = temp();
+  const items = routingCases.filter((c) => !c.required.length).slice(0, 2);
+  let calls = 0;
+  const result = await main(
+    ["--live", "--suite", "routing", "--jobs", "1", "--runs", "1", "--out", out],
+    {
+      cases: items,
+      judge: noCall,
+      target: async () => {
+        if (++calls === 2) {
+          const raw = readFileSync(path.join(out, "results.json"), "utf8");
+          const checkpoint = JSON.parse(raw);
+          assert.deepEqual(
+            checkpoint.runs.map((r) => r.verdict),
+            ["PASS", "NOT_RUN"],
+          );
+          assert.equal(
+            JSON.parse(readFileSync(path.join(out, "case-results", items[0].id + ".json"))).runs[0]
+              .verdict,
+            "PASS",
+          );
+          const restored = temp();
+          writeFileSync(path.join(restored, "results.json"), raw);
+          const recovered = await main(["--report", restored], { target: noCall, judge: noCall });
+          assert.ok(existsSync(recovered.html));
+          assert.ok(readFileSync(path.join(out, "index.html"), "utf8").includes("실행 시작 시점"));
+        }
+        return { structured: { selected: [] }, text: "{}", models: ["local-stub"], costUSD: 0 };
+      },
+    },
+  );
+  assert.deepEqual(
+    result.report.runs.map((r) => r.verdict),
+    ["PASS", "PASS"],
+  );
+  assert.ok(!readFileSync(result.html, "utf8").includes("실행 시작 시점"));
+});
+
 test("five-repeat preparation groups outcomes without dropping native trial records", async () => {
   const item = (await catalog()).find((entry) => entry.id === "impl-uses-intent-for-file-lookup");
   const result = await main(
@@ -37,6 +141,71 @@ test("five-repeat preparation groups outcomes without dropping native trial reco
   const saved = JSON.parse(readFileSync(path.join(result.output, `case-results/${item.id}.json`)));
   assert.equal(saved.runs.length, 5);
   assert.ok(existsSync(result.html));
+});
+
+test("a payment fixture edit selects exactly its consumers and a shared change still selects all", async () => {
+  const all = await catalog();
+  const { loadScenarios } = await import("../run.mjs");
+  const scenarios = await loadScenarios();
+  const expected = scenarios
+    .filter((item) =>
+      readFileSync(path.join(PLUGIN, "evals/scenarios", item.file), "utf8").includes(
+        "../lib/payment-change.mjs",
+      ),
+    )
+    .map((item) => item.name)
+    .sort();
+  const { scenarioNamesForChangedPaths } = await import("../impact-map.mjs");
+  const fixture = "plugins/adr-writer/evals/lib/payment-change.mjs";
+  assert.equal(expected.length, 4);
+  assert.deepEqual([...scenarioNamesForChangedPaths([fixture], scenarios)].sort(), expected);
+  assert.deepEqual(
+    selectImpacted(all, [fixture])
+      .map((item) => item.id)
+      .sort(),
+    expected,
+  );
+  assert.equal(
+    selectImpacted(all, [fixture, "plugins/adr-writer/evals/lib/harness.mjs"]).length,
+    all.length,
+  );
+});
+
+test("one case fills the requested workers while each repeat keeps its own results and failures", async () => {
+  const item = routingCases.find((item) => item.required.length === 0);
+  for (const jobs of [1, 2]) {
+    let active = 0;
+    let peak = 0;
+    const directories = new Set();
+    const result = await main(
+      ["--live", "--suite", "routing", "--runs", "5", "--jobs", String(jobs), "--out", temp()],
+      {
+        cases: [item],
+        target: async ({ cwd }) => {
+          directories.add(cwd);
+          peak = Math.max(peak, ++active);
+          await new Promise((resolve) => setImmediate(resolve));
+          active--;
+          if (cwd.endsWith("-2")) throw new Error("isolated fixture failure");
+          return { structured: { selected: [] }, text: '{"selected":[]}', models: ["target-stub"] };
+        },
+        judge: noCall,
+      },
+    );
+    assert.equal(peak, jobs);
+    assert.equal(directories.size, 5);
+    const saved = JSON.parse(readFileSync(path.join(result.output, "results.json"), "utf8"));
+    assert.deepEqual(
+      saved.runs.map((run) => [run.repeat, run.verdict]),
+      [
+        [1, "PASS"],
+        [2, "ERROR"],
+        [3, "PASS"],
+        [4, "PASS"],
+        [5, "PASS"],
+      ],
+    );
+  }
 });
 
 test("every classification probe finds the guidance its sibling-plugin skills reference", async () => {

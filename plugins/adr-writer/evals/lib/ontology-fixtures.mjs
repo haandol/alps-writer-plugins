@@ -168,6 +168,15 @@ export const PAYMENTS_ADR = adrDocument({
     "A declined card leaves the order unpaid.",
   ],
 });
+export const RETRY_ADR = adrDocument({
+  title: "Capture card payments once per order",
+  purpose: "Customers must never be charged twice for one order.",
+  decision: "Capture the card charge through the payment provider once per order.",
+  rows: [
+    "An order is captured at most once; a repeated capture request returns the first result.",
+    "A declined card may be retried at most 3 times per order; the fourth attempt is rejected and the order stays unpaid — payment risk policy.",
+  ],
+});
 export const CONFIRMATION_ADR = adrDocument({
   title: "Confirm paid orders",
   purpose: "A paid order is accepted for fulfilment without manual review.",

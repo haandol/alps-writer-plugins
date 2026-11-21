@@ -14,6 +14,7 @@ export function toolServerConfig({
   checkerRoot,
   artifactPaths = [],
   draftRoot,
+  businessContext = false,
 }) {
   return {
     mcpServers: {
@@ -28,7 +29,8 @@ export function toolServerConfig({
           guidance ? "on" : "off",
           checkerRoot,
           JSON.stringify(artifactPaths),
-          ...(draftRoot ? [draftRoot] : []),
+          ...(draftRoot || businessContext ? [draftRoot ?? ""] : []),
+          ...(businessContext ? ["business-context"] : []),
         ],
       },
     },
@@ -45,6 +47,7 @@ export function toolServerOptions([
   checkerRoot,
   rawArtifactPaths,
   rawDraftRoot,
+  queryCapability,
 ]) {
   return {
     root,
@@ -55,5 +58,6 @@ export function toolServerOptions([
     checkerRoot,
     artifactPaths: rawArtifactPaths === undefined ? [] : JSON.parse(rawArtifactPaths),
     ...(rawDraftRoot ? { draftRoot: rawDraftRoot } : {}),
+    ...(queryCapability === "business-context" ? { businessContext: true } : {}),
   };
 }
