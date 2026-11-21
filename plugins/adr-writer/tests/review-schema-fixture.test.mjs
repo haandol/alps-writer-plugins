@@ -531,6 +531,57 @@ test("compact standard preserves exact contract and code evidence through direct
   });
 });
 
+test("direct standard delivery places an authored quiz without exposing the grading key", () => {
+  withTmp((dir) => {
+    const data = compactFixture(dir);
+    const question = {
+      id: "Q1",
+      sectionId: "flow-1",
+      revisit: true,
+      question: "What happens at the admission limit?",
+      options: [
+        { id: "A", text: "Admit", feedback: "The limit is already reached." },
+        { id: "B", text: "Reject", feedback: "No capacity remains." },
+        { id: "C", text: "Retry", feedback: "No retry contract exists." },
+        { id: "D", text: "Reset", feedback: "The count is preserved." },
+      ],
+      correctOptionId: "B",
+      explanation: "The saturated boundary triggers rejection.",
+      evidence: "The admission fixture exercises that boundary.",
+    };
+    data.comprehensionCheck = {
+      prGuidance: "Publication requires authorization.",
+      questions: [question],
+    };
+    write(dir, "findings.json", JSON.stringify(data));
+    const md = readFileSync(path.join(dir, "implementation-review.md"), "utf8");
+    write(dir, "implementation-review.md", md + "\n## Comprehension check\n");
+    assert.equal(materialize(dir).status, 0);
+    const output = path.join(dir, "report.html");
+    const result = spawnSync(
+      process.execPath,
+      [
+        path.join(PLUGIN_ROOT, "scripts/adr-impl-review-article.mjs"),
+        path.join(dir, "findings.json"),
+        output,
+      ],
+      { encoding: "utf8" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const html = readFileSync(output, "utf8");
+    const flow = html.indexOf('id="flow-1"');
+    const quiz = html.indexOf(question.question);
+    assert.ok(flow >= 0 && flow < quiz && quiz < html.indexOf('id="findings"'));
+    assert.ok(html.includes(data.comprehensionCheck.prGuidance));
+    assert.ok(html.includes('class="quiz__check"'));
+    assert.ok(
+      !html.includes(question.explanation),
+      "grading details stay inside the self-check payload",
+    );
+    assert.ok(!html.includes(question.options[1].feedback));
+  });
+});
+
 test("compact presentation cannot bypass evidence, full-mode depth, or PASS gates", () => {
   for (const mutate of [
     (d) => {

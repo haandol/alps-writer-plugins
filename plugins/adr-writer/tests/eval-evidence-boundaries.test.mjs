@@ -1,7 +1,7 @@
 import { capturedChecks } from "../evals/skills/mechanical-checks.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync, mkdirSync, symlinkSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync, mkdirSync, symlinkSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { withTmp, PLUGIN_ROOT } from "./helpers.mjs";
@@ -26,6 +26,32 @@ function fixture(root) {
     readFileSync(logPath, "utf8").trim().split("\n").filter(Boolean).map(JSON.parse);
   return { tools, logPath, events };
 }
+
+test("resumed trace writers preserve sequence and request references across UTF-8 appends", () =>
+  withTmp((root) => {
+    const logPath = path.join(root, "events.jsonl");
+    const writer = (turn) => makeTools({ root, pluginRoot: PLUGIN_ROOT, logPath, turn });
+    const first = writer(1);
+    const second = writer(2);
+    for (const tools of [first, first, second, first])
+      tools.call("write_file", { path: "docs/notes.md", content: "관찰 기록" });
+    const events = readFileSync(logPath, "utf8").trim().split("\n").map(JSON.parse);
+    assert.deepEqual(
+      events.map((e) => e.seq),
+      [1, 2, 3, 4, 5, 6, 7, 8],
+    );
+    assert.deepEqual(
+      events.filter((e) => e.kind === "result").map((e) => [e.turn, e.request]),
+      [
+        [1, 1],
+        [1, 3],
+        [2, 5],
+        [1, 7],
+      ],
+    );
+    appendFileSync(logPath, "incomplete\n");
+    assert.throws(() => first.call("list_files", {}), SyntaxError);
+  }));
 
 test("only case-declared report files gain write permission, never source or report deletion", () =>
   withTmp((root) => {

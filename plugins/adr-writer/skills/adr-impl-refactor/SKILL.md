@@ -39,7 +39,7 @@ to verify Git exclusion before writing artifacts.
 
 ## 2. Establish the test baseline
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/execution-boundary.md` completely, then run the narrowest existing tests that cover the changed path before applying any refactor. Record the command and result.
+Read `${CLAUDE_PLUGIN_ROOT}/references/execution-boundary.md` completely, then establish the narrowest applicable pre-change test result. Reuse an earlier execution when its exact command, covered cases, implementation, fixtures and environment match; otherwise run the tests. Record the command and observed result.
 
 - If the relevant tests fail, stop. Refactoring a failing baseline makes cause and effect ambiguous.
 - If no related tests exist, produce proposals only. Do not auto-apply a candidate whose behavior cannot be checked before and after.
@@ -88,7 +88,7 @@ For each verified candidate:
 
 Do not use destructive worktree commands. Track the exact patch for each candidate so only work introduced by this skill is undone.
 
-After all candidates, rerun the combined targeted test set **only when at least one candidate was kept**. When zero candidates changed the worktree, reuse the passing baseline as the final targeted result instead of testing identical state twice. When this skill is called by `/adr-impl`, `/adr-impl` must still rerun the project's full test command after an applied refactor.
+After all candidates, verify the combined targeted test set **only when at least one candidate was kept**. Reuse the last passing execution if it covered that entire set on the final code with the same command, inputs, fixtures and environment. Otherwise run the combined set, including interactions across patches. When zero candidates changed the worktree, reuse the passing baseline as the final targeted result instead of testing identical state twice. When this skill is called by `/adr-impl`, `/adr-impl` must still rerun the project's full test command after an applied refactor.
 
 ## 6. Write the result
 

@@ -57,7 +57,7 @@ Then load `docs/adr/.mapping.json`, plus **only the rule-document sections this 
 - `authoring-rules.md` — "Decision log" (step 5's by-eye check) and "Requirements live in the code and in the ADR" (the step 7 routing and the Prohibited guard).
 - `structure.md` — "Anti-pattern categories" (the step 4 duplication finding) and "Decision log" (the step 1 exclusion).
 
-**Do not load the rule documents whole here.** `adr-reviewer` owns R1-R20 and reads its own sections per ADR (see its step 1), so a full copy in this session buys nothing but pays for every token again — and the same division of labor is why step 3 tells you not to restate the reviewer's criteria. Read a further section on demand if an aggregation finding turns on it.
+**Do not load the rule documents whole here.** The reviewer owns R1-R20. Reuse the original project sections across the sweep and open further sections for specific decisions or aggregation findings.
 
 **Announce the scope before starting a full sweep.** Show the count and category
 breakdown, then proceed when the requested scope is clear. Item count alone does
@@ -67,10 +67,10 @@ cost, or a change beyond the requested scope. Keep the review read-only.
 ### 2. Run the deterministic harness once, for the whole scope
 
 ```bash
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs --documents-only [category]   # omit the category to lint every ADR
+bun "${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs" --documents-only "$adr_target"   # omit the final argument for a sweep
 ```
 
-Run this **once for the entire scope**, not per ADR — it already walks every ADR and the mapping in one pass. It mechanically settles the format, existence, and consistency half of the rules (Status enum and date format, required sections, canonical filenames, path depth, anti-pattern category segments, Decision Drivers and alternatives counts, Related links resolving, `dependsOn` integrity, mapping↔disk consistency and status↔body agreement, values written in code-constant form, and — internally via `adr-invariants.sh --prd-only` — ADR→PRD back-references).
+Run this **once for the entire scope**, passing the exact saved path for a single ADR. The structural and ADR→PRD checks use that scope. In a scoped result, report repository index/rule diagnostics separately from the document verdict; the overall lint still reports both. It mechanically settles the format, existence, and consistency half of the rules (Status enum and date format, required sections, canonical filenames, path depth, anti-pattern category segments, Decision Drivers and alternatives counts, Related links resolving, `dependsOn` integrity, mapping↔disk consistency and status↔body agreement, values written in code-constant form, and — internally via `adr-invariants.sh --prd-only` — ADR→PRD back-references).
 
 Keep the result and pass each ADR's slice of it to that ADR's reviewer, so the LLM never re-derives what the harness already proved. **Inherit, do not re-diagnose**: an in-scope document error goes into the final report as `FIX_REQUIRED (confirmed by harness)`. Do not import code-side findings from a broader harness run; use the document-only invocation above.
 
@@ -88,6 +88,14 @@ Before choosing the execution strategy, read `${CLAUDE_PLUGIN_ROOT}/references/s
 
 Whichever strategy is chosen, ground each ADR's judgment only in that ADR, its mapping entry, its harness slice, the rule docs, and any supplied user intent/requirement sources for this decision. Do not use another ADR's findings as evidence for this ADR. Cross-ADR patterns and contradictions are synthesized only in step 4. Record a context-isolation limitation only when it materially weakens confidence.
 
+Resolve the current project's review checklist and cited rule sections once per sweep. Share those original sections or references with reviewers, and let each read any missing rule for its own decision. Reuse within this run only; changed or locally pinned rules take precedence.
+
+For a repeated review, a prior result can cover a document whose ADR, relied-on
+contracts, supplied intent, local rules and lint findings still match. Where
+known, compare their verified clean commit with `scripts/review-changes.mjs`.
+Keep the prior verdict and its evidence visible for every reused document. A
+changed rule, source, finding or unreviewed document still needs its own check.
+
 Pass each reviewer: the ADR path, that category's `.mapping.json` entry, and **that ADR's slice of the harness result**.
 
 Also pass any user-supplied intent/requirement excerpts relevant to this decision,
@@ -96,7 +104,7 @@ do not search product code or require a separate intent document. The reviewer
 applies `authoring-rules.md`'s "Intent completeness and provability" under R19
 and records the limits of any intent-coverage claim.
 
-- Agent count and parallelism are not part of the report contract. The model may group mechanical loading work or reuse a context when it can still produce a complete per-ADR R19 regeneration check without anchoring on prior conclusions.
+- Independent ADRs can enter review together once their harness slices are available. Combine their results at step 4. Agent count and parallelism are not part of the report contract; each ADR retains its own R19 regeneration check.
 - Never collapse several ADRs into one combined verdict. Every ADR receives its own verdict, regeneration check, evidence, and comprehension-load line even when the execution strategy batches work.
 - Require only the agent file's existing review-result format in the response.
 - If the scope is large, tell the user the execution grouping, rather than silently reviewing a subset. Never truncate the scope without saying so.
@@ -121,7 +129,7 @@ A per-ADR punch list is just N separate reviews. What a sweep adds is what only 
 
 ### 5. Companion checks (cheap, and only where they need no code)
 
-- **`decision-log.md`** in each category, if present — the harness already verifies its ADR pointers resolve (`decision-log-link-broken`), so trust that and only check by eye that no old ADR number is embedded in the prose, no PRD is cited, and it holds no duplicated current state or implementation constants (`authoring-rules.md` "Decision log").
+- **`decision-log.md`** in each selected category of a category review or sweep, if present — the harness already verifies its ADR pointers resolve (`decision-log-link-broken`), so trust that and only check by eye that no old ADR number is embedded in the prose, no PRD is cited, and it holds no duplicated current state or implementation constants (`authoring-rules.md` "Decision log").
 - **Index hygiene** is fully covered by the step 2 harness (mapping↔disk, status↔body, `dependsOn` integrity) — report its result rather than re-checking.
 - **Rule-doc health leads the report, above the per-ADR findings.** A sweep is the one command that reveals this as a set-wide fact: if the repo's rules predate an upstream rule, every reviewer in this run judged that axis against a document the project does not have, so the axis is unjudged across all N ADRs at once — a far larger hole than any single ADR's finding. Two kinds, both from the step 2 harness:
   - **Version lag** (`rules-doc-stale` / `rules-doc-unstamped`) — report which docs lag and which rules that costs.

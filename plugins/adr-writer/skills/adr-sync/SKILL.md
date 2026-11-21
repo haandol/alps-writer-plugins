@@ -10,6 +10,27 @@ Reconcile evidence, contract and recorded Status. Route an outstanding implement
 
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
+## Quick entry
+
+When a prior check identifies the verified commit and covered scope, compare
+that revision to the current ADR, code, tests and relevant configuration with
+`bun "${CLAUDE_PLUGIN_ROOT}/scripts/review-changes.mjs" <commit-id> <path>...`.
+Include the owning directories where new files can introduce a path. Git dates
+and an empty diff alone do not establish coverage: reuse prior findings only
+when the reviewed inputs were clean, the scope is complete and the intent and
+external inputs still match. A changed file calls for checking the affected
+contract before proposing an edit. With no usable baseline, review that scope
+normally. Apply this evidence rule to deep verification as well.
+
+For `--quick`, read the selected category's index summaries first. Locate their
+local code, tests, IaC or configuration using the summary and category terms.
+Use the glossary or the relevant scope-finding section of `structure.md` only
+when needed. Check the summary against this evidence and report In Sync, Drift
+Suspected or Unverified. If the index or evidence cannot locate the owner, keep
+the scope unverified. Check index paths for stale naming as described in Pass 1.
+Return the quick result without loading deep authoring rules, drafting edits or
+moving files. An explicit deep audit follows the remaining workflow.
+
 Consult the context glossary, then the root glossary, for meanings needed in
 the comparison. Report conflicts on read-only paths. If a definition change is authorized,
 or ADR content relies on a business term where `docs/ontology/` holds Turtle documents, follow
@@ -21,11 +42,7 @@ body or realigning categories. Report a missing compliance contract as an
 alignment issue instead of adding it; returning an ADR to `Proposed` does not
 query. Without them, skip it.
 
-Verify that every ADR in `docs/adr/` matches the repository implementation, including IaC and repository-local configuration. Fix drifted ADRs, resolve contradictions between related ADRs, and synchronize the `.mapping.json` index (the adrs[] path/status/summary).
-
-Alongside verification and correction, **refine each ADR into one self-contained document describing the current admitted decision and requirement contract.** Reconstruct the evolution narration that accumulated mid-body over time ("originally it was X, then changed to Y", "added Z in v2", "changed to B compared with the previous A") into a single current-state description, so reading one ADR conveys its durable decision without code-level implementation facts. Of what you strip out, **harvest major transitions** into the category's `decision-log.md` (Pass 2's step 3-E); **minor** evolutions and individual diffs are preserved by Git, so the ADR body carries no evolution history. (This is cleanup within a single ADR — merging an evolution _chain_ spread across several ADRs into one is `adr-rollup`'s job.)
-
-The default is **deep mode**: read every ADR body in scope and compare every claim (APIs, error codes, enums, entity fields, IaC, Status, Related links) against repository evidence. With `--quick`, check only the adrs[] summary in `.mapping.json` (the one-line Key Decision).
+Use deep mode for a full claim-by-claim repository comparison. Quick mode checks the indexed Key Decision summary.
 
 ## Modes
 
@@ -52,13 +69,10 @@ read-only/quick modes and destructive approval boundaries.
 
 ## Workflow
 
-### 1. Load the index and mapping
+### 1. Load the index and mapping for deep verification
 
-Use the repository's rule documents when present; otherwise use the matching
-`${CLAUDE_PLUGIN_ROOT}/templates/adr/` files. Reuse unchanged sections already
-loaded in this context. Load conditional references only on their active path.
+Read the deep-mode source rules in [deep verification](references/deep-verification.md). Reuse unchanged inputs throughout this run.
 
-- Read `concepts.md` (the abstraction ladder, the gray zone, the dependency model, Status and its automatic transitions), `docs/adr/README.md` (the index and the ADR template), `docs/adr/authoring-rules.md` (authoring rules and the review checklist), and `docs/adr/structure.md` (directory and mapping policy). In a repo seeded before the README/concepts split, all of the concepts material sits inside `README.md` — read it there instead
 - Read `docs/adr/.mapping.json` (the single ADR index — categories → adrs[] with path, status, summary, plus `dependsOn`). The mapping stores neither ADR↔code paths nor a PRD reference — locate the code an ADR governs by **reading the ADR's Decision body and searching the repo each time** (see "Finding the related code" below).
 - Enumerate every ADR file on disk: **only `NNNN-*.md` (ADR files that start with a number)** under `docs/adr/<category>/`. An ADR file on disk that is absent from `.mapping.json`'s adrs[], or an adrs[] path pointing at a file that does not exist, is itself drift (two-way disk↔mapping consistency). **`decision-log.md` is a convention file, not an ADR, so exclude it from this enumeration** — it is not registered in the mapping (`structure.md` "Decision log") and must never be reported as orphan drift. (The deterministic harness likewise does not enumerate this file as an ADR, since it does not start with `NNNN-`.)
 

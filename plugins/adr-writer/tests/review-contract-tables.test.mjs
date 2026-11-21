@@ -7,22 +7,11 @@ import { PLUGIN_ROOT, withTmp, write } from "./helpers.mjs";
 const VALIDATOR = path.join(PLUGIN_ROOT, "scripts/adr-impl-review-validate.mjs");
 const MATERIALIZE = path.join(PLUGIN_ROOT, "scripts/adr-impl-review-materialize.mjs");
 
-// Build otherwise valid review artifacts so failures isolate contract accounting.
-function validateContract(
-  requirements,
-  bases,
-  {
-    afterContract = "",
-    coverageEvidence = "src/completion.mjs:1 — duplicate request reuses the stored result",
-    testResults = "node --test test/completion.test.mjs — PASS",
-    testStatus = "CLEAR",
-  } = {},
-) {
-  return withTmp((dir) => {
-    const adr = write(
-      dir,
-      "contract.md",
-      `# Request completion
+function writeContract(dir, requirements, afterContract = "") {
+  return write(
+    dir,
+    "contract.md",
+    `# Request completion
 
 ## Decision
 
@@ -40,7 +29,22 @@ ${afterContract}
 
 Retries preserve the stored result.
 `,
-    );
+  );
+}
+
+// Build otherwise valid review artifacts so failures isolate contract accounting.
+function validateContract(
+  requirements,
+  bases,
+  {
+    afterContract = "",
+    coverageEvidence = "src/completion.mjs:1 — duplicate request reuses the stored result",
+    testResults = "node --test test/completion.test.mjs — PASS",
+    testStatus = "CLEAR",
+  } = {},
+) {
+  return withTmp((dir) => {
+    const adr = writeContract(dir, requirements, afterContract);
     const contractCoverage = ["Decision", ...bases].map((adrBasis, index) => ({
       contractId: index === 0 ? "D0" : `R${index}`,
       requirement: index === 0 ? "Durable completion" : `Completion obligation ${index}`,
@@ -231,8 +235,17 @@ test("normal table spacing and optional outer pipes retain the same source basis
     "Requirement | Evidence |\n--- | --- |\nKeep  1 result. | Observe `1` result. |",
     "   | Requirement | Evidence |\r\n   | :---: | --- |\r\n   | Keep  1 result.   | Observe `1` result. |",
   ]) {
-    const result = validateContract(table, ["Keep  1 result. | Observe `1` result."]);
-    assert.equal(result.status, 0, result.stderr);
+    withTmp((dir) => {
+      const adr = writeContract(dir, table);
+      const result = spawnSync(process.execPath, [VALIDATOR, "--contract-rows", adr], {
+        encoding: "utf8",
+      });
+      assert.equal(result.status, 0, result.stderr);
+      assert.deepEqual(JSON.parse(result.stdout), [
+        { contractId: "D0", adrBasis: "Decision" },
+        { contractId: "R1", adrBasis: "Keep  1 result. | Observe `1` result." },
+      ]);
+    });
   }
 });
 

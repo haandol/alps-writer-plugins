@@ -174,11 +174,11 @@ export function parseLint(dir, extraArgs = [], { full = false } = {}) {
 
 // Run the SessionStart hook against a fixture and return the parsed
 // additionalContext string (or the whole JSON when raw=true).
-export function runHook(dir, { raw = false, env = {} } = {}) {
+export function runHook(dir, { raw = false, env = {}, event = {} } = {}) {
   const out = execFileSync(process.execPath, [HOOK], {
     cwd: dir,
     env: { ...process.env, CLAUDE_PROJECT_DIR: dir, ...env },
-    input: JSON.stringify({ hook_event_name: "SessionStart", source: "startup" }),
+    input: JSON.stringify({ hook_event_name: "SessionStart", source: "startup", ...event }),
     encoding: "utf8",
   });
   const parsed = JSON.parse(out);

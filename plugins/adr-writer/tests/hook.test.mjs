@@ -172,3 +172,23 @@ test("relative custom mapping is resolved under the selected project", () => {
     });
   });
 });
+
+test("a session launched outside its project finds the model beside the event's ADR index", () => {
+  withTmp((launcher) => {
+    withTmp((project) => {
+      write(launcher, "docs/adr/.mapping.json", "{invalid");
+      write(project, "docs/adr/.mapping.json", JSON.stringify({ categories: {} }));
+      write(project, "docs/ontology/model.ttl", "# model content must stay out of the directive");
+      const event = { cwd: project };
+      assert.match(
+        runHook(launcher, { event, env: { CLAUDE_PROJECT_DIR: "" } }),
+        /Business ontology present/,
+      );
+      assert.match(runHook(launcher, { event }), /failed to parse as JSON/);
+      assert.match(
+        runHook(launcher, { event: { cwd: {} }, env: { CLAUDE_PROJECT_DIR: "" } }),
+        /failed to parse as JSON/,
+      );
+    });
+  });
+});

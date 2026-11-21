@@ -1,6 +1,8 @@
 ## 2. Compliance contracts and contradictions
 
-For each entry of the plan's `compliance` list, read the named features' ADRs:
+Start with the plan's `reviewAdrs` and match each `compliance` entry to its
+features and affected obligations. Read a shared ADR once and reuse its sourced
+clauses across the matching entries. Record the result for each relation:
 
 - a **hand-off** needs a compliance contract in the ADRs of both the emitting
   step and the reacting step;

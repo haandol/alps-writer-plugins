@@ -1,0 +1,116 @@
+@prefix m: <urn:ontology-writer:model:> .
+@prefix onto: <urn:ontology-writer:vocabulary:> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+m:change-author a onto:Actor ;
+    rdfs:label "변경 작성자" ;
+    onto:definition "개발 중 요청된 기능 동작이나 규칙의 변경이 어느 레벨의 뜻을 바꾸는지 판단하고, 확정된 뜻에 맞춘 결정 기록 개정을 사용자 확인을 거쳐 마치는 역할." ;
+    onto:performs m:business-change.classify-change, m:business-change.revise-contract .
+
+m:business-change.contract-change-found a onto:BusinessEvent ;
+    rdfs:label "결정 기록 소유 변경 확인됨" ;
+    onto:definition "요청한 변경이 업무 모델의 뜻을 바꾸지 않고, 정확한 값이나 한 단계 안의 동작처럼 결정 기록이 소유하는 계약만 바꾼다는 것이 드러났다." ;
+    onto:triggers m:business-change.revise-when-settled ;
+    onto:inContext m:architecture-decision .
+
+m:business-change.contract-revised a onto:BusinessEvent ;
+    rdfs:label "결정 기록 개정됨" ;
+    onto:definition "요청한 변경이 확정된 업무 의미에 맞는 계약으로 결정 기록에 반영되어 구현의 기준이 되었다." ;
+    onto:inContext m:architecture-decision .
+
+m:business-change.meaning-adopted a onto:BusinessEvent ;
+    rdfs:label "변경한 업무 의미 확정됨" ;
+    onto:definition "사용자가 승인한 업무 의미의 변경이 업무 모델에 반영되어 결정 기록 개정에 사용할 수 있게 되었다." ;
+    onto:triggers m:business-change.revise-when-settled ;
+    onto:inContext m:business-modeling .
+
+m:business-change.meaning-change-found a onto:BusinessEvent ;
+    rdfs:label "업무 의미 변경 확인됨" ;
+    onto:definition "요청한 변경이 업무 모델이 소유하는 뜻을 바꾼다는 것이 드러났다." ;
+    onto:triggers m:business-change.approve-meaning-first ;
+    onto:inContext m:business-modeling .
+
+m:business-change.meaning-declined a onto:BusinessEvent ;
+    rdfs:label "업무 의미 변경 거절됨" ;
+    onto:definition "사용자가 제안된 업무 의미의 변경을 거절해 기존 업무 모델의 뜻을 유지하기로 했다." ;
+    onto:triggers m:business-change.keep-current-meaning ;
+    onto:inContext m:business-modeling .
+
+m:business-change a onto:Process ;
+    rdfs:label "개발 중 업무 변경 반영" ;
+    onto:definition "개발 중 사용자가 요청한 기능 동작이나 규칙의 변경을 그 뜻을 소유하는 레벨에서 먼저 확정하고, 업무 모델에서 결정 기록으로 내려보낸다." ;
+    onto:startCondition "업무 모델이 있는 프로젝트에서 사용자가 개발 중 기능의 동작이나 규칙을 바꾸도록 요청했다." ;
+    onto:businessOutcome "업무 모델이 소유하는 뜻의 변경은 사용자가 승인한 뒤에만 결정 기록의 계약이 되고, 결정 기록이 소유하는 변경은 업무 모델을 거치지 않고 결정 기록에서 확정된다." ;
+    onto:openScope "개정된 결정 기록의 계약을 구현하고 검증하는 흐름."^^onto:OpenPath ;
+    onto:summary "업무 의미를 바꾸는 개발 중 변경은 업무 모델의 승인을 먼저 거친 뒤 결정 기록으로 내려간다." ;
+    onto:status "Proposed" ;
+    onto:hasStep m:business-change.classify-change, m:business-change.decide-model-change, m:business-change.revise-contract .
+
+m:business-change.classify-change a onto:Step ;
+    rdfs:label "변경의 소유 레벨 판단" ;
+    onto:definition "요청한 변경이 업무 흐름, 사건 인계, 정책의 반응, 역할 책임, 여러 단계에 걸친 규칙이나 업무 모델이 정의하는 개념·용어의 뜻을 바꾸는지, 결정 기록이 소유하는 계약만 바꾸는지 판단한다." ;
+    onto:stepKind "system" ;
+    onto:emits m:business-change.contract-change-found, m:business-change.meaning-change-found ;
+    onto:inContext m:architecture-decision .
+
+m:business-change.decide-model-change a onto:Step ;
+    rdfs:label "업무 의미 변경 결정" ;
+    onto:definition "사용자가 개발 중 제안된 업무 의미의 변경을 영향받는 기능과 함께 검토해 승인하거나 거절한다. 승인한 내용만 업무 모델에 반영한다." ;
+    onto:stepKind "system" ;
+    onto:emits m:business-change.meaning-adopted, m:business-change.meaning-declined ;
+    onto:inContext m:business-modeling .
+
+m:business-change.revise-contract a onto:Step ;
+    rdfs:label "결정 기록 개정" ;
+    onto:definition "확정된 업무 의미나 결정 기록이 소유하는 변경을 기능의 계약으로 정리하고, 사용자 확인을 거쳐 결정 기록에 반영한다." ;
+    onto:stepKind "system" ;
+    onto:emits m:business-change.contract-revised ;
+    onto:inContext m:architecture-decision .
+
+m:business-change.approve-meaning-first a onto:Policy ;
+    rdfs:label "업무 의미의 선행 승인" ;
+    onto:definition "업무 모델이 소유하는 뜻을 바꾸는 변경은 결정 기록을 고치기 전에 사용자의 판단에 맡긴다." ;
+    onto:reactionCondition "요청한 변경이 업무 흐름, 사건 인계, 정책의 반응, 역할 책임, 여러 단계에 걸친 규칙이나 업무 모델이 정의하는 개념·용어의 뜻을 바꾼다." ;
+    onto:basisKind "user-decision" ;
+    onto:basis "업무 의미는 업무 모델이 소유하며, 그 의미의 변경은 결정 기록과 구현보다 먼저 사용자의 승인을 받는다." ;
+    onto:starts m:business-change.decide-model-change ;
+    onto:inContext m:business-modeling .
+
+m:business-change.keep-current-meaning a onto:Policy ;
+    rdfs:label "거절된 변경의 현재 의미 유지" ;
+    onto:definition "업무 의미 변경이 거절되면 사용자가 정한 대로 현재 업무 뜻에 맞춰 결정 기록을 다시 쓴다." ;
+    onto:reactionCondition "사용자가 거절된 변경 대신 현재 업무 뜻으로 결정 기록을 다시 쓰기로 했다." ;
+    onto:basisKind "user-decision" ;
+    onto:basis "거절된 업무 의미는 결정 기록과 구현에 반영하지 않는다." ;
+    onto:starts m:business-change.revise-contract ;
+    onto:inContext m:architecture-decision .
+
+m:business-change.revise-when-settled a onto:Policy ;
+    rdfs:label "확정된 의미로 결정 기록 개정" ;
+    onto:definition "변경이 의존하는 업무 의미가 확정된 뒤에 결정 기록을 개정한다." ;
+    onto:reactionCondition "변경이 업무 모델의 뜻을 바꾸지 않거나, 변경이 의존하는 업무 의미가 승인되어 업무 모델에 반영되었다." ;
+    onto:basisKind "user-decision" ;
+    onto:basis "결정 기록은 업무 모델이 확정한 의미를 실현하는 계약만 담는다." ;
+    onto:starts m:business-change.revise-contract ;
+    onto:inContext m:architecture-decision .
+
+m:business-change.hold-dependent-contract a onto:BusinessRule ;
+    rdfs:label "미확정 업무 의미에 의존하는 계약 보류" ;
+    onto:definition "승인 대기이거나 거절된 업무 의미에 의존하는 결정 기록 내용은 미정으로 남고 구현의 기준이 되지 않는다. 그 의미와 독립인 내용은 자신의 확인을 거쳐 확정할 수 있다." ;
+    onto:basisKind "user-decision" ;
+    onto:basis "업무 의미를 확정하는 책임은 업무 모델에, 구현 계약을 확정하는 책임은 결정 기록에 있다." ;
+    onto:constrains m:business-change.decide-model-change, m:business-change.revise-contract .
+
+m:business-change.contract-only a onto:ObservationCriterion ;
+    rdfs:label "결정 기록만의 변경" ;
+    onto:startCondition "사용자가 업무 규칙의 뜻은 그대로 두고 정확한 값만 바꾸도록 요청했다." ;
+    onto:observedResult "업무 모델 변경 제안 없이 결정 기록에서 변경이 확정된다." ;
+    onto:criterionOf m:business-change ;
+    onto:passesThrough m:business-change.contract-change-found, m:business-change.contract-revised .
+
+m:business-change.meaning-first a onto:ObservationCriterion ;
+    rdfs:label "업무 의미 변경의 선행 승인" ;
+    onto:startCondition "사용자가 여러 단계에 걸친 업무 규칙의 뜻을 바꾸는 변경을 요청했다." ;
+    onto:observedResult "업무 모델 변경 제안이 결정 기록 개정보다 먼저 제시되고, 승인 전에는 그 뜻에 의존하는 결정 기록 내용이 확정되거나 구현되지 않는다." ;
+    onto:criterionOf m:business-change ;
+    onto:passesThrough m:business-change.meaning-change-found .

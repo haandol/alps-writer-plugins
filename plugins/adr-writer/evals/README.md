@@ -48,6 +48,7 @@ bun evals/run.mjs --list                        # scenario names
 bun evals/run.mjs --dry-run --only review-      # build fixtures, print prompts, no agent
 bun evals/run.mjs --live --only review-catches         # one scenario, one run
 bun evals/run.mjs --live --only review-catches --runs 10   # rates
+bun evals/run.mjs --live --only review-catches --runs 5 --jobs 2   # two concurrent trials
 bun evals/run.mjs --changed main --list          # affected scenarios only
 bun evals/run.mjs --live --changed main --runs 5        # affected branch + working-tree scenarios
 bun evals/run.mjs --live --runs 5 --out /tmp/report.md     # everything, shareable report
@@ -60,7 +61,8 @@ select scenarios affected by the branch diff, staged files, and unstaged files.
 The table does not become a source of product or ADR truth; it only avoids
 calling a live model for unrelated prompts. Shared ADR rule or eval-harness
 changes, including the runner and impact map, select every scenario. A changed
-scenario selects itself; ALPS server instructions and profile changes select the
+scenario selects itself. An edit confined to the payment proposal fixture selects
+its four consuming scenarios. ALPS server instructions and profile changes select the
 ALPS-related scenarios. Shared comprehension-load guidance selects its scoring,
 authoring, handoff, and implementation scenarios in either plugin copy. The two
 comprehension scoring probes include the full shipping rubric, so their default
@@ -124,6 +126,16 @@ integration tests execute `--documents-only` and verify that code references are
 excluded while document references remain checked. Delegation probes load the
 same packaged guidance through both direct authoring and Feature handoff.
 
+The payment-change proposal scenarios exercise both SessionStart and
+`/adr-new` on the same two requests. One changes when an order can be confirmed.
+The other changes the number of retries allowed after a declined card. Each
+scenario enables a fixture tool that runs Ontology Writer's real read-only query.
+The runner records its output, the order of file operations and the proposal
+written before approval. Fixture searches accept a file or directory prefix
+and record which paths supplied matching lines, so model text returned by a
+repository-wide search is visible to the check. The semantic judge checks which change the proposal
+asks the user to approve. These cases end before the user approves or declines.
+
 ## Reproducing a reported bug
 
 1. **Copy the closest scenario** in `scenarios/` and rename it.
@@ -137,6 +149,9 @@ same packaged guidance through both direct authoring and Feature handoff.
    responses, files and tool evidence with GPT-6.1. Add `mechanicalScore` only
    for file preservation, authorized actions, native schemas, exact citations or
    structured execution states. Evaluation-only tags are optional diagnostics.
+   A scenario that measures only the SessionStart directives, with no skill body,
+   sets `directiveOnly: true`; the harness test then requires both shipped
+   directive markers instead of a skill-length prompt.
 
 5. `--runs 10` and read the rate.
 6. After a fix, run again — **and run the paired scenario.** Most of these come

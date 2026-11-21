@@ -250,6 +250,18 @@ bash <plugin>/scripts/adr-invariants.sh                   # reverse-reference or
 
 `adr-structure-lint` handles the deterministic half of the reviewer's R-rules. `/adr-impl-review` derives complete implementation scope from the ADR, keeps the diff as separate change context, builds Context, selects visual questions and records each Hill’s diagram assignment or local omission, assigns every contract row exactly once across vertical Container/Hills, and records Component implementation plus focused Code evidence before synthesizing the verdict. Standard mode uses a decision ledger and sufficiency perspective; full mode adds separately grounded necessity and sufficiency perspectives. Both modes render the same validated Evidence Package and open it once in the host's default browser.
 
+Independent reviews and checks can use the same observed test output while
+deriving their own conclusions. With capacity available, run them concurrently
+and assemble the findings in reading order after their evidence arrives.
+
+When a previous review identifies its clean commit and relevant inputs,
+`bun scripts/review-changes.mjs <commit-id> <path>...` compares those paths
+with the working tree, including staged, unstaged and untracked work. Include
+the affected contracts, source directories, tests and configuration. Reuse prior
+evidence only when intent, scope and non-Git inputs still match. A new request,
+uncertain history or incomplete coverage calls for a scoped review. File dates
+alone do not determine whether a contract needs updating.
+
 Artifact delivery has a small core contract and a separate native schema.
 Worked JSON, quizzes, interactive checks, detailed repair guidance and requested
 browser QA load only for the selected operation. The direct report-writer role
@@ -285,8 +297,9 @@ state machines and detailed conditions. A category's `realizes` list in
 `.mapping.json` is the only link between a feature and the steps it realizes.
 This plugin never reads the model: `adr-structure-lint` checks only the shape of
 `realizes`, ADR work moves those links when categories split or merge, and the
-business-context checks of ADR work run through ontology-writer's query. Without
-model documents nothing changes.
+business-context checks of ADR work run through ontology-writer's query. Scope
+other text searches to the ADRs or code being inspected so they cannot return
+model content. Without model documents nothing changes.
 
 For development, use the smallest known business scope: unfamiliar work starts
 with the BC overview and scoped search; known steps/processes go directly to
@@ -299,9 +312,9 @@ keeps retrieval selective without replacing required ADR reads or review coverag
 
 One hook supports the main session — **no external LLM calls**; the main model classifies text and decides.
 
-| Hook           | When it fires                          | Role                                                                                                                                                                                                                                                         |
-| -------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `SessionStart` | Startup, resume, clear, and compaction | Inject a compact ADR admission directive; admitted work reads `docs/adr/.mapping.json` before code changes. With a business ontology, one more line says that business context is checked through ontology-writer, and that work states when it could not be |
+| Hook           | When it fires                          | Role                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| -------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SessionStart` | Startup, resume, clear, and compaction | Inject a compact ADR admission directive; admitted work reads `docs/adr/.mapping.json` before code changes. With a business ontology, one more line says that business context is checked through ontology-writer, that a change to business flow, hand-offs, policies, responsibilities, cross-step rules, concepts or terms goes through its model change approval before the ADR, and that work states when it could not be checked |
 
 The directive first applies the ADR admission gate. Requirement contracts, durable boundaries, provider/model choices, key designs, algorithms, and fallback policies enter the cycle and trigger an on-demand read of the full mapping and plausible ADR bodies; replaceable SDKs, libraries, frameworks, and credential/auth adapters stay in code. The hook never blocks an edit, injects mapping contents, or dictates private reasoning or agent topology. Running at session start, resume, clear, and compaction recovery keeps the directive available without executing on every user message.
 

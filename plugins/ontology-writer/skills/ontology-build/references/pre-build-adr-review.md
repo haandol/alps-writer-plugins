@@ -15,7 +15,10 @@ documents?” Wait for the choice. Remember an explicit answer unless it applies
 only this time. Do not record a route when there are no ADRs.
 Choosing to build immediately takes the current documents into EventStorming.
 
-Follow the requested review purpose. For document quality, run `/adr-review`.
+Follow the requested review purpose. For document quality, run `/adr-review`
+with the selected ADR paths. In a first build without a model, identify
+candidates from the user's workflow and index summaries. An unconfirmed link
+remains a candidate.
 For “does the code implement these ADRs?”, use `/adr-impl-review` on the
 relevant ADRs if conformance has not already been verified. `/adr-sync`
 is the route for a requested reconciliation of proven drift. A saved review

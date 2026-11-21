@@ -348,6 +348,7 @@ export function ontologyFindings({
   inScope = () => true,
   cwd = process.cwd(),
   readAdr = null,
+  reviewScopeOnly = false,
 }) {
   const directoryErrors = [];
   const documents = readModelDocuments(ontologyDir, rel, (directory, error) =>
@@ -389,6 +390,9 @@ export function ontologyFindings({
     };
     findings.push(...checkRealizes(scoped, index, mappingPath));
   }
+  // Discovery needs the model and links only. Final validation still checks ADR bodies and glossaries.
+  if (reviewScopeOnly)
+    return { model: documents.length > 0 || directoryErrors.length > 0, findings, index };
   if (index) {
     findings.push(
       ...workingAdrRecordFindings({

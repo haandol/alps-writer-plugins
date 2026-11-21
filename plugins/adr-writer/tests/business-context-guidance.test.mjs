@@ -30,9 +30,11 @@ test("the session directive notes a business ontology without reading it", () =>
     assert.deepEqual(lines.slice(0, -1), plain.split("\n"), "the ADR directive is unchanged");
     assert.equal(
       lines.at(-1),
-      "Business ontology present: check business context through the Ontology Writer plugin before an ADR decision or contract changes; if it is unavailable, state that the business context was not checked.",
+      "Business ontology present: before an ADR decision or contract changes, obtain model content only through Ontology Writer's query. Keep model files out of direct reads and text searches, including repository-wide searches. Changes to business flow, hand-offs, policies, responsibilities, cross-step rules, concepts or terms go through its model change approval before the ADR. If it is unavailable, state that the business context was not checked.",
     );
     assert.doesNotMatch(lines.at(-1), /ordering|ontology\.mjs/, "no model content or query path");
+    const withModel = lines.join("\n");
+    assert.ok(withModel.length < 2_400, `directive with a model too large: ${withModel.length}`);
   });
 });
 
@@ -180,13 +182,39 @@ test("unlinked features get a three-way judgment and a confirmed empty record is
 });
 
 test("the business context bounds choices and raises proposals but never becomes an obligation", () => {
+  // A requested change to model-owned meaning goes upward first; ADR-owned detail stays
+  // below and never moves into the model.
   has(
     CONTEXT,
-    "Pick details the ADR leaves open so they do not contradict the model's flow, events, policies, cross-feature rules or terms.",
+    "A user-requested change that itself alters such meaning takes this path before the ADR is drafted; reporting the contradiction never settles it.",
   );
   has(
     CONTEXT,
-    "When no such choice exists, or the change needs a different flow, event, policy, cross-feature rule, or a business concept or term the model defines, raise an ontology change proposal through ontology-writer's `/ontology-edit`.",
+    "A change to an exact value, a state machine, or one step's behavior, permissions or failure handling that leaves the step's performer unchanged needs no ontology proposal and never moves into the model, as long as the meaning of every rule it touches stays the same.",
+  );
+  has(
+    CONTEXT,
+    "When such a value accompanies a model change, the proposal carries only the meaning and the pending ADR row keeps the value.",
+  );
+  has(
+    CONTEXT,
+    "An authoring summary waits for that result and does not hand the work to implementation before it.",
+  );
+  has(
+    CONTEXT,
+    "This waives only the proposal: where Ontology Writer is available, the context retrieval, observation-criteria and compliance-contract checks still run before contract rows are proposed.",
+  );
+  has(
+    CONTEXT,
+    "A contradiction the requested change creates is still reported, but it follows **Propose, do not absorb** rather than ending with the report.",
+  );
+  has(
+    CONTEXT,
+    "Pick details the ADR leaves open so they do not contradict the model's flow, events, policies, responsibilities, cross-feature rules or terms.",
+  );
+  has(
+    CONTEXT,
+    "When no such choice exists, or the change needs a different flow, event, policy, actor responsibility, cross-feature rule, or a business concept or term the model defines, raise an ontology change proposal through ontology-writer's `/ontology-edit`.",
   );
   has(
     CONTEXT,

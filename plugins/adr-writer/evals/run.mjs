@@ -39,6 +39,7 @@ import { snapshot } from "./regression/workspace.mjs";
 import { responseObligations, semanticPrompt } from "./skills/response-contract.mjs";
 import { runAgent } from "./lib/harness.mjs";
 import { scenarioNamesForChangedPaths } from "./impact-map.mjs";
+import { caseRepeats, DEFAULT_JOBS, runPool } from "./lib/run-pool.mjs";
 import { capturedChecks } from "./skills/mechanical-checks.mjs";
 import { invokeClaude } from "./regression/claude.mjs";
 import { toolServerConfig } from "./regression/tool-config.mjs";
@@ -48,6 +49,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 function parseArgs(argv) {
   const o = {
     runs: 1,
+    jobs: DEFAULT_JOBS,
     only: null,
     changed: null,
     list: false,
@@ -62,6 +64,7 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--runs") o.runs = Number(argv[++i]);
+    else if (a === "--jobs") o.jobs = Number(argv[++i]);
     else if (a === "--only") o.only = argv[++i];
     else if (a === "--changed") o.changed = argv[++i];
     else if (a === "--list") o.list = true;
@@ -79,6 +82,7 @@ function parseArgs(argv) {
     } else die(`unknown argument: ${a}`);
   }
   if (!Number.isInteger(o.runs) || o.runs < 1) die(`--runs must be a positive integer`);
+  if (!Number.isInteger(o.jobs) || o.jobs < 1) die("--jobs must be a positive integer");
   if (o.only && o.changed) die(`--only and --changed are mutually exclusive`);
   if (o.changed != null && !o.changed.trim()) die(`--changed requires a Git base`);
   if (o.live && (o.dryRun || o.list))
@@ -90,14 +94,15 @@ function parseArgs(argv) {
 function readHelp() {
   return `adr evals — run behaviour scenarios against a real agent
 
-  node evals/run.mjs [--runs N] [--only <substring> | --changed <git-base>]
+  node evals/run.mjs [--runs N] [--jobs N] [--only <substring> | --changed <git-base>]
                      [--list] [--dry-run | --live]
                      [--out report.md] [--cmd '<agent command>']
                      [--include-transcript] [--include-fixture-paths]
 
 Scenarios live in evals/scenarios/*.mjs. Each exports { name, description,
 bugReport?, build(dir) -> prompt, and fixed semantic obligations.
-Meaning is judged with Bedrock GPT-6.1/default; legacy lexical scores are not run. }.
+Meaning is judged with Bedrock GPT-6.1/default; legacy lexical scores are not run.
+--jobs bounds concurrent live trials (default up to 4; use 1 for serial).
 Preparation is the default. --live explicitly permits target and judge calls.
 `;
 }
@@ -202,9 +207,11 @@ export async function runOnce(scenario, opts, injected = {}) {
         pluginRoot,
         logPath,
         turn: 1,
+        guidance: !scenario.directiveOnly,
         checkerRoot: pluginRoot,
         artifactPaths: scenario.artifactPaths ?? [],
         draftRoot: scenario.draftRoot,
+        businessContext: scenario.businessContext,
       }),
     ),
   );
@@ -213,7 +220,7 @@ export async function runOnce(scenario, opts, injected = {}) {
     res = injected.target
       ? await injected.target(prompt, { cmd: opts.cmd, cwd: dir, config })
       : opts.cmd
-        ? runAgent(prompt, { cmd: opts.cmd, cwd: dir })
+        ? await runAgent(prompt, { cmd: opts.cmd, cwd: dir })
         : await (injected.invokeClaude ?? invokeClaude)({
             prompt,
             cwd: dir,
@@ -436,43 +443,37 @@ export function main(args = process.argv.slice(2), injected = {}) {
           `agent: ${opts.dryRun ? "(dry run, not invoked)" : opts.cmd}\n\n`,
       );
 
-      const results = [];
-      let agentScored = false;
-
-      for (const s of scenarios) {
-        process.stdout.write(`## ${s.name}\n${s.description}\n`);
-        const runs = [];
-        for (let i = 0; i < opts.runs; i++) {
-          process.stdout.write(`  run ${i + 1}/${opts.runs} … `);
-          const r = await runOnce(s, opts, injected);
-          runs.push(r);
-          if (r.dry) {
-            process.stdout.write(`fixture ${r.fixture}\n`);
+      const results = scenarios.map((scenario) => ({ scenario, runs: [] }));
+      await runPool(
+        caseRepeats(results, opts.runs),
+        opts.dryRun ? 1 : opts.jobs,
+        async ({ item, repeat }) => {
+          const { scenario, runs } = item;
+          process.stdout.write(`Running ${scenario.name} ${repeat}/${opts.runs} …\n`);
+          const run = await runOnce(scenario, opts, injected);
+          runs[repeat - 1] = run;
+          if (run.dry) {
             process.stdout.write(
-              `\n--- prompt (${r.prompt.length} chars) ---\n${r.prompt}\n--- end ---\n`,
+              `## ${scenario.name}\n${scenario.description}\nfixture ${run.fixture}\n`,
             );
-            continue;
-          }
-          if (r.error) {
-            process.stdout.write(`ERROR — ${r.error}\n`);
-            continue;
-          }
-          if (r.unscored) {
             process.stdout.write(
-              `UNSCORED — ${r.unscored} (${((r.elapsedMs ?? r.ms ?? 0) / 1000).toFixed(0)}s)\n`,
+              `\n--- prompt (${run.prompt.length} chars) ---\n${run.prompt}\n--- end ---\n`,
             );
-            continue;
+          } else {
+            const duration = `(${((run.elapsedMs ?? run.ms ?? 0) / 1000).toFixed(0)}s)`;
+            const outcome = run.error
+              ? `ERROR — ${run.error}`
+              : run.unscored
+                ? `UNSCORED — ${run.unscored}`
+                : `${run.checks.filter((c) => c.pass).length}/${run.checks.length} checks, verdict ${run.verdict}`;
+            process.stdout.write(`  ${scenario.name} #${repeat}: ${outcome} ${duration}\n`);
           }
-          agentScored = true;
-          const failed = r.checks.filter((c) => !c.pass).length;
-          process.stdout.write(
-            `${r.checks.length - failed}/${r.checks.length} checks` +
-              `, verdict ${r.verdict}` +
-              ` (${((r.elapsedMs ?? r.ms ?? 0) / 1000).toFixed(0)}s)\n`,
-          );
-        }
+        },
+      );
 
+      for (const { scenario, runs } of results) {
         if (!opts.dryRun) {
+          process.stdout.write(`## ${scenario.name}\n${scenario.description}\n`);
           const scored = runs.filter((r) => r.scored).length;
           const errored = runs.filter((r) => r.error).length;
           const unscored = runs.filter((r) => r.unscored).length;
@@ -489,7 +490,6 @@ export function main(args = process.argv.slice(2), injected = {}) {
             }
           }
         }
-        results.push({ scenario: s, runs });
         process.stdout.write("\n");
       }
 
@@ -498,7 +498,7 @@ export function main(args = process.argv.slice(2), injected = {}) {
         process.stdout.write(`report written: ${opts.out}\n`);
       }
 
-      if (!opts.dryRun && !agentScored) {
+      if (!opts.dryRun && !results.some(({ runs }) => runs.some((run) => run.scored))) {
         die(
           `the agent never produced scorable output. Check ADR_EVAL_CMD (currently: ${opts.cmd}) — ` +
             `it must accept a prompt on stdin, print the reply to stdout, and include the required tail.`,

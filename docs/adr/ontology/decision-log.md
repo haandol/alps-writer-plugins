@@ -8,6 +8,14 @@ The current Purpose, all still-valid Decision Drivers, adopted choice, rationale
 and requirement contract remain together in the ADR body. Reading this log is
 optional for understanding the current decision.
 
+## 2026-11-20 — 모델이 소유하는 뜻을 바꾸는 개발 중 변경의 선행 승인을 세션 지침에 포함
+
+- **Current ADR**: [retrieve-business-context-for-agents](./context-retrieval/0002-retrieve-business-context-for-agents.md)
+- **Change type**: requirement rule change
+- **What**: 세션 시작 지침이 ADR 변경 전에 업무 맥락을 확인하고 모순을 잡으라고만 하던 규칙 → Ontology Writer 지침은 요청한 변경이 모델이 소유하는 뜻을 바꾸면 ADR보다 먼저 온톨로지 변경 제안으로 올리고, 승인 전에는 의존하는 ADR 행을 미정으로 두고 코드를 기다리며, 값·상태 기계·한 단계 안의 동작은 ADR에서 진행하라고 지시한다. ADR Writer 지침의 한 줄도 그 순서를 알린다. 요청한 변경 자체가 모델과 모순되면 완료 보고로 끝내지 않는다(R15·R21·R29·R52).
+- **Why**: 상향 규칙이 ADR 작성 skill 안에만 있어, skill 없이 대화에서 바로 ADR을 고치는 경로에서는 ADR만 바뀌고 모델이 갱신되지 않았기 때문이다(사용자 보고, 2026-11-20).
+- **What is now void**: 세션 지침이 업무 맥락을 조회해 모순만 잡으면 된다는 기준, 요청한 변경과 모델의 모순을 완료 보고에 적고 ADR 계약을 확정하던 동작.
+
 ## 2026-11-18 — 터미널에서 정렬하고 화면에서 결정
 
 - **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md)
@@ -52,7 +60,7 @@ optional for understanding the current decision.
 
 ## 2026-11-18 — 사용자가 프로젝트별로 선택한 최초 구축 방식 기억
 
-- **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md), [build-ontology-from-documents](./0004-build-ontology-from-documents.md)
+- **Current ADR**: [retrieve-business-context-for-agents](./context-retrieval/0002-retrieve-business-context-for-agents.md), [build-ontology-from-documents](./0004-build-ontology-from-documents.md)
 - **Change type**: requirement rule change
 - **What**: 명시한 구축 여부와 ADR 리뷰 방식을 각각 기억한다. 현재 요청과 항목별 초기화로 방식을 바꿀 수 있다.
 - **Why**: 새 세션이나 다른 워크트리에서 같은 질문에 다시 답하는 수고를 줄이면서 변경·저장 승인은 해당 작업에서 받는다.
@@ -66,7 +74,7 @@ optional for understanding the current decision.
 
 ## 2026-11-18 — 모델이 없는 프로젝트의 첫 구축 안내
 
-- **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Current ADR**: [retrieve-business-context-for-agents](./context-retrieval/0002-retrieve-business-context-for-agents.md)
 - **Change type**: requirement rule change
 - **What**: Ontology Writer가 설치된 새 세션은 모델이 없으면 구축할지 한 번 직접 묻는다. 수락하면 문서나 업무 설명으로 초안을 만들고, 거절하거나 답이 없으면 원래 작업을 계속한다.
 - **Why**: 모델과 ADR 색인이 모두 있어야 보이던 지침만으로는 처음 설치한 사용자가 구축을 시작할 방법을 발견하기 어려웠다.
@@ -89,7 +97,7 @@ optional for understanding the current decision.
 
 ## 2026-11-07 — 검색 색인 제거, 조회마다 현재 원본에서 계산
 
-- **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Current ADR**: [retrieve-business-context-for-agents](./context-retrieval/0002-retrieve-business-context-for-agents.md)
 - **Change type**: adopted alternative replacement
 - **What**: 다중어·인용 문구·짧은 한글 검색, 관련도와 원문 근거는 유지하고, 그 계산을 SQLite 파생 색인 대신 조회마다 이미 읽은 현재 원본 그래프에서 한다.
 - **Why**: 사용자는 색인의 현재성 확인과 재생성 부담을 피하려고 꼭 필요하지 않으면 색인을 두지 않는다. 조회는 원래 모델 전체를 해석하므로 색인이 줄일 비용이 작고, 같은 검색어에서 색인과 직접 계산의 결과가 같았다.
@@ -97,7 +105,7 @@ optional for understanding the current decision.
 
 ## 2026-11-07 — 로컬 색인의 다중어·한글 검색과 근거 반환
 
-- **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Current ADR**: [retrieve-business-context-for-agents](./context-retrieval/0002-retrieve-business-context-for-agents.md)
 - **Change type**: requirement rule change
 - **What**: 연속 문구·식별자 순서 중심의 탐색을 다중어·인용 문구·짧은 한글과 관련도 검색으로 확장하고, BC 내부의 일치 필드·원문 위치와 원본 기반 캐시 재생성을 보장한다.
 - **Why**: 사용자는 서비스 운영 부담 없이 Bun과 로컬 SQLite를 사용해 ADR·ontology 검색을 개선하도록 요청했다.
@@ -121,7 +129,7 @@ optional for understanding the current decision.
 
 ## 2026-11-05 — BC 조망에서 내부 업무와 ADR로 내려가는 검색
 
-- **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Current ADR**: [retrieve-business-context-for-agents](./context-retrieval/0002-retrieve-business-context-for-agents.md)
 - **Change type**: requirement rule change
 - **What**: 온톨로지 지식을 구성할 때부터 BC의 책임·핵심 업무·협업과 BC 내부 업무를 레이어로 나눈다. 최상위 BC 지식 전체를 가볍게 읽고 내부 업무는 검색·페이지 탐색으로 내려가며, 구체적 사건·순서·개념·규칙은 내부 레이어에 보존한다.
 - **Why**: 사용자는 C4 model과 HNSW에서 착안해, 큰 비즈니스 로직을 한 번에 LLM에 넣지 않고 전체 조망에서 관련 BC를 골라 업무 상세와 ADR로 내려가기를 원했다. 이 구체적 의도를 조회 계약과 도입·구축의 목적에 보완한다.
@@ -164,7 +172,7 @@ ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축
 
 ## 2026-11-02 — 업무 온톨로지 레벨을 별도 플러그인 Ontology Writer로 나눔
 
-- **Current ADR**: [introduce-business-ontology-level](./0001-introduce-business-ontology-level.md), [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md), [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md), [build-ontology-from-documents](./0004-build-ontology-from-documents.md), [render-read-only-ontology-views](./0005-render-read-only-ontology-views.md)
+- **Current ADR**: [introduce-business-ontology-level](./0001-introduce-business-ontology-level.md), [retrieve-business-context-for-agents](./context-retrieval/0002-retrieve-business-context-for-agents.md), [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md), [build-ontology-from-documents](./0004-build-ontology-from-documents.md), [render-read-only-ontology-views](./0005-render-read-only-ontology-views.md)
 - **Change type**: architecture
 - **What**: ADR Writer가 업무 온톨로지 레벨까지 맡던 결정 → 별도 플러그인 Ontology Writer가 어휘, 모델의 작성·검증·저장, 업무 맥락 조회와 그 세션 지침, 변경 승인과 하위 전파, 문서에서 모델 구축과 화면을 맡고, ADR Writer는 ADR과 ADR 색인(실현 기능 기록의 형식 포함)을 맡는다. 모델 변경과 색인 연결은 Ontology Writer가 같은 변경 단위로 쓰고, 영향 ADR이 있는 변경에는 두 플러그인이 함께 있어야 한다. 모델 문서가 있으면 ADR Writer의 세션 지침은 업무 맥락을 Ontology Writer로 확인하고 확인하지 못했으면 그 사실을 밝히라는 한 줄을 더하며, ADR 작업을 막지 않는다.
 - **Why**: 모델을 쓰지 않는 사용자도 세션마다 온톨로지 스킬 다섯 개의 설명을 싣고 있었고, 그 분량은 나머지 ADR 스킬 설명을 모두 합친 것과 비슷했다. 사용자가 PRD, 업무 모델과 ADR 계층마다 플러그인을 나누기로 정했다(사용자 결정, 2026-11-02).
@@ -204,7 +212,7 @@ ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축
 
 ## 2026-10-30 — 현재 `Accepted` 날짜와 같은 날의 확인은 다시 기록하지 않고 알림
 
-- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md), [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md), [retrieve-business-context-for-agents](./context-retrieval/0002-retrieve-business-context-for-agents.md)
 - **Change type**: requirement rule change
 - **What**: 업무 구성을 바꾸지 않는 편집을 확인하면 언제나 그 확인이 다음 비교의 기준이 된다고 하던 규칙 → 확인한 날짜가 그 프로세스의 현재 `Accepted` 날짜와 같으면 Status를 다시 기록하지 않고, ADR Writer가 그 사실과 이유를 알리며, 그 편집은 날짜가 바뀐 뒤의 확인 전까지 동기화 전 직접 편집으로 표시된다. 다시 기록한 `Accepted`는 커밋된 뒤에 비교 기준이 된다.
 - **Why**: Status가 날짜 단위이고 별도 승인 기록을 두지 않아, 같은 날의 확인은 저장소 이력에 새 기준을 남길 수 없기 때문이다(사용자 결정, 2026-10-30: 날짜 단위를 유지하고 한계를 명시).
@@ -212,7 +220,7 @@ ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축
 
 ## 2026-10-30 — 업무 구성을 바꾸지 않는 편집의 확인이 `Accepted` 날짜를 다시 기록
 
-- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md), [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Current ADR**: [govern-ontology-lifecycle-and-cascade](./change-approval/0003-govern-ontology-lifecycle-and-cascade.md), [retrieve-business-context-for-agents](./context-retrieval/0002-retrieve-business-context-for-agents.md)
 - **Change type**: requirement rule change
 - **What**: 미정 범위만의 변경이나 같은 뜻으로 확인한 문구 수정이 `Accepted` 프로세스의 Status를 전혀 바꾸지 않던 규칙 → 승인 저장이나 온톨로지 동기화가 그런 편집을 확인하면, 기계 게이트가 유지될 때 확인한 날짜의 `Accepted`로 다시 기록한다(`Accepted`→`Accepted` 날짜 갱신). 조회는 그 이전의 편집을 표시하지 않고, 변경 표시를 판정할 수 없는 범위는 이유와 함께 보이며 ADR 작성과 구현은 그 범위를 동기화 전 직접 편집이 있을 수 있는 것으로 다룬다.
 - **Why**: 승인 기록을 두지 않는 상태에서 확인한 비의미 편집이 다음 비교에서 다시 직접 편집으로 표시되고 같은 확인을 매번 다시 묻게 되었기 때문이다(사용자 결정, 2026-10-30).
@@ -228,7 +236,7 @@ ADR을 거쳐 코드와 테스트로 전달하는 목적을 명시했다. 구축
 
 ## 2026-10-29 — ADR 작성·수정 경로가 업무 모델을 먼저 확인하고 준수 계약을 제안하도록 확장
 
-- **Current ADR**: [retrieve-business-context-for-agents](./0002-retrieve-business-context-for-agents.md)
+- **Current ADR**: [retrieve-business-context-for-agents](./context-retrieval/0002-retrieve-business-context-for-agents.md)
 - **Change type**: requirement rule change
 - **What**: 연결된 기능의 코드를 바꾸기 전 조회하라는 지시 한 줄과, 업무 맥락을 ADR에 없는 새 요구사항의 근거로 쓰지 않는 규칙 → ADR의 결정이나 계약을 바꾸는 모든 경로가 먼저 모델을 확인하는 지시와 규칙, 연결 없는 기능의 세 가지 판단과 빈 실현 기록, 승인받을 초안에 빠진 준수 계약 제안. 구현 판정과 완료 조건에는 여전히 ADR 계약 행만 쓴다.
 - **Why**: 사용자가 코드를 바꾸기 전에 ADR을 확인하듯, ADR을 쓰거나 고치기 전에는 상위 업무 모델을 먼저 확인하도록 하네스를 바꾸라고 요청했다.

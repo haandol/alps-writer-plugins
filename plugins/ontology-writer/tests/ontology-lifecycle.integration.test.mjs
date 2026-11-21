@@ -10,6 +10,134 @@ import { cachedRepo, commitAll, git, initRepo, withTmp, write, writeAdrFiles } f
 import { ACCEPTED, EXAMPLE, cli } from "./ontology-helpers.mjs";
 import { MAPPING } from "./ontology-lifecycle-helpers.mjs";
 
+test("conflicting ADR records stay unresolved in either index order, including retired records", () => {
+  withTmp((dir) => {
+    write(dir, "docs/ontology/model.ttl", EXAMPLE);
+    const mapping = structuredClone(MAPPING);
+    const entry = mapping.categories.payments;
+    const first = entry.adrs[0];
+    for (const status of ["Proposed", "Deprecated (2020-01-02)"]) {
+      const records = [first, { ...first, status }];
+      let previous;
+      for (const adrs of [records, [...records].reverse()]) {
+        entry.adrs = adrs;
+        write(dir, "docs/adr/.mapping.json", JSON.stringify(mapping));
+        const res = cli(dir, [
+          "align",
+          "--process",
+          "payment.take-payment",
+          "--review-adrs",
+          "--json",
+        ]);
+        const scope = JSON.parse(res.out);
+        assert.equal(res.code, 1);
+        assert.ok(
+          scope.unresolved.some(
+            (msg) => msg.includes(first.path) && msg.includes(status) && msg.includes(first.status),
+          ),
+        );
+        assert.ok(scope.reviewAdrs.every((adr) => adr.path !== first.path));
+        if (previous) assert.deepEqual(scope, previous);
+        previous = scope;
+      }
+    }
+  });
+});
+
+test("a process selects current ADRs once across hand-offs and uses Git only to locate changes", () => {
+  withTmp((dir) => {
+    initRepo(dir);
+    const mapping = structuredClone(MAPPING);
+    mapping.categories.other = {
+      adrs: [{ path: "docs/adr/other/0001-unrelated.md", status: "Proposed" }],
+      realizes: [],
+    };
+    mapping.categories.payments.adrs.push({
+      path: "docs/adr/payments/0002-retired.md",
+      status: "Deprecated (2020-01-02)",
+    });
+    write(dir, "docs/adr/.mapping.json", JSON.stringify(mapping));
+    writeAdrFiles(dir, mapping);
+    write(dir, "docs/ontology/model.ttl", EXAMPLE);
+    commitAll(dir);
+    const base = git(dir, ["rev-parse", "HEAD"]).trim();
+    const args = ["align", "--process", "payment.take-payment", "--json"];
+    const selected = () => {
+      const res = cli(dir, [...args, "--review-adrs", "--since", base]);
+      assert.equal(res.code, 0, res.out);
+      return JSON.parse(res.out);
+    };
+    write(dir, mapping.categories.other.adrs[0].path, "unrelated work");
+    const first = selected();
+    assert.equal(first.adrBodiesChecked, false);
+    assert.equal(first.changes.status, "unchanged");
+    write(dir, "docs/ontology/notes.md", "workshop notes");
+    write(
+      dir,
+      "docs/adr/payments/0002-retired.md",
+      "# Retired\n\n## Status\n\nDeprecated (2020-01-02)\n",
+    );
+    const noise = selected().changes;
+    assert.equal(noise.status, "changed");
+    assert.deepEqual(noise.currentAdrs, []);
+    assert.deepEqual(noise.scopeInputs, []);
+    assert.deepEqual(noise.retiredAdrs, ["docs/adr/payments/0002-retired.md"]);
+    assert.ok(noise.paths.includes("docs/ontology/notes.md"));
+    rmSync(path.join(dir, "docs/ontology/notes.md"));
+    git(dir, ["restore", "docs/adr/payments/0002-retired.md"]);
+    assert.deepEqual(
+      first.reviewAdrs.map((a) => a.path),
+      [MAPPING.categories.checkout.adrs[0].path, MAPPING.categories.payments.adrs[0].path],
+    );
+    assert.ok(first.compliance.length > first.reviewAdrs.length);
+    const doc = MAPPING.categories.payments.adrs[0].path;
+    write(dir, "docs/ontology/model.ttl", EXAMPLE + "\n# locally edited model\n");
+    assert.deepEqual(selected().changes.scopeInputs, ["docs/ontology/model.ttl"]);
+    write(dir, "docs/ontology/model.ttl", EXAMPLE);
+    write(dir, doc, "# ADR\n\n## Status\n\nProposed\n");
+    assert.deepEqual(selected().changes.currentAdrs, [doc]);
+    write(dir, "docs/adr/payments/0003-candidate.md", "# Proposed contract");
+    assert.deepEqual(selected().changes.scopeInputs, ["docs/adr/payments/0003-candidate.md"]);
+    assert.equal(
+      cli(dir, args).code,
+      1,
+      "index-only discovery never bypasses the real Status gate",
+    );
+    mapping.categories.payments.realizes = [];
+    write(dir, "docs/adr/.mapping.json", JSON.stringify(mapping));
+    const incomplete = cli(dir, [...args, "--review-adrs"]);
+    assert.equal(incomplete.code, 1);
+    assert.ok(
+      JSON.parse(incomplete.out).unresolved.some((msg) => msg.includes("payment.request-payment")),
+    );
+  });
+});
+
+test("a nested project's process scope matches repository-relative Git paths", () => {
+  withTmp((repo) => {
+    initRepo(repo);
+    const project = path.join(repo, "apps", "billing");
+    write(project, "docs/ontology/model.ttl", EXAMPLE);
+    write(project, "docs/adr/.mapping.json", JSON.stringify(MAPPING));
+    writeAdrFiles(project, MAPPING);
+    commitAll(repo);
+    const base = git(repo, ["rev-parse", "HEAD"]).trim();
+    const adr = MAPPING.categories.payments.adrs[0].path;
+    write(project, adr, "# Updated contract");
+    const res = cli(project, [
+      "align",
+      "--process",
+      "payment.take-payment",
+      "--review-adrs",
+      "--since",
+      base,
+      "--json",
+    ]);
+    assert.equal(res.code, 0, res.out);
+    assert.deepEqual(JSON.parse(res.out).changes.currentAdrs, ["apps/billing/" + adr]);
+  });
+});
+
 test("process status and alignment plan recommend the actual next action without writing", () => {
   withTmp((dir) => {
     initRepo(dir);

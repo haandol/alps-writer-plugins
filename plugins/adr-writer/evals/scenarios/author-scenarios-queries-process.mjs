@@ -26,7 +26,7 @@ MAPPING.categories.payments.adrs = [
 export const obligations = [
   {
     id: "process-query",
-    text: "The category result lists no observation criteria, so the response queries the connected process (Take a payment) through ontology-writer — a process-scoped query such as `--process payment.take-payment` — to check its observation criteria, though the user did not ask about criteria, and the authoring summary it presents for approval waits for and carries those criteria.",
+    text: "The category result lists no observation criteria, so the response's next step is to query the connected process (Take a payment) through ontology-writer — a process-scoped query such as `--process payment.take-payment` — to check its observation criteria, though the user did not ask about criteria. Tools are unavailable in this run, so it states that exact command and that the authoring summary waits for and will carry those criteria; it presents no approval summary built without them. Deferring the process query to implementation, or skipping it, fails.",
   },
   {
     id: "no-model-read",

@@ -26,10 +26,9 @@ For direct-role as well as skill-driven use, read the
 loaded guidance. They own filenames, required/derived fields, disclosure,
 validation, opening, and conditional quiz/interactive modules. Read
 [evidence synthesis](../skills/adr-impl-review/references/evidence-synthesis.md)
-for evidence discipline and clause accounting, and
-[Review Hiking](../skills/adr-impl-review/references/review-hiking.md) for vertical
-Hills and Code evidence. Read
-[visualization](../skills/adr-impl-review/references/visualization.md) for figures;
+for evidence discipline and clause accounting. For detailed zooms read
+[Review Hiking](../skills/adr-impl-review/references/review-hiking.md); when figures
+are selected read [visualization](../skills/adr-impl-review/references/visualization.md);
 its browser QA branch is request-only.
 
 ## Preserve the verified handoff

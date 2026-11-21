@@ -57,10 +57,17 @@ export function needsEnv(scenario) {
  * scenario ever paraphrased the rules instead, the eval would measure the paraphrase.
  */
 export function assertShippedPrompt(scenario, prompt) {
-  assert.ok(
-    prompt.length > 5000,
-    `${scenario.name}: prompt is too short to hold a real skill body`,
-  );
+  // A directive-only scenario measures the SessionStart directives without any skill body, so
+  // it is checked for both shipped directive markers instead of a long skill text.
+  if (scenario.directiveOnly) {
+    for (const marker of ["[ADR-first directive]", "[Business-context directive]"])
+      assert.ok(prompt.includes(marker), `${scenario.name}: missing shipped ${marker}`);
+  } else {
+    assert.ok(
+      prompt.length > 5000,
+      `${scenario.name}: prompt is too short to hold a real skill body`,
+    );
+  }
   assert.ok(
     prompt.length <= 100_000,
     `${scenario.name}: prompt exceeds the non-invasive 100k-character budget (${prompt.length})`,

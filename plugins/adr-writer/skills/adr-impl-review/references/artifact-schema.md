@@ -9,6 +9,12 @@ kinds and Hill boundaries. Reuse already loaded owners. The
 
 ## Compact standard presentation
 
+For either mode, obtain the ordered `contractId` and exact `adrBasis` fields
+once with `bun "${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-validate.mjs" --contract-rows <adr-path>`.
+Use that output directly when composing coverage. The reviewer supplies the
+meaning, implementation, observations, tests and verdict. Extraction does not
+verify a row; final validation compares every row to the current ADR again.
+
 In `standard`, Context may be `{ "summary": "<intent, preconditions, contract, scope and risk>" }`.
 Each Hill needs `id`, a behavior-specific `title`, `claim`, `contractIds` and
 nonempty direct `codeEvidence` (the same kind/location/content/explanation/tests
@@ -26,7 +32,7 @@ and comparisons keep their reference and evidence checks.
 
 Reuse the narrative anchors and generated markers below; the materializer fills
 repeated evidence without requiring extra authored paragraphs. For a compact
-standard report without selected diagrams, quizzes or human-decision controls,
+standard report with a placed or explicitly excluded quiz and no diagrams or human-decision controls,
 `adr-impl-review-article.mjs <findings.json> <report.html>` validates the native
 artifacts and creates the final shared-report HTML directly. Broader explanation
 hierarchies and selected interactions use the rich composition path; never drop

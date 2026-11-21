@@ -22,6 +22,14 @@ Preparation is the default and makes no model calls. It writes a self-contained
 `index.html`, original `results.json`, per-case records, input snapshots, and
 preflight checks under a fresh `.codex/evals/skills-*` directory. The report says
 **미실행**, not PASS. It is safe to inspect the report before choosing a paid run.
+
+During a live run or rejudge, each finished trial updates its case file and the
+atomic `results.json` checkpoint. The initial HTML identifies itself as a
+snapshot. Use `--report <run-directory>` to render the latest saved results
+without model calls, including after an interruption. The full HTML is
+published again when the workers finish. Each live execution runs preflight
+once in the target's own workspace. Original scoring and replay both check
+recorded actions, file changes, final policy and structure, and case obligations.
 `--out` selects a new/empty directory. `--open` opens only the generated local file.
 
 The catalog includes ADR/ALPS classification scenarios, report-writing probes
@@ -48,10 +56,12 @@ bun run eval:skills --list --changed main
 
 `--suite` accepts `all`, `classification`, `routing`, or `execution`.
 `--only` matches a case ID substring; `--changed` selects affected cases instead.
-`--jobs` bounds concurrent cases and `--timeout` bounds each model call in seconds.
-Trials of one case use separate workspaces and alternate comparison order.
-Defaults are three repeats, one concurrent case and 300 seconds per call. These
-are starting settings, not evidence of statistical reliability.
+`--jobs` bounds concurrent case repeats, including repeats of a single case.
+The default uses up to four workers within the host's available parallelism.
+Use `--jobs 1` for serial execution or a lower provider quota. Each repeat
+has a separate workspace; its comparison conditions run in alternating order
+and its conversation turns stay in sequence. Defaults are three repeats and
+300 seconds per model call. The worker count does not change the sample count.
 
 `--compare none` is the default. `versions` compares the selected baseline commit
 with the candidate instructions; `without-skill` compares candidate guidance with

@@ -3,7 +3,7 @@
 // measured separately by live LLM evaluations.
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -216,6 +216,115 @@ test("legacy default invocation uses isolated fixture tools and retains their ac
   assert.equal(launched, true);
   assert.equal(result.scored, true);
   assert.ok(result.checks.every((c) => c.pass));
+});
+
+test("custom agent commands receive stdin and retain their exit status, stderr and timeout", async () => {
+  const { runAgent } = await import("../evals/lib/harness.mjs");
+  const success = await runAgent("fixture prompt\n", { cmd: "cat" });
+  assert.equal(success.ok, true);
+  assert.equal(success.stdout, "fixture prompt\n");
+  const failure = await runAgent("", { cmd: "echo fixture-error >&2; exit 7" });
+  assert.equal(failure.ok, false);
+  assert.equal(failure.status, 7);
+  assert.match(failure.stderr, /fixture-error/);
+  const timeout = await runAgent("", { cmd: "exec sleep 5", timeoutMs: 50 });
+  assert.equal(timeout.ok, false);
+  assert.ok(timeout.error);
+});
+
+test("a timed-out custom pipeline cannot modify the fixture after the worker returns", async () => {
+  const { runAgent } = await import("../evals/lib/harness.mjs");
+  const cwd = scratch("timeout-tree-");
+  const result = await runAgent("", {
+    cwd,
+    cmd: `sh -c 'trap "" TERM; touch started; sleep 0.6; touch completed' | cat`,
+    timeoutMs: 250,
+  });
+  assert.ok(existsSync(path.join(cwd, "started")));
+  assert.equal(result.ok, false);
+  assert.match(result.error, /timed out/);
+  await new Promise((resolve) => setTimeout(resolve, 650));
+  assert.equal(existsSync(path.join(cwd, "completed")), false);
+});
+
+test("payment proposals require the real context before the first draft and preserve unapproved files", async () => {
+  const { makeTools, snapshot } = await import("../evals/regression/workspace.mjs");
+  const { toolServerConfig, toolServerOptions } =
+    await import("../evals/regression/tool-config.mjs");
+  const { capturedChecks } = await import("../evals/skills/mechanical-checks.mjs");
+  for (const name of [
+    "hook-business-rule-proposal",
+    "hook-value-change-proposal",
+    "author-checks-business-rule-proposal",
+    "author-checks-business-value-proposal",
+  ]) {
+    const dir = scratch("payment-change-workspace-");
+    const scenario = await loadScenario(`${name}.mjs`);
+    await scenario.build(dir);
+    const logPath = path.join(scratch("payment-proposal-tools-"), "events.jsonl");
+    const options = {
+      root: dir,
+      pluginRoot: dir,
+      checkerRoot: dir,
+      turn: 1,
+      logPath,
+      artifactPaths: scenario.artifactPaths,
+    };
+    assert.ok(
+      !makeTools(options).definitions.some((tool) => tool.name === "query_business_context"),
+    );
+    const config = toolServerConfig({
+      ...options,
+      businessContext: scenario.businessContext,
+      guidance: !scenario.directiveOnly,
+    });
+    const tools = makeTools(toolServerOptions(config.mcpServers.fixture.args.slice(1)));
+    const events = () => readFileSync(logPath, "utf8").trim().split("\n").map(JSON.parse);
+    const before = snapshot(dir);
+    const draft = { path: scenario.artifactPaths[0], content: "Fixture transport test" };
+    tools.call("query_business_context", { scope: "category", id: "payments" });
+    tools.call("query_business_context", { scope: "process", id: "payment.take-payment" });
+    tools.call("write_file", draft);
+    const complete = events();
+    const check = (trace) => scenario.mechanicalScore({ events: trace }).every((row) => row.pass);
+    assert.ok(check(complete), name);
+    const scoped = tools.call("search", { text: "confirm", prefix: "docs/adr" });
+    assert.ok(scoped.length > 0 && scoped.every((match) => match.path.startsWith("docs/adr/")));
+    assert.ok(check(events()), "searching ADR text does not read the model");
+    const allMatches = tools.call("search", { text: "confirm" });
+    assert.ok(allMatches.some((match) => match.path === "docs/ontology/ordering.ttl"));
+    assert.ok(
+      !check(events()),
+      "returning a model line through a repository-wide search bypasses the query",
+    );
+    assert.ok(!check([]), "an unobserved query and a text-only reply cannot pass");
+    const firstWrite = complete.find((e) => e.kind === "request" && e.tool === "write_file");
+    assert.ok(
+      !check([{ ...firstWrite, seq: 0 }, ...complete]),
+      "querying after a first draft fails even if it was rewritten",
+    );
+    if (name === "author-checks-business-value-proposal") {
+      const processQuery = complete.find(
+        (e) => e.tool === "query_business_context" && e.arguments?.scope === "process",
+      );
+      assert.ok(
+        !check(complete.filter((e) => e.request !== processQuery.seq)),
+        "the category result alone lacks the process criterion",
+      );
+    }
+
+    const capture = () =>
+      capturedChecks(scenario, { before, files: snapshot(dir), events: events() });
+    assert.ok(capture().every((row) => row.pass));
+    // Restoring the original bytes does not erase the premature write request.
+    const adr = "docs/adr/payments/0001-card-capture.md";
+    tools.call("write_file", { path: adr, content: "premature revision" });
+    tools.call("write_file", { path: adr, content: before[adr] });
+    assert.ok(capture().some((row) => !row.pass));
+    tools.call("read_file", { path: "docs/ontology/ordering.ttl" });
+    const directRead = events().slice(-2);
+    assert.ok(!check([...complete, ...directRead]), "a direct model read bypasses the query");
+  }
 });
 
 test("a scenario's own agent timeout reaches the isolated agent; others keep the default", async () => {

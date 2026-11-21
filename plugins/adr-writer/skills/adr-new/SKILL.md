@@ -1,6 +1,6 @@
 ---
 name: adr-new
-description: Author a new ADR directly (no ALPS PRD required). Drafts a Proposed ADR and records it in the docs/adr/.mapping.json index (path + Status + Key Decision summary). Use when the user invokes /adr-new or asks to write an ADR for a fresh decision (refactor, infra choice, new feature direction). Keywords - "/adr-new", "ADR 새로 작성", "ADR 만들어줘", "draft an ADR", "write a new ADR".
+description: Draft or revise a Proposed ADR without an ALPS PRD. Index its path, Status and decision summary in docs/adr/.mapping.json. Use for /adr-new, "ADR 새로 작성", "ADR 만들어줘", or requests to write an architecture decision.
 argument-hint: "<category> [title?]"
 ---
 
@@ -15,7 +15,10 @@ topology, then use bounded contexts and vertical user stories by default.
 > **Reports**: Before human-facing reports, apply [report-writer](../report-writer/SKILL.md).
 
 Determine model presence by file discovery. Obtain its contents only through
-Ontology Writer's scoped query. If the query is unavailable, report that limit.
+Ontology Writer's scoped query. When locating an ADR or its implementation,
+scope every text search to the ADR or source directory being inspected. If the
+tool cannot limit the search path, list filenames and open the relevant ADRs
+or source files directly. If the query is unavailable, report that limit.
 An existing empty ADR index is still an index.
 
 Author a decision directly from the user’s intent and the repository evidence. A handoff from another workflow uses the same admission, drafting and approval steps.
@@ -31,8 +34,10 @@ When `docs/ontology/` holds Turtle documents, read
 `${CLAUDE_PLUGIN_ROOT}/references/business-context.md` before eliciting or
 drafting: query the feature's business context, judge an unlinked feature, and
 connect workflow outcomes and relevant exceptions/hand-offs to feature-level
-contracts and observation criteria, and name what you checked in the approval
-summary. Without them, skip it.
+contracts and observation criteria. When a category query omits the criteria,
+query the connected process before presenting the revision for approval. Name
+the context you checked and its relevant criteria in that summary. Without model
+documents, skip this check.
 
 > When to use: whenever a decision passes the **ADR admission gate** and must be recorded before changing code — a requirement contract, external boundary, data/key design, security trust boundary, adopted algorithm, fallback policy, or durable trade-off. A replaceable implementation means does not enter this skill. The ADR you write can go straight into `/adr-impl`.
 >

@@ -20,6 +20,7 @@
 //   bun ontology.mjs transition --process ID --to Accepted|Proposed [--date YYYY-MM-DD]
 //                                [--same-meaning ID=PROPERTY]... [--unread-unchanged]
 //   bun ontology.mjs align --process ID [--together ID,ID] [--json]
+//   bun ontology.mjs align --process ID --review-adrs [--since VERIFIED_COMMIT] [--json]
 //   bun ontology.mjs align --ui [--process ID] [--lang en|ko] [--no-open | --browser NAME]
 //   bun ontology.mjs lifecycle [--base REF] [--json]
 //   bun ontology.mjs view [--include-retired] [--lang en|ko] [--no-open | --browser NAME]
@@ -136,9 +137,10 @@ import {
   unionGraph,
   validateModel,
 } from "./ontology-lib.mjs";
-import { validateMappingShape } from "./adr-lint-lib.mjs";
+import { classifyStatus, isAdrFile, validateMappingShape } from "./adr-lint-lib.mjs";
 import { newAdrDrafts } from "./ontology-adr-drafts.mjs";
 import { alignmentPlan, impactSummary, nextProcessAction } from "./ontology-align.mjs";
+import { reviewChanges } from "./review-changes.mjs";
 import { setupPreference } from "./ontology-preferences.mjs";
 import {
   CHANGE_LOG,
@@ -234,6 +236,8 @@ function parseArgs(argv) {
     } else if (a === "--base") opts.base = value();
     else if (a === "--json") opts.json = true;
     else if (a === "--ui" && command === "align") opts.ui = true;
+    else if (a === "--review-adrs" && command === "align") opts.reviewAdrs = true;
+    else if (a === "--since" && command === "align") opts.since = value();
     else if (a === "--write") opts.write = true;
     else if (a === "--check") opts.write = false;
     else if (a === "--allow-comment-removal") opts.allowCommentRemoval = true;
@@ -320,6 +324,8 @@ function parseArgs(argv) {
     usage("--also-base adds bases to a --base comparison of a direct edit");
   if ((command === "impact" || command === "apply") && opts.draft && opts.process)
     usage("--process limits a --base comparison; a draft is summarized whole");
+  if (opts.since !== undefined && !opts.reviewAdrs) usage("--since requires --review-adrs");
+  if (opts.reviewAdrs && opts.ui) usage("--review-adrs is a terminal scope lookup");
   if (opts.ui && (opts.json || opts.together.length))
     usage(
       "--ui opens a selection session; use the headless alignment plan for --json or --together",
@@ -392,6 +398,7 @@ function levelFindings(opts) {
     mapping,
     mappingPath: rel(mappingFile ?? mappingPathOf(opts)),
     rel,
+    reviewScopeOnly: opts.command === "align" && opts.reviewAdrs,
     ...(opts.command === "view"
       ? { readAdr: (file) => readAdrDocument({ path: file }, { adrRoot: opts.adrDir }).body }
       : {}),
@@ -2412,6 +2419,112 @@ async function alignSession(opts, level) {
   return 0;
 }
 
+/** Project one business process onto its realizing decisions. The index links steps to features, not individual ADR clauses. */
+function processReviewScope(level, plan, opts) {
+  const ownSteps = new Set(level.index.out(elementIri(plan.process.id), "hasStep").map(elementId));
+  const features = new Map(
+    plan.realization.categories.map(({ category }) => [
+      category,
+      new Set(level.mapping.categories[category].realizes.filter((step) => ownSteps.has(step))),
+    ]),
+  );
+  const missingSteps = new Set(plan.realization.unrealizedSystemSteps);
+  // The plan already resolved the links for hand-offs, rules and criterion participants.
+  function include(ref) {
+    if (ref.system && !ref.categories.length) missingSteps.add(ref.step);
+    for (const category of ref.categories) {
+      if (!features.has(category)) features.set(category, new Set());
+      features.get(category).add(ref.step);
+    }
+  }
+  for (const row of plan.compliance)
+    for (const ref of row.steps ?? [row.from, row.to]) include(ref);
+  for (const criterion of plan.criteria) for (const ref of criterion.run) include(ref);
+  const unresolved = [...missingSteps].sort().map((step) => `No realizing feature for ${step}`);
+  const reviewAdrs = [];
+  const inputs = [opts.ontologyDir, mappingPathOf(opts)];
+  const retired = new Set();
+  for (const category of [...features.keys()].sort()) {
+    const folder = path.resolve(opts.adrDir, category);
+    const relative = path.relative(path.resolve(opts.adrDir), folder);
+    if (
+      !relative ||
+      relative === ".." ||
+      relative.startsWith(".." + path.sep) ||
+      path.isAbsolute(relative) ||
+      relative.split(path.sep).join("/") !== category
+    ) {
+      unresolved.push(`Invalid ADR category: ${category}`);
+      continue;
+    }
+    inputs.push(folder);
+    const { files, problems } = recordedAdrFiles(category, level.mapping.categories[category], {
+      at: (p) => path.resolve(p),
+      folder,
+      join: path.join,
+    });
+    for (const problem of problems) unresolved.push(problem.why);
+    const steps = [...features.get(category)].sort();
+    let current = false;
+    for (const [file, group] of Map.groupBy(files, (item) => item.file)) {
+      const adrPath = rel(file);
+      const statuses = [
+        ...new Set(group.map(({ record }) => String(record.status ?? "").trim())),
+      ].sort();
+      if (statuses.length !== 1) {
+        unresolved.push(`Conflicting ADR statuses for ${adrPath}: ${statuses.join(", ")}`);
+        continue;
+      }
+      const status = classifyStatus(statuses[0]);
+      if (!status.ok) {
+        unresolved.push(`Invalid ADR Status: ${adrPath}`);
+        continue;
+      }
+      if (status.value !== "Proposed" && !status.value.startsWith("Accepted")) {
+        retired.add(file);
+        continue;
+      }
+      current = true;
+      const summaries = new Set(group.map(({ record }) => record.summary ?? ""));
+      reviewAdrs.push({
+        path: adrPath,
+        status: status.value,
+        category,
+        steps,
+        summary: summaries.size === 1 ? (group[0].record.summary ?? "") : "",
+      });
+    }
+    if (!current) unresolved.push(`No unambiguous current ADR for ${category}`);
+  }
+  reviewAdrs.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  const scope = { reviewAdrs, unresolved };
+  if (opts.since !== undefined) {
+    const changes = reviewChanges(opts.since, inputs);
+    scope.changes = changes;
+    if (changes.status !== "unverified") {
+      // Git paths are rooted at the repository; selected paths can be relative to a subproject.
+      const gitPath = (file) => path.posix.join(changes.prefix ?? "", rel(file));
+      const current = new Set(reviewAdrs.map((adr) => gitPath(adr.path)));
+      const retiredPaths = new Set([...retired].map(gitPath));
+      const modelDir = gitPath(opts.ontologyDir);
+      const indexFile = gitPath(mappingPathOf(opts));
+      const folders = new Set(inputs.slice(2).map(gitPath));
+      changes.currentAdrs = changes.paths.filter((p) => current.has(p));
+      changes.retiredAdrs = changes.paths.filter((p) => retiredPaths.has(p));
+      changes.scopeInputs = changes.paths.filter(
+        (p) =>
+          p === indexFile ||
+          ((modelDir === "." || p.startsWith(modelDir + "/")) && p.endsWith(".ttl")) ||
+          (folders.has(path.posix.dirname(p)) &&
+            isAdrFile(path.posix.basename(p)) &&
+            !current.has(p) &&
+            !retiredPaths.has(p)),
+      );
+    }
+  }
+  return scope;
+}
+
 function align(opts) {
   const level = levelFindings(opts);
   const { model, findings, index } = level;
@@ -2439,15 +2552,49 @@ function align(opts) {
     return 1;
   }
   if (opts.ui) return alignSession(opts, level);
+  if (opts.reviewAdrs) {
+    const plan = alignmentPlan({
+      index,
+      mapping: level.mapping,
+      processId: opts.process,
+      together: opts.together,
+    });
+    if (plan.error) return fail(plan.error);
+    const scope = processReviewScope(level, plan, opts);
+    const errors = findings.filter((finding) => finding.level === "error");
+    const result = {
+      process: plan.process,
+      ...scope,
+      compliance: plan.compliance,
+      criteria: plan.criteria,
+      errors,
+      adrBodiesChecked: false,
+    };
+    if (opts.json) process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+    else {
+      process.stdout.write(`ADR review scope — ${opts.process} (index only)\n`);
+      for (const adr of scope.reviewAdrs)
+        process.stdout.write(`${adr.path} [${adr.status}] — ${adr.steps.join(", ")}\n`);
+      for (const problem of [...scope.unresolved, ...errors.map((f) => f.msg)])
+        process.stdout.write(`? ${problem}\n`);
+      if (scope.changes) process.stdout.write(`Git: ${JSON.stringify(scope.changes)}\n`);
+    }
+    return errors.length || scope.unresolved.length || scope.changes?.status === "unverified"
+      ? 1
+      : 0;
+  }
   const context = workingContext(opts, level, { kind: "process", id: opts.process });
   const plan = processPlan(level, opts.process, opts.lang, {
     changes: context.changes,
     together: opts.together,
   });
   if (plan.error) return fail(plan.error);
+  Object.assign(plan, processReviewScope(level, plan, opts));
   if (opts.json) process.stdout.write(JSON.stringify(plan, null, 2) + "\n");
   else {
     process.stdout.write(`Alignment plan — ${plan.process.id} [${plan.process.status}]\n`);
+    for (const adr of plan.reviewAdrs)
+      process.stdout.write(`review ADR ${adr.path} [${adr.status}] — ${adr.steps.join(", ")}\n`);
     for (const b of plan.blocking) process.stdout.write(`✗ ${b}\n`);
     for (const c of plan.compliance)
       process.stdout.write(

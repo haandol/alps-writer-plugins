@@ -32,6 +32,8 @@ test("a fresh session asks whether to build without creating files or requiring 
     assert.match(offer, /On yes or an existing request to build, start \/ontology-build/);
     assert.match(offer, /On no, later, or no answer, continue their request/);
     assert.match(offer, /Saving the draft requires separate approval/);
+    // Without a model there is no model-owned meaning to route upward yet.
+    assert.doesNotMatch(offer, /model-owned meaning|\/ontology-edit/);
     assert.deepEqual(readdirSync(dir), []);
     // A resumed, cleared, compacted or forked session does not ask the first-model question again.
     for (const source of ["resume", "clear", "compact", "fork"]) {
@@ -80,7 +82,20 @@ test("the session directive asks for the business context only when the index an
       ctx,
       /Before changing code of a feature linked to a process step, query its business context; use it to catch contradictions, never as new obligations\./,
     );
-    assert.ok(ctx.length < 600, `directive too large: ${ctx.length}`);
+    // A change to model-owned meaning goes up first; ADR-owned detail stays below.
+    assert.match(
+      ctx,
+      /If the requested change alters model-owned meaning — flow, hand-offs, policy reactions, responsibilities, cross-step rules, concepts or terms — run \/ontology-edit before the ADR; until approved, dependent ADR rows stay pending and their code waits\./,
+    );
+    assert.match(
+      ctx,
+      /Changing only values, state machines or in-step behavior, permissions or failure handling needs no model proposal; with a model change, the proposal states the meaning without the value, which the pending ADR row keeps\./,
+    );
+    assert.ok(
+      ctx.indexOf("/ontology-edit") < ctx.indexOf("Before changing code"),
+      "the upward route precedes the code-change instruction",
+    );
+    assert.ok(ctx.length < 1_100, `directive too large: ${ctx.length}`);
     for (const content of ["Submit the order", "ordering", "Customer"])
       assert.ok(!ctx.includes(content), `no model or index content: ${content}`);
   });

@@ -2,6 +2,9 @@ import {
   appendFileSync,
   copyFileSync,
   existsSync,
+  closeSync,
+  fstatSync,
+  openSync,
   lstatSync,
   mkdirSync,
   readFileSync,
@@ -12,6 +15,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { SEEDED_RULE_DOCS, STAMPED_RULE_DOCS } from "../../scripts/adr-lint-lib.mjs";
@@ -130,6 +134,7 @@ export function makeTools({
   checkerRoot = pluginRoot,
   artifactPaths = [],
   draftRoot,
+  businessContext = false,
 }) {
   if (draftRoot !== undefined) {
     if (
@@ -155,14 +160,30 @@ export function makeTools({
       throw new Error("report paths cannot overlap the draft workspace");
   }
   const artifacts = new Set(artifactPaths);
-  const events = () =>
-    existsSync(logPath)
-      ? readFileSync(logPath, "utf8").split("\n").filter(Boolean).map(JSON.parse)
-      : [];
+  // One tool server owns a trial's log for its turn. Resumed or interleaved
+  // owners recover their position when the append-only file has changed.
+  let logSize = -1;
+  let logInode;
+  let sequence = 0;
   function record(event) {
-    const entry = { seq: events().length + 1, turn, ...event };
-    appendFileSync(logPath, JSON.stringify(entry) + "\n");
-    return entry;
+    const fd = openSync(logPath, "a+");
+    try {
+      const stat = fstatSync(fd);
+      if (stat.ino !== logInode || stat.size !== logSize) {
+        sequence = stat.size
+          ? readFileSync(fd, "utf8").split("\n").filter(Boolean).map(JSON.parse).length
+          : 0;
+      }
+      const entry = { seq: sequence + 1, turn, ...event };
+      const line = JSON.stringify(entry) + "\n";
+      appendFileSync(fd, line);
+      sequence = entry.seq;
+      logSize = stat.size + Buffer.byteLength(line);
+      logInode = stat.ino;
+      return entry;
+    } finally {
+      closeSync(fd);
+    }
   }
   function location(file) {
     if (file.startsWith("plugin/")) {
@@ -190,6 +211,37 @@ export function makeTools({
     return confined(root, file);
   }
   const properties = {
+    ...(businessContext
+      ? {
+          query_business_context: {
+            description:
+              "Run Ontology Writer's read-only query in this fixture, with a category, process or step identifier.",
+            fields: {
+              scope: { type: "string", enum: ["category", "process", "step"] },
+              id: { type: "string" },
+            },
+            run({ scope, id }) {
+              if (
+                !["category", "process", "step"].includes(scope) ||
+                typeof id !== "string" ||
+                !/^[a-z0-9][a-z0-9./-]*$/i.test(id)
+              )
+                throw new Error("expected a query scope and business identifier");
+              const cli = fileURLToPath(
+                new URL("../../../ontology-writer/scripts/ontology.mjs", import.meta.url),
+              );
+              const query = spawnSync(process.execPath, [cli, "query", `--${scope}`, id], {
+                cwd: root,
+                encoding: "utf8",
+              });
+              if (query.error) throw query.error;
+              if (query.status !== 0)
+                throw new Error(query.stderr || query.stdout || "business-context query failed");
+              return query.stdout;
+            },
+          },
+        }
+      : {}),
     ...(draftRoot
       ? {
           prepare_draft: {
@@ -237,10 +289,22 @@ export function makeTools({
     },
     search: {
       description: "Literal text search in fixture files; returns matching file names and lines.",
-      fields: { text: { type: "string" } },
-      run({ text }) {
-        if (!text || text.length > 300) throw new Error("invalid search text");
-        return listFiles(root).flatMap((file) =>
+      fields: {
+        text: { type: "string" },
+        ...(businessContext
+          ? {
+              prefix: {
+                type: "string",
+                description: "Limit the search to this fixture file or directory.",
+              },
+            }
+          : {}),
+      },
+      required: ["text"],
+      run({ text, prefix = "" }) {
+        if (typeof text !== "string" || !text || text.length > 300)
+          throw new Error("invalid search text");
+        return listFiles(root, prefix).flatMap((file) =>
           readFileSync(confined(root, file), "utf8")
             .split("\n")
             .flatMap((line, index) =>
@@ -441,6 +505,11 @@ export function makeTools({
           request: request.seq,
           tool: name,
           ok: true,
+          // A search can disclose model lines just like a file read. Paths identify
+          // the actual hits without duplicating fixture content in the action log.
+          ...(businessContext && name === "search"
+            ? { matchedPaths: [...new Set(result.map((match) => match.path))] }
+            : {}),
           // Reads are already available in the fixture and shipped prompt.
           // Preserve mutation contents and check outputs for temporal evidence.
           result: ["read_file", "list_files", "search"].includes(name)

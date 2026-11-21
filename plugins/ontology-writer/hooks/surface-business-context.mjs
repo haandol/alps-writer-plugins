@@ -76,6 +76,10 @@ function main() {
         : ` --adr-dir ${quote(adrDir)}`;
   return [
     `[Business-context directive] Ontology: before creating or changing an ADR decision or contract, first check the feature's business context (bun "${QUERY_CLI}" query --step <id>${where}).`,
+    // The model sits above ADRs, so a change to its meaning starts there; values and
+    // in-step behavior stay ADR-owned. Without this line the upward rule reached only
+    // ADR skills and conversational ADR edits skipped the model.
+    "If the requested change alters model-owned meaning — flow, hand-offs, policy reactions, responsibilities, cross-step rules, concepts or terms — run /ontology-edit before the ADR; until approved, dependent ADR rows stay pending and their code waits. Changing only values, state machines or in-step behavior, permissions or failure handling needs no model proposal; with a model change, the proposal states the meaning without the value, which the pending ADR row keeps.",
     "Before changing code of a feature linked to a process step, query its business context; use it to catch contradictions, never as new obligations.",
     "For ontology status, give one concrete next action.",
     "Find: --overview then --context <id> --search <text>. Known: --step/--process; feature: --category.",

@@ -4,9 +4,10 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { catalog, skillCatalog, checkReferences, filesHash, PLUGIN, ROOT } from "./catalog.mjs";
+import { caseRepeats, DEFAULT_JOBS, runPool } from "../lib/run-pool.mjs";
 import { routingCounts } from "./metrics.mjs";
-import { saveSkillsReport, renderSavedSkillsReport } from "./report.mjs";
-import { copyPlugin, runCase, runPool, calendarDate } from "../regression/run.mjs";
+import { startSkillsReport, renderSavedSkillsReport } from "./report.mjs";
+import { copyPlugin, runCase, calendarDate, initialFixtureChecks } from "../regression/run.mjs";
 import { invokeClaude } from "../regression/claude.mjs";
 import {
   confined,
@@ -20,10 +21,10 @@ import { semanticPrompt } from "./response-contract.mjs";
 import { capturedChecks } from "./mechanical-checks.mjs";
 import { checkRequiredGuidance } from "../lib/required-guidance.mjs";
 import { parseTail, ALPS_PLUGIN_ROOT, ONTOLOGY_PLUGIN_ROOT } from "../lib/harness.mjs";
-import { scenarioNamesForChangedPaths } from "../impact-map.mjs";
+import { evaluationImpactPaths, scenarioNamesForChangedPaths } from "../impact-map.mjs";
 import { BEDROCK_DEFAULTS } from "../deepeval/bedrock.mjs";
 import { validateReportEvaluation } from "./report-evaluation.mjs";
-import { finalChecks } from "../lib/execution-checks.mjs";
+import { executionOutcome } from "../lib/execution-checks.mjs";
 import { toolServerConfig } from "../regression/tool-config.mjs";
 
 const HELP = `Skill evaluation — classification, routing, execution
@@ -42,6 +43,7 @@ permits target and semantic-judge calls. Deterministic scorers do not call a jud
 All catalog classification responses receive DeepEval GEval judgments; existing
 local checks remain independent gates. Routing is scored deterministically.
 --only filters case IDs; --changed <git-base> selects impacted cases.
+--jobs bounds concurrent independent repeats (default up to 4; use 1 for serial).
 --model chooses the Claude target; --judge-model/profile/region/provider choose
 the existing DeepEval judge (Bedrock defaults). No provider fallback.
 --target-profile <AWS-profile> --target-region <region> with --model selects
@@ -52,7 +54,7 @@ Quality failures are findings, not CI gates. Exit 2 means setup/no scorable resu
 
 /** Parse one explicit execution intent; report/list/prepare never inherit live behavior. */
 export function parseSkillsArgs(args) {
-  const o = { suite: "all", runs: 3, jobs: 1, timeout: 300, compare: "none" };
+  const o = { suite: "all", runs: 3, jobs: DEFAULT_JOBS, timeout: 300, compare: "none" };
   const flags = new Set(["live", "prepare", "list", "open", "help"]);
   const values = new Set([
     "suite",
@@ -150,7 +152,8 @@ export function changedPaths(base) {
 }
 
 /** Apply the same change selection to existing scenarios and the separate execution/routing corpora. */
-export function selectImpacted(cases, paths) {
+export function selectImpacted(cases, changedPaths) {
+  const paths = evaluationImpactPaths(changedPaths);
   const classification = scenarioNamesForChangedPaths(
     paths,
     cases.filter((c) => c.type === "classification").map((c) => ({ ...c, name: c.id })),
@@ -204,7 +207,7 @@ function recordCall(record, stage, response) {
 }
 
 /** Provide a confined MCP filesystem for old probes without granting a host shell or external tools. */
-function toolConfig(directory, root, pluginRoot, logPath, artifactPaths = [], draftRoot) {
+function toolConfig(directory, root, pluginRoot, logPath, item) {
   const file = path.join(directory, "mcp.json");
   writeFileSync(
     file,
@@ -214,9 +217,11 @@ function toolConfig(directory, root, pluginRoot, logPath, artifactPaths = [], dr
         pluginRoot,
         logPath,
         turn: 1,
+        guidance: !item.directiveOnly,
         checkerRoot: pluginRoot,
-        artifactPaths,
-        draftRoot,
+        artifactPaths: item.artifactPaths,
+        draftRoot: item.draftRoot,
+        businessContext: item.businessContext,
       }),
     ),
   );
@@ -324,11 +329,16 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
     pluginRoot,
     logPath: log,
     turn: 0,
+    guidance: !item.directiveOnly,
     artifactPaths: item.artifactPaths,
     draftRoot: item.draftRoot,
+    businessContext: item.businessContext,
   });
-  const config = toolConfig(folder, root, pluginRoot, log, item.artifactPaths, item.draftRoot);
-  const wrapped = `This is an isolated classification probe, not a native client routing test.\nUse only the local fixture MCP tools. Fixture root ${root}; use relative paths for fixture reads/writes. CLAUDE_PLUGIN_ROOT is plugin/. Resolve referenced skills and guidance through plugin/skills and plugin/references.\n${prompt}`;
+  const config = toolConfig(folder, root, pluginRoot, log, item);
+  const guidance = item.directiveOnly
+    ? "This session has only its startup directives."
+    : "CLAUDE_PLUGIN_ROOT is plugin/. Resolve referenced skills and guidance through plugin/skills and plugin/references.";
+  const wrapped = `This is an isolated classification probe, not a native client routing test.\nUse only the local fixture MCP tools. Fixture root ${root}; use relative paths for fixture reads/writes. ${guidance}\n${prompt}`;
   const initial = snapshot(root, item);
   json(folder, "input.json", { prompt: wrapped, files: initial });
   record.promptHash = sha(prompt.split(root).join("<FIXTURE>"));
@@ -383,11 +393,10 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
       throw new Error("Invalid mechanical artifact checks");
     record.checks.push(...additional);
   }
-  const input = JSON.parse(readFileSync(path.join(folder, "input.json"), "utf8"));
   await judgeEvidence(
     { ...item, obligations: item.semanticObligations, turns: [prompt] },
     {
-      before: input.files,
+      before,
       after: files,
       events,
       turns: [prompt],
@@ -443,46 +452,52 @@ async function runExecution(
     const body = readFileSync(path.join(variant.root, "skills", item.skill, "SKILL.md"), "utf8");
     checkReferences(body, variant.root);
   }
-  const prepared = path.join(folder, "prepared");
-  createWorkspace(prepared, item.build(), candidate.root);
-  const tools = makeTools({
-    root: prepared,
-    pluginRoot: variant.root,
-    checkerRoot: candidate.root,
-    logPath: path.join(folder, "checks.jsonl"),
-    turn: 0,
-    artifactPaths: item.artifactPaths,
-  });
-  if (variant.guidance !== false) checkRequiredGuidance(item, tools);
-  const checks = [
-    tools.call("run_check", { kind: "policy-tests" }),
-    tools.call("run_check", { kind: "structure" }),
-  ];
-  json(folder, "preflight.json", checks);
-  if (checks.some((c) => c.exitCode !== 0)) throw new Error("Invalid execution fixture");
-  const initialFilesHash = filesHash(prepared);
-  record.conditionHash = sha({
-    files: initialFilesHash,
-    task: item.turns,
-    obligations: item.obligations,
-    timeout: options.timeout,
-    tools: "fixture-documents-v2",
-    artifactPaths: item.artifactPaths ?? [],
-    checker: candidate.hash,
-    judge: options.judge,
-    targetBedrock: options.targetBedrock ?? null,
-    harness: report.runtime.harnessHash,
-    date: options.referenceDate,
-  });
-  record.inputHash = sha({
-    files: initialFilesHash,
-    task: item.turns,
-    obligations: item.obligations,
-  });
-  if (!options.live) return;
+  function recordPreflight(root, { policy, lint }) {
+    json(folder, "preflight.json", [policy, lint]);
+    const initialFilesHash = filesHash(root);
+    record.conditionHash = sha({
+      files: initialFilesHash,
+      task: item.turns,
+      obligations: item.obligations,
+      timeout: options.timeout,
+      tools: "fixture-documents-v2",
+      artifactPaths: item.artifactPaths ?? [],
+      checker: candidate.hash,
+      judge: options.judge,
+      targetBedrock: options.targetBedrock ?? null,
+      harness: report.runtime.harnessHash,
+      date: options.referenceDate,
+    });
+    record.inputHash = sha({
+      files: initialFilesHash,
+      task: item.turns,
+      obligations: item.obligations,
+    });
+  }
+  const fixture = item.build();
+  if (!options.live) {
+    const root = path.join(folder, "prepared");
+    createWorkspace(root, fixture, candidate.root);
+    const tools = makeTools({
+      root,
+      pluginRoot: variant.root,
+      checkerRoot: candidate.root,
+      logPath: path.join(folder, "checks.jsonl"),
+      turn: 0,
+      artifactPaths: item.artifactPaths,
+    });
+    if (variant.guidance !== false) checkRequiredGuidance(item, tools);
+    const initial = initialFixtureChecks(tools);
+    recordPreflight(root, initial);
+    if (initial.policy.exitCode !== 0 || initial.lint.exitCode !== 0)
+      throw new Error("Invalid execution fixture");
+    return;
+  }
   const captured = await runCase(item, variant, record.repeat, folder, {
     ...options,
     "capture-only": true,
+    fixture,
+    onPreflight: recordPreflight,
     invoke: dependencies.target,
     fixturePluginRoot: candidate.root,
     checkerRoot: candidate.root,
@@ -501,14 +516,15 @@ async function runExecution(
     turn: item.turns.length,
     artifactPaths: item.artifactPaths,
   });
-  record.checks = finalChecks(finalTools);
-  if (item.verifyEvidence) {
-    const checks = item.verifyEvidence(evidence);
-    if (!Array.isArray(checks) || !checks.length || checks.some((c) => typeof c.pass !== "boolean"))
-      throw new Error("Invalid execution evidence checks");
-    record.checks.push(...checks);
-    json(folder, "execution-checks.json", checks);
-  }
+  const { checks, caseChecks } = executionOutcome(
+    finalTools,
+    item,
+    evidence,
+    fixture,
+    item.verifyEvidence,
+  );
+  record.checks = checks;
+  if (caseChecks.length) json(folder, "execution-checks.json", caseChecks);
   await judgeEvidence(item, evidence, record, folder, options, dependencies);
   if (record.verdict === "PASS" && record.checks.some((c) => !c.pass))
     record.verdict = "NOT_PROVEN";
@@ -641,89 +657,81 @@ export async function main(args, injected = {}) {
     datasetHash: sha(cases.map(({ build, score, ...c }) => c)),
     runs: [],
   };
-  for (const item of cases)
-    for (let repeat = 1; repeat <= options.runs; repeat++)
-      for (const v of item.type === "execution" ? variants : [candidate])
-        report.runs.push({
-          caseId: item.id,
-          type: item.type,
-          variant: v.name,
-          repeat,
-          verdict: "NOT_RUN",
-          targetModels: [],
-          judgeModels: [],
-          calls: [],
-          referenceDate: options.referenceDate,
-          artifactDirectory: `runs/${item.id}-${v.name}-${repeat}`,
-        });
-  const save = () => {
+  // Keep the report's order stable even when repeat groups finish out of order.
+  const groups = caseRepeats(cases, options.runs).map(({ item, repeat }) => {
+    const trials = (item.type === "execution" ? variants : [candidate]).map((variant) => {
+      const record = {
+        caseId: item.id,
+        type: item.type,
+        variant: variant.name,
+        repeat,
+        verdict: "NOT_RUN",
+        targetModels: [],
+        judgeModels: [],
+        calls: [],
+        referenceDate: options.referenceDate,
+        artifactDirectory: `runs/${item.id}-${variant.name}-${repeat}`,
+      };
+      report.runs.push(record);
+      return { record, variant };
+    });
+    if (repeat % 2 === 0) trials.reverse();
+    return { item, trials };
+  });
+  const progress = startSkillsReport(output, report, (byCase) => {
     report.datasetHash = sha(
       report.cases.map((item) => ({
         ...item,
         inputHashes: [
           ...new Set(
-            report.runs
-              .filter((r) => r.caseId === item.id)
+            byCase
+              .get(item.id)
               .map((r) => r.inputHash)
               .filter(Boolean),
           ),
         ].sort(),
       })),
     );
-    json(output, "results.json", report);
-    return saveSkillsReport(output, report);
-  };
-  save();
+  });
   const previousCwd = process.cwd(),
     previousHome = process.env.DEEPEVAL_HOME;
   process.env.DEEPEVAL_HOME = path.join(output, ".deepeval-local");
   // DeepEval's optional local files stay in the disposable output, never the repository root.
   process.chdir(output);
   try {
-    // Alternate within each task to avoid always observing the same condition first.
-    await runPool(cases, options.jobs, async (item) => {
-      for (let repeat = 1; repeat <= options.runs; repeat++) {
-        const order =
-          item.type === "execution"
-            ? repeat % 2
-              ? variants
-              : [...variants].reverse()
-            : [candidate];
-        for (const variant of order) {
-          const record = report.runs.find(
-            (r) => r.caseId === item.id && r.repeat === repeat && r.variant === variant.name,
-          );
-          const folder = confined(output, record.artifactDirectory);
-          mkdirSync(folder, { recursive: true });
-          const started = Date.now();
-          try {
-            if (item.type === "routing")
-              await runRouting(item, record, folder, entries, options, dependencies);
-            else if (item.type === "classification")
-              await runClassification(item, record, folder, probeRoot, options, dependencies);
-            else
-              await runExecution(
-                item,
-                record,
-                folder,
-                variant,
-                candidate,
-                options,
-                dependencies,
-                report,
-              );
-          } catch (error) {
-            record.verdict = "ERROR";
-            record.error = error.message;
-          }
-          record.elapsedMs = Date.now() - started;
-          json(output, `${record.artifactDirectory}/result.json`, record);
-          // A live run saves its progress; a preparation calls no model and saves once at the end.
-          if (options.live) save();
-          process.stdout.write(
-            `${item.type} ${item.id} ${variant.name} #${repeat}: ${record.verdict}${record.error ? ` — ${record.error}` : ""}\n`,
-          );
+    await runPool(groups, options.jobs, async ({ item, trials }) => {
+      for (const { record: slot, variant } of trials) {
+        const record = structuredClone(slot);
+        const folder = confined(output, record.artifactDirectory);
+        mkdirSync(folder, { recursive: true });
+        const started = Date.now();
+        try {
+          if (item.type === "routing")
+            await runRouting(item, record, folder, entries, options, dependencies);
+          else if (item.type === "classification")
+            await runClassification(item, record, folder, probeRoot, options, dependencies);
+          else
+            await runExecution(
+              item,
+              record,
+              folder,
+              variant,
+              candidate,
+              options,
+              dependencies,
+              report,
+            );
+        } catch (error) {
+          record.verdict = "ERROR";
+          record.error = error.message;
         }
+        record.elapsedMs = Date.now() - started;
+        json(output, `${record.artifactDirectory}/result.json`, record);
+        Object.assign(slot, record);
+        progress.completed(item);
+        process.stdout.write(
+          `${item.type} ${item.id} ${variant.name} #${record.repeat}: ${record.verdict}${record.error ? ` — ${record.error}` : ""}\n`,
+        );
       }
     });
   } finally {
@@ -731,7 +739,7 @@ export async function main(args, injected = {}) {
     if (previousHome === undefined) delete process.env.DEEPEVAL_HOME;
     else process.env.DEEPEVAL_HOME = previousHome;
   }
-  const html = save();
+  const html = progress.finish();
   if (options.open) (injected.open ?? openReport)(html);
   process.stdout.write(`HTML: ${html}\nResults: ${path.join(output, "results.json")}\n`);
   return {

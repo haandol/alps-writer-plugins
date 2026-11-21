@@ -13,6 +13,15 @@ const prefix = "skills/adr-impl-review/references/";
 const read = (file) => readFileSync(path.join(root, file), "utf8");
 const modulePath = (name) => `${prefix}${name}.md`;
 const body = (name) => read(modulePath(name));
+test("a standard sufficiency handoff loads contract evidence without the full reporting template", () => {
+  const name = "sufficiency-detail";
+  const core = agentText("adr-impl-sufficiency-reviewer");
+  const detailed = agentText("adr-impl-sufficiency-reviewer", { references: [modulePath(name)] });
+  assert.ok(!core.includes(body(name)));
+  assert.ok(detailed.includes(body(name)));
+  assert.match(core, /--contract-rows/);
+  assert.match(core, /unverified premise/i);
+});
 const optional = [
   "artifact-example",
   "quiz-artifact",

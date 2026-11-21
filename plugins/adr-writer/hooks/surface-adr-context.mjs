@@ -15,14 +15,15 @@ import { hasModel } from "../scripts/model-documents.mjs";
 
 const MAPPING_PATH = process.env.ALPS_ADR_MAPPING || "docs/adr/.mapping.json";
 
-// Drain stdin so Claude Code never sees a broken pipe. The prompt content is
-// not parsed because intent classification belongs to the main model.
-function drainStdin() {
+// Some hosts start the hook outside the project and supply its directory in the event.
+function sessionDirectory() {
   try {
-    readFileSync(0);
+    const cwd = JSON.parse(readFileSync(0, "utf8"))?.cwd;
+    if (typeof cwd === "string" && path.isAbsolute(cwd)) return cwd;
   } catch {
-    /* ignore */
+    // Older hosts can send empty or non-JSON input.
   }
+  return process.cwd();
 }
 
 function loadJSON(p) {
@@ -34,9 +35,7 @@ function loadJSON(p) {
 }
 
 function main() {
-  drainStdin();
-
-  const cwd = process.cwd();
+  const cwd = sessionDirectory();
   const eventCwd = process.env.CLAUDE_PROJECT_DIR || cwd;
   const mappingFile = path.isAbsolute(MAPPING_PATH)
     ? MAPPING_PATH
@@ -74,9 +73,10 @@ function main() {
   ];
   // The business ontology sits above ADRs. Ontology Writer owns it and its
   // query; without that plugin the context goes unchecked, and the work says so.
+  // The line names only the kinds of meaning the model owns, never the model itself.
   if (hasModel(path.join(path.dirname(path.dirname(mappingFile)), "ontology")))
     directive.push(
-      "Business ontology present: check business context through the Ontology Writer plugin before an ADR decision or contract changes; if it is unavailable, state that the business context was not checked.",
+      "Business ontology present: before an ADR decision or contract changes, obtain model content only through Ontology Writer's query. Keep model files out of direct reads and text searches, including repository-wide searches. Changes to business flow, hand-offs, policies, responsibilities, cross-step rules, concepts or terms go through its model change approval before the ADR. If it is unavailable, state that the business context was not checked.",
     );
 
   const out = {

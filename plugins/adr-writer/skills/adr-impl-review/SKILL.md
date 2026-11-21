@@ -47,7 +47,7 @@ flowchart TD
     HIKE --> RULING
 ```
 
-In full mode, the necessity and sufficiency perspectives are grounded separately and do not see each other's conclusions before synthesis (section 3). They may run in parallel or sequentially. Standard mode runs only the sufficiency perspective defined below and may use compact evidence presentation. The user's intent and the ADR's regeneration checklist are settled before implementation; this command consumes that baseline and does not reopen it as a routine post-implementation gate.
+In full mode, the necessity and sufficiency perspectives are grounded separately and do not see each other's conclusions before synthesis (section 3). Start both from the shared baseline concurrently when capacity permits. Standard mode uses the sufficiency perspective and may use compact presentation. This review consumes the approved intent and regeneration checklist and does not reopen it as a routine post-implementation gate.
 
 This is not a mathematical proof of necessity and sufficiency. It is **a disproof-based review that hunts for unnecessary changes and missing behavior from two different perspectives.** A passing test is only evidence that no counterexample was found among the cases actually executed — not a proof of completeness.
 
@@ -179,12 +179,12 @@ Use [Review Hiking](references/review-hiking.md) for detailed zooms and
 
 For `standard`, execute this section and then continue at **Report and artifact stage**. The full-mode baseline and perspective sections below do not apply.
 
-1. Build a decision ledger containing every ADR decision and each independently reviewable requirement-contract row, including its implementation-independent observable evidence. The sufficiency pass also extracts Notable implementation choices once from the complete implementation scope.
+1. Use the decisions and contract rows identified during scoping as the ledger. The sufficiency pass reconciles each independent obligation and its observable evidence against the ADR and extracts Notable implementation choices once.
    Apply the obligation accounting in `${CLAUDE_PLUGIN_ROOT}/references/implementation-evidence.md`
    in both modes. Code coverage and test success alone never establish contract
    completeness; all clauses, relevant counterexamples and actual assertions matter.
-2. Apply the `adr-impl-sufficiency-reviewer` role to the original material, Hills, and ledger with the smallest suitable execution strategy.
-3. Review Hills in reader-priority order; record contract status, implementation evidence, and targeted test results. An unexecuted core path yields `INCONCLUSIVE`.
+2. Pass `standard`, the scoped ADR, its rows and observed evidence to the sufficiency reviewer. Use the short handoff in the role; the full baseline file and preliminary Trail map belong to the full path.
+3. Review independent Hills concurrently when capacity permits. Present them in reader-priority order with contract status, implementation evidence and targeted test results. An unexecuted core path yields `INCONCLUSIVE`.
 4. Verify and synthesize findings using section 4's evidence rules. Standard mode has no necessity pass, mandatory separate reporting role, fixed Mermaid quota, or post-implementation spec-fitness gate. The validated HTML report remains required.
 5. Continue at **Report and artifact stage** below. In standard mode,
    `reviewMode` is `standard`, `necessityFindingCount` is zero, and `PASS`

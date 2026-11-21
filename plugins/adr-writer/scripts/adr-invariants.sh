@@ -23,7 +23,7 @@
 #                     [--removed "<cat>/<NNNN> ..."]
 #                     [--renumbered "<cat>/<old>:<cat>/<new> ..."]
 #
-#   --adr-dir DIR     ADR root (default: docs/adr)
+#   --adr-dir DIR     ADR root (default: docs/adr); with --prd-only also accepts a category directory or numbered ADR file
 #   --code-only       run only check (a): code → ADR reverse references
 #   --prd-only        run only check (b): ADR → PRD reverse references
 #   --rollup-only     run only check (c)+(d): stale citations after a rollup
@@ -335,7 +335,7 @@ if [ "$RUN_PRD" -eq 1 ]; then
   # already ALPS-only. `--include` scopes to numbered ADR bodies so seeded rule
   # docs (README/concepts/structure/authoring-rules) that legitimately mention ALPS are
   # exempt.
-  hits="$(grep -rnE "\.alps\.xml|ALPS Section|ALPS.*Section [0-9]+\.[0-9]|Section [0-9]+\.[0-9].*ALPS|F-[A-Z]+-[0-9]" \
+  hits="$(grep -HrnE "\.alps\.xml|ALPS Section|ALPS.*Section [0-9]+\.[0-9]|Section [0-9]+\.[0-9].*ALPS|F-[A-Z]+-[0-9]" \
     --include='[0-9][0-9][0-9][0-9]-*.md' -- "$ADR_DIR" 2>/dev/null)"; rc=$?
   check_grep_rc "$rc" "check (b) ADR→PRD scan"
   if [ -n "$hits" ]; then
