@@ -72,6 +72,8 @@ The same ladder governs **context lifetime**. Persist only information whose los
 
 Everything a capable coding agent can recover by reading those artifacts, running a deterministic tool, repeating a search, or asking one short question should remain **ephemeral**. This includes approval state, implementation plans, search results, discovered code scopes, copied tickets and logs, mapping snapshots, intermediate summaries, subagent transcripts, exploratory reasoning, temporary review artifacts, eval results, and reproducible test/build observations. If approval evidence is absent, ask again rather than building an approval registry. A derived cache may exist for performance, but it must be disposable, non-authoritative, and safe to rebuild.
 
+Keep only the working material needed for the current result or to resume expensive work in a fresh session. A task owns its checkpoint across session restarts. Start independent work from the owning documents, code, tests and current user inputs. When a checkpoint is absent, rebuild from those sources. Never look up a different task's scratch files, copy them into a new task, or require them for acceptance. A finished, explicitly supplied deliverable can be assessed on its own.
+
 Apply the single-level read test at runtime through **selective reading and progressive disclosure**: keep hooks and core skill instructions compact; load mappings, ADR bodies, detailed references, and reviewer instructions only when the active path needs them; and do not carry intermediate context into later stages when authoritative artifacts are sufficient.
 
 The plugins are a **non-invasive, removable harness** over that ladder. Durable

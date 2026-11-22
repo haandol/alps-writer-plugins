@@ -53,6 +53,8 @@ relations, observation criteria and unresolved links. The links identify a
 feature; use its summaries and the affected obligation to select the relevant
 ADR(s). Read a context-level decision only when a reviewed contract relies on it.
 
+Use evidence from this task or a final result supplied for this alignment. Start from current contracts when that evidence is absent.
+
 When prior evidence names a verified clean commit, add `--since <commit-id>`.
 Use `changes.currentAdrs` to revisit current contracts, `scopeInputs` to
 recheck the affected ownership or business relations, and `retiredAdrs` to

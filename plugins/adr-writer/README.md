@@ -220,6 +220,12 @@ compliance from a violation. It compares supplied intent sources when available;
 without them, it limits its claim to the ADR's recorded intent. It never reads
 code or certifies implementation completion.
 
+A long document review can keep one local checkpoint. A fresh session can resume
+the same task there. A new review starts from its current ADRs and inputs. If
+its checkpoint is missing, regenerate the plan and review from those sources.
+Changed or unverified inputs return to review, and the current scope is checked
+together for contradictions. See [document checkpoints](skills/adr-review/references/checkpoints.md).
+
 Implementation and its final review connect every obligation to enforcing paths,
 actual test assertions and execution results. Coverage distinguishes code
 inspection from verified behavior, accounts for all clauses in a compound row,

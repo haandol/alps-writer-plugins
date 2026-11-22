@@ -9,6 +9,7 @@ const FILES = [
   "adr-status-transition.mjs",
   "adr-impl-review-open.mjs",
   "review-changes.mjs",
+  "review-workspace.mjs",
 ];
 
 syncFiles(
@@ -20,6 +21,10 @@ syncFiles(
     {
       source: "plugins/ontology-writer/scripts/model-documents.mjs",
       targets: ["plugins/adr-writer/scripts/model-documents.mjs"],
+    },
+    {
+      source: "plugins/ontology-writer/scripts/directory-lock.mjs",
+      targets: ["plugins/adr-writer/scripts/directory-lock.mjs"],
     },
   ],
   {

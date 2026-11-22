@@ -26,7 +26,7 @@ exclusion before writing any report or evidence:
   creation with collision retry, so repeated or concurrent reviews cannot
   overwrite each other. Reuse that directory for passes within the same run.
 - Pass its absolute path to the participating roles and output commands. Keep
-  final HTML/Markdown, JSON, reproduction files, and supporting evidence there.
+  the requested result, its required evidence and necessary task checkpoints there.
   Preserve required artifact filenames and schemas. Verify links from the new
   location, and provide the final report's absolute path to the user.
 
@@ -36,6 +36,14 @@ the reason. In a project without Git, use the same local directory layout and
 local ignore file, but do not claim Git verification. Honor an explicitly
 requested output location; do not silently relocate it or change the user's
 tracking choice.
+
+## Resume the same task
+
+Keep reproducible checks in memory. Checkpoint only work needed to resume this
+task after a session restart. Derive missing material from current sources.
+A new task starts independently of earlier working directories. Deliver the
+result with its required evidence so it remains readable after its checkpoint
+is discarded.
 
 ## Keep outputs disposable
 

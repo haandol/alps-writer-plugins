@@ -38,6 +38,9 @@ folders are evidence, not the definition of the business domain or its boundarie
 - Stop expanding once the change's business question and relevant boundaries
   are understood. Preserve unresolved conditions and diagnostics; do not infer
   missing rules from an empty search or truncate away necessary connections.
+- A checkpoint belongs to one unfinished task across sessions. Start new work
+  from the saved model, its realizing ADRs and current inputs. Rebuild missing
+  working material from these sources instead of searching another task's files.
 - Reuse checked context within the same work while its sources remain current.
   Refresh affected queries when relevant model facts, links, ADR contracts or
   Status, or task scope change. Keep results temporary and continue from ADRs.

@@ -8,6 +8,8 @@ ADR, not every ADR in its category or repository. Carry its approved intent and
 requirement sources and any reusable current document-check evidence; the review
 derives its verdict from those sources rather than the author's self-check.
 
+Use this task’s evidence or an explicitly supplied completed review. A new review starts from the saved decision when that evidence is absent.
+
 Honor an explicit request to skip or defer this recommended review. Reuse a
 completed document review when the saved decision, contract, relevant sources
 and checks are unchanged. A pre-save authoring self-check alone is not that

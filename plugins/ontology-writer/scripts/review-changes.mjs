@@ -70,23 +70,29 @@ export function reviewChanges(base, inputs = [], cwd = process.cwd()) {
         ...unknown("HEAD changed during the comparison; compare the current worktree again."),
         paths: changed,
       };
-    // Git cannot attest the contents behind links, submodules or unchecked index entries.
-    if (entries.some((entry) => !/^H 100(?:644|755) [0-9a-f]+ 0\t/.test(entry)))
-      return {
-        ...unknown("A selected input has contents that this Git comparison cannot verify."),
-        paths: changed,
-      };
-    const visible = [...changed, ...entries.map((entry) => entry.slice(entry.indexOf("\t") + 1))];
-    if (
-      !paths.every((p) =>
-        visible.some((file) => p === "." || file === p || file.startsWith(p + "/")),
-      )
-    )
-      return {
-        ...unknown("A selected input has no Git-visible files at this revision."),
-        paths: changed,
-      };
+    const entryPath = (entry) => entry.slice(entry.indexOf("\t") + 1);
+    const visible = new Set([...changed, ...entries.map(entryPath)]);
+    const unchecked = entries
+      .filter((entry) => !/^H 100(?:644|755) [0-9a-f]+ 0\t/.test(entry))
+      .map(entryPath);
+    const visibleNames = [...visible];
+    const missing = paths.filter(
+      (p) => !visible.has(p) && !visibleNames.some((file) => p === "." || file.startsWith(p + "/")),
+    );
     const prefix = path.relative(top, path.resolve(cwd)).split(path.sep).join("/");
+    // Keep the overall result unverified. An exact file batch can still distinguish
+    // its unaffected members from missing paths and unchecked index entries.
+    if (unchecked.length || missing.length)
+      return {
+        ...unknown(
+          unchecked.length
+            ? "A selected input has contents that this Git comparison cannot verify."
+            : "A selected input has no Git-visible files at this revision.",
+        ),
+        paths: changed,
+        unverifiedPaths: [...new Set([...unchecked, ...missing])].sort(),
+        ...(prefix ? { prefix } : {}),
+      };
     return {
       status: changed.length ? "changed" : "unchanged",
       base,
