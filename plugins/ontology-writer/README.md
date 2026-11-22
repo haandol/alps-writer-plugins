@@ -13,6 +13,7 @@ realize it. ADRs stay the only implementation authority.
 | Goal                                                    | Command                                                                |
 | ------------------------------------------------------- | ---------------------------------------------------------------------- |
 | Build a model from documents, through EventStorming     | `/ontology-build [documents]`                                          |
+| Continue an unfinished build after changing sessions    | `/ontology-build resume [scope]`                                       |
 | Change the business flow and cascade it to ADRs         | `/ontology-edit [change]`                                              |
 | Check completeness, or reconcile direct Turtle edits    | `/ontology-sync [process]`                                             |
 | Mark a process current once its features run end to end | `/ontology-align [process]`                                            |

@@ -24,7 +24,7 @@ facts) and warnings (ids that name a number, policies and rules without a basis)
   `flowsTo` as order and from policies as reactions). Render it with
   `eventstorming-view.mjs`.
 - `mapping.draft.json`: the ADR index with the candidate `realizes` links added.
-- `ask/questions.json`: the web session's questions. A question without a
+- `ask/questions.json`: current questions, empty when none remain. A question without a
   `diagram` gets a flow of its `stages`.
 - `candidates-summary.json`: per-context counts, verdicts, planned items, basis
   gaps and the candidates still needing confirmation, for the report.
@@ -34,6 +34,9 @@ candidates marked `"confirmed": true` only, and warns about each relation it lef
 out because its other end is not confirmed. Use them for the save's `impact` and
 `apply`. `--ontology-dir` and `--mapping` override `docs/ontology` and
 `docs/adr/.mapping.json`.
+
+Reusing a run drops obsolete Turtle and mapping files for the selected draft
+and preserves the answer and discussion log.
 
 ## File
 

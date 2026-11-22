@@ -17,11 +17,12 @@
 //   bun ontology-candidates.mjs check <candidates.json> [--ontology-dir DIR] [--json]
 //   bun ontology-candidates.mjs prepare <candidates.json> --run <run> [--ontology-dir DIR]
 //                               [--mapping FILE] [--confirmed-only] [--json]
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { validateEventBoard } from "./eventstorming-board.mjs";
-import { parseQuestions } from "./ontology-ask.mjs";
+import { parseQuestions, withLock } from "./ontology-ask.mjs";
 import { findModelDocuments, readDocument } from "./ontology-fs.mjs";
+import { realOf, writeUnit } from "./ontology-write-unit.mjs";
 import {
   BASIS_KINDS,
   compareCodePoints,
@@ -70,10 +71,16 @@ const nonEmpty = (v) => typeof v === "string" && v.trim().length > 0;
 
 // ── reading ────────────────────────────────────────────────────────────────
 
+// An unreadable directory must not appear to have no documents on a refresh.
+function modelFiles(directory) {
+  return findModelDocuments(directory, (_dir, error) => {
+    throw error;
+  });
+}
+
 /** The current model: parsed documents, every triple and which document holds each subject. */
 export function readCurrentModel(ontologyDir) {
-  const files = existsSync(ontologyDir) ? findModelDocuments(ontologyDir, () => {}) : [];
-  const docs = files.map((file) => {
+  const docs = modelFiles(ontologyDir).map((file) => {
     const doc = path.relative(ontologyDir, file);
     const parsed = parseDocument({ doc, ...readDocument(file) });
     return { doc, file, parsed };
@@ -289,11 +296,9 @@ function candidateTriples(kind, item, { isNew }) {
 }
 
 /** Where each new subject goes: its context's document, the actors' document, or model.ttl. */
-function documentPlacer(doc, current) {
-  const byId = new Map(allCandidates(doc).map((c) => [c.item.id, c]));
-  const ownerOfStep = new Map(
-    list(doc.processes).flatMap((p) => list(p.steps).map((s) => [s, p.id])),
-  );
+function documentPlacer(candidates, processes, current) {
+  const byId = new Map(candidates.map((c) => [c.item.id, c]));
+  const ownerOfStep = new Map(list(processes).flatMap((p) => list(p.steps).map((s) => [s, p.id])));
   const memo = new Map();
   const contextOf = (cid, seen = new Set()) => {
     if (!cid || seen.has(cid)) return null;
@@ -396,9 +401,8 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
   if (confirmedOnly) {
     const held = new Set(triples.map(tripleKey));
     const droppedKeys = new Set(dropped.map(([, t]) => tripleKey(t)));
-    const cut = mergeTriples(all, current).added.filter(
-      (t) => PATH_RELATIONS.has(t.p) && !held.has(tripleKey(t)),
-    );
+    const allAdded = chosen.length === all.length ? added : mergeTriples(all, current).added;
+    const cut = allAdded.filter((t) => PATH_RELATIONS.has(t.p) && !held.has(tripleKey(t)));
     const cutPaths = cut.flatMap((t) => {
       const what = `${elementId(t.s)} ${t.p.replace(ONTO, "")} ${elementId(t.o.value)}`;
       if (!droppedKeys.has(tripleKey(t))) unconfirmed.push(what);
@@ -410,7 +414,7 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
     undecided = noOpenScopeWithCutPaths(triples, cutPaths, added);
   }
   // Place each subject's triples in its document; only touched documents are rewritten.
-  const place = documentPlacer(doc, current);
+  const place = documentPlacer(all, doc.processes, current);
   const byDoc = new Map();
   const touched = new Set();
   const put = (t, isAdded) => {
@@ -423,14 +427,15 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
     if (removed.has(t)) touched.add(current.home.get(t.s));
     else put(t, false);
   for (const t of added) put(t, true);
-  const documents = current.docs.map((d) =>
-    touched.has(d.doc)
-      ? { doc: d.doc, text: serializeTurtle(byDoc.get(d.doc) ?? []), rewritten: true }
-      : { doc: d.doc, text: readFileSync(d.file, "utf8"), rewritten: false },
-  );
-  for (const [name, ts] of byDoc)
-    if (!current.docs.some((d) => d.doc === name))
-      documents.push({ doc: name, text: serializeTurtle(ts), rewritten: true, created: true });
+  const documents = [];
+  for (const { doc, file } of current.docs) {
+    const rewritten = touched.has(doc);
+    const text = rewritten ? serializeTurtle(byDoc.get(doc) ?? []) : readFileSync(file, "utf8");
+    documents.push({ doc, text, rewritten });
+    byDoc.delete(doc);
+  }
+  for (const [doc, ts] of byDoc)
+    documents.push({ doc, text: serializeTurtle(ts), rewritten: true, created: true });
   return { documents, kept, dropped: dropped.map(([what]) => what), unconfirmed, undecided };
 }
 
@@ -751,6 +756,39 @@ export function candidateSummary(doc, check) {
 
 // ── CLI ────────────────────────────────────────────────────────────────────
 
+// Resolve aliases through the existing parent even on the first prepare.
+function resolvedPath(file) {
+  const name = path.resolve(file);
+  return realOf(name) ?? path.join(resolvedPath(path.dirname(name)), path.basename(name));
+}
+
+function publishCandidates(run, draft, documents, artifacts, inputs) {
+  const files = new Map(documents.map((d) => [path.join(draft, d.doc), d.text]));
+  const wrote = { draft };
+  for (const [key, name, value] of artifacts) {
+    const file = path.join(run, name);
+    files.set(file, value == null ? null : `${JSON.stringify(value, null, 2)}\n`);
+    if (value != null) wrote[key] = file;
+  }
+  mkdirSync(run, { recursive: true });
+  return withLock(path.join(run, ".prepare.lock"), () => {
+    // Discover obsolete documents under the writer lock, including pre-upgrade drafts.
+    for (const prior of modelFiles(draft)) {
+      if (!files.has(prior)) files.set(prior, null);
+    }
+    for (const file of [draft, ...files.keys()]) {
+      if (resolvedPath(file) !== file || inputs.has(file))
+        throw new Error(
+          `candidate output must be a separate copy inside the run directory: ${file}`,
+        );
+    }
+    mkdirSync(draft, { recursive: true }); // An empty confirmation still has a readable draft.
+    const result = writeUnit(Array.from(files, ([file, text]) => ({ file, text })));
+    if (!result.ok) throw new Error(result.error);
+    return wrote;
+  });
+}
+
 function usage(message) {
   if (message) console.error(`ontology-candidates: ${message}`);
   console.error(
@@ -800,19 +838,16 @@ function main(argv) {
 
   const runFlag = flag("--run");
   if (!runFlag) usage("prepare needs --run <run directory>");
-  const run = path.resolve(runFlag);
-  if (run === ontologyDir || run.startsWith(ontologyDir + path.sep))
+  const run = resolvedPath(runFlag);
+  const modelPath = resolvedPath(ontologyDir);
+  if (run === modelPath || run.startsWith(modelPath + path.sep))
     usage("the run directory must not be inside the model directory");
   const confirmedOnly = rest.includes("--confirmed-only");
+  const draft = path.join(run, confirmedOnly ? "save-draft" : "draft");
+  if (modelPath === draft || modelPath.startsWith(draft + path.sep))
+    usage("the draft must not contain the model directory");
   const mappingFile = path.resolve(flag("--mapping", "docs/adr/.mapping.json"));
   const mapping = existsSync(mappingFile) ? JSON.parse(readFileSync(mappingFile, "utf8")) : null;
-  const wrote = {};
-  const write = (name, content) => {
-    const target = path.join(run, name);
-    mkdirSync(path.dirname(target), { recursive: true });
-    writeFileSync(target, content);
-    return target;
-  };
 
   const { documents, kept, dropped, unconfirmed, undecided } = mergeDraft(doc, current, {
     confirmedOnly,
@@ -844,31 +879,30 @@ function main(argv) {
   if (!confirmedOnly) {
     board = candidateBoard(doc, current);
     errors.push(...validateEventBoard(board).map((e) => `board ${e}`));
-    if (list(doc.questions).length) {
-      questions = candidateQuestions(doc, board, current);
-      const parsed = parseQuestions(JSON.stringify(questions));
-      if (!parsed.ok) errors.push(`questions: ${parsed.error}`);
-    }
+    questions = candidateQuestions(doc, board, current);
+    const parsed = parseQuestions(JSON.stringify(questions));
+    if (!parsed.ok) errors.push(`questions: ${parsed.error}`);
   }
 
-  // Unusable candidates write nothing, so a refused draft can never reach impact or apply.
+  let wrote = {};
   if (!errors.length) {
-    const draftDir = confirmedOnly ? "save-draft" : "draft";
-    for (const d of documents) write(path.join(draftDir, d.doc), d.text);
-    wrote.draft = path.join(run, draftDir);
-    if (index)
-      wrote.mapping = write(
-        confirmedOnly ? "mapping.save.json" : "mapping.draft.json",
-        `${JSON.stringify(index.mapping, null, 2)}\n`,
-      );
-    if (board) wrote.board = write("board.json", `${JSON.stringify(board, null, 2)}\n`);
-    if (questions)
-      wrote.questions = write("ask/questions.json", `${JSON.stringify(questions, null, 2)}\n`);
+    const artifacts = [
+      ["mapping", confirmedOnly ? "mapping.save.json" : "mapping.draft.json", index?.mapping],
+    ];
     if (!confirmedOnly)
-      wrote.summary = write(
-        "candidates-summary.json",
-        `${JSON.stringify(candidateSummary(doc, { warnings }), null, 2)}\n`,
+      artifacts.push(
+        ["board", "board.json", board],
+        ["summary", "candidates-summary.json", candidateSummary(doc, { warnings })],
+        ["questions", "ask/questions.json", questions],
       );
+    try {
+      const inputs = new Set(
+        [file, mappingFile, ...current.docs.map((d) => d.file)].map(resolvedPath),
+      );
+      wrote = publishCandidates(run, draft, documents, artifacts, inputs);
+    } catch (error) {
+      errors.push(error.message);
+    }
   }
   say({ errors, warnings, wrote });
   process.exit(errors.length ? 1 : 0);

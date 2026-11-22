@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmdirSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { test } from "node:test";
@@ -100,6 +107,129 @@ test("the save draft holds only confirmed candidates and names every relation it
       !existsSync(path.join(dir, "run/board.json")),
       "a save draft writes no review artifacts",
     );
+  });
+});
+
+test("rebuilding the same run removes withdrawn candidates and preserves the question session", () => {
+  withTmp((dir) => {
+    const candidates = structuredClone(FIXTURE);
+    const shipping = {
+      id: "shipping",
+      label: "배송",
+      definition: "주문 상품을 배송하는 업무 경계.",
+      coreLogic: "배송 요청을 받아 주문 상품을 고객에게 전달한다.",
+      verdict: "stated",
+      evidence: [{ source: "배송 정책서" }],
+      confirmed: true,
+    };
+    candidates.contexts.push(shipping);
+    project(dir, candidates);
+    const prepare = (target, ...flags) => {
+      const result = run(dir, "prepare", "candidates.json", "--run", target, ...flags);
+      assert.equal(result.status, 0, result.stdout + result.stderr);
+    };
+    prepare("run");
+    prepare("run", "--confirmed-only");
+    const ask = path.join(PLUGIN_ROOT, "scripts/ontology-ask.mjs");
+    const answer = spawnSync(
+      process.execPath,
+      [ask, "record", "run", "Q1", "--text", "운영자 확인"],
+      {
+        cwd: dir,
+        encoding: "utf8",
+      },
+    );
+    assert.equal(answer.status, 0, answer.stdout + answer.stderr);
+    const answersFile = path.join(dir, "run/ask/answers.jsonl");
+    const answers = readFileSync(answersFile, "utf8");
+
+    shipping.confirmed = false;
+    writeFileSync(path.join(dir, "candidates.json"), JSON.stringify(candidates));
+    prepare("run", "--confirmed-only", "--mapping", "no-index.json");
+    prepare("fresh", "--confirmed-only", "--mapping", "no-index.json");
+    assert.deepEqual(draftDocs(dir, "run/save-draft"), draftDocs(dir, "fresh/save-draft"));
+    assert.ok(!existsSync(path.join(dir, "run/mapping.save.json")));
+    assert.ok(existsSync(path.join(dir, "run/draft/shipping.ttl")), "save keeps review candidates");
+    assert.ok(existsSync(path.join(dir, "run/mapping.draft.json")));
+
+    candidates.contexts.pop();
+    candidates.questions = [];
+    writeFileSync(path.join(dir, "candidates.json"), JSON.stringify(candidates));
+    prepare("run", "--mapping", "no-index.json");
+    prepare("fresh", "--mapping", "no-index.json");
+    assert.deepEqual(draftDocs(dir, "run/draft"), draftDocs(dir, "fresh/draft"));
+    assert.ok(!existsSync(path.join(dir, "run/mapping.draft.json")));
+    const questions = parseQuestions(
+      readFileSync(path.join(dir, "run/ask/questions.json"), "utf8"),
+    );
+    assert.equal(questions.ok, true);
+    assert.deepEqual(questions.value.questions, []);
+    assert.equal(readFileSync(answersFile, "utf8"), answers);
+  });
+});
+
+test("an empty confirmation replaces the old save draft with a readable empty draft", () => {
+  withTmp((dir) => {
+    project(dir);
+    const prepare = () =>
+      run(dir, "prepare", "candidates.json", "--run", "run", "--confirmed-only");
+    assert.equal(prepare().status, 0);
+    const empty = { version: 1, title: "New scope", scope: "No confirmed workflow yet" };
+    writeFileSync(path.join(dir, "candidates.json"), JSON.stringify(empty));
+    const out = prepare();
+    assert.equal(out.status, 0, out.stdout + out.stderr);
+    assert.deepEqual(draftDocs(dir, "run/save-draft"), []);
+    assert.deepEqual(JSON.parse(readFileSync(path.join(dir, "run/mapping.save.json"))), MAPPING);
+  });
+});
+
+test("a failed refresh retains the previous draft and can be retried", () => {
+  withTmp((dir) => {
+    const c = structuredClone(FIXTURE);
+    project(dir, c);
+    const prepare = (...flags) =>
+      run(
+        dir,
+        "prepare",
+        "candidates.json",
+        "--run",
+        "run",
+        "--confirmed-only",
+        "--json",
+        ...flags,
+      );
+    assert.equal(prepare("--mapping", "no-index.json").status, 0);
+    const before = draftDocs(dir, "run/save-draft");
+    c.steps[2].confirmed = false;
+    writeFileSync(path.join(dir, "candidates.json"), JSON.stringify(c));
+    const map = path.join(dir, "run/mapping.save.json");
+    mkdirSync(map);
+    const failed = prepare();
+    assert.equal(failed.status, 1);
+    assert.deepEqual(JSON.parse(failed.stdout).wrote, {});
+    assert.deepEqual(draftDocs(dir, "run/save-draft"), before);
+    rmdirSync(map);
+    const retry = prepare();
+    assert.equal(retry.status, 0, retry.stdout + retry.stderr);
+    assert.notDeepEqual(draftDocs(dir, "run/save-draft"), before);
+  });
+});
+
+test("extending the BC layer with a cross-context workflow matches a single preparation", () => {
+  withTmp((dir) => {
+    project(dir);
+    const full = run(dir, "prepare", "candidates.json", "--run", "full", "--confirmed-only");
+    assert.equal(full.status, 0, full.stdout + full.stderr);
+    const { version, title, scope, contexts } = FIXTURE;
+    saveFirstModel(dir, { version, title, scope, contexts });
+    project(dir, { ...FIXTURE, contexts: [] });
+    const extended = run(dir, "prepare", "candidates.json", "--run", "next", "--confirmed-only");
+    assert.equal(extended.status, 0, extended.stdout + extended.stderr);
+    const graph = (runDir) => triplesOf(draftDocs(dir, runDir + "/save-draft"));
+    assert.equal(diffGraphs(graph("full"), graph("next")).same, true);
+    const mapping = (runDir) =>
+      JSON.parse(readFileSync(path.join(dir, runDir, "mapping.save.json")));
+    assert.deepEqual(mapping("next"), mapping("full"));
   });
 });
 

@@ -13,7 +13,7 @@ internal workflows connected to each BC. The upper layer must stay small enough
 to read as a whole; internal knowledge is retrieved selectively. Preserve the
 existing evidence and approval boundaries for both layers.
 
-Work in a disposable run directory under `.adr-review/` following
+Reuse the build progress run directory under `.adr-review/` following
 [review artifact storage](../../report-writer/references/review-artifacts.md).
 Record the candidates in one `<run>/candidates.json` and generate the draft,
 board, index draft, question file and review summary from it with

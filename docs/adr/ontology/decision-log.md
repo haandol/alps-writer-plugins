@@ -8,6 +8,13 @@ The current Purpose, all still-valid Decision Drivers, adopted choice, rationale
 and requirement contract remain together in the ADR body. Reading this log is
 optional for understanding the current decision.
 
+## 2026-11-22 — 긴 온톨로지 구축을 다음 세션에서 재개
+
+- **Current ADR**: [build-ontology-from-documents](./0004-build-ontology-from-documents.md)
+- **Change type**: requirement rule change
+- **What**: 자료 검토 한 묶음과 사건 지도·책임 경계·업무 흐름 검토를 마칠 때마다 해당 실행의 로컬 검토 공간에 재개 요약을 남긴다.
+- **Why**: 첫 후보를 쓰기 전에 중단되더라도 새 세션이 이미 마친 조사와 다음 작업을 파악할 수 있어야 한다.
+
 ## 2026-11-20 — 모델이 소유하는 뜻을 바꾸는 개발 중 변경의 선행 승인을 세션 지침에 포함
 
 - **Current ADR**: [retrieve-business-context-for-agents](./context-retrieval/0002-retrieve-business-context-for-agents.md)

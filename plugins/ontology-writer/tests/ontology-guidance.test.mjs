@@ -17,6 +17,20 @@ const ALIGN = workflowText("ontology-align");
 
 const BUILD = workflowText("ontology-build");
 
+test("the build workflow enters resume before discovery and checkpoints every expensive unit", () => {
+  const skill = read("skills/ontology-build/SKILL.md");
+  const entry = skill.indexOf("[build progress](references/progress.md)");
+  assert.ok(entry >= 0 && entry < skill.indexOf("## 1. Fix the input and the scope"));
+  const guidance = read("skills/ontology-build/references/progress.md");
+  has(guidance, "On a request to continue, run `resume` first");
+  has(
+    guidance,
+    "Before moving on from **each** finished source or ADR batch, whole event map, boundary proposal, and individual workflow review, save a short checkpoint.",
+  );
+  has(guidance, "This includes the first batch before any candidates exist.");
+  has(guidance, "A pause, an unanswered question or a partial save leaves it open.");
+});
+
 const STORM = read("skills/ontology-build/references/agentstorm.md");
 
 test("a fresh session asks whether to build without creating files or requiring an ADR index", () => {

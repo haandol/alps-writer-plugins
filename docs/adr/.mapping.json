@@ -248,8 +248,8 @@
         },
         {
           "path": "docs/adr/ontology/0004-build-ontology-from-documents.md",
-          "status": "Accepted (2026-11-19)",
-          "summary": "첫 구축 전 프로젝트별 리뷰 선호와 구현 일치 근거를 재사용하고, 충분한 ADR만으로도 근거 기반 이벤트 스토밍으로 후보를 만들고, 선택지·직접 답변·질의응답과 모델 저장 승인을 구분한다"
+          "status": "Accepted (2026-11-22)",
+          "summary": "자료 검토·사건 지도·경계·업무 흐름마다 로컬 요약으로 구축을 재개하고, 근거 기반 후보에서 사용자가 확인한 범위만 승인 경로로 저장한다"
         },
         {
           "path": "docs/adr/ontology/0005-render-read-only-ontology-views.md",
