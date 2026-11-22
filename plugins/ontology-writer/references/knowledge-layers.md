@@ -31,6 +31,13 @@ guide code organization through ADRs without copying code structure upward.
 - Then open each relevant BC into its internal workflow knowledge. Keep the
   whole-scope EventStorming map as discovery evidence, while the saved upper
   knowledge and each BC's details remain independently readable.
+- For a broad build, follow one workflow from its start to an observable
+  outcome across the participating BCs. Carry its context and hand-off IDs,
+  unresolved questions and source locations in the disposable candidates.
+  Revisit the affected boundary if an exception changes who owns a rule.
+  After an approved save, start the next workflow from the saved model;
+  reopen working evidence only for the facts still in question. Report the
+  covered workflow and remaining scope through the existing review and approval.
 - Unknown upper knowledge remains a candidate or a question. A query must not
   silently promote a generated summary or an inferred collaboration to a fact.
 
