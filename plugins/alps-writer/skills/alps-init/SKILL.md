@@ -6,6 +6,9 @@ disable-model-invocation: true
 
 # alps-init
 
+Resume from the selected ALPS document. Working notes are optional, local to
+this task, and recoverable from the document and supplied sources.
+
 Every call on an existing document requires `doc_path`: use the document path returned by
 init/load for reads, saves, glossary operations, status and export. Pass it even
 after loading; no other call selects a default document.

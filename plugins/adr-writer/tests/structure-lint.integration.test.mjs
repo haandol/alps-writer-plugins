@@ -69,6 +69,26 @@ test("document-only review ignores code references but still rejects ADR referen
   });
 });
 
+test("document-only reference hits belong to the exact document and line, including colon paths", () => {
+  withTmp((dir) => {
+    seedClean(dir);
+    const original = "docs/adr/identity/login/0001-password-policy.md";
+    const file = "docs/adr/billing:archive/0001-pay.md";
+    const body =
+      readFileSync(path.join(dir, original), "utf8") + "\nSee book.alps.xml:12:example\n";
+    write(dir, file, body);
+    const result = parseLint(dir, ["--documents-only"], { full: true });
+    assert.equal(result.code, 1);
+    assert.ok(result.documents.includes(file));
+    const hits = result.errors.filter((item) => item.rule === "invariants");
+    assert.equal(hits.length, 1);
+    assert.equal(hits[0].where, file);
+    assert.equal(hits[0].adrRule, "R15");
+    assert.equal(hits[0].line, body.split("\n").length - 1);
+    assert.match(hits[0].msg, /book\.alps\.xml:12:example/);
+  });
+});
+
 test("a single ADR reports shared index failure separately and does not infer a sibling numbering gap", () => {
   withTmp((dir) => {
     seedClean(dir);

@@ -60,6 +60,10 @@ history. Keep plans, approvals, search results, scope discoveries, summaries,
 review/eval artifacts and reproducible observations ephemeral. If approval
 evidence is absent, ask again; do not create an approval registry. Derived caches
 must be disposable, non-authoritative and safe to rebuild.
+Keep intermediate material in memory unless it is needed to finish or resume
+the current task. A fresh session may resume that task's checkpoint. A new
+task starts from authoritative sources and current inputs. Missing checkpoints
+are rebuilt from those sources. Never rely on another task's working files.
 
 The harness must remain non-invasive and removable. Constrain observable
 artifacts, actions, evidence, approval boundaries and lifecycle transitions;

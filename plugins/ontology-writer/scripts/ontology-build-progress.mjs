@@ -16,6 +16,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { withLock } from "./directory-lock.mjs";
 import { findModelDocuments } from "./model-documents.mjs";
+import { isForeignReviewFile } from "./review-workspace.mjs";
 
 const filename = "build-progress.json";
 const stages = ["sources", "event-map", "boundaries", "workflow"];
@@ -72,6 +73,7 @@ function readProgress(dir) {
   if (!entry) return null;
   if (!entry.isFile()) throw new Error("Expected a regular build progress file");
   const doc = JSON.parse(readFileSync(file, "utf8"));
+  if (doc.task !== undefined && doc.task !== hash(dir)) return null;
   if (
     doc.version !== 1 ||
     typeof doc.complete !== "boolean" ||
@@ -95,6 +97,32 @@ function readProgress(dir) {
   return doc;
 }
 
+// Both the original and current writer put the scope before the work units.
+// Discovery needs only this header; the selected task is validated in full.
+async function readScope(dir) {
+  const file = path.join(dir, filename);
+  const entry = stat(file);
+  if (!entry) return null;
+  if (!entry.isFile()) throw new Error("Expected a regular build progress file");
+  const stream = createReadStream(file, { encoding: "utf8", highWaterMark: 256 });
+  let prefix = "";
+  try {
+    for await (const chunk of stream) {
+      prefix += chunk;
+      const end = prefix.search(/,\s*"units"\s*:\s*\[/);
+      if (end < 0) continue;
+      const header = JSON.parse(prefix.slice(0, end) + "}");
+      if (header.task !== undefined && header.task !== hash(dir)) return null;
+      if (header.version === 1 && typeof header.complete === "boolean" && present(header.scope))
+        return { scope: header.scope, complete: header.complete };
+      break;
+    }
+    throw new Error("Invalid build progress header");
+  } finally {
+    stream.destroy();
+  }
+}
+
 // A new or removed model document can change the scope even for a batch
 // completed before the first model existed. Contents are checked per reference.
 function modelInventory(root) {
@@ -107,14 +135,16 @@ function modelInventory(root) {
 
 // Keep each cited location in the handoff, but read a project file only once
 // per command even when several sections or symlinks point to it.
-async function stamp(root, location, stampsByFile) {
+async function stamp(root, run, location, stampsByFile) {
   if (/^[a-z][a-z0-9+.-]*:/i.test(location)) return null;
   const file = path.resolve(root, location.split("#", 1)[0]);
+  if (isForeignReviewFile(root, run, file)) return "foreign-run";
   if (!file.startsWith(root + path.sep)) return null;
   if (stampsByFile.has(file)) return stampsByFile.get(file);
   let value = null;
   try {
     const real = realpathSync(file);
+    if (isForeignReviewFile(root, run, real)) return "foreign-run";
     if (stampsByFile.has(real)) value = stampsByFile.get(real);
     else if (real.startsWith(root + path.sep) && stat(real)?.isFile()) {
       const digest = createHash("sha256");
@@ -137,7 +167,10 @@ function update(dir, change) {
     const file = path.join(dir, filename);
     const tmp = path.join(dir, `.build-progress-${randomUUID()}.tmp`);
     try {
-      writeFileSync(tmp, JSON.stringify(next, null, 2) + "\n", { flag: "wx", mode: 0o600 });
+      writeFileSync(tmp, JSON.stringify({ task: hash(dir), ...next }, null, 2) + "\n", {
+        flag: "wx",
+        mode: 0o600,
+      });
       renameSync(tmp, file);
     } finally {
       rmSync(tmp, { force: true });
@@ -151,12 +184,20 @@ async function save(root, run, input) {
   if (!present(input.scope) || !present(input.next))
     throw new Error("Expected scope and next action");
   const { scope, stage, unit, finding, open, references, next } = input;
+  const existing = run ? verifyRun(root, path.resolve(run)) : null;
   const stamps = [];
   const stampsByFile = new Map();
-  for (const ref of references) stamps.push(await stamp(root, ref, stampsByFile));
+  for (const ref of references) {
+    const value = await stamp(root, existing, ref, stampsByFile);
+    if (value === "foreign-run")
+      throw new Error(
+        "Another task's working file is outside this build; cite the original source",
+      );
+    stamps.push(value);
+  }
   const inventory = modelInventory(root);
-  const allocated = run
-    ? { dir: run }
+  const allocated = existing
+    ? { dir: existing }
     : (await import("./ontology-fs.mjs")).allocateRunDirectory(root, runKind(root));
   const dir = verifyRun(root, path.resolve(allocated.dir));
   const result = update(dir, (doc) => {
@@ -184,15 +225,30 @@ async function describe(root, run, doc) {
   const units = [];
   const stampsByFile = new Map();
   const inventory = modelInventory(root);
+  let rebuild = false;
   for (const { stamps, modelInventory: savedInventory, ...unit } of doc.units) {
     const recheck = [];
     for (const [i, location] of unit.references.entries()) {
-      const now = await stamp(root, location, stampsByFile);
+      const now = await stamp(root, run, location, stampsByFile);
+      if (now === "foreign-run") {
+        rebuild = true;
+        recheck.push({ reason: "rebuild-from-original-sources" });
+        break;
+      }
       if (now === null || now === "missing" || now !== stamps[i])
         recheck.push({
           location,
           reason: now === null ? "verify-at-source" : now === "missing" ? "missing" : "changed",
         });
+    }
+    if (recheck.some((item) => item.reason === "rebuild-from-original-sources")) {
+      units.push({
+        scope: unit.scope,
+        stage: unit.stage,
+        unit: unit.unit,
+        recheck: [{ reason: "rebuild-from-original-sources" }],
+      });
+      continue;
     }
     units.push({
       ...unit,
@@ -201,14 +257,16 @@ async function describe(root, run, doc) {
       recheck,
     });
   }
-  return { run, scope: doc.scope, complete: doc.complete, units, next: doc.next };
+  const next = rebuild
+    ? "Rebuild the flagged units from the current model and original sources."
+    : doc.next;
+  return { run, scope: doc.scope, complete: doc.complete, units, next };
 }
 
 async function resume(root, scope) {
   const matches = [];
   const warnings = [];
   const needle = scope.toLowerCase();
-  let onlyMatch;
   const localDir = path.join(root, ".adr-review");
   const search = [
     [localDir, ""],
@@ -232,19 +290,26 @@ async function resume(root, scope) {
       if (!entry.isDirectory() || !entry.name.startsWith(prefix)) continue;
       const run = path.join(base, entry.name);
       try {
-        const doc = readProgress(run);
-        if (doc && !doc.complete && doc.scope.toLowerCase().includes(needle)) {
-          matches.push({ run, scope: doc.scope, next: doc.next });
-          // Only a unique match needs its full summary and evidence checks.
-          onlyMatch = matches.length === 1 ? doc : undefined;
-        }
+        const header = await readScope(run);
+        if (header && !header.complete && header.scope.toLowerCase().includes(needle))
+          matches.push({ run, scope: header.scope });
       } catch (error) {
         warnings.push({ run, reason: error.message });
       }
     }
   }
-  if (onlyMatch && !warnings.length)
-    return { selected: await describe(root, matches[0].run, onlyMatch) };
+  if (matches.length === 1 && !warnings.length) {
+    const { run, scope } = matches[0];
+    try {
+      const doc = readProgress(run);
+      if (doc && !doc.complete && doc.scope === scope)
+        return { selected: await describe(root, run, doc) };
+      matches.length = 0;
+    } catch (error) {
+      warnings.push({ run, reason: error.message });
+      matches.length = 0;
+    }
+  }
   return { matches, warnings };
 }
 

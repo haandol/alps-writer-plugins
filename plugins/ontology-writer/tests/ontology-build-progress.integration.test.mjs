@@ -200,6 +200,62 @@ test("a failed or interrupted update leaves the last complete summary and a retr
   });
 });
 
+test("a build can use its own working file and rejects another task's file or link", () => {
+  withTmp((dir) => {
+    const a = ok(dir, ["save"], first).run;
+    const b = ok(dir, ["save"], { ...first, scope: "반품" }).run;
+    const own = path.join(a, "notes.md"),
+      foreign = path.join(b, "notes.md");
+    writeFileSync(own, "current notes");
+    writeFileSync(foreign, "other notes");
+    ok(dir, ["save", a], { ...first, references: [path.relative(dir, own)] });
+    const checkpoint = path.join(a, "build-progress.json");
+    const original = readFileSync(checkpoint);
+    symlinkSync(foreign, path.join(dir, "linked.md"));
+    for (const location of [path.relative(dir, foreign), "linked.md"]) {
+      const denied = cli(dir, ["save", a], { ...first, references: [location] });
+      assert.notEqual(denied.status, 0);
+      assert.match(denied.stderr, /another task/i);
+      assert.deepEqual(readFileSync(checkpoint), original);
+    }
+    const legacy = JSON.parse(original);
+    delete legacy.task;
+    legacy.units[0].references = [path.relative(dir, foreign)];
+    writeFileSync(checkpoint, JSON.stringify(legacy));
+    const selected = ok(dir, ["resume", "확정"]).selected;
+    assert.equal(selected.run, a);
+    assert.equal(selected.units[0].finding, undefined);
+    assert.deepEqual(selected.units[0].recheck, [{ reason: "rebuild-from-original-sources" }]);
+  });
+});
+
+test("resume lists task scopes without opening other units and a copied checkpoint does not become a new task", () => {
+  withTmp((dir) => {
+    const a = ok(dir, ["save"], first).run;
+    const b = ok(dir, ["save"], { ...first, scope: "반품" }).run;
+    const file = path.join(b, "build-progress.json");
+    const text = readFileSync(file, "utf8");
+    writeFileSync(file, text.slice(0, text.indexOf('"units": [') + '"units": ['.length) + "broken");
+    const list = ok(dir, ["resume"]);
+    assert.deepEqual(
+      list.matches.map((x) => Object.keys(x)),
+      [
+        ["run", "scope"],
+        ["run", "scope"],
+      ],
+    );
+    assert.deepEqual(list.warnings, []);
+    assert.equal(ok(dir, ["resume", "확정"]).selected.run, a);
+    assert.equal(cli(dir, ["show", b]).status, 1);
+    writeFileSync(file, readFileSync(path.join(a, "build-progress.json")));
+    assert.equal(cli(dir, ["show", b]).status, 1);
+    assert.equal(ok(dir, ["resume"]).selected.run, a);
+    rmSync(path.join(a, "build-progress.json"));
+    assert.deepEqual(ok(dir, ["resume"]).matches, []);
+    assert.equal(ok(dir, ["save", b], { ...first, scope: "새 업무" }).scope, "새 업무");
+  });
+});
+
 test("the project can discover its temporary fallback without inspecting another project's run", () => {
   withTmp((dir) => {
     const temp = path.join(dir, "temporary");
@@ -264,7 +320,7 @@ test(
         const { run } = ok(dir, ["save"], first, options);
         const result = ok(dir, ["resume"], undefined, options);
         assert.equal(result.selected, undefined);
-        assert.deepEqual(result.matches, [{ run, scope: first.scope, next: first.next }]);
+        assert.deepEqual(result.matches, [{ run, scope: first.scope }]);
         assert.deepEqual(
           result.warnings.map((warning) => warning.run),
           [local],

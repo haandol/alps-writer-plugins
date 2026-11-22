@@ -10,6 +10,8 @@ monitoring is not a required gate.
 
 The main session does not merge the two reviews by vote. Verify findings with these rules.
 
+Use execution evidence from this task or a final result explicitly supplied as input. If it is unavailable, verify from the current sources.
+
 When reusing a prior execution, its verified clean Git commit and relevant
 source, test and configuration paths can be recorded with its existing test
 evidence. Compare with `scripts/review-changes.mjs <commit-id> <path>...`,

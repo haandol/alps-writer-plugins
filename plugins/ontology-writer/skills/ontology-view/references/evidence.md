@@ -14,6 +14,8 @@ Assemble and deliver a disposable board using [the board contract](../../../refe
   Keep this evidence on the board. The saved model has no Domain, Subdomain or
   View types, and previewing evidence grants no approval to change its vocabulary.
 
+Assemble this view from current inputs. If this task has no working board, use the saved model and supplied sources.
+
 For a request to inspect EventStorming discovery, use `/ontology-build` and
 [EventStorming discovery](../../../references/eventstorming.md) to show its event map, evidence and boundary
 candidates. Use [the board contract](../../../references/eventstorming-board.md) to render a candidate board even before

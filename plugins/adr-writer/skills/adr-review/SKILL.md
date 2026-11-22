@@ -70,7 +70,7 @@ cost, or a change beyond the requested scope. Keep the review read-only.
 bun "${CLAUDE_PLUGIN_ROOT}/scripts/adr-structure-lint.mjs" --documents-only "$adr_target"   # omit the final argument for a sweep
 ```
 
-Run this **once for the entire scope**, passing the exact saved path for a single ADR. The structural and ADR→PRD checks use that scope. In a scoped result, report repository index/rule diagnostics separately from the document verdict; the overall lint still reports both. It mechanically settles the format, existence, and consistency half of the rules (Status enum and date format, required sections, canonical filenames, path depth, anti-pattern category segments, Decision Drivers and alternatives counts, Related links resolving, `dependsOn` integrity, mapping↔disk consistency and status↔body agreement, values written in code-constant form, and — internally via `adr-invariants.sh --prd-only` — ADR→PRD back-references).
+Run this **once for the entire scope**, passing the exact saved path for a single ADR. For a checkpointed review use the step 3 planner with `--with-lint` in place of this invocation. The structural and ADR→PRD checks use that scope. In a scoped result, report repository index/rule diagnostics separately from the document verdict; the overall lint still reports both. The harness checks filenames, sections, Status, mapping integrity, Related links, numeric form, and ADR→PRD references. Each reference violation names its document and source line.
 
 Keep the result and pass each ADR's slice of it to that ADR's reviewer, so the LLM never re-derives what the harness already proved. **Inherit, do not re-diagnose**: an in-scope document error goes into the final report as `FIX_REQUIRED (confirmed by harness)`. Do not import code-side findings from a broader harness run; use the document-only invocation above.
 
@@ -90,11 +90,11 @@ Whichever strategy is chosen, ground each ADR's judgment only in that ADR, its m
 
 Resolve the current project's review checklist and cited rule sections once per sweep. Share those original sections or references with reviewers, and let each read any missing rule for its own decision. Reuse within this run only; changed or locally pinned rules take precedence.
 
-For a repeated review, a prior result can cover a document whose ADR, relied-on
-contracts, supplied intent, local rules and lint findings still match. Where
-known, compare their verified clean commit with `scripts/review-changes.mjs`.
-Keep the prior verdict and its evidence visible for every reused document. A
-changed rule, source, finding or unreviewed document still needs its own check.
+For a long review, use [a task-local checkpoint](references/checkpoints.md).
+Resume completed documents only within this unfinished task when
+the ADR, relied-on contracts, supplied intent, local rules and lint findings
+still match. Batch the verified commit comparison with `scripts/review-changes.mjs`.
+Keep the prior verdict and its evidence visible for every reused document.
 
 Pass each reviewer: the ADR path, that category's `.mapping.json` entry, and **that ADR's slice of the harness result**.
 

@@ -278,10 +278,11 @@ export function parseHeadings(body) {
   return { lines, heads };
 }
 
-// Return the line range [start, end) of the section whose heading matches
+// Callers inspecting several sections may pass the result of parseHeadings
+// instead of the source string. Return the range [start, end) whose heading matches
 // `pred`, ending at the next heading of the SAME-or-higher level. null if none.
 export function sectionRange(body, pred) {
-  const { lines, heads } = parseHeadings(body);
+  const { lines, heads } = typeof body === "string" ? parseHeadings(body) : body;
   const idx = heads.findIndex((h) => pred(h));
   if (idx === -1) return null;
   const start = heads[idx].line;
@@ -335,7 +336,7 @@ export function alternativesText(body) {
 
 /** Check the document spine while accepting Context as the legacy Purpose heading. */
 export function checkSections(body) {
-  const { heads } = parseHeadings(body);
+  const { heads } = typeof body === "string" ? parseHeadings(body) : body;
   const h2 = new Set(heads.filter((h) => h.level === 2).map((h) => h.text.trim()));
   if (h2.has("Context")) h2.add("Purpose");
   const missingHard = HARD_SECTIONS.filter((s) => !h2.has(s));

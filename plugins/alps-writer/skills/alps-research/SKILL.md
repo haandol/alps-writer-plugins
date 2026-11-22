@@ -118,7 +118,7 @@ twice. Export the selected document after successful requested edits.
 Keep only approved product meaning, rationale, necessary source attribution,
 conditions, and uncertainty in the owning ALPS items. Research logs, copied
 sources, intermediate findings, and review artifacts are disposable, not another
-product authority or required document appendix. Preserve Full/Lite structure.
+product authority or required document appendix. A new research task uses the selected ALPS document and supplied sources. Preserve Full/Lite structure.
 After a Full ALPS handoff, changing ALPS does not change the governing ADRs or
 implementation: follow the existing explicit re-import and contract approval
 boundary. Do not add a handoff step to Lite.

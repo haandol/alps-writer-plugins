@@ -33,7 +33,9 @@ definitions before completion.
 > templates, and guides are written in English only as agent instructions.
 
 > **Non-invasive harness**: the saved Lite ALPS document owns durable product
-> context. Interview sequencing, tool-call planning, approval views, and model
+> context. Resume from that document and current sources if working notes are
+> missing. Working notes belong only to this task. Interview sequencing,
+> tool-call planning, approval views, and model
 > orchestration remain disposable. Do not request private chain-of-thought or
 > create hidden state required to use the document after plugin removal.
 

@@ -32,6 +32,11 @@ reconstructing hidden plugin state. A future model should recover the necessary
 context by reading the artifact that owns that abstraction level and, when
 needed, running deterministic project tools.
 
+Use intermediate files only to produce the current result or resume the same
+unfinished task. Keep readily reproducible material in memory. Start new work
+from authoritative artifacts and current inputs. If the task checkpoint is
+missing, reconstruct the work there; never consult another task's scratch files.
+
 ## Constrain outcomes, not private reasoning
 
 Harness instructions define observable outputs, allowed actions, evidence,
