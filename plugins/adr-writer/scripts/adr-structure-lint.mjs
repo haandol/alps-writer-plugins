@@ -57,6 +57,7 @@ import {
   constantAssignmentHits,
   validateMappingShape,
   bodyStatus,
+  parseHeadings,
   isAdrFile,
   numberingGaps,
   rulesVersion,
@@ -115,8 +116,8 @@ class Report {
   constructor() {
     this.items = [];
   }
-  add(level, rule, where, msg) {
-    this.items.push({ level, rule, where, msg });
+  add(level, rule, where, msg, details) {
+    this.items.push({ level, rule, where, msg, ...details });
   }
   error(rule, where, msg) {
     this.add("error", rule, where, msg);
@@ -320,7 +321,8 @@ function main() {
     // status is the single ADR-status index (README has none), so it must
     // mirror the body's ## Status line — adr-impl/adr-sync update both in
     // lockstep. A mismatch means the index went stale.
-    const status = bodyStatus(body);
+    const headings = parseHeadings(body);
+    const status = bodyStatus(headings);
     if (!status.present) rep.error("status-missing", where, "no ## Status section");
     else {
       const val = status.value;
@@ -339,7 +341,7 @@ function main() {
     }
 
     // required sections
-    const secs = checkSections(body);
+    const secs = checkSections(headings);
     for (const m of secs.missingHard)
       rep.error("section-missing", where, `missing required section: ## ${m}`);
     if (!secs.hasAlternatives)
@@ -348,13 +350,13 @@ function main() {
       rep.warn("drivers-missing", where, "no Decision Drivers section (recommended)");
 
     // R13: Decision Drivers count 3-5
-    const dr = countDrivers(body);
+    const dr = countDrivers(headings);
     if (dr.present && (dr.count < 3 || dr.count > 5))
       rep.warn("drivers-count", where, `${dr.count} Decision Drivers (3-5 recommended)`);
 
     // R14: one credible alternative or a constraint explanation can suffice.
     // Structure can detect an empty section; judging its rationale needs semantic review.
-    if (alternativesText(body) === "")
+    if (alternativesText(headings) === "")
       rep.warn(
         "alternatives-empty",
         where,
@@ -362,7 +364,7 @@ function main() {
       );
 
     // R10: Related-link targets resolve on disk
-    for (const target of relatedLinkTargets(body)) {
+    for (const target of relatedLinkTargets(headings)) {
       const resolved = path.resolve(path.dirname(file), target);
       if (!existsSync(resolved))
         rep.error("related-broken", where, `Related link target does not exist: ${target}`);
@@ -572,7 +574,7 @@ function main() {
   if (opts.invariants && (!opts.documentsOnly || present)) {
     const invScript = path.join(HERE, "adr-invariants.sh");
     const invariantArgs = [invScript, "--adr-dir", opts.documentsOnly ? target.path : adrRoot];
-    if (opts.documentsOnly) invariantArgs.push("--prd-only");
+    if (opts.documentsOnly) invariantArgs.push("--prd-records");
     const r = spawnSync("bash", invariantArgs, {
       cwd: process.cwd(),
       encoding: "utf8",
@@ -584,13 +586,28 @@ function main() {
         invScript,
         `adr-invariants.sh environment error (exit 2): ${(r.stderr || "").trim()}`,
       );
+    } else if (invExit === 1 && opts.documentsOnly) {
+      // Each record is path NUL line:source LF. The path and the source may both contain colons.
+      const hits = /([^\0]+)\0([1-9]\d*):([^\n]*)(?:\n|$)/gy;
+      const output = r.stdout ?? "";
+      let offset = 0;
+      for (const match of output.matchAll(hits)) {
+        const where = relFromRepo(match[1]);
+        rep.add("error", "invariants", where, `${where}:${match[2]}:${match[3]}`, {
+          line: Number(match[2]),
+          adrRule: "R15",
+        });
+        offset += match[0].length;
+      }
+      if (!offset || offset !== output.length)
+        rep.error("invariants-env", invScript, "could not attribute all ADR→PRD matches");
     } else if (invExit === 1) {
       // fold each reported reverse-ref line as an error
       for (const line of (r.stdout || "").split("\n")) {
         const t = line.trim();
         if (t && !t.startsWith("✓")) rep.error("invariants", invScript, t);
       }
-    } else if (invExit < 0) {
+    } else if (invExit !== 0 || r.error) {
       rep.error(
         "invariants-spawn",
         invScript,
@@ -599,7 +616,13 @@ function main() {
     }
   }
 
-  finish(rep, opts, files.length === 0 ? "no ADR files to check" : null, repository);
+  finish(
+    rep,
+    opts,
+    files.length === 0 ? "no ADR files to check" : null,
+    repository,
+    files.map(relFromRepo),
+  );
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -629,7 +652,7 @@ function statusReason(reason) {
   );
 }
 
-function finish(rep, opts, note, repository) {
+function finish(rep, opts, note, repository, documents = []) {
   const passes = (report) => !report.errors.length && !(opts.warnAsError && report.warns.length);
   const scoped = repository !== rep;
   const ok = passes(rep) && passes(repository);
@@ -644,7 +667,19 @@ function finish(rep, opts, note, repository) {
     : undefined;
   if (opts.json) {
     process.stdout.write(
-      JSON.stringify({ ok, errors, warnings, scope, note: note || undefined }, null, 2) + "\n",
+      JSON.stringify(
+        {
+          ok,
+          errors,
+          warnings,
+          scope,
+          note: note || undefined,
+          documents: opts.documentsOnly ? documents : undefined,
+          warnAsError: (opts.documentsOnly && opts.warnAsError) || undefined,
+        },
+        null,
+        2,
+      ) + "\n",
     );
   } else {
     const lines = ["## ADR Structure Lint"];

@@ -26,6 +26,7 @@
 #   --adr-dir DIR     ADR root (default: docs/adr); with --prd-only also accepts a category directory or numbered ADR file
 #   --code-only       run only check (a): code → ADR reverse references
 #   --prd-only        run only check (b): ADR → PRD reverse references
+#   --prd-records     check (b) for the structure linter, emitting path NUL line:source LF
 #   --rollup-only     run only check (c)+(d): stale citations after a rollup
 #   --removed LIST    space-separated ADR ids/paths a rollup DELETED, e.g.
 #                     "auth/0002 auth/0003" — enables check (c) and, like
@@ -52,6 +53,7 @@ set -uo pipefail
 ADR_DIR="docs/adr"
 RUN_CODE=1
 RUN_PRD=1
+PRD_RECORDS=0
 RUN_ROLLUP=0
 REMOVED=""
 RENUMBERED=""
@@ -73,6 +75,7 @@ while [ $# -gt 0 ]; do
     --adr-dir) need_val "$1" "${2:-}" "$#"; ADR_DIR="$2"; shift 2 ;;
     --code-only) RUN_CODE=1; RUN_PRD=0; RUN_ROLLUP=0; shift ;;
     --prd-only) RUN_CODE=0; RUN_PRD=1; RUN_ROLLUP=0; shift ;;
+    --prd-records) RUN_CODE=0; RUN_PRD=1; RUN_ROLLUP=0; PRD_RECORDS=1; shift ;;
     --rollup-only) RUN_CODE=0; RUN_PRD=0; RUN_ROLLUP=1; shift ;;
     # --removed / --renumbered narrow the run to the rollup checks (c)/(d).
     # Reset RUN_CODE/RUN_PRD so a caller that forgets --rollup-only doesn't
@@ -335,7 +338,16 @@ if [ "$RUN_PRD" -eq 1 ]; then
   # already ALPS-only. `--include` scopes to numbered ADR bodies so seeded rule
   # docs (README/concepts/structure/authoring-rules) that legitimately mention ALPS are
   # exempt.
-  hits="$(grep -HrnE "\.alps\.xml|ALPS Section|ALPS.*Section [0-9]+\.[0-9]|Section [0-9]+\.[0-9].*ALPS|F-[A-Z]+-[0-9]" \
+  prd_pattern='\.alps\.xml|ALPS Section|ALPS.*Section [0-9]+\.[0-9]|Section [0-9]+\.[0-9].*ALPS|F-[A-Z]+-[0-9]'
+  if [ "$PRD_RECORDS" -eq 1 ]; then
+    # Direct output preserves grep's NUL filename separator even for paths containing colons or newlines.
+    grep --null -aHrnE "$prd_pattern" --include='[0-9][0-9][0-9][0-9]-*.md' -- "$ADR_DIR"
+    rc=$?
+    check_grep_rc "$rc" "check (b) ADR→PRD scan"
+    if [ "$rc" -eq 0 ]; then exit 1; fi
+    exit 0
+  fi
+  hits="$(grep -HrnE "$prd_pattern" \
     --include='[0-9][0-9][0-9][0-9]-*.md' -- "$ADR_DIR" 2>/dev/null)"; rc=$?
   check_grep_rc "$rc" "check (b) ADR→PRD scan"
   if [ -n "$hits" ]; then
