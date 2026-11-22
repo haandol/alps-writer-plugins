@@ -296,11 +296,9 @@ function candidateTriples(kind, item, { isNew }) {
 }
 
 /** Where each new subject goes: its context's document, the actors' document, or model.ttl. */
-function documentPlacer(doc, current) {
-  const byId = new Map(allCandidates(doc).map((c) => [c.item.id, c]));
-  const ownerOfStep = new Map(
-    list(doc.processes).flatMap((p) => list(p.steps).map((s) => [s, p.id])),
-  );
+function documentPlacer(candidates, processes, current) {
+  const byId = new Map(candidates.map((c) => [c.item.id, c]));
+  const ownerOfStep = new Map(list(processes).flatMap((p) => list(p.steps).map((s) => [s, p.id])));
   const memo = new Map();
   const contextOf = (cid, seen = new Set()) => {
     if (!cid || seen.has(cid)) return null;
@@ -403,9 +401,8 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
   if (confirmedOnly) {
     const held = new Set(triples.map(tripleKey));
     const droppedKeys = new Set(dropped.map(([, t]) => tripleKey(t)));
-    const cut = mergeTriples(all, current).added.filter(
-      (t) => PATH_RELATIONS.has(t.p) && !held.has(tripleKey(t)),
-    );
+    const allAdded = chosen.length === all.length ? added : mergeTriples(all, current).added;
+    const cut = allAdded.filter((t) => PATH_RELATIONS.has(t.p) && !held.has(tripleKey(t)));
     const cutPaths = cut.flatMap((t) => {
       const what = `${elementId(t.s)} ${t.p.replace(ONTO, "")} ${elementId(t.o.value)}`;
       if (!droppedKeys.has(tripleKey(t))) unconfirmed.push(what);
@@ -417,7 +414,7 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
     undecided = noOpenScopeWithCutPaths(triples, cutPaths, added);
   }
   // Place each subject's triples in its document; only touched documents are rewritten.
-  const place = documentPlacer(doc, current);
+  const place = documentPlacer(all, doc.processes, current);
   const byDoc = new Map();
   const touched = new Set();
   const put = (t, isAdded) => {
@@ -430,14 +427,15 @@ export function mergeDraft(doc, current, { confirmedOnly = false } = {}) {
     if (removed.has(t)) touched.add(current.home.get(t.s));
     else put(t, false);
   for (const t of added) put(t, true);
-  const documents = current.docs.map((d) =>
-    touched.has(d.doc)
-      ? { doc: d.doc, text: serializeTurtle(byDoc.get(d.doc) ?? []), rewritten: true }
-      : { doc: d.doc, text: readFileSync(d.file, "utf8"), rewritten: false },
-  );
-  for (const [name, ts] of byDoc)
-    if (!current.docs.some((d) => d.doc === name))
-      documents.push({ doc: name, text: serializeTurtle(ts), rewritten: true, created: true });
+  const documents = [];
+  for (const { doc, file } of current.docs) {
+    const rewritten = touched.has(doc);
+    const text = rewritten ? serializeTurtle(byDoc.get(doc) ?? []) : readFileSync(file, "utf8");
+    documents.push({ doc, text, rewritten });
+    byDoc.delete(doc);
+  }
+  for (const [doc, ts] of byDoc)
+    documents.push({ doc, text: serializeTurtle(ts), rewritten: true, created: true });
   return { documents, kept, dropped: dropped.map(([what]) => what), unconfirmed, undecided };
 }
 
