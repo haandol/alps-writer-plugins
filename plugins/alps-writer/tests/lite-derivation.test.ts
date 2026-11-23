@@ -102,7 +102,7 @@ test("Full init rejects missing, non-Lite, incomplete and other-format sources w
   const incompleteBefore = fs.readFileSync(incomplete, "utf8");
   assert.throws(
     () => service.initDocument("cart", fullPath, "alps", incomplete),
-    /is not complete: Sections not written: 1, 2, 3, 4, 5, 6, 8\. Complete it first: load it with alps_document\(action: 'load', doc_path: '.*incomplete\.lite\.alps\.xml'\), then write the unwritten Sections in section order, starting with Section 1 \(Business Context\)\. Retry this initialization afterwards, or call alps_document\(action: 'init', profile: 'full', project_name, output_path\) without source_doc_path/,
+    /is not complete: Sections not complete: 1, 2, 3, 4, 5, 6, 8\. Complete it first: load it with alps_document\(action: 'load', doc_path: '.*incomplete\.lite\.alps\.xml'\), then complete the remaining Sections in section order, starting with Section 1 \(Business Context\)\. Retry this initialization afterwards, or call alps_document\(action: 'init', profile: 'full', project_name, output_path\) without source_doc_path/,
   );
   assert.equal(fs.readFileSync(incomplete, "utf8"), incompleteBefore);
 
@@ -160,7 +160,7 @@ test("status reports unreferenced and undefined Lite IDs and completes only when
   assert.match(status, /Completion: 🟡 Incomplete — .*Lite requirement IDs not referenced/);
   assert.match(
     status,
-    /^Next steps:\n- Write the unwritten Sections in section order, starting with Section 1 \(Overview\)\.\n- Convert BR-1, FR-1, NFR-1, EC-1, KPI-1, TM-1 in the Full Section its guide names and list each ID in that content's `Source requirements:`; only an optional FR, NFR or EC may instead be deferred to Section 9 with its ID and reason\.$/m,
+    /^Next steps:\n- Complete the remaining Sections in section order, starting with Section 1 \(Overview\)\.\n- Convert BR-1, FR-1, NFR-1, EC-1, KPI-1, TM-1 in the Full Section its guide names and list each ID in that content's `Source requirements:`; only an optional FR, NFR or EC may instead be deferred to Section 9 with its ID and reason\.$/m,
   );
 
   service.saveSection(1, "1", "Purpose", "Source requirements: BR-1, FR-1, FR-9");
@@ -181,7 +181,7 @@ test("status reports unreferenced and undefined Lite IDs and completes only when
   assert.doesNotMatch(status, /References to IDs not defined/);
   assert.match(
     status,
-    /Completion: 🟡 Incomplete — Sections not written: 1, 2, 3, 4, 5, 6, 7, 8, 9$/m,
+    /Completion: 🟡 Incomplete — Sections not complete: 1, 2, 3, 4, 5, 6, 7, 8, 9$/m,
   );
   assert.doesNotMatch(status, /Lite requirement IDs not referenced/);
 

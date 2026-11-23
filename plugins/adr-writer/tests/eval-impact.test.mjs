@@ -207,3 +207,24 @@ test("embedded hook output and loaded references select every scenario that uses
     }
   }
 });
+
+test("each private fixture routes to exactly the scenarios that import it", async () => {
+  const { readdirSync, readFileSync } = await import("node:fs");
+  const { PRIVATE_FIXTURE_SCENARIOS, evaluationImpactPaths } = await import(
+    path.join(EVALS, "impact-map.mjs")
+  );
+  const scenarioDir = path.join(EVALS, "scenarios");
+  for (const [fixture, routed] of PRIVATE_FIXTURE_SCENARIOS) {
+    const importPath = `../lib/${path.basename(fixture)}`;
+    const importers = readdirSync(scenarioDir)
+      .filter((file) => file.endsWith(".mjs"))
+      .filter((file) => readFileSync(path.join(scenarioDir, file), "utf8").includes(importPath))
+      .map((file) => file.replace(/\.mjs$/, ""))
+      .sort();
+    assert.deepEqual([...routed].sort(), importers, `${fixture} routing matches its importers`);
+    assert.deepEqual(
+      evaluationImpactPaths([fixture]).sort(),
+      importers.map((name) => `plugins/adr-writer/evals/scenarios/${name}.mjs`),
+    );
+  }
+});

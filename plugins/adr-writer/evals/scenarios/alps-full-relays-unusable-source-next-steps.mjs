@@ -1,23 +1,6 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import {
-  ALPS_PLUGIN_ROOT,
-  alpsSkillText,
-  seedMapping,
-  seedRuleDocs,
-  TAIL_SPEC,
-} from "../lib/harness.mjs";
+import { alpsSkillText, seedMapping, seedRuleDocs, TAIL_SPEC } from "../lib/harness.mjs";
 import { responseChecks } from "../lib/response-checks.mjs";
-
-/** The Full overview's Lite source derivation rules, which alps-init points to. */
-function liteDerivationRules() {
-  const overview = readFileSync(
-    path.join(ALPS_PLUGIN_ROOT, "src", "templates", "overview.md"),
-    "utf8",
-  );
-  const start = overview.indexOf("## Lite source derivation");
-  return overview.slice(start, overview.indexOf("\n---", start));
-}
+import { liteDerivationRules } from "../lib/lite-derivation.mjs";
 
 // Status as the server prints it when the recorded Lite source is no longer complete.
 const STATUS = `
@@ -39,9 +22,9 @@ Section 9 (Out of Scope): ⬜ Not started
 Lite source: cart.lite.alps.xml
 Lite source path: /work/prd/cart.lite.alps.xml
 Lite source incomplete: undefined requirement references: FR-3. Lite coverage is unverified.
-Completion: 🟡 Incomplete — Sections not written: 5, 6, 7, 8, 9; Lite source incomplete
+Completion: 🟡 Incomplete — Sections not complete: 5, 6, 7, 8, 9; Lite source incomplete
 Next steps:
-- Write the unwritten Sections in section order, starting with Section 5 (Requirements Summary).
+- Complete the remaining Sections in section order, starting with Section 5 (Requirements Summary).
 - Complete the Lite source through Lite Section approval: load it with alps_document(action: 'load', doc_path: '/work/prd/cart.lite.alps.xml'), then define each referenced ID in its owning subsection (FR-3 in 3.1), or correct or remove the reference. Then check this document's status again; resume, saves and export keep working meanwhile.
 
 동료가 Full을 파생한 뒤 Lite 8.1 Demo Scenario에 "쿠폰을 적용하면 할인이 보인다 (FR-3)" 단계를 추가했지만, Lite 3.1에는 FR-1과 FR-2만 정의되어 있다.

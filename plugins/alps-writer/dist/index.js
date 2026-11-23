@@ -37295,10 +37295,10 @@ var LITE_OWNER_BY_PREFIX = new Map(
 );
 var ownedIn = (ids2) => ids2.map((id) => `${id} in ${LITE_OWNER_BY_PREFIX.get(id.split("-")[0])}`).join(", ");
 var lowerFirst = (text) => text.charAt(0).toLowerCase() + text.slice(1);
-function unwrittenBlocker(profile2, pending) {
+function incompleteSectionsBlocker(profile2, pending) {
   return {
-    reason: `Sections not written: ${pending.join(", ")}`,
-    next: `Write the unwritten Sections in section order, starting with Section ${pending[0]} (${profile2.sectionTitles[pending[0]]}).`
+    reason: `Sections not complete: ${pending.join(", ")}`,
+    next: `Complete the remaining Sections in section order, starting with Section ${pending[0]} (${profile2.sectionTitles[pending[0]]}).`
   };
 }
 function completionLines(blockers) {
@@ -37704,7 +37704,7 @@ Lite source path: ${source.path}` : `Created ${profile2.label} document at ${fil
     const pending = states.filter((state) => !state.complete).map((state) => state.section);
     const requirements = this.liteRequirements(content);
     const blockers = [];
-    if (pending.length > 0) blockers.push(unwrittenBlocker(LITE_ALPS_PROFILE, pending));
+    if (pending.length > 0) blockers.push(incompleteSectionsBlocker(LITE_ALPS_PROFILE, pending));
     const { duplicates, undefinedReferences } = requirements;
     if (duplicates.length > 0) {
       blockers.push({
@@ -37968,7 +37968,7 @@ ${display}`;
   /** Report Lite coverage, dangling references and source changes for a derived Full document. */
   liteSourceLines(content, link, pending) {
     const blockers = [];
-    if (pending.length > 0) blockers.push(unwrittenBlocker(ALPS_PROFILE, pending));
+    if (pending.length > 0) blockers.push(incompleteSectionsBlocker(ALPS_PROFILE, pending));
     const source = this.readLiteSource(link);
     const lines = [`Lite source: ${link.source}`, `Lite source path: ${source.path}`];
     if (!source.ok) {
@@ -38244,7 +38244,7 @@ var server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.17.0" },
+  { name: "alps-writer", version: "0.17.1" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
