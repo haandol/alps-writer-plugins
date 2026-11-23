@@ -4,6 +4,14 @@ This document is the **major decision-change history** of the alps-authoring/lit
 Each ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-11-23 — PoC 데모 문서에서 eval 가능한 비즈니스 요구사항 문서로 전환
+
+- **Current ADR**: [lite-alps-authoring-profile](./0001-lite-alps-authoring-profile.md)
+- **Change type**: Driver inverted
+- **What**: 최소 PoC를 위한 4-Section(Overview, Solution and Essential User Experiences, Out of Scope, Demo Scenario)과 Full과의 상호 비참조 → Business Context, Business Requirements, Functional Requirements, Non-Functional Requirements, Edge Cases, Success Criteria, 선택 Out of Scope, Demo Scenario의 8-Section에서 요구사항마다 식별자·필수 여부·판정 기준을 두고, Solution Strategy를 제거하며, `C4Context`를 비즈니스 용어의 Business Context Diagram으로 옮기고, Full이 Lite를 출처로 파생할 수 있게 함.
+- **Why**: 소프트웨어 팩토리에서 구현과 독립 평가가 쓸 비즈니스 기준을 기술 결정 없이 먼저 확정하고, 하위 문서가 그 기준을 손실 없이 추적해야 하기 때문이다.
+- **What is now void**: Lite는 Full을 다음 단계로 안내하지 않는다는 금지와 Essential User Experiences 단위의 데모 커버리지와 거절한 tension 후보를 저장하지 않는 규칙.
+
 ## 2026-11-17 — tension 후보를 항상 제안
 
 - **Current ADR**: [lite-alps-authoring-profile](./0001-lite-alps-authoring-profile.md)

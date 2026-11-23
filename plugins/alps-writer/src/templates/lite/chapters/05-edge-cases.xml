@@ -1,0 +1,17 @@
+<section id="5" title="Edge Cases">
+  <subsection id="5.1" title="Edge Cases">
+    <description>
+- Record the boundary, invalid-input, repeated or simultaneous request, permission-violation, external-party failure, and abuse situations that apply to the approved requirements as `EC-n`, defined at the start of a table row or list item. Consider each category and record only the situations that apply.
+- For each EC, state the situation, the related FR and BR IDs, Required or Optional, and the expected business outcome (for example rejection, preserving the existing state, recovery, or guidance to the user) as a pass/fail criterion.
+- Derive expected outcomes from approved rules. When several valid outcomes would change a protected decision, ask instead of choosing.
+- When no situation applies, record that in one sentence.
+    </description>
+    <example>
+| ID | Situation | Related | Expected business outcome | Required |
+|----|-----------|---------|---------------------------|----------|
+| EC-1 | The same merge is requested again after a network retry | FR-1, BR-2 | Quantities are summed once; a second addition fails | Required |
+| EC-2 | The member signs in from two devices at the same moment | FR-1, BR-2 | Every product and quantity from both carts survives exactly once | Required |
+| EC-3 | Another member requests this member's cart | FR-1, BR-3 | The request is refused and the cart stays unchanged | Required |
+    </example>
+  </subsection>
+</section>

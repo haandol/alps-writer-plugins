@@ -1,0 +1,24 @@
+<section id="1" title="Business Context">
+  <subsection id="1.1" title="Target User and Core Problem">
+    <description>
+- Identify the main target user and the core problem the product should address.
+- Include the user's situation or current consequence when it helps explain the problem.
+- Mention the current workaround or evidence only when it materially clarifies the problem.
+- Do not ask for a solution, screen, technology, requirement list, or demo procedure.
+    </description>
+    <example>
+Shoppers who browse without an account lose the products they collected when they sign in to check out, so they rebuild the cart or leave without buying.
+    </example>
+  </subsection>
+  <subsection id="1.2" title="Intent and Desired Outcome">
+    <description>
+- State what the product intends to change for the target user, the final outcome they should gain, and why it matters to the business.
+- Preserve priorities and scope boundaries the user supplied so later proposals cannot pursue a different purpose. Do not invent exclusions or a separate intent field.
+- Preserve a measurement signal when the user already has one; Section 6 turns it into a KPI. Do not require a metric or start a metrics interview here.
+- Do not invent business claims or measures the user did not provide or approve.
+    </description>
+    <example>
+Shoppers keep what they collected as guests when they sign in, so the store recovers purchases that are abandoned at sign-in. Keeping members' existing carts intact matters more than speed of rollout.
+    </example>
+  </subsection>
+</section>

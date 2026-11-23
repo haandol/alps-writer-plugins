@@ -1,0 +1,22 @@
+<section id="8" title="Demo Scenario">
+  <subsection id="8.1" title="Demo Scenario">
+    <description>
+- Work backward from the approved intent and requirements to propose the shortest executable scenario that shows every Required FR at least once. Optional FRs may appear.
+- Propose the concrete starting state, representative demo input, sequential user actions, and visible expected results instead of asking the user to supply them.
+- For every step, state the user action, the visible expected result, and the FR and EC IDs it shows. Include relevant EC counterexamples when they are needed to show that a result serves its intent.
+- Reuse shared setup when the requirements form one coherent flow. Use separate execution blocks when connecting them would require an unapproved business contract.
+- End with one overall pass result that requires every shown FR and EC criterion to pass. Required ECs not shown remain judged by Section 5.
+- Keep demonstrated claims inside the approved Sections and any written Section 7 boundary. A passing demo shows that the approved behavior runs; it is not proof of business impact or market validity.
+    </description>
+    <example>
+**Starting state:** A guest has 2 shirts and 1 pair of shoes in the cart; the guest's member account already has 1 shirt in its cart.
+
+| Step | User action | Visible expected result | Shows |
+|------|-------------|-------------------------|-------|
+| 1 | Signs in as the existing member | One cart shows 3 shirts and 1 pair of shoes | FR-1 |
+| 2 | Repeats the sign-in after a dropped connection | The cart still shows 3 shirts, not 4 | FR-1, EC-1 |
+
+**Overall pass result:** FR-1 and EC-1 meet their criteria in the steps above.
+    </example>
+  </subsection>
+</section>

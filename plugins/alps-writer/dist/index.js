@@ -36658,6 +36658,7 @@ var StdioServerTransport = class {
 import path from "path";
 import { fileURLToPath } from "url";
 var __dirname = path.dirname(fileURLToPath(import.meta.url));
+var REQUIREMENT_PREFIXES = ["BR", "FR", "NFR", "EC", "KPI", "TM"];
 var templatesDir = path.join(__dirname, "templates");
 var guidesDir = path.join(__dirname, "guides");
 var liteTemplatesDir = path.join(templatesDir, "lite");
@@ -36693,7 +36694,8 @@ var ALPS_PROFILE = {
     sourceSection: 6,
     sourceSubsectionId: "6.1"
   },
-  optionalSections: []
+  optionalSections: [],
+  requirementOwners: null
 };
 var LITE_ALPS_PROFILE = {
   id: "lite",
@@ -36705,19 +36707,34 @@ var LITE_ALPS_PROFILE = {
   chaptersDir: path.join(liteTemplatesDir, "chapters"),
   guidesDir: path.join(guidesDir, "lite"),
   sectionTitles: {
-    1: "Overview",
-    2: "Solution and Essential User Experiences",
-    3: "Out of Scope",
-    4: "Demo Scenario"
+    1: "Business Context",
+    2: "Business Requirements",
+    3: "Functional Requirements",
+    4: "Non-Functional Requirements",
+    5: "Edge Cases",
+    6: "Success Criteria",
+    7: "Out of Scope",
+    8: "Demo Scenario"
   },
   sectionReferences: {
     2: [1],
     3: [1, 2],
-    4: [1, 2]
+    4: [1, 2, 3],
+    5: [2, 3, 4],
+    6: [1, 2, 3, 4, 5],
+    7: [1, 2, 3, 4, 5, 6],
+    8: [1, 2, 3, 4, 5, 6]
   },
-  authoringOrder: [1, 2, 3, 4],
+  authoringOrder: [1, 2, 3, 4, 5, 6, 7, 8],
   dynamicSection: null,
-  optionalSections: [3]
+  optionalSections: [7],
+  requirementOwners: {
+    "2.1": ["BR"],
+    "3.1": ["FR"],
+    "4.1": ["NFR"],
+    "5.1": ["EC"],
+    "6.1": ["KPI", "TM"]
+  }
 };
 var DOCUMENT_PROFILES = {
   alps: ALPS_PROFILE,
@@ -36905,6 +36922,7 @@ Call \`alps_template(action: 'guide', profile: '${id === "lite" ? "lite" : "full
 };
 
 // src/tools/documents/service.ts
+import { createHash } from "crypto";
 import fs3 from "fs";
 import os from "os";
 import path4 from "path";
@@ -37028,6 +37046,33 @@ function featureCoverage(source, entries) {
   return { expected: required2.length, written: required2.length - missing.length, missing };
 }
 
+// src/tools/documents/requirement-ids.ts
+var PREFIX_GROUP = REQUIREMENT_PREFIXES.join("|");
+var TOKEN = new RegExp(`(?<![A-Za-z0-9])(${PREFIX_GROUP})-([1-9]\\d*)(?![A-Za-z0-9])`, "g");
+var DEFINITION = new RegExp(
+  `^\\s*(?:\\|\\s*|[-*+]\\s+|\\d+[.)]\\s+|#{1,6}\\s+)?(?:\\*\\*|__|\`)?(${PREFIX_GROUP})-([1-9]\\d*)(?![A-Za-z0-9])`
+);
+var withoutCodeFences = (text) => text.replace(/```[\s\S]*?```|~~~[\s\S]*?~~~/g, "");
+function requirementReferences(text) {
+  return new Set([...text.matchAll(TOKEN)].map((match) => `${match[1]}-${match[2]}`));
+}
+function requirementDefinitions(text, owned) {
+  const counts = /* @__PURE__ */ new Map();
+  for (const line of withoutCodeFences(text).split(/\r?\n/)) {
+    const match = line.match(DEFINITION);
+    if (!match || !owned.includes(match[1])) continue;
+    const id = `${match[1]}-${match[2]}`;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  return counts;
+}
+function sortRequirementIds(ids2) {
+  const rank = (id) => REQUIREMENT_PREFIXES.indexOf(id.split("-")[0]);
+  return [...ids2].sort(
+    (a, b) => rank(a) - rank(b) || Number(a.split("-")[1]) - Number(b.split("-")[1])
+  );
+}
+
 // src/tools/documents/glossary.ts
 function glossaryKey(term) {
   return term.trim().normalize("NFC");
@@ -37102,17 +37147,21 @@ function architectureDiagramError(content) {
   }
   return null;
 }
-function liteProductContextDiagramError(content) {
+var LITE_CONTEXT_DIAGRAM_SUBSECTION = "3.2";
+function liteBusinessContextDiagramError(content) {
   const diagramTypes = mermaidDiagramTypes(content);
   const contextCount = diagramTypes.filter((type) => type === "C4Context").length;
   if (contextCount !== 1) {
-    return "Lite ALPS Section 2.1 requires exactly one Mermaid C4Context diagram.";
+    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} requires exactly one Mermaid C4Context diagram.`;
   }
   const disallowed = diagramTypes.find((type) => type.startsWith("C4") && type !== "C4Context");
   if (disallowed) {
-    return `Lite ALPS Section 2.1 allows only Mermaid C4Context diagrams; found ${disallowed}.`;
+    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} allows only Mermaid C4Context diagrams; found ${disallowed}.`;
   }
   return null;
+}
+function sourceFingerprint(content) {
+  return createHash("sha256").update(content.replace(/\r\n/g, "\n").trim()).digest("hex");
 }
 var DocumentService = class _DocumentService {
   workingDoc = null;
@@ -37214,10 +37263,11 @@ ${content}
 </section>`;
   }
   /** Rebuild numbered sections while preserving the optional trailing term definitions. */
-  buildDocument(profile2, projectName, sections, glossary = []) {
+  buildDocument(profile2, projectName, sections, glossary = [], sourceLink = null) {
     const profileAttribute = profile2.rootProfile ? ` profile="${escapeXmlAttribute(profile2.rootProfile)}"` : "";
+    const sourceAttributes = sourceLink ? ` source="${escapeXmlAttribute(sourceLink.source)}"${sourceLink.fingerprint ? ` source-fingerprint="${escapeXmlAttribute(sourceLink.fingerprint)}"` : ""}` : "";
     const lines = [
-      `<alps-document project="${escapeXmlAttribute(projectName)}"${profileAttribute}>`
+      `<alps-document project="${escapeXmlAttribute(projectName)}"${profileAttribute}${sourceAttributes}>`
     ];
     for (const section of sectionNumbers(profile2)) {
       lines.push(this.buildSection(profile2, section, sections.get(section) || NOT_STARTED));
@@ -37225,6 +37275,13 @@ ${content}
     if (glossary.length > 0) lines.push(buildGlossary(glossary));
     lines.push("</alps-document>");
     return lines.join("\n\n");
+  }
+  /** Read the Lite source a Full document records, if any. */
+  extractSourceLink(content) {
+    const root = content.match(/<(?:alps-document|prd-document)\b([^>]*)>/);
+    const source = root ? attribute(root[1], "source") : null;
+    if (!source) return null;
+    return { source, fingerprint: attribute(root[1], "source-fingerprint") };
   }
   extractProjectName(content) {
     const root = content.match(/<(?:alps-document|prd-document)\b([^>]*)>/);
@@ -37259,7 +37316,7 @@ ${content}
         profile2 = LITE_ALPS_PROFILE;
       } else {
         return {
-          error: "Lite ALPS documents must contain Sections 1-4 exactly once and in order."
+          error: `Lite ALPS documents must contain Sections ${sectionRange(LITE_ALPS_PROFILE)} exactly once and in order.`
         };
       }
     }
@@ -37338,9 +37395,14 @@ ${content}
     }
     return null;
   }
-  initDocument(projectName, outputPath, profileId = "alps") {
+  initDocument(projectName, outputPath, profileId = "alps", sourceDocPath) {
     this.workingDoc = null;
     const profile2 = DOCUMENT_PROFILES[profileId];
+    if (sourceDocPath != null && isLiteProfile(profile2)) {
+      throw new Error(
+        "A Lite source applies only to Full ALPS initialization; Lite ALPS documents have no source."
+      );
+    }
     let filepath = this.expandPath(outputPath);
     if (!path4.extname(filepath)) filepath += profile2.filenameSuffix;
     const pathError = this.pathError(filepath, profile2);
@@ -37350,12 +37412,17 @@ ${content}
         `Document already exists at ${filepath}. Use alps_document(action: 'load', doc_path) to resume.`
       );
     }
+    const sourceLink = sourceDocPath == null ? null : this.completedLiteSource(sourceDocPath, filepath);
     fs3.mkdirSync(path4.dirname(filepath), { recursive: true });
     try {
-      fs3.writeFileSync(filepath, this.buildDocument(profile2, projectName, /* @__PURE__ */ new Map()), {
-        encoding: "utf-8",
-        flag: "wx"
-      });
+      fs3.writeFileSync(
+        filepath,
+        this.buildDocument(profile2, projectName, /* @__PURE__ */ new Map(), [], sourceLink),
+        {
+          encoding: "utf-8",
+          flag: "wx"
+        }
+      );
     } catch (error62) {
       if (error62.code === "EEXIST") {
         throw new Error(
@@ -37366,7 +37433,106 @@ ${content}
       throw error62;
     }
     this.workingDoc = filepath;
-    return `Created ${profile2.label} document at ${filepath}`;
+    return sourceLink ? `Created ${profile2.label} document at ${filepath}
+Lite source: ${sourceLink.source}` : `Created ${profile2.label} document at ${filepath}`;
+  }
+  /**
+   * Accept only a completed current-format Lite document as a Full source and
+   * return the link recorded relative to the Full document. Nothing is written.
+   */
+  completedLiteSource(sourceDocPath, fullPath) {
+    const sourcePath = this.expandPath(sourceDocPath);
+    if (!sourcePath.toLowerCase().endsWith(LITE_ALPS_PROFILE.filenameSuffix)) {
+      throw new Error(
+        `Invalid Lite source: ${sourcePath}. A Full ALPS source must be a ${LITE_ALPS_PROFILE.filenameSuffix} document.`
+      );
+    }
+    let content;
+    try {
+      content = fs3.readFileSync(sourcePath, "utf-8");
+    } catch (error62) {
+      throw new Error(`Lite source not readable at ${sourcePath}: ${error62.message}`, {
+        cause: error62
+      });
+    }
+    const inspection = this.inspectDocument(content);
+    if ("error" in inspection)
+      throw new Error(`Invalid Lite source at ${sourcePath}: ${inspection.error}`);
+    if (!isLiteProfile(inspection.profile)) {
+      throw new Error(`Invalid Lite source at ${sourcePath}: the document is not Lite ALPS.`);
+    }
+    const incomplete = this.liteIncompleteReasons(content);
+    if (incomplete.length > 0) {
+      throw new Error(
+        `Lite source at ${sourcePath} is not complete: ${incomplete.join("; ")}. Complete the Lite document before deriving Full ALPS.`
+      );
+    }
+    const relative = path4.relative(path4.dirname(fullPath), sourcePath).split(path4.sep).join("/");
+    return { source: relative, fingerprint: sourceFingerprint(content) };
+  }
+  /** Resolve the recorded Lite source and its defined identifiers without failing the Full request. */
+  readLiteSource(link) {
+    const sourcePath = path4.resolve(path4.dirname(this.workingDoc), link.source);
+    let content;
+    try {
+      content = fs3.readFileSync(sourcePath, "utf-8");
+    } catch (error62) {
+      return { ok: false, link, reason: `not readable (${error62.message})` };
+    }
+    const inspection = this.inspectDocument(content);
+    if ("error" in inspection) return { ok: false, link, reason: inspection.error };
+    if (!isLiteProfile(inspection.profile)) {
+      return { ok: false, link, reason: "the document is not Lite ALPS" };
+    }
+    return { ok: true, link, content, defined: this.liteRequirements(content).defined };
+  }
+  /** Requirement identifiers a Lite document defines, duplicates and dangling references. */
+  liteRequirements(content) {
+    const owners = LITE_ALPS_PROFILE.requirementOwners ?? {};
+    const sections = this.parseSections(content);
+    const defined = /* @__PURE__ */ new Set();
+    const duplicates = /* @__PURE__ */ new Set();
+    const referenced = /* @__PURE__ */ new Set();
+    for (const [section, sectionContent] of sections) {
+      for (const [id, subsection] of this.parseSubsections(sectionContent, section)) {
+        for (const reference of requirementReferences(subsection.content))
+          referenced.add(reference);
+        const owned = owners[id];
+        if (!owned) continue;
+        for (const [definition, count] of requirementDefinitions(subsection.content, owned)) {
+          defined.add(definition);
+          if (count > 1) duplicates.add(definition);
+        }
+      }
+    }
+    const undefinedReferences = [...referenced].filter((id) => !defined.has(id));
+    return {
+      defined,
+      duplicates: sortRequirementIds(duplicates),
+      undefinedReferences: sortRequirementIds(undefinedReferences)
+    };
+  }
+  /** Reasons a Lite document is not complete; empty when it is. */
+  liteIncompleteReasons(content) {
+    const reasons = [];
+    const pending = this.sectionStates(content, LITE_ALPS_PROFILE).filter(
+      (state) => !state.complete
+    );
+    if (pending.length > 0) {
+      reasons.push(
+        `required Sections not written: ${pending.map((state) => state.section).join(", ")}`
+      );
+    }
+    const requirements = this.liteRequirements(content);
+    if (requirements.duplicates.length > 0) {
+      reasons.push(`duplicate requirement definitions: ${requirements.duplicates.join(", ")}`);
+    }
+    if (requirements.undefinedReferences.length > 0) {
+      reasons.push(
+        `undefined requirement references: ${requirements.undefinedReferences.join(", ")}`
+      );
+    }
+    return reasons;
   }
   /**
    * Keeps resume guidance aligned with each profile's authoring contract.
@@ -37375,7 +37541,7 @@ ${content}
    */
   resumeGuidance(profile2) {
     const steps = isLiteProfile(profile2) ? `1. Call alps_template(action: 'guide', profile: '${isLiteProfile(profile2) ? "lite" : "full"}', section: N) before working on any section
-2. Follow the guide: ask only for missing user-owned or protected context, but propose Sections 2 and 4 before asking the user to design them
+2. Follow the guide: ask only for missing user-owned context, undefined terms or protected decisions, but propose Sections 2-6 and 8 before asking the user to design them
 3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
 4. Get explicit "yes" confirmation before calling alps_section(action: 'save', doc_path, section, subsection_id, title, content)` : `1. Call alps_template(action: 'guide', profile: '${isLiteProfile(profile2) ? "lite" : "full"}', section: N) before working on any section
 2. Reuse supplied context. Ask 1-2 focused questions at a time only for missing information. DO NOT auto-generate content that invents missing product decisions
@@ -37439,9 +37605,18 @@ ${this.resumeGuidance(profile2)}`;
       const diagramError = architectureDiagramError(content);
       if (diagramError) throw new Error(`Invalid subsection content: ${diagramError}`);
     }
-    if (profile2.id === "lite" && subsection.fullId === "2.1") {
-      const diagramError = liteProductContextDiagramError(content);
+    if (profile2.id === "lite" && subsection.fullId === LITE_CONTEXT_DIAGRAM_SUBSECTION) {
+      const diagramError = liteBusinessContextDiagramError(content);
       if (diagramError) throw new Error(`Invalid subsection content: ${diagramError}`);
+    }
+    const owned = profile2.requirementOwners?.[subsection.fullId];
+    if (owned) {
+      const duplicates = [...requirementDefinitions(content, owned)].filter(([, count]) => count > 1).map(([id]) => id);
+      if (duplicates.length > 0) {
+        throw new Error(
+          `Invalid subsection content: requirement identifiers must be defined once in ${subsection.fullId}; duplicated: ${sortRequirementIds(duplicates).join(", ")}.`
+        );
+      }
     }
     const projectName = this.extractProjectName(document.content);
     const sections = this.parseSections(document.content);
@@ -37455,9 +37630,20 @@ ${this.resumeGuidance(profile2)}`;
     existing.set(subsection.fullId, { title, content });
     const parts = [...existing.entries()].sort(bySubsectionId).map(([id, value]) => this.buildSubsection(id, value.title, value.content));
     sections.set(section, parts.join("\n"));
+    const sourceLink = this.extractSourceLink(document.content);
+    if (sourceLink) {
+      const source = this.readLiteSource(sourceLink);
+      if (source.ok) sourceLink.fingerprint = sourceFingerprint(source.content);
+    }
     this.writeAtomic(
       this.workingDoc,
-      this.buildDocument(profile2, projectName, sections, parseGlossary(document.content))
+      this.buildDocument(
+        profile2,
+        projectName,
+        sections,
+        parseGlossary(document.content),
+        sourceLink
+      )
     );
     return `Saved ${subsection.fullId}. ${title}`;
   }
@@ -37511,18 +37697,96 @@ ${subsection.content}`;
 
 ${display}`;
   }
+  getStatus() {
+    const document = this.readWorkingDocument();
+    const { content: docContent, profile: profile2 } = document;
+    const projectName = this.extractProjectName(docContent);
+    const lines = [`${profile2.label} Document: ${projectName}`, `Location: ${this.workingDoc}`, ""];
+    const states = this.sectionStates(docContent, profile2);
+    for (const state of states) {
+      lines.push(`Section ${state.section} (${state.title}): ${state.status}`);
+    }
+    const glossary = parseGlossary(docContent);
+    if (glossary.length > 0) lines.push(`Appendix (Glossary): ${glossary.length} defined terms`);
+    const pending = states.filter((state) => !state.complete).map((state) => state.section);
+    if (isLiteProfile(profile2)) {
+      lines.push("", ...this.liteRequirementLines(docContent, pending));
+    } else {
+      const sourceLink = this.extractSourceLink(docContent);
+      if (sourceLink) lines.push("", ...this.liteSourceLines(docContent, sourceLink, pending));
+    }
+    return lines.join("\n");
+  }
+  liteRequirementLines(content, pending) {
+    const requirements = this.liteRequirements(content);
+    const reasons = [];
+    if (pending.length > 0) reasons.push(`Sections not written: ${pending.join(", ")}`);
+    const lines = [
+      `Requirement IDs: ${requirements.defined.size} defined${requirements.defined.size > 0 ? ` (${sortRequirementIds(requirements.defined).join(", ")})` : ""}`
+    ];
+    if (requirements.duplicates.length > 0) {
+      lines.push(`Duplicate requirement definitions: ${requirements.duplicates.join(", ")}`);
+      reasons.push("duplicate requirement definitions");
+    }
+    if (requirements.undefinedReferences.length > 0) {
+      lines.push(
+        `Undefined requirement references: ${requirements.undefinedReferences.join(", ")}`
+      );
+      reasons.push("undefined requirement references");
+    }
+    lines.push(
+      reasons.length === 0 ? "Completion: \u2705 Complete" : `Completion: \u{1F7E1} Incomplete \u2014 ${reasons.join("; ")}`
+    );
+    return lines;
+  }
+  /** Report Lite coverage, dangling references and source changes for a derived Full document. */
+  liteSourceLines(content, link, pending) {
+    const reasons = [];
+    if (pending.length > 0) reasons.push(`Sections not written: ${pending.join(", ")}`);
+    const lines = [`Lite source: ${link.source}`];
+    const source = this.readLiteSource(link);
+    if (!source.ok) {
+      lines.push(`Lite source unavailable: ${source.reason}. Lite coverage is unverified.`);
+      reasons.push("Lite source unavailable");
+    } else {
+      const sections = this.parseSections(content);
+      const referenced = /* @__PURE__ */ new Set();
+      for (const [section, sectionContent] of sections) {
+        for (const [, subsection] of this.parseSubsections(sectionContent, section)) {
+          for (const id of requirementReferences(subsection.content)) referenced.add(id);
+        }
+      }
+      const missing = sortRequirementIds([...source.defined].filter((id) => !referenced.has(id)));
+      const dangling = sortRequirementIds([...referenced].filter((id) => !source.defined.has(id)));
+      const covered = source.defined.size - missing.length;
+      lines.push(
+        missing.length === 0 ? `Lite coverage: \u2705 ${covered}/${source.defined.size} requirement IDs referenced` : `Lite coverage: \u{1F7E1} ${covered}/${source.defined.size} requirement IDs referenced \u2014 missing: ${missing.join(", ")}`
+      );
+      if (missing.length > 0) reasons.push("Lite requirement IDs not referenced");
+      if (dangling.length > 0) {
+        lines.push(`References to IDs not defined in the Lite source: ${dangling.join(", ")}`);
+        reasons.push("references to IDs not defined in the Lite source");
+      }
+      if (link.fingerprint !== sourceFingerprint(source.content)) {
+        lines.push(
+          "Lite source changed since the last Full save: offer one explicit re-derivation; this notice does not block completion."
+        );
+      }
+    }
+    lines.push(
+      reasons.length === 0 ? "Completion: \u2705 Complete" : `Completion: \u{1F7E1} Incomplete \u2014 ${reasons.join("; ")}`
+    );
+    return lines;
+  }
   /**
    * Count required entries with an actual body, not merely saved XML tags.
    * Empty saves still clear content, but cannot make a section complete on resume.
    * Reading status never rewrites older documents containing empty entries.
    */
-  getStatus() {
-    const document = this.readWorkingDocument();
-    const { content: docContent, profile: profile2 } = document;
-    const projectName = this.extractProjectName(docContent);
+  sectionStates(docContent, profile2) {
     const sections = this.parseSections(docContent);
     const registry2 = this.templates[profile2.id];
-    const lines = [`${profile2.label} Document: ${projectName}`, `Location: ${this.workingDoc}`, ""];
+    const states = [];
     for (const [number4, title] of Object.entries(profile2.sectionTitles)) {
       const section = Number.parseInt(number4, 10);
       const content = sections.get(section) || "";
@@ -37530,9 +37794,10 @@ ${display}`;
       const subsections = new Map(
         [...savedSubsections].filter(([, subsection]) => subsection.content.trim().length > 0)
       );
+      const optional2 = profile2.optionalSections.includes(section);
       let status;
       if (subsections.size === 0 && (savedSubsections.size > 0 || this.isNotStarted(content))) {
-        status = profile2.optionalSections.includes(section) ? "\u2B1C Optional \u2014 not written" : "\u2B1C Not started";
+        status = optional2 ? "\u2B1C Optional \u2014 not written" : "\u2B1C Not started";
       } else if (section === profile2.dynamicSection?.section) {
         const source = this.parseSubsections(
           sections.get(profile2.dynamicSection.sourceSection) || "",
@@ -37549,17 +37814,20 @@ ${display}`;
       } else {
         const expected = registry2.expectedSubsections(section).filter((definition) => definition.required);
         const written = expected.filter((definition) => subsections.has(definition.id)).length;
-        if (expected.length === 0 && profile2.optionalSections.includes(section)) {
+        if (expected.length === 0 && optional2) {
           status = `\u2705 Written (${subsections.size} optional subsection${subsections.size === 1 ? "" : "s"})`;
         } else {
           status = expected.length > 0 && written === expected.length ? `\u2705 Written (${written}/${expected.length} subsections)` : `\u{1F7E1} In progress (${written}/${expected.length} subsections)`;
         }
       }
-      lines.push(`Section ${number4} (${title}): ${status}`);
+      states.push({
+        section,
+        title,
+        status,
+        complete: status.startsWith("\u2705") || optional2 && status.startsWith("\u2B1C")
+      });
     }
-    const glossary = parseGlossary(docContent);
-    if (glossary.length > 0) lines.push(`Appendix (Glossary): ${glossary.length} defined terms`);
-    return lines.join("\n");
+    return states;
   }
   contentToMarkdown(content, section) {
     const subsections = this.parseSubsections(content, section);
@@ -37585,6 +37853,9 @@ ${data.content}`).join("\n\n");
     const sections = this.parseSections(docContent);
     const lines = [`# ${projectName} ${profile2.markdownTitle}
 `];
+    const sourceLink = isLiteProfile(profile2) ? null : this.extractSourceLink(docContent);
+    if (sourceLink) lines.push(`> Lite source: ${sourceLink.source}
+`);
     for (const section of sectionNumbers(profile2)) {
       const content = sections.get(section) || "";
       const unwritten = this.sectionIsUnwritten(content, section);
@@ -37628,11 +37899,12 @@ var DocumentController = class {
     this.service = service;
   }
   service;
-  initAlpsDocument(projectName, outputPath) {
-    return this.service.initDocument(projectName, outputPath);
+  /** Initialize Full ALPS, optionally derived from a completed Lite document. */
+  initAlpsDocument(projectName, outputPath, sourceDocPath) {
+    return this.service.initDocument(projectName, outputPath, "alps", sourceDocPath);
   }
-  initLiteAlpsDocument(projectName, outputPath) {
-    return this.service.initDocument(projectName, outputPath, "lite");
+  initLiteAlpsDocument(projectName, outputPath, sourceDocPath) {
+    return this.service.initDocument(projectName, outputPath, "lite", sourceDocPath);
   }
   loadAlpsDocument(docPath) {
     return this.service.loadDocument(docPath);
@@ -37665,13 +37937,13 @@ var server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.15.14" },
+  { name: "alps-writer", version: "0.16.0" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
 ALPS defines each feature as a vertical slice \u2014 a single feature that cuts through all layers (UI \u2192 API \u2192 Data) end-to-end, so it can be developed, tested, and delivered independently. When writing feature specs (Section 7), always describe each user action as a vertical slice tracing from UI to API to data store. Write for a junior developer seeing the Feature for the first time: use plain language, explain unfamiliar acronyms and domain or technical terms on first use, and make the actor, action, conceptual data, and user-visible result clear without requiring code knowledge. When multiple participants or layers make a flow easier to understand visually, recommend a concise Mermaid diagram; prefer \`sequenceDiagram\` for request, data, and response flow across UI, API, data stores, and external systems. The diagram is optional and its absence never blocks approval, saving, or completion. Keep diagrams at product-requirement resolution and out of modules, classes, functions, schemas, libraries, and algorithms. End each Feature's Acceptance Criteria with one Demo checkpoint that states its role in the Section 3 end-to-end demo and its observable completion result; do not duplicate the Feature's flow, errors, or acceptance rules in a separate demo subsection.
 
-Lite ALPS is a four-section, product-level simplification of Full ALPS for a minimum PoC. It uses the same conversational approval pattern as Full ALPS while working backward from the user's desired business impact: explain the current section, ask one focused question when protected context is missing, integrate the user's answer, present an approval digest, and save only after confirmation. Lite reduces the template to Target User and Core Problem, Desired Business Impact, an AI-proposed Solution Strategy with exactly one product-level Mermaid \`C4Context\`, Essential User Experiences, optional Explicit Exclusions, and one AI-proposed Demo Scenario. Essential User Experiences define the user-visible experiences the PoC must not omit and their business-impact contribution; Demo Scenario proposes the concrete starting state, input, actions, and visible results that demonstrate every approved experience. Its document state and lifecycle remain independent from Full ALPS, and Lite support does not alter Full ALPS prompts and guides.
+Lite ALPS is an eight-section business-requirements document with no technical requirements. It uses the same conversational approval pattern as Full ALPS: the user supplies the business context, and AI works backward from it to propose identified, evaluable Business Requirements (BR-n), Functional Requirements (FR-n), Non-Functional Requirements (NFR-n), Edge Cases (EC-n), KPIs (KPI-n) with tension metrics (TM-n), one business-wording Mermaid \`C4Context\` Business Context Diagram, and a Demo Scenario covering every required FR. Every BR, FR, NFR and EC is marked required or optional and has an observable pass/fail criterion with its basis. Lite is the upper business baseline: Full ALPS may be initialized from a completed Lite with source_doc_path and then converts each Lite requirement into technical requirements without changing its business meaning, tracing the Lite IDs it covers. Lite never reads Full.
 
 <TRIGGER>
 MUST use this server's tools when the user wants to:
@@ -37686,13 +37958,14 @@ Keywords: PRD, ALPS, Lite ALPS, \uAE30\uD68D\uC11C, \uAE30\uD68D \uBB38\uC11C, \
 <WORKFLOW>
 Every operation on an existing document requires doc_path; init requires output_path. Use the source path returned by init/load on every read, save, glossary, status, and export call. There is no active-document fallback; missing or invalid paths fail without selecting another document.
 1. Full ALPS: alps_document(action: 'init', profile: 'full', project_name, output_path) or alps_document(action: 'load', doc_path)
+   Full ALPS derived from Lite: alps_document(action: 'init', profile: 'full', project_name, output_path, source_doc_path) with a completed .lite.alps.xml
    Lite ALPS: alps_document(action: 'init', profile: 'lite', project_name, output_path) or alps_document(action: 'load', doc_path)
 2. Full ALPS: alps_template(action: 'overview', profile: 'full')
    Lite ALPS: alps_template(action: 'overview', profile: 'lite')
    The matching overview MUST be called first to get the conversation guide.
 3. Use atomic confirmation by default. Batch confirmation is allowed only when the user explicitly requests it or supplies a complete structured source covering multiple sections.
    Full ALPS order: 1, 2, 3, 4, 6, 5, 7, 8, 9.
-   Lite ALPS order: 1, 2, 3, 4. Section 3 is optional.
+   Lite ALPS order: 1, 2, 3, 4, 5, 6, 7, 8. Section 7 is optional.
    For Full ALPS, author Requirements (6) before Design (5), because Design reuses the Feature IDs defined in Section 6.1.
    For each section:
    a. Call the matching alps_template(action: 'guide', profile: 'full', section: N) or alps_template(action: 'guide', profile: 'lite', section: N)
@@ -37705,7 +37978,7 @@ Every operation on an existing document requires doc_path; init requires output_
    approval unit and persist each with its own alps_section(action: 'save', doc_path, section, subsection_id, title, content) call. Never merge,
    skip, or infer a Feature.
 5. alps_export(doc_path) for final output
-6. After the selected document's required Sections are approved and saved (Full: all nine; Lite: 1, 2, and 4), verify written completion with alps_document(action: 'status', doc_path) and ask once whether the user wants an optional deep-research review of the ALPS items' evidence and errors. Lite's unwritten optional Section 3 does not block this invitation. Reuse an explicit review request or an answered choice in the current conversation. An unanswered invitation, decline, deferral, or research failure never changes document completion. Do not start research without a request. If requested, use the bundled alps-research skill: prefer actual available built-in deep research; otherwise investigate with the agent's web search and source-reading tools. If web search is unavailable or fails, use connected DuckDuckGo MCP and disclose that fallback and its reason. If neither works, report the external evidence gaps and continue accessible source and internal checks. Tie findings to the original items, distinguish factual errors from unsupported hypotheses and chosen goals/policies, verify source passages, and present corrections for existing Section/Feature approval before saving. Research alone never authorizes document changes.
+6. After the selected document's required Sections are approved and saved (Full: all nine; Lite: every Section except optional 7), verify completion with alps_document(action: 'status', doc_path) \u2014 its Completion line includes requirement-ID checks for Lite and Lite coverage for a derived Full \u2014 and ask once whether the user wants an optional deep-research review of the ALPS items' evidence and errors. Lite's unwritten optional Section 7 does not block this invitation. Reuse an explicit review request or an answered choice in the current conversation. An unanswered invitation, decline, deferral, or research failure never changes document completion. Do not start research without a request. If requested, use the bundled alps-research skill: prefer actual available built-in deep research; otherwise investigate with the agent's web search and source-reading tools. If web search is unavailable or fails, use connected DuckDuckGo MCP and disclose that fallback and its reason. If neither works, report the external evidence gaps and continue accessible source and internal checks. Tie findings to the original items, distinguish factual errors from unsupported hypotheses and chosen goals/policies, verify source passages, and present corrections for existing Section/Feature approval before saving. Research alone never authorizes document changes.
 </WORKFLOW>
 
 <RULES>
@@ -37714,22 +37987,22 @@ Every operation on an existing document requires doc_path; init requires output_
 - Include new or changed definitions in the current section's approval digest, then save each with alps_glossary(action: 'save', doc_path, term, definition). Do not add a separate approval or interview stage. Check missing definitions before completion. The optional Glossary Appendix appears after all numbered sections only when needed; ordinary-language documents need no glossary. Do not require DDD or domain classification for glossary maintenance, or move requirement rules out of their owning sections.
 - MUST call the overview tool matching the selected document profile first
 - NEVER proceed without user confirmation
-- ALWAYS confirm progress at the SECTION level. Lite Section 3 is optional; when no explicit exclusions were provided and the approved boundary is not materially ambiguous, state that and skip it without a dedicated question.
+- ALWAYS confirm progress at the SECTION level. Lite Section 7 is optional; when no explicit exclusions were provided and the approved boundary is not materially ambiguous, state that and skip it without a dedicated question.
 - Approval digests MUST remain readable as raw text and include every contract-bearing value, rule, permission, state, transition, scope boundary, and success condition. Omit repeated explanation, examples, Markdown decoration, and implementation detail. Do not name omitted implementation details or add an exclusion list for them.
 - NEVER save a requirement contract that was absent from the approval digest. Show the full pending content when the user requests it.
 - Batch approval requires explicit opt-in or a complete structured source; each section and Feature remains a separate save unit.
 - For Section 7, each Feature 7.x is one approval and save unit. Its 7.x.1-7.x.6 fields stay together.
 - If a Section 7 Feature's comprehension load is 8/10 or higher, suggest up to three independently demonstrable user-behavior splits before approval. The suggestion never blocks approval or saving, and the user may keep the original Feature.
 - Section 7 must be understandable to a junior developer seeing the Feature for the first time. Explain unfamiliar terms on first use. Recommend Mermaid when it materially clarifies a multi-participant or multi-layer flow, prefer \`sequenceDiagram\` for data flow, and never make a diagram an approval, save, or completion requirement.
-- Lite ALPS has four fixed Sections: Overview, Solution and Essential User Experiences, optional Out of Scope, and Demo Scenario.
-- Lite ALPS follows Full ALPS's conversation pattern: when context is missing, ask one focused question at a time, or at most two closely related questions, and integrate the user's answer before approval.
-- Section 1 has only Target User and Core Problem and Desired Business Impact. Do not ask for a solution, screen, starting state, user-action sequence, or demo procedure there. Section 2 has only Solution Strategy and Essential User Experiences. Section 3 has one optional Explicit Exclusions list. Section 4 has one 4.1 Demo Scenario.
-- Work backward from the approved Desired Business Impact and propose Section 2 instead of asking the user to design the minimum solution or demo flow. End the text Solution Strategy with exactly one Mermaid \`C4Context\` Product Context Diagram generated from the approved Overview and complete Section 2 draft. Show the target user, PoC system, relevant external systems, and their relationships at product-role level. The text remains independently reviewable. Never generate \`C4Container\`, lower C4 levels, APIs, databases, deployment units, technology stacks, libraries, code structure, or implementation layers. Every Essential User Experience has a distinct name, user-observable result, and contribution to the Desired Business Impact. Starting states and sequential user actions belong to Section 4. Do not use implementation functions, internal state, technical layers, or subjective impressions as completion results.
-- Section 4 proposes the shortest Demo Scenario that demonstrates every approved Essential User Experience. Propose the concrete starting state, representative input, sequential user actions, and visible results instead of asking the user to supply them. Show the complete scenario, experience coverage, and business-impact connection before approval. Every step or execution block names the experience it demonstrates, and the overall result passes only when every experience is observable.
-- Ask only when a choice would change money, permissions, law or regulation, privacy or safety, irreversible data meaning, an external promise, or the acceptance boundary. If experiences cannot be connected without such an unapproved product contract, keep separate execution blocks inside the same Demo Scenario. Do not add a separate Learning Check or present a passing demo as proof of actual business impact or market validity.
-- Do not add architecture questions or content beyond the required product-level \`C4Context\`. Do not add NFR, implementation-detail, or ADR-handoff questions to Lite ALPS.
-- Do not invent exclusions or require optional Section 3.
-- Lite and Full keep independent document state and completion; Lite is not a transition into Full.
+- Lite ALPS has eight fixed Sections: Business Context, Business Requirements, Functional Requirements, Non-Functional Requirements, Edge Cases, Success Criteria, optional Out of Scope, and Demo Scenario.
+- Lite ALPS follows Full ALPS's conversation pattern. Section 1 asks for the target user, core problem, intent and desired outcome only; never ask there for a solution, screen, technology, requirement list or demo procedure. Sections 2-6 and 8 start with AI proposals; ask only for missing context that cannot be proposed, undefined terms, or a choice that would change money, permissions, law or regulation, privacy or safety, irreversible data meaning, an external promise, or the acceptance boundary.
+- Define each Lite requirement ID once in its owning subsection (BR 2.1, FR 3.1, NFR 4.1, EC 5.1, KPI and TM 6.1) at the start of a table row, list item or heading; elsewhere IDs are references. Keep approved IDs stable and never reuse a deleted ID. When an approved item changes, show the later items that reference it in the same approval digest.
+- Every BR, FR, NFR and EC states required or optional and an observable pass/fail criterion with its basis, in user-visible or business-verifiable terms. Every FR has an actor, starting situation, business input, applied rules and values with related BR, observable result, related failure handling, and Given/When/Then acceptance criteria. Do not save a Section while an acceptance-changing value or policy remains unresolved.
+- Release acceptance requires every required BR, FR, NFR and EC to pass. For every KPI always propose a tension metric with its abuse or opposite-failure scenario, and record the decision per KPI: an adopted TM-n, the required IDs that already guard it, or not adopted. KPIs and TMs are monitoring unless the user confirms them as required. Lite KPIs carry only their business calculation; collection and instrumentation belong to Full.
+- Record business-mandated external systems, data locations or channels as BR or NFR business boundaries; never record replaceable technology. Never add APIs, storage, deployment, libraries, code structure, Feature IDs, implementation plans, architecture questions or \`C4Container\` to Lite. Section 3.2 has exactly one Mermaid \`C4Context\` in business-role wording.
+- Section 8 proposes the shortest Demo Scenario that shows every required FR, names the FR and EC IDs each step shows, includes relevant EC counterexamples, and passes only when every shown criterion passes. A passing demo is not proof of business impact or market validity.
+- Do not invent exclusions or require optional Section 7.
+- Lite and Full keep independent document state and completion. A derived Full records its Lite source; never change Lite business meaning in Full \u2014 propose a Lite change through Lite's own approval instead.
 </RULES>`
   }
 );
@@ -37810,27 +38083,31 @@ server.registerTool(
 server.registerTool(
   "alps_document",
   {
-    description: "Manage a document: init requires profile, project_name and output_path; load/status require doc_path and detect the profile from the source. After loading, follow that profile's overview and guide; obtain section approval before saving.",
+    description: "Manage a document: init requires profile, project_name and output_path, and Full init may take source_doc_path to derive from a completed Lite document; load/status require doc_path and detect the profile from the source. After loading, follow that profile's overview and guide; obtain section approval before saving.",
     inputSchema: external_exports.strictObject({
       action: external_exports.enum(["init", "load", "status"]),
       profile: profile.optional(),
       project_name: external_exports.string().min(1).optional(),
       output_path: external_exports.string().min(1).describe(PATH_BASE).optional(),
-      doc_path: documentPath.optional()
+      doc_path: documentPath.optional(),
+      source_doc_path: external_exports.string().min(1).refine((value) => value.trim().length > 0, "Source document path must not be blank").describe(
+        `Optional for init with profile 'full': a completed .lite.alps.xml to derive Full ALPS from. ${PATH_BASE}`
+      ).optional()
     }).superRefine(
       (input2, ctx) => actionFields(
         input2,
         ctx,
-        input2.action === "init" ? ["profile", "project_name", "output_path"] : ["doc_path"]
+        input2.action === "init" ? ["profile", "project_name", "output_path"] : ["doc_path"],
+        input2.action === "init" ? ["source_doc_path"] : []
       )
     ),
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false }
   },
-  ({ action, profile: profile2, project_name, output_path, doc_path }) => {
+  ({ action, profile: profile2, project_name, output_path, doc_path, source_doc_path }) => {
     switch (action) {
       case "init":
         return response(
-          profile2 === "lite" ? dc.initLiteAlpsDocument(project_name, output_path) : dc.initAlpsDocument(project_name, output_path)
+          profile2 === "lite" ? dc.initLiteAlpsDocument(project_name, output_path, source_doc_path) : dc.initAlpsDocument(project_name, output_path, source_doc_path)
         );
       case "load":
         return response(dc.loadAlpsDocument(doc_path));

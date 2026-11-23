@@ -15,13 +15,13 @@ const server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.15.14" },
+  { name: "alps-writer", version: "0.16.0" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
 ALPS defines each feature as a vertical slice — a single feature that cuts through all layers (UI → API → Data) end-to-end, so it can be developed, tested, and delivered independently. When writing feature specs (Section 7), always describe each user action as a vertical slice tracing from UI to API to data store. Write for a junior developer seeing the Feature for the first time: use plain language, explain unfamiliar acronyms and domain or technical terms on first use, and make the actor, action, conceptual data, and user-visible result clear without requiring code knowledge. When multiple participants or layers make a flow easier to understand visually, recommend a concise Mermaid diagram; prefer \`sequenceDiagram\` for request, data, and response flow across UI, API, data stores, and external systems. The diagram is optional and its absence never blocks approval, saving, or completion. Keep diagrams at product-requirement resolution and out of modules, classes, functions, schemas, libraries, and algorithms. End each Feature's Acceptance Criteria with one Demo checkpoint that states its role in the Section 3 end-to-end demo and its observable completion result; do not duplicate the Feature's flow, errors, or acceptance rules in a separate demo subsection.
 
-Lite ALPS is a four-section, product-level simplification of Full ALPS for a minimum PoC. It uses the same conversational approval pattern as Full ALPS while working backward from the user's desired business impact: explain the current section, ask one focused question when protected context is missing, integrate the user's answer, present an approval digest, and save only after confirmation. Lite reduces the template to Target User and Core Problem, Desired Business Impact, an AI-proposed Solution Strategy with exactly one product-level Mermaid \`C4Context\`, Essential User Experiences, optional Explicit Exclusions, and one AI-proposed Demo Scenario. Essential User Experiences define the user-visible experiences the PoC must not omit and their business-impact contribution; Demo Scenario proposes the concrete starting state, input, actions, and visible results that demonstrate every approved experience. Its document state and lifecycle remain independent from Full ALPS, and Lite support does not alter Full ALPS prompts and guides.
+Lite ALPS is an eight-section business-requirements document with no technical requirements. It uses the same conversational approval pattern as Full ALPS: the user supplies the business context, and AI works backward from it to propose identified, evaluable Business Requirements (BR-n), Functional Requirements (FR-n), Non-Functional Requirements (NFR-n), Edge Cases (EC-n), KPIs (KPI-n) with tension metrics (TM-n), one business-wording Mermaid \`C4Context\` Business Context Diagram, and a Demo Scenario covering every required FR. Every BR, FR, NFR and EC is marked required or optional and has an observable pass/fail criterion with its basis. Lite is the upper business baseline: Full ALPS may be initialized from a completed Lite with source_doc_path and then converts each Lite requirement into technical requirements without changing its business meaning, tracing the Lite IDs it covers. Lite never reads Full.
 
 <TRIGGER>
 MUST use this server's tools when the user wants to:
@@ -36,13 +36,14 @@ Keywords: PRD, ALPS, Lite ALPS, 기획서, 기획 문서, 제품 요구사항, �
 <WORKFLOW>
 Every operation on an existing document requires doc_path; init requires output_path. Use the source path returned by init/load on every read, save, glossary, status, and export call. There is no active-document fallback; missing or invalid paths fail without selecting another document.
 1. Full ALPS: alps_document(action: 'init', profile: 'full', project_name, output_path) or alps_document(action: 'load', doc_path)
+   Full ALPS derived from Lite: alps_document(action: 'init', profile: 'full', project_name, output_path, source_doc_path) with a completed .lite.alps.xml
    Lite ALPS: alps_document(action: 'init', profile: 'lite', project_name, output_path) or alps_document(action: 'load', doc_path)
 2. Full ALPS: alps_template(action: 'overview', profile: 'full')
    Lite ALPS: alps_template(action: 'overview', profile: 'lite')
    The matching overview MUST be called first to get the conversation guide.
 3. Use atomic confirmation by default. Batch confirmation is allowed only when the user explicitly requests it or supplies a complete structured source covering multiple sections.
    Full ALPS order: 1, 2, 3, 4, 6, 5, 7, 8, 9.
-   Lite ALPS order: 1, 2, 3, 4. Section 3 is optional.
+   Lite ALPS order: 1, 2, 3, 4, 5, 6, 7, 8. Section 7 is optional.
    For Full ALPS, author Requirements (6) before Design (5), because Design reuses the Feature IDs defined in Section 6.1.
    For each section:
    a. Call the matching alps_template(action: 'guide', profile: 'full', section: N) or alps_template(action: 'guide', profile: 'lite', section: N)
@@ -55,7 +56,7 @@ Every operation on an existing document requires doc_path; init requires output_
    approval unit and persist each with its own alps_section(action: 'save', doc_path, section, subsection_id, title, content) call. Never merge,
    skip, or infer a Feature.
 5. alps_export(doc_path) for final output
-6. After the selected document's required Sections are approved and saved (Full: all nine; Lite: 1, 2, and 4), verify written completion with alps_document(action: 'status', doc_path) and ask once whether the user wants an optional deep-research review of the ALPS items' evidence and errors. Lite's unwritten optional Section 3 does not block this invitation. Reuse an explicit review request or an answered choice in the current conversation. An unanswered invitation, decline, deferral, or research failure never changes document completion. Do not start research without a request. If requested, use the bundled alps-research skill: prefer actual available built-in deep research; otherwise investigate with the agent's web search and source-reading tools. If web search is unavailable or fails, use connected DuckDuckGo MCP and disclose that fallback and its reason. If neither works, report the external evidence gaps and continue accessible source and internal checks. Tie findings to the original items, distinguish factual errors from unsupported hypotheses and chosen goals/policies, verify source passages, and present corrections for existing Section/Feature approval before saving. Research alone never authorizes document changes.
+6. After the selected document's required Sections are approved and saved (Full: all nine; Lite: every Section except optional 7), verify completion with alps_document(action: 'status', doc_path) — its Completion line includes requirement-ID checks for Lite and Lite coverage for a derived Full — and ask once whether the user wants an optional deep-research review of the ALPS items' evidence and errors. Lite's unwritten optional Section 7 does not block this invitation. Reuse an explicit review request or an answered choice in the current conversation. An unanswered invitation, decline, deferral, or research failure never changes document completion. Do not start research without a request. If requested, use the bundled alps-research skill: prefer actual available built-in deep research; otherwise investigate with the agent's web search and source-reading tools. If web search is unavailable or fails, use connected DuckDuckGo MCP and disclose that fallback and its reason. If neither works, report the external evidence gaps and continue accessible source and internal checks. Tie findings to the original items, distinguish factual errors from unsupported hypotheses and chosen goals/policies, verify source passages, and present corrections for existing Section/Feature approval before saving. Research alone never authorizes document changes.
 </WORKFLOW>
 
 <RULES>
@@ -64,22 +65,22 @@ Every operation on an existing document requires doc_path; init requires output_
 - Include new or changed definitions in the current section's approval digest, then save each with alps_glossary(action: 'save', doc_path, term, definition). Do not add a separate approval or interview stage. Check missing definitions before completion. The optional Glossary Appendix appears after all numbered sections only when needed; ordinary-language documents need no glossary. Do not require DDD or domain classification for glossary maintenance, or move requirement rules out of their owning sections.
 - MUST call the overview tool matching the selected document profile first
 - NEVER proceed without user confirmation
-- ALWAYS confirm progress at the SECTION level. Lite Section 3 is optional; when no explicit exclusions were provided and the approved boundary is not materially ambiguous, state that and skip it without a dedicated question.
+- ALWAYS confirm progress at the SECTION level. Lite Section 7 is optional; when no explicit exclusions were provided and the approved boundary is not materially ambiguous, state that and skip it without a dedicated question.
 - Approval digests MUST remain readable as raw text and include every contract-bearing value, rule, permission, state, transition, scope boundary, and success condition. Omit repeated explanation, examples, Markdown decoration, and implementation detail. Do not name omitted implementation details or add an exclusion list for them.
 - NEVER save a requirement contract that was absent from the approval digest. Show the full pending content when the user requests it.
 - Batch approval requires explicit opt-in or a complete structured source; each section and Feature remains a separate save unit.
 - For Section 7, each Feature 7.x is one approval and save unit. Its 7.x.1-7.x.6 fields stay together.
 - If a Section 7 Feature's comprehension load is 8/10 or higher, suggest up to three independently demonstrable user-behavior splits before approval. The suggestion never blocks approval or saving, and the user may keep the original Feature.
 - Section 7 must be understandable to a junior developer seeing the Feature for the first time. Explain unfamiliar terms on first use. Recommend Mermaid when it materially clarifies a multi-participant or multi-layer flow, prefer \`sequenceDiagram\` for data flow, and never make a diagram an approval, save, or completion requirement.
-- Lite ALPS has four fixed Sections: Overview, Solution and Essential User Experiences, optional Out of Scope, and Demo Scenario.
-- Lite ALPS follows Full ALPS's conversation pattern: when context is missing, ask one focused question at a time, or at most two closely related questions, and integrate the user's answer before approval.
-- Section 1 has only Target User and Core Problem and Desired Business Impact. Do not ask for a solution, screen, starting state, user-action sequence, or demo procedure there. Section 2 has only Solution Strategy and Essential User Experiences. Section 3 has one optional Explicit Exclusions list. Section 4 has one 4.1 Demo Scenario.
-- Work backward from the approved Desired Business Impact and propose Section 2 instead of asking the user to design the minimum solution or demo flow. End the text Solution Strategy with exactly one Mermaid \`C4Context\` Product Context Diagram generated from the approved Overview and complete Section 2 draft. Show the target user, PoC system, relevant external systems, and their relationships at product-role level. The text remains independently reviewable. Never generate \`C4Container\`, lower C4 levels, APIs, databases, deployment units, technology stacks, libraries, code structure, or implementation layers. Every Essential User Experience has a distinct name, user-observable result, and contribution to the Desired Business Impact. Starting states and sequential user actions belong to Section 4. Do not use implementation functions, internal state, technical layers, or subjective impressions as completion results.
-- Section 4 proposes the shortest Demo Scenario that demonstrates every approved Essential User Experience. Propose the concrete starting state, representative input, sequential user actions, and visible results instead of asking the user to supply them. Show the complete scenario, experience coverage, and business-impact connection before approval. Every step or execution block names the experience it demonstrates, and the overall result passes only when every experience is observable.
-- Ask only when a choice would change money, permissions, law or regulation, privacy or safety, irreversible data meaning, an external promise, or the acceptance boundary. If experiences cannot be connected without such an unapproved product contract, keep separate execution blocks inside the same Demo Scenario. Do not add a separate Learning Check or present a passing demo as proof of actual business impact or market validity.
-- Do not add architecture questions or content beyond the required product-level \`C4Context\`. Do not add NFR, implementation-detail, or ADR-handoff questions to Lite ALPS.
-- Do not invent exclusions or require optional Section 3.
-- Lite and Full keep independent document state and completion; Lite is not a transition into Full.
+- Lite ALPS has eight fixed Sections: Business Context, Business Requirements, Functional Requirements, Non-Functional Requirements, Edge Cases, Success Criteria, optional Out of Scope, and Demo Scenario.
+- Lite ALPS follows Full ALPS's conversation pattern. Section 1 asks for the target user, core problem, intent and desired outcome only; never ask there for a solution, screen, technology, requirement list or demo procedure. Sections 2-6 and 8 start with AI proposals; ask only for missing context that cannot be proposed, undefined terms, or a choice that would change money, permissions, law or regulation, privacy or safety, irreversible data meaning, an external promise, or the acceptance boundary.
+- Define each Lite requirement ID once in its owning subsection (BR 2.1, FR 3.1, NFR 4.1, EC 5.1, KPI and TM 6.1) at the start of a table row, list item or heading; elsewhere IDs are references. Keep approved IDs stable and never reuse a deleted ID. When an approved item changes, show the later items that reference it in the same approval digest.
+- Every BR, FR, NFR and EC states required or optional and an observable pass/fail criterion with its basis, in user-visible or business-verifiable terms. Every FR has an actor, starting situation, business input, applied rules and values with related BR, observable result, related failure handling, and Given/When/Then acceptance criteria. Do not save a Section while an acceptance-changing value or policy remains unresolved.
+- Release acceptance requires every required BR, FR, NFR and EC to pass. For every KPI always propose a tension metric with its abuse or opposite-failure scenario, and record the decision per KPI: an adopted TM-n, the required IDs that already guard it, or not adopted. KPIs and TMs are monitoring unless the user confirms them as required. Lite KPIs carry only their business calculation; collection and instrumentation belong to Full.
+- Record business-mandated external systems, data locations or channels as BR or NFR business boundaries; never record replaceable technology. Never add APIs, storage, deployment, libraries, code structure, Feature IDs, implementation plans, architecture questions or \`C4Container\` to Lite. Section 3.2 has exactly one Mermaid \`C4Context\` in business-role wording.
+- Section 8 proposes the shortest Demo Scenario that shows every required FR, names the FR and EC IDs each step shows, includes relevant EC counterexamples, and passes only when every shown criterion passes. A passing demo is not proof of business impact or market validity.
+- Do not invent exclusions or require optional Section 7.
+- Lite and Full keep independent document state and completion. A derived Full records its Lite source; never change Lite business meaning in Full — propose a Lite change through Lite's own approval instead.
 </RULES>`,
   },
 );
@@ -187,7 +188,7 @@ server.registerTool(
   "alps_document",
   {
     description:
-      "Manage a document: init requires profile, project_name and output_path; load/status require doc_path and detect the profile from the source. After loading, follow that profile's overview and guide; obtain section approval before saving.",
+      "Manage a document: init requires profile, project_name and output_path, and Full init may take source_doc_path to derive from a completed Lite document; load/status require doc_path and detect the profile from the source. After loading, follow that profile's overview and guide; obtain section approval before saving.",
     inputSchema: z
       .strictObject({
         action: z.enum(["init", "load", "status"]),
@@ -195,23 +196,32 @@ server.registerTool(
         project_name: z.string().min(1).optional(),
         output_path: z.string().min(1).describe(PATH_BASE).optional(),
         doc_path: documentPath.optional(),
+        source_doc_path: z
+          .string()
+          .min(1)
+          .refine((value) => value.trim().length > 0, "Source document path must not be blank")
+          .describe(
+            `Optional for init with profile 'full': a completed .lite.alps.xml to derive Full ALPS from. ${PATH_BASE}`,
+          )
+          .optional(),
       })
       .superRefine((input, ctx) =>
         actionFields(
           input,
           ctx,
           input.action === "init" ? ["profile", "project_name", "output_path"] : ["doc_path"],
+          input.action === "init" ? ["source_doc_path"] : [],
         ),
       ),
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   },
-  ({ action, profile, project_name, output_path, doc_path }) => {
+  ({ action, profile, project_name, output_path, doc_path, source_doc_path }) => {
     switch (action) {
       case "init":
         return response(
           profile === "lite"
-            ? dc.initLiteAlpsDocument(project_name!, output_path!)
-            : dc.initAlpsDocument(project_name!, output_path!),
+            ? dc.initLiteAlpsDocument(project_name!, output_path!, source_doc_path)
+            : dc.initAlpsDocument(project_name!, output_path!, source_doc_path),
         );
       case "load":
         return response(dc.loadAlpsDocument(doc_path!));

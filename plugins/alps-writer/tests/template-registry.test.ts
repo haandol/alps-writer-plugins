@@ -105,52 +105,55 @@ test("the shipped templates expose the titles the tools advertise", () => {
   });
 });
 
-test("the Lite templates use fixed sections, keep Section 3 optional, and require Section 4", () => {
+test("the Lite templates use fixed sections, keep Section 7 optional, and require the others", () => {
   const registry = new TemplateRegistry(LITE_CHAPTERS_DIR, null);
 
   assert.equal(
-    registry.expectedSubsections(3).every((definition) => definition.required === false),
+    registry.expectedSubsections(7).every((definition) => definition.required === false),
     true,
   );
-  assert.equal(
-    registry.expectedSubsections(4).every((definition) => definition.required === true),
-    true,
-  );
-  assert.deepEqual(registry.validateSubsection(3, "1", "Excluded Users and Use Cases"), {
+  for (const section of [1, 2, 3, 4, 5, 6, 8]) {
+    assert.equal(
+      registry.expectedSubsections(section).every((definition) => definition.required === true),
+      true,
+      `Section ${section}`,
+    );
+  }
+  assert.deepEqual(registry.validateSubsection(7, "1", "Excluded Users and Use Cases"), {
     ok: false,
-    message: 'Title for 3.1 must be "Explicit Exclusions".',
+    message: 'Title for 7.1 must be "Explicit Exclusions".',
   });
-  assert.deepEqual(registry.validateSubsection(3, "1", "Explicit Exclusions"), {
+  assert.deepEqual(registry.validateSubsection(7, "1", "Explicit Exclusions"), {
     ok: true,
-    fullId: "3.1",
+    fullId: "7.1",
   });
   assert.deepEqual(registry.validateSubsection(1, "1", "Target User and Core Problem"), {
     ok: true,
     fullId: "1.1",
   });
-  assert.deepEqual(registry.validateSubsection(1, "2", "Desired Business Impact"), {
+  assert.deepEqual(registry.validateSubsection(1, "2", "Intent and Desired Outcome"), {
     ok: true,
     fullId: "1.2",
   });
-  assert.deepEqual(registry.validateSubsection(1, "2", "Value and Key Assumption"), {
+  assert.deepEqual(registry.validateSubsection(1, "2", "Desired Business Impact"), {
     ok: false,
-    message: 'Title for 1.2 must be "Desired Business Impact".',
+    message: 'Title for 1.2 must be "Intent and Desired Outcome".',
   });
-  assert.deepEqual(registry.validateSubsection(2, "2", "Essential User Experiences"), {
+  assert.deepEqual(registry.validateSubsection(3, "2", "Business Context Diagram"), {
     ok: true,
-    fullId: "2.2",
+    fullId: "3.2",
   });
-  assert.deepEqual(registry.validateSubsection(2, "2", "Required Acceptance Tests"), {
-    ok: false,
-    message: 'Title for 2.2 must be "Essential User Experiences".',
-  });
-  assert.deepEqual(registry.validateSubsection(4, "1", "Demo Scenario"), {
+  assert.deepEqual(registry.validateSubsection(6, "1", "KPIs and Tension Metrics"), {
     ok: true,
-    fullId: "4.1",
+    fullId: "6.1",
   });
-  assert.deepEqual(registry.validateSubsection(4, "2", "Learning Check"), {
+  assert.deepEqual(registry.validateSubsection(8, "1", "Demo Scenario"), {
+    ok: true,
+    fullId: "8.1",
+  });
+  assert.deepEqual(registry.validateSubsection(8, "2", "Learning Check"), {
     ok: false,
-    message: "Unknown subsection 4.2. Allowed subsection_id values: 1.",
+    message: "Unknown subsection 8.2. Allowed subsection_id values: 1.",
   });
   const invalid = registry.validateSubsection(1, "1", "Purpose");
   assert.match(invalid.ok ? "" : invalid.message, /must be "Target User and Core Problem"/);

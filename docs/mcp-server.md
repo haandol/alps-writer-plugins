@@ -52,13 +52,13 @@ The server exposes five tools. Full and Lite share the same tools; select
 `profile: "full"` or `"lite"` for templates and new documents. Existing documents
 use their own profile. Tool calls use named JSON arguments.
 
-| Tool            | Actions                                            | Required inputs                                                                         |
-| --------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `alps_template` | `overview`, `sections`, `section`, `full`, `guide` | `action`, `profile`; `section` for `section`/`guide`                                    |
-| `alps_document` | `init`, `load`, `status`                           | `action`; `profile`, `project_name`, `output_path` for init; `doc_path` for load/status |
-| `alps_section`  | `read`, `save`                                     | `action`, `doc_path`, `section`; also `subsection_id`, `title`, `content` for save      |
-| `alps_glossary` | `read`, `save`                                     | `action`, `doc_path`; also `term`, `definition` for save                                |
-| `alps_export`   | Markdown export                                    | `doc_path`; optional `output_path` writes a file                                        |
+| Tool            | Actions                                            | Required inputs                                                                                                          |
+| --------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `alps_template` | `overview`, `sections`, `section`, `full`, `guide` | `action`, `profile`; `section` for `section`/`guide`                                                                     |
+| `alps_document` | `init`, `load`, `status`                           | `action`; `profile`, `project_name`, `output_path` for init (Full may add `source_doc_path`); `doc_path` for load/status |
+| `alps_section`  | `read`, `save`                                     | `action`, `doc_path`, `section`; also `subsection_id`, `title`, `content` for save                                       |
+| `alps_glossary` | `read`, `save`                                     | `action`, `doc_path`; also `term`, `definition` for save                                                                 |
+| `alps_export`   | Markdown export                                    | `doc_path`; optional `output_path` writes a file                                                                         |
 
 `alps_template` includes examples only when `include_examples: true` is supplied
 for `section` or `full`. Section reads can select `subsection_id`; without it,
@@ -67,7 +67,7 @@ they return the whole section. Irrelevant action arguments are rejected.
 For example, call `alps_template` with:
 
 ```json
-{ "action": "section", "profile": "lite", "section": 4, "include_examples": true }
+{ "action": "section", "profile": "lite", "section": 8, "include_examples": true }
 ```
 
 The previous per-operation tool names are replaced by these five names. Update
@@ -80,12 +80,13 @@ Document writes are guarded:
 - Markdown export rejects an output path pointing to the source document, including links and relative aliases, so the XML remains editable.
 - Full documents use `.alps.xml`; Lite documents use `.lite.alps.xml` and declare the Lite profile in the root. A failed `init` or `load` leaves no document selected.
 - Existing files are never selected implicitly by initialization; resume them explicitly with `alps_document(action: 'load')`.
-- Full ALPS resumes in dependency order `1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9`. Lite ALPS resumes in `1 → 2 → 3 → 4`; Section 3 is optional and Section 4 is required.
+- Full ALPS resumes in dependency order `1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9`. Lite ALPS resumes in `1 → 2 → 3 → 4 → 5 → 6 → 7 → 8`; Section 7 is optional and every other Section is required.
 - Static subsection IDs and titles are validated against the active XML templates during load and save. Full Section 7 accepts one dynamic entry per approved Feature.
 - Markdown content is XML-escaped on disk and decoded when read or exported. Saves use an atomic replacement so interrupted writes do not leave a partially written document.
-- Section status is based on required template subsection coverage, not content length. Lite Section 3 reports optional and may remain unwritten; Section 4 requires one `4.1 Demo Scenario`.
-- Markdown export omits an unwritten optional Lite Section 3 while preserving every written Section in document order.
-- Lite documents must use the current `Overview → Solution and Essential User Experiences → Out of Scope → Demo Scenario` format. Other four-section shapes and former eight-section documents are rejected without modification.
-- Lite Section 1 records `Desired Business Impact`; Section 2 proposes the minimum solution and Essential User Experiences; Section 4 proposes the concrete starting state, input, actions, and visible results.
+- Section status is based on required template subsection coverage, not content length. Lite Section 7 reports optional and may remain unwritten.
+- Markdown export omits an unwritten optional Lite Section 7 while preserving every written Section in document order.
+- Lite documents must use the current `Business Context → Business Requirements → Functional Requirements → Non-Functional Requirements → Edge Cases → Success Criteria → Out of Scope → Demo Scenario` format. Other shapes, including the former four-section format, are rejected without modification.
+- Lite requirement IDs (`BR-n`, `FR-n`, `NFR-n`, `EC-n`, `KPI-n`, `TM-n`) are defined once in their owning subsection; a duplicate definition is rejected and status reports undefined references. Lite Section 3.2 must contain exactly one `C4Context` and no other C4 level.
 - Lite templates never request architecture, technology stack, API, database, deployment, library, or code-structure decisions.
-- Lite and Full ALPS have separate authoring and management state. Loading, completing, or exporting one never reads or changes the other.
+- Full `init` with `source_doc_path` accepts only a completed `.lite.alps.xml`, records it relative to the Full document with a content fingerprint, and never writes the Lite file. Full status then reports Lite coverage, references to undefined Lite IDs and a non-blocking notice when the Lite changed after the last Full save. Lite `init` rejects `source_doc_path`.
+- Lite never reads a Full document. Loading, completing, or exporting a Lite document never changes a Full document.

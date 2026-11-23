@@ -209,24 +209,36 @@ asks the user to approve. These cases end before the user approves or declines.
      target user and problem are missing, ask one or at most two focused
      questions and wait for the user's answer instead of inventing them.
    - `lite-alps-asks-business-impact-before-solution` checks the next Section 1
-     step: once the target user and problem are known, ask for Desired Business
-     Impact and why it matters without pulling solution or demo design forward.
-   - `lite-alps-proposes-solution-from-business-impact` ↔
-     `lite-alps-generates-demo-from-essential-user-experiences` check the working-backwards
-     path. After Desired Business Impact is approved, Section 2 proposes the
-     minimum solution and Essential User Experiences without asking the user to
-     design a flow; Section 4 then proposes the concrete starting state, input,
-     user actions, and visible results from those outcome-only experiences.
+     step: once the target user and problem are known, ask for the Intent and
+     Desired Outcome and why it matters without pulling a solution,
+     requirement list, technology or demo design forward.
+   - `lite-alps-proposes-requirements-from-business-context` ↔
+     `lite-alps-generates-demo-from-functional-requirements` check the
+     working-backwards path. After the Business Context is approved, Section 2
+     proposes identified Business Requirements with required flags, pass/fail
+     criteria and basis without asking the user to list them; Section 8 then
+     proposes a concrete demo that shows every Required FR with its FR and EC IDs.
+   - `lite-alps-success-criteria-records-tension` checks Lite Success Criteria: release
+     acceptance over Required items, a KPI defined by its business calculation
+     only, an always-proposed tension metric and a recorded per-KPI decision.
    - `lite-alps-resume-preserves-proposal-first` feeds the actual
      `DocumentService.loadDocument` response into the Lite Section 2 prompt. It
      catches a shared Full/Lite resume banner that restores Full's blanket
-     no-auto-generation rule and suppresses Lite's proposal-first Sections 2
-     and 4.
+     no-auto-generation rule and suppresses Lite's proposal-first Sections 2-6
+     and 8.
    - `lite-alps-skips-empty-optional-section` ↔
      `lite-alps-records-explicit-exclusions` check both directions of current
-     Lite Section 3. No explicit exclusions means skip the Section and continue
+     Lite Section 7. No explicit exclusions means skip the Section and continue
      to the required Demo Scenario; explicit exclusions are
      recorded exactly while unresolved choices remain outside non-scope.
+   - `alps-full-derives-from-lite-without-reasking` ↔
+     `alps-full-routes-business-gap-to-lite` check Lite-to-Full derivation:
+     Full converts Lite requirements with source IDs and unchanged values
+     without re-asking business questions, and a missing money-affecting rule
+     becomes a Lite change proposal rather than a Full decision.
+   - `feature-handoff-drops-lite-ids` checks that handoff of a Lite-derived
+     Feature keeps its contracts and metric pairs while Lite IDs, markers and
+     the Lite path stay legacy planning context.
    - `impl-review-selects-risk-mode` checks both directions of the review-mode
      classifier: localized implementation uses standard, while contract and
      public-surface changes use full.

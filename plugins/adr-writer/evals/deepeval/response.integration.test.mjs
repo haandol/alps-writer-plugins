@@ -229,10 +229,9 @@ test("every shipped classification probe has a fixed GEval contract and prepares
 
 test("GEval rejects keyword-only success, local failure cannot be averaged away, and judge errors stay errors", async () => {
   const item = (await catalog()).find(
-    (c) => c.id === "lite-alps-proposes-solution-from-business-impact",
+    (c) => c.id === "lite-alps-proposes-requirements-from-business-context",
   );
-  const reply =
-    "Solution Strategy. Essential User Experiences. 해외 출장. 승인. 완료했다고 주장합니다." + tail;
+  const reply = "Business Requirements. BR-1. 장바구니. 승인. 완료했다고 주장합니다." + tail;
   // One runner call shares plugin snapshots; each combination is its own case with its own
   // fixture, local check, captured evidence and real GEval invocation.
   const combinations = [
@@ -353,7 +352,7 @@ C | choice=ASK_RETENTION; basis=정책 미정; question=어떤 보고서를 언�
 
 test("semantic input retains transient writes and excludes files materialized by the scorer", async () => {
   const item = (await catalog()).find(
-    (c) => c.id === "lite-alps-proposes-solution-from-business-impact",
+    (c) => c.id === "lite-alps-proposes-requirements-from-business-context",
   );
   const reply = "파일은 변경하지 않았습니다." + tail;
   const result = await main(

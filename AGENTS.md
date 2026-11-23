@@ -26,12 +26,14 @@ existing permissions. Preserve the plugins' independent installation boundaries.
 
 C4 shows the same system at different resolutions, from its external context to
 containers and components. Apply that idea when choosing where to record a fact.
-The PRD explains the user's problem and intended outcome. The optional ontology
+The PRD explains the user's problem and intended outcome: Lite ALPS records evaluable
+business requirements without technology, and a Full ALPS derived from it converts them
+into technical requirements without changing their business meaning. The optional ontology
 describes business workflows and responsibilities. ADRs record architecture
 decisions and exact requirement contracts. Code and tests show the implementation.
 
 Full ALPS Section 4.1 requires both Mermaid `C4Context` and `C4Container`.
-Lite ALPS uses one product-level `C4Context` in Solution Strategy. Component,
+Lite ALPS uses one business-wording `C4Context` as its Business Context Diagram. Component,
 Dynamic, Deployment and Code diagrams stay below the PRD level.
 
 ### Preserve conditions, not recoverable facts

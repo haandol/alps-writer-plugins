@@ -50,6 +50,50 @@ Some sections depend on other sections. Before working on a section with referen
 
 ---
 
+## Lite source derivation
+
+A Full document may derive from a completed Lite ALPS document, the upper business baseline.
+Initialize it with `alps_document(action: 'init', profile: 'full', project_name, output_path, source_doc_path)`.
+The server accepts only a completed current-format `.lite.alps.xml`, records its path relative to the Full
+document and a fingerprint of its content, and never changes the Lite file. A Full document without a
+source is never linked later.
+
+When starting a new Full document without a source, offer once in that task to write a Lite document first
+or to use an existing completed Lite as the source. If the user declines or does not answer, continue
+without a source; the rest of this template applies unchanged.
+
+When the document records a Lite source, each Section guide's `<lite_source>` block applies:
+
+- Read the matching Lite Sections before the Section and propose a converted draft. Do not re-ask what Lite
+  already answered; ask directly only about technical-resolution choices.
+- Keep every Lite value, unit, rule, permission, required flag, acceptance criterion, KPI and TM calculation
+  and required or monitoring use. Add only technical-resolution content: measurement methods, technical
+  boundaries, error responses, evaluation methods and technical thresholds that name the Lite ID they serve
+  and never accept a result the Lite criterion rejects.
+- Never add a business rule, business value, permission or user-visible acceptance criterion without a Lite
+  ID. Present a missing, conflicting or ambiguous business meaning as a Lite change proposal naming the
+  affected Lite IDs; save it in the Lite document only through that Lite Section's approval, then propose
+  updates to already-saved Full units that reference the changed IDs. If the user declines, continue with
+  the current Lite meaning. Do not save a Full unit that depends on a pending proposal.
+- Mark converted content with `Source requirements:` and the Lite IDs it covers. Required FRs become
+  Features (6.1 and 7.x), Required NFRs 6.2 mandatory constraints, Required ECs Feature edge cases, KPIs and
+  TMs Sections 2.2 and 8, BRs Feature rules, cases or 4.2 constraints. Optional FRs, NFRs and ECs are
+  converted or deferred to Section 9 with their IDs and reasons. Only a BR fully judged by other IDs' cases
+  may be marked as needing no technical requirement, and the digest names those IDs.
+- `alps_document(action: 'status', doc_path)` reports Lite IDs not referenced in Full and references to IDs the
+  Lite does not define. A derived Full is complete only when both lists are empty and every Section is
+  written. This coverage does not change Feature-level handoff to ADRs, and handoff never carries Lite paths,
+  Lite IDs or `Source requirements` markers into ADRs.
+- When status reports that the Lite source changed since the last Full save, offer one explicit
+  re-derivation. Re-derive only on the user's request: compare the current Lite with the Full document,
+  change nothing when the meaning is the same, propose updates for changed or added Lite requirements through
+  the existing approval units, and never delete Full content for a removed Lite requirement without the
+  user's choice. The notice does not block completion.
+- If status reports the source as unavailable, Lite coverage is unverified and the document is not complete
+  until the Lite document is restored at the recorded relative path; resume, saves and export still work.
+
+---
+
 ## Conversation Guide
 
 ### Optional glossary appendix
@@ -177,7 +221,8 @@ When user provides PDF, ALPS (PRD), or any reference:
 
 ## Optional research after completion
 
-After all nine Sections are approved and written, check the selected document with
+After all nine Sections are approved and written — and, for a derived Full document, the
+status Completion line is complete — check the selected document with
 `alps_document(action: 'status', doc_path)`, export it, and ask once whether the user wants
 a deep-research review of the ALPS items' evidence and errors. Reuse an explicit
 review request or an answered choice in the current conversation. An unanswered

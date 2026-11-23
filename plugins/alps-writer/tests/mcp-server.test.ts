@@ -57,11 +57,11 @@ test("MCP template examples are opt-in, reachable from the Full guide, and indep
     /alps_section\(action: 'read', doc_path, section: 3\), alps_section\(action: 'read', doc_path, section: 6\)/,
   );
   const full = await call("alps_template", { action: "section", profile: "full", section: 7 });
-  const lite = await call("alps_template", { action: "section", profile: "lite", section: 4 });
+  const lite = await call("alps_template", { action: "section", profile: "lite", section: 8 });
   assert.ok(!full.includes(workedFeature));
   assert.match(full, /7\.x\.6 Evaluation Rubric/);
-  assert.match(lite, /4\.1 Demo Scenario/);
-  assert.doesNotMatch(lite, /Introduce myself on an overseas business trip/);
+  assert.match(lite, /8\.1 Demo Scenario/);
+  assert.doesNotMatch(lite, /A guest has 2 shirts and 1 pair of shoes/);
   assert.equal(
     await call("alps_template", {
       action: "section",
@@ -75,7 +75,7 @@ test("MCP template examples are opt-in, reachable from the Full guide, and indep
     await call("alps_template", {
       action: "section",
       profile: "lite",
-      section: 4,
+      section: 8,
       include_examples: false,
     }),
     lite,
@@ -99,16 +99,16 @@ test("MCP template examples are opt-in, reachable from the Full guide, and indep
     /Demo outcome:.*approved section appears and the next incomplete section becomes active/,
   );
   assert.equal(
-    await call("alps_template", { action: "section", profile: "lite", section: 4 }),
+    await call("alps_template", { action: "section", profile: "lite", section: 8 }),
     lite,
   );
   const liteExamples = await call("alps_template", {
     action: "section",
     profile: "lite",
-    section: 4,
+    section: 8,
     include_examples: true,
   });
-  assert.match(liteExamples, /Introduce myself on an overseas business trip/);
+  assert.match(liteExamples, /A guest has 2 shirts and 1 pair of shoes/);
   assert.ok(!liteExamples.includes(workedFeature));
   assert.doesNotMatch(liteExamples, /7\.x|9-section limit|30-day retention/);
   assert.equal(
@@ -116,7 +116,7 @@ test("MCP template examples are opt-in, reachable from the Full guide, and indep
     full,
   );
   assert.equal(
-    await call("alps_template", { action: "section", profile: "lite", section: 4 }),
+    await call("alps_template", { action: "section", profile: "lite", section: 8 }),
     lite,
   );
   assert.equal(
@@ -141,7 +141,7 @@ test("MCP template examples are opt-in, reachable from the Full guide, and indep
     assert.match(withExamples, /\*\*Example:\*\*/);
     assert.equal(await call("alps_template", { action: "full", profile }), defaultTemplate);
   }
-  const liteGuide = await call("alps_template", { action: "guide", profile: "lite", section: 4 });
+  const liteGuide = await call("alps_template", { action: "guide", profile: "lite", section: 8 });
   assert.match(
     liteGuide,
     /alps_section\(action: 'read', doc_path, section: 1\), alps_section\(action: 'read', doc_path, section: 2\)/,
@@ -152,7 +152,7 @@ test("MCP template examples are opt-in, reachable from the Full guide, and indep
   );
   const invalidLite = await client.callTool({
     name: "alps_template",
-    arguments: { action: "section", profile: "lite", section: 7, include_examples: true },
+    arguments: { action: "section", profile: "lite", section: 9, include_examples: true },
   });
   assert.equal(invalidLite.isError, true);
 });
@@ -594,7 +594,7 @@ test("grouped MCP actions reject missing, unrelated and unknown inputs without w
       name: "alps_template",
       arguments: { action: "guide", profile: "full", section: 1, include_examples: true },
     },
-    { name: "alps_template", arguments: { action: "section", profile: "lite", section: 5 } },
+    { name: "alps_template", arguments: { action: "section", profile: "lite", section: 9 } },
     {
       name: "alps_document",
       arguments: {
@@ -604,6 +604,27 @@ test("grouped MCP actions reject missing, unrelated and unknown inputs without w
       },
     },
     { name: "alps_document", arguments: { action: "load", doc_path, profile: "lite" } },
+    { name: "alps_document", arguments: { action: "status", doc_path, source_doc_path: doc_path } },
+    {
+      name: "alps_document",
+      arguments: {
+        action: "init",
+        profile: "lite",
+        project_name: "Sourced Lite",
+        output_path: path.join(dir, "forbidden.lite.alps.xml"),
+        source_doc_path: doc_path,
+      },
+    },
+    {
+      name: "alps_document",
+      arguments: {
+        action: "init",
+        profile: "full",
+        project_name: "Unsourced",
+        output_path: path.join(dir, "forbidden.alps.xml"),
+        source_doc_path: doc_path,
+      },
+    },
     { name: "alps_document", arguments: { doc_path } },
     {
       name: "alps_section",
@@ -623,6 +644,7 @@ test("grouped MCP actions reject missing, unrelated and unknown inputs without w
     assert.equal(fs.readFileSync(doc_path, "utf8"), original);
   }
   assert.equal(fs.existsSync(path.join(dir, "forbidden.alps.xml")), false);
+  assert.equal(fs.existsSync(path.join(dir, "forbidden.lite.alps.xml")), false);
   const removed = await client.callTool({ name: "save_alps_section", arguments: {} });
   assert.equal(removed.isError, true, "a removed name must not survive as an extra public alias");
 
@@ -634,7 +656,7 @@ test("grouped MCP actions reject missing, unrelated and unknown inputs without w
       });
       assert.notEqual(result.isError, true);
       if (action === "sections")
-        assert.equal(JSON.parse(textContent(result)).length, profile === "full" ? 9 : 4);
+        assert.equal(JSON.parse(textContent(result)).length, profile === "full" ? 9 : 8);
       else assert.match(textContent(result), /alps_template/);
     }
   }
