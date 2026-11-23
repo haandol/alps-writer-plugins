@@ -32,7 +32,7 @@ flowchart TD
     subgraph entry["ADR 작성 진입"]
         direction TB
         AlpsInit(["/alps-init<br/>ALPS PRD를 섹션 단위로 작성"])
-        S7["Section 7 기능 명세<br/>+ 6.3 의존성 그래프"]
+        S7["Section 7 기능 명세<br/>+ 5.3 의존성 그래프"]
         AlpsInit --> S7
         ADROnly(["ADR-only 진입<br/>PRD 없음"])
         Existing(["/adr-import<br/>기존 프로젝트 분석과 의도 질문 리포트"])
@@ -155,17 +155,17 @@ flowchart TD
     class C,Q,More gate;
 ```
 
-**작성 순서** — `1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9`. 섹션 번호와 최종 문서 순서는 그대로다(5는 Design, 6은 Requirements). _질문하는_ 순서만 어긋나는데, Section 5가 Section 6.1이 정의하는 Feature ID(F1, F2, …)를 재사용하기 때문이다. 질문 순서가 숫자 순서에서 벗어나는 곳은 여기 한 군데뿐이다.
+**작성 순서** — `1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9`, 섹션 번호와 같다. Section 5 Requirements Summary가 정의하는 Feature ID(F1, F2, …)를 Section 6 Design과 Section 7이 재사용한다. 이전 순서(5 Design, 6 Requirements)로 작성된 문서는 읽을 때 현재 순서로 보이고 첫 승인 저장에서 내용 손실 없이 현재 순서로 기록된다.
 
 기존 문서는 `alps_document(action: 'status', doc_path)` 결과를 읽고 이 순서에서 첫 미완료 섹션부터 이어간다. 완료된 섹션은 한 번 요약하되, 사용자가 전체 재검토를 요청하거나 선행 내용이 바뀐 경우가 아니면 다시 승인받지 않는다.
 
 | §   | 섹션                      | §   | 섹션                        |
 | --- | ------------------------- | --- | --------------------------- |
-| 1   | Overview                  | 6   | Requirements Summary        |
+| 1   | Overview                  | 6   | Design Specification        |
 | 2   | MVP Goals and Key Metrics | 7   | Feature-Level Specification |
 | 3   | Demo Scenario             | 8   | MVP Metrics                 |
 | 4   | High-Level Architecture   | 9   | Out of Scope                |
-| 5   | Design Specification      |     |                             |
+| 5   | Requirements Summary      |     |                             |
 
 **Section 7은 특별히 조심해야 하는 예외다.** 원자 모드에서는 각 Feature를 하나씩 확인·저장한다. batch 모드에서도 각 7.x는 독립 초안과 저장 호출을 유지하며, 작거나 비슷하다는 이유로 합치거나 생략하지 않는다.
 
@@ -188,17 +188,17 @@ sequenceDiagram
 
     F2A->>MCP: alps_document(action: 'load', doc_path)
     F2A->>MCP: alps_section(action: 'read', doc_path, section: 7) — 기능 목록
-    F2A->>MCP: alps_section(action: 'read', doc_path, section: 6) — 6.3 의존성 그래프, 6.2 NFR
+    F2A->>MCP: alps_section(action: 'read', doc_path, section: 5) — 5.3 의존성 그래프, 5.2 NFR
     F2A->>MCP: alps_section(action: 'read', doc_path, section: 4) — 4.2 기술 스택 / 전역 제약
 
-    F2A->>F2A: 6.3 그래프의 정합성 검사
+    F2A->>F2A: 5.3 그래프의 정합성 검사
     alt 기능 하나를 지정
         F2A->>F2A: 전이적 선행 기능까지 분석 범위에 추가
         Note over F2A: Section 7에 없는 선행이 있으면<br/>아무것도 쓰기 전에 중단
     else 전체 변환
         F2A->>F2A: 전체 기능을 위상 정렬
     end
-    Note over F2A: self-edge·순환·없는 기능 참조는<br/>쓰기 전에 중단하고 6.3 수정을 요청
+    Note over F2A: self-edge·순환·없는 기능 참조는<br/>쓰기 전에 중단하고 5.3 수정을 요청
 
     F2A->>F2A: 위상 순서로 분석 큐 구성
     F2A->>U: 분석 순서 제시 — 한 번만 확인

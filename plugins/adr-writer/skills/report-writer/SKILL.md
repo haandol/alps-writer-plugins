@@ -55,8 +55,10 @@ A review-only request does not authorize changes to the subject.
 Write model-facing instructions in English and the report in the user's language.
 Keep the report self-contained, preserve exact evidence and the caller's scope,
 and use stable terms whose definitions connect to their examples and later uses.
-Use the reading order above in HTML and Markdown. The renderer localizes the
-fixed headings. Give the sections below the Overview subject-specific names.
+Use the reading order above in HTML, Markdown and plain text. The renderer localizes the
+fixed headings; plain text written without it uses the same fixed headings in that order,
+localized as [format and layout](references/format-and-layout.md#plain-text-delivery) lists.
+Give the sections below the Overview subject-specific names.
 
 The template owns the structure: which regions exist, their order and the
 abstraction level each one carries. You own what goes inside each section: its
@@ -93,10 +95,16 @@ Write in this order; do not start prose before the plan holds:
    page shell or its styles; the renderer embeds the shared template and stylesheet
    and rejects unfilled placeholders.
 
-Before rendering, fill the template's `comprehensionCheck` with the effective
-`readerLevel` and core questions within that level's limit. The quiz is required. Only when the user
+Before rendering HTML, fill the template's `comprehensionCheck` with the effective
+`readerLevel` and core questions within that level's limit. An HTML report requires the quiz. Only when the user
 explicitly excluded the quiz for this report, replace it with
 `{ "excluded": "<the user's request>" }`; the renderer refuses anything else.
+A report delivered only as Markdown or plain text (for example read in a CLI) has no quiz,
+because its questions and answers would show together. For a Markdown file, omit
+`comprehensionCheck` and render with `--format markdown`; for plain text shown only in the
+conversation or terminal, write it there without the renderer or a file, keeping the fixed
+headings and reading order. Markdown renderings
+never include the quiz.
 
 Preserve evidenced domain boundaries in reviews, comparisons and concept
 explanations. Lead each explanatory section with its answer in one or

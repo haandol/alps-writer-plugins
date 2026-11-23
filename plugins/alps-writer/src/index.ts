@@ -15,7 +15,7 @@ const server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.16.0" },
+  { name: "alps-writer", version: "0.17.0" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
@@ -42,9 +42,9 @@ Every operation on an existing document requires doc_path; init requires output_
    Lite ALPS: alps_template(action: 'overview', profile: 'lite')
    The matching overview MUST be called first to get the conversation guide.
 3. Use atomic confirmation by default. Batch confirmation is allowed only when the user explicitly requests it or supplies a complete structured source covering multiple sections.
-   Full ALPS order: 1, 2, 3, 4, 6, 5, 7, 8, 9.
+   Full ALPS order: 1, 2, 3, 4, 5, 6, 7, 8, 9.
    Lite ALPS order: 1, 2, 3, 4, 5, 6, 7, 8. Section 7 is optional.
-   For Full ALPS, author Requirements (6) before Design (5), because Design reuses the Feature IDs defined in Section 6.1.
+   Full ALPS Section 5 (Requirements) defines the Feature IDs that Section 6 (Design) and Section 7 reuse.
    For each section:
    a. Call the matching alps_template(action: 'guide', profile: 'full', section: N) or alps_template(action: 'guide', profile: 'lite', section: N)
    b. Call the matching alps_template(action: 'section', profile: 'full', section: N) or alps_template(action: 'section', profile: 'lite', section: N)
@@ -81,6 +81,7 @@ Every operation on an existing document requires doc_path; init requires output_
 - Section 8 proposes the shortest Demo Scenario that shows every required FR, names the FR and EC IDs each step shows, includes relevant EC counterexamples, and passes only when every shown criterion passes. A passing demo is not proof of business impact or market validity.
 - Do not invent exclusions or require optional Section 7.
 - Lite and Full keep independent document state and completion. A derived Full records its Lite source; never change Lite business meaning in Full — propose a Lite change through Lite's own approval instead.
+- When status reports a document incomplete or its Lite source unavailable or incomplete, never stop at the blocked state: relay the \`Next steps:\` it lists and offer to do the next one.
 </RULES>`,
   },
 );

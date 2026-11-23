@@ -63,7 +63,7 @@ LLM 평가에는 판단할 입력과 기준 자료, 좁은 실패 규칙, 판정
 
 #### 필수 보장
 
-- Section 7 작성자는 Section 3과 Section 6을 먼저 읽는다.
+- Section 7 작성자는 Section 3과 Section 5를 먼저 읽는다.
 - 모든 `7.x` Feature의 Evaluation Rubric는 전체 데모에서의 역할과 관찰 가능한 완료 결과를 연결하는 `Demo outcome` 한 줄을 포함한다.
 - Demo outcome는 같은 Feature의 User Flow, 오류 처리와 Evaluation Rubric에 모순되지 않아야 한다.
 - Atomic과 batch 작성 모두 기존 Feature 단위의 승인과 저장 경계를 유지한다.

@@ -1,4 +1,4 @@
-<section id="6" title="Requirements Summary">
+<section id="5" title="Requirements Summary">
   <description>
 - List all core features (functional requirements) and non-functional requirements for the MVP.
 - Each core feature is assigned a unique ID (F1, F2, …), and will be mapped to Section 7.
@@ -6,7 +6,7 @@
 - Only features defined in this section are included in the MVP scope; additional features must be listed in Section 9.
 - Identify a top-3 NFR focus set for MVP prioritization. This is not a deletion cap: retain every mandatory security, privacy, regulatory, accessibility, contractual, and Must-Have constraint even when the final list exceeds three. Optional constraints outside the focus set may be merged or deferred via Section 9.
   </description>
-  <subsection id="6.1" title="Core Features (Functional Requirements)">
+  <subsection id="5.1" title="Core Features (Functional Requirements)">
     <example>
 | ID | Feature | Priority |
 |----|---------|----------|
@@ -17,7 +17,7 @@
 | F5 | Post List/Detail | Nice-to-Have |
     </example>
   </subsection>
-  <subsection id="6.2" title="Non-Functional Requirements">
+  <subsection id="5.2" title="Non-Functional Requirements">
     <description>
 - Define non-functional requirements such as security, performance, and scalability.
 - Set the minimum standards for the MVP phase.
@@ -33,9 +33,9 @@
 | NF3 | API responses return in under 3 seconds (p95) | Global | Must-Have |
     </example>
   </subsection>
-  <subsection id="6.3" title="Feature Dependency Diagram">
+  <subsection id="5.3" title="Feature Dependency Diagram">
     <description>
-- After completing 6.1 and 6.2, the AI automatically analyzes feature dependencies and generates this diagram.
+- After completing 5.1 and 5.2, the AI automatically analyzes feature dependencies and generates this diagram.
 - Visualize the dependency relationships between features using a Mermaid diagram.
 - Use a top-down tree structure (graph TD) to show which features depend on other features.
 - An arrow from A to B means "A depends on B" (B must be implemented before A).

@@ -64,7 +64,7 @@
           },
           "dependsOn": {
             "type": "array",
-            "description": "Category ids this category depends on (prerequisites). Recorded by adr-new when the author names a prerequisite ADR, or backfilled once by feature-to-adr from an ALPS Section 6.3 dependency graph (edge 'this --depends on--> X' becomes X in this list). Read by adr-impl to implement prerequisite ADRs first, and validated by adr-sync. Uses the same key namespace as 'categories' (single-segment or two-segment context/feature keys). Edges MAY cross bounded-context boundaries (e.g. an ordering/checkout feature depending on an identity/login feature is a normal DDD context relationship). Must reference existing category keys; keep acyclic (no self-edge).",
+            "description": "Category ids this category depends on (prerequisites). Recorded by adr-new when the author names a prerequisite ADR, or backfilled once by feature-to-adr from an ALPS Section 5.3 dependency graph (edge 'this --depends on--> X' becomes X in this list). Read by adr-impl to implement prerequisite ADRs first, and validated by adr-sync. Uses the same key namespace as 'categories' (single-segment or two-segment context/feature keys). Edges MAY cross bounded-context boundaries (e.g. an ordering/checkout feature depending on an identity/login feature is a normal DDD context relationship). Must reference existing category keys; keep acyclic (no self-edge).",
             "items": { "type": "string" },
             "uniqueItems": true
           },

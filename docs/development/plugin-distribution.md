@@ -123,7 +123,8 @@ report's subject and reader questions; preserve mandatory content without a fixe
 Collapsed branches explain
 what opening them will clarify. Sources and quizzes support their owning
 explanation without consuming its four-child allowance; both output formats
-place child explanations before the parent's quiz and source evidence. Review
+place child explanations before the parent's source evidence, and HTML also places
+them before the parent's quiz. Review
 what the reader learns with details closed and after opening one branch.
 ADR writing preserves its required sections: Purpose introduces the problem,
 intended outcome, and direction; the adjacent Decision Drivers retain all current
@@ -153,7 +154,8 @@ keyboard access and a static/print reading path. Interaction does not imply new
 service execution or measured learning. The shared interaction reference owns
 composition and verification guidance.
 
-Include a core-content quiz in every report. If the user explicitly excludes it,
+Include a core-content quiz in every HTML report; a report delivered only as Markdown
+or plain text has none. If the user explicitly excludes it from an HTML report,
 record the request in `comprehensionCheck.excluded`. Otherwise include at least
 one medium-difficulty question, with four choices and one correct answer per
 question. The whole-report cap is 10 for `beginner`, 6 for `intermediate` and 5

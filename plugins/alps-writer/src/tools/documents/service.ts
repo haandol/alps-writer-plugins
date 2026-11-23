@@ -17,6 +17,7 @@ import {
 import { attribute, decodeXml, escapeXmlAttribute, escapeXmlText } from "../../xml.js";
 import { TemplateRegistry } from "../templates/registry.js";
 import { featureCoverage } from "./feature-coverage.js";
+import { scanFences } from "./fences.js";
 import {
   requirementDefinitions,
   requirementReferences,
@@ -37,17 +38,60 @@ const bySubsectionId = ([a]: [string, unknown], [b]: [string, unknown]) =>
 
 const ALLOWED_ARCHITECTURE_DIAGRAMS = new Set(["C4Context", "C4Container"]);
 
+/** The diagram type of every Mermaid block, read after any frontmatter and `%%` lines. */
+// Mermaid removes `%%{…}%%` directives, which may span lines, before it reads the diagram type.
+const MERMAID_DIRECTIVE = /%%\{[\s\S]*?\}%%/g;
+
+/** The diagram type of every Mermaid block, read as Mermaid does after frontmatter and directives. */
 function mermaidDiagramTypes(content: string): string[] {
-  return [...content.matchAll(/```mermaid\s*\r?\n([\s\S]*?)```/g)]
-    .map(
-      (match) =>
-        match[1]
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .find((line) => line && !line.startsWith("%%"))
-          ?.split(/\s+/)[0],
-    )
+  return scanFences(content)
+    .blocks.filter((block) => /^mermaid\b/i.test(block.info))
+    .map((block) => {
+      const lines = block.lines.map((line) => line.trim());
+      let start = lines.findIndex(Boolean);
+      if (lines[start] === "---") {
+        const end = lines.indexOf("---", start + 1);
+        start = end < 0 ? lines.length : end + 1;
+      }
+      return lines
+        .slice(start)
+        .join("\n")
+        .replace(MERMAID_DIRECTIVE, "")
+        .split("\n")
+        .map((line) => line.trim())
+        .find((line) => line && !line.startsWith("%%"))
+        ?.split(/\s+/)[0];
+    })
     .filter((type): type is string => Boolean(type));
+}
+
+const C4_LEVEL = /^C4(?:Context|Container|Component|Dynamic|Deployment)$/;
+
+/**
+ * C4 diagram keywords written alone on a line, read through any quote, list or indentation
+ * around them. This line reading does not depend on how fences and containers nest, so a
+ * C4 level the block reading misses is still seen; prose that names a level in a sentence
+ * is not a keyword line.
+ */
+function c4KeywordLines(content: string): string[] {
+  const read = (text: string) =>
+    text
+      .split(/\r\n|\r|\n/)
+      .map((line) =>
+        line
+          .replace(/^(?:\s*(?:>|<[^>]*>|(?:[-*+]|\d{1,9}[.)])(?=\s|$)))*\s*/, "")
+          .replace(/\s*%%.*$/, "")
+          .trim(),
+      )
+      .filter((line) => C4_LEVEL.test(line));
+  // Directive removal reveals keywords written after a directive, but an unmatched `%%{` can
+  // make it swallow lines up to a later `}%%`; keep the larger count of each level.
+  const stripped = read(content.replace(MERMAID_DIRECTIVE, ""));
+  const original = read(content);
+  const count = (lines: string[], level: string) => lines.filter((line) => line === level).length;
+  return [...new Set([...stripped, ...original])].flatMap((level) =>
+    Array<string>(Math.max(count(stripped, level), count(original, level))).fill(level),
+  );
 }
 
 function architectureDiagramError(content: string): string | null {
@@ -55,13 +99,15 @@ function architectureDiagramError(content: string): string | null {
 
   for (const required of ALLOWED_ARCHITECTURE_DIAGRAMS) {
     if (!diagramTypes.includes(required)) {
-      return `Section 4.1 requires a Mermaid ${required} diagram.`;
+      return `Section 4.1 requires a Mermaid ${required} diagram. Add a \`\`\`mermaid block whose first line is ${required}.`;
     }
   }
 
-  const disallowed = diagramTypes.find((type) => !ALLOWED_ARCHITECTURE_DIAGRAMS.has(type));
+  const disallowed =
+    diagramTypes.find((type) => !ALLOWED_ARCHITECTURE_DIAGRAMS.has(type)) ??
+    c4KeywordLines(content).find((type) => !ALLOWED_ARCHITECTURE_DIAGRAMS.has(type));
   if (disallowed) {
-    return `Section 4.1 allows only Mermaid C4Context and C4Container diagrams; found ${disallowed}.`;
+    return `Section 4.1 allows only Mermaid C4Context and C4Container diagrams; found ${disallowed}. Remove that diagram, or any line holding only that keyword, and keep Section 4.1 to the Context and Container levels.`;
   }
 
   return null;
@@ -71,17 +117,69 @@ const LITE_CONTEXT_DIAGRAM_SUBSECTION = "3.2";
 
 function liteBusinessContextDiagramError(content: string): string | null {
   const diagramTypes = mermaidDiagramTypes(content);
+  const keywordLines = c4KeywordLines(content);
   const contextCount = diagramTypes.filter((type) => type === "C4Context").length;
-  if (contextCount !== 1) {
-    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} requires exactly one Mermaid C4Context diagram.`;
+  if (contextCount !== 1 || keywordLines.filter((type) => type === "C4Context").length > 1) {
+    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} requires exactly one Mermaid C4Context diagram. Keep one \`\`\`mermaid block whose first line is C4Context, outside quotes, and remove any other C4Context block or line holding only that keyword.`;
   }
 
-  const disallowed = diagramTypes.find((type) => type.startsWith("C4") && type !== "C4Context");
+  const disallowed = [...diagramTypes, ...keywordLines].find(
+    (type) => type.startsWith("C4") && type !== "C4Context",
+  );
   if (disallowed) {
-    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} allows only Mermaid C4Context diagrams; found ${disallowed}.`;
+    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} allows only Mermaid C4Context diagrams; found ${disallowed}. Remove that diagram, or any line holding only that keyword; system structure belongs in Full ALPS Section 4.1.`;
   }
 
   return null;
+}
+
+/** Full ALPS section titles in the earlier order, where Design preceded Requirements. */
+const EARLIER_FULL_ORDER = { 5: "Design Specification", 6: "Requirements Summary" } as const;
+
+/**
+ * Present a Full document written in the earlier Section 5/6 order in the current order.
+ * Only the exact earlier title pair converts; the two sections and their subsection IDs
+ * swap numbers in memory and every other byte stays as stored.
+ */
+function currentFullOrder(content: string): string {
+  const titles = new Map<string, string | null>();
+  for (const match of content.matchAll(/<section\b([^>]*)>/g)) {
+    const id = attribute(match[1], "id");
+    if (id) titles.set(id, attribute(match[1], "title"));
+  }
+  if (titles.get("5") !== EARLIER_FULL_ORDER[5] || titles.get("6") !== EARLIER_FULL_ORDER[6]) {
+    return content;
+  }
+  return content.replace(
+    /<section\b([^>]*)>([\s\S]*?)<\/section>/g,
+    (whole: string, attributes: string, body: string) => {
+      const from = attribute(attributes, "id");
+      if (from !== "5" && from !== "6") return whole;
+      const to = from === "5" ? "6" : "5";
+      const renumbered = body.replace(
+        /(<subsection\b[^>]*?\bid=")(\d+)(\.)/g,
+        (prefix: string, start: string, number: string, dot: string) =>
+          number === from ? `${start}${to}${dot}` : prefix,
+      );
+      return `<section${attributes.replace(/\bid="\d+"/, `id="${to}"`)}>${renumbered}</section>`;
+    },
+  );
+}
+
+/** Set one attribute on the document root, replacing its value or appending it. */
+function withRootAttribute(content: string, name: string, value: string): string {
+  return content.replace(
+    /^(\s*<(?:alps-document|prd-document)\b)([^>]*)>/,
+    (_root: string, open: string, attributes: string) => {
+      const escaped = escapeXmlAttribute(value);
+      // The same attribute syntax `attribute()` reads, including spaces around `=`.
+      const pattern = new RegExp(`(\\s${name}\\s*=\\s*)"[^"]*"`);
+      const updated = pattern.test(attributes)
+        ? attributes.replace(pattern, (_match: string, prefix: string) => `${prefix}"${escaped}"`)
+        : `${attributes} ${name}="${escaped}"`;
+      return `${open}${updated}>`;
+    },
+  );
 }
 
 /** Content identity of a Lite source, used to notice changes after the last Full save. */
@@ -89,7 +187,12 @@ function sourceFingerprint(content: string): string {
   return createHash("sha256").update(content.replace(/\r\n/g, "\n").trim()).digest("hex");
 }
 
-type LoadedDocument = { content: string; profile: DocumentProfile };
+type LoadedDocument = {
+  content: string;
+  profile: DocumentProfile;
+  /** True when the stored file uses the earlier Full Section 5/6 order. */
+  earlierOrder?: boolean;
+};
 
 /** Root attributes a Full document derived from Lite carries across every rebuild. */
 type SourceLink = { source: string; fingerprint: string | null };
@@ -102,9 +205,49 @@ type LiteRequirementState = {
   undefinedReferences: string[];
 };
 
+/** One reason a document is not complete and the next action that resolves it. */
+type Blocker = { reason: string; next: string };
+
+type LiteCompletion = {
+  requirements: LiteRequirementState;
+  /** Empty when the Lite document is complete. */
+  blockers: Blocker[];
+};
+
+/** A recorded Lite source resolved from the Full document's location. */
 type LiteSource =
-  | { ok: true; link: SourceLink; content: string; defined: Set<string> }
-  | { ok: false; link: SourceLink; reason: string };
+  | { ok: true; path: string; content: string; defined: Set<string> }
+  | { ok: false; path: string; label: string; problem: string; next: string };
+
+/** The Lite subsection that defines each identifier prefix, e.g. FR in 3.1. */
+const LITE_OWNER_BY_PREFIX = new Map(
+  Object.entries(LITE_ALPS_PROFILE.requirementOwners ?? {}).flatMap(([subsection, prefixes]) =>
+    prefixes.map((prefix) => [prefix as string, subsection] as const),
+  ),
+);
+
+const ownedIn = (ids: string[]): string =>
+  ids.map((id) => `${id} in ${LITE_OWNER_BY_PREFIX.get(id.split("-")[0])}`).join(", ");
+
+const lowerFirst = (text: string): string => text.charAt(0).toLowerCase() + text.slice(1);
+
+/** The next action for unwritten Sections, which are always written in section order. */
+function unwrittenBlocker(profile: DocumentProfile, pending: number[]): Blocker {
+  return {
+    reason: `Sections not written: ${pending.join(", ")}`,
+    next: `Write the unwritten Sections in section order, starting with Section ${pending[0]} (${profile.sectionTitles[pending[0]]}).`,
+  };
+}
+
+/** The completion line and, when incomplete, the next action for every blocker. */
+function completionLines(blockers: Blocker[]): string[] {
+  if (blockers.length === 0) return ["Completion: ✅ Complete"];
+  return [
+    `Completion: 🟡 Incomplete — ${blockers.map((blocker) => blocker.reason).join("; ")}`,
+    "Next steps:",
+    ...blockers.map((blocker) => `- ${blocker.next}`),
+  ];
+}
 
 export class DocumentService {
   private workingDoc: string | null = null;
@@ -295,6 +438,18 @@ export class DocumentService {
     } else if (profileValue === LITE_ALPS_PROFILE.rootProfile) {
       const headerIds = headers.map(({ id }) => id);
       const currentIds = sectionNumbers(LITE_ALPS_PROFILE);
+      const sectionElements = [...content.matchAll(/<section\b/g)].length;
+      const outsideSections = content
+        .replace(/^\s*<(?:alps-document|prd-document)\b[^>]*>/, "")
+        .replace(/<\/(?:alps-document|prd-document)>\s*$/, "")
+        .replace(/<section\b[^>]*>[\s\S]*?<\/section>/g, "")
+        .replace(/<glossary>[\s\S]*?<\/glossary>/, "")
+        .trim();
+      if (sectionElements !== headerIds.length || outsideSections) {
+        return {
+          error: `Lite ALPS documents must contain only Sections ${sectionRange(LITE_ALPS_PROFILE)} and an optional glossary.`,
+        };
+      }
       if (
         currentIds.length === headerIds.length &&
         currentIds.every((section, index) => section === headerIds[index])
@@ -353,7 +508,9 @@ export class DocumentService {
     if ("error" in inspection) {
       throw new Error(`Invalid ALPS document at ${this.workingDoc}: ${inspection.error}`);
     }
-    return { content, profile: inspection.profile };
+    // Reads stay in memory; the next approved save rebuilds the file in the current order.
+    const current = isLiteProfile(inspection.profile) ? content : currentFullOrder(content);
+    return { content: current, profile: inspection.profile, earlierOrder: current !== content };
   }
 
   private writeAtomic(filepath: string, content: string): void {
@@ -408,7 +565,7 @@ export class DocumentService {
     const profile = DOCUMENT_PROFILES[profileId];
     if (sourceDocPath != null && isLiteProfile(profile)) {
       throw new Error(
-        "A Lite source applies only to Full ALPS initialization; Lite ALPS documents have no source.",
+        "A Lite source applies only to Full ALPS initialization; Lite ALPS documents have no source. Call alps_document(action: 'init', profile: 'lite', project_name, output_path) without source_doc_path to create the Lite, or use profile 'full' with this source_doc_path to derive a Full document from a completed Lite.",
       );
     }
     let filepath = this.expandPath(outputPath);
@@ -421,8 +578,8 @@ export class DocumentService {
         `Document already exists at ${filepath}. Use alps_document(action: 'load', doc_path) to resume.`,
       );
     }
-    const sourceLink =
-      sourceDocPath == null ? null : this.completedLiteSource(sourceDocPath, filepath);
+    const source = sourceDocPath == null ? null : this.completedLiteSource(sourceDocPath, filepath);
+    const sourceLink = source?.link ?? null;
 
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
     try {
@@ -444,61 +601,98 @@ export class DocumentService {
       throw error;
     }
     this.workingDoc = filepath;
-    return sourceLink
-      ? `Created ${profile.label} document at ${filepath}\nLite source: ${sourceLink.source}`
+    return source
+      ? `Created ${profile.label} document at ${filepath}\nLite source: ${source.link.source}\nLite source path: ${source.path}`
       : `Created ${profile.label} document at ${filepath}`;
   }
 
   /**
-   * Accept only a completed current-format Lite document as a Full source and
-   * return the link recorded relative to the Full document. Nothing is written.
+   * Accept only a completed current-format Lite document as a Full source and return the
+   * link recorded relative to the Full document with the resolved source path. Nothing is
+   * written; every rejection names the next action, including continuing without a source.
    */
-  private completedLiteSource(sourceDocPath: string, fullPath: string): SourceLink {
+  private completedLiteSource(
+    sourceDocPath: string,
+    fullPath: string,
+  ): { link: SourceLink; path: string } {
     const sourcePath = this.expandPath(sourceDocPath);
+    const withoutSource =
+      "or call alps_document(action: 'init', profile: 'full', project_name, output_path) without source_doc_path to continue without a Lite source.";
     if (!sourcePath.toLowerCase().endsWith(LITE_ALPS_PROFILE.filenameSuffix)) {
       throw new Error(
-        `Invalid Lite source: ${sourcePath}. A Full ALPS source must be a ${LITE_ALPS_PROFILE.filenameSuffix} document.`,
+        `Invalid Lite source: ${sourcePath}. A Full ALPS source must be a ${LITE_ALPS_PROFILE.filenameSuffix} document. Name a completed Lite ALPS document, ${withoutSource}`,
       );
     }
     let content: string;
     try {
       content = fs.readFileSync(sourcePath, "utf-8");
     } catch (error) {
-      throw new Error(`Lite source not readable at ${sourcePath}: ${(error as Error).message}`, {
-        cause: error,
-      });
+      throw new Error(
+        `Lite source not readable at ${sourcePath}: ${(error as Error).message}. Check the path, write the Lite first with alps_document(action: 'init', profile: 'lite', project_name, output_path), ${withoutSource}`,
+        { cause: error },
+      );
     }
     const inspection = this.inspectDocument(content);
-    if ("error" in inspection)
-      throw new Error(`Invalid Lite source at ${sourcePath}: ${inspection.error}`);
-    if (!isLiteProfile(inspection.profile)) {
-      throw new Error(`Invalid Lite source at ${sourcePath}: the document is not Lite ALPS.`);
-    }
-    const incomplete = this.liteIncompleteReasons(content);
-    if (incomplete.length > 0) {
+    const invalid =
+      "error" in inspection
+        ? inspection.error
+        : isLiteProfile(inspection.profile)
+          ? null
+          : "the document is not Lite ALPS.";
+    if (invalid) {
       throw new Error(
-        `Lite source at ${sourcePath} is not complete: ${incomplete.join("; ")}. Complete the Lite document before deriving Full ALPS.`,
+        `Invalid Lite source at ${sourcePath}: ${invalid} Name a current-format Lite ALPS document, ${withoutSource}`,
+      );
+    }
+    const { blockers } = this.liteCompletion(content);
+    if (blockers.length > 0) {
+      throw new Error(
+        `Lite source at ${sourcePath} is not complete: ${blockers.map((blocker) => blocker.reason).join("; ")}. Complete it first: load it with alps_document(action: 'load', doc_path: '${sourcePath}'), then ${blockers.map((blocker) => lowerFirst(blocker.next)).join(" Then ")} Retry this initialization afterwards, ${withoutSource}`,
       );
     }
     const relative = path.relative(path.dirname(fullPath), sourcePath).split(path.sep).join("/");
-    return { source: relative, fingerprint: sourceFingerprint(content) };
+    return {
+      link: { source: relative, fingerprint: sourceFingerprint(content) },
+      path: sourcePath,
+    };
   }
 
-  /** Resolve the recorded Lite source and its defined identifiers without failing the Full request. */
+  /**
+   * Resolve the recorded Lite source without failing the Full request. A source that is
+   * unreadable, not current-format Lite or no longer complete is unusable, and the result
+   * names the next action that makes it usable again.
+   */
   private readLiteSource(link: SourceLink): LiteSource {
     const sourcePath = path.resolve(path.dirname(this.workingDoc!), link.source);
+    const meanwhile =
+      "Then check this document's status again; resume, saves and export keep working meanwhile.";
+    const unavailable = (problem: string): LiteSource => ({
+      ok: false,
+      path: sourcePath,
+      label: "Lite source unavailable",
+      problem: `Lite source unavailable: ${problem}`,
+      next: `Restore the completed Lite ALPS document at ${sourcePath}, the source path recorded relative to this Full document. ${meanwhile}`,
+    });
     let content: string;
     try {
       content = fs.readFileSync(sourcePath, "utf-8");
     } catch (error) {
-      return { ok: false, link, reason: `not readable (${(error as Error).message})` };
+      return unavailable(`not readable (${(error as Error).message})`);
     }
     const inspection = this.inspectDocument(content);
-    if ("error" in inspection) return { ok: false, link, reason: inspection.error };
-    if (!isLiteProfile(inspection.profile)) {
-      return { ok: false, link, reason: "the document is not Lite ALPS" };
+    if ("error" in inspection) return unavailable(inspection.error.replace(/\.$/, ""));
+    if (!isLiteProfile(inspection.profile)) return unavailable("the document is not Lite ALPS");
+    const { requirements, blockers } = this.liteCompletion(content);
+    if (blockers.length > 0) {
+      return {
+        ok: false,
+        path: sourcePath,
+        label: "Lite source incomplete",
+        problem: `Lite source incomplete: ${blockers.map((blocker) => blocker.reason).join("; ")}`,
+        next: `Complete the Lite source through Lite Section approval: load it with alps_document(action: 'load', doc_path: '${sourcePath}'), then ${blockers.map((blocker) => lowerFirst(blocker.next)).join(" Then ")} ${meanwhile}`,
+      };
     }
-    return { ok: true, link, content, defined: this.liteRequirements(content).defined };
+    return { ok: true, path: sourcePath, content, defined: requirements.defined };
   }
 
   /** Requirement identifiers a Lite document defines, duplicates and dangling references. */
@@ -528,41 +722,47 @@ export class DocumentService {
     };
   }
 
-  /** Reasons a Lite document is not complete; empty when it is. */
-  private liteIncompleteReasons(content: string): string[] {
-    const reasons: string[] = [];
-    const pending = this.sectionStates(content, LITE_ALPS_PROFILE).filter(
-      (state) => !state.complete,
-    );
-    if (pending.length > 0) {
-      reasons.push(
-        `required Sections not written: ${pending.map((state) => state.section).join(", ")}`,
-      );
-    }
+  /**
+   * The one Lite completion rule shared by Lite status and Full source acceptance:
+   * every required Section written, no duplicate definition and no undefined reference.
+   * Each blocker carries the next action that resolves it.
+   */
+  private liteCompletion(
+    content: string,
+    states: SectionState[] = this.sectionStates(content, LITE_ALPS_PROFILE),
+  ): LiteCompletion {
+    const pending = states.filter((state) => !state.complete).map((state) => state.section);
     const requirements = this.liteRequirements(content);
-    if (requirements.duplicates.length > 0) {
-      reasons.push(`duplicate requirement definitions: ${requirements.duplicates.join(", ")}`);
+    const blockers: Blocker[] = [];
+    if (pending.length > 0) blockers.push(unwrittenBlocker(LITE_ALPS_PROFILE, pending));
+    const { duplicates, undefinedReferences } = requirements;
+    if (duplicates.length > 0) {
+      blockers.push({
+        reason: `duplicate requirement definitions: ${duplicates.join(", ")}`,
+        next: `Keep one definition of each duplicated ID in its owning subsection (${ownedIn(duplicates)}) and refer to it elsewhere by ID.`,
+      });
     }
-    if (requirements.undefinedReferences.length > 0) {
-      reasons.push(
-        `undefined requirement references: ${requirements.undefinedReferences.join(", ")}`,
-      );
+    if (undefinedReferences.length > 0) {
+      blockers.push({
+        reason: `undefined requirement references: ${undefinedReferences.join(", ")}`,
+        next: `Define each referenced ID in its owning subsection (${ownedIn(undefinedReferences)}), or correct or remove the reference.`,
+      });
     }
-    return reasons;
+    return { requirements, blockers };
   }
 
   /**
    * Keeps resume guidance aligned with each profile's authoring contract.
-   * Full ALPS remains question-first, while Lite asks only for missing or
-   * protected context and preserves proposal-first Sections 2 and 4.
+   * Full ALPS remains question-first, while Lite asks only for missing context,
+   * undefined terms or protected decisions and keeps proposal-first Sections 2-6 and 8.
    */
   private resumeGuidance(profile: DocumentProfile): string {
     const steps = isLiteProfile(profile)
-      ? `1. Call alps_template(action: 'guide', profile: '${isLiteProfile(profile) ? "lite" : "full"}', section: N) before working on any section
+      ? `1. Call alps_template(action: 'guide', profile: 'lite', section: N) before working on any section
 2. Follow the guide: ask only for missing user-owned context, undefined terms or protected decisions, but propose Sections 2-6 and 8 before asking the user to design them
 3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
 4. Get explicit "yes" confirmation before calling alps_section(action: 'save', doc_path, section, subsection_id, title, content)`
-      : `1. Call alps_template(action: 'guide', profile: '${isLiteProfile(profile) ? "lite" : "full"}', section: N) before working on any section
+      : `1. Call alps_template(action: 'guide', profile: 'full', section: N) before working on any section
 2. Reuse supplied context. Ask 1-2 focused questions at a time only for missing information. DO NOT auto-generate content that invents missing product decisions
 3. Wait when a question needs an answer; otherwise present the section's approval digest
 4. Get explicit "yes" confirmation before calling alps_section(action: 'save', doc_path, section, subsection_id, title, content)`;
@@ -616,7 +816,50 @@ ${this.resumeGuidance(profile)}`;
     return inspection.profile;
   }
 
-  /** Save one approved subsection without dropping definitions collected elsewhere in the document. */
+  /**
+   * An earlier-order Full document is rewritten whole on its first save, so Sections 5 and 6
+   * must hold only recognized subsections: free text there cannot be renumbered safely.
+   * The refusal leaves the file unchanged and names how to make the save possible.
+   */
+  private assertCurrentOrderRewritable(
+    document: LoadedDocument,
+    sections: Map<number, string>,
+  ): void {
+    if (!document.earlierOrder) return;
+    const unparsed = ([5, 6] as const).filter((id) =>
+      this.hasUnparsedContent(sections.get(id) || ""),
+    );
+    if (unparsed.length === 0) return;
+    const locations = unparsed
+      .map(
+        (id) =>
+          `Section ${id} (this earlier-order file stores ${ALPS_PROFILE.sectionTitles[id]} as <section id="${id === 5 ? 6 : 5}">)`,
+      )
+      .join(" and ");
+    throw new Error(
+      unparsed.length > 1
+        ? `Cannot rewrite this document in the current section order: ${locations} contain unrecognized content outside their subsections. Reads, status and export still work. To save again, move that text into one of each section's subsections or out of the file, then retry the save.`
+        : `Cannot rewrite this document in the current section order: ${locations} contains unrecognized content outside its subsections. Reads, status and export still work. To save again, move that text into one of that section's subsections or out of the file, then retry the save.`,
+    );
+  }
+
+  /**
+   * The source link a Full save writes: the current fingerprint of a usable Lite source, or
+   * the recorded fingerprint while the source is unusable. Lite documents have no source.
+   */
+  private savedSourceLink(document: LoadedDocument): SourceLink | null {
+    if (isLiteProfile(document.profile)) return null;
+    const link = this.extractSourceLink(document.content);
+    if (!link) return null;
+    const source = this.readLiteSource(link);
+    return source.ok ? { ...link, fingerprint: sourceFingerprint(source.content) } : link;
+  }
+
+  /**
+   * Save one approved subsection without dropping definitions collected elsewhere in the
+   * document. The first save of an earlier-order Full document rewrites the whole document
+   * in the current order, and a derived Full document records its source's current fingerprint.
+   */
   saveSection(section: number, subsectionId: string, title: string, content: string): string {
     const document = this.readWorkingDocument();
 
@@ -651,6 +894,7 @@ ${this.resumeGuidance(profile)}`;
 
     const projectName = this.extractProjectName(document.content);
     const sections = this.parseSections(document.content);
+    this.assertCurrentOrderRewritable(document, sections);
     const sectionContent = sections.get(section) || "";
     if (this.hasUnparsedContent(sectionContent)) {
       throw new Error(
@@ -665,13 +909,7 @@ ${this.resumeGuidance(profile)}`;
       .map(([id, value]) => this.buildSubsection(id, value.title, value.content));
     sections.set(section, parts.join("\n"));
 
-    const sourceLink = this.extractSourceLink(document.content);
-    if (sourceLink) {
-      // Record the Lite content this save was written against; an unreadable source keeps its last fingerprint.
-      const source = this.readLiteSource(sourceLink);
-      if (source.ok) sourceLink.fingerprint = sourceFingerprint(source.content);
-    }
-
+    const sourceLink = this.savedSourceLink(document);
     this.writeAtomic(
       this.workingDoc!,
       this.buildDocument(
@@ -688,6 +926,8 @@ ${this.resumeGuidance(profile)}`;
   /**
    * Save one user-confirmed meaning while preserving all other entries and section content.
    * Semantic confirmation belongs to the conversation; blank input is rejected without a write.
+   * Like a section save, it rewrites an earlier-order Full document in the current order and
+   * records a derived Full document's current source fingerprint.
    */
   saveGlossaryEntry(term: string, definition: string): string {
     const document = this.readWorkingDocument();
@@ -702,13 +942,32 @@ ${this.resumeGuidance(profile)}`;
     if (existing) existing.definition = definition;
     else entries.push({ term, definition });
 
-    const glossary = buildGlossary(entries);
-    const content = document.content.includes("<glossary>")
-      ? document.content.replace(/<glossary>[\s\S]*?<\/glossary>/, () => glossary)
-      : document.content.replace(
-          /<\/(?:alps-document|prd-document)>\s*$/,
-          (closing) => `${glossary}\n\n${closing}`,
-        );
+    const sourceLink = this.savedSourceLink(document);
+    let content: string;
+    if (document.earlierOrder) {
+      const sections = this.parseSections(document.content);
+      this.assertCurrentOrderRewritable(document, sections);
+      content = this.buildDocument(
+        document.profile,
+        this.extractProjectName(document.content),
+        sections,
+        entries,
+        sourceLink,
+      );
+    } else {
+      // A current-order document keeps every other byte; a derived one also records the
+      // fingerprint of the Lite content this save was written against.
+      const glossary = buildGlossary(entries);
+      const base = sourceLink?.fingerprint
+        ? withRootAttribute(document.content, "source-fingerprint", sourceLink.fingerprint)
+        : document.content;
+      content = base.includes("<glossary>")
+        ? base.replace(/<glossary>[\s\S]*?<\/glossary>/, () => glossary)
+        : base.replace(
+            /<\/(?:alps-document|prd-document)>\s*$/,
+            (closing) => `${glossary}\n\n${closing}`,
+          );
+    }
     this.writeAtomic(this.workingDoc!, content);
     return `Saved glossary term: ${existing?.term ?? term}`;
   }
@@ -757,7 +1016,7 @@ ${this.resumeGuidance(profile)}`;
 
     const pending = states.filter((state) => !state.complete).map((state) => state.section);
     if (isLiteProfile(profile)) {
-      lines.push("", ...this.liteRequirementLines(docContent, pending));
+      lines.push("", ...this.liteRequirementLines(docContent, states));
     } else {
       const sourceLink = this.extractSourceLink(docContent);
       if (sourceLink) lines.push("", ...this.liteSourceLines(docContent, sourceLink, pending));
@@ -765,10 +1024,8 @@ ${this.resumeGuidance(profile)}`;
     return lines.join("\n");
   }
 
-  private liteRequirementLines(content: string, pending: number[]): string[] {
-    const requirements = this.liteRequirements(content);
-    const reasons: string[] = [];
-    if (pending.length > 0) reasons.push(`Sections not written: ${pending.join(", ")}`);
+  private liteRequirementLines(content: string, states: SectionState[]): string[] {
+    const { requirements, blockers } = this.liteCompletion(content, states);
     const lines = [
       `Requirement IDs: ${requirements.defined.size} defined${
         requirements.defined.size > 0
@@ -778,31 +1035,24 @@ ${this.resumeGuidance(profile)}`;
     ];
     if (requirements.duplicates.length > 0) {
       lines.push(`Duplicate requirement definitions: ${requirements.duplicates.join(", ")}`);
-      reasons.push("duplicate requirement definitions");
     }
     if (requirements.undefinedReferences.length > 0) {
       lines.push(
         `Undefined requirement references: ${requirements.undefinedReferences.join(", ")}`,
       );
-      reasons.push("undefined requirement references");
     }
-    lines.push(
-      reasons.length === 0
-        ? "Completion: ✅ Complete"
-        : `Completion: 🟡 Incomplete — ${reasons.join("; ")}`,
-    );
-    return lines;
+    return [...lines, ...completionLines(blockers)];
   }
 
   /** Report Lite coverage, dangling references and source changes for a derived Full document. */
   private liteSourceLines(content: string, link: SourceLink, pending: number[]): string[] {
-    const reasons: string[] = [];
-    if (pending.length > 0) reasons.push(`Sections not written: ${pending.join(", ")}`);
-    const lines = [`Lite source: ${link.source}`];
+    const blockers: Blocker[] = [];
+    if (pending.length > 0) blockers.push(unwrittenBlocker(ALPS_PROFILE, pending));
     const source = this.readLiteSource(link);
+    const lines = [`Lite source: ${link.source}`, `Lite source path: ${source.path}`];
     if (!source.ok) {
-      lines.push(`Lite source unavailable: ${source.reason}. Lite coverage is unverified.`);
-      reasons.push("Lite source unavailable");
+      lines.push(`${source.problem}. Lite coverage is unverified.`);
+      blockers.push({ reason: source.label, next: source.next });
     } else {
       const sections = this.parseSections(content);
       const referenced = new Set<string>();
@@ -819,10 +1069,18 @@ ${this.resumeGuidance(profile)}`;
           ? `Lite coverage: ✅ ${covered}/${source.defined.size} requirement IDs referenced`
           : `Lite coverage: 🟡 ${covered}/${source.defined.size} requirement IDs referenced — missing: ${missing.join(", ")}`,
       );
-      if (missing.length > 0) reasons.push("Lite requirement IDs not referenced");
+      if (missing.length > 0) {
+        blockers.push({
+          reason: "Lite requirement IDs not referenced",
+          next: `Convert ${missing.join(", ")} in the Full Section its guide names and list each ID in that content's \`Source requirements:\`; only an optional FR, NFR or EC may instead be deferred to Section 9 with its ID and reason.`,
+        });
+      }
       if (dangling.length > 0) {
         lines.push(`References to IDs not defined in the Lite source: ${dangling.join(", ")}`);
-        reasons.push("references to IDs not defined in the Lite source");
+        blockers.push({
+          reason: "references to IDs not defined in the Lite source",
+          next: `Ask whether to remove or correct the Full content that references ${dangling.join(", ")}, or to propose a Lite change that defines them, saved through Lite Section approval.`,
+        });
       }
       if (link.fingerprint !== sourceFingerprint(source.content)) {
         lines.push(
@@ -830,12 +1088,7 @@ ${this.resumeGuidance(profile)}`;
         );
       }
     }
-    lines.push(
-      reasons.length === 0
-        ? "Completion: ✅ Complete"
-        : `Completion: 🟡 Incomplete — ${reasons.join("; ")}`,
-    );
-    return lines;
+    return [...lines, ...completionLines(blockers)];
   }
 
   /**
@@ -920,6 +1173,92 @@ ${this.resumeGuidance(profile)}`;
     );
   }
 
+  /**
+   * Where the operating system would write a path: each component resolves in order, a link
+   * is followed even when its target is missing, and `..` steps out of the physical directory
+   * reached so far. A guarded file that was moved away stays protected through any alias.
+   */
+  private physicalLocation(file: string, depth = 0): string {
+    const absolute = path.isAbsolute(file) ? file : `${process.cwd()}${path.sep}${file}`;
+    let resolved = path.parse(absolute).root;
+    const parts = absolute
+      .slice(resolved.length)
+      .split(/[\\/]+/)
+      .filter(Boolean);
+    for (const [index, part] of parts.entries()) {
+      if (part === ".") continue;
+      if (part === "..") {
+        resolved = path.dirname(resolved);
+        continue;
+      }
+      const next = path.join(resolved, part);
+      let link: string | null = null;
+      try {
+        if (fs.lstatSync(next).isSymbolicLink()) link = fs.readlinkSync(next);
+      } catch (error) {
+        if (!["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) {
+          throw error;
+        }
+      }
+      if (link == null || depth >= 40) {
+        resolved = next;
+        continue;
+      }
+      const target = path.isAbsolute(link) ? link : `${resolved}${path.sep}${link}`;
+      const rest = parts.slice(index + 1).join(path.sep);
+      return this.physicalLocation(rest ? `${target}${path.sep}${rest}` : target, depth + 1);
+    }
+    return resolved;
+  }
+
+  /**
+   * Whether two physical locations can name the same file. Names compare after Unicode
+   * normalization and case folding, because case-insensitive or normalizing volumes such as
+   * the default macOS one treat them as one file; directories also compare by identity.
+   */
+  private sameLocation(a: string, b: string): boolean {
+    const foldOnce = (value: string) =>
+      value
+        .normalize("NFC")
+        .replace(/\p{Default_Ignorable_Code_Point}|[\u200E\u200F\u202A-\u202E]/gu, "")
+        .toUpperCase()
+        .toLowerCase()
+        .normalize("NFC");
+    // Case mapping can produce characters that compose or map again, so fold until stable.
+    const fold = (value: string) => foldOnce(foldOnce(value));
+    if (fold(a) === fold(b)) return true;
+    // Through a mount or firmlink alias, the nearest existing directories are one directory.
+    const anchor = (location: string) => {
+      const rest = [path.basename(location)];
+      for (let directory = path.dirname(location); ; directory = path.dirname(directory)) {
+        const stats = this.statIfExists(directory);
+        if (stats) return { stats, rest: fold(rest.join("/")) };
+        if (path.dirname(directory) === directory) return null;
+        rest.unshift(path.basename(directory));
+      }
+    };
+    const left = anchor(a);
+    const right = anchor(b);
+    return Boolean(
+      left &&
+      right &&
+      left.rest === right.rest &&
+      left.stats.dev === right.stats.dev &&
+      left.stats.ino === right.stats.ino,
+    );
+  }
+
+  private statIfExists(file: string): fs.Stats | undefined {
+    try {
+      return fs.statSync(file);
+    } catch (error) {
+      if (["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? "")) {
+        return undefined;
+      }
+      throw error;
+    }
+  }
+
   /** Export numbered content followed by the glossary only when actual definitions exist. */
   exportMarkdown(outputPath?: string): string {
     const document = this.readWorkingDocument();
@@ -946,17 +1285,28 @@ ${this.resumeGuidance(profile)}`;
     const result = lines.join("\n");
     if (outputPath) {
       const out = this.expandPath(outputPath);
-      // Compare file identity so relative paths and links cannot export over the source.
-      const source = fs.statSync(this.workingDoc!);
-      let target: fs.Stats | undefined;
-      try {
-        target = fs.statSync(out);
-      } catch (error) {
-        if (!["ENOENT", "ENOTDIR"].includes((error as NodeJS.ErrnoException).code ?? ""))
-          throw error;
+      // Neither the ALPS document nor its Lite source may be replaced; compare file identity
+      // as well as the resolved path so relative paths and links cannot export over either.
+      const guarded = [{ file: this.workingDoc!, name: "the source ALPS document" }];
+      if (sourceLink) {
+        guarded.push({
+          file: path.resolve(path.dirname(this.workingDoc!), sourceLink.source),
+          name: "the Lite source document",
+        });
       }
-      if (target && source.dev === target.dev && source.ino === target.ino)
-        throw new Error("Markdown output must not replace the source ALPS document.");
+      const target = this.statIfExists(out);
+      const location = this.physicalLocation(out);
+      for (const { file, name } of guarded) {
+        const existing = this.statIfExists(file);
+        const sameFile =
+          this.sameLocation(location, this.physicalLocation(file)) ||
+          (target && existing && target.dev === existing.dev && target.ino === existing.ino);
+        if (sameFile) {
+          throw new Error(
+            `Markdown output must not replace ${name}. Choose another output_path ending in .md.`,
+          );
+        }
+      }
       fs.mkdirSync(path.dirname(out), { recursive: true });
       this.writeAtomic(out, result);
       return `Exported to ${out}`;

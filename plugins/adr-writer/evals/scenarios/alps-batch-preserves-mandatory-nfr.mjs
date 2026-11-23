@@ -7,7 +7,7 @@ import {
 } from "../lib/harness.mjs";
 
 const SOURCE = `
-사용자는 완성된 제품 브리프를 제공했고 Sections 1, 2, 3, 6, 7을 한 번에 검토하고 싶다고
+사용자는 완성된 제품 브리프를 제공했고 Sections 1, 2, 3, 5, 7을 한 번에 검토하고 싶다고
 명시했다. 네 가지 Must-Have NFR:
 1. 결제 데이터는 저장하지 않는다 (보안).
 2. GDPR 삭제 요청은 30일 이내 완료한다 (규제).
@@ -27,7 +27,7 @@ export default {
     seedMapping(dir);
     return [
       alpsSkillText("alps-init"),
-      alpsGuideText(6),
+      alpsGuideText(5),
       alpsGuideText(7),
       `\n---\n\n# This run`,
       SOURCE,

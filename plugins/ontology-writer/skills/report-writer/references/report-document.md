@@ -138,8 +138,9 @@ Read the relevant module only when authoring or checking that content:
 - **Code diffs:** [code evidence](code-evidence.md#diff-data-example) owns
   `kind: "diff"`, complete patch hunks and their presentation.
 - **Quizzes:** [comprehension support](comprehension.md#structured-quiz-data)
-  owns `comprehensionCheck`, question rules and staged disclosure. Include the effective `readerLevel` and its permitted
-  question count, or the user's explicit exclusion for this report.
+  owns `comprehensionCheck`, question rules and staged disclosure. In an HTML report include the effective
+  `readerLevel` and its permitted question count, or the user's explicit exclusion for this report;
+  a report delivered only as Markdown or plain text omits `comprehensionCheck`.
 
 ## Compatibility with specialized reports
 
@@ -153,7 +154,8 @@ schema or conflating code verdict with comprehension readiness.
 
 This illustrative input has one section and one quiz question. It omits figures.
 Replace its facts, review status, source path and question with the actual report
-content and verification. A quiz-free report requires the user's explicit exclusion.
+content and verification. An HTML report without a quiz requires the user's explicit
+exclusion; a report delivered only as Markdown or plain text has no quiz.
 
 ```json
 {

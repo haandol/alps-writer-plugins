@@ -9,7 +9,7 @@ ALPS (Agentic Lean Product Spec) comes in two formats:
 
 | Format    | Sections                                                                                                                                                                                   | Use it for                                                                                |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| Full ALPS | 1 Overview · 2 MVP goals and metrics · 3 Demo scenario · 4 Architecture · 5 Design · 6 Requirements · 7 Feature specs · 8 MVP metrics · 9 Out of scope                                     | A product you will plan, then implement                                                   |
+| Full ALPS | 1 Overview · 2 MVP goals and metrics · 3 Demo scenario · 4 Architecture · 5 Requirements · 6 Design · 7 Feature specs · 8 MVP metrics · 9 Out of scope                                     | A product you will plan, then implement                                                   |
 | Lite ALPS | 1 Business context · 2 Business requirements · 3 Functional requirements · 4 Non-functional requirements · 5 Edge cases · 6 Success criteria · 7 Out of scope (optional) · 8 Demo scenario | Evaluable business requirements without technology, and the source of a derived Full ALPS |
 
 In Lite ALPS you give the problem, intent and outcome you want; the agent proposes

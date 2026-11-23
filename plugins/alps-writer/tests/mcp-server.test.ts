@@ -54,7 +54,7 @@ test("MCP template examples are opt-in, reachable from the Full guide, and indep
   assert.ok(!guide.includes(workedFeature));
   assert.match(
     guide,
-    /alps_section\(action: 'read', doc_path, section: 3\), alps_section\(action: 'read', doc_path, section: 6\)/,
+    /alps_section\(action: 'read', doc_path, section: 3\), alps_section\(action: 'read', doc_path, section: 5\)/,
   );
   const full = await call("alps_template", { action: "section", profile: "full", section: 7 });
   const lite = await call("alps_template", { action: "section", profile: "lite", section: 8 });
@@ -486,7 +486,7 @@ test("MCP resume leaves missing required features incomplete and restores comple
       name: "alps_section",
       arguments: { action: "save", doc_path, section, subsection_id, title, content },
     });
-  await save(6, "1", "Core Features (Functional Requirements)", "- F1: Login\n- F2: Logout");
+  await save(5, "1", "Core Features (Functional Requirements)", "- F1: Login\n- F2: Logout");
   await save(7, "1", "Login", "Login behavior; may lead to F2.");
   await save(7, "3", "Export", "Export behavior.");
   const before = fs.readFileSync(doc_path, "utf8");

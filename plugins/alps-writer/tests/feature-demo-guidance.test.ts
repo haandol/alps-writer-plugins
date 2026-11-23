@@ -8,7 +8,7 @@ import { TemplateService } from "../src/tools/templates/service.js";
 const PLUGIN_ROOT = path.resolve(CHAPTERS_DIR, "..", "..", "..");
 
 test("Section 7 connects each Feature to Section 3 without a duplicate demo subsection", () => {
-  assert.deepEqual(SECTION_REFERENCES[7], [3, 6]);
+  assert.deepEqual(SECTION_REFERENCES[7], [3, 5]);
 
   const guide = fs.readFileSync(path.join(GUIDES_DIR, "07.md"), "utf8");
   assert.match(guide, /Section 3 \(Demo Scenario\)/);
@@ -32,7 +32,7 @@ test("Section 7 connects each Feature to Section 3 without a duplicate demo subs
   assert.match(chapter, /Do not repeat preconditions, user actions, or failure scenarios/i);
 
   const skill = fs.readFileSync(path.join(PLUGIN_ROOT, "skills", "alps-init", "SKILL.md"), "utf8");
-  assert.match(skill, /Review Section 3 and Section 6 first/);
+  assert.match(skill, /Review Section 3 and Section 5 first/);
   assert.match(skill, /Demo outcome/);
   assert.match(skill, /Evaluation Rubric/);
   assert.doesNotMatch(skill, /Every Feature must include a Feature Demo/);
@@ -45,9 +45,9 @@ test("the Section 7 runtime surfaces the Demo outcome and both dependencies", ()
 
   assert.match(template, /Demo outcome/);
   assert.doesNotMatch(template, /#### 7\.x\.7 Feature Demo/);
-  assert.match(guide, /Section 3 \(Demo Scenario\), Section 6 \(Requirements Summary\)/);
+  assert.match(guide, /Section 3 \(Demo Scenario\), Section 5 \(Requirements Summary\)/);
   assert.match(
     guide,
-    /alps_section\(action: 'read', doc_path, section: 3\), alps_section\(action: 'read', doc_path, section: 6\)/,
+    /alps_section\(action: 'read', doc_path, section: 3\), alps_section\(action: 'read', doc_path, section: 5\)/,
   );
 });

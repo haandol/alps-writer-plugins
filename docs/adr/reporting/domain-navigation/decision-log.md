@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the reporting/domain-n
 ADR body describes only the current state, while the timeline of "what changed and why"
 accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-11-23 — 퀴즈를 HTML 보고서에만 포함
+
+- **Current ADR**: [domain-first-report-navigation](./0001-domain-first-report-navigation.md)
+- **Change type**: requirement rule change
+- **What**: 모든 보고서에 퀴즈 필수, Markdown·텍스트는 질문과 정답을 분리해 표시 → HTML 보고서에만 퀴즈 필수, Markdown·일반 텍스트로만 전달하는 보고서는 퀴즈와 제외 기록이 없고 Markdown·텍스트 렌더링에는 퀴즈를 넣지 않음.
+- **Why**: CLI에서 Markdown·텍스트 보고서를 읽으면 문제와 답이 함께 보여 스스로 확인하는 의미가 없다.
+
 ## 2026-11-18 — 독자 수준에 따른 퀴즈 문항 상한
 
 입문 독자는 핵심 조건을 여러 상황에 적용해 볼 수 있도록 10개까지, 중간 독자는 기존과 같이 6개까지, 숙련 독자는 5개까지 제공한다.

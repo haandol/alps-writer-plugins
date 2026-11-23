@@ -1,9 +1,12 @@
 # Comprehension support
 
-Every report includes a quiz of at least one question on its core content. The
+Every HTML report includes a quiz of at least one question on its core content. The
 only exception is a user's explicit exclusion for that report: record it as
 `comprehensionCheck: { "excluded": "<the user's request>" }` instead of questions.
-Chat answers that are not reports carry no quiz. Generating questions or
+A report delivered only as Markdown or plain text, such as one read in a CLI, carries
+no quiz and needs no exclusion record, because its questions and answers would show
+together. Markdown renderings never include the quiz, and chat answers that are not
+reports carry no quiz. Generating questions or
 selecting correct answers does not measure learning gains or cognitive-load
 reduction, and an unanswered quiz never blocks the original task.
 
@@ -34,7 +37,7 @@ including when the review verdict is PASS.
 ## Place questions with their explanation
 
 Place each question after the explanation needed to answer it, including child
-explanations, and before the owning domain's detailed evidence in every format.
+explanations, and before the owning domain's detailed evidence in the HTML report.
 If those explanations can be collapsed, provide a route back to them. Questions
 support the owning explanation. Apply the reader level’s limit once across
 the report. Questions do not use the four slots for child explanations.
@@ -63,8 +66,7 @@ HTML must provide these controls. Use the verification levels in
 [final delivery](format-and-layout.md#final-delivery); static checks do not prove
 browser interaction or print behavior. Its printable view shows questions
 and all choices, with answers, feedback, previous selections, and controls
-excluded. Markdown and text keep questions and choices separate from answers
-and explanations; do not claim they automatically grade or conceal answers.
+excluded. Markdown and plain-text renderings carry no quiz.
 Source HTML or JSON can contain the answer data: staged disclosure is a reading
 aid, not an exam-security boundary.
 
@@ -77,9 +79,12 @@ them to every report.
 
 The ordinary completion response delivers the result and report location; it
 does not ask quiz questions or request answers. Only when the user explicitly
-asks to run the quiz, present one prepared question at a time. Accept one of its
-four choices. For an incorrect answer, explain the missing concept with the
-stored evidence and retry the same question. Keep progress in the conversation,
+asks to run the quiz, present one prepared question at a time. A report delivered
+only as Markdown or plain text has no prepared questions: prepare them in the
+conversation under the same question rules, present them one at a time, and never
+add them to the delivered file. Accept one of the question's
+four choices. For an incorrect answer, explain the missing concept with that
+question's evidence and retry the same question. Keep progress in the conversation,
 not in an ADR, mapping, repository, or other authoritative registry.
 
 ## Structured quiz data
@@ -96,9 +101,10 @@ Each question contains:
   source supporting the answer.
 - `revisit`: boolean; one or two questions are true, or the sole question is true.
 
-`comprehensionCheck` is required: the CLI renderer refuses a report without it,
-and accepts `{ "excluded": "<the user's request>" }` only for an explicit user
-exclusion. The renderer rejects unknown section references,
+`comprehensionCheck` is required for HTML: the CLI renderer refuses an HTML report
+without it, and accepts `{ "excluded": "<the user's request>" }` only for an explicit
+user exclusion. A Markdown rendering needs neither and never includes the quiz.
+The renderer rejects unknown section references,
 ambiguous choices, excess questions and missing answer evidence. It makes no model
 call and does not judge topical importance or difficulty; the author reviews those.
 

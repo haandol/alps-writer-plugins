@@ -107,7 +107,7 @@ test("Section 7 keeps Feature-level save units and suggests splits at eight or h
     assert.match(source, /(?:keep|keeping) the original Feature|원래 Feature/i);
     assert.match(source, /never blocks approval or saving|승인.*저장.*차단하지/i);
     assert.match(source, /independently (?:demonstrable|observable) user[-\s]+behavior/i);
-    assert.match(source, /Section 6 and Section 7 Feature boundaries\s+together/i);
+    assert.match(source, /Section 5 and Section 7 Feature boundaries\s+together/i);
   }
 
   assert.match(guide, /Feature `7\.x` is one approval and save unit/i);

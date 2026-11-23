@@ -120,7 +120,7 @@ test("Section 4.1 requires Context and Container as its only Mermaid diagram typ
     '```mermaid\n%%{init: {"theme": "neutral"}}%%\n%% system boundary\nC4Context\nPerson(user, "User")\n```';
   assert.throws(
     () => service.saveSection(4, "1", "System Diagram", contextOnly),
-    /requires a Mermaid C4Container diagram/,
+    /requires a Mermaid C4Container diagram\. Add a ```mermaid block whose first line is C4Container\./,
   );
 
   const componentAdded = `${contextOnly}
@@ -136,8 +136,21 @@ Component(module, "Module")
 \`\`\``;
   assert.throws(
     () => service.saveSection(4, "1", "System Diagram", componentAdded),
-    /allows only Mermaid C4Context and C4Container diagrams; found C4Component/,
+    /allows only Mermaid C4Context and C4Container diagrams; found C4Component\. Remove that diagram, or any line holding only that keyword, and keep Section 4\.1 to the Context and Container levels\./,
   );
+  // A longer closing fence or an unclosed fence cannot hide a lower C4 level.
+  for (const hidden of [
+    `${contextOnly}\n\n\`\`\`mermaid\nC4Container\n\`\`\`\`\n\n\`\`\`mermaid\nC4Component\n\`\`\`\``,
+    `${contextOnly}\n\n~~~mermaid\nC4Container\n~~~\n\n\`\`\`mermaid\nC4Component`,
+    `${contextOnly}\n\n~~~mermaid\nC4Container\n~~~\n\nNote:\n\n    \`\`\`text\n\n\`\`\`mermaid\nC4Component\n\`\`\``,
+    `${contextOnly}\n\n~~~mermaid\nC4Container\n~~~\n\n- Parent:\n  - Child\n  \`\`\`text\n\n\`\`\`mermaid\nC4Component\n\`\`\``,
+    `${contextOnly}\n\n~~~mermaid\nC4Container\n~~~\n\n> \`\`\`mermaid\n> C4Component\n> \`\`\``,
+  ]) {
+    assert.throws(
+      () => service.saveSection(4, "1", "System Diagram", hidden),
+      /allows only Mermaid C4Context and C4Container diagrams; found C4Component/,
+    );
+  }
 
   const valid = `${contextOnly}
 
@@ -156,12 +169,12 @@ test("non-C4 diagrams remain valid outside Section 4.1", () => {
 
   assert.match(
     service.saveSection(
-      6,
+      5,
       "3",
       "Feature Dependency Diagram",
       "```mermaid\ngraph TD\nF2 --> F1\n```",
     ),
-    /Saved 6\.3/,
+    /Saved 5\.3/,
   );
 });
 
@@ -241,7 +254,7 @@ test("dynamic Feature completion counts only entries with a non-empty body", () 
   const service = new DocumentService();
   service.initDocument("empty-features", target);
   service.saveSection(
-    6,
+    5,
     "1",
     "Core Features (Functional Requirements)",
     "- F1: Login\n- F2: Logout",
@@ -257,14 +270,14 @@ test("dynamic Feature completion counts only entries with a non-empty body", () 
   assert.match(service.getStatus(), /Section 7 .*In progress \(1\/2 features\)/);
 });
 
-test("dynamic Section 7 status follows the feature count declared in Section 6.1", () => {
+test("dynamic Section 7 status follows the feature count declared in Section 5.1", () => {
   const dir = temporaryDirectory();
   const target = path.join(dir, "features.alps.xml");
   const service = new DocumentService();
   service.initDocument("demo", target);
 
   service.saveSection(
-    6,
+    5,
     "1",
     "Core Features (Functional Requirements)",
     "- F1: Login\n- F2: Logout",
@@ -280,7 +293,7 @@ test("legacy and current rubric headings round-trip without rewriting existing F
     const target = path.join(temporaryDirectory(), "rubric.alps.xml");
     const service = new DocumentService();
     service.initDocument("rubric", target);
-    service.saveSection(6, "1", "Core Features (Functional Requirements)", "- F1: Login");
+    service.saveSection(5, "1", "Core Features (Functional Requirements)", "- F1: Login");
     const body = `#### 7.1.6 ${heading}\n\nThe approved login result is observable.`;
     assert.match(service.saveSection(7, "1", "Login", body), /Saved 7\.1/);
     const saved = fs.readFileSync(target, "utf8");
@@ -300,7 +313,7 @@ test("Section 7 accepts Features with or without a Mermaid diagram and preserves
   service.initDocument("demo", target);
 
   service.saveSection(
-    6,
+    5,
     "1",
     "Core Features (Functional Requirements)",
     "- F1: Plain flow\n- F2: Visual flow",

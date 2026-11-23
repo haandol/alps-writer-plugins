@@ -36676,23 +36676,23 @@ var ALPS_PROFILE = {
     2: "MVP Goals and Key Metrics",
     3: "Demo Scenario",
     4: "High-Level Architecture",
-    5: "Design Specification",
-    6: "Requirements Summary",
+    5: "Requirements Summary",
+    6: "Design Specification",
     7: "Feature-Level Specification",
     8: "MVP Metrics",
     9: "Out of Scope"
   },
   sectionReferences: {
     3: [2],
-    5: [6],
-    7: [3, 6],
-    8: [2, 6]
+    6: [5],
+    7: [3, 5],
+    8: [2, 5]
   },
-  authoringOrder: [1, 2, 3, 4, 6, 5, 7, 8, 9],
+  authoringOrder: [1, 2, 3, 4, 5, 6, 7, 8, 9],
   dynamicSection: {
     section: 7,
-    sourceSection: 6,
-    sourceSubsectionId: "6.1"
+    sourceSection: 5,
+    sourceSubsectionId: "5.1"
   },
   optionalSections: [],
   requirementOwners: null
@@ -37046,23 +37046,91 @@ function featureCoverage(source, entries) {
   return { expected: required2.length, written: required2.length - missing.length, missing };
 }
 
+// src/tools/documents/fences.ts
+var FENCE = /^(`{3,}|~{3,})(.*)$/;
+var CLOSING_FENCE = /^(`{3,}|~{3,})[ \t]*$/;
+var LIST_ITEM = /^( *)([-*+]|\d{1,9}[.)])( +|$)/;
+function indentOf(line) {
+  let width = 0;
+  for (const character of line) {
+    if (character === " ") width += 1;
+    else if (character === "	") width += 4 - width % 4;
+    else break;
+  }
+  return width;
+}
+function scanFences(text) {
+  const outside = [];
+  const blocks = [];
+  let open2 = null;
+  let listContent = null;
+  for (const line of text.split(/\r\n|\r|\n/)) {
+    const indent = indentOf(line);
+    const blank = line.trim() === "";
+    if (open2) {
+      if (open2.base > 0 && !blank && indent < open2.base) {
+        open2 = null;
+        listContent = null;
+      } else {
+        const closing = line.trim().match(CLOSING_FENCE);
+        if (closing && indent - open2.base <= 3 && closing[1][0] === open2.char && closing[1].length >= open2.length) {
+          open2 = null;
+        } else {
+          open2.block.lines.push(line);
+        }
+        continue;
+      }
+    }
+    let base = listContent ?? 0;
+    let candidate = line;
+    let relative = indent - base;
+    const item = line.match(LIST_ITEM);
+    if (item) {
+      listContent = item[1].length + item[2].length + Math.min(Math.max(item[3].length, 1), 4);
+      base = listContent;
+      candidate = line.slice(item[0].length);
+      relative = 0;
+    } else if (!blank && listContent != null && indent < listContent) {
+      listContent = null;
+      base = 0;
+      relative = indent;
+    }
+    const opening = relative <= 3 ? candidate.trimStart().match(FENCE) : null;
+    if (opening && !(opening[1][0] === "`" && opening[2].includes("`"))) {
+      const block = { info: opening[2].trim(), lines: [] };
+      blocks.push(block);
+      open2 = { char: opening[1][0], length: opening[1].length, base, block };
+      continue;
+    }
+    outside.push(line);
+  }
+  return { outside, blocks };
+}
+
 // src/tools/documents/requirement-ids.ts
 var PREFIX_GROUP = REQUIREMENT_PREFIXES.join("|");
 var TOKEN = new RegExp(`(?<![A-Za-z0-9])(${PREFIX_GROUP})-([1-9]\\d*)(?![A-Za-z0-9])`, "g");
-var DEFINITION = new RegExp(
-  `^\\s*(?:\\|\\s*|[-*+]\\s+|\\d+[.)]\\s+|#{1,6}\\s+)?(?:\\*\\*|__|\`)?(${PREFIX_GROUP})-([1-9]\\d*)(?![A-Za-z0-9])`
+var STRUCTURAL_DEFINITION = new RegExp(
+  `^\\s*(?:\\|\\s*|[-*+]\\s+|\\d+[.)]\\s+|#{1,6}\\s+)(?:\\*\\*|__|\`)?(${PREFIX_GROUP})-([1-9]\\d*)(?![A-Za-z0-9])`
 );
-var withoutCodeFences = (text) => text.replace(/```[\s\S]*?```|~~~[\s\S]*?~~~/g, "");
+var BOLD_HEADING_DEFINITION = new RegExp(
+  `^\\s*(\\*\\*|__)(${PREFIX_GROUP})-([1-9]\\d*)(?![A-Za-z0-9])(?:(?!\\1).)*\\1\\s*(?:\\([^()]*\\))?\\s*(?:[:\uFF1A\\-\u2013\u2014].*)?$`
+);
+function definedIdentifier(line) {
+  const structural = line.match(STRUCTURAL_DEFINITION);
+  if (structural) return { prefix: structural[1], id: `${structural[1]}-${structural[2]}` };
+  const heading = line.match(BOLD_HEADING_DEFINITION);
+  return heading ? { prefix: heading[2], id: `${heading[2]}-${heading[3]}` } : null;
+}
 function requirementReferences(text) {
   return new Set([...text.matchAll(TOKEN)].map((match) => `${match[1]}-${match[2]}`));
 }
 function requirementDefinitions(text, owned) {
   const counts = /* @__PURE__ */ new Map();
-  for (const line of withoutCodeFences(text).split(/\r?\n/)) {
-    const match = line.match(DEFINITION);
-    if (!match || !owned.includes(match[1])) continue;
-    const id = `${match[1]}-${match[2]}`;
-    counts.set(id, (counts.get(id) ?? 0) + 1);
+  for (const line of scanFences(text).outside) {
+    const definition = definedIdentifier(line);
+    if (!definition || !owned.includes(definition.prefix)) continue;
+    counts.set(definition.id, (counts.get(definition.id) ?? 0) + 1);
   }
   return counts;
 }
@@ -37129,39 +37197,117 @@ function glossaryMarkdown(entries) {
 // src/tools/documents/service.ts
 var bySubsectionId = ([a], [b]) => a.localeCompare(b, void 0, { numeric: true });
 var ALLOWED_ARCHITECTURE_DIAGRAMS = /* @__PURE__ */ new Set(["C4Context", "C4Container"]);
+var MERMAID_DIRECTIVE = /%%\{[\s\S]*?\}%%/g;
 function mermaidDiagramTypes(content) {
-  return [...content.matchAll(/```mermaid\s*\r?\n([\s\S]*?)```/g)].map(
-    (match) => match[1].split(/\r?\n/).map((line) => line.trim()).find((line) => line && !line.startsWith("%%"))?.split(/\s+/)[0]
-  ).filter((type) => Boolean(type));
+  return scanFences(content).blocks.filter((block) => /^mermaid\b/i.test(block.info)).map((block) => {
+    const lines = block.lines.map((line) => line.trim());
+    let start = lines.findIndex(Boolean);
+    if (lines[start] === "---") {
+      const end = lines.indexOf("---", start + 1);
+      start = end < 0 ? lines.length : end + 1;
+    }
+    return lines.slice(start).join("\n").replace(MERMAID_DIRECTIVE, "").split("\n").map((line) => line.trim()).find((line) => line && !line.startsWith("%%"))?.split(/\s+/)[0];
+  }).filter((type) => Boolean(type));
+}
+var C4_LEVEL = /^C4(?:Context|Container|Component|Dynamic|Deployment)$/;
+function c4KeywordLines(content) {
+  const read = (text) => text.split(/\r\n|\r|\n/).map(
+    (line) => line.replace(/^(?:\s*(?:>|<[^>]*>|(?:[-*+]|\d{1,9}[.)])(?=\s|$)))*\s*/, "").replace(/\s*%%.*$/, "").trim()
+  ).filter((line) => C4_LEVEL.test(line));
+  const stripped = read(content.replace(MERMAID_DIRECTIVE, ""));
+  const original = read(content);
+  const count = (lines, level) => lines.filter((line) => line === level).length;
+  return [.../* @__PURE__ */ new Set([...stripped, ...original])].flatMap(
+    (level) => Array(Math.max(count(stripped, level), count(original, level))).fill(level)
+  );
 }
 function architectureDiagramError(content) {
   const diagramTypes = mermaidDiagramTypes(content);
   for (const required2 of ALLOWED_ARCHITECTURE_DIAGRAMS) {
     if (!diagramTypes.includes(required2)) {
-      return `Section 4.1 requires a Mermaid ${required2} diagram.`;
+      return `Section 4.1 requires a Mermaid ${required2} diagram. Add a \`\`\`mermaid block whose first line is ${required2}.`;
     }
   }
-  const disallowed = diagramTypes.find((type) => !ALLOWED_ARCHITECTURE_DIAGRAMS.has(type));
+  const disallowed = diagramTypes.find((type) => !ALLOWED_ARCHITECTURE_DIAGRAMS.has(type)) ?? c4KeywordLines(content).find((type) => !ALLOWED_ARCHITECTURE_DIAGRAMS.has(type));
   if (disallowed) {
-    return `Section 4.1 allows only Mermaid C4Context and C4Container diagrams; found ${disallowed}.`;
+    return `Section 4.1 allows only Mermaid C4Context and C4Container diagrams; found ${disallowed}. Remove that diagram, or any line holding only that keyword, and keep Section 4.1 to the Context and Container levels.`;
   }
   return null;
 }
 var LITE_CONTEXT_DIAGRAM_SUBSECTION = "3.2";
 function liteBusinessContextDiagramError(content) {
   const diagramTypes = mermaidDiagramTypes(content);
+  const keywordLines = c4KeywordLines(content);
   const contextCount = diagramTypes.filter((type) => type === "C4Context").length;
-  if (contextCount !== 1) {
-    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} requires exactly one Mermaid C4Context diagram.`;
+  if (contextCount !== 1 || keywordLines.filter((type) => type === "C4Context").length > 1) {
+    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} requires exactly one Mermaid C4Context diagram. Keep one \`\`\`mermaid block whose first line is C4Context, outside quotes, and remove any other C4Context block or line holding only that keyword.`;
   }
-  const disallowed = diagramTypes.find((type) => type.startsWith("C4") && type !== "C4Context");
+  const disallowed = [...diagramTypes, ...keywordLines].find(
+    (type) => type.startsWith("C4") && type !== "C4Context"
+  );
   if (disallowed) {
-    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} allows only Mermaid C4Context diagrams; found ${disallowed}.`;
+    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} allows only Mermaid C4Context diagrams; found ${disallowed}. Remove that diagram, or any line holding only that keyword; system structure belongs in Full ALPS Section 4.1.`;
   }
   return null;
 }
+var EARLIER_FULL_ORDER = { 5: "Design Specification", 6: "Requirements Summary" };
+function currentFullOrder(content) {
+  const titles = /* @__PURE__ */ new Map();
+  for (const match of content.matchAll(/<section\b([^>]*)>/g)) {
+    const id = attribute(match[1], "id");
+    if (id) titles.set(id, attribute(match[1], "title"));
+  }
+  if (titles.get("5") !== EARLIER_FULL_ORDER[5] || titles.get("6") !== EARLIER_FULL_ORDER[6]) {
+    return content;
+  }
+  return content.replace(
+    /<section\b([^>]*)>([\s\S]*?)<\/section>/g,
+    (whole, attributes, body) => {
+      const from = attribute(attributes, "id");
+      if (from !== "5" && from !== "6") return whole;
+      const to = from === "5" ? "6" : "5";
+      const renumbered = body.replace(
+        /(<subsection\b[^>]*?\bid=")(\d+)(\.)/g,
+        (prefix, start, number4, dot) => number4 === from ? `${start}${to}${dot}` : prefix
+      );
+      return `<section${attributes.replace(/\bid="\d+"/, `id="${to}"`)}>${renumbered}</section>`;
+    }
+  );
+}
+function withRootAttribute(content, name, value) {
+  return content.replace(
+    /^(\s*<(?:alps-document|prd-document)\b)([^>]*)>/,
+    (_root, open2, attributes) => {
+      const escaped = escapeXmlAttribute(value);
+      const pattern = new RegExp(`(\\s${name}\\s*=\\s*)"[^"]*"`);
+      const updated = pattern.test(attributes) ? attributes.replace(pattern, (_match, prefix) => `${prefix}"${escaped}"`) : `${attributes} ${name}="${escaped}"`;
+      return `${open2}${updated}>`;
+    }
+  );
+}
 function sourceFingerprint(content) {
   return createHash("sha256").update(content.replace(/\r\n/g, "\n").trim()).digest("hex");
+}
+var LITE_OWNER_BY_PREFIX = new Map(
+  Object.entries(LITE_ALPS_PROFILE.requirementOwners ?? {}).flatMap(
+    ([subsection, prefixes]) => prefixes.map((prefix) => [prefix, subsection])
+  )
+);
+var ownedIn = (ids2) => ids2.map((id) => `${id} in ${LITE_OWNER_BY_PREFIX.get(id.split("-")[0])}`).join(", ");
+var lowerFirst = (text) => text.charAt(0).toLowerCase() + text.slice(1);
+function unwrittenBlocker(profile2, pending) {
+  return {
+    reason: `Sections not written: ${pending.join(", ")}`,
+    next: `Write the unwritten Sections in section order, starting with Section ${pending[0]} (${profile2.sectionTitles[pending[0]]}).`
+  };
+}
+function completionLines(blockers) {
+  if (blockers.length === 0) return ["Completion: \u2705 Complete"];
+  return [
+    `Completion: \u{1F7E1} Incomplete \u2014 ${blockers.map((blocker) => blocker.reason).join("; ")}`,
+    "Next steps:",
+    ...blockers.map((blocker) => `- ${blocker.next}`)
+  ];
 }
 var DocumentService = class _DocumentService {
   workingDoc = null;
@@ -37312,6 +37458,13 @@ ${content}
     } else if (profileValue === LITE_ALPS_PROFILE.rootProfile) {
       const headerIds = headers.map(({ id }) => id);
       const currentIds = sectionNumbers(LITE_ALPS_PROFILE);
+      const sectionElements = [...content.matchAll(/<section\b/g)].length;
+      const outsideSections = content.replace(/^\s*<(?:alps-document|prd-document)\b[^>]*>/, "").replace(/<\/(?:alps-document|prd-document)>\s*$/, "").replace(/<section\b[^>]*>[\s\S]*?<\/section>/g, "").replace(/<glossary>[\s\S]*?<\/glossary>/, "").trim();
+      if (sectionElements !== headerIds.length || outsideSections) {
+        return {
+          error: `Lite ALPS documents must contain only Sections ${sectionRange(LITE_ALPS_PROFILE)} and an optional glossary.`
+        };
+      }
       if (currentIds.length === headerIds.length && currentIds.every((section, index) => section === headerIds[index])) {
         profile2 = LITE_ALPS_PROFILE;
       } else {
@@ -37362,7 +37515,8 @@ ${content}
     if ("error" in inspection) {
       throw new Error(`Invalid ALPS document at ${this.workingDoc}: ${inspection.error}`);
     }
-    return { content, profile: inspection.profile };
+    const current = isLiteProfile(inspection.profile) ? content : currentFullOrder(content);
+    return { content: current, profile: inspection.profile, earlierOrder: current !== content };
   }
   writeAtomic(filepath, content) {
     const temporary = `${filepath}.tmp-${process.pid}-${Date.now()}`;
@@ -37400,7 +37554,7 @@ ${content}
     const profile2 = DOCUMENT_PROFILES[profileId];
     if (sourceDocPath != null && isLiteProfile(profile2)) {
       throw new Error(
-        "A Lite source applies only to Full ALPS initialization; Lite ALPS documents have no source."
+        "A Lite source applies only to Full ALPS initialization; Lite ALPS documents have no source. Call alps_document(action: 'init', profile: 'lite', project_name, output_path) without source_doc_path to create the Lite, or use profile 'full' with this source_doc_path to derive a Full document from a completed Lite."
       );
     }
     let filepath = this.expandPath(outputPath);
@@ -37412,7 +37566,8 @@ ${content}
         `Document already exists at ${filepath}. Use alps_document(action: 'load', doc_path) to resume.`
       );
     }
-    const sourceLink = sourceDocPath == null ? null : this.completedLiteSource(sourceDocPath, filepath);
+    const source = sourceDocPath == null ? null : this.completedLiteSource(sourceDocPath, filepath);
+    const sourceLink = source?.link ?? null;
     fs3.mkdirSync(path4.dirname(filepath), { recursive: true });
     try {
       fs3.writeFileSync(
@@ -37433,58 +37588,86 @@ ${content}
       throw error62;
     }
     this.workingDoc = filepath;
-    return sourceLink ? `Created ${profile2.label} document at ${filepath}
-Lite source: ${sourceLink.source}` : `Created ${profile2.label} document at ${filepath}`;
+    return source ? `Created ${profile2.label} document at ${filepath}
+Lite source: ${source.link.source}
+Lite source path: ${source.path}` : `Created ${profile2.label} document at ${filepath}`;
   }
   /**
-   * Accept only a completed current-format Lite document as a Full source and
-   * return the link recorded relative to the Full document. Nothing is written.
+   * Accept only a completed current-format Lite document as a Full source and return the
+   * link recorded relative to the Full document with the resolved source path. Nothing is
+   * written; every rejection names the next action, including continuing without a source.
    */
   completedLiteSource(sourceDocPath, fullPath) {
     const sourcePath = this.expandPath(sourceDocPath);
+    const withoutSource = "or call alps_document(action: 'init', profile: 'full', project_name, output_path) without source_doc_path to continue without a Lite source.";
     if (!sourcePath.toLowerCase().endsWith(LITE_ALPS_PROFILE.filenameSuffix)) {
       throw new Error(
-        `Invalid Lite source: ${sourcePath}. A Full ALPS source must be a ${LITE_ALPS_PROFILE.filenameSuffix} document.`
+        `Invalid Lite source: ${sourcePath}. A Full ALPS source must be a ${LITE_ALPS_PROFILE.filenameSuffix} document. Name a completed Lite ALPS document, ${withoutSource}`
       );
     }
     let content;
     try {
       content = fs3.readFileSync(sourcePath, "utf-8");
     } catch (error62) {
-      throw new Error(`Lite source not readable at ${sourcePath}: ${error62.message}`, {
-        cause: error62
-      });
+      throw new Error(
+        `Lite source not readable at ${sourcePath}: ${error62.message}. Check the path, write the Lite first with alps_document(action: 'init', profile: 'lite', project_name, output_path), ${withoutSource}`,
+        { cause: error62 }
+      );
     }
     const inspection = this.inspectDocument(content);
-    if ("error" in inspection)
-      throw new Error(`Invalid Lite source at ${sourcePath}: ${inspection.error}`);
-    if (!isLiteProfile(inspection.profile)) {
-      throw new Error(`Invalid Lite source at ${sourcePath}: the document is not Lite ALPS.`);
-    }
-    const incomplete = this.liteIncompleteReasons(content);
-    if (incomplete.length > 0) {
+    const invalid = "error" in inspection ? inspection.error : isLiteProfile(inspection.profile) ? null : "the document is not Lite ALPS.";
+    if (invalid) {
       throw new Error(
-        `Lite source at ${sourcePath} is not complete: ${incomplete.join("; ")}. Complete the Lite document before deriving Full ALPS.`
+        `Invalid Lite source at ${sourcePath}: ${invalid} Name a current-format Lite ALPS document, ${withoutSource}`
+      );
+    }
+    const { blockers } = this.liteCompletion(content);
+    if (blockers.length > 0) {
+      throw new Error(
+        `Lite source at ${sourcePath} is not complete: ${blockers.map((blocker) => blocker.reason).join("; ")}. Complete it first: load it with alps_document(action: 'load', doc_path: '${sourcePath}'), then ${blockers.map((blocker) => lowerFirst(blocker.next)).join(" Then ")} Retry this initialization afterwards, ${withoutSource}`
       );
     }
     const relative = path4.relative(path4.dirname(fullPath), sourcePath).split(path4.sep).join("/");
-    return { source: relative, fingerprint: sourceFingerprint(content) };
+    return {
+      link: { source: relative, fingerprint: sourceFingerprint(content) },
+      path: sourcePath
+    };
   }
-  /** Resolve the recorded Lite source and its defined identifiers without failing the Full request. */
+  /**
+   * Resolve the recorded Lite source without failing the Full request. A source that is
+   * unreadable, not current-format Lite or no longer complete is unusable, and the result
+   * names the next action that makes it usable again.
+   */
   readLiteSource(link) {
     const sourcePath = path4.resolve(path4.dirname(this.workingDoc), link.source);
+    const meanwhile = "Then check this document's status again; resume, saves and export keep working meanwhile.";
+    const unavailable = (problem) => ({
+      ok: false,
+      path: sourcePath,
+      label: "Lite source unavailable",
+      problem: `Lite source unavailable: ${problem}`,
+      next: `Restore the completed Lite ALPS document at ${sourcePath}, the source path recorded relative to this Full document. ${meanwhile}`
+    });
     let content;
     try {
       content = fs3.readFileSync(sourcePath, "utf-8");
     } catch (error62) {
-      return { ok: false, link, reason: `not readable (${error62.message})` };
+      return unavailable(`not readable (${error62.message})`);
     }
     const inspection = this.inspectDocument(content);
-    if ("error" in inspection) return { ok: false, link, reason: inspection.error };
-    if (!isLiteProfile(inspection.profile)) {
-      return { ok: false, link, reason: "the document is not Lite ALPS" };
+    if ("error" in inspection) return unavailable(inspection.error.replace(/\.$/, ""));
+    if (!isLiteProfile(inspection.profile)) return unavailable("the document is not Lite ALPS");
+    const { requirements, blockers } = this.liteCompletion(content);
+    if (blockers.length > 0) {
+      return {
+        ok: false,
+        path: sourcePath,
+        label: "Lite source incomplete",
+        problem: `Lite source incomplete: ${blockers.map((blocker) => blocker.reason).join("; ")}`,
+        next: `Complete the Lite source through Lite Section approval: load it with alps_document(action: 'load', doc_path: '${sourcePath}'), then ${blockers.map((blocker) => lowerFirst(blocker.next)).join(" Then ")} ${meanwhile}`
+      };
     }
-    return { ok: true, link, content, defined: this.liteRequirements(content).defined };
+    return { ok: true, path: sourcePath, content, defined: requirements.defined };
   }
   /** Requirement identifiers a Lite document defines, duplicates and dangling references. */
   liteRequirements(content) {
@@ -37512,38 +37695,41 @@ Lite source: ${sourceLink.source}` : `Created ${profile2.label} document at ${fi
       undefinedReferences: sortRequirementIds(undefinedReferences)
     };
   }
-  /** Reasons a Lite document is not complete; empty when it is. */
-  liteIncompleteReasons(content) {
-    const reasons = [];
-    const pending = this.sectionStates(content, LITE_ALPS_PROFILE).filter(
-      (state) => !state.complete
-    );
-    if (pending.length > 0) {
-      reasons.push(
-        `required Sections not written: ${pending.map((state) => state.section).join(", ")}`
-      );
-    }
+  /**
+   * The one Lite completion rule shared by Lite status and Full source acceptance:
+   * every required Section written, no duplicate definition and no undefined reference.
+   * Each blocker carries the next action that resolves it.
+   */
+  liteCompletion(content, states = this.sectionStates(content, LITE_ALPS_PROFILE)) {
+    const pending = states.filter((state) => !state.complete).map((state) => state.section);
     const requirements = this.liteRequirements(content);
-    if (requirements.duplicates.length > 0) {
-      reasons.push(`duplicate requirement definitions: ${requirements.duplicates.join(", ")}`);
+    const blockers = [];
+    if (pending.length > 0) blockers.push(unwrittenBlocker(LITE_ALPS_PROFILE, pending));
+    const { duplicates, undefinedReferences } = requirements;
+    if (duplicates.length > 0) {
+      blockers.push({
+        reason: `duplicate requirement definitions: ${duplicates.join(", ")}`,
+        next: `Keep one definition of each duplicated ID in its owning subsection (${ownedIn(duplicates)}) and refer to it elsewhere by ID.`
+      });
     }
-    if (requirements.undefinedReferences.length > 0) {
-      reasons.push(
-        `undefined requirement references: ${requirements.undefinedReferences.join(", ")}`
-      );
+    if (undefinedReferences.length > 0) {
+      blockers.push({
+        reason: `undefined requirement references: ${undefinedReferences.join(", ")}`,
+        next: `Define each referenced ID in its owning subsection (${ownedIn(undefinedReferences)}), or correct or remove the reference.`
+      });
     }
-    return reasons;
+    return { requirements, blockers };
   }
   /**
    * Keeps resume guidance aligned with each profile's authoring contract.
-   * Full ALPS remains question-first, while Lite asks only for missing or
-   * protected context and preserves proposal-first Sections 2 and 4.
+   * Full ALPS remains question-first, while Lite asks only for missing context,
+   * undefined terms or protected decisions and keeps proposal-first Sections 2-6 and 8.
    */
   resumeGuidance(profile2) {
-    const steps = isLiteProfile(profile2) ? `1. Call alps_template(action: 'guide', profile: '${isLiteProfile(profile2) ? "lite" : "full"}', section: N) before working on any section
+    const steps = isLiteProfile(profile2) ? `1. Call alps_template(action: 'guide', profile: 'lite', section: N) before working on any section
 2. Follow the guide: ask only for missing user-owned context, undefined terms or protected decisions, but propose Sections 2-6 and 8 before asking the user to design them
 3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
-4. Get explicit "yes" confirmation before calling alps_section(action: 'save', doc_path, section, subsection_id, title, content)` : `1. Call alps_template(action: 'guide', profile: '${isLiteProfile(profile2) ? "lite" : "full"}', section: N) before working on any section
+4. Get explicit "yes" confirmation before calling alps_section(action: 'save', doc_path, section, subsection_id, title, content)` : `1. Call alps_template(action: 'guide', profile: 'full', section: N) before working on any section
 2. Reuse supplied context. Ask 1-2 focused questions at a time only for missing information. DO NOT auto-generate content that invents missing product decisions
 3. Wait when a question needs an answer; otherwise present the section's approval digest
 4. Get explicit "yes" confirmation before calling alps_section(action: 'save', doc_path, section, subsection_id, title, content)`;
@@ -37590,7 +37776,40 @@ ${this.resumeGuidance(profile2)}`;
     this.workingDoc = filepath;
     return inspection.profile;
   }
-  /** Save one approved subsection without dropping definitions collected elsewhere in the document. */
+  /**
+   * An earlier-order Full document is rewritten whole on its first save, so Sections 5 and 6
+   * must hold only recognized subsections: free text there cannot be renumbered safely.
+   * The refusal leaves the file unchanged and names how to make the save possible.
+   */
+  assertCurrentOrderRewritable(document, sections) {
+    if (!document.earlierOrder) return;
+    const unparsed = [5, 6].filter(
+      (id) => this.hasUnparsedContent(sections.get(id) || "")
+    );
+    if (unparsed.length === 0) return;
+    const locations = unparsed.map(
+      (id) => `Section ${id} (this earlier-order file stores ${ALPS_PROFILE.sectionTitles[id]} as <section id="${id === 5 ? 6 : 5}">)`
+    ).join(" and ");
+    throw new Error(
+      unparsed.length > 1 ? `Cannot rewrite this document in the current section order: ${locations} contain unrecognized content outside their subsections. Reads, status and export still work. To save again, move that text into one of each section's subsections or out of the file, then retry the save.` : `Cannot rewrite this document in the current section order: ${locations} contains unrecognized content outside its subsections. Reads, status and export still work. To save again, move that text into one of that section's subsections or out of the file, then retry the save.`
+    );
+  }
+  /**
+   * The source link a Full save writes: the current fingerprint of a usable Lite source, or
+   * the recorded fingerprint while the source is unusable. Lite documents have no source.
+   */
+  savedSourceLink(document) {
+    if (isLiteProfile(document.profile)) return null;
+    const link = this.extractSourceLink(document.content);
+    if (!link) return null;
+    const source = this.readLiteSource(link);
+    return source.ok ? { ...link, fingerprint: sourceFingerprint(source.content) } : link;
+  }
+  /**
+   * Save one approved subsection without dropping definitions collected elsewhere in the
+   * document. The first save of an earlier-order Full document rewrites the whole document
+   * in the current order, and a derived Full document records its source's current fingerprint.
+   */
   saveSection(section, subsectionId, title, content) {
     const document = this.readWorkingDocument();
     const { profile: profile2 } = document;
@@ -37620,6 +37839,7 @@ ${this.resumeGuidance(profile2)}`;
     }
     const projectName = this.extractProjectName(document.content);
     const sections = this.parseSections(document.content);
+    this.assertCurrentOrderRewritable(document, sections);
     const sectionContent = sections.get(section) || "";
     if (this.hasUnparsedContent(sectionContent)) {
       throw new Error(
@@ -37630,11 +37850,7 @@ ${this.resumeGuidance(profile2)}`;
     existing.set(subsection.fullId, { title, content });
     const parts = [...existing.entries()].sort(bySubsectionId).map(([id, value]) => this.buildSubsection(id, value.title, value.content));
     sections.set(section, parts.join("\n"));
-    const sourceLink = this.extractSourceLink(document.content);
-    if (sourceLink) {
-      const source = this.readLiteSource(sourceLink);
-      if (source.ok) sourceLink.fingerprint = sourceFingerprint(source.content);
-    }
+    const sourceLink = this.savedSourceLink(document);
     this.writeAtomic(
       this.workingDoc,
       this.buildDocument(
@@ -37650,6 +37866,8 @@ ${this.resumeGuidance(profile2)}`;
   /**
    * Save one user-confirmed meaning while preserving all other entries and section content.
    * Semantic confirmation belongs to the conversation; blank input is rejected without a write.
+   * Like a section save, it rewrites an earlier-order Full document in the current order and
+   * records a derived Full document's current source fingerprint.
    */
   saveGlossaryEntry(term, definition) {
     const document = this.readWorkingDocument();
@@ -37662,13 +37880,28 @@ ${this.resumeGuidance(profile2)}`;
     if (existing?.definition === definition) return `Glossary unchanged: ${existing.term}`;
     if (existing) existing.definition = definition;
     else entries.push({ term, definition });
-    const glossary = buildGlossary(entries);
-    const content = document.content.includes("<glossary>") ? document.content.replace(/<glossary>[\s\S]*?<\/glossary>/, () => glossary) : document.content.replace(
-      /<\/(?:alps-document|prd-document)>\s*$/,
-      (closing) => `${glossary}
+    const sourceLink = this.savedSourceLink(document);
+    let content;
+    if (document.earlierOrder) {
+      const sections = this.parseSections(document.content);
+      this.assertCurrentOrderRewritable(document, sections);
+      content = this.buildDocument(
+        document.profile,
+        this.extractProjectName(document.content),
+        sections,
+        entries,
+        sourceLink
+      );
+    } else {
+      const glossary = buildGlossary(entries);
+      const base = sourceLink?.fingerprint ? withRootAttribute(document.content, "source-fingerprint", sourceLink.fingerprint) : document.content;
+      content = base.includes("<glossary>") ? base.replace(/<glossary>[\s\S]*?<\/glossary>/, () => glossary) : base.replace(
+        /<\/(?:alps-document|prd-document)>\s*$/,
+        (closing) => `${glossary}
 
 ${closing}`
-    );
+      );
+    }
     this.writeAtomic(this.workingDoc, content);
     return `Saved glossary term: ${existing?.term ?? term}`;
   }
@@ -37710,44 +37943,37 @@ ${display}`;
     if (glossary.length > 0) lines.push(`Appendix (Glossary): ${glossary.length} defined terms`);
     const pending = states.filter((state) => !state.complete).map((state) => state.section);
     if (isLiteProfile(profile2)) {
-      lines.push("", ...this.liteRequirementLines(docContent, pending));
+      lines.push("", ...this.liteRequirementLines(docContent, states));
     } else {
       const sourceLink = this.extractSourceLink(docContent);
       if (sourceLink) lines.push("", ...this.liteSourceLines(docContent, sourceLink, pending));
     }
     return lines.join("\n");
   }
-  liteRequirementLines(content, pending) {
-    const requirements = this.liteRequirements(content);
-    const reasons = [];
-    if (pending.length > 0) reasons.push(`Sections not written: ${pending.join(", ")}`);
+  liteRequirementLines(content, states) {
+    const { requirements, blockers } = this.liteCompletion(content, states);
     const lines = [
       `Requirement IDs: ${requirements.defined.size} defined${requirements.defined.size > 0 ? ` (${sortRequirementIds(requirements.defined).join(", ")})` : ""}`
     ];
     if (requirements.duplicates.length > 0) {
       lines.push(`Duplicate requirement definitions: ${requirements.duplicates.join(", ")}`);
-      reasons.push("duplicate requirement definitions");
     }
     if (requirements.undefinedReferences.length > 0) {
       lines.push(
         `Undefined requirement references: ${requirements.undefinedReferences.join(", ")}`
       );
-      reasons.push("undefined requirement references");
     }
-    lines.push(
-      reasons.length === 0 ? "Completion: \u2705 Complete" : `Completion: \u{1F7E1} Incomplete \u2014 ${reasons.join("; ")}`
-    );
-    return lines;
+    return [...lines, ...completionLines(blockers)];
   }
   /** Report Lite coverage, dangling references and source changes for a derived Full document. */
   liteSourceLines(content, link, pending) {
-    const reasons = [];
-    if (pending.length > 0) reasons.push(`Sections not written: ${pending.join(", ")}`);
-    const lines = [`Lite source: ${link.source}`];
+    const blockers = [];
+    if (pending.length > 0) blockers.push(unwrittenBlocker(ALPS_PROFILE, pending));
     const source = this.readLiteSource(link);
+    const lines = [`Lite source: ${link.source}`, `Lite source path: ${source.path}`];
     if (!source.ok) {
-      lines.push(`Lite source unavailable: ${source.reason}. Lite coverage is unverified.`);
-      reasons.push("Lite source unavailable");
+      lines.push(`${source.problem}. Lite coverage is unverified.`);
+      blockers.push({ reason: source.label, next: source.next });
     } else {
       const sections = this.parseSections(content);
       const referenced = /* @__PURE__ */ new Set();
@@ -37762,10 +37988,18 @@ ${display}`;
       lines.push(
         missing.length === 0 ? `Lite coverage: \u2705 ${covered}/${source.defined.size} requirement IDs referenced` : `Lite coverage: \u{1F7E1} ${covered}/${source.defined.size} requirement IDs referenced \u2014 missing: ${missing.join(", ")}`
       );
-      if (missing.length > 0) reasons.push("Lite requirement IDs not referenced");
+      if (missing.length > 0) {
+        blockers.push({
+          reason: "Lite requirement IDs not referenced",
+          next: `Convert ${missing.join(", ")} in the Full Section its guide names and list each ID in that content's \`Source requirements:\`; only an optional FR, NFR or EC may instead be deferred to Section 9 with its ID and reason.`
+        });
+      }
       if (dangling.length > 0) {
         lines.push(`References to IDs not defined in the Lite source: ${dangling.join(", ")}`);
-        reasons.push("references to IDs not defined in the Lite source");
+        blockers.push({
+          reason: "references to IDs not defined in the Lite source",
+          next: `Ask whether to remove or correct the Full content that references ${dangling.join(", ")}, or to propose a Lite change that defines them, saved through Lite Section approval.`
+        });
       }
       if (link.fingerprint !== sourceFingerprint(source.content)) {
         lines.push(
@@ -37773,10 +38007,7 @@ ${display}`;
         );
       }
     }
-    lines.push(
-      reasons.length === 0 ? "Completion: \u2705 Complete" : `Completion: \u{1F7E1} Incomplete \u2014 ${reasons.join("; ")}`
-    );
-    return lines;
+    return [...lines, ...completionLines(blockers)];
   }
   /**
    * Count required entries with an actual body, not merely saved XML tags.
@@ -37845,6 +38076,74 @@ ${data.content}`).join("\n\n");
     const subsections = this.parseSubsections(content, section);
     return subsections.size > 0 && [...subsections.values()].every((subsection) => subsection.content.trim().length === 0);
   }
+  /**
+   * Where the operating system would write a path: each component resolves in order, a link
+   * is followed even when its target is missing, and `..` steps out of the physical directory
+   * reached so far. A guarded file that was moved away stays protected through any alias.
+   */
+  physicalLocation(file2, depth = 0) {
+    const absolute = path4.isAbsolute(file2) ? file2 : `${process.cwd()}${path4.sep}${file2}`;
+    let resolved = path4.parse(absolute).root;
+    const parts = absolute.slice(resolved.length).split(/[\\/]+/).filter(Boolean);
+    for (const [index, part] of parts.entries()) {
+      if (part === ".") continue;
+      if (part === "..") {
+        resolved = path4.dirname(resolved);
+        continue;
+      }
+      const next = path4.join(resolved, part);
+      let link = null;
+      try {
+        if (fs3.lstatSync(next).isSymbolicLink()) link = fs3.readlinkSync(next);
+      } catch (error62) {
+        if (!["ENOENT", "ENOTDIR"].includes(error62.code ?? "")) {
+          throw error62;
+        }
+      }
+      if (link == null || depth >= 40) {
+        resolved = next;
+        continue;
+      }
+      const target = path4.isAbsolute(link) ? link : `${resolved}${path4.sep}${link}`;
+      const rest = parts.slice(index + 1).join(path4.sep);
+      return this.physicalLocation(rest ? `${target}${path4.sep}${rest}` : target, depth + 1);
+    }
+    return resolved;
+  }
+  /**
+   * Whether two physical locations can name the same file. Names compare after Unicode
+   * normalization and case folding, because case-insensitive or normalizing volumes such as
+   * the default macOS one treat them as one file; directories also compare by identity.
+   */
+  sameLocation(a, b) {
+    const foldOnce = (value) => value.normalize("NFC").replace(new RegExp("\\p{Default_Ignorable_Code_Point}|[\\u200E\\u200F\\u202A-\\u202E]", "gu"), "").toUpperCase().toLowerCase().normalize("NFC");
+    const fold = (value) => foldOnce(foldOnce(value));
+    if (fold(a) === fold(b)) return true;
+    const anchor2 = (location) => {
+      const rest = [path4.basename(location)];
+      for (let directory = path4.dirname(location); ; directory = path4.dirname(directory)) {
+        const stats = this.statIfExists(directory);
+        if (stats) return { stats, rest: fold(rest.join("/")) };
+        if (path4.dirname(directory) === directory) return null;
+        rest.unshift(path4.basename(directory));
+      }
+    };
+    const left = anchor2(a);
+    const right = anchor2(b);
+    return Boolean(
+      left && right && left.rest === right.rest && left.stats.dev === right.stats.dev && left.stats.ino === right.stats.ino
+    );
+  }
+  statIfExists(file2) {
+    try {
+      return fs3.statSync(file2);
+    } catch (error62) {
+      if (["ENOENT", "ENOTDIR"].includes(error62.code ?? "")) {
+        return void 0;
+      }
+      throw error62;
+    }
+  }
   /** Export numbered content followed by the glossary only when actual definitions exist. */
   exportMarkdown(outputPath) {
     const document = this.readWorkingDocument();
@@ -37875,16 +38174,24 @@ ${markdown}
     const result = lines.join("\n");
     if (outputPath) {
       const out = this.expandPath(outputPath);
-      const source = fs3.statSync(this.workingDoc);
-      let target;
-      try {
-        target = fs3.statSync(out);
-      } catch (error62) {
-        if (!["ENOENT", "ENOTDIR"].includes(error62.code ?? ""))
-          throw error62;
+      const guarded = [{ file: this.workingDoc, name: "the source ALPS document" }];
+      if (sourceLink) {
+        guarded.push({
+          file: path4.resolve(path4.dirname(this.workingDoc), sourceLink.source),
+          name: "the Lite source document"
+        });
       }
-      if (target && source.dev === target.dev && source.ino === target.ino)
-        throw new Error("Markdown output must not replace the source ALPS document.");
+      const target = this.statIfExists(out);
+      const location = this.physicalLocation(out);
+      for (const { file: file2, name } of guarded) {
+        const existing = this.statIfExists(file2);
+        const sameFile = this.sameLocation(location, this.physicalLocation(file2)) || target && existing && target.dev === existing.dev && target.ino === existing.ino;
+        if (sameFile) {
+          throw new Error(
+            `Markdown output must not replace ${name}. Choose another output_path ending in .md.`
+          );
+        }
+      }
       fs3.mkdirSync(path4.dirname(out), { recursive: true });
       this.writeAtomic(out, result);
       return `Exported to ${out}`;
@@ -37937,7 +38244,7 @@ var server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.16.0" },
+  { name: "alps-writer", version: "0.17.0" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
@@ -37964,9 +38271,9 @@ Every operation on an existing document requires doc_path; init requires output_
    Lite ALPS: alps_template(action: 'overview', profile: 'lite')
    The matching overview MUST be called first to get the conversation guide.
 3. Use atomic confirmation by default. Batch confirmation is allowed only when the user explicitly requests it or supplies a complete structured source covering multiple sections.
-   Full ALPS order: 1, 2, 3, 4, 6, 5, 7, 8, 9.
+   Full ALPS order: 1, 2, 3, 4, 5, 6, 7, 8, 9.
    Lite ALPS order: 1, 2, 3, 4, 5, 6, 7, 8. Section 7 is optional.
-   For Full ALPS, author Requirements (6) before Design (5), because Design reuses the Feature IDs defined in Section 6.1.
+   Full ALPS Section 5 (Requirements) defines the Feature IDs that Section 6 (Design) and Section 7 reuse.
    For each section:
    a. Call the matching alps_template(action: 'guide', profile: 'full', section: N) or alps_template(action: 'guide', profile: 'lite', section: N)
    b. Call the matching alps_template(action: 'section', profile: 'full', section: N) or alps_template(action: 'section', profile: 'lite', section: N)
@@ -38003,6 +38310,7 @@ Every operation on an existing document requires doc_path; init requires output_
 - Section 8 proposes the shortest Demo Scenario that shows every required FR, names the FR and EC IDs each step shows, includes relevant EC counterexamples, and passes only when every shown criterion passes. A passing demo is not proof of business impact or market validity.
 - Do not invent exclusions or require optional Section 7.
 - Lite and Full keep independent document state and completion. A derived Full records its Lite source; never change Lite business meaning in Full \u2014 propose a Lite change through Lite's own approval instead.
+- When status reports a document incomplete or its Lite source unavailable or incomplete, never stop at the blocked state: relay the \`Next steps:\` it lists and offer to do the next one.
 </RULES>`
   }
 );

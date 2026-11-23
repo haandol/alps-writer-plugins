@@ -75,7 +75,7 @@
       {
         "id": "Q1",
         "sectionId": "part-one",
-        "question": "{{Required quiz within the reader level limit: a medium-difficulty question applying this section's core rule to a situation. Add further questions as the core content needs. Replace comprehensionCheck with { \"excluded\": \"<the user's request>\" } only when the user explicitly excluded the quiz.}}",
+        "question": "{{Required quiz for an HTML report within the reader level limit: a medium-difficulty question applying this section's core rule to a situation. Add further questions as the core content needs. Replace comprehensionCheck with { \"excluded\": \"<the user's request>\" } only when the user explicitly excluded the quiz, and remove it for a report delivered only as Markdown or plain text.}}",
         "options": [
           {
             "id": "A",

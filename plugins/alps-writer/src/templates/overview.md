@@ -18,14 +18,15 @@ value, unit, population, condition, and scope across sections.
 2. MVP Goals and Key Metrics - Articulate measurable goals that validate the MVP hypothesis
 3. Demo Scenario - Describe the demo scenario showing how key hypotheses can be validated _(references: Section 2)_
 4. High-Level Architecture - Provide C4 Context and Container diagrams plus durable Architecture Constraints; exclude implementation technology inventories
-5. Design Specification - Detail the UX and page flow _(references: Section 6)_
-6. Requirements Summary - Enumerate all core functional and non-functional requirements
-7. Feature-Level Specification - Present complete user stories and an observable demo for each feature _(references: Sections 3, 6)_
-8. MVP Metrics - Detail methods for collecting and analyzing data _(references: Section 2, 6)_
+5. Requirements Summary - Enumerate all core functional and non-functional requirements
+6. Design Specification - Detail the UX and page flow _(references: Section 5)_
+7. Feature-Level Specification - Present complete user stories and an observable demo for each feature _(references: Sections 3, 5)_
+8. MVP Metrics - Detail methods for collecting and analyzing data _(references: Section 2, 5)_
 9. Out of Scope - List features deferred for future iterations
 
-> **Recommended authoring order:** 1 → 2 → 3 → 4 → **6 → 5** → 7 → 8 → 9.
-> The section numbering and the final document order are unchanged (Section 5 is Design, Section 6 is Requirements). Only the order in which you _ask questions_ differs: author Section 6 (Requirements) before Section 5 (Design), because Section 5 reuses the Feature IDs (F1, F2, …) defined in Section 6.1. This is the only place the questioning order departs from the numeric order.
+> **Authoring order:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9, the same as the section numbers.
+> Section 5 (Requirements) defines the Feature IDs (F1, F2, …) that Section 6 (Design) and Section 7 (Features) reuse.
+> A document written in the earlier order (Section 5 Design, Section 6 Requirements) is shown in this order on load and rewritten in this order on its first approved save, without losing content.
 
 ---
 
@@ -36,9 +37,9 @@ Some sections depend on other sections. Before working on a section with referen
 
 <reference-map>
 - Section 3 (Demo Scenario) → MUST review Section 2 (MVP Goals)
-- Section 5 (Design Specification) → MUST review Section 6 (Requirements Summary)
-- Section 7 (Feature-Level Specification) → MUST review Section 3 (Demo Scenario) AND Section 6 (Requirements Summary)
-- Section 8 (MVP Metrics) → MUST review Section 2 (MVP Goals) AND Section 6.2 (Non-Functional Requirements)
+- Section 6 (Design Specification) → MUST review Section 5 (Requirements Summary)
+- Section 7 (Feature-Level Specification) → MUST review Section 3 (Demo Scenario) AND Section 5 (Requirements Summary)
+- Section 8 (MVP Metrics) → MUST review Section 2 (MVP Goals) AND Section 5.2 (Non-Functional Requirements)
 </reference-map>
 
 <mandatory-actions>
@@ -76,7 +77,7 @@ When the document records a Lite source, each Section guide's `<lite_source>` bl
   updates to already-saved Full units that reference the changed IDs. If the user declines, continue with
   the current Lite meaning. Do not save a Full unit that depends on a pending proposal.
 - Mark converted content with `Source requirements:` and the Lite IDs it covers. Required FRs become
-  Features (6.1 and 7.x), Required NFRs 6.2 mandatory constraints, Required ECs Feature edge cases, KPIs and
+  Features (5.1 and 7.x), Required NFRs 5.2 mandatory constraints, Required ECs Feature edge cases, KPIs and
   TMs Sections 2.2 and 8, BRs Feature rules, cases or 4.2 constraints. Optional FRs, NFRs and ECs are
   converted or deferred to Section 9 with their IDs and reasons. Only a BR fully judged by other IDs' cases
   may be marked as needing no technical requirement, and the digest names those IDs.
@@ -89,8 +90,15 @@ When the document records a Lite source, each Section guide's `<lite_source>` bl
   change nothing when the meaning is the same, propose updates for changed or added Lite requirements through
   the existing approval units, and never delete Full content for a removed Lite requirement without the
   user's choice. The notice does not block completion.
-- If status reports the source as unavailable, Lite coverage is unverified and the document is not complete
-  until the Lite document is restored at the recorded relative path; resume, saves and export still work.
+- Read Lite with the absolute path status reports as `Lite source path:`; the recorded `Lite source:` is
+  relative to the Full document.
+- When a Lite NFR leaves its population or observation condition undefined, do not define it in Full; ask
+  it as a Lite change proposal. Propose a tension candidate only for a KPI whose Lite row records no tension
+  decision.
+- If status reports the Lite source as unavailable or incomplete, Lite coverage is unverified and the document
+  is not complete; resume, saves and export still work. Never stop at the blocked state: relay the
+  `Next steps:` status lists, such as restoring the completed Lite at the reported path or completing the
+  Lite through its own Section approval, and offer to do that next.
 
 ---
 
@@ -146,7 +154,7 @@ For EVERY section:
 4. Integrate answers iteratively
 5. When complete, present a concise plain-text approval digest and ask for confirmation
 6. Call `alps_section(action: 'save', doc_path, section, subsection_id, title, content)` — one call per X.n subsection — only AFTER explicit "yes". `subsection_id` and `title` MUST match the `<subsection id="N.x" title="...">` in that section's XML template.
-7. Move to the next section only after confirmation. Follow the recommended authoring order above — author Section 6 (Requirements) before Section 5 (Design).
+7. Move to the next section only after confirmation, in the numeric authoring order above.
 
 <section-level-checkpoint>
 Atomic confirmation happens at the SECTION level by default. Batch confirmation is allowed only after explicit user opt-in or when a complete structured source covers several sections. In either mode, never silently skip a section; present every section as a separate approval unit.
@@ -166,7 +174,7 @@ The approval view is a disposable reading aid, not the stored document.
 <confirmation-required-sections>
 Every section requires confirmation (see the section-level checkpoint above). These need EXTRA-strict, non-skippable confirmation:
 - Section 3. Demo Scenario
-- Section 6. Requirements Summary
+- Section 5. Requirements Summary
 - Every Feature `7.x` of Section 7 (separate approval/save unit; atomic by default)
 </confirmation-required-sections>
 
@@ -176,7 +184,7 @@ Section 7 (Feature-Level Specification) is the most common place to cut corners.
 - Batch mode: present multiple Features only as separately labeled approval units, then save each approved Feature with a separate call.
 - A Feature `7.x` is the approval and save unit. Its `7.x.1`-`7.x.6` fields stay together.
 - If a Feature's comprehension load is 8/10 or higher, propose up to three independently demonstrable user-behavior splits before approval and include the option to keep the original Feature. The proposal never blocks approval or saving.
-- If the user chooses a split, update the corresponding Section 6 and Section 7 Feature boundaries together. Never split by frontend/backend/data layers.
+- If the user chooses a split, update the corresponding Section 5 and Section 7 Feature boundaries together. Never split by frontend/backend/data layers.
 - Never skip a Feature because it "looks small", "looks similar to a previous one", or "can be inferred". Each Feature is a separate vertical slice.
 - Write each Feature so a junior developer seeing it for the first time can identify the actor, action, conceptual data, and user-visible result. Explain unfamiliar acronyms and domain or technical terms on first use.
 - When multiple participants or layers make a flow easier to understand visually, recommend a concise Mermaid diagram in `7.x.3`; prefer `sequenceDiagram` for request, data, and response flow across UI, API, data stores, and external systems.
@@ -214,7 +222,6 @@ When user provides PDF, ALPS (PRD), or any reference:
 - For Section 7, ALWAYS use first-reader-friendly language and recommend an optional Mermaid diagram when it materially clarifies a multi-participant or multi-layer flow; prefer `sequenceDiagram` for data flow and never treat the diagram as a completion requirement
 - When information is missing, ask 1-2 questions at a time (1 for complex topics); do not re-ask information already provided
 - When saving, ALWAYS call `alps_section(action: 'save', doc_path, section, subsection_id, title, content)` with action and all five content arguments; `subsection_id` and `title` must match the section's XML template
-- Author Section 6 (Requirements) before Section 5 (Design) — see the recommended authoring order
 - In Section 4.1, ALWAYS include both Mermaid `C4Context` and `C4Container` diagrams. These are the only C4 levels allowed; never generate Component, Dynamic, Deployment, or Code-level C4 diagrams.
 - In Section 4.2, record only Architecture Constraints that regenerated implementations must preserve. Never persist a replaceable technology inventory.
 </rules>

@@ -3,7 +3,7 @@
 - List the key data points and methods for collecting them to measure the MVP's success.
 - Define success thresholds for each key performance indicator.
 - Keep each tension metric from Section 2 next to the KPI it protects and give it a collection method. A monitoring-only tension needs no target; record one only when the user confirmed it as required.
-- Non-functional requirements (from Section 6.2) are also validated here or through dedicated release testing.
+- Non-functional requirements (from Section 5.2) are also validated here or through dedicated release testing.
 - Keep each NFR's value, unit, population, and measurement condition intact. Daily active users and concurrent users are different quantities.
   </description>
   <subsection id="8.1" title="Data Collection Methods">

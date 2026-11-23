@@ -140,9 +140,10 @@ implementation readiness, or ADR handoff.
    structure, Feature IDs, implementation plans, or ADR handoff steps to Lite.
 10. When the requested document work is complete, call `alps_export(doc_path)`.
 11. Lite is complete when `alps_document(action: 'status', doc_path)` reports `Completion: ✅ Complete`
-    (every required Section written, no duplicate definitions or undefined references). Then ask
-    once whether the user wants an optional deep-research review of its evidence and errors, and
-    mention once that a completed Lite can be the source of a derived Full ALPS
+    (every required Section written, no duplicate definitions or undefined references). While it
+    reports incomplete, relay the `Next steps:` it lists and offer to do the next one. Once it
+    reports complete, ask once whether the user wants an optional deep-research review of its
+    evidence and errors, and mention once that a completed Lite can be the source of a derived Full ALPS
     (`/alps-init` with this Lite as source) when implementation preparation is needed. Unwritten
     optional Section 7 does not block this. Reuse a review request or an answered choice already
     in the current conversation; an unanswered invitation, decline, or deferral does not start

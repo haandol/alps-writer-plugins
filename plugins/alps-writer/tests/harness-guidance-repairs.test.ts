@@ -47,7 +47,7 @@ test("the sign-up example keeps password and lockout rules identical in acceptan
   assert.doesNotMatch(
     acceptance,
     /unverified.*deleted/i,
-    "the Section 6 example excludes email verification",
+    "the Section 5 example excludes email verification",
   );
   assert.doesNotMatch(service.getSection(7), /A 5th consecutive/, "examples remain opt-in");
 });
@@ -147,7 +147,7 @@ test("Section 7 loads worked Features only through opt-in templates and keeps th
   );
   assert.match(
     guide,
-    /alps_section\(action: 'read', doc_path, section: 3\), alps_section\(action: 'read', doc_path, section: 6\)/,
+    /alps_section\(action: 'read', doc_path, section: 3\), alps_section\(action: 'read', doc_path, section: 5\)/,
   );
   assert.match(guide, /If a referenced section is empty, STOP and author it first/);
   assert.match(guide, /Feature `7\.x` is one approval and save unit/);
@@ -241,7 +241,7 @@ test("rubric cases remain independently evaluable and paired metrics retain thei
 
 test("NFR examples preserve the daily-user unit and the latency condition in their checks", () => {
   const service = new TemplateService();
-  const nfr = tableRows(service.getSection(6, true)).find((row) => row[0] === "NF2");
+  const nfr = tableRows(service.getSection(5, true)).find((row) => row[0] === "NF2");
   const thresholds = tableRows(between(service.getSection(8, true), "8.2 Success Thresholds"));
   const workload = thresholds.find((row) => row[0].includes("NF2"));
   assert.ok(nfr && workload);
@@ -258,7 +258,7 @@ test("NFR examples preserve the daily-user unit and the latency condition in the
 
 test("the metrics guide checks both NF1 obligations and carries Section 2 KPI units", () => {
   const service = new TemplateService();
-  const nfr = tableRows(service.getSectionGuide(6)).find((row) => row[0] === "NF1");
+  const nfr = tableRows(service.getSectionGuide(5)).find((row) => row[0] === "NF1");
   assert.ok(nfr);
   const concurrency = nfr[1].match(/[\d,]+ concurrent users/)?.[0];
   const seconds = nfr[1].match(/within (\d+) seconds/)?.[1];
@@ -291,7 +291,7 @@ test("both overview responses distinguish new documents from resume in their own
 
 test("Full examples do not invent a stack or a technical-debt roadmap", () => {
   const service = new TemplateService();
-  const navigation = between(service.getSectionGuide(5), "<example>", "</example>");
+  const navigation = between(service.getSectionGuide(6), "<example>", "</example>");
   const roadmap = between(service.getSectionGuide(9), "<example>", "</example>");
   assert.doesNotMatch(navigation, /Chainlit|Claude|React|Express/);
   assert.doesNotMatch(roadmap, /S3|ECS|Phase [23]|coverage/i);

@@ -30,8 +30,8 @@ Labels identify what a collapsed branch adds; source groups retain complete
 access without hiding conclusion-changing facts. Produce every report through the
 shared template and stylesheet described in [the document contract](report-document.md).
 
-In every format, place a node's child explanations before its comprehension
-questions and detailed source evidence. Label parent support material with its
+In every format, place a node's child explanations before its detailed source
+evidence, and in HTML before its comprehension questions. Label parent support material with its
 owning scope when a linear format resumes it after child sections. A question
 depending on collapsed child explanations provides a route back to them;
 reading them is never an approval or task-completion gate.
@@ -45,12 +45,21 @@ Use [diagrams](diagrams.md) for figure selection and checks, and
 [quantitative claims](quantitative-claims.md) when calculations support a judgment.
 Read these only when the report needs that content.
 
+## Plain-text delivery
+
+A report shown only as plain text in the conversation or terminal is written without the
+renderer, so it carries the renderer's fixed headings itself, in the same order: the title,
+`Purpose`, `Context`, the core answer, `Overview`, the subject-specific sections, then the
+review information. In a Korean report the fixed headings are `목표`, `배경` and `전체 그림`.
+It has no quiz and no exclusion record.
+
 ## Final delivery
 
 Apply the [delivery decision](../SKILL.md#choose-the-delivery) before this section.
 For a selected report, default to standalone local HTML when the user has not
 specified a format or delivery constraint. Short, simple explanations and review
-results delivered in chat do not need a report file, browser opening or quiz.
+results delivered in chat do not need a report file, browser opening or quiz. A
+report delivered only as Markdown or plain text carries no quiz.
 An ordinary acknowledgement, progress update or completion notice is not a report.
 Keep required Markdown/JSON audit artifacts alongside the final human view.
 Explicit other-format, chat-only, no-file, no-open or browser requests override
