@@ -5,7 +5,7 @@
 // behaviour; this table only avoids running unrelated live-model scenarios.
 
 // This fixture belongs to the four proposal probes. Other lib/ changes retain
-// the shared-harness fallback. Tests compare this list with the actual imports.
+// the shared-harness fallback.
 const paymentProposalScenarios = [
   "author-checks-business-rule-proposal",
   "author-checks-business-value-proposal",
@@ -13,12 +13,26 @@ const paymentProposalScenarios = [
   "hook-value-change-proposal",
 ];
 
+// These fixtures belong to the Full ALPS scenarios that derive from a Lite source.
+const liteDerivationScenarios = [
+  "alps-full-derives-from-lite-without-reasking",
+  "alps-full-relays-unusable-source-next-steps",
+  "alps-full-routes-business-gap-to-lite",
+];
+
+/** Private fixtures and the scenarios that import them; tests compare both lists. */
+export const PRIVATE_FIXTURE_SCENARIOS = new Map([
+  ["plugins/adr-writer/evals/lib/payment-change.mjs", paymentProposalScenarios],
+  ["plugins/adr-writer/evals/lib/lite-derivation.mjs", liteDerivationScenarios],
+]);
+
 /** Route a private fixture change like edits to its consuming scenarios in either runner. */
 export function evaluationImpactPaths(paths) {
   return paths.flatMap((path) => {
     const normalized = path.replaceAll("\\", "/");
-    if (normalized !== "plugins/adr-writer/evals/lib/payment-change.mjs") return [normalized];
-    return paymentProposalScenarios.map((name) => `plugins/adr-writer/evals/scenarios/${name}.mjs`);
+    const consumers = PRIVATE_FIXTURE_SCENARIOS.get(normalized);
+    if (!consumers) return [normalized];
+    return consumers.map((name) => `plugins/adr-writer/evals/scenarios/${name}.mjs`);
   });
 }
 

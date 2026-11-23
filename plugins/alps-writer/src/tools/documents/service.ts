@@ -231,11 +231,14 @@ const ownedIn = (ids: string[]): string =>
 
 const lowerFirst = (text: string): string => text.charAt(0).toLowerCase() + text.slice(1);
 
-/** The next action for unwritten Sections, which are always written in section order. */
-function unwrittenBlocker(profile: DocumentProfile, pending: number[]): Blocker {
+/**
+ * The next action for Sections that are not complete yet, whether unwritten or partly
+ * written; they are always completed in section order.
+ */
+function incompleteSectionsBlocker(profile: DocumentProfile, pending: number[]): Blocker {
   return {
-    reason: `Sections not written: ${pending.join(", ")}`,
-    next: `Write the unwritten Sections in section order, starting with Section ${pending[0]} (${profile.sectionTitles[pending[0]]}).`,
+    reason: `Sections not complete: ${pending.join(", ")}`,
+    next: `Complete the remaining Sections in section order, starting with Section ${pending[0]} (${profile.sectionTitles[pending[0]]}).`,
   };
 }
 
@@ -734,7 +737,7 @@ export class DocumentService {
     const pending = states.filter((state) => !state.complete).map((state) => state.section);
     const requirements = this.liteRequirements(content);
     const blockers: Blocker[] = [];
-    if (pending.length > 0) blockers.push(unwrittenBlocker(LITE_ALPS_PROFILE, pending));
+    if (pending.length > 0) blockers.push(incompleteSectionsBlocker(LITE_ALPS_PROFILE, pending));
     const { duplicates, undefinedReferences } = requirements;
     if (duplicates.length > 0) {
       blockers.push({
@@ -1047,7 +1050,7 @@ ${this.resumeGuidance(profile)}`;
   /** Report Lite coverage, dangling references and source changes for a derived Full document. */
   private liteSourceLines(content: string, link: SourceLink, pending: number[]): string[] {
     const blockers: Blocker[] = [];
-    if (pending.length > 0) blockers.push(unwrittenBlocker(ALPS_PROFILE, pending));
+    if (pending.length > 0) blockers.push(incompleteSectionsBlocker(ALPS_PROFILE, pending));
     const source = this.readLiteSource(link);
     const lines = [`Lite source: ${link.source}`, `Lite source path: ${source.path}`];
     if (!source.ok) {

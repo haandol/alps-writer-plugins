@@ -131,7 +131,7 @@ test("optional Out of Scope does not block completion and export omits it", () =
   const service = new DocumentService();
 
   assert.match(service.initDocument("cart", target, "lite"), /Created Lite ALPS/);
-  assert.match(service.getStatus(), /Completion: 🟡 Incomplete — Sections not written: 1, 2, 3/);
+  assert.match(service.getStatus(), /Completion: 🟡 Incomplete — Sections not complete: 1, 2, 3/);
   saveCompleteLite(service);
 
   const status = service.getStatus();
@@ -885,6 +885,6 @@ test("an incomplete Lite status names the next Section to write in section order
   service.saveSection(...second);
   assert.match(
     service.getStatus(),
-    /^Completion: 🟡 Incomplete — Sections not written: 2, 3, 4, 5, 6, 8\nNext steps:\n- Write the unwritten Sections in section order, starting with Section 2 \(Business Requirements\)\.$/m,
+    /^Completion: 🟡 Incomplete — Sections not complete: 2, 3, 4, 5, 6, 8\nNext steps:\n- Complete the remaining Sections in section order, starting with Section 2 \(Business Requirements\)\.$/m,
   );
 });
