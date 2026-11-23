@@ -150,6 +150,8 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     "report-scope-explicit-short-report",
     "report-scope-known-choice",
     "report-scope-local-review",
+    "report-scope-markdown-only-no-quiz",
+    "report-scope-plain-text-cli-no-quiz",
     "report-scope-quiz-recommendation",
     "report-scope-requested-quiz",
     "report-scope-required-artifact",
