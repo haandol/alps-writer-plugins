@@ -3,12 +3,13 @@ import { DocumentService } from "./service.js";
 export class DocumentController {
   constructor(private service: DocumentService) {}
 
-  initAlpsDocument(projectName: string, outputPath: string): string {
-    return this.service.initDocument(projectName, outputPath);
+  /** Initialize Full ALPS, optionally derived from a completed Lite document. */
+  initAlpsDocument(projectName: string, outputPath: string, sourceDocPath?: string): string {
+    return this.service.initDocument(projectName, outputPath, "alps", sourceDocPath);
   }
 
-  initLiteAlpsDocument(projectName: string, outputPath: string): string {
-    return this.service.initDocument(projectName, outputPath, "lite");
+  initLiteAlpsDocument(projectName: string, outputPath: string, sourceDocPath?: string): string {
+    return this.service.initDocument(projectName, outputPath, "lite", sourceDocPath);
   }
 
   loadAlpsDocument(docPath: string): string {

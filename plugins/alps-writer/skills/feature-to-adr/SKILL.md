@@ -162,7 +162,7 @@ Treat confirmed answers as ephemeral handoff input. Do not persist a separate
 enrichment report or registry, and do not silently rewrite the PRD. Update the
 PRD only when the user explicitly requests it or accepts a Feature split that
 changes the Section 6 and Section 7 boundaries. Repeat the enrichment pass until
-there are no open questions, or until the user defers an answer that the
+there are no open questions, or the user defers an answer that the
 complete transfer requires.
 
 After enrichment, classify every relevant source item and confirmed answer into
@@ -177,7 +177,7 @@ exactly one final route:
    tuning values, names, signatures, schemas, and other code-level choices that
    preserve the same contract and boundaries.
 3. **Legacy planning context** — narrative, workshop history, duplicate
-   explanation, and other material whose loss cannot change a compliant
+   explanation, Lite IDs, and other material whose loss cannot change a compliant
    implementation.
 4. **Current reference level** — a business-term definition or feature
    relationship that the current reference level owns, routed as its change

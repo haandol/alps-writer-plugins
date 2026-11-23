@@ -4,6 +4,10 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export type DocumentProfileId = "alps" | "lite";
+
+/** Business requirement identifier prefixes a Lite document defines and Full traces. */
+export const REQUIREMENT_PREFIXES = ["BR", "FR", "NFR", "EC", "KPI", "TM"] as const;
+export type RequirementPrefix = (typeof REQUIREMENT_PREFIXES)[number];
 export type InitializableDocumentProfileId = "alps" | "lite";
 
 export interface DynamicSectionDefinition {
@@ -26,6 +30,8 @@ export interface DocumentProfile {
   authoringOrder: readonly number[];
   dynamicSection: DynamicSectionDefinition | null;
   optionalSections: readonly number[];
+  /** Subsections that define requirement identifiers, keyed by subsection id. */
+  requirementOwners: Readonly<Record<string, readonly RequirementPrefix[]>> | null;
 }
 
 const templatesDir = path.join(__dirname, "templates");
@@ -65,6 +71,7 @@ export const ALPS_PROFILE: DocumentProfile = {
     sourceSubsectionId: "6.1",
   },
   optionalSections: [],
+  requirementOwners: null,
 };
 
 export const LITE_ALPS_PROFILE: DocumentProfile = {
@@ -77,19 +84,34 @@ export const LITE_ALPS_PROFILE: DocumentProfile = {
   chaptersDir: path.join(liteTemplatesDir, "chapters"),
   guidesDir: path.join(guidesDir, "lite"),
   sectionTitles: {
-    1: "Overview",
-    2: "Solution and Essential User Experiences",
-    3: "Out of Scope",
-    4: "Demo Scenario",
+    1: "Business Context",
+    2: "Business Requirements",
+    3: "Functional Requirements",
+    4: "Non-Functional Requirements",
+    5: "Edge Cases",
+    6: "Success Criteria",
+    7: "Out of Scope",
+    8: "Demo Scenario",
   },
   sectionReferences: {
     2: [1],
     3: [1, 2],
-    4: [1, 2],
+    4: [1, 2, 3],
+    5: [2, 3, 4],
+    6: [1, 2, 3, 4, 5],
+    7: [1, 2, 3, 4, 5, 6],
+    8: [1, 2, 3, 4, 5, 6],
   },
-  authoringOrder: [1, 2, 3, 4],
+  authoringOrder: [1, 2, 3, 4, 5, 6, 7, 8],
   dynamicSection: null,
-  optionalSections: [3],
+  optionalSections: [7],
+  requirementOwners: {
+    "2.1": ["BR"],
+    "3.1": ["FR"],
+    "4.1": ["NFR"],
+    "5.1": ["EC"],
+    "6.1": ["KPI", "TM"],
+  },
 };
 
 export const DOCUMENT_PROFILES: Readonly<Record<DocumentProfileId, DocumentProfile>> = {

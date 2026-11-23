@@ -7,16 +7,19 @@ Markdown export.
 
 ALPS (Agentic Lean Product Spec) comes in two formats:
 
-| Format    | Sections                                                                                                                                               | Use it for                                   |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| Full ALPS | 1 Overview · 2 MVP goals and metrics · 3 Demo scenario · 4 Architecture · 5 Design · 6 Requirements · 7 Feature specs · 8 MVP metrics · 9 Out of scope | A product you will plan, then implement      |
-| Lite ALPS | 1 Target user, problem and desired business impact · 2 Solution and essential user experiences · 3 Out of scope (optional) · 4 Demo scenario           | A minimum proof of concept (PoC) or a mockup |
+| Format    | Sections                                                                                                                                                                                   | Use it for                                                                                |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Full ALPS | 1 Overview · 2 MVP goals and metrics · 3 Demo scenario · 4 Architecture · 5 Design · 6 Requirements · 7 Feature specs · 8 MVP metrics · 9 Out of scope                                     | A product you will plan, then implement                                                   |
+| Lite ALPS | 1 Business context · 2 Business requirements · 3 Functional requirements · 4 Non-functional requirements · 5 Edge cases · 6 Success criteria · 7 Out of scope (optional) · 8 Demo scenario | Evaluable business requirements without technology, and the source of a derived Full ALPS |
 
-In Full ALPS each feature is a vertical slice from UI to API to data, written for
-a developer seeing it for the first time and ending with its demo checkpoint. In
-Lite ALPS you give the problem and the business impact you want; the agent
-proposes the solution, the experiences the PoC must not omit, and a demo that
-shows all of them.
+In Lite ALPS you give the problem, intent and outcome you want; the agent proposes
+identified business, functional and non-functional requirements and edge cases, each
+with an observable pass/fail criterion, KPIs with tension metrics, and a demo that
+shows every required functional requirement. In Full ALPS each feature is a vertical
+slice from UI to API to data, written for a developer seeing it for the first time
+and ending with its demo checkpoint. A Full document can derive from a completed Lite:
+it converts each Lite requirement into technical requirements and evaluation without
+changing its business meaning, and reports any Lite requirement it does not yet cover.
 
 ## Commands
 
@@ -78,7 +81,7 @@ call selects a document for later ones.
 ## More
 
 - [ALPS format guide](./templates/alps/about-alps.md)
-- [Lite ALPS walkthrough](../../docs/usage.md#a-lite-alps--independent-poc-authoring)
+- [Lite ALPS walkthrough](../../docs/usage.md#a-lite-alps--evaluable-business-requirements-then-an-optional-derived-full-alps)
 - [Evidence research skill](./skills/alps-research/SKILL.md)
 
 [MIT](../../LICENSE)

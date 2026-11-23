@@ -10,11 +10,11 @@ export const obligations = [
   },
   {
     id: "lite-scope",
-    text: "For Lite, keep the four sections and experience-based scope. Explain adequate results in Essential User Experiences and show initial pass/fail observations in the Demo Scenario. Preserve ending the practice session on request as required, without adding Feature IDs, a new evaluation section, sample-size design or evaluator code.",
+    text: "For Lite, keep the eight sections and business-level resolution. Give each FR and EC a pass/fail criterion, state release acceptance in Success Criteria, and show initial pass/fail observations in the Demo Scenario. Preserve ending the practice session on request as a Required FR, without adding Feature IDs, technology, a new evaluation section, sample-size design, data collection or evaluator code.",
   },
   {
     id: "optional",
-    text: "The approved absence of a numeric KPI for Lite does not block writing, saving or completion, and no metric quota or omission approval is imposed. A relevant observable counterexample is acceptable; any improvement signal the response proposes still gets a tension candidate. Do not equate optional metrics with optional existing product or safety requirements.",
+    text: "The approved absence of a numeric KPI for Lite does not block writing, saving or completion, and no metric quota or omission approval is imposed; Success Criteria records that no KPI applies. A relevant observable counterexample is acceptable; any KPI or improvement signal the response proposes still gets a tension candidate and a recorded decision. Do not equate optional metrics with optional existing product or safety requirements.",
   },
   {
     id: "evidence",
@@ -33,12 +33,13 @@ export default {
       alpsSkillText("alps-init", { references: ["references/outcome-evaluation.md"] }),
       alpsGuideText(7),
       alpsSkillText("lite-alps-init"),
-      alpsLiteGuideText(2),
-      alpsLiteGuideText(4),
+      alpsLiteGuideText(3),
+      alpsLiteGuideText(6),
+      alpsLiteGuideText(8),
       `# This run
 Prepare two separate Korean proposals; do not invoke tools or save files.
 A. Full Feature: supported customer questions receive a grounded answer; a confirmed need for staff results in an actual handoff. The user wants to improve verified resolution rate later, but supplied no numeric acceptance thresholds. Write its Evaluation Rubric, keeping completion checks and improvement distinct.
-B. Lite: overseas workers rehearse a short English introduction. The approved essential experiences are starting topic-specific practice, receiving a relevant response to an answer, and ending the session when requested. The user explicitly has no numeric KPI for this PoC. Suggest the relevant experience text and demo observations while preserving that choice and the four-section structure.`,
+B. Lite: overseas workers rehearse a short English introduction. The approved functional requirements are starting topic-specific practice, receiving a relevant response to an answer, and ending the session when requested. The user explicitly has no numeric KPI. Suggest the relevant FR acceptance criteria, Success Criteria text and demo observations while preserving that choice and the eight-section structure.`,
       TAIL_SPEC,
     ].join("\n\n");
   },

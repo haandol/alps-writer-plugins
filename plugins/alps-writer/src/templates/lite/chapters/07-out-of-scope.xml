@@ -1,0 +1,7 @@
+<section id="7" title="Out of Scope">
+  <subsection id="7.1" title="Explicit Exclusions" required="false">
+    <description>
+Optional. In one concise list, record only the users, flows, capabilities, edge cases, or claims the user explicitly excludes. Do not invent exclusions or turn an unresolved choice into one.
+    </description>
+  </subsection>
+</section>

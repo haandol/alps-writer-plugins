@@ -72,21 +72,19 @@ test("the overview and alps-init keep Context and Container as the only C4 level
   }
 });
 
-test("Lite Solution Strategy ships one product-level Context without Container", () => {
-  const template = read(
-    "src/templates/lite/chapters/02-solution-and-essential-user-experiences.xml",
-  );
-  const guide = read("src/guides/lite/02.md");
-  const runtimeSection = new TemplateService(LITE_ALPS_PROFILE).getSection(2, true);
+test("Lite Business Context Diagram ships one business-wording Context without Container", () => {
+  const template = read("src/templates/lite/chapters/03-functional-requirements.xml");
+  const guide = read("src/guides/lite/03.md");
+  const runtimeSection = new TemplateService(LITE_ALPS_PROFILE).getSection(3, true);
 
   assert.deepEqual(c4Declarations(template), ["C4Context"]);
   assert.deepEqual(c4Declarations(runtimeSection), ["C4Context"]);
   for (const source of [template, guide]) {
-    assert.match(source, /Product Context Diagram/);
+    assert.match(source, /Business Context Diagram/);
     assert.match(source, /exactly one Mermaid `C4Context`/i);
-    assert.match(source, /target user.*PoC system.*external systems/is);
+    assert.match(source, /business responsibility/i);
     assert.match(source, /C4Container/);
-    assert.match(source, /API|APIs/);
-    assert.match(source, /database/i);
+    assert.match(source, /APIs/);
+    assert.match(source, /databases/i);
   }
 });

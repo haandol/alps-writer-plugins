@@ -19,19 +19,26 @@ const groups = [
   ["제품 계약", "수용과 개선", ["alps-evaluates-outcomes-"]],
   ["제품 계약", "Full ALPS", "계약과 승인", ["alps-approval-", "alps-batch-", "alps-reference-"]],
   ["제품 계약", "Full ALPS", "기능 구성", ["alps-groups-", "alps-high-"]],
+  ["제품 계약", "Full ALPS", "Lite 파생", ["alps-full-"]],
   ["제품 계약", "Lite ALPS", "문제 정의", ["lite-alps-asks-", "lite-alps-follows-"]],
   [
     "제품 계약",
     "Lite ALPS",
-    "해결 전략과 데모",
+    "요구사항 제안과 데모",
     ["lite-alps-generates-", "lite-alps-proposes-", "lite-alps-resume-", "lite-alps-groups-"],
   ],
+  ["제품 계약", "Lite ALPS", "성공 기준", ["lite-alps-success-"]],
   ["제품 계약", "Lite ALPS", "범위", ["lite-alps-records-", "lite-alps-skips-"]],
   [
     "제품 계약",
     "계약 이전",
     "완전성과 반복 인계",
-    ["feature-handoff-enriches-", "feature-handoff-idempotent-", "feature-handoff-ownership-"],
+    [
+      "feature-handoff-enriches-",
+      "feature-handoff-idempotent-",
+      "feature-handoff-ownership-",
+      "feature-handoff-drops-",
+    ],
   ],
   [
     "제품 계약",

@@ -17,8 +17,8 @@ Everything in this repo serves one idea, so weigh changes against it.
 | **Zoom in**               | Code / AGENTS.md / README                 | HOW (detail) — structure, names, signatures, tuning values                  | the user's repo     |
 
 Full ALPS applies the C4 analogy literally in Section 4 with both a Mermaid
-`C4Context` and `C4Container` diagram. Lite ALPS keeps only one product-level
-`C4Context` inside Solution Strategy. Component, Dynamic, Deployment, and
+`C4Context` and `C4Container` diagram. Lite ALPS keeps only one business-wording
+`C4Context` as its Business Context Diagram. Component, Dynamic, Deployment, and
 Code-level C4 diagrams belong below the PRD resolution and must not be generated
 there.
 

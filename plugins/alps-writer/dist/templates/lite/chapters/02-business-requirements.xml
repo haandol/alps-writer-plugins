@@ -1,0 +1,18 @@
+<section id="2" title="Business Requirements">
+  <subsection id="2.1" title="Business Requirements">
+    <description>
+- Record every business rule, policy, and constraint the product must honor as `BR-n`, defined at the start of a table row or list item. Keep approved IDs stable and never reuse a deleted one.
+- For each BR, state the exact values, units, population, and conditions; whether it is Required or Optional; the observable result that shows it is honored versus violated; and its basis (policy, regulation, contract, existing business behavior, or the user's decision).
+- Record business-mandated external systems, data locations, or access channels as the business boundary they fix, with their basis. Name a specific product only when a contract, regulation, or organization policy mandates it; never record replaceable technology.
+- Ask before fixing a choice that would change money, permissions, law or regulation, privacy or safety, irreversible data meaning, an external promise, or the acceptance boundary.
+- When no business rule applies, record that in one sentence instead of inventing one.
+    </description>
+    <example>
+| ID | Business requirement | Required | Pass/fail criterion | Basis |
+|----|----------------------|----------|---------------------|-------|
+| BR-1 | A guest can collect products in a cart without signing in | Required | A guest who adds products and returns during the same visit still sees them | Checkout recovery goal |
+| BR-2 | On sign-in, the guest cart and the member's existing cart become one cart; quantities of the same product are summed | Required | After sign-in the member sees every product from both carts exactly once with summed quantities; a lost product or a non-summed quantity fails | Product owner decision |
+| BR-3 | A member's cart is never shown to or changed by another member | Required | A request from another member never shows or changes the cart | Privacy policy |
+    </example>
+  </subsection>
+</section>

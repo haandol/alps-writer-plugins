@@ -1,6 +1,6 @@
 ---
 name: lite-alps-init
-description: Bootstrap or resume a four-section Lite ALPS document using the same conversational authoring flow as Full ALPS.
+description: Bootstrap or resume an eight-section Lite ALPS business-requirements document — evaluable business, functional, non-functional and edge-case requirements with KPIs and tension metrics, no technical requirements — using the same conversational authoring flow as Full ALPS.
 argument-hint: "[project-name-or-lite-alps-path]"
 ---
 
@@ -10,22 +10,23 @@ Every call on an existing document requires `doc_path`: use the document path re
 init/load for reads, saves, glossary operations, status and export. Pass it even
 after loading; no other call selects a default document.
 
-Before classifying features, read
+Before grouping requirements, read
 `${CLAUDE_PLUGIN_ROOT}/references/feature-boundaries.md`: inspect existing project
 topology, then use bounded contexts and vertical user stories by default.
 
-Create or resume a Lite ALPS document that works backward from a desired business impact to a
-minimum PoC and its executable demo.
+Create or resume a Lite ALPS document that refines business requirements until a technical
+author can derive technical requirements without another business question, keeps technology
+out, and gives every requirement an observable pass/fail criterion.
 
 Intent bounds the details AI proposes: preserve whose problem is being solved,
 the intended outcome, and supplied priorities or scope so plausible proposals
-do not drift toward a different purpose. Use the existing Overview, experience
-contribution, and optional exclusions; do not add an intent section or invent
-exclusions. Read the plugin-local `references/requirement-delegation.md` for
-missing or delegated choices and retain the existing Section approval boundary.
+do not drift toward a different purpose. Use the existing Business Context and
+optional exclusions; do not add an intent section or invent exclusions. Read the
+plugin-local `references/requirement-delegation.md` for missing or delegated
+choices and retain the existing Section approval boundary.
 
 Use the Lite overview’s optional glossary rules, including in proposal-led
-Sections 2 and 4. Resolve unclear terms before approving dependent content,
+Sections 2-6 and 8. Resolve unclear terms before approving dependent content,
 save their definitions under the current Section approval, and check for missing
 definitions before completion.
 
@@ -41,12 +42,11 @@ definitions before completion.
 
 Lite shares Full ALPS's approval and saving boundary. Explain the current Section, reuse supplied
 context, present a plain-text approval digest, and save only after explicit approval. Section 1
-collects missing problem and business-impact context; Sections 2 and 4 start with AI proposals
-and ask only for unresolved protected product decisions under step 7.
+collects missing business context; Sections 2-6 and 8 start with AI proposals and ask only under
+step 7's question rules.
 
-Lite and Full keep separate document files, state, completion, and export. Never read or update a
-Full document while authoring Lite, and never present Lite completion as Full completion or
-implementation readiness.
+Lite never reads or updates a Full document. Never present Lite completion as Full completion,
+implementation readiness, or ADR handoff.
 
 1. Use the user's request to choose a new Lite ALPS document or resume an existing
    `.lite.alps.xml`; ask only when that choice is unclear.
@@ -54,7 +54,8 @@ implementation readiness.
    `alps_document(action: 'load', doc_path)`.
    On resume, use the profile detected from the file. For a Full document,
    continue with [alps-init](../alps-init/SKILL.md) if it is the intended target.
-   Resolve a conflicting target before saving.
+   Resolve a conflicting target before saving. A Lite document in another section format is
+   rejected unchanged; offer to author a new Lite document using it as reference input.
 3. Call `alps_template(action: 'overview', profile: 'lite')`.
 4. Select the confirmation mode:
    - Atomic is the default: discuss, approve, and save one Section at a time.
@@ -62,13 +63,16 @@ implementation readiness.
      source covering several Sections.
    - Batch mode still keeps every Section as a separate approval unit and saves each subsection
      separately.
-   - Treat a supplied ticket, incident, PDF, or structured source as ephemeral input. Preserve only
-     the target problem, Desired Business Impact, observable experience, exact product rules,
-     success conditions, and explicit exclusions. Do not copy source IDs, logs, code paths,
-     implementation plans, or code-recoverable technology facts into Lite ALPS.
-5. Use the authoring order **1 → 2 → 3 → 4**.
-   - Sections 1, 2, and 4 are required.
-   - Section 3 is optional and remains unwritten when the user has no explicit exclusions and the
+   - Treat a supplied ticket, incident, PDF, earlier Lite document, or structured source as
+     ephemeral input. Preserve only the target problem, intent and outcome, business rules,
+     observable behavior, quality expectations, edge cases, success criteria, and explicit
+     exclusions. Do not copy source IDs, logs, code paths, implementation plans, or
+     code-recoverable technology facts into Lite ALPS.
+5. Use the authoring order **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8**:
+   Business Context, Business Requirements, Functional Requirements,
+   Non-Functional Requirements, Edge Cases, Success Criteria, Out of Scope, and Demo Scenario.
+   - Every Section except Section 7 is required.
+   - Section 7 is optional and remains unwritten when the user has no explicit exclusions and the
      approved boundary is not materially ambiguous.
    - After loading, call `alps_document(action: 'status', doc_path)`, summarize completed required
      Sections once, and resume at the first incomplete required Section.
@@ -78,67 +82,74 @@ implementation readiness.
    - Read every prerequisite named by the guide with
      `alps_section(action: 'read', doc_path, section: N)`.
    - Briefly explain the Section's purpose.
-   - Follow step 7's Section-specific question and proposal rules. When a question is needed,
-     ask one focused question or at most two closely related questions from the guide, wait for
-     the answer, and integrate it. Otherwise continue with the proposal or optional skip.
+   - Follow step 7's question and proposal rules. When a question is needed, ask one focused
+     question or at most two closely related questions, wait for the answer, and integrate it.
+     Otherwise continue with the proposal or optional skip.
    - When the Section is complete, present a concise plain-text approval digest.
    - Save each approved subsection separately with
      `alps_section(action: 'save', doc_path, section, subsection_id, title, content)`.
 7. Section scope:
-   - **Section 1 — Overview**: ask for the target user and core problem, then the final business
-     impact that user should gain and why it matters. Keep the result in
-     `Target User and Core Problem` and `Desired Business Impact`. Preserve a measurement signal when
-     supplied, but do not ask for a solution, screen, starting state, action sequence, or demo flow.
-   - **Section 2 — Solution and Essential User Experiences**: work backward from the approved Desired Business
-     Impact and propose the minimum Solution Strategy and every product behavior the PoC must
-     demonstrate. End the text Solution Strategy with a `Product Context Diagram` containing exactly
-     one Mermaid `C4Context`, generated from the approved Overview and complete Section 2 draft.
-     Show the target user, PoC system, relevant external systems, and their relationships at
-     product-role level. Keep the text independently reviewable. Never generate `C4Container`, lower
-     C4 levels, APIs, databases, deployment units, technology stacks, libraries, code structure, or
-     implementation layers. Save the product behaviors as `Essential User Experiences`; each
-     experience has a distinct name, user-observable result, and contribution to the Desired
-     Business Impact. Do not ask the user to design the solution, starting state, sequential actions,
-     screen flow, or system architecture. Ask only when a protected product decision about money,
-     permissions, law or regulation, privacy or safety, irreversible data meaning, an external
-     promise, or the acceptance boundary cannot be safely proposed.
-   - **Section 3 — Out of Scope**: record only exclusions the user explicitly confirms. Do not ask
+   - **Section 1 — Business Context**: ask for the target user and core problem, then the intent,
+     the final outcome, why it matters, and any priorities or scope boundaries. Keep the result in
+     `Target User and Core Problem` and `Intent and Desired Outcome`. Preserve a supplied
+     measurement signal for Section 6. Never ask here for a solution, screen, technology,
+     requirement list, starting state, or demo flow.
+   - **Sections 2-6 — requirements**: work backward from the approved Business Context and propose
+     the content first. Ask only for missing context that cannot be proposed, an undefined term, or
+     a choice that would change money, permissions, law or regulation, privacy or safety,
+     irreversible data meaning, an external promise, or the acceptance boundary.
+     - Define each identifier once in its owning subsection at the start of a table row, list item,
+       or heading: `BR-n` (2.1), `FR-n` (3.1, at least one), `NFR-n` (4.1), `EC-n` (5.1), `KPI-n`
+       and adopted `TM-n` (6.1). Keep approved IDs stable; never reuse a deleted ID.
+     - Every BR, FR, NFR and EC is Required or Optional and has an observable pass/fail criterion
+       with its basis, in user-visible or business-verifiable terms. Every FR has an actor,
+       starting situation, business input, applied rules and values with BR IDs, observable result,
+       related failure handling, and Given/When/Then acceptance criteria.
+     - Record a business-mandated external system, data location or channel as a BR or NFR
+       business boundary with its basis; never record replaceable technology.
+     - Section 3.2 is exactly one Mermaid `C4Context` Business Context Diagram in business-role
+       wording, generated from Sections 1-2 and the 3.1 draft, with no `C4Container`, APIs,
+       databases, servers, deployment units, or technology names.
+     - Section 6 states release acceptance (every Required BR, FR, NFR and EC passes) and defines
+       KPIs by business calculation only. When defining these results, read
+       `${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md` and keep its application at Lite
+       resolution. Users rarely think of tension metrics, so always propose one for every KPI with
+       the abuse or opposite-failure scenario it exposes, and record the decision per KPI: adopted
+       `TM-n`, guarding Required IDs, or not adopted. A declined candidate is never a completion
+       gate; KPIs and TMs are monitoring unless confirmed as required. Do not add sample design,
+       data collection, or instrumentation.
+     - When an approved item changes or is deleted, show every later item and demo step that
+       references it in the same approval digest.
+     - Do not save a Section while an acceptance-changing value or policy remains unresolved; show
+       the question and offer to defer.
+   - **Section 7 — Out of Scope**: record only exclusions the user explicitly confirms. Do not ask
      for exclusions merely to fill the optional Section. When there are no explicit exclusions and
      the approved boundary is not materially ambiguous, skip it without a dedicated question.
-   - **Section 4 — Demo Scenario**: work backward from the Desired Business Impact and approved
-     Essential User Experiences to propose one `4.1 Demo Scenario` that demonstrates every experience
-     at least once. Propose the concrete starting state, representative demo input, sequential user
-     actions, and visible expected results instead of asking the user to supply them. Show the
-     complete generated scenario, experience coverage, and business-impact connection before approval.
-     Each step or execution block names the experience it demonstrates, and the overall result passes
-     only when every essential experience is observable. Ask only when the demo exposes a protected product decision. Do not
-     present a passing demo as proof of actual business impact or market validity.
-8. The approval digest includes the applicable confirmed intent, scope, mandatory information,
-   values and rules, expected result, and unresolved questions. Never save a requirement,
-   exclusion, or Demo result absent from the digest. Show the full pending content when requested.
-   When defining these results, read `${CLAUDE_PLUGIN_ROOT}/references/outcome-evaluation.md`
-   and keep its application at Lite resolution. Users rarely think of tension metrics, so
-   always propose one for every known or proposed signal, with the abuse or opposite-failure
-   scenario it exposes: Section 1.2 for impact signals (no metric interview is required),
-   Section 2.2 for experience improvement signals in the existing text. Section 4.1
-   demonstrates initial pass/fail outcomes and relevant counterexamples. The user decides
-   adoption; a declined candidate is never a completion gate. Distinguish monitoring from confirmed required conditions; preserve existing
-   safety and permission rules. Do not add sections, mandatory metric columns, sample
-   design, evaluator implementation or an optimization-readiness claim.
-9. Do not add architecture questions or content beyond the required product-level `C4Context`.
+   - **Section 8 — Demo Scenario**: work backward from the approved Sections to propose one
+     `8.1 Demo Scenario` that shows every Required FR at least once, with the concrete starting
+     state, representative input, sequential user actions, visible expected results, and the FR and
+     EC IDs each step shows, including relevant EC counterexamples. Show the complete scenario and
+     its FR coverage before approval. The overall result passes only when every shown FR and EC
+     criterion passes. Do not present a passing demo as proof of business impact or market validity.
+8. The approval digest includes the applicable confirmed intent, scope, requirement IDs with
+   Required or Optional, values and rules, pass/fail criteria, affected later items, and unresolved
+   questions. Never save a requirement, exclusion, or Demo result absent from the digest. Show the
+   full pending content when requested.
+9. Do not add architecture questions or content beyond the required business-wording `C4Context`.
    Never add `C4Container`, technology stacks, interfaces, storage, deployment, libraries, code
-   structure, NFR wizards, Feature IDs, implementation plans, or ADR handoff steps to Lite.
-10. When the requested document work is complete, call
-    `alps_export(doc_path)`.
-11. After required Sections 1, 2, and 4 are approved and written, confirm the selected
-    document's completion with `alps_document(action: 'status', doc_path)` and ask once
-    whether the user wants an optional deep-research review of its evidence and errors.
-    Unwritten optional Section 3 does not block this invitation. Reuse a review request
-    or an answered choice already in the current conversation; an unanswered invitation,
-    decline, or deferral does not start research or change completion. If requested,
-    follow [alps-research](../alps-research/SKILL.md) for source selection and fallbacks.
-    Apply any resulting edits through the existing Section approval boundary.
+   structure, Feature IDs, implementation plans, or ADR handoff steps to Lite.
+10. When the requested document work is complete, call `alps_export(doc_path)`.
+11. Lite is complete when `alps_document(action: 'status', doc_path)` reports `Completion: ✅ Complete`
+    (every required Section written, no duplicate definitions or undefined references). Then ask
+    once whether the user wants an optional deep-research review of its evidence and errors, and
+    mention once that a completed Lite can be the source of a derived Full ALPS
+    (`/alps-init` with this Lite as source) when implementation preparation is needed. Unwritten
+    optional Section 7 does not block this. Reuse a review request or an answered choice already
+    in the current conversation; an unanswered invitation, decline, or deferral does not start
+    research or change completion. If requested, follow [alps-research](../alps-research/SKILL.md)
+    for source selection and fallbacks. Apply any resulting edits through the existing Section
+    approval boundary.
 
-**Rule**: Lite uses Full ALPS's conversation-led authoring behavior with fewer Sections. Do not
-auto-complete a Section before asking for missing context or add persona-selection and
-method-specific interview layers. No Section is saved without explicit approval.
+**Rule**: Lite uses Full ALPS's conversation-led authoring behavior. Do not auto-complete a Section
+before asking for missing context or add persona-selection and method-specific interview layers.
+No Section is saved without explicit approval.

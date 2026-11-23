@@ -124,23 +124,32 @@ flowchart TD
 
 ## Walkthroughs
 
-### A. Lite ALPS — independent PoC authoring
+### A. Lite ALPS — evaluable business requirements, then an optional derived Full ALPS
 
-1. `/lite-alps-init` → write or resume a 4-section document for a minimum PoC and its demo.
-2. Confirm the target user, core problem, and Desired Business Impact. Lite works backward from that input: AI proposes the minimum Solution Strategy and Essential User Experiences, then proposes a concrete Demo Scenario with starting state, input, user actions, and visible results.
-3. Build and validate the mockup or PoC from the exported Lite ALPS document.
+1. `/lite-alps-init` → write or resume an 8-section business-requirements document.
+2. Confirm the target user, core problem, intent and desired outcome. Lite works backward from that
+   input: AI proposes identified business requirements (`BR-n`), functional requirements (`FR-n`)
+   with Given/When/Then acceptance criteria, non-functional requirements (`NFR-n`), edge cases
+   (`EC-n`), release acceptance with KPIs (`KPI-n`) and their tension metrics (`TM-n`), one
+   business-wording Business Context Diagram, and a Demo Scenario that shows every required FR.
+   Every BR, FR, NFR and EC is required or optional and has an observable pass/fail criterion.
+3. When implementation preparation is needed, run `/alps-init` with the completed Lite as its source.
+   The Full document converts each Lite requirement into technical requirements, evaluation cases and
+   metric instrumentation without changing its business meaning, and status reports any Lite ID it
+   does not yet cover. Business changes go to Lite first and reach Full through an explicit
+   re-derivation.
 
-Section 3 records explicit exclusions and is optional. Section 4 is the required Demo Scenario. Do
-not invent exclusions or classify an unresolved choice as out of scope. When no exclusion was
-stated and the boundary is not materially ambiguous, skip Section 3 without a dedicated question;
-the Markdown export omits the unwritten optional Section.
+Section 7 records explicit exclusions and is optional. Do not invent exclusions or classify an
+unresolved choice as out of scope. When no exclusion was stated and the boundary is not materially
+ambiguous, skip Section 7 without a dedicated question; the Markdown export omits the unwritten
+optional Section.
 
 Lite ALPS deliberately contains no technology stack, architecture, API, database, deployment,
-library, code-structure, or implementation-planning inputs. It does not ask the user to design the
-minimum solution or demo flow from scratch; only protected product decisions such as permissions,
-safety, external promises, or acceptance boundaries trigger an additional question. Lite reuses
-Full's approval pattern, but neither reads the other document, shares approval or completion state,
-uses the other as source material, or treats the other as a next step.
+library, code-structure, or implementation-planning inputs; a business-mandated external system or
+data location is recorded as a business boundary. It does not ask the user to write requirements
+from scratch; only missing context, undefined terms, or protected decisions such as permissions,
+safety, external promises, or acceptance boundaries trigger a question. Lite reuses Full's approval
+pattern, never reads a Full document, and stays the business baseline for any Full derived from it.
 
 ### B. PRD-first — start from a Full ALPS spec (both plugins)
 
@@ -193,7 +202,7 @@ In all flows the hook runs automatically once adr-writer is installed. Session s
 | Command                | Role                                                                                                              |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `/alps-init`           | Author or resume Full ALPS with atomic confirmation by default and explicit batch confirmation when appropriate   |
-| `/lite-alps-init`      | Author or resume an independent 4-section Lite ALPS for minimum PoC scope, behavior, and demo                     |
+| `/lite-alps-init`      | Author or resume an 8-section Lite ALPS of evaluable business requirements, KPIs and tension metrics              |
 | `/feature-to-adr [id]` | Transfer a Full ALPS Feature's complete implementation contract into `1..N` ADRs; re-import semantic changes only |
 
 ### adr-writer

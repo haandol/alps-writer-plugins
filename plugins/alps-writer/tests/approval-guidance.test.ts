@@ -55,7 +55,7 @@ test("reference handling keeps durable contracts and drops source or code-recove
   ]) {
     assert.match(source, /ephemeral input/i);
     assert.match(source, /target problem/i);
-    assert.match(source, /Desired Business Impact/i);
+    assert.match(source, /intent and outcome/i);
     assert.match(source, /observable/i);
     assert.match(source, /source IDs?/i);
     assert.match(source, /logs/i);
@@ -79,14 +79,17 @@ test("Lite reuses Full's focused-question authoring without changing Full", () =
   assert.doesNotMatch(`${fullSkill}\n${fullOverview}`, /inference-first|Ask ZERO/i);
 
   assert.match(liteSkill, /same conversational authoring flow as Full ALPS/i);
-  assert.match(liteSkill, /Sections 2 and 4 start with AI proposals/i);
-  assert.match(liteSkill, /ask only for unresolved protected product decisions/i);
-  assert.match(liteOverview, /Ask one focused question, or at most two closely related questions/i);
+  assert.match(liteSkill, /Sections 2-6 and 8 start with AI proposals/i);
+  assert.match(liteSkill, /Ask only for missing context that cannot be proposed/i);
+  assert.match(
+    liteOverview,
+    /ask one\s+focused question, or at most two closely related questions/i,
+  );
   assert.match(server, /same conversational approval pattern as Full ALPS/i);
   assert.match(documents, /Ask 1-2 focused questions at a time/i);
 
   for (const guidePath of Array.from(
-    { length: 4 },
+    { length: 8 },
     (_, index) => `src/guides/lite/${String(index + 1).padStart(2, "0")}.md`,
   )) {
     assert.match(read(guidePath), /<questions>/i, guidePath);

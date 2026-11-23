@@ -1,0 +1,23 @@
+<section id="6" title="Success Criteria">
+  <subsection id="6.1" title="KPIs and Tension Metrics">
+    <description>
+- State release acceptance first: the release is acceptable only when every Required BR, FR, NFR, and EC passes its criterion. KPIs and tension metrics observe whether the intent is achieved after release; they gate release only when the user confirms them as required with a basis.
+- Record each KPI as `KPI-n` in a KPI table: the purpose it stands for, its business calculation (population, numerator, denominator, unit, direction, observation window), baseline and target only when supplied or approved, related BR and FR IDs, required or monitoring use, and its tension decision.
+- For every KPI, always propose a tension metric, because users rarely think of one: derive an abuse, shortcut, or opposite-failure scenario that raises the KPI while defeating the purpose, and propose a same-purpose measure that worsens in it. When a number is unsuitable, propose an observable counterexample.
+- Record the user's decision for every KPI: an adopted tension metric `TM-n` defined in its own table row with its calculation, the KPI it protects, and the scenario; the Required IDs that already catch the shortcut; or not adopted. A declined candidate never blocks completion.
+- Never let a KPI rise offset a Required violation, and never declare failure from a monitoring change alone. Do not invent targets, sample designs, data collection, or instrumentation; Full ALPS adds those.
+- When no KPI applies, record that in one sentence after the release-acceptance statement.
+    </description>
+    <example>
+Release acceptance: every Required BR, FR, NFR, and EC passes. The KPI below observes the outcome after release and is not a release gate.
+
+| ID | KPI and purpose | Calculation | Baseline / target / window | Related | Use | Tension decision |
+|----|-----------------|-------------|----------------------------|---------|-----|------------------|
+| KPI-1 | Guest checkout recovery — guests who sign in go on to buy | Members who complete checkout within 7 days after a guest-cart sign-in / guest-cart sign-ins, as a percentage, higher is better, 30-day window | 12% / 15% / 30 days (supplied) | BR-1, BR-2, FR-1 | Monitoring | TM-1 |
+
+| ID | Tension metric | Calculation | Protects | Abuse or opposite-failure scenario | Use |
+|----|----------------|-------------|----------|------------------------------------|-----|
+| TM-1 | Cart complaint rate | Support contacts about missing or duplicated cart items / guest-cart sign-ins, as a percentage, lower is better, same window | KPI-1 | Pushing every guest into a merged cart can raise checkouts while silently duplicating or dropping items | Monitoring |
+    </example>
+  </subsection>
+</section>

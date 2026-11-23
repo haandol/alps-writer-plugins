@@ -1,0 +1,43 @@
+<section id="3" title="Functional Requirements">
+  <subsection id="3.1" title="Functional Requirements">
+    <description>
+- Record every user-observable product behavior as `FR-n`, defined at the start of a heading, list item, or table row. There is at least one FR.
+- Give each FR: the actor, the starting situation, the business input, the rules and values it applies with their related BR IDs, the observable result, related failure handling (it may reference EC IDs defined in Section 5), Required or Optional, and Given/When/Then acceptance criteria.
+- Acceptance criteria use user-visible or business-verifiable results. Do not use screens, widgets, APIs, storage, internal state, technical layers, or subjective impressions as results.
+- For a quality judgment, give a representative situation and the rule that separates an adequate result from an inadequate one.
+- Write each FR so a technical author can derive technical requirements without asking another business question. Leave no acceptance-changing value or policy unresolved.
+    </description>
+    <example>
+**FR-1: Merge the guest cart on sign-in** (Required)
+
+- Actor: a guest with products in the cart who signs in as an existing member
+- Starting situation: the member may already have products in the member cart
+- Business input: the products and quantities in both carts
+- Rules and values: BR-2 (one cart, summed quantities), BR-3 (only the member's own cart)
+- Observable result: the member sees one cart containing every product from both carts
+- Failure handling: a repeated or simultaneous merge follows EC-1 and EC-2
+- Acceptance criteria:
+  - Given a guest cart with 2 shirts and 1 pair of shoes and a member cart with 1 shirt, When the guest signs in, Then the cart shows 3 shirts and 1 pair of shoes.
+  - Given an empty member cart, When the guest signs in, Then the cart shows exactly the guest's products and quantities.
+    </example>
+  </subsection>
+  <subsection id="3.2" title="Business Context Diagram">
+    <description>
+- Generate exactly one Mermaid `C4Context` diagram from the approved Sections 1-2 and the Section 3.1 draft.
+- Use business wording: people are target users and business staff by role; one system element is this product; external elements are partners, outside services, or existing organization operations that the requirements involve, described by business responsibility; relationships are business actions.
+- Never use `C4Container` or lower C4 levels, and keep APIs, databases, servers, app structure, deployment units, and technology names out of titles and descriptions. A business-mandated external party may keep its name.
+- The diagram supplements the text requirements; every requirement stays reviewable without rendering it.
+    </description>
+    <example>
+```mermaid
+C4Context
+title Business Context for Guest Cart Merge
+
+Person(shopper, "Shopper", "Collects products and buys them, with or without signing in")
+System(store, "Online Store", "Keeps each shopper's cart and lets members check out")
+
+Rel(shopper, store, "Collects products and signs in at")
+```
+    </example>
+  </subsection>
+</section>

@@ -36,8 +36,8 @@ plugins/alps-writer/      # PRD plugin (bundles + commits its own MCP server)
 │   ├── tools/
 │   │   ├── templates/    # Template tools (controller + service)
 │   │   └── documents/    # Document tools (controller + service)
-│   ├── guides/           # Full 01-09 + Lite 01-04
-│   └── templates/        # Full + Lite 01-04
+│   ├── guides/           # Full 01-09 + Lite 01-08
+│   └── templates/        # Full + Lite 01-08
 ├── dist/                 # committed esbuild bundle (index.js + copied assets)
 ├── skills/               # alps-init, lite-alps-init, alps-research, feature-to-adr
 └── templates/alps/       # about-alps.md
@@ -140,7 +140,7 @@ same purpose and worsens when the primary metric is pushed up through a shortcut
 Acceptance evaluates the intended outcome before implementation; improvement
 signals remain distinct. Users rarely think of tension metrics, which come from
 abuse and opposite-failure scenarios, so agents always propose one for every
-primary metric: product KPIs (Full Sections 2 and 8, Lite 1.2) and Feature or
+primary metric: product KPIs (Full Sections 2 and 8, Lite 6.1) and Feature or
 experience metrics. The user decides adoption; a declined candidate never blocks. `/feature-to-adr` carries each pair, its
 protected purpose and required-or-monitoring meaning into the owning ADR's
 Observable evidence, so implementation compares both without the PRD. Distinguish monitoring signals from confirmed required
@@ -151,8 +151,10 @@ results to calculations, scope and eval/tension pairs. Existing Acceptance
 Criteria headings remain readable without an automatic migration.
 Code comparisons, actual user-entry evidence and LLM meaning judgments serve
 different obligations; only aggregation of fixed inputs is deterministic. Missing
-required evidence remains unverified. Lite uses impact signals in 1.2, experience
-outcomes and optional improvement signals in 2.2, and initial pass/fail observations
-in 4.1, preserving its four Sections and approval units.
+required evidence remains unverified. Lite gives every BR, FR, NFR and EC a
+required-or-optional flag and a pass/fail criterion, states release acceptance and
+KPIs with recorded tension decisions in 6.1, and shows every required FR in the 8.1
+demo. A Full document derived from Lite keeps those definitions and adds collection,
+instrumentation and technical evaluation, tracing each Lite ID it covers.
 
 ADR folders are organized along two axes — a DDD **bounded context** (top-level folder / first key segment) containing one or more **features** (vertical slices, the second segment). A single-feature context stays flat (`auth/`, workshop `f1/`), so existing flat repos need no migration. The ADR index lives in `docs/adr/.mapping.json` itself (path/status/summary per ADR), and admitted work reads it on demand; the README keeps no separate ADR list. The mapping carries an optional advisory `subdomainType` (core/supporting/generic) per context and stores no PRD reference. Context discovery is the default for product and ADR authoring. Inspect repository organization separately from execution/deployment shape, then group by business language and rule ownership, not service or technical-layer folders. Preserve confirmed grouping; propose grounded candidates when absent and confirm only material ambiguity. `/feature-to-adr` preserves that meaning in plugin-local guidance, while adr-writer stays independent of the PRD. Category keys remain at most two segments; a valid single-feature context can stay flat. Each context's ADRs, read with the code they govern at any snapshot, must explain each other without another context's documents, the root mapping or another repository: a dependent ADR records what it relies on from another context, repository or external system under Relied-on boundary, the providing ADR stays the owner, and in a multirepo system each repository keeps the ADRs for its own code. The mapping is a derived index. A context's own `<context>/glossary.md` holds the meanings it uses; the root glossary keeps terms that mean the same everywhere. An edit to an implemented contract reaches the shared branch with its code in one change unit. This holds with ADRs alone; a business ontology, when present, helps verify the boundaries against the cross-context flow. Code refactoring or moving existing ADRs requires its own authorized scope.

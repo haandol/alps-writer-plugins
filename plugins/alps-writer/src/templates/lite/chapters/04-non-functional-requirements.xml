@@ -1,0 +1,17 @@
+<section id="4" title="Non-Functional Requirements">
+  <subsection id="4.1" title="Non-Functional Requirements">
+    <description>
+- Record quality expectations the user or the business can observe as `NFR-n`, defined at the start of a table row or list item: responsiveness as the user experiences it, availability during business hours, privacy, data location, access isolation, accessibility, auditability, and similar expectations.
+- For each NFR, state the threshold, unit, population, and observation condition; its scope (`Global` or FR IDs); Required or Optional; and its basis. When a number is unsuitable, state a yes/no condition that two readers judge the same way.
+- Never drop a security, privacy, regulatory, accessibility, or contractual condition. Lite NFRs have no count limit.
+- Stay at the business-observable level. Do not specify infrastructure metrics, technology, or architecture.
+- When no quality expectation applies, record that in one sentence.
+    </description>
+    <example>
+| ID | Quality expectation | Threshold and condition | Scope | Required | Basis |
+|----|---------------------|-------------------------|-------|----------|-------|
+| NFR-1 | The merged cart appears promptly after sign-in | Visible within 2 seconds after sign-in for 95% of sign-ins during peak shopping hours | FR-1 | Required | Checkout experience goal |
+| NFR-2 | Cart contents are kept only as long as the business allows | A guest cart is discarded 30 days after the guest's last visit | Global | Required | Privacy policy |
+    </example>
+  </subsection>
+</section>

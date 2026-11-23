@@ -19,7 +19,7 @@ for (const profile of ["alps", "lite"] as const) {
     assert.doesNotMatch(service.exportMarkdown(), /Appendix/);
     assert.doesNotMatch(service.getStatus(), /Appendix/);
     assert.equal(fs.readFileSync(target, "utf8"), before);
-    assert.equal((before.match(/<section /g) ?? []).length, profile === "lite" ? 4 : 9);
+    assert.equal((before.match(/<section /g) ?? []).length, profile === "lite" ? 8 : 9);
   });
 
   test(`${profile}: definitions survive section saves and fresh-service resume and export last`, (t) => {
@@ -30,7 +30,7 @@ for (const profile of ["alps", "lite"] as const) {
     service.initDocument("Terms", target, profile);
     const initialStatus = service.getStatus();
     assert.match(service.saveGlossaryEntry("PO", "발송된 구매 주문. 초안은 제외."), /Saved/);
-    assert.equal(service.getStatus().split("\nAppendix")[0], initialStatus);
+    assert.equal(service.getStatus().replace(/\nAppendix \(Glossary\): .*$/m, ""), initialStatus);
     const sectionTitle = profile === "lite" ? "Target User and Core Problem" : "Purpose";
     assert.match(service.saveSection(1, "1", sectionTitle, "사용자의 PO 조회"), /Saved/);
     const raw = fs.readFileSync(target, "utf8");

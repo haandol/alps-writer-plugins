@@ -114,8 +114,8 @@ test("--list names every scenario without invoking an agent", () => {
   assert.match(out, /alps-high-load-suggests-feature-split/);
   assert.match(out, /lite-alps-follows-full-conversation/);
   assert.match(out, /lite-alps-asks-business-impact-before-solution/);
-  assert.match(out, /lite-alps-proposes-solution-from-business-impact/);
-  assert.match(out, /lite-alps-generates-demo-from-essential-user-experiences/);
+  assert.match(out, /lite-alps-proposes-requirements-from-business-context/);
+  assert.match(out, /lite-alps-generates-demo-from-functional-requirements/);
   assert.match(out, /lite-alps-skips-empty-optional-section/);
   assert.match(out, /lite-alps-records-explicit-exclusions/);
   assert.match(out, /lite-alps-resume-preserves-proposal-first/);
@@ -185,7 +185,7 @@ test("the Lite resume eval embeds the shipping profile-aware runtime guidance", 
   const { prompt } = await built("lite-alps-resume-preserves-proposal-first.mjs");
 
   assert.match(prompt, /alps_template\(action: 'guide', profile: 'lite'/);
-  assert.match(prompt, /propose Sections 2 and 4 before asking the user to design them/i);
+  assert.match(prompt, /propose Sections 2-6 and 8 before asking the user to design them/i);
   assert.doesNotMatch(prompt, /Ask 1-2 focused questions at a time - DO NOT auto-generate content/);
 });
 

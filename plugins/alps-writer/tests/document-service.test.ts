@@ -221,19 +221,19 @@ test("empty Lite required and optional subsections remain unwritten", () => {
   const service = new DocumentService();
   service.initDocument("empty", target, "lite");
   service.saveSection(1, "1", "Target User and Core Problem", "");
-  service.saveSection(1, "2", "Desired Business Impact", "  \n ");
-  service.saveSection(3, "1", "Explicit Exclusions", "\t");
+  service.saveSection(1, "2", "Intent and Desired Outcome", "  \n ");
+  service.saveSection(7, "1", "Explicit Exclusions", "\t");
   assert.match(service.getStatus(), /Section 1 .*⬜ Not started/);
-  assert.match(service.getStatus(), /Section 3 .*Optional — not written/);
+  assert.match(service.getStatus(), /Section 7 .*Optional — not written/);
   service.saveSection(1, "1", "Target User and Core Problem", "An author needs a clear spec.");
   assert.match(service.getStatus(), /Section 1 .*In progress \(1\/2 subsections\)/);
-  service.saveSection(1, "2", "Desired Business Impact", "Reduce clarification work.");
+  service.saveSection(1, "2", "Intent and Desired Outcome", "Reduce clarification work.");
   assert.match(service.getStatus(), /Section 1 .*Written \(2\/2 subsections\)/);
-  service.saveSection(3, "1", "Explicit Exclusions", "No explicit exclusions.");
-  assert.match(service.getStatus(), /Section 3 .*Written \(1 optional subsection\)/);
-  service.saveSection(3, "1", "Explicit Exclusions", "");
-  assert.match(service.getStatus(), /Section 3 .*Optional — not written/);
-  assert.doesNotMatch(service.exportMarkdown(), /## Section 3\. Out of Scope/);
+  service.saveSection(7, "1", "Explicit Exclusions", "No explicit exclusions.");
+  assert.match(service.getStatus(), /Section 7 .*Written \(1 optional subsection\)/);
+  service.saveSection(7, "1", "Explicit Exclusions", "");
+  assert.match(service.getStatus(), /Section 7 .*Optional — not written/);
+  assert.doesNotMatch(service.exportMarkdown(), /## Section 7\. Out of Scope/);
 });
 
 test("dynamic Feature completion counts only entries with a non-empty body", () => {

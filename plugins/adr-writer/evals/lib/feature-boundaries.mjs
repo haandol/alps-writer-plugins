@@ -82,8 +82,8 @@ must remain unresolved before changing ownership.
 Emit exactly A..G.`
     : "Emit exactly A..D."
 }
-For Lite, keep any explanation within the current four-section product model;
-never add lower C4 levels or technical-layer features. For handoff, preserve
+For Lite, keep any explanation within the current eight-section business-requirements
+model; never add lower C4 levels or technical-layer requirement groups. For handoff, preserve
 confirmed owners, propose missing boundaries and ask about material conflicts.
 In EVAL-FINDINGS, summaries use TWO_CONTEXTS, THREE_CONTEXTS, LAYER_GROUPS,
 HEADLESS, ADD_SCREEN, PARTIAL, COMPLETE, REUSE, PROPOSE or ASK_BOUNDARY.`,
