@@ -1,4 +1,5 @@
 import type { DocumentService } from "../src/tools/documents/service.js";
+import { TemplateRegistry } from "../src/tools/templates/registry.js";
 
 /** One business-wording Context diagram, the only C4 level Lite Section 3.2 accepts. */
 export function liteContextDiagram(): string {
@@ -59,4 +60,42 @@ export function saveCompleteLite(service: DocumentService): void {
   for (const [section, id, title, content] of COMPLETE_LITE_SUBSECTIONS) {
     service.saveSection(section, id, title, content);
   }
+}
+
+/** The two C4 levels Full Section 4.1 requires. */
+const FULL_SYSTEM_DIAGRAMS = `\`\`\`mermaid
+C4Context
+title Guest Cart Merge
+Person(shopper, "Shopper")
+System(store, "Online Store")
+Rel(shopper, store, "Buys at")
+\`\`\`
+
+\`\`\`mermaid
+C4Container
+title Online Store
+Container(web, "Web App", "SPA")
+\`\`\``;
+
+/**
+ * Write every required Full subsection and Feature F1 so only Lite coverage can keep the
+ * document incomplete; `purpose` becomes 1.1 and usually carries `Source requirements:`.
+ */
+export function saveCompleteFull(service: DocumentService, purpose: string): void {
+  const registry = new TemplateRegistry();
+  for (let section = 1; section <= 9; section++) {
+    for (const { id, title, required } of registry.expectedSubsections(section)) {
+      if (!required) continue;
+      const content =
+        id === "1.1"
+          ? purpose
+          : id === "4.1"
+            ? FULL_SYSTEM_DIAGRAMS
+            : id === "5.1"
+              ? "| ID | Feature | Priority |\n|----|----|----|\n| F1 | Guest cart merge | Must-Have |"
+              : `${title} body`;
+      service.saveSection(section, id.slice(String(section).length + 1), title, content);
+    }
+  }
+  service.saveSection(7, "1", "Guest cart merge", "Feature ID: F1\n\nFeature body");
 }

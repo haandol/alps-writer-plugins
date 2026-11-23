@@ -33,9 +33,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/codegen/code.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/codegen/code.js
 var require_code = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/codegen/code.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/codegen/code.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.regexpCode = exports.getEsmExportName = exports.getProperty = exports.safeStringify = exports.stringify = exports.strConcat = exports.addCodeArg = exports.str = exports._ = exports.nil = exports._Code = exports.Name = exports.IDENTIFIER = exports._CodeOrName = void 0;
@@ -187,9 +187,9 @@ var require_code = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/codegen/scope.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/codegen/scope.js
 var require_scope = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/codegen/scope.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/codegen/scope.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ValueScope = exports.ValueScopeName = exports.Scope = exports.varKinds = exports.UsedValueState = void 0;
@@ -332,9 +332,9 @@ var require_scope = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/codegen/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/codegen/index.js
 var require_codegen = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/codegen/index.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/codegen/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.or = exports.and = exports.not = exports.CodeGen = exports.operators = exports.varKinds = exports.ValueScopeName = exports.ValueScope = exports.Scope = exports.Name = exports.regexpCode = exports.stringify = exports.getProperty = exports.nil = exports.strConcat = exports.str = exports._ = void 0;
@@ -1052,9 +1052,9 @@ var require_codegen = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/util.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/util.js
 var require_util = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/util.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/util.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.checkStrictMode = exports.getErrorPath = exports.Type = exports.useFunc = exports.setEvaluated = exports.evaluatedPropsToName = exports.mergeEvaluated = exports.eachItem = exports.unescapeJsonPointer = exports.escapeJsonPointer = exports.escapeFragment = exports.unescapeFragment = exports.schemaRefOrVal = exports.schemaHasRulesButRef = exports.schemaHasRules = exports.checkUnknownRules = exports.alwaysValidSchema = exports.toHash = void 0;
@@ -1219,9 +1219,9 @@ var require_util = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/names.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/names.js
 var require_names = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/names.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/names.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -1258,9 +1258,9 @@ var require_names = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/errors.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/errors.js
 var require_errors = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/errors.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/errors.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.extendErrors = exports.resetErrorsCount = exports.reportExtraError = exports.reportError = exports.keyword$DataError = exports.keywordError = void 0;
@@ -1380,9 +1380,9 @@ var require_errors = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/boolSchema.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/boolSchema.js
 var require_boolSchema = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/boolSchema.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/boolSchema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.boolOrEmptySchema = exports.topBoolOrEmptySchema = void 0;
@@ -1431,9 +1431,9 @@ var require_boolSchema = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/rules.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/rules.js
 var require_rules = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/rules.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/rules.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.getRules = exports.isJSONType = void 0;
@@ -1462,9 +1462,9 @@ var require_rules = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/applicability.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/applicability.js
 var require_applicability = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/applicability.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/applicability.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.shouldUseRule = exports.shouldUseGroup = exports.schemaHasRulesForType = void 0;
@@ -1485,9 +1485,9 @@ var require_applicability = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/dataType.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/dataType.js
 var require_dataType = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/dataType.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/dataType.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.reportTypeError = exports.checkDataTypes = exports.checkDataType = exports.coerceAndCheckDataType = exports.getJSONTypes = exports.getSchemaTypes = exports.DataType = void 0;
@@ -1669,9 +1669,9 @@ var require_dataType = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/defaults.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/defaults.js
 var require_defaults = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/defaults.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/defaults.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.assignDefaults = void 0;
@@ -1706,9 +1706,9 @@ var require_defaults = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/code.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/code.js
 var require_code2 = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/code.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/code.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateUnion = exports.validateArray = exports.usePattern = exports.callValidateCode = exports.schemaProperties = exports.allSchemaProperties = exports.noPropertyInData = exports.propertyInData = exports.isOwnProperty = exports.hasPropFunc = exports.reportMissingProp = exports.checkMissingProp = exports.checkReportMissingProp = void 0;
@@ -1839,9 +1839,9 @@ var require_code2 = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/keyword.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/keyword.js
 var require_keyword = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/keyword.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/keyword.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateKeywordUsage = exports.validSchemaType = exports.funcKeywordCode = exports.macroKeywordCode = void 0;
@@ -1957,9 +1957,9 @@ var require_keyword = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/subschema.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/subschema.js
 var require_subschema = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/subschema.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/subschema.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.extendSubschemaMode = exports.extendSubschemaData = exports.getSubschema = void 0;
@@ -2040,9 +2040,9 @@ var require_subschema = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js
 var require_fast_deep_equal = __commonJS({
-  "../../node_modules/.bun/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js"(exports, module) {
+  "../../../alps-writer-plugins/node_modules/.bun/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js"(exports, module) {
     "use strict";
     module.exports = function equal(a, b) {
       if (a === b) return true;
@@ -2075,9 +2075,9 @@ var require_fast_deep_equal = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/json-schema-traverse@1.0.0/node_modules/json-schema-traverse/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/json-schema-traverse@1.0.0/node_modules/json-schema-traverse/index.js
 var require_json_schema_traverse = __commonJS({
-  "../../node_modules/.bun/json-schema-traverse@1.0.0/node_modules/json-schema-traverse/index.js"(exports, module) {
+  "../../../alps-writer-plugins/node_modules/.bun/json-schema-traverse@1.0.0/node_modules/json-schema-traverse/index.js"(exports, module) {
     "use strict";
     var traverse = module.exports = function(schema, opts, cb) {
       if (typeof opts == "function") {
@@ -2163,9 +2163,9 @@ var require_json_schema_traverse = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/resolve.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/resolve.js
 var require_resolve = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/resolve.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/resolve.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.getSchemaRefs = exports.resolveUrl = exports.normalizeId = exports._getFullPath = exports.getFullPath = exports.inlineRef = void 0;
@@ -2319,9 +2319,9 @@ var require_resolve = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/index.js
 var require_validate = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/index.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/validate/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.getData = exports.KeywordCxt = exports.validateFunctionCode = void 0;
@@ -2827,9 +2827,9 @@ var require_validate = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/validation_error.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/validation_error.js
 var require_validation_error = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/validation_error.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/validation_error.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var ValidationError = class extends Error {
@@ -2843,9 +2843,9 @@ var require_validation_error = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/ref_error.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/ref_error.js
 var require_ref_error = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/ref_error.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/ref_error.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var resolve_1 = require_resolve();
@@ -2860,9 +2860,9 @@ var require_ref_error = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/index.js
 var require_compile = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/index.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/compile/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.resolveSchema = exports.getCompilingSchema = exports.resolveRef = exports.compileSchema = exports.SchemaEnv = void 0;
@@ -3084,9 +3084,9 @@ var require_compile = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/refs/data.json
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/refs/data.json
 var require_data = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/refs/data.json"(exports, module) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/refs/data.json"(exports, module) {
     module.exports = {
       $id: "https://raw.githubusercontent.com/ajv-validator/ajv/master/lib/refs/data.json#",
       description: "Meta-schema for $data reference (JSON AnySchema extension proposal)",
@@ -3103,9 +3103,9 @@ var require_data = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/fast-uri@3.1.9/node_modules/fast-uri/lib/utils.js
+// ../../../alps-writer-plugins/node_modules/.bun/fast-uri@3.1.9/node_modules/fast-uri/lib/utils.js
 var require_utils = __commonJS({
-  "../../node_modules/.bun/fast-uri@3.1.9/node_modules/fast-uri/lib/utils.js"(exports, module) {
+  "../../../alps-writer-plugins/node_modules/.bun/fast-uri@3.1.9/node_modules/fast-uri/lib/utils.js"(exports, module) {
     "use strict";
     var isUUID = RegExp.prototype.test.bind(/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu);
     var isIPv4 = RegExp.prototype.test.bind(/^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)$/u);
@@ -3637,9 +3637,9 @@ var require_utils = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/fast-uri@3.1.9/node_modules/fast-uri/lib/schemes.js
+// ../../../alps-writer-plugins/node_modules/.bun/fast-uri@3.1.9/node_modules/fast-uri/lib/schemes.js
 var require_schemes = __commonJS({
-  "../../node_modules/.bun/fast-uri@3.1.9/node_modules/fast-uri/lib/schemes.js"(exports, module) {
+  "../../../alps-writer-plugins/node_modules/.bun/fast-uri@3.1.9/node_modules/fast-uri/lib/schemes.js"(exports, module) {
     "use strict";
     var { isUUID } = require_utils();
     var URN_REG = /^([\da-z][\d\-a-z]{0,31}):((?:[\w!$'()*+,\-./:;=@]|%[\da-f]{2})+)$/iu;
@@ -3848,9 +3848,9 @@ var require_schemes = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/fast-uri@3.1.9/node_modules/fast-uri/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/fast-uri@3.1.9/node_modules/fast-uri/index.js
 var require_fast_uri = __commonJS({
-  "../../node_modules/.bun/fast-uri@3.1.9/node_modules/fast-uri/index.js"(exports, module) {
+  "../../../alps-writer-plugins/node_modules/.bun/fast-uri@3.1.9/node_modules/fast-uri/index.js"(exports, module) {
     "use strict";
     var { normalizeIPv6, removeDotSegments, removeDotSegmentsRelative, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, serializePathEncoding, normalizeQueryFragmentEncoding, encodeQuery, encodeFragment, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
     var { SCHEMES, getSchemeHandler } = require_schemes();
@@ -4278,9 +4278,9 @@ var require_fast_uri = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/uri.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/uri.js
 var require_uri = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/uri.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/uri.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var uri = require_fast_uri();
@@ -4289,9 +4289,9 @@ var require_uri = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/core.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/core.js
 var require_core = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/core.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/core.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = void 0;
@@ -4900,9 +4900,9 @@ var require_core = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/core/id.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/core/id.js
 var require_id = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/core/id.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/core/id.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var def = {
@@ -4915,9 +4915,9 @@ var require_id = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/core/ref.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/core/ref.js
 var require_ref = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/core/ref.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/core/ref.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.callRef = exports.getValidate = void 0;
@@ -5037,9 +5037,9 @@ var require_ref = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/core/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/core/index.js
 var require_core2 = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/core/index.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/core/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var id_1 = require_id();
@@ -5058,9 +5058,9 @@ var require_core2 = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitNumber.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitNumber.js
 var require_limitNumber = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitNumber.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitNumber.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5090,9 +5090,9 @@ var require_limitNumber = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/multipleOf.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/multipleOf.js
 var require_multipleOf = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/multipleOf.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/multipleOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5118,9 +5118,9 @@ var require_multipleOf = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js
 var require_ucs2length = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     function ucs2length(str) {
@@ -5144,9 +5144,9 @@ var require_ucs2length = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitLength.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitLength.js
 var require_limitLength = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitLength.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitLength.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5176,9 +5176,9 @@ var require_limitLength = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/pattern.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/pattern.js
 var require_pattern = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/pattern.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/pattern.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5213,9 +5213,9 @@ var require_pattern = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitProperties.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitProperties.js
 var require_limitProperties = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitProperties.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitProperties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5242,9 +5242,9 @@ var require_limitProperties = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/required.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/required.js
 var require_required = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/required.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/required.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -5324,9 +5324,9 @@ var require_required = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitItems.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitItems.js
 var require_limitItems = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitItems.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/limitItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5353,9 +5353,9 @@ var require_limitItems = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js
 var require_equal = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var equal = require_fast_deep_equal();
@@ -5364,9 +5364,9 @@ var require_equal = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/uniqueItems.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/uniqueItems.js
 var require_uniqueItems = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/uniqueItems.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/uniqueItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var dataType_1 = require_dataType();
@@ -5431,9 +5431,9 @@ var require_uniqueItems = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/const.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/const.js
 var require_const = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/const.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/const.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5460,9 +5460,9 @@ var require_const = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/enum.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/enum.js
 var require_enum = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/enum.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/enum.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5509,9 +5509,9 @@ var require_enum = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/index.js
 var require_validation = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/index.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/validation/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var limitNumber_1 = require_limitNumber();
@@ -5547,9 +5547,9 @@ var require_validation = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/additionalItems.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/additionalItems.js
 var require_additionalItems = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/additionalItems.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/additionalItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateAdditionalItems = void 0;
@@ -5600,9 +5600,9 @@ var require_additionalItems = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/items.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/items.js
 var require_items = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/items.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/items.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateTuple = void 0;
@@ -5657,9 +5657,9 @@ var require_items = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/prefixItems.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/prefixItems.js
 var require_prefixItems = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/prefixItems.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/prefixItems.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var items_1 = require_items();
@@ -5674,9 +5674,9 @@ var require_prefixItems = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/items2020.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/items2020.js
 var require_items2020 = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/items2020.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/items2020.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5709,9 +5709,9 @@ var require_items2020 = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/contains.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/contains.js
 var require_contains = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/contains.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/contains.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5803,9 +5803,9 @@ var require_contains = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/dependencies.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/dependencies.js
 var require_dependencies = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/dependencies.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/dependencies.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.validateSchemaDeps = exports.validatePropertyDeps = exports.error = void 0;
@@ -5897,9 +5897,9 @@ var require_dependencies = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/propertyNames.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/propertyNames.js
 var require_propertyNames = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/propertyNames.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/propertyNames.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -5940,9 +5940,9 @@ var require_propertyNames = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js
 var require_additionalProperties = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/additionalProperties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -6046,9 +6046,9 @@ var require_additionalProperties = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/properties.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/properties.js
 var require_properties = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/properties.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/properties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var validate_1 = require_validate();
@@ -6104,9 +6104,9 @@ var require_properties = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/patternProperties.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/patternProperties.js
 var require_patternProperties = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/patternProperties.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/patternProperties.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -6178,9 +6178,9 @@ var require_patternProperties = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/not.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/not.js
 var require_not = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/not.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/not.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var util_1 = require_util();
@@ -6209,9 +6209,9 @@ var require_not = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/anyOf.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/anyOf.js
 var require_anyOf = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/anyOf.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/anyOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var code_1 = require_code2();
@@ -6226,9 +6226,9 @@ var require_anyOf = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/oneOf.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/oneOf.js
 var require_oneOf = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/oneOf.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/oneOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6284,9 +6284,9 @@ var require_oneOf = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/allOf.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/allOf.js
 var require_allOf = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/allOf.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/allOf.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var util_1 = require_util();
@@ -6311,9 +6311,9 @@ var require_allOf = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/if.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/if.js
 var require_if = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/if.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/if.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6380,9 +6380,9 @@ var require_if = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/thenElse.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/thenElse.js
 var require_thenElse = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/thenElse.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/thenElse.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var util_1 = require_util();
@@ -6398,9 +6398,9 @@ var require_thenElse = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/index.js
 var require_applicator = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/index.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/applicator/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var additionalItems_1 = require_additionalItems();
@@ -6446,9 +6446,9 @@ var require_applicator = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/format/format.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/format/format.js
 var require_format = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/format/format.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/format/format.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6536,9 +6536,9 @@ var require_format = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/format/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/format/index.js
 var require_format2 = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/format/index.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/format/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var format_1 = require_format();
@@ -6547,9 +6547,9 @@ var require_format2 = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/metadata.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/metadata.js
 var require_metadata = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/metadata.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/metadata.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.contentVocabulary = exports.metadataVocabulary = void 0;
@@ -6570,9 +6570,9 @@ var require_metadata = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/draft7.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/draft7.js
 var require_draft7 = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/draft7.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/draft7.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var core_1 = require_core2();
@@ -6592,9 +6592,9 @@ var require_draft7 = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/discriminator/types.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/discriminator/types.js
 var require_types = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/discriminator/types.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/discriminator/types.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.DiscrError = void 0;
@@ -6606,9 +6606,9 @@ var require_types = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/discriminator/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/discriminator/index.js
 var require_discriminator = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/discriminator/index.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/vocabularies/discriminator/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var codegen_1 = require_codegen();
@@ -6711,9 +6711,9 @@ var require_discriminator = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/refs/json-schema-draft-07.json
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/refs/json-schema-draft-07.json
 var require_json_schema_draft_07 = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/refs/json-schema-draft-07.json"(exports, module) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/refs/json-schema-draft-07.json"(exports, module) {
     module.exports = {
       $schema: "http://json-schema.org/draft-07/schema#",
       $id: "http://json-schema.org/draft-07/schema#",
@@ -6868,9 +6868,9 @@ var require_json_schema_draft_07 = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/ajv.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/ajv.js
 var require_ajv = __commonJS({
-  "../../node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/ajv.js"(exports, module) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv@8.20.0/node_modules/ajv/dist/ajv.js"(exports, module) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = exports.Ajv = void 0;
@@ -6938,9 +6938,9 @@ var require_ajv = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv-formats@3.0.1+409704e89d09a59a/node_modules/ajv-formats/dist/formats.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv-formats@3.0.1+409704e89d09a59a/node_modules/ajv-formats/dist/formats.js
 var require_formats = __commonJS({
-  "../../node_modules/.bun/ajv-formats@3.0.1+409704e89d09a59a/node_modules/ajv-formats/dist/formats.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv-formats@3.0.1+409704e89d09a59a/node_modules/ajv-formats/dist/formats.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.formatNames = exports.fastFormats = exports.fullFormats = void 0;
@@ -7141,9 +7141,9 @@ var require_formats = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv-formats@3.0.1+409704e89d09a59a/node_modules/ajv-formats/dist/limit.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv-formats@3.0.1+409704e89d09a59a/node_modules/ajv-formats/dist/limit.js
 var require_limit = __commonJS({
-  "../../node_modules/.bun/ajv-formats@3.0.1+409704e89d09a59a/node_modules/ajv-formats/dist/limit.js"(exports) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv-formats@3.0.1+409704e89d09a59a/node_modules/ajv-formats/dist/limit.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.formatLimitDefinition = void 0;
@@ -7213,9 +7213,9 @@ var require_limit = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/ajv-formats@3.0.1+409704e89d09a59a/node_modules/ajv-formats/dist/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/ajv-formats@3.0.1+409704e89d09a59a/node_modules/ajv-formats/dist/index.js
 var require_dist = __commonJS({
-  "../../node_modules/.bun/ajv-formats@3.0.1+409704e89d09a59a/node_modules/ajv-formats/dist/index.js"(exports, module) {
+  "../../../alps-writer-plugins/node_modules/.bun/ajv-formats@3.0.1+409704e89d09a59a/node_modules/ajv-formats/dist/index.js"(exports, module) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var formats_1 = require_formats();
@@ -7255,7 +7255,7 @@ var require_dist = __commonJS({
   }
 });
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v3/helpers/util.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v3/helpers/util.js
 var util;
 (function(util2) {
   util2.assertEqual = (_) => {
@@ -7389,7 +7389,7 @@ var getParsedType = (data) => {
   }
 };
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v3/ZodError.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v3/ZodError.js
 var ZodIssueCode = util.arrayToEnum([
   "invalid_type",
   "invalid_literal",
@@ -7518,7 +7518,7 @@ ZodError.create = (issues) => {
   return error62;
 };
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v3/locales/en.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v3/locales/en.js
 var errorMap = (issue2, _ctx) => {
   let message;
   switch (issue2.code) {
@@ -7621,13 +7621,13 @@ var errorMap = (issue2, _ctx) => {
 };
 var en_default = errorMap;
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v3/errors.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v3/errors.js
 var overrideErrorMap = en_default;
 function getErrorMap() {
   return overrideErrorMap;
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v3/helpers/parseUtil.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
   const { data, path: path5, errorMaps, issueData } = params;
   const fullPath = [...path5, ...issueData.path || []];
@@ -7736,14 +7736,14 @@ var isDirty = (x) => x.status === "dirty";
 var isValid = (x) => x.status === "valid";
 var isAsync = (x) => typeof Promise !== "undefined" && x instanceof Promise;
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v3/helpers/errorUtil.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v3/helpers/errorUtil.js
 var errorUtil;
 (function(errorUtil2) {
   errorUtil2.errToObj = (message) => typeof message === "string" ? { message } : message || {};
   errorUtil2.toString = (message) => typeof message === "string" ? message : message?.message;
 })(errorUtil || (errorUtil = {}));
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v3/types.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
   constructor(parent, value, path5, key) {
     this._cachedPath = [];
@@ -11150,7 +11150,7 @@ var nullableType = ZodNullable.create;
 var preprocessType = ZodEffects.createWithPreprocess;
 var pipelineType = ZodPipeline.create;
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/index.js
 var core_exports2 = {};
 __export(core_exports2, {
   $ZodAny: () => $ZodAny,
@@ -11467,7 +11467,7 @@ __export(core_exports2, {
   withParser: () => withParser
 });
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/util.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/util.js
 var util_exports = {};
 __export(util_exports, {
   BIGINT_FORMAT_RANGES: () => BIGINT_FORMAT_RANGES,
@@ -12323,7 +12323,7 @@ function constantCatch(value) {
   return fn;
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/core.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/core.js
 var _a;
 var NEVER = /* @__PURE__ */ Object.freeze({
   status: "aborted"
@@ -12445,7 +12445,7 @@ function config(newConfig) {
   return globalConfig;
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/errors.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/errors.js
 function _getMessage() {
   const internals = this._zod;
   internals.message ?? (internals.message = JSON.stringify(internals.def, jsonStringifyReplacer, 2));
@@ -12637,7 +12637,7 @@ function prettifyError(error62) {
   return lines.join("\n");
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/parse.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/parse.js
 function finalizeParams(callee, params) {
   return { callee: params?.callee ?? callee, Err: params?.Err };
 }
@@ -12797,7 +12797,7 @@ var _safeDecodeAsync = (_Err) => async (schema, value, _ctx) => {
 };
 var safeDecodeAsync = /* @__PURE__ */ _safeDecodeAsync($ZodRealError);
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/regexes.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/regexes.js
 var regexes_exports = {};
 __export(regexes_exports, {
   anyString: () => anyString,
@@ -12969,7 +12969,7 @@ var sha512_hex = /^[0-9a-fA-F]{128}$/;
 var sha512_base64 = /* @__PURE__ */ fixedBase64(86, "==");
 var sha512_base64url = /* @__PURE__ */ fixedBase64url(86);
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/checks.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/checks.js
 var $ZodCheck = /* @__PURE__ */ $constructor("$ZodCheck", (inst, def) => {
   var _a3;
   inst._zod ?? (inst._zod = {});
@@ -13445,7 +13445,7 @@ var $ZodCheckOverwrite = /* @__PURE__ */ $constructor("$ZodCheckOverwrite", (ins
   };
 });
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/doc.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/doc.js
 var Doc = class {
   constructor(args = [], closed = {}) {
     this.content = [];
@@ -13486,14 +13486,14 @@ ${content.join("\n")}
   }
 };
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/versions.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/versions.js
 var version = {
   major: 4,
   minor: 6,
   patch: 7
 };
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/schemas.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/schemas.js
 var $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
   var _a3;
   inst ?? (inst = {});
@@ -15935,7 +15935,7 @@ function handleRefineResult(result, payload, input2, inst) {
   }
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/memoizer.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/memoizer.js
 var $ZodCyclicError = class extends Error {
   constructor() {
     super(`Cannot parse a reference cycle that closes through a transform`);
@@ -16212,7 +16212,7 @@ function isBackEdge(ctx, value) {
   return backEdges !== void 0 && isRef(value) && backEdges.has(value);
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/index.js
 var locales_exports = {};
 __export(locales_exports, {
   ar: () => ar_default,
@@ -16280,7 +16280,7 @@ __export(locales_exports, {
   zhTW: () => zh_TW_default
 });
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ar.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ar.js
 var error = () => {
   const Sizable = {
     string: { unit: "\u062D\u0631\u0641", verb: "\u0623\u0646 \u064A\u062D\u0648\u064A" },
@@ -16392,7 +16392,7 @@ function ar_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/az.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/az.js
 var error2 = () => {
   const Sizable = {
     string: { unit: "simvol", verb: "olmal\u0131d\u0131r" },
@@ -16503,7 +16503,7 @@ function az_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/be.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/be.js
 function getBelarusianPlural(count, one, few, many) {
   const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
@@ -16672,7 +16672,7 @@ function be_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/bg.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/bg.js
 var error4 = () => {
   const Sizable = {
     string: { unit: "\u0441\u0438\u043C\u0432\u043E\u043B\u0430", verb: "\u0434\u0430 \u0441\u044A\u0434\u044A\u0440\u0436\u0430" },
@@ -16798,7 +16798,7 @@ function bg_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/bn.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/bn.js
 var error5 = () => {
   const Sizable = {
     string: { unit: "\u0985\u0995\u09CD\u09B7\u09B0", verb: "\u09A5\u09BE\u0995\u09A4\u09C7 \u09B9\u09AC\u09C7" },
@@ -16912,7 +16912,7 @@ function bn_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ca.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ca.js
 var error6 = () => {
   const Sizable = {
     string: { unit: "car\xE0cters", verb: "contenir" },
@@ -17026,7 +17026,7 @@ function ca_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ckb.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ckb.js
 var error7 = () => {
   const Sizable = {
     string: { unit: "\u067E\u06CC\u062A", verb: "\u0628\u06CE\u062A" },
@@ -17159,7 +17159,7 @@ function ckb_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/cs.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/cs.js
 var error8 = () => {
   const Sizable = {
     string: { unit: "znak\u016F", verb: "m\xEDt" },
@@ -17276,7 +17276,7 @@ function cs_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/da.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/da.js
 var error9 = () => {
   const Sizable = {
     string: { unit: "tegn", verb: "havde" },
@@ -17397,7 +17397,7 @@ function da_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/de.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/de.js
 var error10 = () => {
   const Sizable = {
     string: { unit: "Zeichen", verb: "zu haben" },
@@ -17511,7 +17511,7 @@ function de_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/el.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/el.js
 var error11 = () => {
   const Sizable = {
     string: { unit: "\u03C7\u03B1\u03C1\u03B1\u03BA\u03C4\u03AE\u03C1\u03B5\u03C2", verb: "\u03BD\u03B1 \u03AD\u03C7\u03B5\u03B9" },
@@ -17624,7 +17624,7 @@ function el_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/en.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/en.js
 var error12 = () => {
   const Sizable = {
     string: { unit: "characters", verb: "to have" },
@@ -17749,7 +17749,7 @@ function en_default2() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/eo.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/eo.js
 var error13 = () => {
   const Sizable = {
     string: { unit: "karaktrojn", verb: "havi" },
@@ -17864,7 +17864,7 @@ function eo_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/es.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/es.js
 var error14 = () => {
   const Sizable = {
     string: { unit: "caracteres", verb: "tener" },
@@ -18001,7 +18001,7 @@ function es_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/fa.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/fa.js
 var error15 = () => {
   const Sizable = {
     string: { unit: "\u06A9\u0627\u0631\u0627\u06A9\u062A\u0631", verb: "\u062F\u0627\u0634\u062A\u0647 \u0628\u0627\u0634\u062F" },
@@ -18121,7 +18121,7 @@ function fa_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/fi.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/fi.js
 var error16 = () => {
   const Sizable = {
     string: { unit: "merkki\xE4", subject: "merkkijonon" },
@@ -18239,7 +18239,7 @@ function fi_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/fr.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/fr.js
 var error17 = () => {
   const Sizable = {
     string: { unit: "caract\xE8res", verb: "avoir" },
@@ -18369,7 +18369,7 @@ function fr_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/fr-CA.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/fr-CA.js
 var error18 = () => {
   const Sizable = {
     string: { unit: "caract\xE8res", verb: "avoir" },
@@ -18482,7 +18482,7 @@ function fr_CA_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/gu.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/gu.js
 var error19 = () => {
   const Sizable = {
     string: { unit: "\u0A85\u0A95\u0ACD\u0AB7\u0AB0", verb: "\u0AB9\u0ACB\u0AB5\u0ABE \u0A9C\u0ACB\u0A88\u0A8F" },
@@ -18596,7 +18596,7 @@ function gu_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/he.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/he.js
 var error20 = () => {
   const TypeNames = {
     string: { label: "\u05DE\u05D7\u05E8\u05D5\u05D6\u05EA", gender: "f" },
@@ -18798,7 +18798,7 @@ function he_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/hi.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/hi.js
 var error21 = () => {
   const Sizable = {
     string: { unit: "\u0905\u0915\u094D\u0937\u0930", verb: "\u0930\u0916\u0928\u0947 \u0915\u0947 \u0932\u093F\u090F" },
@@ -18910,7 +18910,7 @@ function hi_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/hr.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/hr.js
 var error22 = () => {
   const Sizable = {
     string: { unit: "znakova", verb: "imati" },
@@ -19037,7 +19037,7 @@ function hr_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/hu.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/hu.js
 var error23 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "legyen" },
@@ -19151,7 +19151,7 @@ function hu_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/hy.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/hy.js
 function getArmenianPlural(count, one, many) {
   return Math.abs(count) === 1 ? one : many;
 }
@@ -19310,7 +19310,7 @@ function hy_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/id.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/id.js
 var error25 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "memiliki" },
@@ -19422,7 +19422,7 @@ function id_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/is.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/is.js
 var error26 = () => {
   const Sizable = {
     string: { unit: "stafi", verb: "a\xF0 hafa" },
@@ -19537,7 +19537,7 @@ function is_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/it.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/it.js
 var error27 = () => {
   const Sizable = {
     string: { unit: "caratteri", verb: "avere" },
@@ -19651,7 +19651,7 @@ function it_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ja.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ja.js
 var error28 = () => {
   const Sizable = {
     string: { unit: "\u6587\u5B57", verb: "\u3067\u3042\u308B" },
@@ -19764,7 +19764,7 @@ function ja_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ka.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ka.js
 var error29 = () => {
   const Sizable = {
     string: { unit: "\u10E1\u10D8\u10DB\u10D1\u10DD\u10DA\u10DD", verb: "\u10E3\u10DC\u10D3\u10D0 \u10E8\u10D4\u10D8\u10EA\u10D0\u10D5\u10D3\u10D4\u10E1" },
@@ -19882,7 +19882,7 @@ function ka_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/km.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/km.js
 var error30 = () => {
   const Sizable = {
     string: { unit: "\u178F\u17BD\u17A2\u1780\u17D2\u179F\u179A", verb: "\u1782\u17BD\u179A\u1798\u17B6\u1793" },
@@ -19998,12 +19998,12 @@ function km_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/kh.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/kh.js
 function kh_default() {
   return km_default();
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/kn.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/kn.js
 var error31 = () => {
   const Sizable = {
     string: { unit: "\u0C85\u0C95\u0CCD\u0CB7\u0CB0\u0C97\u0CB3\u0CC1", verb: "\u0CB9\u0CCA\u0C82\u0CA6\u0CB2\u0CC1" },
@@ -20119,7 +20119,7 @@ function kn_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ko.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ko.js
 var error32 = () => {
   const Sizable = {
     string: { unit: "\uBB38\uC790", verb: "to have" },
@@ -20236,7 +20236,7 @@ function ko_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/lt.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/lt.js
 var capitalizeFirstCharacter = (text) => {
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
@@ -20444,7 +20444,7 @@ function lt_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/mk.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/mk.js
 var error34 = () => {
   const Sizable = {
     string: { unit: "\u0437\u043D\u0430\u0446\u0438", verb: "\u0434\u0430 \u0438\u043C\u0430\u0430\u0442" },
@@ -20559,7 +20559,7 @@ function mk_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ms.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ms.js
 var error35 = () => {
   const Sizable = {
     string: { unit: "aksara", verb: "mempunyai" },
@@ -20672,7 +20672,7 @@ function ms_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ne.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ne.js
 var error36 = () => {
   const Sizable = {
     string: { unit: "\u0905\u0915\u094D\u0937\u0930", verb: "\u0939\u0941\u0928\u0941\u092A\u0930\u094D\u091B" },
@@ -20784,7 +20784,7 @@ function ne_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/nl.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/nl.js
 var error37 = () => {
   const Sizable = {
     string: { unit: "tekens", verb: "heeft" },
@@ -20900,7 +20900,7 @@ function nl_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/nn.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/nn.js
 var error38 = () => {
   const Sizable = {
     string: { unit: "teikn", verb: "\xE5 ha" },
@@ -21014,7 +21014,7 @@ function nn_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/no.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/no.js
 var error39 = () => {
   const Sizable = {
     string: { unit: "tegn", verb: "\xE5 ha" },
@@ -21128,7 +21128,7 @@ function no_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ota.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ota.js
 var error40 = () => {
   const Sizable = {
     string: { unit: "harf", verb: "olmal\u0131d\u0131r" },
@@ -21243,7 +21243,7 @@ function ota_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ps.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ps.js
 var error41 = () => {
   const Sizable = {
     string: { unit: "\u062A\u0648\u06A9\u064A", verb: "\u0648\u0644\u0631\u064A" },
@@ -21363,7 +21363,7 @@ function ps_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/pl.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/pl.js
 var error42 = () => {
   const Sizable = {
     string: { unit: "znak\xF3w", verb: "mie\u0107" },
@@ -21478,7 +21478,7 @@ function pl_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/pt.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/pt.js
 var error43 = () => {
   const Sizable = {
     string: { unit: "caracteres" },
@@ -21622,7 +21622,7 @@ function pt_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/pt-BR.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/pt-BR.js
 var error44 = () => {
   const Sizable = {
     string: { unit: "caracteres" },
@@ -21767,7 +21767,7 @@ function pt_BR_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ro.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ro.js
 var error45 = () => {
   const Sizable = {
     string: { unit: "caractere", verb: "s\u0103 aib\u0103" },
@@ -21890,7 +21890,7 @@ function ro_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ru.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ru.js
 function getRussianPlural(count, one, few, many) {
   const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
@@ -22059,7 +22059,7 @@ function ru_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/sk.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/sk.js
 var error47 = () => {
   const Sizable = {
     string: { unit: "znakov", verb: "ma\u0165" },
@@ -22176,7 +22176,7 @@ function sk_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/sl.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/sl.js
 var error48 = () => {
   const Sizable = {
     string: { unit: "znakov", verb: "imeti" },
@@ -22291,7 +22291,7 @@ function sl_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/sv.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/sv.js
 var error49 = () => {
   const Sizable = {
     string: { unit: "tecken", verb: "att ha" },
@@ -22407,7 +22407,7 @@ function sv_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ta.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ta.js
 var error50 = () => {
   const Sizable = {
     string: { unit: "\u0B8E\u0BB4\u0BC1\u0BA4\u0BCD\u0BA4\u0BC1\u0B95\u0BCD\u0B95\u0BB3\u0BCD", verb: "\u0B95\u0BCA\u0BA3\u0BCD\u0B9F\u0BBF\u0BB0\u0BC1\u0B95\u0BCD\u0B95 \u0BB5\u0BC7\u0BA3\u0BCD\u0B9F\u0BC1\u0BAE\u0BCD" },
@@ -22523,7 +22523,7 @@ function ta_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/tg.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/tg.js
 var error51 = () => {
   const Sizable = {
     string: { unit: "\u0430\u043B\u043E\u043C\u0430\u0442", verb: "\u0434\u043E\u0448\u0442\u0430 \u0431\u043E\u0448\u0430\u0434" },
@@ -22640,7 +22640,7 @@ function tg_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/th.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/th.js
 var error52 = () => {
   const Sizable = {
     string: { unit: "\u0E15\u0E31\u0E27\u0E2D\u0E31\u0E01\u0E29\u0E23", verb: "\u0E04\u0E27\u0E23\u0E21\u0E35" },
@@ -22756,7 +22756,7 @@ function th_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/tk.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/tk.js
 var error53 = () => {
   const Sizable = {
     string: { unit: "simwol", verb: "bolmaly" },
@@ -22864,7 +22864,7 @@ function tk_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/tr.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/tr.js
 var error54 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "olmal\u0131" },
@@ -22975,7 +22975,7 @@ function tr_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/uk.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/uk.js
 var error55 = () => {
   const Sizable = {
     string: { unit: "\u0441\u0438\u043C\u0432\u043E\u043B\u0456\u0432", verb: "\u043C\u0430\u0442\u0438\u043C\u0435" },
@@ -23089,12 +23089,12 @@ function uk_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ua.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ua.js
 function ua_default() {
   return uk_default();
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ur.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/ur.js
 var error56 = () => {
   const Sizable = {
     string: { unit: "\u062D\u0631\u0648\u0641", verb: "\u06C1\u0648\u0646\u0627" },
@@ -23210,7 +23210,7 @@ function ur_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/uz.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/uz.js
 var error57 = () => {
   const Sizable = {
     string: { unit: "belgi", verb: "bo\u2018lishi kerak" },
@@ -23324,7 +23324,7 @@ function uz_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/vi.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/vi.js
 var error58 = () => {
   const Sizable = {
     string: { unit: "k\xFD t\u1EF1", verb: "c\xF3" },
@@ -23438,7 +23438,7 @@ function vi_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/zh-CN.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/zh-CN.js
 var error59 = () => {
   const Sizable = {
     string: { unit: "\u5B57\u7B26", verb: "\u5305\u542B" },
@@ -23553,7 +23553,7 @@ function zh_CN_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/zh-TW.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/zh-TW.js
 var error60 = () => {
   const Sizable = {
     string: { unit: "\u5B57\u5143", verb: "\u64C1\u6709" },
@@ -23666,7 +23666,7 @@ function zh_TW_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/yo.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/locales/yo.js
 var error61 = () => {
   const Sizable = {
     string: { unit: "\xE0mi", verb: "n\xED" },
@@ -23779,7 +23779,7 @@ function yo_default() {
   };
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/registries.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/registries.js
 var _a2;
 var $output = /* @__PURE__ */ Symbol("ZodOutput");
 var $input = /* @__PURE__ */ Symbol("ZodInput");
@@ -23829,7 +23829,7 @@ function registry() {
 (_a2 = globalThis).__zod_globalRegistry ?? (_a2.__zod_globalRegistry = registry());
 var globalRegistry = globalThis.__zod_globalRegistry;
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/compile.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/compile.js
 var INVALID2 = /* @__PURE__ */ Symbol.for("zod.compile.invalid");
 var FALLBACK_FLAG = /* @__PURE__ */ Symbol.for("zod.compile.fallback");
 var ZodCompileAsyncError = class extends Error {
@@ -25439,7 +25439,7 @@ function generateTransformCheck(doc, ctx, schema, accessor) {
   return accessor;
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/api.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/api.js
 function snapshotChecks(def) {
   if (def.checks)
     def.checks = [...def.checks];
@@ -26498,7 +26498,7 @@ function _stringFormat(Class2, format, fnOrRegex, _params = {}) {
   return inst;
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/to-json-schema.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/to-json-schema.js
 function assignProps(target, ...sources) {
   for (const source of sources) {
     for (const key of Reflect.ownKeys(source)) {
@@ -27028,7 +27028,7 @@ var createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) =
   return finalize(ctx, schema);
 };
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/json-schema-processors.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/json-schema-processors.js
 var narrowMin = (agg, key, value) => {
   if (agg[key] === void 0 || value > agg[key])
     agg[key] = value;
@@ -27776,7 +27776,7 @@ function toJSONSchema(input2, params) {
   return finalize(ctx, input2);
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/json-schema-generator.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/json-schema-generator.js
 var JSONSchemaGenerator = class {
   /** @deprecated Access via ctx instead */
   get metadataRegistry() {
@@ -27854,10 +27854,10 @@ var JSONSchemaGenerator = class {
   }
 };
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/json-schema.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/json-schema.js
 var json_schema_exports = {};
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/mini/schemas.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/mini/schemas.js
 var ZodMiniType = /* @__PURE__ */ $constructor("ZodMiniType", (inst, def) => {
   if (!inst._zod)
     throw new Error("Uninitialized schema in ZodMiniType.");
@@ -27923,7 +27923,7 @@ function object(shape, params) {
   return new ZodMiniObject(def);
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/visit.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/visit.js
 var RESOLVING = /* @__PURE__ */ Symbol("z.visit/resolving");
 function visit(schema, fnOrHandlers) {
   const fn = typeof fnOrHandlers === "function" ? fnOrHandlers : (node2, rewritten) => {
@@ -28078,7 +28078,7 @@ function visit(schema, fnOrHandlers) {
   return run(schema);
 }
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
 function isZ4Schema(s) {
   const schema = s;
   return !!schema._zod;
@@ -28238,7 +28238,7 @@ function getLiteralValue(schema) {
   return void 0;
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/external.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/external.js
 var external_exports = {};
 __export(external_exports, {
   $brand: () => $brand,
@@ -28501,7 +28501,7 @@ __export(external_exports, {
   xor: () => xor
 });
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/schemas.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/schemas.js
 var schemas_exports2 = {};
 __export(schemas_exports2, {
   ZodAny: () => ZodAny2,
@@ -28682,7 +28682,7 @@ __export(schemas_exports2, {
   xor: () => xor
 });
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/checks.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/checks.js
 var checks_exports2 = {};
 __export(checks_exports2, {
   endsWith: () => _endsWith,
@@ -28717,7 +28717,7 @@ __export(checks_exports2, {
   uppercase: () => _uppercase
 });
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/errors.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/errors.js
 var _installedErrorProtos = /* @__PURE__ */ new WeakSet([Object.prototype, Error.prototype]);
 function _lazyMethod(proto, key, make) {
   Object.defineProperty(proto, key, {
@@ -28763,7 +28763,7 @@ var ZodRealError = /* @__PURE__ */ $constructor("ZodError", initializer2, void 0
   Parent: Error
 });
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/parse.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/parse.js
 var parse2 = /* @__PURE__ */ _parse(ZodRealError);
 var parseAsync2 = /* @__PURE__ */ _parseAsync(ZodRealError);
 var safeParse3 = /* @__PURE__ */ _safeParse(ZodRealError);
@@ -28777,7 +28777,7 @@ var safeDecode2 = /* @__PURE__ */ _safeDecode(ZodRealError);
 var safeEncodeAsync2 = /* @__PURE__ */ _safeEncodeAsync(ZodRealError);
 var safeDecodeAsync2 = /* @__PURE__ */ _safeDecodeAsync(ZodRealError);
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/schemas.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/schemas.js
 function _ensureDefaultLocale() {
   if (!globalConfig.localeError)
     config(en_default2());
@@ -30242,7 +30242,7 @@ function preprocess(fn, schema) {
   });
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/compat.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/compat.js
 var ZodIssueCode2 = {
   invalid_type: "invalid_type",
   too_big: "too_big",
@@ -30268,7 +30268,7 @@ var ZodFirstPartyTypeKind2;
 /* @__PURE__ */ (function(ZodFirstPartyTypeKind3) {
 })(ZodFirstPartyTypeKind2 || (ZodFirstPartyTypeKind2 = {}));
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/iso.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/iso.js
 var iso_exports2 = {};
 __export(iso_exports2, {
   ZodISODate: () => ZodISODate,
@@ -30293,7 +30293,7 @@ function duration2(params) {
   return _isoDuration(ZodISODuration, params);
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/from-json-schema.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/from-json-schema.js
 var z = {
   ...schemas_exports2,
   ...checks_exports2,
@@ -31026,7 +31026,7 @@ function fromJSONSchema(schema, params) {
   return convertSchema(normalized, ctx);
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/deep-partial.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/deep-partial.js
 function deepPartial(schema) {
   return visit(schema, {
     object: (s) => s.partial(),
@@ -31038,7 +31038,7 @@ function deepPartial(schema) {
   });
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/in-out.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/in-out.js
 function withChecks(side, checks) {
   if (!checks?.length)
     return side;
@@ -31068,7 +31068,7 @@ function output(schema) {
   });
 }
 
-// ../../node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/coerce.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod@4.6.7/node_modules/zod/v4/classic/coerce.js
 var coerce_exports2 = {};
 __export(coerce_exports2, {
   bigint: () => bigint3,
@@ -31093,7 +31093,7 @@ function date4(params) {
   return _coercedDate(ZodDate2, params);
 }
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/types.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/types.js
 var LATEST_PROTOCOL_VERSION = "2025-11-25";
 var SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, "2025-06-18", "2025-03-26", "2024-11-05", "2024-10-07"];
 var RELATED_TASK_META_KEY = "io.modelcontextprotocol/related-task";
@@ -32624,12 +32624,12 @@ var UrlElicitationRequiredError = class extends McpError {
   }
 };
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/interfaces.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/interfaces.js
 function isTerminal(status) {
   return status === "completed" || status === "failed" || status === "cancelled";
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/Options.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/Options.js
 var ignoreOverride = /* @__PURE__ */ Symbol("Let zodToJsonSchema decide on which parser to use");
 var defaultOptions = {
   name: void 0,
@@ -32663,7 +32663,7 @@ var getDefaultOptions = (options) => typeof options === "string" ? {
   ...options
 };
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/Refs.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/Refs.js
 var getRefs = (options) => {
   const _options = getDefaultOptions(options);
   const currentPath = _options.name !== void 0 ? [..._options.basePath, _options.definitionPath, _options.name] : _options.basePath;
@@ -32684,7 +32684,7 @@ var getRefs = (options) => {
   };
 };
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/errorMessages.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/errorMessages.js
 function addErrorMessage(res, key, errorMessage, refs) {
   if (!refs?.errorMessages)
     return;
@@ -32700,7 +32700,7 @@ function setResponseValueAndErrors(res, key, value, errorMessage, refs) {
   addErrorMessage(res, key, errorMessage, refs);
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
 var getRelativePath = (pathA, pathB) => {
   let i = 0;
   for (; i < pathA.length && i < pathB.length; i++) {
@@ -32710,7 +32710,7 @@ var getRelativePath = (pathA, pathB) => {
   return [(pathA.length - i).toString(), ...pathB.slice(i)].join("/");
 };
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/any.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/any.js
 function parseAnyDef(refs) {
   if (refs.target !== "openAi") {
     return {};
@@ -32726,7 +32726,7 @@ function parseAnyDef(refs) {
   };
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/array.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/array.js
 function parseArrayDef(def, refs) {
   const res = {
     type: "array"
@@ -32750,7 +32750,7 @@ function parseArrayDef(def, refs) {
   return res;
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/bigint.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/bigint.js
 function parseBigintDef(def, refs) {
   const res = {
     type: "integer",
@@ -32796,24 +32796,24 @@ function parseBigintDef(def, refs) {
   return res;
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/boolean.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/boolean.js
 function parseBooleanDef() {
   return {
     type: "boolean"
   };
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/branded.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/branded.js
 function parseBrandedDef(_def, refs) {
   return parseDef(_def.type._def, refs);
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/catch.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/catch.js
 var parseCatchDef = (def, refs) => {
   return parseDef(def.innerType._def, refs);
 };
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/date.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/date.js
 function parseDateDef(def, refs, overrideDateStrategy) {
   const strategy = overrideDateStrategy ?? refs.dateStrategy;
   if (Array.isArray(strategy)) {
@@ -32872,7 +32872,7 @@ var integerDateParser = (def, refs) => {
   return res;
 };
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/default.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/default.js
 function parseDefaultDef(_def, refs) {
   return {
     ...parseDef(_def.innerType._def, refs),
@@ -32880,12 +32880,12 @@ function parseDefaultDef(_def, refs) {
   };
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/effects.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/effects.js
 function parseEffectsDef(_def, refs) {
   return refs.effectStrategy === "input" ? parseDef(_def.schema._def, refs) : parseAnyDef(refs);
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/enum.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/enum.js
 function parseEnumDef(def) {
   return {
     type: "string",
@@ -32893,7 +32893,7 @@ function parseEnumDef(def) {
   };
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/intersection.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/intersection.js
 var isJsonSchema7AllOfType = (type) => {
   if ("type" in type && type.type === "string")
     return false;
@@ -32935,7 +32935,7 @@ function parseIntersectionDef(def, refs) {
   } : void 0;
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/literal.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/literal.js
 function parseLiteralDef(def, refs) {
   const parsedType2 = typeof def.value;
   if (parsedType2 !== "bigint" && parsedType2 !== "number" && parsedType2 !== "boolean" && parsedType2 !== "string") {
@@ -32955,7 +32955,7 @@ function parseLiteralDef(def, refs) {
   };
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/string.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/string.js
 var emojiRegex2 = void 0;
 var zodPatterns = {
   /**
@@ -33280,7 +33280,7 @@ function stringifyRegExpWithFlags(regex, refs) {
   return pattern;
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/record.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/record.js
 function parseRecordDef(def, refs) {
   if (refs.target === "openAi") {
     console.warn("Warning: OpenAI may not support records in schemas! Try an array of key-value pairs instead.");
@@ -33332,7 +33332,7 @@ function parseRecordDef(def, refs) {
   return schema;
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/map.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/map.js
 function parseMapDef(def, refs) {
   if (refs.mapStrategy === "record") {
     return parseRecordDef(def, refs);
@@ -33357,7 +33357,7 @@ function parseMapDef(def, refs) {
   };
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/nativeEnum.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/nativeEnum.js
 function parseNativeEnumDef(def) {
   const object3 = def.values;
   const actualKeys = Object.keys(def.values).filter((key) => {
@@ -33371,7 +33371,7 @@ function parseNativeEnumDef(def) {
   };
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/never.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/never.js
 function parseNeverDef(refs) {
   return refs.target === "openAi" ? void 0 : {
     not: parseAnyDef({
@@ -33381,7 +33381,7 @@ function parseNeverDef(refs) {
   };
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/null.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/null.js
 function parseNullDef(refs) {
   return refs.target === "openApi3" ? {
     enum: ["null"],
@@ -33391,7 +33391,7 @@ function parseNullDef(refs) {
   };
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/union.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/union.js
 var primitiveMappings = {
   ZodString: "string",
   ZodNumber: "number",
@@ -33459,7 +33459,7 @@ var asAnyOf = (def, refs) => {
   return anyOf.length ? { anyOf } : void 0;
 };
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/nullable.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/nullable.js
 function parseNullableDef(def, refs) {
   if (["ZodString", "ZodNumber", "ZodBigInt", "ZodBoolean", "ZodNull"].includes(def.innerType._def.typeName) && (!def.innerType._def.checks || !def.innerType._def.checks.length)) {
     if (refs.target === "openApi3") {
@@ -33491,7 +33491,7 @@ function parseNullableDef(def, refs) {
   return base && { anyOf: [base, { type: "null" }] };
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/number.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/number.js
 function parseNumberDef(def, refs) {
   const res = {
     type: "number"
@@ -33540,7 +33540,7 @@ function parseNumberDef(def, refs) {
   return res;
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/object.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/object.js
 function parseObjectDef(def, refs) {
   const forceOptionalIntoNullable = refs.target === "openAi";
   const result = {
@@ -33610,7 +33610,7 @@ function safeIsOptional(schema) {
   }
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/optional.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/optional.js
 var parseOptionalDef = (def, refs) => {
   if (refs.currentPath.toString() === refs.propertyPath?.toString()) {
     return parseDef(def.innerType._def, refs);
@@ -33629,7 +33629,7 @@ var parseOptionalDef = (def, refs) => {
   } : parseAnyDef(refs);
 };
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/pipeline.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/pipeline.js
 var parsePipelineDef = (def, refs) => {
   if (refs.pipeStrategy === "input") {
     return parseDef(def.in._def, refs);
@@ -33649,12 +33649,12 @@ var parsePipelineDef = (def, refs) => {
   };
 };
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/promise.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/promise.js
 function parsePromiseDef(def, refs) {
   return parseDef(def.type._def, refs);
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/set.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/set.js
 function parseSetDef(def, refs) {
   const items = parseDef(def.valueType._def, {
     ...refs,
@@ -33674,7 +33674,7 @@ function parseSetDef(def, refs) {
   return schema;
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/tuple.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/tuple.js
 function parseTupleDef(def, refs) {
   if (def.rest) {
     return {
@@ -33702,24 +33702,24 @@ function parseTupleDef(def, refs) {
   }
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/undefined.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/undefined.js
 function parseUndefinedDef(refs) {
   return {
     not: parseAnyDef(refs)
   };
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/unknown.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/unknown.js
 function parseUnknownDef(refs) {
   return parseAnyDef(refs);
 }
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/readonly.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parsers/readonly.js
 var parseReadonlyDef = (def, refs) => {
   return parseDef(def.innerType._def, refs);
 };
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/selectParser.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/selectParser.js
 var selectParser = (def, typeName, refs) => {
   switch (typeName) {
     case ZodFirstPartyTypeKind.ZodString:
@@ -33795,7 +33795,7 @@ var selectParser = (def, typeName, refs) => {
   }
 };
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parseDef.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/parseDef.js
 function parseDef(def, refs, forceResolution = false) {
   const seenItem = refs.seen.get(def);
   if (refs.override) {
@@ -33851,7 +33851,7 @@ var addMeta = (def, refs, jsonSchema) => {
   return jsonSchema;
 };
 
-// ../../node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/zodToJsonSchema.js
+// ../../../alps-writer-plugins/node_modules/.bun/zod-to-json-schema@3.25.2+969a6d035afea0f4/node_modules/zod-to-json-schema/dist/esm/zodToJsonSchema.js
 var zodToJsonSchema = (schema, options) => {
   const refs = getRefs(options);
   let definitions = typeof options === "object" && options.definitions ? Object.entries(options.definitions).reduce((acc, [name2, schema2]) => ({
@@ -33913,7 +33913,7 @@ var zodToJsonSchema = (schema, options) => {
   return combined;
 };
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-json-schema-compat.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-json-schema-compat.js
 function mapMiniTarget(t) {
   if (!t)
     return "draft-7";
@@ -33955,7 +33955,7 @@ function parseWithCompat(schema, data) {
   return result.data;
 }
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js
 var DEFAULT_REQUEST_TIMEOUT_MSEC = 6e4;
 var Protocol = class {
   constructor(_options) {
@@ -34932,7 +34932,7 @@ function mergeCapabilities(base, additional) {
   return result;
 }
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/validation/ajv-provider.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/validation/ajv-provider.js
 var import_ajv = __toESM(require_ajv(), 1);
 var import_ajv_formats = __toESM(require_dist(), 1);
 function createDefaultAjvInstance() {
@@ -35000,7 +35000,7 @@ var AjvJsonSchemaValidator = class {
   }
 };
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/server.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/server.js
 var ExperimentalServerTasks = class {
   constructor(_server) {
     this._server = _server;
@@ -35213,7 +35213,7 @@ var ExperimentalServerTasks = class {
   }
 };
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/helpers.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/helpers.js
 function assertToolsCallTaskCapability(requests, method, entityName) {
   if (!requests) {
     throw new Error(`${entityName} does not support task creation (required for ${method})`);
@@ -35248,7 +35248,7 @@ function assertClientRequestTaskCapability(requests, method, entityName) {
   }
 }
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/index.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/index.js
 var Server = class extends Protocol {
   /**
    * Initializes this server with the given name and version information.
@@ -35619,7 +35619,7 @@ var Server = class extends Protocol {
   }
 };
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/completable.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/completable.js
 var COMPLETABLE_SYMBOL = /* @__PURE__ */ Symbol.for("mcp.completable");
 function isCompletable(schema) {
   return !!schema && typeof schema === "object" && COMPLETABLE_SYMBOL in schema;
@@ -35633,7 +35633,7 @@ var McpZodTypeKind;
   McpZodTypeKind2["Completable"] = "McpCompletable";
 })(McpZodTypeKind || (McpZodTypeKind = {}));
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/toolNameValidation.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/toolNameValidation.js
 var TOOL_NAME_REGEX = /^[A-Za-z0-9._-]{1,128}$/;
 function validateToolName(name) {
   const warnings = [];
@@ -35691,7 +35691,7 @@ function validateAndWarnToolName(name) {
   return result.isValid;
 }
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/mcp-server.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/mcp-server.js
 var ExperimentalMcpServerTasks = class {
   constructor(_mcpServer) {
     this._mcpServer = _mcpServer;
@@ -35706,7 +35706,7 @@ var ExperimentalMcpServerTasks = class {
   }
 };
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js
 function toolInputElementCount(value, max) {
   let count = 0;
   const stack = [value];
@@ -36547,10 +36547,10 @@ var EMPTY_COMPLETION_RESULT = {
   }
 };
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process2 from "node:process";
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
 var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 var ReadBuffer = class {
   constructor(options) {
@@ -36587,7 +36587,7 @@ function serializeMessage(message) {
   return JSON.stringify(message) + "\n";
 }
 
-// ../../node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+// ../../../alps-writer-plugins/node_modules/.bun/@modelcontextprotocol+sdk@1.32.2+969a6d035afea0f4/node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 var StdioServerTransport = class {
   constructor(_stdin = process2.stdin, _stdout = process2.stdout, options) {
     this._stdin = _stdin;
@@ -36676,23 +36676,23 @@ var ALPS_PROFILE = {
     2: "MVP Goals and Key Metrics",
     3: "Demo Scenario",
     4: "High-Level Architecture",
-    5: "Design Specification",
-    6: "Requirements Summary",
+    5: "Requirements Summary",
+    6: "Design Specification",
     7: "Feature-Level Specification",
     8: "MVP Metrics",
     9: "Out of Scope"
   },
   sectionReferences: {
     3: [2],
-    5: [6],
-    7: [3, 6],
-    8: [2, 6]
+    6: [5],
+    7: [3, 5],
+    8: [2, 5]
   },
-  authoringOrder: [1, 2, 3, 4, 6, 5, 7, 8, 9],
+  authoringOrder: [1, 2, 3, 4, 5, 6, 7, 8, 9],
   dynamicSection: {
     section: 7,
-    sourceSection: 6,
-    sourceSubsectionId: "6.1"
+    sourceSection: 5,
+    sourceSubsectionId: "5.1"
   },
   optionalSections: [],
   requirementOwners: null
@@ -37046,23 +37046,91 @@ function featureCoverage(source, entries) {
   return { expected: required2.length, written: required2.length - missing.length, missing };
 }
 
+// src/tools/documents/fences.ts
+var FENCE = /^(`{3,}|~{3,})(.*)$/;
+var CLOSING_FENCE = /^(`{3,}|~{3,})[ \t]*$/;
+var LIST_ITEM = /^( *)([-*+]|\d{1,9}[.)])( +|$)/;
+function indentOf(line) {
+  let width = 0;
+  for (const character of line) {
+    if (character === " ") width += 1;
+    else if (character === "	") width += 4 - width % 4;
+    else break;
+  }
+  return width;
+}
+function scanFences(text) {
+  const outside = [];
+  const blocks = [];
+  let open2 = null;
+  let listContent = null;
+  for (const line of text.split(/\r\n|\r|\n/)) {
+    const indent = indentOf(line);
+    const blank = line.trim() === "";
+    if (open2) {
+      if (open2.base > 0 && !blank && indent < open2.base) {
+        open2 = null;
+        listContent = null;
+      } else {
+        const closing = line.trim().match(CLOSING_FENCE);
+        if (closing && indent - open2.base <= 3 && closing[1][0] === open2.char && closing[1].length >= open2.length) {
+          open2 = null;
+        } else {
+          open2.block.lines.push(line);
+        }
+        continue;
+      }
+    }
+    let base = listContent ?? 0;
+    let candidate = line;
+    let relative = indent - base;
+    const item = line.match(LIST_ITEM);
+    if (item) {
+      listContent = item[1].length + item[2].length + Math.min(Math.max(item[3].length, 1), 4);
+      base = listContent;
+      candidate = line.slice(item[0].length);
+      relative = 0;
+    } else if (!blank && listContent != null && indent < listContent) {
+      listContent = null;
+      base = 0;
+      relative = indent;
+    }
+    const opening = relative <= 3 ? candidate.trimStart().match(FENCE) : null;
+    if (opening && !(opening[1][0] === "`" && opening[2].includes("`"))) {
+      const block = { info: opening[2].trim(), lines: [] };
+      blocks.push(block);
+      open2 = { char: opening[1][0], length: opening[1].length, base, block };
+      continue;
+    }
+    outside.push(line);
+  }
+  return { outside, blocks };
+}
+
 // src/tools/documents/requirement-ids.ts
 var PREFIX_GROUP = REQUIREMENT_PREFIXES.join("|");
 var TOKEN = new RegExp(`(?<![A-Za-z0-9])(${PREFIX_GROUP})-([1-9]\\d*)(?![A-Za-z0-9])`, "g");
-var DEFINITION = new RegExp(
-  `^\\s*(?:\\|\\s*|[-*+]\\s+|\\d+[.)]\\s+|#{1,6}\\s+)?(?:\\*\\*|__|\`)?(${PREFIX_GROUP})-([1-9]\\d*)(?![A-Za-z0-9])`
+var STRUCTURAL_DEFINITION = new RegExp(
+  `^\\s*(?:\\|\\s*|[-*+]\\s+|\\d+[.)]\\s+|#{1,6}\\s+)(?:\\*\\*|__|\`)?(${PREFIX_GROUP})-([1-9]\\d*)(?![A-Za-z0-9])`
 );
-var withoutCodeFences = (text) => text.replace(/```[\s\S]*?```|~~~[\s\S]*?~~~/g, "");
+var BOLD_HEADING_DEFINITION = new RegExp(
+  `^\\s*(\\*\\*|__)(${PREFIX_GROUP})-([1-9]\\d*)(?![A-Za-z0-9])(?:(?!\\1).)*\\1\\s*(?:\\([^()]*\\))?\\s*(?:[:\uFF1A\\-\u2013\u2014].*)?$`
+);
+function definedIdentifier(line) {
+  const structural = line.match(STRUCTURAL_DEFINITION);
+  if (structural) return { prefix: structural[1], id: `${structural[1]}-${structural[2]}` };
+  const heading = line.match(BOLD_HEADING_DEFINITION);
+  return heading ? { prefix: heading[2], id: `${heading[2]}-${heading[3]}` } : null;
+}
 function requirementReferences(text) {
   return new Set([...text.matchAll(TOKEN)].map((match) => `${match[1]}-${match[2]}`));
 }
 function requirementDefinitions(text, owned) {
   const counts = /* @__PURE__ */ new Map();
-  for (const line of withoutCodeFences(text).split(/\r?\n/)) {
-    const match = line.match(DEFINITION);
-    if (!match || !owned.includes(match[1])) continue;
-    const id = `${match[1]}-${match[2]}`;
-    counts.set(id, (counts.get(id) ?? 0) + 1);
+  for (const line of scanFences(text).outside) {
+    const definition = definedIdentifier(line);
+    if (!definition || !owned.includes(definition.prefix)) continue;
+    counts.set(definition.id, (counts.get(definition.id) ?? 0) + 1);
   }
   return counts;
 }
@@ -37129,39 +37197,117 @@ function glossaryMarkdown(entries) {
 // src/tools/documents/service.ts
 var bySubsectionId = ([a], [b]) => a.localeCompare(b, void 0, { numeric: true });
 var ALLOWED_ARCHITECTURE_DIAGRAMS = /* @__PURE__ */ new Set(["C4Context", "C4Container"]);
+var MERMAID_DIRECTIVE = /%%\{[\s\S]*?\}%%/g;
 function mermaidDiagramTypes(content) {
-  return [...content.matchAll(/```mermaid\s*\r?\n([\s\S]*?)```/g)].map(
-    (match) => match[1].split(/\r?\n/).map((line) => line.trim()).find((line) => line && !line.startsWith("%%"))?.split(/\s+/)[0]
-  ).filter((type) => Boolean(type));
+  return scanFences(content).blocks.filter((block) => /^mermaid\b/i.test(block.info)).map((block) => {
+    const lines = block.lines.map((line) => line.trim());
+    let start = lines.findIndex(Boolean);
+    if (lines[start] === "---") {
+      const end = lines.indexOf("---", start + 1);
+      start = end < 0 ? lines.length : end + 1;
+    }
+    return lines.slice(start).join("\n").replace(MERMAID_DIRECTIVE, "").split("\n").map((line) => line.trim()).find((line) => line && !line.startsWith("%%"))?.split(/\s+/)[0];
+  }).filter((type) => Boolean(type));
+}
+var C4_LEVEL = /^C4(?:Context|Container|Component|Dynamic|Deployment)$/;
+function c4KeywordLines(content) {
+  const read = (text) => text.split(/\r\n|\r|\n/).map(
+    (line) => line.replace(/^(?:\s*(?:>|<[^>]*>|(?:[-*+]|\d{1,9}[.)])(?=\s|$)))*\s*/, "").replace(/\s*%%.*$/, "").trim()
+  ).filter((line) => C4_LEVEL.test(line));
+  const stripped = read(content.replace(MERMAID_DIRECTIVE, ""));
+  const original = read(content);
+  const count = (lines, level) => lines.filter((line) => line === level).length;
+  return [.../* @__PURE__ */ new Set([...stripped, ...original])].flatMap(
+    (level) => Array(Math.max(count(stripped, level), count(original, level))).fill(level)
+  );
 }
 function architectureDiagramError(content) {
   const diagramTypes = mermaidDiagramTypes(content);
   for (const required2 of ALLOWED_ARCHITECTURE_DIAGRAMS) {
     if (!diagramTypes.includes(required2)) {
-      return `Section 4.1 requires a Mermaid ${required2} diagram.`;
+      return `Section 4.1 requires a Mermaid ${required2} diagram. Add a \`\`\`mermaid block whose first line is ${required2}.`;
     }
   }
-  const disallowed = diagramTypes.find((type) => !ALLOWED_ARCHITECTURE_DIAGRAMS.has(type));
+  const disallowed = diagramTypes.find((type) => !ALLOWED_ARCHITECTURE_DIAGRAMS.has(type)) ?? c4KeywordLines(content).find((type) => !ALLOWED_ARCHITECTURE_DIAGRAMS.has(type));
   if (disallowed) {
-    return `Section 4.1 allows only Mermaid C4Context and C4Container diagrams; found ${disallowed}.`;
+    return `Section 4.1 allows only Mermaid C4Context and C4Container diagrams; found ${disallowed}. Remove that diagram, or any line holding only that keyword, and keep Section 4.1 to the Context and Container levels.`;
   }
   return null;
 }
 var LITE_CONTEXT_DIAGRAM_SUBSECTION = "3.2";
 function liteBusinessContextDiagramError(content) {
   const diagramTypes = mermaidDiagramTypes(content);
+  const keywordLines = c4KeywordLines(content);
   const contextCount = diagramTypes.filter((type) => type === "C4Context").length;
-  if (contextCount !== 1) {
-    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} requires exactly one Mermaid C4Context diagram.`;
+  if (contextCount !== 1 || keywordLines.filter((type) => type === "C4Context").length > 1) {
+    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} requires exactly one Mermaid C4Context diagram. Keep one \`\`\`mermaid block whose first line is C4Context, outside quotes, and remove any other C4Context block or line holding only that keyword.`;
   }
-  const disallowed = diagramTypes.find((type) => type.startsWith("C4") && type !== "C4Context");
+  const disallowed = [...diagramTypes, ...keywordLines].find(
+    (type) => type.startsWith("C4") && type !== "C4Context"
+  );
   if (disallowed) {
-    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} allows only Mermaid C4Context diagrams; found ${disallowed}.`;
+    return `Lite ALPS Section ${LITE_CONTEXT_DIAGRAM_SUBSECTION} allows only Mermaid C4Context diagrams; found ${disallowed}. Remove that diagram, or any line holding only that keyword; system structure belongs in Full ALPS Section 4.1.`;
   }
   return null;
 }
+var EARLIER_FULL_ORDER = { 5: "Design Specification", 6: "Requirements Summary" };
+function currentFullOrder(content) {
+  const titles = /* @__PURE__ */ new Map();
+  for (const match of content.matchAll(/<section\b([^>]*)>/g)) {
+    const id = attribute(match[1], "id");
+    if (id) titles.set(id, attribute(match[1], "title"));
+  }
+  if (titles.get("5") !== EARLIER_FULL_ORDER[5] || titles.get("6") !== EARLIER_FULL_ORDER[6]) {
+    return content;
+  }
+  return content.replace(
+    /<section\b([^>]*)>([\s\S]*?)<\/section>/g,
+    (whole, attributes, body) => {
+      const from = attribute(attributes, "id");
+      if (from !== "5" && from !== "6") return whole;
+      const to = from === "5" ? "6" : "5";
+      const renumbered = body.replace(
+        /(<subsection\b[^>]*?\bid=")(\d+)(\.)/g,
+        (prefix, start, number4, dot) => number4 === from ? `${start}${to}${dot}` : prefix
+      );
+      return `<section${attributes.replace(/\bid="\d+"/, `id="${to}"`)}>${renumbered}</section>`;
+    }
+  );
+}
+function withRootAttribute(content, name, value) {
+  return content.replace(
+    /^(\s*<(?:alps-document|prd-document)\b)([^>]*)>/,
+    (_root, open2, attributes) => {
+      const escaped = escapeXmlAttribute(value);
+      const pattern = new RegExp(`(\\s${name}\\s*=\\s*)"[^"]*"`);
+      const updated = pattern.test(attributes) ? attributes.replace(pattern, (_match, prefix) => `${prefix}"${escaped}"`) : `${attributes} ${name}="${escaped}"`;
+      return `${open2}${updated}>`;
+    }
+  );
+}
 function sourceFingerprint(content) {
   return createHash("sha256").update(content.replace(/\r\n/g, "\n").trim()).digest("hex");
+}
+var LITE_OWNER_BY_PREFIX = new Map(
+  Object.entries(LITE_ALPS_PROFILE.requirementOwners ?? {}).flatMap(
+    ([subsection, prefixes]) => prefixes.map((prefix) => [prefix, subsection])
+  )
+);
+var ownedIn = (ids2) => ids2.map((id) => `${id} in ${LITE_OWNER_BY_PREFIX.get(id.split("-")[0])}`).join(", ");
+var lowerFirst = (text) => text.charAt(0).toLowerCase() + text.slice(1);
+function unwrittenBlocker(profile2, pending) {
+  return {
+    reason: `Sections not written: ${pending.join(", ")}`,
+    next: `Write the unwritten Sections in section order, starting with Section ${pending[0]} (${profile2.sectionTitles[pending[0]]}).`
+  };
+}
+function completionLines(blockers) {
+  if (blockers.length === 0) return ["Completion: \u2705 Complete"];
+  return [
+    `Completion: \u{1F7E1} Incomplete \u2014 ${blockers.map((blocker) => blocker.reason).join("; ")}`,
+    "Next steps:",
+    ...blockers.map((blocker) => `- ${blocker.next}`)
+  ];
 }
 var DocumentService = class _DocumentService {
   workingDoc = null;
@@ -37312,6 +37458,13 @@ ${content}
     } else if (profileValue === LITE_ALPS_PROFILE.rootProfile) {
       const headerIds = headers.map(({ id }) => id);
       const currentIds = sectionNumbers(LITE_ALPS_PROFILE);
+      const sectionElements = [...content.matchAll(/<section\b/g)].length;
+      const outsideSections = content.replace(/^\s*<(?:alps-document|prd-document)\b[^>]*>/, "").replace(/<\/(?:alps-document|prd-document)>\s*$/, "").replace(/<section\b[^>]*>[\s\S]*?<\/section>/g, "").replace(/<glossary>[\s\S]*?<\/glossary>/, "").trim();
+      if (sectionElements !== headerIds.length || outsideSections) {
+        return {
+          error: `Lite ALPS documents must contain only Sections ${sectionRange(LITE_ALPS_PROFILE)} and an optional glossary.`
+        };
+      }
       if (currentIds.length === headerIds.length && currentIds.every((section, index) => section === headerIds[index])) {
         profile2 = LITE_ALPS_PROFILE;
       } else {
@@ -37362,7 +37515,8 @@ ${content}
     if ("error" in inspection) {
       throw new Error(`Invalid ALPS document at ${this.workingDoc}: ${inspection.error}`);
     }
-    return { content, profile: inspection.profile };
+    const current = isLiteProfile(inspection.profile) ? content : currentFullOrder(content);
+    return { content: current, profile: inspection.profile, earlierOrder: current !== content };
   }
   writeAtomic(filepath, content) {
     const temporary = `${filepath}.tmp-${process.pid}-${Date.now()}`;
@@ -37400,7 +37554,7 @@ ${content}
     const profile2 = DOCUMENT_PROFILES[profileId];
     if (sourceDocPath != null && isLiteProfile(profile2)) {
       throw new Error(
-        "A Lite source applies only to Full ALPS initialization; Lite ALPS documents have no source."
+        "A Lite source applies only to Full ALPS initialization; Lite ALPS documents have no source. Call alps_document(action: 'init', profile: 'lite', project_name, output_path) without source_doc_path to create the Lite, or use profile 'full' with this source_doc_path to derive a Full document from a completed Lite."
       );
     }
     let filepath = this.expandPath(outputPath);
@@ -37412,7 +37566,8 @@ ${content}
         `Document already exists at ${filepath}. Use alps_document(action: 'load', doc_path) to resume.`
       );
     }
-    const sourceLink = sourceDocPath == null ? null : this.completedLiteSource(sourceDocPath, filepath);
+    const source = sourceDocPath == null ? null : this.completedLiteSource(sourceDocPath, filepath);
+    const sourceLink = source?.link ?? null;
     fs3.mkdirSync(path4.dirname(filepath), { recursive: true });
     try {
       fs3.writeFileSync(
@@ -37433,58 +37588,86 @@ ${content}
       throw error62;
     }
     this.workingDoc = filepath;
-    return sourceLink ? `Created ${profile2.label} document at ${filepath}
-Lite source: ${sourceLink.source}` : `Created ${profile2.label} document at ${filepath}`;
+    return source ? `Created ${profile2.label} document at ${filepath}
+Lite source: ${source.link.source}
+Lite source path: ${source.path}` : `Created ${profile2.label} document at ${filepath}`;
   }
   /**
-   * Accept only a completed current-format Lite document as a Full source and
-   * return the link recorded relative to the Full document. Nothing is written.
+   * Accept only a completed current-format Lite document as a Full source and return the
+   * link recorded relative to the Full document with the resolved source path. Nothing is
+   * written; every rejection names the next action, including continuing without a source.
    */
   completedLiteSource(sourceDocPath, fullPath) {
     const sourcePath = this.expandPath(sourceDocPath);
+    const withoutSource = "or call alps_document(action: 'init', profile: 'full', project_name, output_path) without source_doc_path to continue without a Lite source.";
     if (!sourcePath.toLowerCase().endsWith(LITE_ALPS_PROFILE.filenameSuffix)) {
       throw new Error(
-        `Invalid Lite source: ${sourcePath}. A Full ALPS source must be a ${LITE_ALPS_PROFILE.filenameSuffix} document.`
+        `Invalid Lite source: ${sourcePath}. A Full ALPS source must be a ${LITE_ALPS_PROFILE.filenameSuffix} document. Name a completed Lite ALPS document, ${withoutSource}`
       );
     }
     let content;
     try {
       content = fs3.readFileSync(sourcePath, "utf-8");
     } catch (error62) {
-      throw new Error(`Lite source not readable at ${sourcePath}: ${error62.message}`, {
-        cause: error62
-      });
+      throw new Error(
+        `Lite source not readable at ${sourcePath}: ${error62.message}. Check the path, write the Lite first with alps_document(action: 'init', profile: 'lite', project_name, output_path), ${withoutSource}`,
+        { cause: error62 }
+      );
     }
     const inspection = this.inspectDocument(content);
-    if ("error" in inspection)
-      throw new Error(`Invalid Lite source at ${sourcePath}: ${inspection.error}`);
-    if (!isLiteProfile(inspection.profile)) {
-      throw new Error(`Invalid Lite source at ${sourcePath}: the document is not Lite ALPS.`);
-    }
-    const incomplete = this.liteIncompleteReasons(content);
-    if (incomplete.length > 0) {
+    const invalid = "error" in inspection ? inspection.error : isLiteProfile(inspection.profile) ? null : "the document is not Lite ALPS.";
+    if (invalid) {
       throw new Error(
-        `Lite source at ${sourcePath} is not complete: ${incomplete.join("; ")}. Complete the Lite document before deriving Full ALPS.`
+        `Invalid Lite source at ${sourcePath}: ${invalid} Name a current-format Lite ALPS document, ${withoutSource}`
+      );
+    }
+    const { blockers } = this.liteCompletion(content);
+    if (blockers.length > 0) {
+      throw new Error(
+        `Lite source at ${sourcePath} is not complete: ${blockers.map((blocker) => blocker.reason).join("; ")}. Complete it first: load it with alps_document(action: 'load', doc_path: '${sourcePath}'), then ${blockers.map((blocker) => lowerFirst(blocker.next)).join(" Then ")} Retry this initialization afterwards, ${withoutSource}`
       );
     }
     const relative = path4.relative(path4.dirname(fullPath), sourcePath).split(path4.sep).join("/");
-    return { source: relative, fingerprint: sourceFingerprint(content) };
+    return {
+      link: { source: relative, fingerprint: sourceFingerprint(content) },
+      path: sourcePath
+    };
   }
-  /** Resolve the recorded Lite source and its defined identifiers without failing the Full request. */
+  /**
+   * Resolve the recorded Lite source without failing the Full request. A source that is
+   * unreadable, not current-format Lite or no longer complete is unusable, and the result
+   * names the next action that makes it usable again.
+   */
   readLiteSource(link) {
     const sourcePath = path4.resolve(path4.dirname(this.workingDoc), link.source);
+    const meanwhile = "Then check this document's status again; resume, saves and export keep working meanwhile.";
+    const unavailable = (problem) => ({
+      ok: false,
+      path: sourcePath,
+      label: "Lite source unavailable",
+      problem: `Lite source unavailable: ${problem}`,
+      next: `Restore the completed Lite ALPS document at ${sourcePath}, the source path recorded relative to this Full document. ${meanwhile}`
+    });
     let content;
     try {
       content = fs3.readFileSync(sourcePath, "utf-8");
     } catch (error62) {
-      return { ok: false, link, reason: `not readable (${error62.message})` };
+      return unavailable(`not readable (${error62.message})`);
     }
     const inspection = this.inspectDocument(content);
-    if ("error" in inspection) return { ok: false, link, reason: inspection.error };
-    if (!isLiteProfile(inspection.profile)) {
-      return { ok: false, link, reason: "the document is not Lite ALPS" };
+    if ("error" in inspection) return unavailable(inspection.error.replace(/\.$/, ""));
+    if (!isLiteProfile(inspection.profile)) return unavailable("the document is not Lite ALPS");
+    const { requirements, blockers } = this.liteCompletion(content);
+    if (blockers.length > 0) {
+      return {
+        ok: false,
+        path: sourcePath,
+        label: "Lite source incomplete",
+        problem: `Lite source incomplete: ${blockers.map((blocker) => blocker.reason).join("; ")}`,
+        next: `Complete the Lite source through Lite Section approval: load it with alps_document(action: 'load', doc_path: '${sourcePath}'), then ${blockers.map((blocker) => lowerFirst(blocker.next)).join(" Then ")} ${meanwhile}`
+      };
     }
-    return { ok: true, link, content, defined: this.liteRequirements(content).defined };
+    return { ok: true, path: sourcePath, content, defined: requirements.defined };
   }
   /** Requirement identifiers a Lite document defines, duplicates and dangling references. */
   liteRequirements(content) {
@@ -37512,38 +37695,41 @@ Lite source: ${sourceLink.source}` : `Created ${profile2.label} document at ${fi
       undefinedReferences: sortRequirementIds(undefinedReferences)
     };
   }
-  /** Reasons a Lite document is not complete; empty when it is. */
-  liteIncompleteReasons(content) {
-    const reasons = [];
-    const pending = this.sectionStates(content, LITE_ALPS_PROFILE).filter(
-      (state) => !state.complete
-    );
-    if (pending.length > 0) {
-      reasons.push(
-        `required Sections not written: ${pending.map((state) => state.section).join(", ")}`
-      );
-    }
+  /**
+   * The one Lite completion rule shared by Lite status and Full source acceptance:
+   * every required Section written, no duplicate definition and no undefined reference.
+   * Each blocker carries the next action that resolves it.
+   */
+  liteCompletion(content, states = this.sectionStates(content, LITE_ALPS_PROFILE)) {
+    const pending = states.filter((state) => !state.complete).map((state) => state.section);
     const requirements = this.liteRequirements(content);
-    if (requirements.duplicates.length > 0) {
-      reasons.push(`duplicate requirement definitions: ${requirements.duplicates.join(", ")}`);
+    const blockers = [];
+    if (pending.length > 0) blockers.push(unwrittenBlocker(LITE_ALPS_PROFILE, pending));
+    const { duplicates, undefinedReferences } = requirements;
+    if (duplicates.length > 0) {
+      blockers.push({
+        reason: `duplicate requirement definitions: ${duplicates.join(", ")}`,
+        next: `Keep one definition of each duplicated ID in its owning subsection (${ownedIn(duplicates)}) and refer to it elsewhere by ID.`
+      });
     }
-    if (requirements.undefinedReferences.length > 0) {
-      reasons.push(
-        `undefined requirement references: ${requirements.undefinedReferences.join(", ")}`
-      );
+    if (undefinedReferences.length > 0) {
+      blockers.push({
+        reason: `undefined requirement references: ${undefinedReferences.join(", ")}`,
+        next: `Define each referenced ID in its owning subsection (${ownedIn(undefinedReferences)}), or correct or remove the reference.`
+      });
     }
-    return reasons;
+    return { requirements, blockers };
   }
   /**
    * Keeps resume guidance aligned with each profile's authoring contract.
-   * Full ALPS remains question-first, while Lite asks only for missing or
-   * protected context and preserves proposal-first Sections 2 and 4.
+   * Full ALPS remains question-first, while Lite asks only for missing context,
+   * undefined terms or protected decisions and keeps proposal-first Sections 2-6 and 8.
    */
   resumeGuidance(profile2) {
-    const steps = isLiteProfile(profile2) ? `1. Call alps_template(action: 'guide', profile: '${isLiteProfile(profile2) ? "lite" : "full"}', section: N) before working on any section
+    const steps = isLiteProfile(profile2) ? `1. Call alps_template(action: 'guide', profile: 'lite', section: N) before working on any section
 2. Follow the guide: ask only for missing user-owned context, undefined terms or protected decisions, but propose Sections 2-6 and 8 before asking the user to design them
 3. Wait for a user response only when the guide requires a focused question; otherwise present the proposal for approval
-4. Get explicit "yes" confirmation before calling alps_section(action: 'save', doc_path, section, subsection_id, title, content)` : `1. Call alps_template(action: 'guide', profile: '${isLiteProfile(profile2) ? "lite" : "full"}', section: N) before working on any section
+4. Get explicit "yes" confirmation before calling alps_section(action: 'save', doc_path, section, subsection_id, title, content)` : `1. Call alps_template(action: 'guide', profile: 'full', section: N) before working on any section
 2. Reuse supplied context. Ask 1-2 focused questions at a time only for missing information. DO NOT auto-generate content that invents missing product decisions
 3. Wait when a question needs an answer; otherwise present the section's approval digest
 4. Get explicit "yes" confirmation before calling alps_section(action: 'save', doc_path, section, subsection_id, title, content)`;
@@ -37590,7 +37776,40 @@ ${this.resumeGuidance(profile2)}`;
     this.workingDoc = filepath;
     return inspection.profile;
   }
-  /** Save one approved subsection without dropping definitions collected elsewhere in the document. */
+  /**
+   * An earlier-order Full document is rewritten whole on its first save, so Sections 5 and 6
+   * must hold only recognized subsections: free text there cannot be renumbered safely.
+   * The refusal leaves the file unchanged and names how to make the save possible.
+   */
+  assertCurrentOrderRewritable(document, sections) {
+    if (!document.earlierOrder) return;
+    const unparsed = [5, 6].filter(
+      (id) => this.hasUnparsedContent(sections.get(id) || "")
+    );
+    if (unparsed.length === 0) return;
+    const locations = unparsed.map(
+      (id) => `Section ${id} (this earlier-order file stores ${ALPS_PROFILE.sectionTitles[id]} as <section id="${id === 5 ? 6 : 5}">)`
+    ).join(" and ");
+    throw new Error(
+      unparsed.length > 1 ? `Cannot rewrite this document in the current section order: ${locations} contain unrecognized content outside their subsections. Reads, status and export still work. To save again, move that text into one of each section's subsections or out of the file, then retry the save.` : `Cannot rewrite this document in the current section order: ${locations} contains unrecognized content outside its subsections. Reads, status and export still work. To save again, move that text into one of that section's subsections or out of the file, then retry the save.`
+    );
+  }
+  /**
+   * The source link a Full save writes: the current fingerprint of a usable Lite source, or
+   * the recorded fingerprint while the source is unusable. Lite documents have no source.
+   */
+  savedSourceLink(document) {
+    if (isLiteProfile(document.profile)) return null;
+    const link = this.extractSourceLink(document.content);
+    if (!link) return null;
+    const source = this.readLiteSource(link);
+    return source.ok ? { ...link, fingerprint: sourceFingerprint(source.content) } : link;
+  }
+  /**
+   * Save one approved subsection without dropping definitions collected elsewhere in the
+   * document. The first save of an earlier-order Full document rewrites the whole document
+   * in the current order, and a derived Full document records its source's current fingerprint.
+   */
   saveSection(section, subsectionId, title, content) {
     const document = this.readWorkingDocument();
     const { profile: profile2 } = document;
@@ -37620,6 +37839,7 @@ ${this.resumeGuidance(profile2)}`;
     }
     const projectName = this.extractProjectName(document.content);
     const sections = this.parseSections(document.content);
+    this.assertCurrentOrderRewritable(document, sections);
     const sectionContent = sections.get(section) || "";
     if (this.hasUnparsedContent(sectionContent)) {
       throw new Error(
@@ -37630,11 +37850,7 @@ ${this.resumeGuidance(profile2)}`;
     existing.set(subsection.fullId, { title, content });
     const parts = [...existing.entries()].sort(bySubsectionId).map(([id, value]) => this.buildSubsection(id, value.title, value.content));
     sections.set(section, parts.join("\n"));
-    const sourceLink = this.extractSourceLink(document.content);
-    if (sourceLink) {
-      const source = this.readLiteSource(sourceLink);
-      if (source.ok) sourceLink.fingerprint = sourceFingerprint(source.content);
-    }
+    const sourceLink = this.savedSourceLink(document);
     this.writeAtomic(
       this.workingDoc,
       this.buildDocument(
@@ -37650,6 +37866,8 @@ ${this.resumeGuidance(profile2)}`;
   /**
    * Save one user-confirmed meaning while preserving all other entries and section content.
    * Semantic confirmation belongs to the conversation; blank input is rejected without a write.
+   * Like a section save, it rewrites an earlier-order Full document in the current order and
+   * records a derived Full document's current source fingerprint.
    */
   saveGlossaryEntry(term, definition) {
     const document = this.readWorkingDocument();
@@ -37662,13 +37880,28 @@ ${this.resumeGuidance(profile2)}`;
     if (existing?.definition === definition) return `Glossary unchanged: ${existing.term}`;
     if (existing) existing.definition = definition;
     else entries.push({ term, definition });
-    const glossary = buildGlossary(entries);
-    const content = document.content.includes("<glossary>") ? document.content.replace(/<glossary>[\s\S]*?<\/glossary>/, () => glossary) : document.content.replace(
-      /<\/(?:alps-document|prd-document)>\s*$/,
-      (closing) => `${glossary}
+    const sourceLink = this.savedSourceLink(document);
+    let content;
+    if (document.earlierOrder) {
+      const sections = this.parseSections(document.content);
+      this.assertCurrentOrderRewritable(document, sections);
+      content = this.buildDocument(
+        document.profile,
+        this.extractProjectName(document.content),
+        sections,
+        entries,
+        sourceLink
+      );
+    } else {
+      const glossary = buildGlossary(entries);
+      const base = sourceLink?.fingerprint ? withRootAttribute(document.content, "source-fingerprint", sourceLink.fingerprint) : document.content;
+      content = base.includes("<glossary>") ? base.replace(/<glossary>[\s\S]*?<\/glossary>/, () => glossary) : base.replace(
+        /<\/(?:alps-document|prd-document)>\s*$/,
+        (closing) => `${glossary}
 
 ${closing}`
-    );
+      );
+    }
     this.writeAtomic(this.workingDoc, content);
     return `Saved glossary term: ${existing?.term ?? term}`;
   }
@@ -37710,44 +37943,37 @@ ${display}`;
     if (glossary.length > 0) lines.push(`Appendix (Glossary): ${glossary.length} defined terms`);
     const pending = states.filter((state) => !state.complete).map((state) => state.section);
     if (isLiteProfile(profile2)) {
-      lines.push("", ...this.liteRequirementLines(docContent, pending));
+      lines.push("", ...this.liteRequirementLines(docContent, states));
     } else {
       const sourceLink = this.extractSourceLink(docContent);
       if (sourceLink) lines.push("", ...this.liteSourceLines(docContent, sourceLink, pending));
     }
     return lines.join("\n");
   }
-  liteRequirementLines(content, pending) {
-    const requirements = this.liteRequirements(content);
-    const reasons = [];
-    if (pending.length > 0) reasons.push(`Sections not written: ${pending.join(", ")}`);
+  liteRequirementLines(content, states) {
+    const { requirements, blockers } = this.liteCompletion(content, states);
     const lines = [
       `Requirement IDs: ${requirements.defined.size} defined${requirements.defined.size > 0 ? ` (${sortRequirementIds(requirements.defined).join(", ")})` : ""}`
     ];
     if (requirements.duplicates.length > 0) {
       lines.push(`Duplicate requirement definitions: ${requirements.duplicates.join(", ")}`);
-      reasons.push("duplicate requirement definitions");
     }
     if (requirements.undefinedReferences.length > 0) {
       lines.push(
         `Undefined requirement references: ${requirements.undefinedReferences.join(", ")}`
       );
-      reasons.push("undefined requirement references");
     }
-    lines.push(
-      reasons.length === 0 ? "Completion: \u2705 Complete" : `Completion: \u{1F7E1} Incomplete \u2014 ${reasons.join("; ")}`
-    );
-    return lines;
+    return [...lines, ...completionLines(blockers)];
   }
   /** Report Lite coverage, dangling references and source changes for a derived Full document. */
   liteSourceLines(content, link, pending) {
-    const reasons = [];
-    if (pending.length > 0) reasons.push(`Sections not written: ${pending.join(", ")}`);
-    const lines = [`Lite source: ${link.source}`];
+    const blockers = [];
+    if (pending.length > 0) blockers.push(unwrittenBlocker(ALPS_PROFILE, pending));
     const source = this.readLiteSource(link);
+    const lines = [`Lite source: ${link.source}`, `Lite source path: ${source.path}`];
     if (!source.ok) {
-      lines.push(`Lite source unavailable: ${source.reason}. Lite coverage is unverified.`);
-      reasons.push("Lite source unavailable");
+      lines.push(`${source.problem}. Lite coverage is unverified.`);
+      blockers.push({ reason: source.label, next: source.next });
     } else {
       const sections = this.parseSections(content);
       const referenced = /* @__PURE__ */ new Set();
@@ -37762,10 +37988,18 @@ ${display}`;
       lines.push(
         missing.length === 0 ? `Lite coverage: \u2705 ${covered}/${source.defined.size} requirement IDs referenced` : `Lite coverage: \u{1F7E1} ${covered}/${source.defined.size} requirement IDs referenced \u2014 missing: ${missing.join(", ")}`
       );
-      if (missing.length > 0) reasons.push("Lite requirement IDs not referenced");
+      if (missing.length > 0) {
+        blockers.push({
+          reason: "Lite requirement IDs not referenced",
+          next: `Convert ${missing.join(", ")} in the Full Section its guide names and list each ID in that content's \`Source requirements:\`; only an optional FR, NFR or EC may instead be deferred to Section 9 with its ID and reason.`
+        });
+      }
       if (dangling.length > 0) {
         lines.push(`References to IDs not defined in the Lite source: ${dangling.join(", ")}`);
-        reasons.push("references to IDs not defined in the Lite source");
+        blockers.push({
+          reason: "references to IDs not defined in the Lite source",
+          next: `Ask whether to remove or correct the Full content that references ${dangling.join(", ")}, or to propose a Lite change that defines them, saved through Lite Section approval.`
+        });
       }
       if (link.fingerprint !== sourceFingerprint(source.content)) {
         lines.push(
@@ -37773,10 +38007,7 @@ ${display}`;
         );
       }
     }
-    lines.push(
-      reasons.length === 0 ? "Completion: \u2705 Complete" : `Completion: \u{1F7E1} Incomplete \u2014 ${reasons.join("; ")}`
-    );
-    return lines;
+    return [...lines, ...completionLines(blockers)];
   }
   /**
    * Count required entries with an actual body, not merely saved XML tags.
@@ -37845,6 +38076,74 @@ ${data.content}`).join("\n\n");
     const subsections = this.parseSubsections(content, section);
     return subsections.size > 0 && [...subsections.values()].every((subsection) => subsection.content.trim().length === 0);
   }
+  /**
+   * Where the operating system would write a path: each component resolves in order, a link
+   * is followed even when its target is missing, and `..` steps out of the physical directory
+   * reached so far. A guarded file that was moved away stays protected through any alias.
+   */
+  physicalLocation(file2, depth = 0) {
+    const absolute = path4.isAbsolute(file2) ? file2 : `${process.cwd()}${path4.sep}${file2}`;
+    let resolved = path4.parse(absolute).root;
+    const parts = absolute.slice(resolved.length).split(/[\\/]+/).filter(Boolean);
+    for (const [index, part] of parts.entries()) {
+      if (part === ".") continue;
+      if (part === "..") {
+        resolved = path4.dirname(resolved);
+        continue;
+      }
+      const next = path4.join(resolved, part);
+      let link = null;
+      try {
+        if (fs3.lstatSync(next).isSymbolicLink()) link = fs3.readlinkSync(next);
+      } catch (error62) {
+        if (!["ENOENT", "ENOTDIR"].includes(error62.code ?? "")) {
+          throw error62;
+        }
+      }
+      if (link == null || depth >= 40) {
+        resolved = next;
+        continue;
+      }
+      const target = path4.isAbsolute(link) ? link : `${resolved}${path4.sep}${link}`;
+      const rest = parts.slice(index + 1).join(path4.sep);
+      return this.physicalLocation(rest ? `${target}${path4.sep}${rest}` : target, depth + 1);
+    }
+    return resolved;
+  }
+  /**
+   * Whether two physical locations can name the same file. Names compare after Unicode
+   * normalization and case folding, because case-insensitive or normalizing volumes such as
+   * the default macOS one treat them as one file; directories also compare by identity.
+   */
+  sameLocation(a, b) {
+    const foldOnce = (value) => value.normalize("NFC").replace(new RegExp("\\p{Default_Ignorable_Code_Point}|[\\u200E\\u200F\\u202A-\\u202E]", "gu"), "").toUpperCase().toLowerCase().normalize("NFC");
+    const fold = (value) => foldOnce(foldOnce(value));
+    if (fold(a) === fold(b)) return true;
+    const anchor2 = (location) => {
+      const rest = [path4.basename(location)];
+      for (let directory = path4.dirname(location); ; directory = path4.dirname(directory)) {
+        const stats = this.statIfExists(directory);
+        if (stats) return { stats, rest: fold(rest.join("/")) };
+        if (path4.dirname(directory) === directory) return null;
+        rest.unshift(path4.basename(directory));
+      }
+    };
+    const left = anchor2(a);
+    const right = anchor2(b);
+    return Boolean(
+      left && right && left.rest === right.rest && left.stats.dev === right.stats.dev && left.stats.ino === right.stats.ino
+    );
+  }
+  statIfExists(file2) {
+    try {
+      return fs3.statSync(file2);
+    } catch (error62) {
+      if (["ENOENT", "ENOTDIR"].includes(error62.code ?? "")) {
+        return void 0;
+      }
+      throw error62;
+    }
+  }
   /** Export numbered content followed by the glossary only when actual definitions exist. */
   exportMarkdown(outputPath) {
     const document = this.readWorkingDocument();
@@ -37875,16 +38174,24 @@ ${markdown}
     const result = lines.join("\n");
     if (outputPath) {
       const out = this.expandPath(outputPath);
-      const source = fs3.statSync(this.workingDoc);
-      let target;
-      try {
-        target = fs3.statSync(out);
-      } catch (error62) {
-        if (!["ENOENT", "ENOTDIR"].includes(error62.code ?? ""))
-          throw error62;
+      const guarded = [{ file: this.workingDoc, name: "the source ALPS document" }];
+      if (sourceLink) {
+        guarded.push({
+          file: path4.resolve(path4.dirname(this.workingDoc), sourceLink.source),
+          name: "the Lite source document"
+        });
       }
-      if (target && source.dev === target.dev && source.ino === target.ino)
-        throw new Error("Markdown output must not replace the source ALPS document.");
+      const target = this.statIfExists(out);
+      const location = this.physicalLocation(out);
+      for (const { file: file2, name } of guarded) {
+        const existing = this.statIfExists(file2);
+        const sameFile = this.sameLocation(location, this.physicalLocation(file2)) || target && existing && target.dev === existing.dev && target.ino === existing.ino;
+        if (sameFile) {
+          throw new Error(
+            `Markdown output must not replace ${name}. Choose another output_path ending in .md.`
+          );
+        }
+      }
       fs3.mkdirSync(path4.dirname(out), { recursive: true });
       this.writeAtomic(out, result);
       return `Exported to ${out}`;
@@ -37937,7 +38244,7 @@ var server = new McpServer(
   // plugin.json files, marketplace.json). tests/version-consistency.test.ts
   // fails the build when they drift — this literal silently reported 0.4.20
   // to MCP clients for two releases after a manifest-only version bump.
-  { name: "alps-writer", version: "0.16.0" },
+  { name: "alps-writer", version: "0.17.0" },
   {
     instructions: `You are an intelligent product owner helping users create ALPS and Lite ALPS product documents.
 
@@ -37964,9 +38271,9 @@ Every operation on an existing document requires doc_path; init requires output_
    Lite ALPS: alps_template(action: 'overview', profile: 'lite')
    The matching overview MUST be called first to get the conversation guide.
 3. Use atomic confirmation by default. Batch confirmation is allowed only when the user explicitly requests it or supplies a complete structured source covering multiple sections.
-   Full ALPS order: 1, 2, 3, 4, 6, 5, 7, 8, 9.
+   Full ALPS order: 1, 2, 3, 4, 5, 6, 7, 8, 9.
    Lite ALPS order: 1, 2, 3, 4, 5, 6, 7, 8. Section 7 is optional.
-   For Full ALPS, author Requirements (6) before Design (5), because Design reuses the Feature IDs defined in Section 6.1.
+   Full ALPS Section 5 (Requirements) defines the Feature IDs that Section 6 (Design) and Section 7 reuse.
    For each section:
    a. Call the matching alps_template(action: 'guide', profile: 'full', section: N) or alps_template(action: 'guide', profile: 'lite', section: N)
    b. Call the matching alps_template(action: 'section', profile: 'full', section: N) or alps_template(action: 'section', profile: 'lite', section: N)
@@ -38003,6 +38310,7 @@ Every operation on an existing document requires doc_path; init requires output_
 - Section 8 proposes the shortest Demo Scenario that shows every required FR, names the FR and EC IDs each step shows, includes relevant EC counterexamples, and passes only when every shown criterion passes. A passing demo is not proof of business impact or market validity.
 - Do not invent exclusions or require optional Section 7.
 - Lite and Full keep independent document state and completion. A derived Full records its Lite source; never change Lite business meaning in Full \u2014 propose a Lite change through Lite's own approval instead.
+- When status reports a document incomplete or its Lite source unavailable or incomplete, never stop at the blocked state: relay the \`Next steps:\` it lists and offer to do the next one.
 </RULES>`
   }
 );

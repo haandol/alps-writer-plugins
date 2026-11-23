@@ -61,7 +61,7 @@ const report = () => ({
   comprehensionCheck: { questions: [question()] },
 });
 
-test("a report carries one or five questions under their actual explanation without losing answers", () => {
+test("an HTML report carries one or five questions under their actual explanation and Markdown carries none", () => {
   const doc = report();
   assert.equal(validateReport(doc).nodes, 2);
   doc.comprehensionCheck.questions = Array.from({ length: 5 }, (_, i) =>
@@ -72,9 +72,10 @@ test("a report carries one or five questions under their actual explanation with
   assert.ok(html.indexOf("Q3") < html.indexOf('id="limits"'));
   assert.ok(html.indexOf("Q4") > html.indexOf('id="limits"'));
   const markdown = renderMarkdown(doc);
-  assert.ok(markdown.indexOf("**Q3.") < markdown.indexOf("Answers and explanations"));
-  assert.ok(markdown.includes(doc.comprehensionCheck.questions[0].explanation));
-  assert.ok(markdown.includes(doc.comprehensionCheck.questions[0].options[0].feedback));
+  assert.ok(!markdown.includes("**Q3."));
+  assert.ok(!markdown.includes("Answers and explanations"));
+  assert.ok(!markdown.includes(doc.comprehensionCheck.questions[0].explanation));
+  assert.ok(!markdown.includes(doc.comprehensionCheck.questions[0].options[0].feedback));
 });
 
 test("report quiz limits follow the effective reader level", () => {

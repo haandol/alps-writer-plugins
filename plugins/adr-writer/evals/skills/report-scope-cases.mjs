@@ -89,6 +89,20 @@ export const reportScopeCases = [
       "Plan the explicitly requested one-question quiz with four choices, one correct answer, evidence and staged self-check. The default question count does not override an explicit request. Do not start a conversational quiz or claim unperformed verification.",
   },
   {
+    id: "report-scope-markdown-only-no-quiz",
+    title: "Markdown 파일로만 전달하는 리포트에는 퀴즈를 만들지 않음",
+    task: "결제 워커의 큐 중복 전달, 결제 성공 뒤 크래시와 응답 타임아웃 때의 재시도·환불 판단을 비교하는 리포트를 만들어줘. 터미널에서 읽을 거라 Markdown 파일 하나로만 주고 HTML은 필요 없어.",
+    expectation:
+      "Honor the Markdown-only delivery: plan one structured Markdown report rendered in Markdown format, with no comprehension quiz, no questions or answers and no quiz-exclusion record, because a Markdown-only report carries no quiz. Do not add an HTML copy, open a browser, or ask whether to include a quiz.",
+  },
+  {
+    id: "report-scope-plain-text-cli-no-quiz",
+    title: "CLI에 일반 텍스트로 정리하는 리포트에는 퀴즈를 만들지 않음",
+    task: "방금 정리한 캐시 TTL과 수동 무효화의 관계를 팀 공유용 리포트로 정리해서 이 터미널에 일반 텍스트로 출력해줘. 파일이나 브라우저는 쓰지 말고.",
+    expectation:
+      "Produce the requested report as plain text in the terminal without a file or browser, keeping the report's fixed headings in order with their Korean labels (목표, 배경, then the core answer, 전체 그림, then subject-specific sections), and include no comprehension questions, answers or quiz-exclusion note, because a plain-text-only report carries no quiz. Do not propose an HTML version or re-ask the delivery choice.",
+  },
+  {
     id: "report-scope-static-verification",
     title: "기본 전달과 요청된 브라우저 검증을 구분",
     task: "로컬 보고서의 의미와 근거를 검토했고, 구조·링크·비어 있지 않은 HTML과 포함된 다이어그램 출력도 확인했어. 기본 브라우저로 열어 최종 전달해줘. 브라우저 자동화나 인쇄 확인은 요청한 적 없어.",

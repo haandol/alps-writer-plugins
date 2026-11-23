@@ -163,7 +163,7 @@ function diagramSources(doc) {
 
 /**
  * Validate observable hierarchy and coverage, never claim to grade prose quality.
- * `requireQuiz` enforces the report contract's mandatory quiz; the CLI always sets it.
+ * `requireQuiz` enforces the HTML report's mandatory quiz; the CLI sets it for HTML output only.
  */
 export function validateReport(doc, { requireQuiz = false, requireOpening = false } = {}) {
   if (doc && typeof doc === "object" && !Array.isArray(doc)) rejectPlaceholders(doc);
@@ -303,7 +303,7 @@ export function validateReport(doc, { requireQuiz = false, requireOpening = fals
   visit(doc.sections, "report");
   if (requireQuiz && doc.comprehensionCheck === undefined)
     throw new Error(
-      `A report needs comprehensionCheck with questions within the reader level limit, or { "excluded": "<the user's request>" } when the user excluded the quiz`,
+      `An HTML report needs comprehensionCheck with questions within the reader level limit, or { "excluded": "<the user's request>" } when the user excluded the quiz`,
     );
   if (doc.comprehensionCheck !== undefined && doc.comprehensionCheck?.excluded !== undefined) {
     keys(doc.comprehensionCheck, ["excluded"], "comprehensionCheck");
@@ -545,7 +545,6 @@ function renderValidatedMarkdown(doc) {
       "",
     ];
   };
-  const quizUi = quizLabels[doc.language];
   const lines = [`# ${md(doc.title)}`, ""];
   if (doc.purpose) lines.push(`## ${ui.purpose}`, "", ...doc.purpose.flatMap((p) => [md(p), ""]));
   if (doc.background)
@@ -565,7 +564,7 @@ function renderValidatedMarkdown(doc) {
     );
     lines.push("");
   }
-  /** Preserve domain ownership while separating printable choices from answer explanations. */
+  /** Preserve domain ownership; the Markdown rendering never includes the quiz. */
   function visit(items, depth = 2) {
     if (depth > 6)
       throw new Error(
@@ -586,28 +585,7 @@ function renderValidatedMarkdown(doc) {
         lines.push(...diagramLines(node.diagram));
       }
       if (node.children) visit(node.children, depth + 1);
-      const questions =
-        doc.comprehensionCheck?.questions?.filter((q) => q.sectionId === node.id) ?? [];
-      if (questions.length) {
-        lines.push(`**${md(node.title)} · ${quizUi.comprehension}**`, "");
-        for (const q of questions) {
-          lines.push(`**${q.id}. ${md(q.question)}**`, "", quizUi.recallCue, "");
-          for (const option of q.options) lines.push(`${option.id}. ${md(option.text)}`, "");
-          lines.push(quizUi.teachBackCue, "");
-          if (q.revisit) lines.push(quizUi.revisitGuidance, "");
-        }
-        lines.push("---", "", `**${quizUi.answers}**`, "");
-        for (const q of questions) {
-          lines.push(
-            `**${q.id}: ${q.correctOptionId}** — ${md(q.explanation)}`,
-            "",
-            `${quizUi.gradingEvidence}: ${md(q.evidence)}`,
-            "",
-          );
-          for (const option of q.options) lines.push(`${option.id}. ${md(option.feedback)}`, "");
-        }
-        lines.push(quizUi.selfCheckLimit, "", "---", "");
-      }
+      // Markdown and plain text cannot hide answers, so the quiz appears only in HTML.
       if (node.evidence?.length) lines.push(`**${md(node.title)} · ${ui.evidence}**`, "");
       for (const evidence of node.evidence ?? []) {
         lines.push(`[${md(evidence.label)}](<${encodeURI(sourceUrl(evidence.source))}>)`, "");
@@ -640,7 +618,8 @@ function main(args) {
       "Usage: render-report.mjs report.json [--new-report] --out report.html [--format html|markdown]",
     );
   const doc = JSON.parse(readFileSync(input, "utf8"));
-  const result = validateReport(doc, { requireQuiz: true, requireOpening });
+  // Only HTML can stage the quiz; a Markdown-only report needs no comprehensionCheck.
+  const result = validateReport(doc, { requireQuiz: format === "html", requireOpening });
   const output =
     format === "html" ? renderValidatedHtml(doc, result) : renderValidatedMarkdown(doc);
   writeFileSync(out, output);

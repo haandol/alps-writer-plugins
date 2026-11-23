@@ -77,7 +77,7 @@ export default {
       liteDerivationRules(),
       alpsGuideText(7),
       `\n---\n\n# This run`,
-      `새 Full ALPS를 Lite 출처로 초기화했고 Sections 1-6은 승인되어 저장되었다. 6.1의 F1은 FR-1을 전환한다.`,
+      `새 Full ALPS를 Lite 출처로 초기화했고 Sections 1-6은 승인되어 저장되었다. 5.1의 F1은 FR-1을 전환한다.`,
       LITE_SOURCE,
       `기술 전환 중 확인한 사실: 비회원 장바구니에는 쿠폰을 적용할 수 있지만, Lite는 병합 뒤 그 쿠폰이 유지되는지 정하지 않았다.`,
       `정상적인 Section 7의 F1 다음 응답을 한국어로 작성하라. 도구를 호출하거나 저장하지 마라.`,

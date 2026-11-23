@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync, mkdtempSync, rmSync, existsSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  readFileSync,
+  readdirSync,
+  mkdtempSync,
+  rmSync,
+  existsSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import os from "node:os";
@@ -683,6 +691,99 @@ test("authors choose tables, lists and code inside a section without consuming b
     bad.sections[0].paragraphs = [block];
     assert.throws(() => validateReport(bad), message);
   }
+});
+
+test("a Markdown-only report needs no quiz and Markdown never shows quiz questions or answers", () => {
+  const temp = mkdtempSync(path.join(os.tmpdir(), "report-markdown-no-quiz-"));
+  try {
+    const cli = path.join(
+      ROOT,
+      "plugins/adr-writer/skills/report-writer/scripts/render-report.mjs",
+    );
+    const input = path.join(temp, "report.json"),
+      output = path.join(temp, "report.md");
+    const quizless = sample();
+    delete quizless.comprehensionCheck;
+    writeFileSync(input, JSON.stringify(quizless));
+    const markdownOnly = spawnSync(
+      process.execPath,
+      [cli, input, "--out", output, "--format", "markdown"],
+      { encoding: "utf8" },
+    );
+    assert.equal(markdownOnly.status, 0, markdownOnly.stderr);
+    assert.match(readFileSync(output, "utf8"), /^# /);
+    const html = spawnSync(process.execPath, [cli, input, "--out", path.join(temp, "r.html")], {
+      encoding: "utf8",
+    });
+    assert.equal(html.status, 2, "HTML still requires the quiz or an exclusion record");
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+  const withQuiz = JSON.parse(
+    read("shared/report-writer/references/examples/report-with-quiz.json"),
+  );
+  const question = withQuiz.comprehensionCheck.questions[0];
+  const markdown = renderMarkdown(withQuiz);
+  assert.ok(!markdown.includes(question.question), "the question text stays out of Markdown");
+  assert.ok(
+    !markdown.includes(question.explanation),
+    "the answer explanation stays out of Markdown",
+  );
+  for (const option of question.options) {
+    assert.ok(!markdown.includes(option.feedback));
+    assert.ok(!markdown.includes(option.text), "the choices stay out of Markdown");
+  }
+  assert.match(renderHtml(withQuiz), /<article class="quiz"/);
+});
+
+test("report guidance limits the required quiz and its exclusion record to HTML reports", () => {
+  const guide = (file) => read(`shared/report-writer/${file}`);
+  const files = [
+    "SKILL.md",
+    "templates/report.json",
+    ...readdirSync(path.join(ROOT, "shared/report-writer/references"))
+      .filter((name) => name.endsWith(".md"))
+      .map((name) => `references/${name}`),
+  ];
+  const stale =
+    /quiz-free report requires|is required: the CLI renderer refuses a report without it|Required quiz within the reader level limit|contract: at least one question|The quiz is required\.|Every report includes a quiz|Include a core-content quiz in every report/;
+  for (const file of files) {
+    assert.doesNotMatch(guide(file), stale, `${file} still requires a quiz outside HTML`);
+  }
+  // The two sentences that set the rule stay scoped to HTML.
+  assert.match(guide("SKILL.md"), /An HTML report requires the quiz\./);
+  assert.match(
+    guide("references/comprehension.md"),
+    /^Every HTML report includes a quiz of at least one question on its core content\./m,
+  );
+  assert.match(
+    guide("references/review-results.md"),
+    /an HTML report carries at least one question within the reader level’s limit\s+unless the user explicitly excluded them, and a report delivered only as Markdown or plain text\s+carries none\./,
+  );
+  assert.match(
+    guide("references/comprehension.md"),
+    /`comprehensionCheck` is required for HTML: the CLI renderer refuses an HTML report\s+without it/,
+  );
+  assert.match(
+    guide("references/comprehension.md"),
+    /A report delivered\s+only as Markdown or plain text has no prepared questions: prepare them in the\s+conversation under the same question rules, present them one at a time, and never\s+add them to the delivered file\. Accept one of the question's\s+four choices\./,
+  );
+  assert.match(
+    guide("references/report-document.md"),
+    /a report delivered only as Markdown or plain text omits `comprehensionCheck`/,
+  );
+  assert.match(
+    guide("SKILL.md"),
+    /For a Markdown file, omit\s+`comprehensionCheck` and render with `--format markdown`; for plain text shown only in the\s+conversation or terminal, write it there without the renderer or a file, keeping the fixed\s+headings and reading order\./,
+  );
+  assert.match(
+    guide("SKILL.md"),
+    /plain text written without it uses the same fixed headings in that order,\s+localized as \[format and layout\]\(references\/format-and-layout\.md#plain-text-delivery\) lists\./,
+  );
+  assert.match(
+    guide("references/format-and-layout.md"),
+    /## Plain-text delivery[\s\S]*`Purpose`, `Context`, the core answer, `Overview`[\s\S]*In a Korean report the fixed headings are `목표`, `배경` and `전체 그림`\./,
+  );
 });
 
 test("the CLI requires a quiz unless the user excluded it, and renders the exclusion without one", () => {

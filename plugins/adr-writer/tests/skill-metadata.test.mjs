@@ -759,10 +759,11 @@ test("feature-to-adr completes ownership transfer and makes explicit re-import i
   assert.match(importer, /Never create an empty placeholder ADR/);
 });
 
-test("alps-init resumes from status in the dependency-respecting section order", () => {
+test("alps-init resumes from status in the numeric section order", () => {
   const init = read(path.join(PLUGINS_ROOT, "alps-writer", "skills", "alps-init", "SKILL.md"));
 
-  assert.match(init, /1 → 2 → 3 → 4 → 6 → 5 → 7 → 8 → 9/);
+  assert.match(init, /1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9/);
+  assert.doesNotMatch(init, /6 → 5/);
   assert.match(init, /alps_document\(action: 'status'/);
   assert.match(init, /first section in that order that is not `✅ Written`/);
   assert.match(init, /Do not reopen or re-confirm a completed unchanged section/);
@@ -771,7 +772,7 @@ test("alps-init resumes from status in the dependency-respecting section order",
 
 test("alps-init defaults to atomic confirmation but supports explicit batch approval", () => {
   const init = read(path.join(PLUGINS_ROOT, "alps-writer", "skills", "alps-init", "SKILL.md"));
-  const nfr = read(path.join(PLUGINS_ROOT, "alps-writer", "src", "guides", "06.md"));
+  const nfr = read(path.join(PLUGINS_ROOT, "alps-writer", "src", "guides", "05.md"));
   const feature = read(path.join(PLUGINS_ROOT, "alps-writer", "src", "guides", "07.md"));
 
   assert.match(init, /Atomic is the default/);
@@ -1063,7 +1064,7 @@ test("Feature and ADR comprehension load is scored internally but shown as one a
   assert.match(featureHandoff, /Feature scores 8\/10 or higher[\s\S]{0,160}up to three/i);
   assert.match(featureHandoff, /keeping the original Feature/i);
   assert.match(featureHandoff, /never blocks drafting, approval, or transfer/i);
-  assert.match(featureHandoff, /Section 6 and Section 7 Feature\s+boundaries together/i);
+  assert.match(featureHandoff, /Section 5 and Section 7 Feature\s+boundaries together/i);
   assert.match(featureHandoff, /Only when the user asks to split ADR work/i);
 
   for (const source of [skills[1], skills[3]]) {

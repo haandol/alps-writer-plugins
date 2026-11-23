@@ -80,7 +80,6 @@ export const quizLabels = {
     gradingEvidence: "Evidence",
     selfCheckLimit:
       "This supports understanding; it does not measure learning or change the report's conclusion.",
-    answers: "Answers and explanations — read after choosing",
   },
   ko: {
     comprehension: "이해도 확인",
@@ -101,7 +100,6 @@ export const quizLabels = {
     gradingEvidence: "근거",
     selfCheckLimit:
       "이해를 돕기 위한 자가 확인입니다. 학습 효과를 측정하거나 보고서의 판정을 바꾸지 않습니다.",
-    answers: "정답과 해설 — 답을 고른 뒤 확인하세요",
   },
 };
 

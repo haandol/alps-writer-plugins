@@ -46,7 +46,7 @@ flowchart TD
     subgraph prd["PRD layer — alps-writer (optional entry)"]
         direction TB
         Init(["/alps-init<br/>author ALPS section by section"])
-        S7["Section 7 feature specs<br/>+ 6.3 dependency graph"]
+        S7["Section 7 feature specs<br/>+ 5.3 dependency graph"]
         Init --> S7
     end
 

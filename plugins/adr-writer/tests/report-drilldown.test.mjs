@@ -269,7 +269,7 @@ test("printing expands explanations and necessary evidence without unfolding opt
   }
 });
 
-test("both formats teach child cases before the parent's quiz and explicitly owned source evidence", () => {
+test("HTML teaches child cases before the parent's quiz, and both formats keep explicitly owned source evidence", () => {
   const doc = report();
   delete doc.background;
   delete doc.sections[0].children[0].preview;
@@ -277,16 +277,16 @@ test("both formats teach child cases before the parent's quiz and explicitly own
     markdown = renderMarkdown(doc);
   for (const child of doc.sections[0].children) {
     assert.ok(html.indexOf(child.paragraphs[0]) < html.indexOf('<article class="quiz">'));
-    assert.ok(markdown.indexOf(child.paragraphs[0]) < markdown.indexOf("**Q1."));
+    assert.ok(markdown.indexOf(child.paragraphs[0]) < markdown.indexOf("[Original retry rule]"));
     assert.ok(
       html.includes(`href="#${child.id}"`),
       "quiz offers a path back to prerequisite explanations",
     );
   }
-  assert.ok(markdown.indexOf("**Q1.") < markdown.indexOf("[Original retry rule]"));
   assert.ok(html.indexOf('<article class="quiz">') < html.indexOf("Original retry rule"));
   assert.ok(markdown.includes("**Retry paths · Evidence**"));
-  assert.ok(markdown.includes("**Retry paths · Check your understanding**"));
+  assert.ok(!markdown.includes("**Retry paths · Check your understanding**"));
+  assert.ok(!markdown.includes("**Q1."));
 });
 
 test("four branches can retain many sources and all five questions without inventing more explanation levels", () => {

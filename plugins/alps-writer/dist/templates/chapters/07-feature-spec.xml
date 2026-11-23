@@ -1,8 +1,8 @@
 <section id="7" title="Feature-Level Specification">
   <description>
-- For every feature listed in Section 6.1, provide a detailed design using the same Fx ID and feature name.
-- Each subsection must match the feature ID, name, and priority defined in Section 6.1.
-- No additional features beyond those in Section 6.1 may be specified here.
+- For every feature listed in Section 5.1, provide a detailed design using the same Fx ID and feature name.
+- Each subsection must match the feature ID, name, and priority defined in Section 5.1.
+- No additional features beyond those in Section 5.1 may be specified here.
 - Connect every Feature to the Section 3 end-to-end demo with one observable Demo outcome under Evaluation Rubric.
 - Write for a junior developer seeing the Feature for the first time. Use plain language, explain unfamiliar acronyms and domain or technical terms on first use, and make the actor, action, conceptual data, and user-visible result understandable without reading code.
 - When multiple participants or layers make a flow easier to understand visually, recommend a concise Mermaid diagram in 7.x.3. Prefer `sequenceDiagram` for request, data, and response flow across UI, API, data stores, and external systems.
@@ -94,7 +94,7 @@ Values the result must honor:
 - A password is at least 10 characters (security policy)
 - 5 consecutive failed sign-in attempts lock the account for 30 minutes (security policy)
 
-> This example uses the account scope from Section 6: email verification is outside the MVP, so it adds no verification or unverified-account deletion policy. The values above are illustrative supplied requirements, not defaults for another product.
+> This example uses the account scope from Section 5: email verification is outside the MVP, so it adds no verification or unverified-account deletion policy. The values above are illustrative supplied requirements, not defaults for another product.
 > How the password is hashed, the auth token format, and the user table's columns remain architectural/implementation choices. The stated password and lockout requirements stay exact in Evaluation Rubric.
       </example>
     </subsection>

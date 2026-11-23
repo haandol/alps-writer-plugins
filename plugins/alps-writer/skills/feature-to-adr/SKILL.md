@@ -161,7 +161,7 @@ into implementation tuning. Never invent an approved value, boundary or rational
 Treat confirmed answers as ephemeral handoff input. Do not persist a separate
 enrichment report or registry, and do not silently rewrite the PRD. Update the
 PRD only when the user explicitly requests it or accepts a Feature split that
-changes the Section 6 and Section 7 boundaries. Repeat the enrichment pass until
+changes the Section 5 and Section 7 boundaries. Repeat the enrichment pass until
 there are no open questions, or the user defers an answer that the
 complete transfer requires.
 
@@ -247,7 +247,7 @@ When the Feature scores 8/10 or higher, offer up to three Feature split
 candidates before transfer and explicitly offer keeping the original Feature.
 The proposal is advisory and never blocks drafting, approval, or transfer. Split
 a Feature only at independently observable user-behavior boundaries. If the user
-chooses a split, update the corresponding Section 6 and Section 7 Feature
+chooses a split, update the corresponding Section 5 and Section 7 Feature
 boundaries together before transfer.
 
 Only when the user asks to split ADR work, offer up to three ADR candidates.
