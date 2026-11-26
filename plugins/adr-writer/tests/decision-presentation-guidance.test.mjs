@@ -443,3 +443,34 @@ test("Driver and alternative counts stay advisory and never justify retirement o
       path.relative(ADR, file),
     );
 });
+
+test("externally checkable assumptions are settled at their source before asking on new and changed ADRs", () => {
+  const CHANGE = read("skills/adr-impl/references/target-and-change.md");
+  has(
+    NEW,
+    "Verify an externally checkable one at an authoritative source before asking ([candidate verification](references/candidate-verification.md)).",
+  );
+  for (const clause of [
+    "read that\n  source before asking",
+    "Show the source and what it established in the approval\n  digest, and cite it under Related when that fact decides the alternative.",
+    "contradicted assumption is not recorded as fact.",
+    "Search snippets and unread\n  citations confirm nothing, and a confirmed fact does not approve the decision\n  or contract.",
+    "Ask only about what the sources could not settle, naming why, and\n  persist no research notes.",
+    "A proposed alternative needs a real basis and\n  enters Alternatives only after the user confirms it.",
+    "keeps that row unapproved",
+  ])
+    has(VERIFY, clause);
+  has(
+    NEW,
+    "for an unrecalled alternative, propose real options with their basis and record only confirmed ones.",
+  );
+  for (const clause of [
+    "apply the decision-changing assumption check in",
+    "settle an externally checkable assumption",
+    "show the source and what it established in the semantic diff",
+    "cite it under Related when it decides the alternative",
+    "keep a contradicted or unconfirmed assumption out of the facts",
+    "ask only what no source settles, naming why",
+  ])
+    has(CHANGE, clause);
+});

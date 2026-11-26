@@ -15,6 +15,7 @@ export function writableCapture(item, file, { report = true } = {}) {
     [
       "author-keeps-values-and-lints",
       "author-self-checks-missing-value",
+      "author-verifies-external-premise",
       "sync-rewrites-final-state-only",
     ].includes(item.id);
   const document =

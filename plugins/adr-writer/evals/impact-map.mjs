@@ -13,6 +13,9 @@ const paymentProposalScenarios = [
   "hook-value-change-proposal",
 ];
 
+// This fixture reads the shipped MCP guidance for the skill-less in-authoring research scenarios.
+const alpsMcpScenarios = ["alps-research-inflight-mcp-full", "alps-research-inflight-mcp-lite"];
+
 // These fixtures belong to the Full ALPS scenarios that derive from a Lite source.
 const liteDerivationScenarios = [
   "alps-full-derives-from-lite-without-reasking",
@@ -24,6 +27,7 @@ const liteDerivationScenarios = [
 export const PRIVATE_FIXTURE_SCENARIOS = new Map([
   ["plugins/adr-writer/evals/lib/payment-change.mjs", paymentProposalScenarios],
   ["plugins/adr-writer/evals/lib/lite-derivation.mjs", liteDerivationScenarios],
+  ["plugins/adr-writer/evals/lib/alps-mcp-surfaces.mjs", alpsMcpScenarios],
 ]);
 
 /** Route a private fixture change like edits to its consuming scenarios in either runner. */
@@ -169,7 +173,22 @@ export const IMPACT_RULES = [
   },
   {
     pathPrefixes: ["plugins/alps-writer/skills/lite-alps-init/"],
-    scenarioPrefixes: ["lite-alps-", "alps-evaluates-outcomes-"],
+    scenarioPrefixes: [
+      "lite-alps-",
+      "alps-evaluates-outcomes-",
+      "alps-research-offers-once-after-lite-",
+      "alps-research-offers-not-again-",
+      "alps-research-offers-after-inflight-",
+    ],
+  },
+  {
+    pathPrefixes: ["plugins/alps-writer/skills/alps-research/"],
+    scenarioPrefixes: ["alps-research-reports-", "alps-research-applies-"],
+  },
+  {
+    // The committed bundle supplies these scenarios' MCP guidance or resume text.
+    pathPrefixes: ["plugins/alps-writer/dist/"],
+    scenarioPrefixes: ["alps-research-inflight-mcp-", "lite-alps-resume-"],
   },
   {
     pathPrefixes: ["plugins/alps-writer/src/tools/documents/"],

@@ -171,6 +171,7 @@ The digest is a disposable reading aid, not another document.
   applicable values and rules, pass/fail criteria, affected later items, and unresolved questions.
 - Show proposed values as ordinary document content; do not add inference-origin labels.
 - Never save a requirement, scope boundary, success condition, or exclusion absent from the digest.
+- When an approval unit relies on an external factual claim or figure (a regulation, a market or user figure, an external service limit) that the document and supplied sources do not establish, list it under the digest's unresolved questions as an unverified basis and offer research for that item only. This adds no question step: approve, revise and defer stay available, research starts only on request, an approved basis stays unverified, the offer is not repeated for the same item in the conversation, and the post-completion invitation is unchanged. Make no offer for a chosen goal or policy or an already established fact.
 - Show the full pending content when requested.
 - End with clear approve, revise, and defer choices.
 

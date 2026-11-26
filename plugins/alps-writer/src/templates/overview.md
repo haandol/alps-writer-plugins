@@ -168,6 +168,7 @@ The approval view is a disposable reading aid, not the stored document.
 - Contract-bearing information includes numeric values and units, allowed value sets, mandatory inputs, permissions and visibility, ordering and uniqueness, allowed or forbidden transitions, scope boundaries, and success conditions.
 - Omit repeated explanations, examples, Markdown decoration, and implementation detail. Do not name omitted implementation details or add an exclusion list for them.
 - Never save a requirement contract that was absent from the digest. The stored prose may expand explanation, but it may not add or change a requirement, scope boundary, or success condition the user did not see.
+- When an approval unit relies on an external factual claim or figure (a regulation, a market or user figure, an external service limit) that the document and supplied sources do not establish, list it under the digest's unresolved questions as an unverified basis and offer research for that item only. This adds no question step: approve, revise and defer stay available, research starts only on request, an approved basis stays unverified, the offer is not repeated for the same item in the conversation, and the post-completion invitation is unchanged. Make no offer for a chosen goal or policy or an already established fact.
 - End with clear choices to approve, revise a named item, or defer. Show the full pending content when the user requests it.
   </approval-digest>
 
