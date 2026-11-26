@@ -39,7 +39,10 @@ is approved and written, offer one optional deep-research review of
 the selected document's evidence and errors. Reuse an explicit research request
 or answered choice in the current conversation. Unwritten optional Lite Section 7,
 a decline, deferral, unanswered invitation, or research failure does not change
-completion. `alps-research` prefers an available built-in deep-research capability,
+completion. During authoring, when an approval unit relies on an external factual
+claim the document and supplied sources do not establish, its digest lists that
+basis as unverified and offers research for that item only; approval choices,
+saving and the completion invitation are unchanged. `alps-research` prefers an available built-in deep-research capability,
 then uses the agent's web search and source reading, falling back to connected
 DuckDuckGo MCP when search is unavailable or fails. Discover actual capabilities;
 do not configure providers or install a server. Review real document items,
