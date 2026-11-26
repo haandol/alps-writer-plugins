@@ -496,6 +496,9 @@ test("a fixture inside this repository's work tree never sees the outer reposito
   const { spawnSync } = await import("node:child_process");
   const { readFileSync } = await import("node:fs");
   const repo = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../../../..");
+  // `.codex/` is ignored and absent from a fresh checkout such as CI.
+  const { mkdirSync } = await import("node:fs");
+  mkdirSync(path.join(repo, ".codex"), { recursive: true });
   const out = mkdtempSync(path.join(repo, ".codex", "git-isolation-"));
   try {
     const item = (await catalog()).find((c) => c.id === "impl-high-load-keeps-progress");
