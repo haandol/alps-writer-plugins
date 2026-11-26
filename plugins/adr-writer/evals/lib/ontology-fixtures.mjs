@@ -204,6 +204,32 @@ export function buildPrompt(references, ...run) {
   ].join("\n\n");
 }
 
+/**
+ * Several independent ontology-build probes asked in one run, so the shipped skill and the
+ * references they load appear once. Each probe's project lives in its own fixture folder
+ * (q1/, q2/, …), and its obligations carry its question id, so every question is still judged
+ * on its own. Batch only response-only probes that judge no commands, tool flow or files, and
+ * never both directions of one decision.
+ */
+export function probeBatch({ references, probes, ...scenario }) {
+  const ids = probes.map((probe) => probe.id);
+  return {
+    ...scenario,
+    obligations: probes.flatMap(({ id, obligations }) =>
+      obligations.map((o) => ({ id: `${id}-${o.id}`, text: `${id}: ${o.text}` })),
+    ),
+    build(dir) {
+      return buildPrompt(
+        references,
+        `This run asks ${ids.length} independent questions (${ids.join(", ")}). Each is a separate project and conversation: its files are in its own folder of this fixture (${ids.map((id) => `${id}/`).join(", ")}), the paths it names are relative to that folder, and nothing stated, read or answered in one question applies to another. Do not call tools or write files. Answer every question completely, in order, under a heading with its id (${ids.map((id) => `\`## ${id}\``).join(", ")}).`,
+        ...probes.map((probe) =>
+          [`## ${probe.id}`, ...probe.build(path.join(dir, probe.id))].join("\n\n"),
+        ),
+      );
+    },
+  };
+}
+
 /** The references a candidate report reads, in the order the build skill links them. */
 export const REPORT_REFERENCES = [
   "references/ontology.md",

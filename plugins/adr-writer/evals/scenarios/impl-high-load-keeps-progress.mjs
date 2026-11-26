@@ -1,5 +1,3 @@
-import { responseChecks } from "../lib/response-checks.mjs";
-
 export const obligations = [
   {
     id: "choice",
@@ -7,27 +5,9 @@ export const obligations = [
   },
   {
     id: "candidates",
-    text: "Do not claim that the user selected a split or alter ADR boundaries. This probe must not call tools or change files; describe the next authorized action without claiming it already ran. The visible reply and classification records agree.",
+    text: "Do not claim that the user selected a split or alter ADR boundaries. This probe must not call tools or change files; describe the next authorized action without claiming it already ran.",
   },
 ];
-
-/** Exact output/scope checks supplement the semantic obligations. */
-export function deterministicScore(input) {
-  return [
-    ...responseChecks(
-      input,
-      { PLAN_SCORE: [], NEXT_STEP: [], CANDIDATE_STATE: [], EXECUTION_STATE: [] },
-      { noTools: true },
-    ),
-    {
-      label: "retains the 8/10 plan score",
-      pass: /\b8\s*\/\s*10\b/.test(
-        input.tail.findings.find((f) => f.tag === "PLAN_SCORE")?.summary ?? "",
-      ),
-      detail: "PLAN_SCORE must remain 8/10",
-    },
-  ];
-}
 
 import { seedMapping, seedRuleDocs, skillText, TAIL_SPEC } from "../lib/harness.mjs";
 

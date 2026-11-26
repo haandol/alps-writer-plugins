@@ -156,6 +156,10 @@ const common = [
     text: "Consolidate only the selected same-decision chain. The survivor describes current new and legacy cohorts with their rationale, valid drivers and real alternatives; the decision log records the adopted 2026-10-06 new-session 5-to-4 TEXT and 6-to-5 VOICE transition and its completion-burden rationale. Do not describe old sessions as migrated, unchanged seed/ending rules as newly adopted, or rejected alternatives as historical policy. Preserve history before overwriting or deleting source evidence, and keep valid source links. The streaming decision and picture-chat contract remain independently owned; link repair does not grant permission to merge them or renumber gaps.",
   },
   {
+    id: "settled-gaps",
+    text: "The user chose to keep every existing number. After applying, do not ask again about or propose renumbering the chatbot gaps left at 0002-0004, even when a numbering-gap warning appears; report the kept gaps only as the selected outcome.",
+  },
+  {
     id: "scope-and-evidence",
     text: "Use the local fixture evidence and verifiers. Preserve exact approval-before-mutation and approved path boundaries, source/code/test immutability, and honest final reporting. Report local policy tests as local evidence, not production, cloud, DB-concurrency or full EncBird verification. Do not build an unrelated whole-system inventory or treat a failed/absent check as success. The fixture is a scoped adaptation; do not claim it is a direct rollup of the real source repository.",
   },
@@ -193,6 +197,8 @@ export const encbirdRollupCases = [
     title: "복습 모달·게임 피드백·문자 호환·문제 선정을 별도 결정으로 유지",
     provenance: encbirdRollupProvenance,
     artifactPaths: [P.plan],
+    // The memo is optional here ("메모가 필요하면"); a no-chain answer may write none.
+    requiredArtifactPaths: [],
     build: buildEncbirdPoolNoChain,
     turns: [
       "pool 폴더의 네 ADR을 adr-rollup 관점에서 점검해줘. 같은 복습 기능이므로 모두 하나로 합쳐도 되는지 근거를 확인하고 변경 계획을 보여줘. 아직 공식 파일 변경은 승인하지 않아. 메모가 필요하면 .adr-review/rollup/plan.md만 쓸 수 있다. 한국어로 답하고 HTML·브라우저·퀴즈는 만들지 마.",

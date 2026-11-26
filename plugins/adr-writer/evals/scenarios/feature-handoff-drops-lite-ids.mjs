@@ -1,5 +1,4 @@
 import { alpsSkillText, seedMapping, seedRuleDocs, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
 
 export const obligations = [
   {
@@ -12,15 +11,9 @@ export const obligations = [
   },
   {
     id: "scope",
-    text: "Return only the pre-draft analysis; do not write files. The required tail agrees with the visible response.",
+    text: "Return only the pre-draft analysis; do not write files.",
   },
 ];
-
-export function deterministicScore(input) {
-  return responseChecks(input, {
-    LITE_IDS_LEGACY: [],
-  });
-}
 
 const BRIEF = `
 이 Full ALPS는 Lite 출처(cart.lite.alps.xml)에서 파생되었다.
@@ -50,7 +43,6 @@ export default {
       BRIEF,
       `Follow the skill's normal Feature result format, including ADR-owned,`,
       `Implementation discretion, Legacy planning context, Transfer coverage, and Result.`,
-      `In the machine-readable tail use ADR_CANDIDATE as the tag for each proposed ADR and LITE_IDS_LEGACY once.`,
       TAIL_SPEC,
     ].join("\n");
   },

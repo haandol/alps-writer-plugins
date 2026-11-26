@@ -1,8 +1,11 @@
 /** Cross-domain controls keep path review from becoming a rule to split every error. */
+// Each `references` lists only the content modules its obligations use; report-cases.mjs adds the common ones.
 export const reportRegressionCases = [
   {
     id: "report-diagram-notation-freedom",
     title: "Choose diagram notation by the relationship, without a flowchart default",
+    // Notation choice and semantics of class and state diagrams.
+    references: ["diagrams"],
     source: `Synthetic domain model: Duck inherits Animal. Owner owns Pet by composition.
 A submitted task can move from Pending to Running, then either Done or Failed; Done and Failed are terminal.
 The report renderer uses the bundled official Mermaid parser and browser engine. No separate type allowlist exists.`,
@@ -21,6 +24,8 @@ The report renderer uses the bundled official Mermaid parser and browser engine.
   {
     id: "report-regression-timeout-artifact-review",
     title: "A saved artifact does not erase a timeout or prove no document was produced",
+    // Review-only recount of trial outcomes and the 3/4 = 75% semantic PASS.
+    references: ["quantitative-claims", "review-results"],
     source: `Supplied recorded evaluation ledger (fixture data):
 Four requested trial IDs use identical first-submission rules. Completing the target call within its deadline, native format validity, and semantic PASS are independent requirements for an on-time successful task.
 T1: target returned before deadline; saved document is format-valid; semantic PASS.
@@ -47,6 +52,8 @@ Claim D: "There are four saved documents and four valid semantic judgments, with
   {
     id: "report-regression-shared-recovery-control",
     title: "Shared recovery is valid only for conditions with the same permission",
+    // Review-only diagram path check of shared and boolean failure branches.
+    references: ["diagrams", "review-results"],
     source: `Supplied hypothetical archive import policy:
 An import can complete, lose its connection, encounter temporary storage unavailability, or be denied access.
 Connection loss and temporary storage unavailability each permit one retry of the same import. Access denial is terminal and must be returned without retry.
@@ -81,6 +88,8 @@ Its prose says: Access denial is terminal.`,
   {
     id: "report-regression-notification-authoring",
     title: "Authoring transfers recovery boundaries to a different process",
+    // Authoring an overview and detail Mermaid view with failure destinations.
+    references: ["diagrams"],
     source: `Supplied hypothetical membership publication policy:
 A reviewer approves an immutable membership revision. The system first stores it durably, then atomically changes the public revision pointer. A failure before the pointer changes leaves the old revision visible.
 After publication the system sends a notification, deduplicated by the published revision. A notification failure permits retrying that notification only; it must not repeat publication or revoke the published revision.
@@ -100,6 +109,8 @@ The notification retry count and delivery latency are not specified. No live tes
   {
     id: "report-regression-accounting-review",
     title: "Review separates first artifacts, recovered attempts and semantic denominators",
+    // Review-only denominators, unknown-versus-zero cost and a derived zero.
+    references: ["quantitative-claims", "review-results"],
     source: `Supplied recorded evaluation ledger (fixture data, not this test's measurements):
 There are 10 requested trial IDs. Eight target calls returned; two timed out. Of the eight returned documents, three passed initial format validation and five failed it.
 All eight saved documents, including format-invalid ones, received valid semantic judgments: six PASS, one FAIL and one UNVERIFIED.
@@ -127,6 +138,8 @@ Also review this separate calculation on its own merits:
   {
     id: "report-regression-artifact-evidence-review",
     title: "Review distinguishes source ID coverage, resolution and supported renderer syntax",
+    // Review-only evidence links and native Mermaid parser scope; no number claim.
+    references: ["diagrams", "review-results"],
     source: `Supplied local report fixture:
 The delivered file is /fixture/review/report.html. The only original is /fixture/source.md and it contains a section titled Publication, but no explicit fragment anchor.
 Document A declares requiredEvidenceIds ["S1"] and has exactly one evidence item {id:"S1", label:"Publication", source:"../source.md"}.

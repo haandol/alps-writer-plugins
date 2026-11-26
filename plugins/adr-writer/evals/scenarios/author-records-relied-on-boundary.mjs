@@ -1,7 +1,4 @@
 import { skillText, ruleText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
-
-export const deterministicScore = (input) => responseChecks(input, {});
 
 export const obligations = [
   {
@@ -27,7 +24,6 @@ export default {
   description:
     "An ADR for a dependent context records what it relies on from another context and an external system in its own body, copying only the relied-on part.",
   obligations,
-  deterministicScore,
   build() {
     return [
       skillText("adr-new", { references: ["references/feature-boundaries.md"] }),

@@ -14,7 +14,12 @@ const paymentProposalScenarios = [
 ];
 
 // This fixture reads the shipped MCP guidance for the skill-less in-authoring research scenarios.
-const alpsMcpScenarios = ["alps-research-inflight-mcp-full", "alps-research-inflight-mcp-lite"];
+const alpsMcpScenarios = [
+  "alps-research-inflight-mcp-full",
+  "alps-research-inflight-mcp-lite",
+  "alps-feature-rubric-mcp-only",
+  "lite-alps-resume-preserves-proposal-first",
+];
 
 // These fixtures belong to the Full ALPS scenarios that derive from a Lite source.
 const liteDerivationScenarios = [
@@ -46,14 +51,19 @@ export const IMPACT_RULES = [
       "plugins/adr-writer/references/execution-boundary.md",
       "plugins/ontology-writer/references/execution-boundary.md",
     ],
-    scenarioPrefixes: ["impl-review-stays-local-", "sync-stays-local-"],
+    scenarioPrefixes: ["impl-review-stays-local-"],
   },
   {
     pathPrefixes: [
       "plugins/adr-writer/references/outcome-evaluation.md",
       "plugins/alps-writer/references/outcome-evaluation.md",
     ],
-    scenarioPrefixes: ["alps-evaluates-outcomes-", "impl-distinguishes-"],
+    scenarioPrefixes: [
+      "alps-evaluates-outcomes-",
+      "alps-feature-demo-outcome-",
+      "alps-metrics-section8-",
+      "impl-distinguishes-",
+    ],
   },
   {
     pathPrefixes: [
@@ -84,8 +94,6 @@ export const IMPACT_RULES = [
       "author-checks-business-",
       "impl-reports-business-",
       "author-records-confirmed-unlinked",
-      "author-scenarios-queries-process",
-      "author-starts-business-query",
       "author-sync-starts-business-query",
     ],
   },
@@ -168,10 +176,6 @@ export const IMPACT_RULES = [
     scenarioPrefixes: ["feature-handoff-"],
   },
   {
-    pathPrefixes: ["plugins/adr-writer/evals/regression/judge.mjs"],
-    scenarioPrefixes: ["alps-approval-digest-"],
-  },
-  {
     pathPrefixes: ["plugins/alps-writer/skills/lite-alps-init/"],
     scenarioPrefixes: [
       "lite-alps-",
@@ -188,7 +192,11 @@ export const IMPACT_RULES = [
   {
     // The committed bundle supplies these scenarios' MCP guidance or resume text.
     pathPrefixes: ["plugins/alps-writer/dist/"],
-    scenarioPrefixes: ["alps-research-inflight-mcp-", "lite-alps-resume-"],
+    scenarioPrefixes: [
+      "alps-research-inflight-mcp-",
+      "alps-feature-rubric-mcp-",
+      "lite-alps-resume-",
+    ],
   },
   {
     pathPrefixes: ["plugins/alps-writer/src/tools/documents/"],
@@ -208,7 +216,8 @@ export const IMPACT_RULES = [
       "hook-business-",
       "hook-value-",
       "ontology-session-",
-      "author-starts-business-query",
+      "author-checks-business-rule-proposal",
+      "author-checks-business-value-proposal",
       "author-sync-starts-business-query",
       "ontology-query-chooses-entry-point",
     ],

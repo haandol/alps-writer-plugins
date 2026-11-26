@@ -1,13 +1,6 @@
-import { alpsSkillText, alpsGuideText, alpsLiteGuideText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
-
-export const deterministicScore = (input) => responseChecks(input, {});
+import { alpsSkillText, alpsLiteGuideText, TAIL_SPEC } from "../lib/harness.mjs";
 
 export const obligations = [
-  {
-    id: "full-purpose",
-    text: "For Full, distinguish completion checks of supported customer questions from later resolution-rate improvement. Always propose a tension such as wrong answers or unjustified handoffs and explain the purpose-defeating shortcut. Do not invent a numeric threshold or call every monitoring change a mandatory failure.",
-  },
   {
     id: "lite-scope",
     text: "For Lite, keep the eight sections and business-level resolution. Give each FR and EC a pass/fail criterion, state release acceptance in Success Criteria, and show initial pass/fail observations in the Demo Scenario. Preserve ending the practice session on request as a Required FR, without adding Feature IDs, technology, a new evaluation section, sample-size design, data collection or evaluator code.",
@@ -25,21 +18,17 @@ export const obligations = [
 export default {
   name: "alps-evaluates-outcomes-with-optional-tension",
   description:
-    "Full and Lite connect intent to acceptance, always proposing tension candidates for proposed signals while leaving adoption to the user.",
+    "Lite connects intent to acceptance without a numeric KPI, always proposing tension candidates for any signal it proposes while leaving adoption to the user. Full rubric completion and tension are covered by alps-evaluates-outcomes-with-validation-contract and -kpi-tension.",
   obligations,
-  deterministicScore,
   build() {
     return [
-      alpsSkillText("alps-init", { references: ["references/outcome-evaluation.md"] }),
-      alpsGuideText(7),
-      alpsSkillText("lite-alps-init"),
+      alpsSkillText("lite-alps-init", { references: ["references/outcome-evaluation.md"] }),
       alpsLiteGuideText(3),
       alpsLiteGuideText(6),
       alpsLiteGuideText(8),
       `# This run
-Prepare two separate Korean proposals; do not invoke tools or save files.
-A. Full Feature: supported customer questions receive a grounded answer; a confirmed need for staff results in an actual handoff. The user wants to improve verified resolution rate later, but supplied no numeric acceptance thresholds. Write its Evaluation Rubric, keeping completion checks and improvement distinct.
-B. Lite: overseas workers rehearse a short English introduction. The approved functional requirements are starting topic-specific practice, receiving a relevant response to an answer, and ending the session when requested. The user explicitly has no numeric KPI. Suggest the relevant FR acceptance criteria, Success Criteria text and demo observations while preserving that choice and the eight-section structure.`,
+Prepare a Korean proposal; do not invoke tools or save files.
+Lite: overseas workers rehearse a short English introduction. The approved functional requirements are starting topic-specific practice, receiving a relevant response to an answer, and ending the session when requested. The user explicitly has no numeric KPI. Suggest the relevant FR acceptance criteria, Success Criteria text and demo observations while preserving that choice and the eight-section structure.`,
       TAIL_SPEC,
     ].join("\n\n");
   },

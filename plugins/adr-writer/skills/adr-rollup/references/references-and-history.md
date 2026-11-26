@@ -20,20 +20,26 @@ Do not ask again when the user already chose to keep them.
 Only for an explicit
 number-cleanup request, read
 `${CLAUDE_PLUGIN_ROOT}/skills/adr-rollup/references/renumbering.md` before preparing
-moves. Include every old → new path, external-link impact and affected independent
-ADR in the same approval; generic rollup approval or silence does not authorize
-renumbering. Check source/destination freshness before any approved move.
+moves. A request naming exact old → new paths approves only those paths; show
+their external-link impact and old → new table before moving. Without named
+paths, include every old → new path, external-link impact and affected
+independent ADR in the same approval. Generic rollup approval or silence does not
+authorize renumbering. Check source/destination freshness before any approved move.
 
 ### 8. Prepare mapping and cross-reference updates
 
 Align every reference in one pass against the **final numbers** after step 7. The ADR index lives in exactly one place, `.mapping.json` (the README carries no ADR list):
 
 - In `docs/adr/.mapping.json`, remove the deleted ADR records from that category's `adrs` array, update the `path` of records changed by the renumber to the new paths, and update the consolidated (survivor) ADR record's `summary` and `status` to match the current decision.
-- Change Related links in other ADRs that reference a deleted or renumbered ADR to the final numbers.
-- Identify affected citations in the original repository before repointing.
+- Change Related and body links in other ADRs that reference a deleted or renumbered ADR to the final numbers.
+- Identify affected citations in the original repository before repointing,
+  including links inside ADR bodies and same-folder relative links
+  (`./NNNN-title.md`) from independent ADRs and the decision log. List each file
+  holding such a citation as a file to overwrite in the step 10 plan.
   Keep absorption and renumbering separate: a removed chain member points to
   its survivor; a renamed independent decision points to its own new path.
-  The bundled locator is one available implementation:
+  The bundled locator is one available implementation; it resolves relative
+  links against the citing file, so same-folder citations are reported too:
 
   ```bash
   ${CLAUDE_PLUGIN_ROOT}/scripts/adr-invariants.sh --rollup-only \
@@ -45,10 +51,10 @@ Align every reference in one pass against the **final numbers** after step 7. Th
   relevant originals change. Its number-token matches are not final validation:
   after renumbering, old numbers may identify valid new occupants. Do not treat
   such matches as stale references. Final evidence must establish zero broken
-  Related or decision-log links and no remaining deleted/old full-filename
-  citations. `adr-structure-lint` supplies the link checks; suitable searches or
-  equivalent local checks can verify stale full filenames. Tool choice does not
-  change these required outcomes.
+  ADR body, Related or decision-log links and no remaining deleted/old
+  full-filename citations. `adr-structure-lint` supplies the link checks;
+  suitable searches or equivalent local checks can verify stale full filenames.
+  Tool choice does not change these required outcomes.
 
 ### 9. Prepare and verify the major history → decision-log.md
 

@@ -32,7 +32,6 @@ export default {
       `\n---\n\n# This run`,
       SOURCE,
       `Produce the normal user-facing approval digest in Korean.`,
-      `In the tail use EXPLICIT_EXCLUSION three times, UNRESOLVED_NOT_EXCLUDED once, and OPTIONAL_SECTION once.`,
       TAIL_SPEC,
     ].join("\n");
   },

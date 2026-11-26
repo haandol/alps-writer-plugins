@@ -14,6 +14,12 @@ export function summarize(runs) {
     errors: runs.filter((r) => r.verdict === "ERROR").length,
     notRun: runs.filter((r) => r.verdict === "NOT_RUN").length,
     successRate: scored.length ? passed / scored.length : null,
+    // Reused results are earlier evidence with identical fingerprints, not new trials.
+    reused: runs.filter((r) => r.origin === "reused").length,
+    rejudged: runs.filter((r) => r.origin === "rejudged").length,
+    executed: runs.filter(
+      (r) => r.verdict !== "NOT_RUN" && !["reused", "rejudged"].includes(r.origin),
+    ).length,
     elapsedMs: runs.reduce((n, r) => n + (r.elapsedMs ?? 0), 0),
     knownCostUSD: runs.flatMap((r) => r.calls ?? []).reduce((n, c) => n + (c.costUSD ?? 0), 0),
     unpricedCalls: runs.flatMap((r) => r.calls ?? []).filter((c) => c.costUSD == null).length,

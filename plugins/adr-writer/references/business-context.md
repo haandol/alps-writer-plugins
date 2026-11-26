@@ -40,7 +40,10 @@ bun <ontology-writer>/scripts/ontology.mjs query --category <key>
 
 When ontology-writer is not available, state in the approval summary or report
 that the business context was not checked, and continue; the missing query never
-blocks the work.
+blocks the work. The exemption covers only the query: a change to a meaning the
+model owns still needs Ontology Writer's model change approval first, so rows
+that rely on it stay pending with the awaited business change in business
+language, independent rows proceed, and the ADR stays `Proposed`.
 
 The query also takes `--process`, `--concept` or `--event`, and
 `--include-retired`. It returns only connected elements: the feature's steps and

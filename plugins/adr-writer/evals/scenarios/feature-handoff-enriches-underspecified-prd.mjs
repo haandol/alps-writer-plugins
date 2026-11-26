@@ -1,5 +1,3 @@
-import { responseChecks } from "../lib/response-checks.mjs";
-
 export const obligations = [
   {
     id: "questions",
@@ -10,15 +8,6 @@ export const obligations = [
     text: "Keep the replaceable email SDK/provider in implementation discretion without asking the user to choose it. Return ASK rather than final BLOCKED, do not draft an ADR or declare handoff complete, and preserve the admin-only invitation permission.",
   },
 ];
-
-/** Exact output/scope checks supplement the semantic obligations. */
-export function deterministicScore(input) {
-  return responseChecks(
-    input,
-    { IMPLEMENTATION_DISCRETION: [], NOT_TRANSFERRED: [] },
-    { noTools: false },
-  );
-}
 
 import { alpsSkillText, seedRuleDocs, seedMapping, TAIL_SPEC } from "../lib/harness.mjs";
 
@@ -46,15 +35,8 @@ export default {
       alpsSkillText("feature-to-adr"),
       `\n---\n\n# This run`,
       `Analyze the following ALPS Feature on the first non-interactive turn.`,
-      `Do not answer the gaps, write files, or draft an ADR. Show exactly what the`,
-      `skill would ask before final classification. Do not turn replaceable SDK or`,
-      `provider selection into a question.`,
+      `Do not write files. Show the skill's next user-facing response.`,
       BRIEF,
-      `Use ENRICHMENT_QUESTION for each required user answer,`,
-      `IMPLEMENTATION_DISCRETION for the replaceable email client choice, and`,
-      `NOT_TRANSFERRED to state that handoff has not completed. Use ADR_CANDIDATE`,
-      `only if the source is already complete enough to draft, which it is not.`,
-      `Put each tag exactly to the left of the | separator.`,
       TAIL_SPEC,
     ].join("\n");
   },

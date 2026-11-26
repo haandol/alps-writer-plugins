@@ -263,24 +263,109 @@ check_grep_rc() { # $1=rc  $2=check label
   fi
 }
 
+# Collapse "." and ".." segments of a slash path and drop a leading "./", so a
+# relative link target can be compared with a repository path. Sets NORMALIZED
+# instead of printing, so resolving each candidate link costs no subshell.
+# Empty-array expansions are guarded for bash 3.2 under `set -u`.
+normalize_path() { # $1=path → NORMALIZED
+  local part IFS=/
+  local -a parts=() out=()
+  read -r -a parts <<< "$1"
+  for part in ${parts[@]+"${parts[@]}"}; do
+    case "$part" in
+      ""|.) ;;
+      ..)
+        if [ "${#out[@]}" -gt 0 ] && [ "${out[${#out[@]}-1]}" != ".." ]; then
+          unset "out[${#out[@]}-1]"
+        else
+          out+=("..")
+        fi ;;
+      *) out+=("$part") ;;
+    esac
+  done
+  if [ "${#out[@]}" -eq 0 ]; then NORMALIZED=""; else NORMALIZED="${out[*]}"; fi
+}
+
+# Relative links resolve against the citing file, so a same-category citation
+# ("./0003-title.md" or "0003-title.md" written inside docs/adr/<cat>/, or
+# "../0003-title.md" from a feature sub-folder) carries no category prefix for
+# scan_citation's pattern to match. Find every link whose basename starts with
+# the id's number, resolve it against its file's directory, and keep the lines
+# whose target is that ADR. Only "<cat>/<NNNN>[-title][.md]" ids have a target
+# to resolve; other path fragments keep the plain token match alone.
+scan_relative_citation() { # $1=id token → stdout: file:line:content hits
+  local token="${1#./}" adr_root cat num slug
+  normalize_path "${ADR_DIR#"$PWD"/}"
+  adr_root="$NORMALIZED"
+  token="${token#"$adr_root"/}"
+  token="${token%.md}"
+  [[ "$token" =~ ^(.+)/([0-9]{4})(-[A-Za-z0-9-]*)?$ ]] || return 0
+  cat="${BASH_REMATCH[1]}"
+  num="${BASH_REMATCH[2]}"
+  slug="${BASH_REMATCH[3]}"
+  local hits rc
+  hits="$(scan_tree "(^|[^A-Za-z0-9_-])${num}(-[A-Za-z0-9-]*)?\.md")"; rc=$?
+  check_grep_rc "$rc" "rollup relative citation scan for '$1'"
+  [ -n "$hits" ] || return 0
+  normalize_path "${adr_root}/${cat}"
+  local want_dir="$NORMALIZED"
+  local link_re="(^|[^A-Za-z0-9_./-])([A-Za-z0-9_./-]*${num}(-[A-Za-z0-9-]*)?\.md)"
+  local line file rest dir target base
+  while IFS= read -r line; do
+    file="${line%%:*}"
+    file="${file#./}"
+    rest="${line#*:}"
+    rest="${rest#*:}"
+    case "$file" in
+      */*) dir="${file%/*}" ;;
+      *) dir="" ;;
+    esac
+    while [[ "$rest" =~ $link_re ]]; do
+      target="${BASH_REMATCH[2]}"
+      rest="${rest#*"${BASH_REMATCH[0]}"}"
+      case "$target" in
+        /*) normalize_path "$target" ;;
+        *) normalize_path "${dir:+$dir/}$target" ;;
+      esac
+      [ "${NORMALIZED%/*}" = "$want_dir" ] || continue
+      base="${NORMALIZED##*/}"
+      if [ -n "$slug" ]; then
+        [ "$base" = "${num}${slug}.md" ] || continue
+      else
+        case "$base" in
+          "${num}.md"|"${num}-"*) ;;
+          *) continue ;;
+        esac
+      fi
+      printf '%s\n' "$line"
+      break
+    done
+  done <<< "$hits"
+}
+
 # Scan the tree for stale citations of one ADR id, shared by rollup checks
 # (c)/(d) which differ only in their report message and repoint direction. The
-# "${pat}(-...)?\.md" branch catches the kebab-title link forms the plugin
-# emits (README index / Related links point at "<cat>/NNNN-kebab-title.md" via
-# "./"/"../" paths, so matching only "<cat>/NNNN.md" would miss every real
-# link). The "(^|[^A-Za-z0-9_-])" LEFT boundary keeps a removed/renumbered id
-# from false-positiving as the suffix of a longer surviving id (removing
-# "auth/0002" must not flag "oauth/0002-token.md"); the "ADR <id>" and
-# "<adr-dir>/<id>" branches are already left-anchored by their literal prefixes.
-# Goes through scan_tree (not an ad-hoc grep) so generated output can't leak
-# noise and the rollup scope always matches check (a)'s. Prints the matching
-# lines; caller frames the message and sets `found`.
+# "${pat}(-...)?\.md" branch catches category-qualified kebab-title links
+# ("../chat/0003-title.md", "docs/adr/chat/0003-title.md"), so matching only
+# "<cat>/NNNN.md" would miss every real link. Links written relative to the
+# citing file without the category ("./0003-title.md" inside the same category)
+# come from scan_relative_citation. The "(^|[^A-Za-z0-9_-])" LEFT boundary keeps
+# a removed/renumbered id from false-positiving as the suffix of a longer
+# surviving id (removing "auth/0002" must not flag "oauth/0002-token.md"); the
+# "ADR <id>" and "<adr-dir>/<id>" branches are already left-anchored by their
+# literal prefixes. Goes through scan_tree (not an ad-hoc grep) so generated
+# output can't leak noise and the rollup scope always matches check (a)'s.
+# Prints each matching line once; caller frames the message and sets `found`.
 scan_citation() { # $1=id token → stdout: file:line:content hits (may be empty)
   local pat
   pat="$(printf '%s' "$1" | sed 's/[].[\*^$/(){}+?|]/\\&/g')"
-  local hits rc
+  local hits rc relative
   hits="$(scan_tree "ADR ${pat}|${ADR_DIR}/${pat}|(^|[^A-Za-z0-9_-])${pat}(-[A-Za-z0-9-]*)?\.md")"; rc=$?
   check_grep_rc "$rc" "rollup citation scan for '$1'"
+  relative="$(scan_relative_citation "$1")" || exit "$?"
+  if [ -n "$relative" ]; then
+    hits="$(printf '%s\n%s\n' "$hits" "$relative" | awk 'NF && !seen[$0]++')"
+  fi
   printf '%s' "$hits"
 }
 

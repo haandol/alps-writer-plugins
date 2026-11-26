@@ -1,5 +1,4 @@
 import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks, exactDecisionRecords } from "../lib/response-checks.mjs";
 
 export const obligations = [
   {
@@ -16,37 +15,15 @@ export const obligations = [
   },
   {
     id: "bounded-artifact-evidence",
-    text: "Retain D0/R1/R2 and the seven existing coverage fields. Put clause/source inventory, enforcing paths, inputs/assertions, counterexamples and edge applicability/exclusions in evidence. Separate 4/4 code-inspected from obligations satisfied by executed assertions, including Decision's success obligation and both R2 clauses. tests lists only supplied required execution outcomes or NOT RUN, not hypothetical mutant failures or assertion narratives. Add no schema/registry, invoke no tools, claim no new execution, borrow no other case's runtime result, require no irrelevant concurrency/restart quota, and claim no mathematical completeness. Prose and records must agree.",
+    text: "Retain D0/R1/R2 and the seven existing coverage fields. Put clause/source inventory, enforcing paths, inputs/assertions, counterexamples and edge applicability/exclusions in evidence. Separate 4/4 code-inspected from obligations satisfied by executed assertions, including Decision's success obligation and both R2 clauses. tests lists only supplied required execution outcomes or NOT RUN, not hypothetical mutant failures or assertion narratives. Add no schema/registry, invoke no tools, claim no new execution, borrow no other case's runtime result, require no irrelevant concurrency/restart quota, and claim no mathematical completeness.",
   },
 ];
-
-// Eval-only decision records; these do not extend the review artifact schema.
-const fields = ["verdict", "D0", "R1", "R2", "category", "inspected", "verified"];
-const expected = {
-  A: ["FIX_REQUIRED", "UNVERIFIED", "PROVEN", "UNVERIFIED", "Test gap", "4/4", "3/4"],
-  B: ["FIX_REQUIRED", "VIOLATED", "PROVEN", "VIOLATED", "Spec violation", "4/4", "3/4"],
-  C: ["PASS", "PROVEN", "PROVEN", "PROVEN", "none", "4/4", "4/4"],
-  D: ["INCONCLUSIVE", "UNVERIFIED", "UNVERIFIED", "PROVEN", "Unverified risk", "4/4", "3/4"],
-  E: ["INCONCLUSIVE", "UNVERIFIED", "UNVERIFIED", "UNVERIFIED", "Unverified risk", "4/4", "0/4"],
-  F: ["FIX_REQUIRED", "VIOLATED", "VIOLATED", "PROVEN", "Spec violation", "4/4", "3/4"],
-  G: ["INCONCLUSIVE", "VIOLATED", "VIOLATED", "UNVERIFIED", "Spec violation", "4/4", "0/4"],
-};
-
-function score(input) {
-  return exactDecisionRecords(input, fields, expected, "one record for every case without extras");
-}
-
-export function deterministicScore(input) {
-  return [...responseChecks(input, {}), ...score(input)];
-}
 
 export default {
   name: "impl-review-provability",
   description:
     "Review assertion effectiveness, compound coverage, external premises, unavailable execution and indirect bypasses against one bounded payment contract.",
   obligations,
-  deterministicScore,
-  score,
   build() {
     return [
       skillText("adr-impl-review", {

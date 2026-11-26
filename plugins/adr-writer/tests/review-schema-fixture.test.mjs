@@ -672,6 +672,8 @@ test("direct delivery refuses invalid evidence and preserves selected rich inter
       () => standardArticle({ ...data, comprehensionCheck: { questions: [{}] } }, "findings.json"),
       /rich report composition/,
     );
+    // A full review without diagrams or decision controls uses the same direct route.
+    assert.doesNotThrow(() => standardArticle({ ...data, reviewMode: "full" }, "findings.json"));
     data.contractCoverage[1].status = "UNVERIFIED";
     write(dir, "findings.json", JSON.stringify(data));
     materialize(dir);

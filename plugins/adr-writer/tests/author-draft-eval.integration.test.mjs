@@ -5,7 +5,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { withTmp, PLUGIN_ROOT } from "./helpers.mjs";
 import scenario, {
-  deterministicScore,
+  mechanicalScore,
   obligations,
 } from "../evals/scenarios/author-keeps-values-and-lints.mjs";
 import { authoringEvidenceChecks } from "../evals/lib/authoring-evidence.mjs";
@@ -131,7 +131,7 @@ test("candidate copies are independent, ignored, checked in their own root, and 
       f.checks().every((c) => c.pass),
       JSON.stringify(f.checks()),
     );
-    assert.ok(deterministicScore({ dir: f.root, events: f.events() }).every((c) => c.pass));
+    assert.ok(mechanicalScore({ dir: f.root, events: f.events() }).every((c) => c.pass));
     const evidence = snapshot(f.root, scenario);
     assert.equal(evidence[`${scenario.draftRoot}/${adr}`], body);
     assert.ok(

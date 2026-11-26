@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { withTmp } from "./helpers.mjs";
-import scenario from "../evals/scenarios/import-asks-intent-before-writing.mjs";
+import scenario, {
+  mechanicalScore,
+} from "../evals/scenarios/import-asks-intent-before-writing.mjs";
 import { skillCatalog, routingCases } from "../evals/skills/catalog.mjs";
 import { scenarioNamesForChangedPaths } from "../evals/impact-map.mjs";
 
@@ -53,9 +55,9 @@ test("the import fixture requires source discovery and rejects preapproval index
       content: readFileSync(report, "utf8"),
     });
     const events = readFileSync(logPath, "utf8").trim().split("\n").map(JSON.parse);
-    assert.ok(scenario.score({ dir, events }).every((c) => c.pass));
-    assert.ok(scenario.score({ dir, events: [] }).some((c) => !c.pass));
+    assert.ok(mechanicalScore({ dir, events }).every((c) => c.pass));
+    assert.ok(mechanicalScore({ dir, events: [] }).some((c) => !c.pass));
     mkdirSync(path.join(dir, "docs/adr"), { recursive: true });
     writeFileSync(path.join(dir, "docs/adr/.mapping.json"), "{}");
-    assert.ok(scenario.score({ dir, events }).some((c) => !c.pass));
+    assert.ok(mechanicalScore({ dir, events }).some((c) => !c.pass));
   }));

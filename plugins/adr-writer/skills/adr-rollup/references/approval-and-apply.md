@@ -5,24 +5,30 @@ when that workflow selects it.
 
 ### 10. User confirmation (always, before any destructive change)
 
-Prepare the concrete summary below and combine its required approvals with the
-remaining intent/conflict questions under `decision-questions.md`. Reuse explicit
-approval already covering these exact contracts and paths; otherwise confirm
-before overwriting or deleting any file. Apply only the approved categories and
-paths, preserving unanswered decisions and concurrent edits. A general rollup
-request alone does not approve unshown destructive paths.
+Prepare the concrete plan below before any file changes and combine its
+required approvals with the remaining intent/conflict questions under
+`decision-questions.md`. List every file the changeset would overwrite, delete,
+move or repoint; a file missing from the plan is outside the approval. Reuse
+explicit approval already covering these exact contracts and paths; otherwise
+confirm before overwriting or deleting any file. Apply only the approved
+categories and paths, preserving unanswered decisions and concurrent edits. A
+general rollup request alone does not approve unshown destructive paths.
 
 ```
-## ADR Roll-up results
+## ADR Roll-up plan — nothing has been changed yet
 
 ### <category>
 
-- Consolidated ADR: NNNN-<name>.md (← merged the <same logical decision> chain: 0001, 0002, 0003)
+- Survivor: NNNN-<name>.md (← absorbs the <same logical decision> chain: 0001, 0002, 0003)
 - Core decision: <1-2 sentences, based on the adopted contract and its sources>
 - Code alignment: <contracts checked, drift held for resolution, and implementation details removed>
 - Removed content: <replaced or retired contracts with evidence, and residual ownership checks>
-- Reflected into decision-log: <how many major transitions were harvested, with a summary — e.g. 1 adopted-alternative replacement, 1 architecture change> (omit if nothing was harvested)
-- Number cleanup: <renumbered files, old→new — e.g. 0004→0002, 0005→0003> (omit if nothing changed)
+- Overwrite: <every file to rewrite — the survivor, docs/adr/.mapping.json, the category decision-log.md, and each in-category file whose citation is repointed>
+- Delete: <every absorbed ADR file to remove> (omit if nothing is deleted)
+- Move old → new: <each renamed path — e.g. 0004→0002, 0005→0003> (omit when numbers are kept)
+- Repoint (external-to-category): <each file outside the category whose links change, with its old → new target> (omit if none)
+- External link impact: <old paths that stop resolving outside the repository> (omit when no path moves)
+- Decision-log entries: <how many major transitions will be harvested, with a summary — e.g. 1 adopted-alternative replacement, 1 architecture change> (omit if nothing is harvested)
 
 ### ADRs in the same category left unconsolidated
 
@@ -33,7 +39,7 @@ request alone does not approve unshown destructive paths.
 
 - [Code re-alignment needed] <category> — the consolidated ADR's <decision> diverges from the code. Needs a user ruling: "an intended decision change (update the ADR first)" or "a code violation (correct the code)". (Omit this section if there are none)
 
-### Next step (consolidated ADRs left as Proposed)
+### Next step (consolidated ADRs that stay Proposed)
 
 - Part of the consolidated ADR is not in the code yet or has no verified completion review, so it stays `Proposed` → continue with `/adr-impl <category>` and it will switch to `Accepted` automatically once the tests and final implementation review pass. (Omit this section if every included decision preserves an existing Accepted state)
 
@@ -41,6 +47,9 @@ request alone does not approve unshown destructive paths.
 
 - billing, notifications, ...
 ```
+
+After applying, report against the same lists: what was applied, what failed and
+its actual partial state, and what was held or still awaits approval.
 
 Immediately before applying the approved changeset, compare the source contents
 and destinations against the preparation baseline. Include every file to be

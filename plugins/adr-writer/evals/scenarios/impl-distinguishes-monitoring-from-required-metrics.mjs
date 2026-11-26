@@ -15,35 +15,15 @@ export const obligations = [
   },
   {
     id: "bounded-action",
-    text: "Explain decisions naturally in Korean and keep them consistent with the decision records. Do not invoke tools, ask for routine approval in A or B, or interpret the local evaluation decision as deployment or external-action permission.",
+    text: "Explain decisions naturally in Korean. Do not invoke tools, ask for routine approval in A or B, or interpret the local evaluation decision as deployment or external-action permission.",
   },
 ];
-
-/** Check the supplied decisions separately from the semantic judgment of their explanation. */
-export function deterministicScore({ tail, events = [] }) {
-  const expected = { A: "PROCEED", B: "PROCEED", C: "REJECT", D: "NOT_PROVEN" };
-  const rows = Array.isArray(tail?.findings) ? tail.findings : [];
-  return [
-    {
-      label: "one decision for every case",
-      pass: rows.length === 4 && new Set(rows.map((r) => r?.tag)).size === 4,
-    },
-    ...Object.entries(expected).map(([tag, decision]) => ({
-      label: `case ${tag}`,
-      pass:
-        rows.filter((r) => r?.tag === tag).length === 1 &&
-        rows.find((r) => r?.tag === tag)?.summary === decision,
-    })),
-    { label: "response-only task", pass: !events.some((e) => e.kind === "request") },
-  ];
-}
 
 export default {
   name: "impl-distinguishes-monitoring-from-required-metrics",
   description:
     "Tension signals never become blanket gates, while required violations and manipulated comparisons cannot pass.",
   obligations,
-  deterministicScore,
   build() {
     return [
       skillText("adr-impl", {

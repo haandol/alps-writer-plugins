@@ -1,5 +1,3 @@
-import { responseChecks } from "../lib/response-checks.mjs";
-
 export const obligations = [
   {
     id: "outcome",
@@ -7,19 +5,9 @@ export const obligations = [
   },
   {
     id: "sequence",
-    text: "Do not ask the user for a solution, screen, technology, requirement list or demo flow at this stage. Mentioning that requirements will be proposed later is not prematurely asking for them. The visible response and required tail agree.",
+    text: "Do not ask the user for a solution, screen, technology, requirement list or demo flow at this stage. Mentioning that requirements will be proposed later is not prematurely asking for them.",
   },
 ];
-
-/** Keep the response-only scope and requested records exact; judge meaning with GEval. */
-export function deterministicScore(input) {
-  return responseChecks(input, {
-    DESIRED_OUTCOME_QUESTION: [],
-    BEFORE_REQUIREMENTS: [],
-    FOCUSED_QUESTION: [],
-    WAIT_FOR_ANSWER: [],
-  });
-}
 
 import {
   alpsLiteGuideText,
@@ -52,8 +40,7 @@ export default {
       alpsLiteGuideText(1),
       `\n---\n\n# This run`,
       SOURCE,
-      `Respond naturally in Korean with one focused question.`,
-      `In the tail use DESIRED_OUTCOME_QUESTION, BEFORE_REQUIREMENTS, FOCUSED_QUESTION, and WAIT_FOR_ANSWER once each.`,
+      `Respond naturally in Korean.`,
       TAIL_SPEC,
     ].join("\n");
   },

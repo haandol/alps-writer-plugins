@@ -44,6 +44,8 @@ export function paymentChangeScenario(name, kind, { authoring = false } = {}) {
     description: change.description,
     businessContext: true,
     directiveOnly: !authoring,
+    // The authoring path is a heavy agentic run that exceeds the default 300 s.
+    ...(authoring ? { agentTimeoutMs: 600_000 } : {}),
     artifactPaths: [proposal],
     obligations: [{ id: "approval-proposal", text: change.obligation }],
     build(dir) {
@@ -60,7 +62,10 @@ export function paymentChangeScenario(name, kind, { authoring = false } = {}) {
       // The proposal is the only authorized write. Its disposable report directory is already ignored.
       write(dir, ".adr-review/.gitignore", "*\n");
       const instructions = authoring
-        ? skillText("adr-new", { references: ["references/business-context.md"] })
+        ? [
+            skillText("adr-new", { references: ["references/business-context.md"] }),
+            ontologyDirective(dir),
+          ].join("\n")
         : [hookContext(dir, mapping), ontologyDirective(dir)].join("\n");
       commitFixture(dir);
       return [

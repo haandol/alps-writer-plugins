@@ -38,16 +38,18 @@ ${options.related ?? "- 없음"}
 `;
 }
 
+const TEST_HEADER =
+  'import test from "node:test";\nimport assert from "node:assert/strict";\n' +
+  'import * as policy from "../src/policy.mjs";\n';
+const MAPPING = "docs/adr/.mapping.json";
+
 function repo(records, code, tests, extra = {}) {
   const categories = {};
   const files = {
     "package.json": '{"private":true,"type":"module"}\n',
     "README.md": "# Local practice application\n\n로컬 검증: node --test test/policy.test.mjs\n",
     "src/policy.mjs": code,
-    "test/policy.test.mjs":
-      'import test from "node:test";\nimport assert from "node:assert/strict";\n' +
-      'import * as policy from "../src/policy.mjs";\n' +
-      tests,
+    "test/policy.test.mjs": TEST_HEADER + tests,
     ...extra,
   };
   for (const record of records) {
@@ -61,8 +63,18 @@ function repo(records, code, tests, extra = {}) {
       summary: record.summary,
     });
   }
-  files["docs/adr/.mapping.json"] = JSON.stringify({ categories }, null, 2) + "\n";
+  files[MAPPING] = JSON.stringify({ categories }, null, 2) + "\n";
   return files;
+}
+
+/** The files another task writes when it adds one indexed ADR: the body and the updated index. */
+function indexedAdr(files, file, body, summary) {
+  const mapping = JSON.parse(files[MAPPING]);
+  const key = file.slice("docs/adr/".length).split("/").slice(0, -1).join("/");
+  const entry = (mapping.categories[key] ??= { feature: key, adrs: [], dependsOn: [] });
+  entry.adrs.push({ path: file, status: body.match(/## Status\s+([^\n]+)/)[1], summary });
+  entry.adrs.sort((a, b) => a.path.localeCompare(b.path));
+  return { [file]: body, [MAPPING]: JSON.stringify(mapping, null, 2) + "\n" };
 }
 
 const chatContract = `텍스트 프리챗은 실제 학습자 발화 최대 5턴, 음성은 최대 6턴이다.
@@ -452,4 +464,141 @@ test("repository infra agrees with the locally executable retention rules", asyn
         }) + "\n",
     },
   );
+}
+
+// ── Rollup safety: variants of the chat and price chains ──────────────────
+
+/** The chat chain whose independent memory decision cites the absorbed revision from its own folder. */
+export function chatChainCitedByMemory() {
+  const files = chatChain();
+  const file = "docs/adr/chat/0004-private-learning-memory.md";
+  const citation = "[세션 길이 결정](./0003-session-length-revision.md)";
+  files[file] = files[file]
+    .replace(
+      "저장 사실을 응답에 노출하지 않는다.",
+      `저장 사실을 응답에 노출하지 않는다. 세션 길이와 종료는 ${citation}이 소유하며 메모리 사용은 세션 길이를 바꾸지 않는다.`,
+    )
+    .replace("## Related\n\n- 없음", `## Related\n\n- ${citation}`);
+  return files;
+}
+
+/** The chat chain whose originals group their contracts, including a relied-on boundary and observable evidence. */
+export function chatChainWithContract() {
+  const files = chatChain();
+  files["docs/adr/chat/0001-session-length.md"] = adr(
+    "상황 연습의 세션 길이",
+    `텍스트 상황 연습은 실제 학습자 8턴의 유한 세션이다. 완료 시 종료한다.
+
+### Requirement contract
+
+**Required guarantees**
+
+- 텍스트 세션은 실제 학습자 발화 8턴에서 끝난다.
+- 텍스트 시작 시 저장하는 숨은 시드는 학습자 턴으로 세지 않는다.
+
+**Prohibitions**
+
+- 텍스트 세션은 한도에 이르기 전에 조기 종료하지 않는다.
+
+**Relied-on boundary**
+
+- 대화 저장소는 학습자 메시지와 상대역 응답을 한 쌍으로 확정해 돌려준다. 응답 생성이 실패해 확정되지 않은 쌍은 돌려주지 않으며, 이 세션은 확정된 쌍만 턴으로 센다.
+
+**Observable evidence**
+
+- 텍스트 세션에서 8번째 학습자 발화 뒤의 추가 발화는 거절되고 진행 표시는 8/8이다.
+- 응답 생성이 실패한 발화 뒤에는 진행 표시의 완료 턴 수가 늘지 않는다.`,
+    {
+      date: "2026-07-10",
+      context: "사용자가 대화를 마쳤다는 느낌을 갖도록 상황 연습에 끝을 둔다.",
+    },
+  );
+  files["docs/adr/chat/0003-session-length-revision.md"] = adr(
+    "상황 연습의 세션 길이 조정",
+    `이 결정은 0001의 세션 길이 행과 그 관찰 기준을 대체한다. 0001의 시드 제외, 조기 종료 금지, 대화 저장소 경계와 확정되지 않은 쌍에 대한 관찰 기준은 그대로 유지한다.
+
+${chatContract}
+
+### Requirement contract
+
+**Required guarantees**
+
+- 텍스트 세션은 실제 학습자 발화 5턴, 음성 세션은 6턴에서 끝난다.
+- 텍스트 저장 상한 6은 숨은 시드 1개와 학습자 5턴을 합친 수이며 음성에는 시드 보정이 없다.
+
+**Observable evidence**
+
+- 텍스트 세션에서 5번째 학습자 발화 뒤의 추가 발화는 거절되고 진행 표시는 5/5이다.
+- 음성 세션에서 6번째 학습자 발화 뒤의 추가 발화는 거절되고 진행 표시는 6/6이다.`,
+    {
+      number: "0003",
+      date: "2026-07-18",
+      context:
+        "8턴은 일회성 상황 연습의 끝을 멀게 느끼게 하므로 실제 텍스트 발화를 5턴으로 줄인다.",
+      related: "- [기존 세션 길이](./0001-session-length.md)",
+    },
+  );
+  return files;
+}
+
+/** The chat and price chains side by side, so one candidate can be held while the other applies. */
+export function chatAndPriceChains() {
+  const chat = chatChain();
+  const price = priceChain();
+  return {
+    ...price,
+    ...chat,
+    "src/policy.mjs": chat["src/policy.mjs"] + price["src/policy.mjs"],
+    "test/policy.test.mjs":
+      chat["test/policy.test.mjs"] + price["test/policy.test.mjs"].slice(TEST_HEADER.length),
+    [MAPPING]:
+      JSON.stringify(
+        {
+          categories: {
+            ...JSON.parse(chat[MAPPING]).categories,
+            ...JSON.parse(price[MAPPING]).categories,
+          },
+        },
+        null,
+        2,
+      ) + "\n",
+  };
+}
+
+/** An independent refund-window decision that another task files at token/0002. */
+export function refundWindowAdr(files) {
+  return indexedAdr(
+    files,
+    "docs/adr/token/0002-refund-request-window.md",
+    adr(
+      "결과 불만족 환불 기한",
+      "확정 실패가 아닌 결과 불만족 환불은 작업 완료 후 7일 안에만 요청할 수 있다. 기한이 지난 요청은 거절하고 지원 채널을 안내한다.",
+      { number: "0002", date: "2026-09-20" },
+    ),
+    "결과 불만족 환불은 작업 완료 후 7일 안에만 요청한다",
+  );
+}
+
+/** The price chain beside two Accepted compensation rules that disagree for the same free-entitlement failures. */
+export function compensationConflict() {
+  const files = priceChain();
+  return {
+    ...files,
+    ...indexedAdr(
+      files,
+      "docs/adr/token/0004-paid-failure-refund.md",
+      adr(
+        "유료 실패 환불",
+        `확정 실패한 작업은 유료 크레딧으로 과금한 경우에만 최초 실제 차감량을 환불한다.
+무료권으로 실행한 작업이 확정 실패해도 무료권은 복구하지 않는다. 무료권은 체험 한도이므로 실행 결과와 관계없이 소진된 것으로 본다.
+흡수된 중복 요청은 새 차감이 없으므로 보상하지 않는다.`,
+        {
+          number: "0004",
+          date: "2026-06-10",
+          context: "무료 체험의 반복 사용을 막고 무료권 한도를 단순하게 유지한다.",
+        },
+      ),
+      "확정 실패는 유료 크레딧만 환불하고 무료권은 복구하지 않는다",
+    ),
+  };
 }

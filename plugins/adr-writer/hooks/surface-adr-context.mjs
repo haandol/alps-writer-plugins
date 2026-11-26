@@ -76,7 +76,7 @@ function main() {
   // The line names only the kinds of meaning the model owns, never the model itself.
   if (hasModel(path.join(path.dirname(path.dirname(mappingFile)), "ontology")))
     directive.push(
-      "Business ontology present: before an ADR decision or contract changes, obtain model content only through Ontology Writer's query. Keep model files out of direct reads and text searches, including repository-wide searches. Changes to business flow, hand-offs, policies, responsibilities, cross-step rules, concepts or terms go through its model change approval before the ADR. If it is unavailable, state that the business context was not checked.",
+      "Business ontology present: before an ADR decision or contract changes, obtain model content only through Ontology Writer's query. Keep model files out of direct reads and text searches, including repository-wide searches. Changes to business flow, hand-offs, policies, responsibilities, cross-step rules, concepts or terms go through its model change approval before the ADR. If it is unavailable, state that the business context was not checked; that covers only the query, so rows relying on a changed model meaning stay pending.",
     );
 
   const out = {

@@ -283,6 +283,72 @@ test("check (c) --removed flags a kebab-title link to a removed ADR", () => {
   });
 });
 
+// A same-category citation is written relative to the citing file and carries no
+// category prefix, so a token-only match reported these as clean.
+test("check (c) resolves same-category relative citations in Related and the body", () => {
+  withTmp((dir) => {
+    seedCanonicalRepo(dir);
+    write(
+      dir,
+      "docs/adr/identity/login/0003-session-length.md",
+      "# 0003. 세션\n\n## Status\nAccepted (2026-07-02)\n\n## Decision\n5턴.\n",
+    );
+    write(
+      dir,
+      "docs/adr/identity/login/0004-memory.md",
+      "# 0004. 메모리\n\n## Status\nAccepted (2026-07-02)\n\n## Decision\n길이는 [세션](./0003-session-length.md)이 소유한다.\n\n## Related\n- [세션](0003-session-length.md)\n",
+    );
+    write(
+      dir,
+      "docs/adr/identity/0001-shared.md",
+      "# 0001. 공통\n\n## Status\nAccepted (2026-07-02)\n\n## Related\n- [세션](./login/0003-session-length.md)\n",
+    );
+    write(dir, "docs/adr/identity/login/decision-log.md", "- [현재](./0003-session-length.md)\n");
+    const { code, stdout } = runInvariants(dir, ["--removed", "identity/login/0003"]);
+    assert.equal(code, 1, stdout);
+    assert.match(stdout, /✗ \(c\)/);
+    for (const line of [
+      "docs/adr/identity/login/0004-memory.md:7:",
+      "docs/adr/identity/login/0004-memory.md:10:",
+      "docs/adr/identity/0001-shared.md:7:",
+      "docs/adr/identity/login/decision-log.md:1:",
+    ])
+      assert.ok(stdout.includes(line), `${line} missing from:\n${stdout}`);
+  });
+});
+
+test("check (c) resolves a parent-relative citation and ignores the same number elsewhere", () => {
+  withTmp((dir) => {
+    seedCanonicalRepo(dir);
+    write(
+      dir,
+      "docs/adr/identity/login/0002-sso.md",
+      "# 0002. SSO\n\n## Status\nProposed\n\n## Related\n- [공통](../0003-shared-session.md)\n- [다른 폴더](../../infra/0003-shared-session.md)\n- [긴 번호](./10003-shared-session.md)\n",
+    );
+    const removed = runInvariants(dir, ["--removed", "identity/0003"]);
+    assert.equal(removed.code, 1, removed.stdout);
+    assert.match(removed.stdout, /0002-sso\.md:7:/);
+    assert.doesNotMatch(removed.stdout, /0002-sso\.md:(8|9):/);
+    const unrelated = runInvariants(dir, ["--removed", "identity/login/0003"]);
+    assert.equal(unrelated.code, 0, unrelated.stdout);
+  });
+});
+
+test("check (d) resolves a same-category relative citation of a renumbered ADR", () => {
+  withTmp((dir) => {
+    seedCanonicalRepo(dir);
+    write(
+      dir,
+      "docs/adr/infra/0002-rollout.md",
+      "# 0002. 배포 순서\n\n## Status\nProposed\n\n## Decision\n[토폴로지](./0004-deploy-topology.md)를 따른다.\n",
+    );
+    const { code, stdout } = runInvariants(dir, ["--renumbered", "infra/0004:infra/0003"]);
+    assert.equal(code, 1, stdout);
+    assert.match(stdout, /✗ \(d\)/);
+    assert.match(stdout, /0002-rollout\.md:7:/);
+  });
+});
+
 test("check (d) --renumbered flags the old id and names the new number", () => {
   withTmp((dir) => {
     seedCanonicalRepo(dir);
@@ -507,5 +573,17 @@ test("unknown flag is a usage error (exit 2)", () => {
   withTmp((dir) => {
     seedCanonicalRepo(dir);
     assert.equal(runInvariants(dir, ["--bogus"]).code, 2);
+  });
+});
+
+test("the eval's final verifiers ignore a disposable review report as a real repository does", async () => {
+  const { ignoreReviewArtifacts } = await import("../evals/lib/execution-checks.mjs");
+  withTmp((dir) => {
+    seedCanonicalRepo(dir);
+    write(dir, ".adr-review/rollup/plan.md", "- 덮어쓴 파일: see ADR identity/login/0001\n");
+    assert.equal(runInvariants(dir, ["--code-only"]).code, 1, "an unignored report is scanned");
+    ignoreReviewArtifacts(dir);
+    const { code, stdout } = runInvariants(dir, ["--code-only"]);
+    assert.equal(code, 0, stdout);
   });
 });

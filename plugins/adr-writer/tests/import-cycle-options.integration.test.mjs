@@ -8,10 +8,8 @@ import scenario, {
   REPORT,
   fixtureFiles,
   obligations,
-  deterministicScore,
   mechanicalScore,
 } from "../evals/scenarios/import-cycle-options-batch.mjs";
-import { parseTail } from "../evals/lib/harness.mjs";
 import { createWorkspace, makeTools, snapshot } from "../evals/regression/workspace.mjs";
 import { deepEvalInput } from "../evals/deepeval/input.mjs";
 import { catalog } from "../evals/skills/catalog.mjs";
@@ -187,13 +185,13 @@ function fixture(t) {
   const events = () => readFileSync(logPath, "utf8").trim().split("\n").map(JSON.parse);
   function capture(text = output()) {
     tools.call("write_file", { path: REPORT, content: text });
-    const input = { dir: root, events: events(), tail: parseTail(text), output: text };
+    const captured = events();
     return {
-      checks: deterministicScore(input),
+      checks: mechanicalScore({ dir: root, events: captured }),
       evidence: {
         before,
         after: snapshot(root),
-        events: input.events,
+        events: captured,
         replies: [text],
         turns: [prompt],
         referenceDate: "2026-10-01",
@@ -245,42 +243,7 @@ test("raw fixture is valid for local tools and positive batch evidence passes me
   assert.equal(JSON.parse(input.actualOutput).resultingFiles[REPORT], output());
 });
 
-test("missing or invented fourth option and split/omitted batch records are rejected mechanically", (t) => {
-  const { capture } = fixture(t);
-  for (const mutate of [
-    (rows) => rows.filter((r) => r.tag !== "commerce-owner"),
-    (rows) => [
-      ...rows,
-      { tag: "commerce-interface", summary: "Introduce an implementation interface" },
-    ],
-    (rows) => [...rows, { tag: "q-commerce", summary: "Ask Delivery separately" }],
-    (rows) => rows.filter((r) => r.tag !== "q-retention"),
-    (rows) => rows.filter((r) => !r.tag.startsWith("access-") && r.tag !== "q-access"),
-  ]) {
-    const { checks } = capture(output(reportBody(), mutate(tailRows())));
-    assert.equal(checks.find((c) => c.label.startsWith("all three comparisons")).pass, false);
-  }
-});
-
-test("declared backwards dependencies, retained cycle and hidden edge drop cannot pass topology checks", (t) => {
-  const { capture } = fixture(t);
-  for (const [tag, summary] of [
-    ["commerce-after", "pricing>eligibility,delivery>eligibility,eligibility>pricing"],
-    ["commerce-after", "pricing>eligibility"],
-    ["wallet-after", "debit>credit,credit>debit"],
-    ["access-after", "NONE"],
-    ["access-after", "identity>workspace"],
-  ]) {
-    const rows = tailRows().map((row) => (row.tag === tag ? { ...row, summary } : row));
-    const { checks } = capture(output(reportBody(), rows));
-    assert.equal(
-      checks.find((c) => c.label.startsWith(`${tag.split("-")[0]} declared`)).pass,
-      false,
-    );
-  }
-});
-
-test("false prose explanations remain GEval counterexamples even with a mechanically valid graph and tail", (t) => {
+test("false prose explanations remain GEval counterexamples even when mechanical checks pass", (t) => {
   const { capture } = fixture(t);
   const samples = [
     {

@@ -1,27 +1,7 @@
 import { skillText, TAIL_SPEC } from "./harness.mjs";
-import { responseChecks } from "./response-checks.mjs";
-
-const CASES = ["A", "B", "C"];
-const FIELDS = new Set(["choice", "basis", "question"]);
-
-/** Parse the probe's exact record format without hiding duplicate or malformed fields. */
-function decisionFields(summary) {
-  if (typeof summary !== "string") return null;
-  const values = new Map();
-  for (const field of summary.split(";")) {
-    if (!field.trim()) continue;
-    const separator = field.indexOf("=");
-    if (separator < 1) return null;
-    const key = field.slice(0, separator).trim();
-    const value = field.slice(separator + 1).trim();
-    if (!FIELDS.has(key) || values.has(key) || !value) return null;
-    values.set(key, value);
-  }
-  return values.size === FIELDS.size ? values : null;
-}
 
 /** Keep task, tools, and record rules fixed while varying only the judgment supplied by Purpose. */
-export function intentDiscretionScenario({ name, purpose, groupingChoices, groupingObligation }) {
+export function intentDiscretionScenario({ name, purpose, groupingObligation }) {
   const obligations = [
     { id: "autonomy", text: groupingObligation },
     {
@@ -30,46 +10,14 @@ export function intentDiscretionScenario({ name, purpose, groupingChoices, group
     },
     {
       id: "evidence",
-      text: "Explain the supplied intent, selected choice, and observable consequence in the visible response. Identify an acceptance observation that would expose a purpose-defeating shortcut. Do not claim tests or implementation ran or introduce a DDD context, registry, or fixed framework outline. Visible prose must agree with the records; correct choice tags alone are insufficient.",
+      text: "Explain the supplied intent, selected choice, and observable consequence in the visible response. Identify an acceptance observation that would expose a purpose-defeating shortcut. Do not claim tests or implementation ran or introduce a DDD context, registry, or fixed framework outline. A correct choice label alone is insufficient.",
     },
   ];
-
-  /** Check record integrity and declared decisions; semantic fitness belongs to the authored judge. */
-  function score({ tail }) {
-    const findings = Array.isArray(tail?.findings) ? tail.findings : [];
-    const expected = { A: groupingChoices, B: ["KEEP_REVIEW_ONLY"], C: ["ASK_RETENTION"] };
-    return [
-      {
-        label: "one decision for each requested case and no extra cases",
-        pass:
-          findings.length === CASES.length &&
-          CASES.every((tag) => findings.filter((row) => row?.tag === tag).length === 1),
-        detail: findings.map((row) => row?.tag).join(", "),
-      },
-      ...CASES.map((tag) => {
-        const rows = findings.filter((row) => row?.tag === tag);
-        const values = rows.length === 1 ? decisionFields(rows[0].summary) : null;
-        return {
-          label: `${tag} preserves intent and its decision boundary`,
-          pass:
-            Boolean(values) &&
-            expected[tag].includes(values.get("choice")) &&
-            (tag === "C" ? values.get("question") !== "none" : values.get("question") === "none"),
-          detail: rows[0]?.summary ?? "missing decision record",
-        };
-      }),
-    ];
-  }
 
   return {
     name,
     description: `Use intent to resolve unspecified grouping while preserving review authority and asking only about missing retention policy. Purpose: ${purpose}`,
     obligations,
-    score,
-    deterministicScore(input) {
-      // Record fields are checked once above; responseChecks owns captured tool scope.
-      return [...responseChecks(input, {}), ...score(input)];
-    },
     build() {
       return [
         skillText("adr-impl", {

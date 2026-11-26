@@ -1,5 +1,13 @@
 #!/usr/bin/env bun
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -12,12 +20,14 @@ import {
   makeTools,
   sha,
   snapshot,
+  validateFaults,
 } from "./workspace.mjs";
 import { JUDGE_PROMPT, evidenceSources, judgeSchema, gradeEvidence } from "./judge.mjs";
 import { BEDROCK_DEFAULTS } from "../lib/judge-defaults.mjs";
 import { invokeClaude } from "./claude.mjs";
 import { saveReport } from "./report.mjs";
 import { executionChecks } from "../lib/execution-checks.mjs";
+import { writableCapture } from "../skills/mechanical-checks.mjs";
 import { verifierIdentity } from "../lib/verifier-identity.mjs";
 import { checkRequiredGuidance } from "../lib/required-guidance.mjs";
 import { toolServerConfig } from "./tool-config.mjs";
@@ -229,6 +239,60 @@ ${JSON.stringify(history, null, 2)}
 </conversation>`;
 }
 
+/**
+ * A case may change its fixture between turns, as another task would while the
+ * user's next turn is pending: `betweenTurns: [{ afterTurn, note, write?, remove? }]`
+ * writes or removes fixture documents after that turn. It may also fail one tool
+ * call: `faults` follows `validateFaults`. Both are case data, checked before a run.
+ */
+export function validateCaseHooks(item, toolNames) {
+  const turns = item.turns?.length ?? 0;
+  for (const change of item.betweenTurns ?? []) {
+    const files = [...Object.keys(change?.write ?? {}), ...(change?.remove ?? [])];
+    if (
+      !Number.isInteger(change?.afterTurn) ||
+      change.afterTurn < 1 ||
+      change.afterTurn >= turns ||
+      typeof change.note !== "string" ||
+      !change.note ||
+      !files.length ||
+      new Set(files).size !== files.length ||
+      Object.values(change.write ?? {}).some((content) => typeof content !== "string") ||
+      files.some((file) => !writableCapture({ type: "execution" }, file, { report: false }))
+    )
+      throw new Error(`${item.id}: invalid between-turn change ${JSON.stringify(change)}`);
+  }
+  const faults = item.faults ?? [];
+  validateFaults(faults, toolNames);
+  if (faults.some((fault) => fault.turn === undefined || fault.turn > turns))
+    throw new Error(`${item.id}: each injected fault names one of its turns`);
+}
+
+/**
+ * Apply the between-turn changes due after `turn`. The target is not told; the
+ * judge sees each one as an `external-change` event, outside the agent's requests.
+ */
+export function applyBetweenTurns(item, turn, root, logPath) {
+  for (const change of (item.betweenTurns ?? []).filter((c) => c.afterTurn === turn)) {
+    const changes = [];
+    for (const [file, content] of Object.entries(change.write ?? {})) {
+      const target = confined(root, file);
+      changes.push({ path: file, change: existsSync(target) ? "modified" : "added", content });
+      mkdirSync(path.dirname(target), { recursive: true });
+      writeFileSync(target, content);
+    }
+    for (const file of change.remove ?? []) {
+      unlinkSync(confined(root, file));
+      changes.push({ path: file, change: "deleted" });
+    }
+    const seq = existsSync(logPath)
+      ? readFileSync(logPath, "utf8").split("\n").filter(Boolean).length + 1
+      : 1;
+    const event = { seq, turn, kind: "external-change", note: change.note, changes };
+    appendFileSync(logPath, JSON.stringify(event) + "\n");
+  }
+}
+
 /** The same preflight runs on the workspace about to be prepared or used by the target. */
 export function initialFixtureChecks(tools) {
   return {
@@ -269,6 +333,9 @@ export async function runCase(item, variant, repeat, directory, options) {
       turns: item.turns,
       obligations: item.obligations,
       timeout: options.timeout,
+      ...(item.agentTimeoutMs ? { agentTimeoutMs: item.agentTimeoutMs } : {}),
+      ...(item.betweenTurns ? { betweenTurns: item.betweenTurns } : {}),
+      ...(item.faults ? { faults: item.faults } : {}),
       checker: options.checkerHash ?? variant.hash,
       tools: sha(readFileSync(path.join(HERE, "workspace.mjs"), "utf8")),
       judge: {
@@ -306,6 +373,10 @@ export async function runCase(item, variant, repeat, directory, options) {
       checkerRoot: options.checkerRoot ?? variant.root,
       artifactPaths: item.artifactPaths,
     });
+    validateCaseHooks(
+      item,
+      tools.definitions.map(({ name }) => name),
+    );
     if (variant.guidance !== false) checkRequiredGuidance(item, tools);
     // A test may share one cache across its runs (`options.fixtureChecks`): a byte-identical
     // fixture under the same checker gives the same initial checks, so only its first run
@@ -339,6 +410,7 @@ export async function runCase(item, variant, repeat, directory, options) {
             guidance: variant.guidance !== false,
             checkerRoot: options.checkerRoot ?? variant.root,
             artifactPaths: item.artifactPaths ?? [],
+            faults: (item.faults ?? []).filter((fault) => fault.turn === index + 1),
           }),
         ),
       );
@@ -353,7 +425,8 @@ export async function runCase(item, variant, repeat, directory, options) {
         cwd: root,
         config,
         model: options.model,
-        timeoutMs: options.timeout * 1000,
+        // A heavy multi-turn case may name a longer agent timeout than the run default.
+        timeoutMs: Math.max(options.timeout * 1000, item.agentTimeoutMs ?? 0),
       });
       result.replies.push(response.text);
       result.calls.push({ stage: "target", ...response, text: undefined, structured: undefined });
@@ -362,10 +435,15 @@ export async function runCase(item, variant, repeat, directory, options) {
       events = readEvents(logPath);
       history.push({
         role: "observed-tool-events",
-        content: events.filter((event) => event.turn === index + 1),
+        // The fault marker is evaluation metadata; the target saw only the tool error.
+        content: events
+          .filter((event) => event.turn === index + 1)
+          .map(({ injectedFault, ...event }) => event),
       });
       checkpoints.push({ turn: index + 1, files: snapshot(root) });
+      applyBetweenTurns(item, index + 1, root, logPath);
     }
+    events = readEvents(logPath);
     evidence = capture(checkpoints.at(-1)?.files, events);
     if (options["capture-only"]) {
       result.verdict = "UNSCORED";

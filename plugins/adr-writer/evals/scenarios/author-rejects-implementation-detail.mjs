@@ -53,7 +53,7 @@ export const obligations = [
 ];
 
 /** File/index absence is exact; natural-language routing is evaluated by GEval. */
-export function deterministicScore({ dir }) {
+export function mechanicalScore({ dir }) {
   const mapping = JSON.parse(read(dir, "docs/adr/.mapping.json") ?? '{"categories":{}}');
   const numbered = findNumberedAdrFiles(path.join(dir, "docs", "adr"));
   return [
@@ -89,5 +89,3 @@ function findNumberedAdrFiles(root) {
   }
   return out;
 }
-
-export const mechanicalScore = deterministicScore;

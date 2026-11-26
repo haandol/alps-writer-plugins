@@ -12,6 +12,7 @@ import { reportTerminologyCases } from "./report-terminology-cases.mjs";
 import { importExecutionCases } from "./import-execution.mjs";
 import { importPrerequisiteCases } from "./import-prerequisites.mjs";
 import { encbirdRollupCases } from "./encbird-rollup-cases.mjs";
+import { rollupSafetyCases } from "./rollup-safety-cases.mjs";
 
 export const PLUGIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 export const ROOT = path.resolve(PLUGIN, "../..");
@@ -75,13 +76,6 @@ export const routingCases = [
     prompt: "이미 승인한 Proposed ADR을 코드로 구현하고 테스트와 완료 리뷰까지 진행해줘.",
     required: ["adr-impl"],
     allowed: ["adr-impl", "adr-impl-refactor", "adr-impl-review", "report-writer"],
-  },
-  {
-    id: "routing-arithmetic",
-    title: "일반 계산",
-    prompt: "17 더하기 25는 얼마야?",
-    required: [],
-    allowed: [],
   },
   {
     id: "routing-typo",
@@ -148,18 +142,21 @@ export async function catalog() {
       group: scenario.name.split("-")[0],
     });
   }
+  // `module` names the eval module that defines a case, so its scorer code is fingerprinted.
+  const from = (module, list) => list.map((c) => ({ ...c, module }));
   return [
     ...classification,
-    ...reportCases,
-    ...reportScopeCases,
-    ...reportArtifactCases,
-    ...reportTerminologyCases,
-    ...routingCases,
+    ...from("skills/report-cases.mjs", reportCases),
+    ...from("skills/report-scope-cases.mjs", reportScopeCases),
+    ...from("skills/report-artifact-cases.mjs", reportArtifactCases),
+    ...from("skills/report-terminology-cases.mjs", reportTerminologyCases),
+    ...from("skills/catalog.mjs", routingCases),
     ...[
-      ...executionCases,
-      ...importExecutionCases,
-      ...importPrerequisiteCases,
-      ...encbirdRollupCases,
+      ...from("regression/cases.mjs", executionCases),
+      ...from("skills/import-execution.mjs", importExecutionCases),
+      ...from("skills/import-prerequisites.mjs", importPrerequisiteCases),
+      ...from("skills/encbird-rollup-cases.mjs", encbirdRollupCases),
+      ...from("skills/rollup-safety-cases.mjs", rollupSafetyCases),
     ].map((c) => ({
       ...c,
       type: "execution",

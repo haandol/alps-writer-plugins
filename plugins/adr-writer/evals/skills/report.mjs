@@ -16,7 +16,7 @@ const prose = (text) => String(text ?? "").replace(/\r?\n/g, " ");
 
 // Presentation-only hierarchy. It does not change prompts, expectations, or scores.
 const groups = [
-  ["제품 계약", "수용과 개선", "결과와 지표", ["alps-evaluates-outcomes-"]],
+  ["제품 계약", "수용과 개선", "결과와 지표", ["alps-evaluates-outcomes-", "alps-metrics-"]],
   ["제품 계약", "수용과 개선", "근거 검토", "안내", "완료 안내", ["alps-research-offers-once-"]],
   [
     "제품 계약",
@@ -34,9 +34,9 @@ const groups = [
   ["제품 계약", "수용과 개선", "근거 검토", "반영", ["alps-research-applies-"]],
   ["제품 계약", "수용과 개선", "근거 검토", "작성 중 제안", ["alps-research-inflight-"]],
   ["제품 계약", "Full ALPS", "계약과 승인", ["alps-approval-", "alps-batch-", "alps-reference-"]],
-  ["제품 계약", "Full ALPS", "기능 구성", ["alps-groups-", "alps-high-"]],
+  ["제품 계약", "Full ALPS", "기능 구성", ["alps-groups-", "alps-high-", "alps-feature-"]],
   ["제품 계약", "Full ALPS", "Lite 파생", ["alps-full-"]],
-  ["제품 계약", "Lite ALPS", "문제 정의", ["lite-alps-asks-", "lite-alps-follows-"]],
+  ["제품 계약", "Lite ALPS", "문제 정의", ["lite-alps-asks-"]],
   [
     "제품 계약",
     "Lite ALPS",
@@ -91,7 +91,6 @@ const groups = [
       [
         "author-checks-business-context",
         "author-checks-business-recorded-",
-        "author-checks-business-without-",
         "author-checks-business-scenarios",
       ],
     ],
@@ -125,10 +124,11 @@ const groups = [
         "author-checks-business-no-model",
       ],
     ],
+    // Without Ontology Writer the query cannot start; those cases sit beside its start.
     [
       "조회 착수와 기준 상태",
-      "조회 착수",
-      ["author-starts-business-", "author-sync-starts-", "author-scenarios-queries-"],
+      "조회 착수와 조회 불가",
+      ["author-sync-starts-", "author-checks-business-without-"],
     ],
     ["조회 착수와 기준 상태", "확인된 빈 기록", ["author-records-confirmed-"]],
     [
@@ -141,7 +141,6 @@ const groups = [
       "확정되지 않은 맥락",
       [
         "author-checks-business-unsettled-",
-        "author-checks-business-unsynced-",
         "author-checks-business-history-",
         "author-checks-business-open-",
       ],
@@ -160,7 +159,7 @@ const groups = [
     "결정 관리",
     "문서 검토",
     "완결성과 검토 범위",
-    ["review-real-", "review-document-", "review-provability", "review-flags-unexplained-"],
+    ["review-real-", "review-provability", "review-flags-unexplained-"],
   ],
   ["결정 관리", "문서 검토", "규칙 문서 갱신", ["review-refreshes-"]],
   [
@@ -169,7 +168,7 @@ const groups = [
     "의도와 계약",
     ["sync-batches-", "sync-resumes-", "sync-prefers-"],
   ],
-  ["결정 관리", "동기화와 통합", "표현과 검증", ["sync-rewrites-", "sync-stays-"]],
+  ["결정 관리", "동기화와 통합", "표현과 검증", ["sync-rewrites-"]],
   ["결정 관리", "동기화와 통합", "통합 범위", ["rollup-"]],
   ["결정 관리", "동기화와 통합", "세션 분류", "ADR 작성 대상", ["hook-admission-"]],
   ["결정 관리", "동기화와 통합", "세션 분류", "업무 규칙 변경", ["hook-business-"]],
@@ -191,45 +190,31 @@ const groups = [
       [
         "ontology-build-reviews-then-",
         "ontology-build-without-adrs-",
-        "ontology-build-checks-beyond-",
         "ontology-build-reuses-verified-",
       ],
     ],
+    // Each probes- case asks several independent build questions in one run.
     [
       "자료와 범위",
-      "범위와 출처",
+      "범위·용어·부분 결과와 문서 속 지시",
+      ["ontology-build-probes-scope-", "ontology-build-ignores-"],
+    ],
+    [
+      "후보 보고와 질문",
+      "입력 표시·필수 항목과 기존 모델",
+      ["ontology-build-probes-marks-", "ontology-build-diffs-current-"],
+    ],
+    ["후보 보고와 질문", "질문 해소·사건 지도와 근거 보존", ["ontology-build-probes-questions-"]],
+    [
+      "후보 보고와 질문",
+      "질문 세션의 답 반영과 질의응답",
       [
-        "ontology-build-anchors-to-",
-        "ontology-build-judges-input-",
-        "ontology-build-ignores-",
-        "ontology-build-keeps-sources-",
+        "ontology-build-discussion-",
+        "ontology-build-posts-follow-",
+        "ontology-build-reads-conversation-",
       ],
     ],
-    [
-      "자료와 범위",
-      "사건 지도와 부분 결과",
-      ["ontology-build-maps-events-", "ontology-build-reports-partial-"],
-    ],
-    [
-      "후보 보고와 질문",
-      "필수 항목과 기존 모델",
-      [
-        "ontology-build-fills-required-",
-        "ontology-build-diffs-current-",
-        "ontology-build-glossary-",
-      ],
-    ],
-    [
-      "후보 보고와 질문",
-      "질문 해소와 질의응답",
-      ["ontology-build-resolves-", "ontology-build-discussion-"],
-    ],
-    [
-      "후보 보고와 질문",
-      "질문 세션의 답 반영",
-      ["ontology-build-posts-follow-", "ontology-build-reads-conversation-"],
-    ],
-    ["저장 승인", "승인 요약", ["ontology-build-hands-off-"]],
+    ["저장 승인", "상태 근거와 승인 요약", ["ontology-build-probes-status-"]],
   ].map((group) => ["결정 관리", "업무 온톨로지", "모델 구축", ...group]),
   ["결정 관리", "업무 온톨로지", "변경 승인", ["ontology-edit-"]],
   ["결정 관리", "업무 온톨로지", "준비 상태와 실행 정렬", ["ontology-sync-", "ontology-align-"]],
@@ -260,7 +245,7 @@ const groups = [
     "업무 맥락과 상태 전이",
     ["impl-reports-business-auto-", "impl-reports-business-pending-"],
   ],
-  ["구현 보장", "규모와 전달", ["impl-high-", "impl-offers-", "impl-lands-"]],
+  ["구현 보장", "규모와 전달", ["impl-high-", "impl-lands-"]],
   ["구현 보장", "실행 수단", ["refactor-", "bedrock-"]],
   [
     "리뷰와 설명",
@@ -274,16 +259,8 @@ const groups = [
     "계약과 구현 사실의 구분",
     ["impl-review-enum-", "impl-review-surfaces-"],
   ],
-  [
-    "리뷰와 설명",
-    "역할과 완료",
-    ["impl-review-pre-", "impl-review-role-", "impl-review-selects-risk-"],
-  ],
-  [
-    "리뷰와 설명",
-    "이해도 확인",
-    ["impl-review-comprehension-", "impl-review-completion-", "impl-review-selects-useful-"],
-  ],
+  ["리뷰와 설명", "역할과 완료", ["impl-review-selects-risk-"]],
+  ["리뷰와 설명", "이해도 확인", ["impl-review-comprehension-", "impl-review-selects-useful-"]],
   ["리뷰와 설명", "보고서 품질", "인지부하", ["comprehension-"]],
   [
     "리뷰와 설명",
@@ -339,39 +316,17 @@ const groups = [
     "보고서 품질",
     "생성 범위",
     "생성 여부 판단",
-    [
-      "report-scope-simple-",
-      "report-scope-local-",
-      "report-scope-complex-",
-      "report-scope-ambiguous",
-    ],
+    ["report-scope-chat-by-", "report-scope-complex-", "report-scope-ambiguous"],
   ],
-  [
-    "리뷰와 설명",
-    "보고서 품질",
-    "생성 범위",
-    "텍스트 전달과 퀴즈",
-    ["report-scope-markdown-", "report-scope-plain-"],
-  ],
+  ["리뷰와 설명", "보고서 품질", "생성 범위", "텍스트 전달과 퀴즈", ["report-scope-text-"]],
   [
     "리뷰와 설명",
     "보고서 품질",
     "생성 범위",
     "명시적 전달 계약",
-    [
-      "report-scope-explicit-",
-      "report-scope-chat-",
-      "report-scope-known-",
-      "report-scope-required-",
-    ],
+    ["report-scope-chat-as-", "report-scope-requested-"],
   ],
-  [
-    "리뷰와 설명",
-    "보고서 품질",
-    "생성 범위",
-    "학습 지원과 전달 검증",
-    ["report-scope-quiz-", "report-scope-requested-", "report-scope-static-"],
-  ],
+  ["리뷰와 설명", "보고서 품질", "생성 범위", "학습 지원과 전달 검증", ["report-scope-finish-"]],
   [
     "리뷰와 설명",
     "보고서 품질",
@@ -408,6 +363,7 @@ function casePath(item) {
         item.id.startsWith("import-prerequisites-") ? "선행 보장과 분류" : "의도 확인과 채택",
       ];
     if (item.id.startsWith("rollup-encbird-current-")) return ["통합", "현재 EncBird 계약"];
+    if (item.reportGroup) return ["통합", "파괴적 변경 안전", item.reportGroup];
     return ["통합", /discover|reject/.test(item.id) ? "계획 발견" : "승인과 계약 보존"];
   }
   if (item.type === "routing") {
@@ -463,9 +419,51 @@ function insert(parent, parts, leaf) {
 /** Describe conditional rates with their denominators and keep skipped/error requests visible. */
 function summaryText(runs, { includeResources = true } = {}) {
   const s = summarize(runs);
-  const counts = `요청 ${s.requested}회 · 채점 완료 ${s.scored}회 · 충족 ${s.passed}회 · 미충족·미검증 ${s.notProven}회 · 오류 ${s.errors}회 · 미실행 ${s.notRun}회. 채점 완료 중 충족률 ${rate(s.successRate)}.`;
+  const origin =
+    s.reused || s.rejudged
+      ? ` 그중 새 실행 ${s.executed}회 · 저장 증거 재판정 ${s.rejudged}회 · 지문이 같은 기존 결과 재사용 ${s.reused}회.`
+      : "";
+  const counts = `요청 ${s.requested}회 · 채점 완료 ${s.scored}회 · 충족 ${s.passed}회 · 미충족·미검증 ${s.notProven}회 · 오류 ${s.errors}회 · 미실행 ${s.notRun}회.${origin} 채점 완료 중 충족률 ${rate(s.successRate)}.`;
   if (!includeResources) return counts;
   return `${counts} 알려진 비용 $${s.knownCostUSD.toFixed(4)}, 금액 미측정 호출 ${s.unpricedCalls}회. 누적 실행 시간 ${(s.elapsedMs / 1000).toFixed(1)}초.`;
+}
+
+/** Name reused, rejudged, executed and omitted cases separately, with the clients that produced them. */
+function originNames(report) {
+  const runs = report.runs;
+  const names = (test) => [...new Set(runs.filter(test).map((r) => r.caseId))];
+  const reused = names((r) => r.origin === "reused");
+  const rejudged = names((r) => r.origin === "rejudged");
+  const omitted = report.selection?.omitted ?? [];
+  const beyond = Object.entries(report.selection?.beyondImpactMap ?? {});
+  const lines = [];
+  if (reused.length || rejudged.length) {
+    const executed = names(
+      (r) => r.verdict !== "NOT_RUN" && !["reused", "rejudged"].includes(r.origin),
+    );
+    const producers = [
+      ...new Set(
+        runs
+          .filter((r) => r.origin === "reused")
+          .map(
+            (r) =>
+              `${(r.targetModels ?? []).join("+") || "모델 미상"} / ${r.reusedFrom?.clientVersion ?? r.clientVersion ?? "client 미상"}`,
+          ),
+      ),
+    ];
+    lines.push(
+      `증거 출처: 새로 실행한 사례 ${executed.length}개(${executed.join(", ") || "없음"}), 저장된 대상 응답을 현재 기준으로 재판정한 사례 ${rejudged.length}개(${rejudged.join(", ") || "없음"}), 지문·소비 파일·채점 기준이 같은 기존 결과를 재사용한 사례 ${reused.length}개(${reused.join(", ") || "없음"}). 재사용 결과는 새 실행이 아니며 원래 실행 시점의 판정입니다. 재사용 결과를 만든 모델·client: ${producers.join(", ")}.`,
+    );
+  }
+  if (beyond.length)
+    lines.push(
+      `영향표 밖에서 선택한 사례: ${beyond.map(([id, reason]) => `${id}(${reason})`).join(", ")}.`,
+    );
+  if (omitted.length)
+    lines.push(
+      `변경 선택에서 제외한 사례 ${omitted.length}개: 실린 입력과 저장된 지문이 바뀌지 않았거나 변경과 무관합니다. ${omitted.join(", ")}.`,
+    );
+  return lines;
 }
 
 /** Reject incomplete, duplicate, or malformed saved results rather than displaying a deceptively green report. */
@@ -503,10 +501,17 @@ export function validateResults(report) {
     if (seen.has(key)) throw new Error("Duplicate run");
     seen.add(key);
   }
+  // A fixed policy requests every repeat. The automatic policy requests at least
+  // one and adds repeats only after a failure, numbered in order up to runsPerCase.
   for (const c of report.cases)
-    for (let i = 1; i <= report.runsPerCase; i++)
-      for (const v of c.type === "execution" ? report.variants : ["candidate"])
+    for (const v of c.type === "execution" ? report.variants : ["candidate"]) {
+      const count =
+        report.repeatPolicy === "auto"
+          ? report.runs.filter((r) => r.caseId === c.id && r.variant === v).length
+          : report.runsPerCase;
+      for (let i = 1; i <= Math.max(count, 1); i++)
         if (!seen.has(`${c.id}/${v}/${i}`)) throw new Error("Missing requested run");
+    }
   return report;
 }
 
@@ -532,10 +537,11 @@ function saveCase(directory, item, runs) {
 /** Keep durable progress per completion. Compose the full HTML initially and at the final join. */
 export function startSkillsReport(directory, report, updateIndex) {
   validateResults(report);
-  const runs = Map.groupBy(report.runs, (r) => r.caseId);
+  // Group on every save: the automatic repeat policy adds runs after a failure.
+  const runs = () => Map.groupBy(report.runs, (r) => r.caseId);
   const live = report.mode !== "PREPARED";
   const saveIndex = () => {
-    updateIndex?.(runs);
+    updateIndex?.(runs());
     publish(path.join(directory, "results.json"), JSON.stringify(report, null, 2));
   };
   saveIndex();
@@ -543,7 +549,7 @@ export function startSkillsReport(directory, report, updateIndex) {
   return {
     completed(item) {
       if (!live) return;
-      saveCase(directory, item, runs.get(item.id));
+      saveCase(directory, item, runs().get(item.id));
       saveIndex();
     },
     finish() {
@@ -657,7 +663,8 @@ export function saveSkillsReport(
     scope: "원본 결과의 재현과 한계",
     preview: "반복 횟수와 모델·실행 조건을 확인해 비교 가능한 결과를 구분한다.",
     paragraphs: [
-      `평가 시각 ${report.generatedAt}. 선택 ${JSON.stringify(report.selection)}. 반복 ${report.runsPerCase}회. ${summaryText(report.runs)}`,
+      `평가 시각 ${report.generatedAt}. 선택 ${JSON.stringify(report.selection)}. ${report.repeatPolicy === "auto" ? `반복 자동: 기본 1회(새 사례·확정 확인 2회), 실패·오류 시 최대 ${report.autoMaxRuns ?? 3}회까지 새로 실행. 실패가 알려졌거나 채점이 바뀌면 행동 지문이 같은 저장 결과를 모두 표본에 남김` : `반복 ${report.runsPerCase}회`}. ${summaryText(report.runs)}`,
+      ...originNames(report),
       ...(report.sourceReport
         ? [
             `재판정: ${report.sourceReport}. 대상 응답은 재사용했으며 새로 생성하지 않았습니다. 이전 검사 정책 ${report.sourceScoringPolicy}, 현재 ${report.scoringPolicy}. 판정 정책 변경에 따른 점수 차이는 Skill 행동 개선율이 아닙니다.`,

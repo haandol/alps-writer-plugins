@@ -23,3 +23,26 @@ export async function runPool(items, jobs, action) {
   const failed = settled.find((result) => result.status === "rejected");
   if (failed) throw failed.reason;
 }
+
+/** Bound concurrent tasks that are created while others are already running. */
+export function limiter(jobs) {
+  let active = 0;
+  const waiting = [];
+  const next = () => {
+    if (active >= jobs || !waiting.length) return;
+    active++;
+    const { task, resolve, reject } = waiting.shift();
+    Promise.resolve()
+      .then(task)
+      .then(resolve, reject)
+      .finally(() => {
+        active--;
+        next();
+      });
+  };
+  return (task) =>
+    new Promise((resolve, reject) => {
+      waiting.push({ task, resolve, reject });
+      next();
+    });
+}

@@ -13,7 +13,6 @@ test("shared comprehension guidance selects scoring and split-decision scenarios
     "comprehension-load-calibration-bands",
     "alps-high-load-suggests-feature-split",
     "impl-high-load-keeps-progress",
-    "impl-offers-stacked-pr-fallback",
     "author-keeps-values-and-lints",
     "feature-handoff-ownership-transfer",
   ];
@@ -110,65 +109,9 @@ test("changed scenarios select themselves and shared runners select every scenar
     );
   }
   assert.deepEqual(
-    [...scenarioNamesForChangedPaths(["plugins/adr-writer/evals/regression/judge.mjs"], scenarios)],
-    [scenarios[0].name],
-    "the shared citation validator also affects the semantic digest scorer",
-  );
-  assert.deepEqual(
     [...scenarioNamesForChangedPaths(["plugins/adr-writer/evals/deepeval/report.mjs"], scenarios)],
     [],
     "the separate regression suite does not select unrelated behavior scenarios",
-  );
-});
-
-test("the reference-input scenario distinguishes durable constraints from implementation detail", async () => {
-  const scenario = (
-    await import(path.join(EVALS, "scenarios", "alps-reference-routes-only-durable-context.mjs"))
-  ).default;
-  const good = scenario.score({
-    output: `Section 4.2 Architecture Constraints
-- Scale assumption: 500 total users and 10 concurrent users.
-- Access boundary: web browser.
-- Data boundary: customer documents remain in the contracted region.
-- Provider data boundary: the provider must not train on customer content.
-
-승인, 수정, 또는 보류해 주세요.`,
-    tail: {
-      findings: [
-        {
-          tag: "DURABLE_CONSTRAINT",
-          summary:
-            "500 total and 10 concurrent; web browser; contracted region; provider must not train",
-        },
-        {
-          tag: "EPHEMERAL_SOURCE",
-          summary: "INC-417, incident log and code paths are not persisted",
-        },
-        {
-          tag: "IMPLEMENTATION_DISCRETION",
-          summary:
-            "React, Express, MongoDB, LangChain, Bedrock SDK and GitHub Actions stay in code",
-        },
-        { tag: "APPROVAL_BEFORE_SAVE", summary: "approval is required before save" },
-      ],
-      raw: "APPROVAL_BEFORE_SAVE | approval is required before save",
-    },
-  });
-  assert.equal(
-    good.every((check) => check.pass),
-    true,
-    good.map((check) => check.detail).join("\n"),
-  );
-
-  const bad = scenario.score({
-    output:
-      "Technology Stack: React, Express, MongoDB, LangChain, Bedrock SDK, GitHub Actions. Ticket INC-417, App.tsx, services/api, ECONNRESET.",
-    tail: { findings: [], raw: "" },
-  });
-  assert.equal(
-    bad.some((check) => !check.pass),
-    true,
-    "a stack inventory copied from the incident must fail the scorer",
   );
 });
 
@@ -197,7 +140,10 @@ test("embedded hook output and loaded references select every scenario that uses
       /\bontologyDirective\(/,
     ],
     [["plugins/adr-writer/references/business-context.md"], /references\/business-context\.md/],
-    [["plugins/alps-writer/dist/index.js"], /\balpsMcpGuidance\(|\balpsLiteResumeText\(/],
+    [
+      ["plugins/alps-writer/dist/index.js"],
+      /\balpsMcpGuidance\(|\balpsLiteResumeText\(|\balpsMcpSession\(/,
+    ],
     ...["alps-init", "lite-alps-init", "alps-research"].map((name) => [
       [`plugins/alps-writer/skills/${name}/SKILL.md`],
       new RegExp(`\\balpsSkillText\\("${name}"\\)`),

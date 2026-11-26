@@ -103,10 +103,6 @@ export default {
       }),
       `\n---\n\n# This run`,
       CHANGED_PRD,
-      `In the machine-readable tail use SEMANTIC_NOOP, REMOVAL_REVIEW, and`,
-      `NO_MUTATION as tags. Put each tag exactly to the left of the | separator.`,
-      `Use ADR_UPDATE or CONTRACT_DELETE only if you conclude that this comparison`,
-      `should immediately mutate or weaken the current ADR.`,
       TAIL_SPEC,
     ].join("\n");
   },

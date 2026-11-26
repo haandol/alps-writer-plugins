@@ -7,9 +7,14 @@ import { COVERAGE_STATUS_LABELS, USER_DECISION_CATEGORIES } from "./adr-impl-rev
 import { renderHtml } from "../skills/report-writer/scripts/render-report.mjs";
 import { hillNarrativeParagraphs, reviewCodeGroups } from "./adr-impl-review-prose.mjs";
 
-/** Compose a local standard review directly; unsupported rich interactions retain their existing route. */
+/**
+ * Compose a compact review directly, standard or full: a full review without
+ * selected diagrams or human-decision controls needs no audit HTML rewrite.
+ * Unsupported rich interactions retain their existing route.
+ */
 export function standardArticle(data, inputPath) {
-  if (data.reviewMode !== "standard") throw new Error("Direct article requires standard mode");
+  if (!["standard", "full"].includes(data.reviewMode))
+    throw new Error("Direct article requires a standard or full review");
   const hills = data.reviewHike.hills;
   const sections = new Set([
     "behavior",

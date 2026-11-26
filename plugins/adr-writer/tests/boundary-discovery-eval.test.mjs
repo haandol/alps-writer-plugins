@@ -4,7 +4,7 @@ import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { withTmp } from "./helpers.mjs";
 import scenario, {
-  score,
+  mechanicalScore as score,
   fixtureFiles,
 } from "../evals/scenarios/author-discovers-existing-boundaries.mjs";
 

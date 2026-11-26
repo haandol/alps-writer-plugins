@@ -40,8 +40,7 @@ export default {
       alpsLiteGuideText(2),
       `\n---\n\n# This run`,
       SOURCE,
-      `Respond naturally in Korean with the complete Section 2 proposal and approval choices.`,
-      `In the tail use AI_PROPOSES_BUSINESS_REQUIREMENTS, REQUIREMENT_IDS_AND_FLAGS, PASS_FAIL_CRITERIA, NO_TECHNOLOGY, and APPROVAL_BEFORE_SAVE once each.`,
+      `Respond naturally in Korean.`,
       TAIL_SPEC,
     ].join("\n");
   },

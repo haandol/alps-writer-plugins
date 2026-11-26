@@ -13,6 +13,12 @@ keeps mechanical file/action/schema checks. The compatibility runner below also 
 Live evals run the actual model and judge what its response and actions mean.
 Word/phrase presence and evaluation-only tail records do not decide behavioral success.
 
+For a regression check after a prompt change, use `bun run eval:llm --live
+--changed main`: it runs each affected probe once, adds repeats only after a
+failure, and reuses or rejudges results whose fingerprints are unchanged (see
+[Repeats and evidence reuse](./skills/README.md#repeats-and-evidence-reuse)).
+The runner below has no cache and always executes the requested `--runs`.
+
 They exist to reproduce reported defects. When someone says "the reviewer told me
 to delete my requirement value", you encode that situation once, run it ten
 times, and learn whether it happens 1/10 or 8/10 — a number a pass/fail verdict
@@ -136,6 +142,16 @@ and record which paths supplied matching lines, so model text returned by a
 repository-wide search is visible to the check. The semantic judge checks which change the proposal
 asks the user to approve. These cases end before the user approves or declines.
 
+Independent response-only probes that load the same shipped guidance may share
+one run as numbered questions, as `rollup-reconciles-conflicts` and the
+`ontology-build-probes-` scenarios do. `probeBatch` in `lib/ontology-fixtures.mjs`
+loads the skill and its references once, keeps each question's project in its own
+fixture folder (`q1/`, `q2/`, …) and prefixes each question's obligations with its
+id, so every question keeps its own verdicts. Keep both directions of one decision
+in separate runs. Do not batch cases that write files or whose obligations judge
+named commands, tool flow or action order, or questions whose material would
+answer another. A batch still fits the 100k-character prompt budget.
+
 ## Reproducing a reported bug
 
 1. **Copy the closest scenario** in `scenarios/` and rename it.
@@ -151,7 +167,9 @@ asks the user to approve. These cases end before the user approves or declines.
    structured execution states. Evaluation-only tags are optional diagnostics.
    A scenario that measures only the SessionStart directives, with no skill body,
    sets `directiveOnly: true`; the harness test then requires both shipped
-   directive markers instead of a skill-length prompt.
+   directive markers instead of a skill-length prompt. When its repository has no
+   Ontology Writer, it also sets `withoutOntologyWriter: true`, and the test
+   requires ADR Writer's directive without Ontology Writer's.
 
 5. `--runs 10` and read the rate.
 6. After a fix, run again — **and run the paired scenario.** Most of these come
@@ -191,12 +209,8 @@ asks the user to approve. These cases end before the user approves or declines.
    - `alps-approval-digest-preserves-contract` checks that concise raw-text
      approval omits implementation detail without dropping values, permissions,
      state rules, or the Demo checkpoint.
-     It uses a separate semantic judge call through the selected `--cmd` /
-     `ADR_EVAL_CMD`, in a fresh directory, to compare the visible digest and tail
-     against fixed obligations. Numbers or role names alone cannot establish a
-     preserved contract. Each obligation needs an evidence-backed verdict;
-     invalid judge output or command failure is an unscorable error. This adds
-     one semantic judge call per trial (plus a permitted citation repair when needed).
+     The judge compares the visible digest against fixed obligations. Numbers or
+     role names alone cannot establish a preserved contract.
    - `alps-reference-routes-only-durable-context` checks the source-lifetime
      boundary: an incident or ticket may supply product and architecture
      constraints, but its ID, logs, code paths, and recoverable technology
@@ -204,10 +218,6 @@ asks the user to approve. These cases end before the user approves or declines.
    - `alps-high-load-suggests-feature-split` checks that a Section 7 Feature at
      `8/10` or higher receives two or three user-behavior split candidates,
      retains the original-Feature option, and never becomes a blocking gate.
-   - `lite-alps-follows-full-conversation` checks that Lite uses the original
-     Full ALPS approval boundary for user-owned Section 1 context: when the
-     target user and problem are missing, ask one or at most two focused
-     questions and wait for the user's answer instead of inventing them.
    - `lite-alps-asks-business-impact-before-solution` checks the next Section 1
      step: once the target user and problem are known, ask for the Intent and
      Desired Outcome and why it matters without pulling a solution,
@@ -254,13 +264,8 @@ asks the user to approve. These cases end before the user approves or declines.
      no publishing gate. Both use the same seeded ADR and review guidance.
      GEval checks the requested narrative, contract coverage and visible choice
      evidence. The review artifact integration tests exercise the validator and HTML renderer.
-   - `impl-review-completion-does-not-auto-quiz` checks the normal completion
-     boundary: even when the HTML contains Q1, the main-session response returns
-     only verdict, tests, and report path unless the user explicitly requests
-     the interactive check.
-   - `impl-review-comprehension-retry` ↔
-     `impl-review-comprehension-pass` check the explicitly requested interactive
-     PR gate. A wrong answer keeps the code verdict at `PASS`, explains the
+   - `impl-review-comprehension-grading` checks both directions of the explicitly
+     requested interactive PR gate in one probe. A wrong answer keeps the code verdict at `PASS`, explains the
      missing causal concept with evidence, retries the same question, and leaves
      PR readiness false. Only the final correct answer may mark the PR
      comprehension-ready; neither path reopens ADR approval or Status.
@@ -297,14 +302,6 @@ asks the user to approve. These cases end before the user approves or declines.
      safety gates.
    - `refactor-orchestration-discretion` checks that lack of a subagent does not
      by itself force a safe tested local refactor into proposal-only.
-   - `review-document-only-boundary` checks that `/adr-review` remains
-     document-only and routes implementation reality to `/adr-sync`.
-   - `impl-review-pre-promotion-lifecycle` checks that completion review runs
-     while a changed target is still `Proposed` and promotion follows `PASS`.
-   - `rollup-preserves-decision-boundaries` checks that rollup leaves distinct
-     decisions alone and requires approval before destructive changes.
-   - `impl-review-role-boundaries` checks explainer and necessity responsibilities
-     without fixing their agent topology.
    - `comprehension-load-score-only` checks the `0 → 1` display clamp on a low-load
      Feature and a high-load ADR, keeps the five-axis calculation hidden, and
      rejects added gates or explanatory output.
@@ -343,8 +340,9 @@ export default {
 
 `build` gets a fresh directory and returns the task and shipping instructions.
 The runtime sends actual responses and evidence to the judge. `mechanicalScore`
-receives captured files/events for objective artifact checks. Historical
-`score`/`deterministicScore` helpers are not called for runtime meaning judgments.
+receives captured files/events for objective artifact checks. Scenarios export
+no lexical `score`/`deterministicScore` helpers; meaning is judged only from
+obligations.
 
 Helpers are in `lib/harness.mjs`: `skillText` / `agentText` (real instruction
 text; scenarios explicitly select the Markdown modules their task needs),
@@ -355,11 +353,6 @@ read files must list its phase modules in `references`. For a nested reference,
 list its parent first; each explicitly loaded module makes its direct references
 available, without loading sibling modules. Tool-enabled execution cases read
 the copied plugin themselves, so their traces can verify actual selective reading.
-`lib/semantic-score.mjs` reuses the obligation/citation validator for natural-language
-contracts. Its tests inject authored judge responses to verify transport and
-rejection behavior without model calls; this does not prove a live judge’s
-semantic accuracy. Controlled contract reversals and equivalent wording are
-available in `tests/fixtures/approval-digest-cases.mjs` for live checks.
 
 ## Two directions, and why both
 

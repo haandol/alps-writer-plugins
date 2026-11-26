@@ -105,6 +105,13 @@ MCP 서버가 아래 동작만 제공한다.
 스킬의 `Glob/Grep/Read`, `git mv`, 로컬 검증 명령은 이 도구들의 동등한 기능으로
 수행한다. 이 환경에 없는 필수 행동은 성공으로 추정하지 말고 미검증으로 남겨야 한다.
 
+사례는 두 가지 환경 변화를 데이터로 지정할 수 있다. `betweenTurns: [{ afterTurn, note, write, remove }]`는
+그 발화 뒤 다른 작업이 fixture의 `docs/` 문서를 바꾼 상태를 만든다. 실행 에이전트에게는 알리지 않고
+판정에는 `external-change` 사건으로 보인다. `faults: [{ id, tool, turn, match, times, error }]`는
+지정한 발화에서 인자가 일치하는 도구 호출을 처음 `times`번(기본 1번) 실행하지 않고 실패시킨다.
+결과 사건의 `injectedFault`는 판정용 표시이며 다음 발화에 재전달하지 않는다. 오래 걸리는 사례는
+`agentTimeoutMs`로 실행 에이전트의 호출 시간 상한을 `--timeout`보다 길게 지정할 수 있다.
+
 여러 발화는 앞선 사용자·응답·관찰 사건을 다음 호출에 재전달하는 **conversation replay**
 다. 실제 CLI의 resume·컨텍스트 압축·자동 메모리를 시험하는 것은 아니다. 기대 동작과
 판정기 입력은 실행 에이전트가 읽을 수 있는 fixture 밖에 둔다.

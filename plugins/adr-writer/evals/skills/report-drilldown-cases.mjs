@@ -5,10 +5,13 @@ Option A sends every retry to the provider as a new charge.
 Option B reuses a stored completion for the same request key. If the provider outcome is unknown after a timeout, B must reconcile that outcome before another charge.
 The request key connects the client's retry to the payment record; the record identifies whether completion is known. No benchmark, deployed-system check, or user study was performed.`;
 
+// Each `references` lists only the content modules its obligations use; report-cases.mjs adds the common ones.
 export const drilldownCases = [
   {
     id: "report-drilldown-comparison",
     title: "Comparison explains the decision before its mechanism and conditions",
+    // orientation forbids unsupported measurements; no figure or review obligation.
+    references: ["quantitative-claims"],
     source: retryFacts,
     task: "Write a Korean comparison report for a junior developer deciding how to handle retries. Use a useful hierarchy with your own headings, not a prescribed outline. The reader should understand the choice before reading detailed evidence and learn something new when opening a deeper explanation. Do not use tools or write files. The user excludes quizzes for this report.",
     semanticObligations: [
@@ -29,6 +32,8 @@ export const drilldownCases = [
   {
     id: "report-drilldown-incident",
     title: "Incident explanation separates outcome, cause and supporting sequence",
+    // progression: any diagram keeps the supplied participants and order; no invented metrics.
+    references: ["diagrams", "quantitative-claims"],
     source: `Supplied hypothetical incident:
 The provider completed a payment, but its response did not reach the caller. The caller timed out and retried. The retry was forwarded as a new charge because the local system had not recorded completion. A second charge occurred.
 Reconciliation means asking the provider for the original payment outcome before deciding whether to issue another charge. This is a proposed correction; no corrected implementation or recovery test was run.`,
@@ -51,6 +56,8 @@ Reconciliation means asking the provider for the original payment outcome before
   {
     id: "report-drilldown-opening-purpose",
     title: "Opening distinguishes a task recap from a concrete reading outcome",
+    // Review-only judgement of two openings; no figure, number or analogy obligation.
+    references: ["review-results"],
     source: retryFacts,
     task: `Review only these two report openings for the supplied retry comparison. Explain whether each conveys why the document is useful and what the junior developer should be able to do with it. Use the same supplied facts for both. Do not rewrite either opening, use tools or write files. The user excludes quizzes.
 Opening A:
@@ -75,6 +82,8 @@ A client can retry when the original payment has a recorded completion or when i
   {
     id: "report-drilldown-distinguishes-shallow",
     title: "Review distinguishes explanation depth from repeated nested headings",
+    // Review-only judgement of explanation depth; no figure, number or analogy obligation.
+    references: ["review-results"],
     source: retryFacts,
     task: `Review these two short explanations against the supplied facts. Explain whether each supports top-down understanding, using specific transitions. Do not rewrite them, use tools or write files. The user excludes quizzes.
 Excerpt A:

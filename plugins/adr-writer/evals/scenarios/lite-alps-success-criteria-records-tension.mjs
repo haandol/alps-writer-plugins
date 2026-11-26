@@ -5,7 +5,6 @@ import {
   seedRuleDocs,
   TAIL_SPEC,
 } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
 
 export const obligations = [
   {
@@ -21,16 +20,6 @@ export const obligations = [
     text: "Always propose a tension metric for KPI-1 with the abuse or opposite-failure scenario it exposes (for example merges that duplicate or drop items raising checkouts), offer adopting it as TM-1 or not, and show that the decision is recorded per KPI. A declined candidate never blocks completion. Present for approval without invoking tools or saving.",
   },
 ];
-
-export function deterministicScore(input) {
-  return responseChecks(input, {
-    RELEASE_ACCEPTANCE: [],
-    KPI_BUSINESS_CALCULATION: [],
-    TENSION_PROPOSED: [],
-    DECISION_RECORDED: [],
-    APPROVAL_BEFORE_SAVE: [],
-  });
-}
 
 const SOURCE = `
 현재 Lite ALPS Sections 1-5가 승인되어 저장되었다.
@@ -56,7 +45,6 @@ export default {
       alpsLiteGuideText(6),
       `\n---\n\n# This run`,
       SOURCE,
-      `In the tail use RELEASE_ACCEPTANCE, KPI_BUSINESS_CALCULATION, TENSION_PROPOSED, DECISION_RECORDED, and APPROVAL_BEFORE_SAVE once each.`,
       TAIL_SPEC,
     ].join("\n");
   },

@@ -92,7 +92,8 @@ test("one preflight on the actual fixture and the same mandatory action checks o
 
 test("an unfinished live evaluation checkpoints the completed case and can render the snapshot offline", async () => {
   const out = temp();
-  const items = routingCases.filter((c) => !c.required.length).slice(0, 2);
+  const typo = routingCases.find((c) => c.id === "routing-typo");
+  const items = [typo, { ...typo, id: "routing-typo-second" }];
   let calls = 0;
   const result = await main(
     ["--live", "--suite", "routing", "--jobs", "1", "--runs", "1", "--out", out],
@@ -220,7 +221,8 @@ test("every classification probe finds the guidance its sibling-plugin skills re
     errors.map((run) => `${run.caseId}: ${run.error ?? run.notRunReason ?? ""}`),
     [],
   );
-});
+  // Preparing the whole classification corpus builds every fixture.
+}, 30_000);
 
 test("unified CLI rejects ambiguous live intent and undefined comparison conditions", () => {
   for (const args of [
@@ -235,7 +237,18 @@ test("unified CLI rejects ambiguous live intent and undefined comparison conditi
     ["--report", "x", "--runs", "3"],
   ])
     assert.throws(() => parseSkillsArgs(args));
-  assert.equal(parseSkillsArgs([]).runs, 3);
+  // Regression evidence runs once by default; measurements keep a repeat count.
+  assert.equal(parseSkillsArgs([]).runs, "auto");
+  assert.equal(parseSkillsArgs(["--runs", "2"]).runs, 2);
+  // Routine regression targets a lower-cost model; a release check runs the default fresh.
+  assert.equal(parseSkillsArgs([]).model, "sonnet");
+  assert.equal(parseSkillsArgs(["--model", "opus"]).model, "opus");
+  assert.equal(parseSkillsArgs(["--release"]).model, undefined);
+  assert.equal(parseSkillsArgs(["--release"])["no-reuse"], true);
+  assert.equal(parseSkillsArgs(["--runs", "2"]).model, undefined);
+  assert.equal(parseSkillsArgs(["--suite", "execution", "--compare", "without-skill"]).runs, 3);
+  assert.throws(() => parseSkillsArgs(["--runs", "2", "--confirm"]), /--confirm/);
+  assert.throws(() => parseSkillsArgs(["--runs", "0"]), /auto or a positive integer/);
   assert.equal(parseSkillsArgs(["--compare", "both", "--baseline", "HEAD"]).compare, "both");
 });
 
@@ -362,7 +375,7 @@ test("a semantic PASS cannot compensate for a failed mandatory final structure c
 
 test("routing reads only shipped metadata before selection and preserves both error directions", async () => {
   let calls = 0;
-  const chosen = routingCases.filter((c) => ["routing-sync", "routing-arithmetic"].includes(c.id));
+  const chosen = routingCases.filter((c) => ["routing-sync", "routing-typo"].includes(c.id));
   const result = await main(["--live", "--suite", "routing", "--runs", "1", "--out", temp()], {
     cases: chosen,
     target: async ({ prompt, schema }) => {
@@ -373,7 +386,7 @@ test("routing reads only shipped metadata before selection and preserves both er
           metadata.every((item) => Object.keys(item).sort().join(",") === "description,name"),
         );
         assert.doesNotMatch(prompt, /# adr-sync/);
-        const selected = prompt.includes("17 더하기") ? ["adr-sync"] : ["adr-review"];
+        const selected = prompt.includes("'teh' 오타") ? ["adr-sync"] : ["adr-review"];
         return { text: "", structured: { selected }, models: ["target"], costUSD: null };
       }
       assert.match(prompt, /# adr-(sync|review)/);
@@ -398,8 +411,14 @@ test("shared instruction changes select the appropriate suites and metadata come
   const all = await catalog();
   const affected = selectImpacted(all, ["plugins/adr-writer/references/comprehension-load.md"]);
   assert.ok(affected.some((c) => c.id === "comprehension-load-score-only"));
-  assert.ok(affected.some((c) => c.type === "routing"));
+  // Routing carries only shipped skill names, descriptions and selected bodies.
+  assert.ok(!affected.some((c) => c.type === "routing"));
   assert.ok(affected.some((c) => c.type === "execution"));
+  assert.ok(
+    selectImpacted(all, ["plugins/adr-writer/skills/adr-new/SKILL.md"]).some(
+      (c) => c.type === "routing",
+    ),
+  );
   assert.equal(selectImpacted(all, ["README.md"]).length, 0);
   assert.equal(selectImpacted(all, ["shared/report-writer/SKILL.md"]).length, all.length);
   for (const e of skillCatalog()) assert.ok(readFileSync(e.file, "utf8").includes(e.description));
