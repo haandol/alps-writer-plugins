@@ -1,29 +1,8 @@
 import { skillText, alpsSkillText, TAIL_SPEC } from "./harness.mjs";
-import { responseChecks } from "./response-checks.mjs";
 
 /** Compare identical business boundaries across different repository/deployment shapes. */
 export function featureBoundaryScenario(product = false) {
   const mode = product === true ? "full" : product === false ? "adr" : product;
-  const expected = {
-    A: "TWO_CONTEXTS",
-    B: "TWO_CONTEXTS",
-    C: "HEADLESS",
-    D: "PARTIAL",
-    ...(mode === "handoff" ? { E: "REUSE", F: "PROPOSE", G: "ASK_BOUNDARY" } : {}),
-  };
-  const score = ({ tail }) =>
-    Object.entries(expected).map(([tag, value]) => {
-      const rows = tail?.findings ?? [];
-      return {
-        label: `${tag} preserves business boundaries and evidence scope`,
-        pass:
-          rows.length === Object.keys(expected).length &&
-          rows.filter((r) => r.tag === tag).length === 1 &&
-          (rows.find((r) => r.tag === tag)?.summary === value ||
-            rows.find((r) => r.tag === tag)?.summary?.startsWith(value + " — ")),
-        detail: rows.find((r) => r.tag === tag)?.summary ?? "missing",
-      };
-    });
   return {
     name: {
       adr: "author-groups-features-by-business-boundary",
@@ -39,9 +18,6 @@ export function featureBoundaryScenario(product = false) {
         text: "A is monorepo plus microservices, B is a single-repository monolith, but both retain ordering and billing contexts and vertical user stories. Do not group by frontend/backend/database or make each service a context. C has no invented UI. D is partial evidence, never a claim of complete multirepo inspection. Preserve the caller's document resolution and ask no already-resolved domain classification question. In handoff, E reuses confirmed ownership, F proposes a grounded missing grouping, and G retains the ownership conflict pending user judgment.",
       },
     ],
-    deterministicScore(input) {
-      return [...responseChecks(input, {}), ...score(input)];
-    },
     build() {
       const prompt =
         mode === "adr"
@@ -75,16 +51,14 @@ ${
 E: The approved source explicitly confirms Ordering owns order submission and
 Billing owns settlement. The existing ADR owners agree.
 F: The approved source gives the same business vocabulary, rule ownership and
-features as A but no context labels. Propose a grounded grouping.
+features as A but no context labels.
 G: The source calls order submission Billing-owned while an existing ADR says
-Ordering owns it. Adoption and chronology cannot be established. State what
-must remain unresolved before changing ownership.
+Ordering owns it. Adoption and chronology cannot be established.
 Emit exactly A..G.`
     : "Emit exactly A..D."
 }
 For Lite, keep any explanation within the current eight-section business-requirements
-model; never add lower C4 levels or technical-layer requirement groups. For handoff, preserve
-confirmed owners, propose missing boundaries and ask about material conflicts.
+model; never add lower C4 levels or technical-layer requirement groups.
 In EVAL-FINDINGS, summaries use TWO_CONTEXTS, THREE_CONTEXTS, LAYER_GROUPS,
 HEADLESS, ADD_SCREEN, PARTIAL, COMPLETE, REUSE, PROPOSE or ASK_BOUNDARY.`,
         TAIL_SPEC,

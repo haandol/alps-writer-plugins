@@ -50,9 +50,76 @@ bun run eval:llm --live --only lite-alps- --runs 3
 bun run eval:llm --live --only report- --runs 3
 bun run eval:llm --live --only report-scope- --runs 2
 
+# Regression check: affected cases once each, reusing unchanged evidence:
+bun run eval:llm --live --changed main
+
 # Preview branch + staged + unstaged + untracked impact without calling models:
 bun run eval:skills --list --changed main
+bun run eval:llm --prepare --changed main   # also prints the evidence plan
 ```
+
+### Repeats and evidence reuse
+
+`--runs auto` is the default without a comparison. A regression case runs once.
+A case whose ID is not a string literal at the comparison base (`--changed`,
+else the default branch) runs twice, as does every case with `--confirm`; use
+`--confirm` when the change alters a durable state or contract-ownership
+classification. A failed, erroneous or unscored case gains repeats up to three,
+and the report gives the rate. `--runs N` fixes N fresh repeats for defect
+reproduction and never reuses. Comparisons need `--runs N` and default to three.
+
+Live results are cached under `.codex/evals/cache` (override with
+`ADR_EVAL_CACHE`). Reuse depends on content, not on the environment that ran
+it. Before calling a model the runner builds each case and compares two
+fingerprints with the cache:
+
+- **Behaviour**: the full prompt, every fixture file and the tool permissions;
+  for execution also the turns, the condition and the skill body, and for
+  routing the answer schema. Each cached run also records the plugin files it
+  read or listed, the checkers or business-context query it ran, and for
+  routing the skill bodies it was shown. Editing a file none of a case's cached
+  runs consumed keeps them; editing one that any of them consumed makes the
+  whole case stale, so the remaining runs cannot stand in as a biased sample.
+- **Scoring**: the obligations (routing: required and allowed skills), the
+  case's own scoring code with its local helpers, and the shared checks
+  including the plugin lint they run.
+
+A rule document the fixture copied unchanged from the plugin templates counts
+only when a run reads, searches or checks it; editing a template then re-runs
+just those cases. A copy the scenario changed (an old stamp, a legacy layout)
+keeps its own content in the fingerprint.
+
+Routine `--runs auto` regression targets `--model sonnet` unless `--model` is
+given. `--release` runs the user's default model fresh, without reuse, for the
+release check. The judge reads the user task, replies, original and changed
+files and tool records; shipped guidance embedded in a prompt reaches it only as
+a path and hash (`judgeGuidance: true` on a case keeps the full text), so
+obligations must be judgeable without the guidance.
+
+Values that differ without changing content are neutralised: the fixture and
+repository paths, the rules-version stamp equal to the current release, and the
+execution reference date. The target model, Claude client, judge settings and
+harness code are recorded with every result but are not reuse keys; to compare
+models or environments, run fresh with `--runs N` or `--no-reuse`.
+
+When both fingerprints match, the earlier result is reused with no model call
+and cites its fingerprints, original model, client and cost (unknown stays
+unknown). When only scoring changed, every stored run with that behaviour is
+rejudged without calling the target (routing is rescored locally). Otherwise
+the case runs. Once a failure is known or the scoring changed, every cached run
+with matching behaviour stays in the sample, so a later pass or a new scoring
+cannot hide an earlier failure. The `Evidence plan` line, each trial line and
+the HTML conditions section name executed, rejudged and reused cases
+separately; reused trials report no new cost. `--no-reuse` executes again while
+still updating the cache. An unreadable or incomplete cache entry is a miss.
+Deleting the cache only causes re-execution.
+
+`--changed <base>` starts from the impact map, then adds each case whose prompt
+or fixture carries a changed hunk or names the changed file, each case that
+cannot be prepared, and each cached case whose fingerprints no longer match. The output and report list the cases
+added beyond the impact map and those omitted. A file a case only reads through
+its tools is known after its first cached run; before that the impact map
+decides. `--list --changed` applies the same selection without calling models.
 
 `--suite` accepts `all`, `classification`, `routing`, or `execution`.
 `--only` matches a case ID substring; `--changed` selects affected cases instead.
@@ -60,8 +127,8 @@ bun run eval:skills --list --changed main
 The default uses up to four workers within the host's available parallelism.
 Use `--jobs 1` for serial execution or a lower provider quota. Each repeat
 has a separate workspace; its comparison conditions run in alternating order
-and its conversation turns stay in sequence. Defaults are three repeats and
-300 seconds per model call. The worker count does not change the sample count.
+and its conversation turns stay in sequence. Model calls time out after 300
+seconds by default. The worker count does not change the sample count.
 
 `--compare none` is the default. `versions` compares the selected baseline commit
 with the candidate instructions; `without-skill` compares candidate guidance with
@@ -189,15 +256,19 @@ bun run eval:skills --prepare --suite execution --only rollup-encbird-current- -
 bun run eval:skills --live --suite execution --only rollup-encbird-current- --model us.anthropic.claude-opus-5-5 --runs 1 --jobs 2 --timeout 600
 ```
 
-Rollup has separate planning and local execution-evidence checks.
-`rollup-targeted-discovery` evaluates a proposed scope without executing reads.
-`tests/rollup-execution-evidence.integration.test.mjs` uses real fixture-tool results and
-phase snapshots to check retrieved content, bounded exploration, evidence reuse
-and changes between preparation and resume. Repeated/reordered reads and complete
-search evidence are accepted; filenames or partial snippets cannot replace a
-required original. These are instrumented local traces, not live-agent success
-rates or a prescribed production tool sequence. Optional renumbering-reference
-loading is checked separately.
+The `rollup-safety-cases.mjs` execution cases reuse the regression chat and price
+fixtures for the approval boundary: an unanswered request, an ambiguous reply and a
+bundle-only request keep every document; a survivor changed or a destination
+occupied while approval was pending holds only the affected change; one deletion
+that fails once must be inspected before it is retried; a contract conflict asks one
+complete question while the independent chain is prepared; a same-folder relative
+citation is planned and repointed; and grouped contract rows survive the merge.
+The concurrent change and the failure are case data (`betweenTurns`, `faults`)
+applied by the regression runner, described in `../regression/README.md`.
+
+Rollup planning is evaluated by `rollup-targeted-discovery`, which judges a proposed
+scope without executing reads; the execution cases above judge real edits. Optional
+renumbering-reference loading is checked separately.
 
 ## Read the result
 
@@ -317,11 +388,17 @@ continuous print reading, and preservation of screen choices when print requires
 temporary expansion. It does not claim that response evaluation verifies a real
 browser's page layout. The HTML report opens every case by default regardless of
 its outcome; a successful result is not a reason to hide its explanation.
-The eight `report-scope-` probes load the shipped report hook, skill and delivery
-references. They cover simple explanations, local reviews, complex flows,
-unclear usefulness, explicit reports, chat-only overrides, an existing delivery
-choice and mandatory workflow artifacts. They judge the proposed next response
-and actions, not actual file creation, browser opening or native client routing.
+The `report-scope-` cases load the shipped report hook, skill and delivery
+references once per run. Their thirteen requests cover simple explanations, local
+reviews, complex flows, unclear usefulness, explicit reports, chat-only overrides,
+an existing delivery choice, mandatory workflow artifacts, quiz decisions, text-only
+reports and ordinary delivery checks. Independent requests with the same direction
+share a run as numbered questions (`q1`, `q2`, …), each judged by its own
+`qN-delivery` obligation. Opposite directions of one delivery decision run
+separately, and a choice the guidance must make by judgment is not asked beside
+a request that dictates it, so `report-scope-complex-flow` and
+`report-scope-ambiguous` stay single. They judge the proposed next response and
+actions, not actual file creation, browser opening or native client routing.
 A scenario may supply `mechanicalScore` alongside its explicit obligations,
 using a named export or a property on the default object. Named exports win when
 both forms are present. Both unified and compatibility runners combine these
@@ -390,9 +467,8 @@ and reassessment, use Bedrock `us.openai.gpt-6.1-sol`, explicit AWS profile
 judge. Explicit judge overrides remain separate; errors never trigger provider
 or regex-score fallback.
 
-Scenario `mechanicalScore` exports check only actual files/actions/schemas.
-Legacy `score` and `deterministicScore` prose/tag functions are not runtime
-judges. The wrapper retires the common tail and makes evaluation-only tag hints
+Scenario `mechanicalScore` exports check only actual files/actions/schemas;
+scenarios have no prose/tag scoring functions. The wrapper retires the common tail and makes evaluation-only tag hints
 optional without removing product contracts or schemas. Empty responses and
 missing required evidence are still errors or unverified, never success.
 

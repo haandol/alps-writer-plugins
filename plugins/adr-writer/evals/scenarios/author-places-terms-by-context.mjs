@@ -1,7 +1,4 @@
 import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
-
-const EXPECTED = { A: "ordering", B: "billing", C: "root", D: "keep" };
 
 export const obligations = [
   {
@@ -18,26 +15,11 @@ export const obligations = [
   },
 ];
 
-export function deterministicScore(input) {
-  const rows = Array.isArray(input.tail?.findings) ? input.tail.findings : [];
-  return [
-    ...responseChecks(input, {}),
-    ...Object.entries(EXPECTED).map(([tag, place]) => ({
-      label: `${tag} is placed in ${place}`,
-      pass:
-        rows.filter((r) => r?.tag === tag).length === 1 &&
-        rows.find((r) => r?.tag === tag)?.summary?.trim() === place,
-      detail: rows.find((r) => r?.tag === tag)?.summary ?? "missing",
-    })),
-  ];
-}
-
 export default {
   name: "author-places-terms-by-context",
   description:
     "Glossary entries follow the bounded context whose meaning they record: different meanings stay in their contexts' glossaries, shared terms in the root, and existing entries are not moved automatically.",
   obligations,
-  deterministicScore,
   build() {
     return [
       skillText("adr-new", { references: ["references/glossary.md"] }),

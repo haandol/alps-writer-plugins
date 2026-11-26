@@ -7,32 +7,6 @@ import { catalog, PLUGIN } from "../skills/catalog.mjs";
 import { main, parseSkillsArgs, selectImpacted } from "../skills/run.mjs";
 import { makeTools } from "../regression/workspace.mjs";
 import { responseObligations } from "../skills/response-contract.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
-
-test("response scope checks allow requested reads but reject mutation attempts and missing fields", () => {
-  const tail = {
-    findings: [
-      {
-        tag: "DECISION_REQUEST",
-        summary: "gap=terminal failure; recommendation=DLQ; basis=durability",
-      },
-    ],
-  };
-  const fields = { DECISION_REQUEST: ["gap", "recommendation", "basis"] };
-  const read = [{ kind: "request", tool: "read_file", arguments: { path: "docs/source.md" } }];
-  assert.ok(
-    responseChecks({ tail, events: read }, fields, { noTools: false }).every((c) => c.pass),
-  );
-  assert.ok(responseChecks({ tail, events: read }, fields).some((c) => !c.pass));
-  assert.ok(
-    responseChecks({ tail, events: [{ kind: "request", tool: "write_file" }] }, fields, {
-      noTools: false,
-    }).some((c) => !c.pass),
-  );
-  assert.ok(
-    responseChecks({ tail, events: [] }, { DECISION_REQUEST: ["adrPatch"] }).some((c) => !c.pass),
-  );
-});
 
 test("classification prose and evaluation tags have no local semantic score", async () => {
   const items = await catalog();
@@ -133,7 +107,6 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     "report-drilldown-overview-unavailable",
     "report-drilldown-path-review",
     "report-drilldown-print-handout",
-    "report-drilldown-process-stages",
     "report-drilldown-rejects-cosmetic-depth",
     "report-drilldown-visual-detail",
     "report-drilldown-visual-restraint",
@@ -145,21 +118,13 @@ test("every shipped classification probe has a fixed GEval contract and prepares
     "report-regression-timeout-artifact-review",
     "report-rejects-unsupported-success",
     "report-scope-ambiguous",
-    "report-scope-chat-override",
+    "report-scope-chat-as-instructed",
+    "report-scope-chat-by-judgment",
     "report-scope-complex-flow",
-    "report-scope-explicit-short-report",
-    "report-scope-known-choice",
-    "report-scope-local-review",
-    "report-scope-markdown-only-no-quiz",
-    "report-scope-plain-text-cli-no-quiz",
-    "report-scope-quiz-recommendation",
-    "report-scope-requested-quiz",
-    "report-scope-required-artifact",
-    "report-scope-simple-definition",
-    "report-scope-static-verification",
-    "report-slop-buried-result",
-    "report-slop-hidden-actors",
-    "report-slop-vague-references",
+    "report-scope-finish-delivery",
+    "report-scope-requested-artifacts",
+    "report-scope-text-without-quiz",
+    "report-slop-rewrites-obscured-meaning",
     "report-terminology-introduction",
     "report-terminology-review-control",
     "report-terminology-source-hierarchy",
@@ -193,7 +158,9 @@ test("every shipped classification probe has a fixed GEval contract and prepares
       assert.match(input.prompt, /\[Report-writing directive\]/);
       assert.doesNotMatch(input.prompt, /Total provider-reported cost: USD 0.48/);
       const item = selected.find((c) => c.id === run.caseId);
-      assert.ok(!input.prompt.includes(item.semanticObligations[0].text));
+      // A batched case keeps one obligation per question; none of them reaches the target.
+      for (const obligation of item.semanticObligations)
+        assert.ok(!input.prompt.includes(obligation.text), obligation.id);
     } else assert.match(input.prompt, /# Editorial review/);
     if (run.caseId.startsWith("report-drilldown-")) {
       assert.doesNotMatch(input.prompt, /Total provider-reported cost: USD 0.48/);
@@ -219,7 +186,7 @@ test("every shipped classification probe has a fixed GEval contract and prepares
         assert.ok(!input.prompt.includes(obligation.text), obligation.id);
     } else if (run.caseId.startsWith("report-slop-")) {
       assert.match(input.prompt, /## Remove AI slop that obscures meaning/);
-      assert.match(input.prompt, /Fixture:/);
+      assert.match(input.prompt, /Fixture A:/);
       assert.doesNotMatch(input.prompt, /USD 0.48/);
       const item = selected.find((c) => c.id === run.caseId);
       for (const obligation of item.semanticObligations)

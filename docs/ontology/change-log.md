@@ -2,6 +2,7 @@
 
 Newest first. One line per major business change or process retirement, with its reason.
 
+- 2026-11-26 — business-change: 승인·거절 분기 관찰 기준 2건과 revise-contract의 change-approval 공동 실현 추가 — 두 분기를 지나는 기준이 없어 정렬 검토가 분기 실행 없이 통과할 수 있었다.
 - 2026-11-23 — reporting: HTML이 아닌 전달의 퀴즈 생략 — CLI의 Markdown·텍스트에서는 문제와 답이 함께 보여 자가 확인 의미가 없다
 - 2026-11-20 — business-change: 개발 중 업무 변경의 소유 레벨 판단과 선행 승인 — 업무 모델이 소유하는 뜻은 결정 기록보다 먼저 승인받는다
 - 2026-11-18 — feature-handoff: 기능 인계와 업무 의미 승인 연결 — 제안이 미정이거나 거절될 때 영향을 받는 기능과 독립 기능의 인계 결과를 구분한다.

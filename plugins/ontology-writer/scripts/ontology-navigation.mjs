@@ -29,11 +29,11 @@ const DETAIL_KINDS = {
 const NAVIGATION_NOTE =
   "Navigation only: summaries, search matches and pages are not complete business-contract evidence. Follow the next page and relevant boundary/detail queries; no match is not evidence that no business rule applies. Read realizing ADRs for implementation obligations.";
 
-/** Bounded collection defaults are replaceable presentation choices, not model facts. */
 /** The line that marks model documents differing from HEAD when they cannot compare by element. */
 export const uncommittedDocumentsLine = (documents) =>
   `UNCOMMITTED model documents differ from HEAD (not a settled reference): ${documents.join(", ")}`;
 
+/** Bounded collection defaults are replaceable presentation choices, not model facts. */
 export function navigationOptions({ limit = null, offset = 0, search = "" } = {}) {
   if (limit !== null && (!Number.isSafeInteger(limit) || limit < 1 || limit > 100))
     throw new Error("navigation --limit must be an integer from 1 to 100");

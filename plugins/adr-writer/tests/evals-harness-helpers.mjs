@@ -58,10 +58,19 @@ export function needsEnv(scenario) {
  */
 export function assertShippedPrompt(scenario, prompt) {
   // A directive-only scenario measures the SessionStart directives without any skill body, so
-  // it is checked for both shipped directive markers instead of a long skill text.
+  // it is checked for both shipped directive markers instead of a long skill text. A scenario
+  // whose repository has no Ontology Writer carries only ADR Writer's directive.
   if (scenario.directiveOnly) {
-    for (const marker of ["[ADR-first directive]", "[Business-context directive]"])
+    const markers = scenario.withoutOntologyWriter
+      ? ["[ADR-first directive]"]
+      : ["[ADR-first directive]", "[Business-context directive]"];
+    for (const marker of markers)
       assert.ok(prompt.includes(marker), `${scenario.name}: missing shipped ${marker}`);
+    if (scenario.withoutOntologyWriter)
+      assert.ok(
+        !prompt.includes("[Business-context directive]"),
+        `${scenario.name}: carries Ontology Writer's directive without that plugin`,
+      );
   } else {
     assert.ok(
       prompt.length > 5000,

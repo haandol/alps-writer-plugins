@@ -1,7 +1,5 @@
 import { alpsSkillText, alpsGuideText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
 
-export const deterministicScore = (input) => responseChecks(input, {});
 export const obligations = [
   {
     id: "complete-criteria",
@@ -16,6 +14,10 @@ export const obligations = [
     text: "Distinguish code-comparable rules, actual user-entry evidence and LLM meaning judgments. Explain fixed-result aggregation: known required violations prevent acceptance; otherwise missing required evidence or execution/judgment errors leave it unverified; accept only with evidence for all required obligations. Keep commands, function names, test files, evaluator prompts and a new validation registry outside the PRD, and preserve the existing Demo outcome and feature save unit.",
   },
   {
+    id: "comparison-conditions",
+    text: "Each metric used for a decision or comparison defines its population or denominator, observation window and exclusion rules as far as that decision needs. A score gain obtained by dropping evaluated cases or reclassifying failures never counts as an improvement under the same conditions; a fixed population and classification rule or an explicit statement satisfies this.",
+  },
+  {
     id: "optional-signals",
     text: "Completion checks are distinct from improvement monitoring. Every proposed eval metric states an abuse or opposite-failure scenario for the same purpose with its counterweight, either a tension candidate or the existing required case that already catches it. A rate summarizing required cases may be a monitoring summary, but no required case's violation is excused by that label; its adoption is the user's choice and a declined candidate does not block writing or implementation. No invented threshold becomes required. Do not invoke tools or claim actual execution in this response-only proposal.",
   },
@@ -23,10 +25,10 @@ export const obligations = [
 
 export default {
   name: "alps-evaluates-outcomes-with-validation-contract",
+  agentTimeoutMs: 600_000, // two complete 7.x.6 proposals; the last 300-second attempt timed out
   description:
     "Evaluation rubrics preserve exact rules and evidence while separating code checks from uncertain semantic judgments.",
   obligations,
-  deterministicScore,
   build() {
     return [
       alpsSkillText("alps-init", { references: ["references/outcome-evaluation.md"] }),

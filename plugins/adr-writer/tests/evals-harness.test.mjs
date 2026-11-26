@@ -2,7 +2,7 @@
 // Semantic correctness is measured separately by live LLM evaluations.
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync, rmSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { makeTools } from "../evals/regression/workspace.mjs";
@@ -79,16 +79,12 @@ test("every scenario exports the shape the runner requires", async () => {
   }
 });
 
-test("behaviour scenarios cover destructive rollup and optional review roles", () => {
+test("behaviour scenarios cover destructive rollup", () => {
   const sources = scenarioFiles()
     .map((file) => readFileSync(path.join(EVALS, "scenarios", file), "utf8"))
     .join("\n");
 
   assert.match(sources, /skillText\("adr-rollup"(?:,|\))/);
-  assert.match(sources, /agentText\("adr-impl-explainer"\)/);
-  assert.match(sources, /agentText\("adr-impl-necessity-reviewer"\)/);
-  assert.match(sources, /review-document-only-boundary/);
-  assert.match(sources, /impl-review-pre-promotion-lifecycle/);
 });
 
 test("--list names every scenario without invoking an agent", () => {
@@ -100,10 +96,6 @@ test("--list names every scenario without invoking an agent", () => {
   assert.match(out, /refactor-safe-local-duplicate/);
   assert.match(out, /refactor-protected-state-transition/);
   assert.match(out, /refactor-orchestration-discretion/);
-  assert.match(out, /review-document-only-boundary/);
-  assert.match(out, /impl-review-pre-promotion-lifecycle/);
-  assert.match(out, /rollup-preserves-decision-boundaries/);
-  assert.match(out, /impl-review-role-boundaries/);
   assert.match(out, /feature-handoff-ownership-transfer/);
   assert.match(out, /feature-handoff-enriches-underspecified-prd/);
   assert.match(out, /feature-handoff-idempotent-reimport/);
@@ -112,7 +104,6 @@ test("--list names every scenario without invoking an agent", () => {
   assert.match(out, /alps-batch-preserves-mandatory-nfr/);
   assert.match(out, /alps-approval-digest-preserves-contract/);
   assert.match(out, /alps-high-load-suggests-feature-split/);
-  assert.match(out, /lite-alps-follows-full-conversation/);
   assert.match(out, /lite-alps-asks-business-impact-before-solution/);
   assert.match(out, /lite-alps-proposes-requirements-from-business-context/);
   assert.match(out, /lite-alps-generates-demo-from-functional-requirements/);
@@ -129,7 +120,6 @@ test("--list names every scenario without invoking an agent", () => {
   assert.match(out, /bedrock-subagent-fallback/);
   assert.match(out, /comprehension-load-score-only/);
   assert.match(out, /comprehension-load-calibration-bands/);
-  assert.match(out, /sync-stays-local-for-infrastructure/);
   assert.match(out, /impl-review-stays-local-for-reproduction/);
 });
 
@@ -222,16 +212,20 @@ test("review fixtures are valid repos by the shipped lint", async () => {
     // the target repo holds, which is not this harness's business.
     if (s.name.startsWith("author-") || needsEnv(s)) continue;
     const { dir } = await built(file);
-    const r = spawnSync(process.execPath, [lint, "--no-invariants", "--json"], {
-      cwd: dir,
-      encoding: "utf8",
-    });
-    const report = JSON.parse(r.stdout);
-    assert.deepEqual(
-      report.errors ?? [],
-      [],
-      `${s.name}: fixture has lint errors: ${JSON.stringify(report.errors)}`,
-    );
+    // A multi-question probe keeps each question's project in its own folder (q1/, q2/, …).
+    const projects = readdirSync(dir).filter((name) => /^q\d+$/.test(name));
+    for (const root of [dir, ...projects.map((name) => path.join(dir, name))]) {
+      const r = spawnSync(process.execPath, [lint, "--no-invariants", "--json"], {
+        cwd: root,
+        encoding: "utf8",
+      });
+      const report = JSON.parse(r.stdout);
+      assert.deepEqual(
+        report.errors ?? [],
+        [],
+        `${s.name} (${path.relative(dir, root) || "."}): fixture has lint errors: ${JSON.stringify(report.errors)}`,
+      );
+    }
   }
 });
 

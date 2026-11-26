@@ -6,10 +6,13 @@ An unknown outcome must be checked externally before another operation is attemp
 No global ordering, cancellation on timeout or always-current local record is guaranteed.
 No live deployment, benchmark or reader study was performed.`;
 
+// Each `references` lists only the content modules its obligations use; report-cases.mjs adds the common ones.
 export const overviewCases = [
   {
     id: "report-drilldown-overview-explicit",
     title: "A feasible C4-like walkthrough supplies an overview without a delivery gate",
+    // Mermaid overview placement, local detail figure and supported syntax.
+    references: ["diagrams"],
     source: facts,
     task: "Write a Korean report walking through the whole system in a top-down, C4-like manner. First draw the most abstract process using Mermaid, then open up each important responsibility and explain its internal behavior. Use supported flowchart or sequence syntax. Keep the brief background and answer first. Do not invoke tools or write files. The user excludes quizzes.",
     semanticObligations: [
@@ -30,6 +33,8 @@ export const overviewCases = [
   {
     id: "report-drilldown-overview-default",
     title: "A whole-process explanation defaults to an overview without a diagram keyword",
+    // Whole-process explanation defaults to a Mermaid overview.
+    references: ["diagrams"],
     source: facts,
     task: "Write a Korean report explaining the complete request-processing system from caller input through handling retries and deciding what can be returned or attempted next. Explain each responsibility so a developer can follow the whole process. Do not invoke tools or write files. The user excludes quizzes.",
     semanticObligations: [
@@ -46,6 +51,8 @@ export const overviewCases = [
   {
     id: "report-drilldown-overview-excluded",
     title: "A diagram exclusion overrides the whole-system overview default",
+    // A diagram exclusion overrides the overview default without a delivery gate.
+    references: ["diagrams"],
     source: facts,
     task: "Write a Korean top-down report explaining the whole system, but use prose only: no diagrams, Mermaid or quizzes. Explain the whole responsibility and then its internals. Do not invoke tools or write files.",
     semanticObligations: [
@@ -62,6 +69,8 @@ export const overviewCases = [
   {
     id: "report-drilldown-overview-review-missing",
     title: "Review recommends a feasible missing overview without failing delivery for absence",
+    // Review-only: recommend a feasible missing overview without failing delivery.
+    references: ["diagrams", "review-results"],
     source: facts,
     task: `Review only this outline against an explicit request for a Mermaid overview followed by C4-like drill-down. Do not rewrite it, invoke tools or write files. No quiz.
 Outline: A brief background and accurate answer precede nested prose sections on retry identity, completion reuse and unknown outcome lookup. A Mermaid sequence appears only inside the unknown-outcome detail. All source links are present. The author says hierarchy validation passed and review.status is reviewed, so the report is complete.`,
@@ -79,6 +88,8 @@ Outline: A brief background and accurate answer precede nested prose sections on
   {
     id: "report-drilldown-overview-unavailable",
     title: "Unavailable visual evidence still allows an accurate prose report",
+    // Unavailable evidence: a figure is never mandatory and must not be invented.
+    references: ["diagrams"],
     source:
       "Supplied hypothetical request-processing system with limited evidence: The system accepts requests and eventually returns a result. Its participants, internal steps, ordering, state changes and failure handling were not supplied. The delivery channel supports plain text only. No tools or live inspection are available.",
     task: "Write a Korean C4-like, top-down report using only these supplied facts. Prefer useful figures whenever possible, but figures are never mandatory. Deliver the explanation now without inventing internals, invoking tools or asking permission. The user excludes quizzes.",

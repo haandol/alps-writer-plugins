@@ -145,7 +145,7 @@ Values the result must honor:
 - For each eval metric, always state an abuse, shortcut or opposite-failure scenario and its counterweight, because users rarely think of one: propose a new tension metric for an unguarded harm, or name the required case that already catches it. A rate summarizing required cases may be a monitoring summary, but each required case still fails on its own violation. The user decides adoption; a declined or unadopted candidate never blocks writing, approval, saving, implementation or improvement. Monitoring values are not automatically gates. An empty population, missing evidence or execution/judgment error is not 0 or a pass; preserve coverage and missingness instead of silently dropping cases.
 - Every required ideal and edge case must be established. Known required violations prevent completion; otherwise missing required evidence leaves completion unverified. A high aggregate score cannot cancel a required violation. Confirm any new required threshold and its basis before using it. Do not weaken criteria or remove difficult cases to improve a score.
 - Start from confirmed requirements and supplement evaluation with observed failures. Keep synthetic cases and AI labels distinct from real traces and human-confirmed judgments. Product rules stay here; commands, fixtures, evaluator code/prompts and run results stay at implementation resolution.
-- End with one **Demo outcome** sentence describing this Feature's role in the Section 3 end-to-end demo and the observable completion result. It connects the Feature to the whole journey; it is not another test or approval gate.
+- End with exactly one **Demo outcome** sentence (not two) describing this Feature's role in the Section 3 end-to-end demo and the observable completion result. It connects the Feature to the whole journey; it is not another test or approval gate. It must agree with this Feature's User Flow, Edge Cases, Error Handling and Evaluation Rubric; surface a conflict with Section 3 before approval instead of copying it.
 - Do not repeat preconditions, user actions, or failure scenarios in full; retain the minimum evaluation setup for each case. When reading an existing document, treat Acceptance Criteria and Demo checkpoint as the legacy names for the same content, without reapproving or rewriting a completed unchanged Feature solely to rename it.
       </description>
       <example>
@@ -194,8 +194,8 @@ evaluation rubric; it is separate from the sign-up examples above.
 
 #### 7.1.1 User Story
 
-- When a user starts a conversation, AI guides document writing based on the ALPS (PRD) template
-- Users complete the document step by step following AI guidance
+- As a product owner writing a first ALPS (PRD) document, I want AI to guide me through the template one section at a time, so that I can complete the whole document without first learning its structure.
+- Problem: alone with a blank template, owners skip sections or stall on what each one needs. Intended outcome: a complete document in which the owner confirmed every section.
 
 #### 7.1.2 User Flow
 

@@ -2,6 +2,13 @@
 
 현재 본문은 유효한 계약을 설명하며, 이 문서는 주요 변경만 최신순으로 기록한다.
 
+## 2026-11-26 — 경로를 지정한 번호 정리 요청의 승인과 영향 제시 시점
+
+- **Current ADR**: [destructive rollup safety](./0001-require-explicit-approval-for-destructive-rollup.md)
+- **Change type**: requirement rule change
+- **What**: 번호 정리 요청에 정확한 경로가 들어 있을 때 다시 확인할지와 외부 링크 영향을 언제 보일지 정하지 않음 → 정확한 old → new 경로를 지정한 요청은 그 경로의 승인으로 보고 그 경로만 변경하되 이동 전에 외부 링크 영향과 old → new 표를 제시한다. 경로가 없는 요청은 경로와 영향을 먼저 보이고 승인된 경로만 변경한다.
+- **Why**: 이 결정이 막으려는 위험은 무응답과 모호한 응답이다. 이미 명시된 경로 승인을 다시 묻지 않으면서도 외부 링크 파손을 이동 전에 알리기 위해서다.
+
 ## 2026-10-02 — 도구 선택보다 근거와 결과를 기준으로 검증
 
 - **Current ADR**: [destructive rollup safety](./0001-require-explicit-approval-for-destructive-rollup.md)

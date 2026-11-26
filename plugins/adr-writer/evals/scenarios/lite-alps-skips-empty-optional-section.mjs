@@ -1,5 +1,3 @@
-import { responseChecks } from "../lib/response-checks.mjs";
-
 export const obligations = [
   {
     id: "optional",
@@ -7,19 +5,9 @@ export const obligations = [
   },
   {
     id: "independence",
-    text: "Keep the work inside Lite ALPS: do not start, read or update a Full ALPS document or declare Lite complete while Section 8 remains. The required tail agrees with the visible response.",
+    text: "Keep the work inside Lite ALPS: do not start, read or update a Full ALPS document or declare Lite complete while Section 8 remains.",
   },
 ];
-
-/** Keep the response-only scope and requested records exact; judge meaning with GEval. */
-export function deterministicScore(input) {
-  return responseChecks(input, {
-    SKIP_SECTION_7: [],
-    NO_INVENTED_EXCLUSIONS: [],
-    LITE_INDEPENDENT: [],
-    DEMO_READY: [],
-  });
-}
 
 import {
   alpsLiteGuideText,
@@ -49,8 +37,7 @@ export default {
       alpsLiteGuideText(7),
       `\n---\n\n# This run`,
       SOURCE,
-      `Respond in Korean with the normal completion guidance.`,
-      `In the tail use SKIP_SECTION_7, NO_INVENTED_EXCLUSIONS, LITE_INDEPENDENT, and DEMO_READY once each.`,
+      `Respond in Korean.`,
       TAIL_SPEC,
     ].join("\n");
   },

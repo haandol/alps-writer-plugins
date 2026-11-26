@@ -141,7 +141,7 @@ export const obligations = [
 ];
 
 /** File state is exact; whether the questions are named is judged semantically. */
-export function deterministicScore({ dir }) {
+export function mechanicalScore({ dir }) {
   const live = listFiles(path.join(dir, "docs", "adr")).filter(
     (file) => file !== ".mapping.json" && !STAMPED_RULE_DOCS.includes(file),
   );
@@ -166,8 +166,6 @@ export function deterministicScore({ dir }) {
     },
   ];
 }
-
-export const mechanicalScore = deterministicScore;
 
 // Files under root, relative to it; empty when root does not exist.
 function listFiles(root, prefix = "") {

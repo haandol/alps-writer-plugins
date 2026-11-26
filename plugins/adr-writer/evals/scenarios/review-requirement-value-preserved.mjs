@@ -10,7 +10,6 @@
 //
 // The ADR here is deliberately clean on that axis. Any R3/R4/R18b finding
 // against the recorded values is the defect.
-import { responseChecks } from "../lib/response-checks.mjs";
 
 export const obligations = [
   {
@@ -22,11 +21,6 @@ export const obligations = [
     text: "Keep the recorded active/expired/ended state set and no ended-to-active transition. Review only; do not modify files. Other supported document findings are allowed when they do not erase recorded requirements.",
   },
 ];
-
-/** Validate requested response structure and scope; preserve semantic contract distinctions. */
-export function deterministicScore(input) {
-  return responseChecks(input, {}, { noTools: false });
-}
 
 import { agentText, seedRuleDocs, seedMapping, write, TAIL_SPEC } from "../lib/harness.mjs";
 

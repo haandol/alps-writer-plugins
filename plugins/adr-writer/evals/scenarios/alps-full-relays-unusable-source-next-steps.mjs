@@ -1,5 +1,4 @@
 import { alpsSkillText, seedMapping, seedRuleDocs, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
 import { liteDerivationRules } from "../lib/lite-derivation.mjs";
 
 // Status as the server prints it when the recorded Lite source is no longer complete.
@@ -41,17 +40,9 @@ export const obligations = [
   },
   {
     id: "boundary",
-    text: "Do not decide what FR-3 means inside Full, do not add a coupon rule or FR-3 to Full content, and do not claim the Full document is complete. Do not invoke tools or save. The required tail agrees with the visible response.",
+    text: "Do not decide what FR-3 means inside Full, do not add a coupon rule or FR-3 to Full content, and do not claim the Full document is complete. Do not invoke tools or save.",
   },
 ];
-
-export function deterministicScore(input) {
-  return responseChecks(input, {
-    SOURCE_PROBLEM: [],
-    NEXT_ACTION: [],
-    NO_FULL_BUSINESS_RULE: [],
-  });
-}
 
 export default {
   name: "alps-full-relays-unusable-source-next-steps",
@@ -69,7 +60,6 @@ export default {
       STATUS,
       `사용자: "이어서 진행해줘."`,
       `정상적인 다음 응답을 한국어로 작성하라. 도구를 호출하거나 저장하지 마라.`,
-      `In the tail use SOURCE_PROBLEM, NEXT_ACTION, and NO_FULL_BUSINESS_RULE once each.`,
       TAIL_SPEC,
     ].join("\n");
   },

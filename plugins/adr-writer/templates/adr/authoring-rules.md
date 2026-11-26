@@ -559,7 +559,7 @@ Prefer a diagram whenever it is clearer than prose.
 
 - **Write ADR bodies in the language the user writes in** — this rules file and every harness prompt are English, but the ADRs they govern follow the user. Keep technical terms, code identifiers, and proper nouns in their original form.
 - **Filenames**: `XXXX-kebab-case-title.md`. **Never put a PRD Feature ID (`F1` etc.) in a filename or folder name** — Feature IDs are stored nowhere, category keys are always derived from the canonical name, and `/adr-impl` resolves targets by category key alone (`f1` exists only as an ordinary literal key when it was a fallback).
-- **Numbering** increases sequentially within a category. Numbers vacated by a split stay as gaps (no renumbering). **Rollup is the sole exception** — a category where a chain was merged and ADRs deleted gets its gaps closed in `adr-rollup`'s final step (rollup leaves no trace). Split and sync never renumber.
+- **Numbering** increases sequentially within a category. Numbers vacated by a split, sync or rollup stay as gaps by default (no renumbering). Only `adr-rollup` renumbers, and only on the user's explicit request with approved old → new paths. Split and sync never renumber.
 - Titles: clear and concise.
 - **Folder names = ubiquitous language**: top-level context folders take the domain expert's model vocabulary (`identity/`, `ordering/`); feature sub-folders take user-action vocabulary (`login/`, `checkout/`). The two layers may differ. At either layer, technical layer names (`api`, `db`, `services`) are banned (`structure.md` "Anti-pattern categories"). Key derivation and fallback rules: `structure.md` "The ADR registry (.mapping.json)".
 - **Clean up progressively** — when an existing ADR violates these rules, fix it as that ADR is next updated. There is no need to sweep every ADR at once.
@@ -599,4 +599,4 @@ For the PR reviewer or the author before merge.
 - [ ] **One ADR = one decision** holds (no split signals)
 - [ ] **`.mapping.json`** has the matching category entry including the new ADR
 
-<!-- adr-writer:rules-version 0.17.3 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->
+<!-- adr-writer:rules-version 0.18.0 — seeded by /adr-new. `adr-structure-lint` warns when this trails the installed plugin; refresh with /adr-new (it re-seeds a stale doc set). Keep this line on re-seed. -->

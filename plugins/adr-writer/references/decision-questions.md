@@ -49,11 +49,13 @@ needs an answer. Do not imply that proposed reasons were historical facts.
 Missing intent may be answered as a current reason to retain a behavior, clearly
 distinguished from the unknown original motivation.
 
-For destructive work, include the survivor, overwrites, removals, every old →
-new path and any residual contract ownership in the same report. Reuse an
-existing explicit approval of that exact scope; otherwise obtain it together
-with the unresolved decisions. A recommendation, an intent answer, or silence
-does not independently authorize deletion, renumbering, or contract adoption.
+For destructive work, include the survivor, every file to overwrite (including
+the index, decision logs and files whose links are repointed), removals, every
+old → new path with its external-link impact and any residual contract
+ownership in the same report. Reuse an existing explicit approval of that exact
+scope; otherwise obtain it together with the unresolved decisions. A
+recommendation, an intent answer, or silence does not independently authorize
+deletion, renumbering, or contract adoption.
 
 Open a single local HTML with the operating system's default opener (`open` on
 macOS), unless the user names another tool. Do not start a server or automation
@@ -83,9 +85,13 @@ answer; retain every settled answer without requesting it again.
 
 An answer may establish intent without authorizing the proposed contract or
 destructive paths. Conversely, already explicit authorization in the current
-session needs no repeated permission question. If an answer materially changes
-the displayed contract, present the revised meaning and ask only for that new
-decision. Do not silently substitute the recommendation for a user's answer.
+session needs no repeated permission question. A renumbering request that names
+exact old → new paths authorizes those paths only: show their external-link
+impact and old → new table before moving, without asking again. A renumbering
+request without paths first needs every path and its external-link impact
+presented, then approval. If an answer materially changes the displayed
+contract, present the revised meaning and ask only for that new decision. Do not
+silently substitute the recommendation for a user's answer.
 
 Before applying, compare affected originals and destinations with the candidate's
 source evidence. Preserve concurrent edits, update affected drafts and revalidate.

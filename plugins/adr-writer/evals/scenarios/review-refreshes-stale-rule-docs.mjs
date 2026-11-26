@@ -1,7 +1,4 @@
 import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
-
-const EXPECTED = { A: "REFRESH_FIRST", B: "STOP_AFTER_REFRESH", C: "REVIEW_WITH_LAG", D: "REVIEW" };
 
 export const obligations = [
   {
@@ -18,26 +15,11 @@ export const obligations = [
   },
 ];
 
-export function deterministicScore(input) {
-  const rows = Array.isArray(input.tail?.findings) ? input.tail.findings : [];
-  return [
-    ...responseChecks(input, {}),
-    ...Object.entries(EXPECTED).map(([tag, decision]) => ({
-      label: `case ${tag}`,
-      pass:
-        rows.filter((r) => r?.tag === tag).length === 1 &&
-        rows.find((r) => r?.tag === tag)?.summary?.trim() === decision,
-      detail: rows.find((r) => r?.tag === tag)?.summary ?? "missing",
-    })),
-  ];
-}
-
 export default {
   name: "review-refreshes-stale-rule-docs",
   description:
     "After a plugin upgrade, /adr-review refreshes lagging seeded rule documents first, preserving hand edits, and lets the user choose whether to review the ADRs afterwards.",
   obligations,
-  deterministicScore,
   build() {
     return [
       skillText("adr-review", { references: ["references/rule-doc-refresh.md"] }),

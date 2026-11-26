@@ -1,5 +1,3 @@
-import { responseChecks } from "../lib/response-checks.mjs";
-
 export const obligations = [
   {
     id: "cases",
@@ -7,31 +5,9 @@ export const obligations = [
   },
   {
     id: "scope",
-    text: "Do not make standard documentation optional, require unrelated edge categories, execute tools or change files. Keep the visible report and all CASE_A/B/C required fields consistent with those three outcomes.",
+    text: "Do not make standard documentation optional, require unrelated edge categories, execute tools or change files. The visible report states each case's verdict and required action consistently with those three outcomes.",
   },
 ];
-
-/** Validate requested response structure and scope; preserve semantic contract distinctions. */
-export function deterministicScore(input) {
-  return responseChecks(
-    input,
-    {
-      CASE_A: ["verdict", "documentation", "ideal", "edge", "action"],
-      CASE_B: [
-        "verdict",
-        "documentation",
-        "why",
-        "how",
-        "terminology",
-        "adrReference",
-        "ideal",
-        "edge",
-      ],
-      CASE_C: ["verdict", "adrReference", "action"],
-    },
-    { noTools: true },
-  );
-}
 
 import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
 
@@ -58,12 +34,12 @@ export default {
       `The approved contract uses these exact domain terms: pending payment, provider success,`,
       `provider failure, at-most-once completion, duplicate settlement.`,
       ``,
-      `## Case A — incomplete`,
+      `## Case A`,
       `A named SettlePayment function is newly added with no GoDoc comment.`,
       `Its only test is "provider success completes a pending payment".`,
       `There is no provider-failure or duplicate-settlement test.`,
       ``,
-      `## Case B — complete on this policy axis`,
+      `## Case B`,
       `The function has this GoDoc comment:`,
       `"SettlePayment enforces at-most-once completion for a pending payment. It records`,
       `completion only after provider success, preserves the pending payment on provider failure,`,
@@ -71,25 +47,12 @@ export default {
       `Tests cover provider success, provider failure preserving pending state, and duplicate`,
       `settlement producing one completion.`,
       ``,
-      `## Case C — direct decision-document reference`,
+      `## Case C`,
       `The function and tests are otherwise identical to Case B, but the comment begins:`,
       `"SettlePayment implements ADR-0001 from docs/adr/payments/settlement/..."`,
       ``,
       `State the completion verdict and required action for each case.`,
-      `Do not weaken the language-standard comment requirement into an optional style preference.`,
-      `Do not require unrelated edge categories that the payment contract does not make relevant.`,
-      ``,
-      `In EVAL-FINDINGS use exactly these three tags and include every named field:`,
-      `CASE_A | verdict=...; documentation=...; ideal=...; edge=...; action=...`,
-      `CASE_B | verdict=...; documentation=...; why=...; how=...; terminology=...; adrReference=...; ideal=...; edge=...`,
-      `CASE_C | verdict=...; adrReference=...; action=...`,
       TAIL_SPEC,
     ].join("\n");
   },
-
-  /**
-   * Accepts only the result that repairs missing documentation and edge cases,
-   * passes the compliant case, and removes source references while preserving
-   * the searchable payment-settlement vocabulary.
-   */
 };

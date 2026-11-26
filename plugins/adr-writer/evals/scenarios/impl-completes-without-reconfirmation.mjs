@@ -1,5 +1,3 @@
-import { responseChecks } from "../lib/response-checks.mjs";
-
 export const obligations = [
   {
     id: "completion",
@@ -14,15 +12,6 @@ export const obligations = [
     text: "For C, ask one consolidated Decision request for the needed contract change before implementing it. Report the actual fixes and verification limits. Do not change files or invoke tools for this classification task.",
   },
 ];
-
-/** Exact output/scope checks supplement the semantic obligations. */
-export function deterministicScore(input) {
-  return responseChecks(
-    input,
-    { PASS_PATH: [], FIX_PATH: [], ESCALATE_ONLY: [] },
-    { noTools: true },
-  );
-}
 
 import { skillText, seedRuleDocs, seedMapping, TAIL_SPEC } from "../lib/harness.mjs";
 
@@ -52,9 +41,8 @@ export default {
       `C. Review discovers that satisfying the code would require changing the approved`,
       `   product contract.`,
       ``,
-      `State whether the workflow asks the user to reconfirm intent, what it fixes`,
-      `automatically, when it transitions to Accepted, and what it reports at the end.`,
-      `Use PASS_PATH, FIX_PATH, and ESCALATE_ONLY as finding tags.`,
+      `For each outcome, state whether the workflow asks the user anything, what it fixes`,
+      `and how, whether and when the Status changes, and what it reports at the end.`,
       TAIL_SPEC,
     ].join("\n");
   },

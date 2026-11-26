@@ -1,8 +1,11 @@
 /** Report behavior fixtures, not observations of a deployed service. */
+// Each `references` lists only the content modules its obligations use; report-cases.mjs adds the common ones.
 export const reportPathCases = [
   {
     id: "report-drilldown-path-review",
     title: "Review detects a shared error node that widens retry permission",
+    // Review-only diagram path check against the source policy.
+    references: ["diagrams", "review-results"],
     source: `Supplied hypothetical delivery policy:
 A delivery attempt returns success, transport unavailable, or permission denied.
 Transport unavailable permits one retry of the same delivery.
@@ -35,31 +38,6 @@ flowchart TD
       {
         id: "review-boundary",
         text: "The response stays review-only, uses the supplied policy and diagrams as evidence, and does not claim to have edited or executed them. It does not claim diagram syntax validity alone establishes the policy's correctness.",
-      },
-    ],
-  },
-  {
-    id: "report-drilldown-process-stages",
-    title: "A process stage expands into its inputs, decisions and outputs",
-    source: `Supplied hypothetical catalog process:
-An operator supplies product rows. The process validates required product IDs and nonnegative whole-won prices; any invalid row rejects the complete batch.
-Normalization trims the ends of product IDs and preserves case. Equal normalized IDs with equal prices collapse into one row; conflicting prices reject the complete batch.
-The normalized rows are compared with the published catalog to create an immutable candidate revision and counts of added, changed and unchanged rows. Unchanged rows have no write effect.
-A reviewer approves one exact revision. Changing its contents requires a new revision and approval. Publication durably stores the approved revision before atomically switching the public pointer; failure leaves the old published revision visible.
-No further recovery mechanism or performance measurement was supplied.`,
-    task: "Write a Korean top-down report explaining this product-catalog process for a junior developer. Show the whole process with Mermaid after the brief background and answer, then open its responsibilities so the reader can follow how input becomes a published result. Use a concrete illustrative row case where helpful. No tools, file writes, or quiz.",
-    semanticObligations: [
-      {
-        id: "same-process",
-        text: "The overview connects validation, normalization/candidate preparation and approved publication. Later explanation expands those same responsibilities and connects their inputs and outputs. Using the subject's actual process stages is valid; the answer does not replace them with the author's research history or unrelated technical layers.",
-      },
-      {
-        id: "concrete-descent",
-        text: "The normalization responsibility unfolds into trimming, equality/price decisions and the resulting rows or rejection, with a supported or clearly illustrative concrete input. Detail teaches how the parent result is produced rather than repeating its summary or presenting source excerpts as the mechanism. No fixed heading list or level count is required.",
-      },
-      {
-        id: "source-bounds",
-        text: "The report preserves whole-batch rejection, case preservation, unchanged-row behavior, exact-revision approval and durable-storage-before-pointer ordering. It does not invent recovery work, universal no-recovery guarantees, measurements or unsupported intermediate states; source limits remain explicit.",
       },
     ],
   },

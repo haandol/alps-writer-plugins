@@ -42,7 +42,7 @@ export const obligations = [
   },
   {
     id: "verdict",
-    text: "The implementation verdict is judged only by the three ADR contract rows and their passing tests; the alignment result is reported separately, and a PASS is not described as business alignment or as an execution check of the whole process.",
+    text: "The implementation verdict rests on the three ADR contract rows and their evidence; naming scope it could not verify (callers, other paths) is allowed. The business alignment result is reported separately and never becomes a condition of the implementation verdict, and a PASS is not described as business alignment or as an execution check of the whole process.",
   },
   {
     id: "new-fact",

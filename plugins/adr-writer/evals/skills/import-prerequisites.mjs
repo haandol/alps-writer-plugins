@@ -323,7 +323,12 @@ function scenario(kind) {
     edges = edgesFor(kind);
   const projection = kind === "projection";
   const item = {
-    id: `import-prerequisites-${kind === "cross" ? "cross-category" : kind === "within" ? "same-category" : "projection-cycle"}`,
+    // Whole string literals, so change selection recognises an existing case.
+    id: {
+      cross: "import-prerequisites-cross-category",
+      within: "import-prerequisites-same-category",
+      projection: "import-prerequisites-projection-cycle",
+    }[kind],
     skill: "adr-import",
     title: projection
       ? "Category projection defers affected decisions while independent approval proceeds"

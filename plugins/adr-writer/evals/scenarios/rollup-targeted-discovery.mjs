@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
 
 const index = "docs/adr/.mapping.json";
 const billing = [
@@ -21,7 +20,7 @@ function adr(title, status, decision, related = "") {
 }
 
 // Raw authored inputs, with no expected plan or judge rubric. Another run can
-// consume these independently of build(), score(), or the shipping skill.
+// consume these independently of build() or the shipping skill.
 export const fixtureFiles = {
   [index]: JSON.stringify({
     categories: Object.fromEntries(
@@ -155,95 +154,11 @@ export const obligations = [
   },
 ];
 
-const required = {
-  "clear-chain": [index, ...billing, payment, ...billingCode],
-  "residual-owner": [index, ...storage, clearance, audit, ...storageCode],
-  "unchanged-evidence": [index, ...billing, payment, ...billingCode],
-  "no-argument-all": [
-    index,
-    ...billing,
-    payment,
-    ...storage,
-    clearance,
-    audit,
-    unrelated,
-    ...billingCode,
-    ...storageCode,
-  ],
-};
-const globalChecks = ["index", "links", "cycles", "invariants"];
-const sameSet = (actual, expected) =>
-  Array.isArray(actual) &&
-  actual.length === expected.length &&
-  new Set(actual).size === actual.length &&
-  actual.every((value) => expected.includes(value));
-
-/** Mechanical plan records only. Explanations, contract meaning and claimed
- * diagram scope are separate semantic obligations, never keyword verdicts. */
-export function score({ output }) {
-  let rows;
-  try {
-    const blocks = [...(output ?? "").matchAll(/```json\s*([\s\S]*?)```/g)];
-    rows = blocks.length === 1 ? JSON.parse(blocks[0][1]) : null;
-  } catch {
-    rows = null;
-  }
-  if (!Array.isArray(rows))
-    return [
-      { label: "one planning array exists", pass: false, detail: "missing or invalid JSON array" },
-    ];
-  return [
-    {
-      label: "every snapshot is addressed exactly once",
-      pass: sameSet(
-        rows.map((row) => row?.id),
-        discoveryCases.map(({ id }) => id),
-      ),
-      detail: JSON.stringify(rows.map((row) => row?.id)),
-    },
-    ...discoveryCases.flatMap(({ id }) => {
-      const row = rows.find((r) => r?.id === id);
-      const reuse = id === "unchanged-evidence";
-      return [
-        {
-          label: `${id}: complete and bounded evidence selection`,
-          pass:
-            Boolean(row) &&
-            sameSet(row.inspect, reuse ? [] : required[id]) &&
-            sameSet(row.reuse, reuse ? required[id] : []),
-          detail: JSON.stringify(row ?? null),
-        },
-        {
-          label: `${id}: presentation and apply safeguards`,
-          pass:
-            Boolean(row) &&
-            (["residual-owner", "no-argument-all"].includes(id)
-              ? ["none", "candidate-local"].includes(row.diagram)
-              : row.diagram === "none") &&
-            sameSet(row.globalChecks, globalChecks) &&
-            row.action === "prepare" &&
-            row.approval === "exact-changeset" &&
-            row.freshness === "all-affected-sources-and-destinations" &&
-            typeof row.reason === "string" &&
-            row.reason.trim().length > 0,
-          detail: JSON.stringify(row ?? null),
-        },
-      ];
-    }),
-  ];
-}
-
-export function deterministicScore(input) {
-  return [...responseChecks(input, {}), ...score(input)];
-}
-
 export default {
   name: "rollup-targeted-discovery",
   description:
     "Plan target-centred rollup evidence, justified ownership expansion and unchanged-evidence reuse without global exploration or omitted contract safety. This is a planning probe, not execution coverage.",
   obligations,
-  score,
-  deterministicScore,
   build() {
     return [
       skillText("adr-rollup", {

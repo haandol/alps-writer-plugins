@@ -284,7 +284,7 @@ test("Full guidance and the ADR rules cite only the current Section 5 and 6 numb
     ].map((file) => path.join(root, "..", "adr-writer", file)),
   ];
   const earlier =
-    /Section 6\.[23]\b|6\.1 Core Features|6\.2 Non-Functional|6\.3 Feature Dependency|5\.1 User Flow|5\.1\.[12] (?:Key Pages|Page Navigation)|\b6 → 5\b|\b4, 6, 5\b|section: 6\) *(?:for|to read) (?:the )?Requirements/;
+    /Section 6\.[23]\b|6\.1 Core Features|6\.2 Non-Functional|6\.3 Feature Dependency|5\.1 User Flow|5\.1\.[12] (?:Key Pages|Page Navigation)|\b6 → 5\b|\b4, 6, 5\b|section: 6\) *(?:for|to read) (?:the )?Requirements|\bSections 3(?:,| and) 6\b/;
   for (const file of files) {
     const match = fs.readFileSync(file, "utf8").match(earlier);
     assert.equal(

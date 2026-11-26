@@ -550,11 +550,59 @@ test("decisionLogLinkTargets ignores an unedited seed (NNNN placeholder)", () =>
   assert.deepEqual(decisionLogLinkTargets(seed), []);
 });
 
+// ── CLI: ADR body links outside Related must resolve ────────────────────
+// R10 reads only Related, so a rollup that repointed Related but left a body
+// link at the deleted ADR used to pass with no error.
+test("CLI: a body link to a removed ADR outside Related is an error", () => {
+  withTmp((dir) => {
+    seedClean(dir);
+    const file = "docs/adr/identity/login/0002-rate-limit.md";
+    const body = readFileSync(path.join(dir, file), "utf8");
+    write(
+      dir,
+      file,
+      body.replace(
+        "토큰 버킷.",
+        "토큰 버킷. 한도는 [세션 정책](./0003-session-length.md)을 따른다.",
+      ),
+    );
+    const r = parseLint(dir);
+    assert.equal(r.code, 1, JSON.stringify(r.errors));
+    const hit = r.errors.find((e) => e.rule === "body-link-broken");
+    assert.ok(hit, JSON.stringify(r.errors));
+    assert.match(hit.where, /0002-rate-limit\.md:\d+$/);
+    assert.match(hit.msg, /0003-session-length\.md/);
+  });
+});
+
+test("CLI: body links that exist, leave the docs, or only illustrate stay clean", () => {
+  withTmp((dir) => {
+    seedClean(dir);
+    const file = "docs/adr/identity/login/0002-rate-limit.md";
+    const body = readFileSync(path.join(dir, file), "utf8");
+    write(
+      dir,
+      file,
+      body.replace(
+        "토큰 버킷.",
+        [
+          "토큰 버킷. [비밀번호](./0001-password-policy.md#decision)와 함께 쓴다.",
+          "[외부](https://example.com/0009-x.md), [폴더](../../../src/), `[예시](./0009-x.md)`",
+          "```markdown",
+          "[예시](./0009-template.md)",
+          "```",
+        ].join("\n"),
+      ),
+    );
+    const r = parseLint(dir);
+    assert.equal(r.code, 0, JSON.stringify(r.errors));
+  });
+});
+
 // ── CLI: decision-log ADR pointer must resolve ──────────────────────────
 // The gap this closes: a rollup renumber moves the ADR a log points at, and
-// neither the stale-citation finder (matches "<cat>/NNNN" tokens, not the log's
-// relative "./NNNN-title.md") nor R10 related-broken (reads NNNN-*.md bodies
-// only) notices the orphaned pointer.
+// R10 related-broken (reads NNNN-*.md bodies only) never notices the
+// orphaned pointer once the move is applied.
 test("CLI: a decision-log pointing at a missing ADR is an error", () => {
   withTmp((dir) => {
     seedClean(dir);

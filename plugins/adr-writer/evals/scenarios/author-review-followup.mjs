@@ -1,5 +1,4 @@
 import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks, exactDecisionRecords } from "../lib/response-checks.mjs";
 
 export const obligations = [
   {
@@ -12,33 +11,11 @@ export const obligations = [
   },
 ];
 
-const fields = ["action", "target", "status", "approval"];
-const expected = {
-  A: ["RUN_DOCUMENT_REVIEW", "saved", "Proposed", "none"],
-  B: ["WAIT_FOR_APPROVAL", "none", "unsaved", "baseline"],
-  C: ["SKIP_RECOMMENDED", "saved", "Proposed", "none"],
-  D: ["REUSE_DOCUMENT_REVIEW", "saved", "Proposed", "none"],
-  E: ["RUN_IMPLEMENTATION_REVIEW", "selected", "Proposed", "none"],
-  F: ["REUSE_IMPLEMENTATION_REVIEW", "selected", "Accepted", "none"],
-  G: ["RERUN_IMPLEMENTATION_REVIEW", "selected", "Proposed", "none"],
-  H: ["REPORT_INCOMPLETE", "selected", "Proposed", "none"],
-  I: ["REPORT_REVIEW_UNAVAILABLE", "saved", "Proposed", "none"],
-};
-
-function score(input) {
-  return exactDecisionRecords(input, fields, expected, "one record for every follow-up case");
-}
-
-export function deterministicScore(input) {
-  return [...responseChecks(input, {}), ...score(input)];
-}
-
 export default {
   name: "author-review-followup",
   description:
     "Recommend a scoped saved-ADR review and reuse the implementation completion review without weakening its gate.",
   obligations,
-  deterministicScore,
   build() {
     return [
       skillText("adr-new", {

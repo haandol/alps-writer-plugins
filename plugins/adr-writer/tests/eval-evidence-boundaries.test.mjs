@@ -7,7 +7,9 @@ import { spawnSync } from "node:child_process";
 import { withTmp, PLUGIN_ROOT } from "./helpers.mjs";
 import { makeTools } from "../evals/regression/workspace.mjs";
 import { catalog } from "../evals/skills/catalog.mjs";
-import importScenario from "../evals/scenarios/import-asks-intent-before-writing.mjs";
+import importScenario, {
+  mechanicalScore as importScore,
+} from "../evals/scenarios/import-asks-intent-before-writing.mjs";
 
 const reportPath = ".adr-review/import/report.md";
 const report =
@@ -129,69 +131,43 @@ test("discovery requires successful correlated reads of exact fixture files", ()
     const files = ["package.json", "deploy.md", "packages/checkout/backend/submit.mjs"];
     for (const file of files)
       assert.throws(() => tools.call("read_file", { path: "missing/" + file }));
-    assert.ok(importScenario.score({ dir: root, events: events() }).some((c) => !c.pass));
+    assert.ok(importScore({ dir: root, events: events() }).some((c) => !c.pass));
     for (const file of files) {
       const shadow = path.join(root, "shadow", file);
       mkdirSync(path.dirname(shadow), { recursive: true });
       writeFileSync(shadow, "Unrelated file");
       tools.call("read_file", { path: "shadow/" + file });
     }
-    assert.ok(importScenario.score({ dir: root, events: events() }).some((c) => !c.pass));
+    assert.ok(importScore({ dir: root, events: events() }).some((c) => !c.pass));
     for (const file of files) tools.call("read_file", { path: file });
     const success = events();
-    assert.ok(importScenario.score({ dir: root, events: success }).every((c) => c.pass));
+    assert.ok(importScore({ dir: root, events: success }).every((c) => c.pass));
     assert.ok(
-      importScenario
-        .score({ dir: root, events: success.filter((e) => e.kind !== "result") })
-        .some((c) => !c.pass),
+      importScore({ dir: root, events: success.filter((e) => e.kind !== "result") }).some(
+        (c) => !c.pass,
+      ),
     );
     const broken = structuredClone(success);
     broken.findLast((e) => e.kind === "result" && e.tool === "read_file").request = -1;
-    assert.ok(importScenario.score({ dir: root, events: broken }).some((c) => !c.pass));
+    assert.ok(importScore({ dir: root, events: broken }).some((c) => !c.pass));
   }));
 
 test("catalog routing preserves semantic obligations and actual mutation guards", async () => {
   const entries = await catalog();
-  const cases = {
-    "sync-batches-unclear-decisions": ["READY", "ASK_INTENT", "ASK_CONFLICT"],
-    "sync-resumes-confirmed-batch": ["CONTINUE", "APPLY", "DEFER"],
-    "author-groups-features-by-business-boundary": [
-      "TWO_CONTEXTS",
-      "TWO_CONTEXTS",
-      "HEADLESS",
-      "PARTIAL",
-    ],
-    "alps-groups-features-by-business-boundary": [
-      "TWO_CONTEXTS",
-      "TWO_CONTEXTS",
-      "HEADLESS",
-      "PARTIAL",
-    ],
-    "lite-alps-groups-features-by-business-boundary": [
-      "TWO_CONTEXTS",
-      "TWO_CONTEXTS",
-      "HEADLESS",
-      "PARTIAL",
-    ],
-    "feature-handoff-preserves-business-boundaries": [
-      "TWO_CONTEXTS",
-      "TWO_CONTEXTS",
-      "HEADLESS",
-      "PARTIAL",
-      "REUSE",
-      "PROPOSE",
-      "ASK_BOUNDARY",
-    ],
-  };
-  for (const [id, summaries] of Object.entries(cases)) {
+  const ids = [
+    "sync-batches-unclear-decisions",
+    "sync-resumes-confirmed-batch",
+    "author-groups-features-by-business-boundary",
+    "alps-groups-features-by-business-boundary",
+    "lite-alps-groups-features-by-business-boundary",
+    "feature-handoff-preserves-business-boundaries",
+  ];
+  for (const id of ids) {
     const { default: original } = await import(`../evals/scenarios/${id}.mjs`);
     const item = entries.find((c) => c.id === id);
     assert.equal(item.score, undefined);
     assert.deepEqual(item.semanticObligations, original.obligations);
-    const input = {
-      events: [],
-      tail: { findings: summaries.map((summary, i) => ({ tag: "ABCDEFG"[i], summary })) },
-    };
+    const input = { events: [] };
     assert.ok(capturedChecks(item, { ...input, before: {}, files: {} }).every((c) => c.pass));
     input.events.push({
       kind: "request",

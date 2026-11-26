@@ -9,21 +9,14 @@ import { authorArtifactChecks } from "../skills/mechanical-checks.mjs";
 //      hand-written ADR faces (structure, Status, drivers, alternatives, and the
 //      value-as-constant warning). No LLM judgement involved.
 //   2. the values from the brief survive verbatim, and the things that belong
-//      one level down (the constant name, the pool size) do not appear.
+//      one level down (the constant name, the pool size) do not appear. The
+//      semantic judge checks this from the written ADR (the `values` obligation).
 //
 // The brief deliberately mixes both kinds: real requirement values with their
 // basis, and two tuning values the author volunteered. An ADR that keeps the
 // tuning values, or blurs the requirement values, is the failure.
-import {
-  skillText,
-  PLUGIN_ROOT,
-  read,
-  TAIL_SPEC,
-  expectLintClean,
-  expectText,
-  expectNoText,
-} from "../lib/harness.mjs";
-import { appendFileSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { skillText, PLUGIN_ROOT, TAIL_SPEC, expectLintClean } from "../lib/harness.mjs";
+import { appendFileSync } from "node:fs";
 import path from "node:path";
 import { createWorkspace } from "../regression/workspace.mjs";
 import { authoringEvidenceChecks } from "../lib/authoring-evidence.mjs";
@@ -111,94 +104,22 @@ const scenario = {
       TAIL_SPEC,
     ].join("\n");
   },
-
-  score({ dir }) {
-    // Find whatever ADR got written, wherever it landed.
-    const body =
-      read(dir, "docs/adr/media/upload/0001-signed-url-upload.md") ?? findFirstAdr(dir) ?? "";
-    const mapping = read(dir, "docs/adr/.mapping.json") ?? "";
-
-    return [
-      { ...fileWritten(body), label: "an ADR file was written" },
-      // Only meaningful once something exists: the lint reports a repo with no
-      // ADRs as clean (nothing to lint), so running it against an empty fixture
-      // would score a green on a run that produced nothing at all.
-      body.trim()
-        ? expectLintClean(dir)
-        : {
-            pass: false,
-            detail: "skipped — no ADR was written, so there was nothing to lint",
-            label: "structure-lint reports no error",
-          },
-      // Requirement values, verbatim. These are the whole reason the ADR exists.
-      expectText(body, /100\s*MB/i, "keeps the 100MB attachment cap"),
-      expectText(body, /10\s*분|10 minutes/i, "keeps the 10-minute URL validity"),
-      expectText(body, /20\s*개|20 uploads|하루 20|20 per day/i, "keeps the 20-per-day free limit"),
-      // The non-numeric contract is the half most often dropped as "obvious".
-      expectText(body, /삭제됨|deleted/i, "keeps the file state set"),
-      // Tuning values belong to the code level and must not be pulled up.
-      expectNoText(
-        body,
-        /커넥션 풀|connection pool|풀은 10|pool size/i,
-        "omits the connection pool size",
-      ),
-      expectNoText(body, /워커\s*4|4 workers|워커는 4/i, "omits the worker count"),
-      // A value written as a constant is the format half of R18 — the harness
-      // warns on it, but check directly since the warning is not an error.
-      expectNoText(body, /[A-Z_]{4,}\s*=\s*\d/, "writes values as prose, not as code constants"),
-      // The mapping is part of the deliverable, not an afterthought.
-      expectText(mapping, /media\/upload/, "registers the category in .mapping.json"),
-      expectText(mapping, /"status":\s*"Proposed"/, "records the new ADR as Proposed"),
-    ];
-  },
 };
 
 export default scenario;
 
-// Retain the original artifact obligation and add explicit process coverage.
-// The legacy scorer remains artifact-only; unified DeepEval also checks actions.
+// Retain the original artifact obligation and add explicit value and process coverage.
 export const obligations = [
   ...responseObligations(scenario),
   {
     id: "candidate-before-apply",
     text: "Prepare an independent copy of the original documents, write and validate the candidate there before any official ADR or mapping write, and apply only the validated content under the given approval. Revalidate after candidate changes and check official structure after apply. A final lint pass, the evaluator's own check or pre-granted approval does not prove candidate validation occurred. Preserve required values, states and other contracts; do not invent missing policies or claim an unperformed check.",
   },
+  {
+    id: "values",
+    text: "The written ADR keeps the brief's requirement values verbatim: attachments of at most 100MB, signed URLs valid for 10 minutes after issue, at most 20 uploads per day on the free plan, and the file state set including deleted. It leaves the connection pool size of 10 and the four verification workers out of the ADR as implementation tuning, and writes values as prose rather than code constants.",
+  },
 ];
-
-export function deterministicScore(input) {
-  return [
-    ...scenario.score(input),
-    ...authoringEvidenceChecks(input.events, { draftRoot, category: "media/upload" }),
-  ];
-}
-
-function fileWritten(body) {
-  return {
-    pass: Boolean(body && body.trim()),
-    detail: body ? `${body.length} chars` : "no ADR found on disk",
-  };
-}
-
-// Fall back to any NNNN-*.md under docs/adr/ — the agent may have chosen a
-// different (still canonical) filename, which is its prerogative.
-function findFirstAdr(dir) {
-  const stack = [path.join(dir, "docs", "adr")];
-  while (stack.length) {
-    const cur = stack.pop();
-    let entries;
-    try {
-      entries = readdirSync(cur);
-    } catch {
-      continue;
-    }
-    for (const e of entries) {
-      const full = path.join(cur, e);
-      if (statSync(full).isDirectory()) stack.push(full);
-      else if (/^\d{4}-.*\.md$/.test(e)) return readFileSync(full, "utf8");
-    }
-  }
-  return null;
-}
 
 export function mechanicalScore(input) {
   return [

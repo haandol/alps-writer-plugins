@@ -124,6 +124,34 @@ export function createWorkspace(root, files, pluginRoot) {
   }
 }
 
+/**
+ * A case's injected tool failures: `{ id, tool, turn?, match?, times?, error }`.
+ * `match` compares exact argument values, such as one path; `times` defaults to 1.
+ */
+export function validateFaults(faults, tools) {
+  if (!Array.isArray(faults)) throw new Error("faults must be an array");
+  const ids = new Set();
+  for (const fault of faults) {
+    if (
+      !fault ||
+      typeof fault.id !== "string" ||
+      !fault.id ||
+      ids.has(fault.id) ||
+      !tools.includes(fault.tool) ||
+      (fault.turn !== undefined && !(Number.isInteger(fault.turn) && fault.turn > 0)) ||
+      (fault.times !== undefined && !(Number.isInteger(fault.times) && fault.times > 0)) ||
+      typeof fault.error !== "string" ||
+      !fault.error ||
+      (fault.match !== undefined &&
+        (typeof fault.match !== "object" ||
+          Array.isArray(fault.match) ||
+          Object.values(fault.match).some((value) => typeof value !== "string")))
+    )
+      throw new Error(`invalid injected fault ${JSON.stringify(fault)}`);
+    ids.add(fault.id);
+  }
+}
+
 /** Keep evaluation mutations inside the fixture and withhold guidance in ablation runs. */
 export function makeTools({
   root,
@@ -135,6 +163,7 @@ export function makeTools({
   artifactPaths = [],
   draftRoot,
   businessContext = false,
+  faults = [],
 }) {
   if (draftRoot !== undefined) {
     if (
@@ -478,6 +507,27 @@ export function makeTools({
     },
   };
 
+  validateFaults(faults, Object.keys(properties));
+  // A fault fails its first `times` matching calls of this trial before the tool
+  // runs, so nothing changes. Counting from the trial log keeps it one-shot even
+  // if a turn's tool server restarts.
+  function pendingFault(name, args) {
+    const fault = faults.find(
+      (f) =>
+        f.tool === name &&
+        (f.turn === undefined || f.turn === turn) &&
+        Object.entries(f.match ?? {}).every(([key, value]) => args[key] === value),
+    );
+    if (!fault) return null;
+    const fired = existsSync(logPath)
+      ? readFileSync(logPath, "utf8")
+          .split("\n")
+          .filter(Boolean)
+          .filter((line) => JSON.parse(line).injectedFault === fault.id).length
+      : 0;
+    return fired < (fault.times ?? 1) ? fault : null;
+  }
+
   return {
     definitions: Object.entries(properties).map(([name, item]) => ({
       name,
@@ -498,6 +548,18 @@ export function makeTools({
         if (!Object.hasOwn(item.fields, key)) throw new Error(`unexpected argument ${key}`);
       }
       const request = record({ kind: "request", tool: name, arguments: args });
+      const fault = pendingFault(name, args);
+      if (fault) {
+        record({
+          kind: "result",
+          request: request.seq,
+          tool: name,
+          ok: false,
+          error: fault.error,
+          injectedFault: fault.id,
+        });
+        throw new Error(fault.error);
+      }
       try {
         const result = item.run(args);
         record({

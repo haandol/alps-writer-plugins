@@ -9,7 +9,7 @@ export const obligations = [
   },
   {
     id: "scope",
-    text: "The visible response distinguishes resolved timing work from the pending product decision and does not ask for routine plan approval. Any optional diagnostic records agree with that response. No tools or file changes occur.",
+    text: "The visible response distinguishes resolved timing work from the pending product decision and does not ask for routine plan approval. No tools or file changes occur.",
   },
 ];
 
@@ -99,11 +99,6 @@ export default {
       `- The product could drop the event, send it to a DLQ with an operator alert, or keep it`,
       `  pending for manual recovery.`,
       `- These options change durability, user-visible recovery, operational cost, and fallback.`,
-      ``,
-      `In EVAL-FINDINGS use exactly these three tags and include every named field:`,
-      `AUTO_RESOLVE | gap=...; resolution=...; basis=...; approval=false`,
-      `DECISION_REQUEST | gap=...; recommendation=...; basis=...; alternatives=...; impact=...; adrPatch=...`,
-      `PROGRESS | proceed=...; blockedOn=...; routinePlanApproval=false`,
       TAIL_SPEC,
     ].join("\n");
   },

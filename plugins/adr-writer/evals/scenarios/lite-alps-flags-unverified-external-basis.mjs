@@ -73,9 +73,7 @@ export default {
       alpsLiteGuideText(2),
       `\n---\n\n# This run`,
       SOURCE,
-      `Respond naturally in Korean with the complete Section 2 proposal and its approval digest and choices.`,
-      `In the tail use UNVERIFIED_BASIS for each item you mark unverified, RESEARCH_OFFER once per offered item,`,
-      `and APPROVAL_CHOICES once.`,
+      `Respond naturally in Korean with the complete Section 2 proposal and its approval digest.`,
       TAIL_SPEC,
     ].join("\n");
   },

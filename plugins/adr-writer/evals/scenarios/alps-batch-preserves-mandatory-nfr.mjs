@@ -32,7 +32,6 @@ export default {
       `\n---\n\n# This run`,
       SOURCE,
       `Describe the confirmation and save plan. Do not call tools.`,
-      `Use BATCH_ALLOWED, SEPARATE_SAVE_UNIT, FOCUS_SET, and MANDATORY_NFR tags in the tail.`,
       TAIL_SPEC,
     ].join("\n");
   },

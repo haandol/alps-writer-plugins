@@ -52,9 +52,9 @@ never gates delivery; source fallback or pending figures are not rendered figure
 
 ## 2. Materialize, validate, compose, and open
 
-Materialize and validate both modes. A compact standard report can generate its
-final HTML directly when its quiz questions name their explanatory sections
-and it needs no diagram or human-decision controls. The same route handles an
+Materialize and validate both modes. A compact report, standard or full, can
+generate its final HTML directly when its quiz questions name their explanatory
+sections and it needs no diagram or human-decision controls. The same route handles an
 explicitly excluded quiz.
 
 ```bash
@@ -67,8 +67,9 @@ The article command runs the existing artifact validator before writing. It does
 not replace semantic review of the final prose or the normal open/verification
 boundary. Keep complete source evidence; no intermediate audit HTML is needed.
 
-For full or rich standard presentation, preserve selected diagrams, quizzes,
-decision controls and the existing composition path:
+A full review with no selected diagram and no human-decision control uses the
+compact route above as well. When diagrams or decision controls are selected,
+preserve them, the quizzes and the existing composition path:
 
 ```bash
 bun ${CLAUDE_PLUGIN_ROOT}/scripts/adr-impl-review-materialize.mjs <artifact-dir>

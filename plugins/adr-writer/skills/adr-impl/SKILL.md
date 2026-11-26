@@ -104,7 +104,8 @@ Implements the specified ADR in code. Once implementation, tests, the verified r
    [completion](references/completion.md). Validate ADR/index structure, choose
    standard/full from risk, and run `/adr-impl-review` against the complete
    implementation scope. Automatically repair evidence-backed defects within
-   the approved contract and rerun the necessary tests and review. A new decision,
+   the approved contract, then confirm each repaired finding with its original
+   reproduction and the affected tests. A new decision,
    contradictory premise, unverified material risk or out-of-scope destructive
    repair needs user judgment. Preserve the target's lifecycle state throughout.
 

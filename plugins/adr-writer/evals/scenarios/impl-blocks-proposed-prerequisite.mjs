@@ -1,5 +1,3 @@
-import { responseChecks } from "../lib/response-checks.mjs";
-
 export const obligations = [
   {
     id: "dependency",
@@ -10,11 +8,6 @@ export const obligations = [
     text: "Preserve the existing ADRs and mapping while reporting the dependency block. No implementation or state promotion is performed in this probe.",
   },
 ];
-
-/** Exact output/scope checks supplement the semantic obligations. */
-export function deterministicScore(input) {
-  return responseChecks(input, {}, { noTools: false });
-}
 
 import { skillText, seedRuleDocs, seedMapping, write, TAIL_SPEC } from "../lib/harness.mjs";
 
@@ -98,7 +91,6 @@ export default {
       `The user asks: "identity/login은 나중에 할게. ordering/checkout 파일과 API부터`,
       `checkout-only로 구현하고 완료 처리해줘."`,
       `Inspect the fixture and state what /adr-impl does before any code edit.`,
-      `Use BLOCKED as the finding tag when the gate prevents downstream implementation.`,
       TAIL_SPEC,
     ].join("\n");
   },

@@ -1,5 +1,4 @@
 import { agentText, ruleText, skillText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks, exactDecisionRecords } from "../lib/response-checks.mjs";
 import { sectionRange } from "../../scripts/adr-lint-lib.mjs";
 
 export const obligations = [
@@ -17,34 +16,11 @@ export const obligations = [
   },
 ];
 
-const fields = ["verdict", "basis", "criteria", "implementation"];
-const expected = {
-  A: ["FIX_REQUIRED", "SOURCE_COMPARED", "INCOMPLETE", "NOT_ASSESSED"],
-  B: ["PASS", "ADR_INTERNAL", "COMPLETE", "NOT_ASSESSED"],
-  C: ["PASS", "SOURCE_COMPARED", "COMPLETE", "NOT_ASSESSED"],
-  D: ["FIX_REQUIRED", "ADR_INTERNAL", "INCOMPLETE", "NOT_ASSESSED"],
-};
-
-function score(input) {
-  return exactDecisionRecords(
-    input,
-    fields,
-    expected,
-    "one document record per case without extras",
-  );
-}
-
-export function deterministicScore(input) {
-  return [...responseChecks(input, {}), ...score(input)];
-}
-
 export default {
   name: "review-provability",
   description:
     "Distinguish supplied intent omissions, honest ADR-internal scope, complete unimplemented documents and missing observable criteria.",
   obligations,
-  deterministicScore,
-  score,
   build() {
     const rules = sectionRange(
       ruleText("authoring-rules.md"),

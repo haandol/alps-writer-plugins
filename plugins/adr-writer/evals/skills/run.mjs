@@ -1,13 +1,37 @@
 #!/usr/bin/env bun
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, cpSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+  cpSync,
+  rmSync,
+  mkdtempSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { catalog, skillCatalog, checkReferences, filesHash, PLUGIN, ROOT } from "./catalog.mjs";
-import { caseRepeats, DEFAULT_JOBS, runPool } from "../lib/run-pool.mjs";
+import { DEFAULT_JOBS, limiter } from "../lib/run-pool.mjs";
+import {
+  behaviourFingerprint,
+  cachedSamples,
+  openCache,
+  recordDependencies,
+  scoringFingerprint,
+} from "../lib/evaluation-cache.mjs";
 import { routingCounts } from "./metrics.mjs";
+import { carriedChanges, changedProbes, defaultBase, knownCaseIds } from "./evidence-selection.mjs";
 import { startSkillsReport, renderSavedSkillsReport } from "./report.mjs";
-import { copyPlugin, runCase, calendarDate, initialFixtureChecks } from "../regression/run.mjs";
+import {
+  copyPlugin,
+  runCase,
+  calendarDate,
+  executionPrompt,
+  initialFixtureChecks,
+} from "../regression/run.mjs";
 import { invokeClaude } from "../regression/claude.mjs";
 import {
   confined,
@@ -24,8 +48,14 @@ import { parseTail, ALPS_PLUGIN_ROOT, ONTOLOGY_PLUGIN_ROOT } from "../lib/harnes
 import { evaluationImpactPaths, scenarioNamesForChangedPaths } from "../impact-map.mjs";
 import { BEDROCK_DEFAULTS } from "../deepeval/bedrock.mjs";
 import { validateReportEvaluation } from "./report-evaluation.mjs";
-import { executionOutcome } from "../lib/execution-checks.mjs";
+import { executionOutcome, ignoreReviewArtifacts } from "../lib/execution-checks.mjs";
 import { toolServerConfig } from "../regression/tool-config.mjs";
+
+/** The automatic policy's repeat ceiling after a failed, erroneous or unscored run. */
+export const AUTO_MAX_RUNS = 3;
+
+/** The target for routine regression; `--release` or `--model` choose another. */
+export const REGRESSION_MODEL = "sonnet";
 
 const HELP = `Skill evaluation — classification, routing, execution
 
@@ -34,15 +64,27 @@ const HELP = `Skill evaluation — classification, routing, execution
   bun run eval:skills --prepare --suite execution --compare without-skill
   bun run eval:skills --live --suite execution --compare without-skill --runs 5
   bun run eval:skills --live --suite execution --compare both --baseline HEAD~1
+  bun run eval:skills --live --changed main
   bun run eval:skills --live --suite routing --runs 3
   bun run eval:skills --report .codex/evals/<run> --open
   bun run eval:skills --live --rejudge .codex/evals/<run> --jobs 2
 
-Defaults: --prepare, --suite all, --runs 3, --compare none. --live explicitly
+Defaults: --prepare, --suite all, --runs auto, --compare none. --live explicitly
 permits target and semantic-judge calls. Deterministic scorers do not call a judge.
+--runs auto runs each case once (twice for a new case or with --confirm) and up
+to ${AUTO_MAX_RUNS} times only after a failure or error. Reuse depends on content: a
+result whose prompt, fixture, tool permissions, consumed plugin files,
+obligations and scoring code are unchanged is reused from .codex/evals/cache;
+one whose scoring alone changed is rejudged from its stored evidence. The
+model, client and judge are recorded, not reuse keys; --no-reuse runs fresh.
+--changed adds cases whose prompt carries a changed hunk or whose cached
+fingerprints changed, and reports the omitted rest.
+--runs N runs N fresh repeats (defect reproduction); comparisons default to 3.
+Routine --runs auto targets --model ${REGRESSION_MODEL} unless --model is given; --release
+runs the user's default model fresh (no reuse) for a release check.
 All catalog classification responses receive DeepEval GEval judgments; existing
 local checks remain independent gates. Routing is scored deterministically.
---only filters case IDs; --changed <git-base> selects impacted cases.
+--only filters case IDs (comma-separated substrings); --changed <git-base> selects impacted cases.
 --jobs bounds concurrent independent repeats (default up to 4; use 1 for serial).
 --model chooses the Claude target; --judge-model/profile/region/provider choose
 the existing DeepEval judge (Bedrock defaults). No provider fallback.
@@ -54,8 +96,17 @@ Quality failures are findings, not CI gates. Exit 2 means setup/no scorable resu
 
 /** Parse one explicit execution intent; report/list/prepare never inherit live behavior. */
 export function parseSkillsArgs(args) {
-  const o = { suite: "all", runs: 3, jobs: DEFAULT_JOBS, timeout: 300, compare: "none" };
-  const flags = new Set(["live", "prepare", "list", "open", "help"]);
+  const o = { suite: "all", jobs: DEFAULT_JOBS, timeout: 300, compare: "none" };
+  const flags = new Set([
+    "live",
+    "prepare",
+    "list",
+    "open",
+    "help",
+    "no-reuse",
+    "confirm",
+    "release",
+  ]);
   const values = new Set([
     "suite",
     "runs",
@@ -106,7 +157,19 @@ export function parseSkillsArgs(args) {
     throw new Error("Version comparison requires --compare versions|both and --baseline");
   if (o.compare !== "none" && !["all", "execution"].includes(o.suite))
     throw new Error("Comparisons require the execution suite");
-  for (const key of ["runs", "jobs", "timeout"]) {
+  // Regression evidence defaults to one run; measurements keep their repeat count.
+  o.runs ??= o.compare === "none" ? "auto" : "3";
+  if (o.runs !== "auto") {
+    o.runs = Number(o.runs);
+    if (!Number.isInteger(o.runs) || o.runs < 1)
+      throw new Error("--runs must be auto or a positive integer");
+  }
+  if (o.runs === "auto" && o.compare !== "none")
+    throw new Error("Comparisons measure fresh repeats; give --runs N");
+  if (o.release) o["no-reuse"] = true;
+  if (o.confirm && o.runs !== "auto")
+    throw new Error("--confirm applies to --runs auto; --runs N already fixes the count");
+  for (const key of ["jobs", "timeout"]) {
     o[key] = Number(o[key]);
     if (!Number.isInteger(o[key]) || o[key] < 1)
       throw new Error(`--${key} must be a positive integer`);
@@ -131,6 +194,9 @@ export function parseSkillsArgs(args) {
       );
     o.targetBedrock = { profile: o["target-profile"], region: o["target-region"] };
   }
+  // Routine regression runs on a lower-cost target; a release check runs the
+  // user's default model fresh, so cached routine evidence never stands in for it.
+  if (!o.model && !o.release && o.runs === "auto") o.model = REGRESSION_MODEL;
   return o;
 }
 
@@ -169,8 +235,11 @@ export function selectImpacted(cases, changedPaths) {
       (c.type === "classification"
         ? classification.has(c.id)
         : c.type === "routing"
-          ? paths.some(
-              (p) => /\/skills\/|\/references\/|\/hooks\//.test(p) || p.includes("evals/skills/"),
+          ? // Routing shows only shipped skill names, descriptions and selected bodies.
+            paths.some(
+              (p) =>
+                /^plugins\/(adr|alps)-writer\/skills\/[^/]+\/SKILL\.md$/.test(p) ||
+                p.includes("evals/skills/"),
             )
           : paths.some(
               (p) =>
@@ -248,36 +317,38 @@ function addSiblingGuidance(destination) {
   }
 }
 
-/** Read plugin metadata first and only selected bodies second; expectations never enter either prompt. */
-async function runRouting(item, record, folder, entries, options, dependencies) {
+/** The routing prompt shows only shipped names and descriptions; expectations never enter it. */
+function routingPrompt(item, entries) {
   const visible = entries.map(({ name, description }) => ({ name, description }));
-  const prompt = `Select the skills needed for this user request from the shipped catalog. Return JSON {"selected":[names]}; use [] when no skill is needed. Do not execute the task.\nCatalog:\n${JSON.stringify(visible)}\nRequest:\n${item.prompt}`;
-  json(folder, "selection-input.json", { prompt });
-  record.inputHash = sha({ prompt, required: item.required, allowed: item.allowed });
-  if (!options.live) return;
-  const response = await dependencies.target({
-    prompt,
-    cwd: folder,
-    model: options.model,
-    timeoutMs: options.timeout * 1000,
-    schema: {
-      type: "object",
-      properties: { selected: { type: "array", items: { type: "string" } } },
-      required: ["selected"],
-      additionalProperties: false,
-    },
+  return `Select the skills needed for this user request from the shipped catalog. Return JSON {"selected":[names]}; use [] when no skill is needed. Do not execute the task.\nCatalog:\n${JSON.stringify(visible)}\nRequest:\n${item.prompt}`;
+}
+
+/** The structured answer a routing trial must return; the model receives it with the prompt. */
+const ROUTING_SCHEMA = {
+  type: "object",
+  properties: { selected: { type: "array", items: { type: "string" } } },
+  required: ["selected"],
+  additionalProperties: false,
+};
+
+/** The second routing prompt, which shows the selected shipped skill bodies. */
+function routingBodyPrompt(selected, bodies, request) {
+  return `The previous catalog selection was ${JSON.stringify(selected)}. Read the selected shipped skill bodies below. Describe their relevant scope briefly; do not execute the user task.\n${JSON.stringify(bodies)}\nRequest: ${request}`;
+}
+
+/** The content a routing trial is given: both prompts and the answer schema. */
+function routingBehaviour(item, entries) {
+  return behaviourFingerprint({
+    prompt: routingPrompt(item, entries),
+    item,
+    // The bodies themselves are recorded per run as `skill:` dependencies.
+    extra: { schema: ROUTING_SCHEMA, bodyPrompt: routingBodyPrompt(["<S>"], ["<B>"], item.prompt) },
   });
-  recordCall(record, "target", response);
-  json(folder, "selection-response.json", response);
-  const selected = (response.structured ?? JSON.parse(response.text)).selected;
-  if (
-    !Array.isArray(selected) ||
-    new Set(selected).size !== selected.length ||
-    selected.some((name) => !entries.some((e) => e.name === name))
-  )
-    throw new Error("Malformed or unknown selected skill");
-  record.selected = selected;
-  record.routing = routingCounts(item.required, item.allowed, selected);
+}
+
+/** Score one captured selection deterministically; no model is involved.*/
+function scoreRouting(item, record) {
+  record.routing = routingCounts(item.required, item.allowed, record.selected);
   record.checks = [
     {
       label: "required routes selected",
@@ -290,6 +361,33 @@ async function runRouting(item, record, folder, entries, options, dependencies) 
       detail: JSON.stringify(record.routing),
     },
   ];
+  record.verdict = record.checks.every((c) => c.pass) ? "PASS" : "NOT_PROVEN";
+}
+
+/** Read plugin metadata first and only selected bodies second; expectations never enter either prompt. */
+async function runRouting(item, record, folder, entries, options, dependencies) {
+  const prompt = routingPrompt(item, entries);
+  json(folder, "selection-input.json", { prompt });
+  record.inputHash = sha({ prompt, required: item.required, allowed: item.allowed });
+  record.behaviourHash = routingBehaviour(item, entries);
+  if (!options.live) return;
+  const response = await dependencies.target({
+    prompt,
+    cwd: folder,
+    model: options.model,
+    timeoutMs: options.timeout * 1000,
+    schema: ROUTING_SCHEMA,
+  });
+  recordCall(record, "target", response);
+  json(folder, "selection-response.json", response);
+  const selected = (response.structured ?? JSON.parse(response.text)).selected;
+  if (
+    !Array.isArray(selected) ||
+    new Set(selected).size !== selected.length ||
+    selected.some((name) => !entries.some((e) => e.name === name))
+  )
+    throw new Error("Malformed or unknown selected skill");
+  record.selected = selected;
   // Body availability is a separate observable phase; no task outcome is claimed.
   const bodies = entries
     .filter((e) => selected.includes(e.name))
@@ -297,7 +395,7 @@ async function runRouting(item, record, folder, entries, options, dependencies) 
   json(folder, "selected-bodies.json", bodies);
   if (bodies.length) {
     const readResponse = await dependencies.target({
-      prompt: `The previous catalog selection was ${JSON.stringify(selected)}. Read the selected shipped skill bodies below. Describe their relevant scope briefly; do not execute the user task.\n${JSON.stringify(bodies)}\nRequest: ${item.prompt}`,
+      prompt: routingBodyPrompt(selected, bodies, item.prompt),
       cwd: folder,
       model: options.model,
       timeoutMs: options.timeout * 1000,
@@ -305,17 +403,20 @@ async function runRouting(item, record, folder, entries, options, dependencies) 
     recordCall(record, "target", readResponse);
     json(folder, "body-response.json", readResponse);
   }
-  record.verdict = record.checks.every((c) => c.pass) ? "PASS" : "NOT_PROVEN";
+  // The selected bodies were shown to the target, so they are inputs of this trial.
+  record.dependencies = recordDependencies([], skillContext(entries), { skills: selected });
+  record.captured = true;
+  scoreRouting(item, record);
 }
 
-/** Judge captured replies semantically while retaining objective artifact and action checks. */
-async function runClassification(item, record, folder, pluginRoot, options, dependencies) {
+/** Dependency context for routing trials: the shipped skill bodies by name. */
+function skillContext(entries) {
+  return { skills: new Map(entries.map(({ name, source }) => [name, source])) };
+}
+
+/** Build a probe's fixture and prompt and check its capabilities; no model is called. */
+async function prepareClassification(item, record, folder, pluginRoot, options, fingerprint) {
   validateReportEvaluation(item);
-  if (item.id === "review-real-repo-adr" && options.only !== item.id) {
-    record.notRunReason =
-      "외부 저장소 사례는 --only review-real-repo-adr로 명시하고 입력을 설정해야 합니다.";
-    return;
-  }
   if (!Array.isArray(item.semanticObligations) || !item.semanticObligations.length)
     throw new Error("Classification requires fixed semantic obligations before target execution");
   const root = path.join(folder, "workspace");
@@ -343,6 +444,35 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
   json(folder, "input.json", { prompt: wrapped, files: initial });
   record.promptHash = sha(prompt.split(root).join("<FIXTURE>"));
   record.inputHash = sha({ prompt: record.promptHash, files: initial });
+  // Only a cached run needs its behaviour fingerprint.
+  if (fingerprint) record.behaviourHash = behaviourFingerprint({ prompt: wrapped, root, item });
+  return { root, prompt, wrapped, log, config, initial };
+}
+
+/** Judge captured replies semantically while retaining objective artifact and action checks. */
+async function runClassification(
+  item,
+  record,
+  folder,
+  pluginRoot,
+  options,
+  dependencies,
+  fingerprint = false,
+) {
+  validateReportEvaluation(item);
+  if (item.id === "review-real-repo-adr" && !options.only?.split(",").includes(item.id)) {
+    record.notRunReason =
+      "외부 저장소 사례는 --only review-real-repo-adr로 명시하고 입력을 설정해야 합니다.";
+    return;
+  }
+  const { root, prompt, wrapped, log, config, initial } = await prepareClassification(
+    item,
+    record,
+    folder,
+    pluginRoot,
+    options,
+    fingerprint,
+  );
   if (!options.live) return;
   let response;
   try {
@@ -351,7 +481,8 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
       cwd: root,
       config,
       model: options.model,
-      timeoutMs: options.timeout * 1000,
+      // A heavy scenario declares the longer limit its whole-document answer needs.
+      timeoutMs: Math.max(options.timeout * 1000, item.agentTimeoutMs ?? 0),
     });
   } catch (error) {
     // A timed-out invocation can leave a useful document. Keep its files and
@@ -377,14 +508,44 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
     .filter(Boolean)
     .map((line) => JSON.parse(line));
   json(folder, "evidence.json", { reply: response.text, tail, files, events: rawEvents });
+  // The plugin files this run read decide whether a later edit invalidates it.
+  record.dependencies = recordDependencies(
+    events,
+    { pluginRoot },
+    { guidance: !item.directiveOnly },
+  );
   if (!response.text?.trim()) throw new Error("Missing scorable reply");
-  const before = JSON.parse(readFileSync(path.join(folder, "input.json"), "utf8")).files;
+  record.captured = true;
+  const evidence = {
+    before: initial,
+    after: files,
+    events,
+    turns: [prompt],
+    replies: [response.text],
+    referenceDate: options.referenceDate,
+  };
+  json(folder, "judge-input-evidence.json", evidence);
+  await scoreClassification(item, record, folder, evidence, root, options, dependencies);
+}
+
+/** Apply the current mechanical checks and semantic judge to one captured reply. */
+async function scoreClassification(
+  item,
+  record,
+  folder,
+  evidence,
+  workspace,
+  options,
+  dependencies,
+) {
+  const { before, after: files, events } = evidence;
   record.checks = capturedChecks(item, { before, files, events });
   if (item.supplementalChecks && item.score) {
+    const output = evidence.replies.at(-1);
     const additional = await item.score({
-      tail,
-      output: response.text,
-      dir: root,
+      tail: parseTail(output),
+      output,
+      dir: workspace,
       events,
       before,
       files,
@@ -394,15 +555,8 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
     record.checks.push(...additional);
   }
   await judgeEvidence(
-    { ...item, obligations: item.semanticObligations, turns: [prompt] },
-    {
-      before,
-      after: files,
-      events,
-      turns: [prompt],
-      replies: [response.text],
-      referenceDate: options.referenceDate,
-    },
+    { ...item, obligations: item.semanticObligations, turns: evidence.turns },
+    evidence,
     record,
     folder,
     options,
@@ -410,6 +564,82 @@ async function runClassification(item, record, folder, pluginRoot, options, depe
   );
   if (record.verdict === "PASS" && record.checks?.some((c) => !c.pass))
     record.verdict = "NOT_PROVEN";
+}
+
+/** Fields of a cached trial that describe its result rather than its identity in this run. */
+function cachedResult(folder, record) {
+  const cached = JSON.parse(readFileSync(path.join(folder, "result.json"), "utf8"));
+  const { caseId, type, variant, repeat, artifactDirectory, calls, elapsedMs, ...result } = cached;
+  if (result.captureDirectory)
+    result.capture = `${record.artifactDirectory}/${result.captureDirectory}/evidence.json`;
+  return result;
+}
+
+/** Present a cached result with identical fingerprints as earlier evidence, not a new trial. */
+function reuseCached(record, folder, entry) {
+  Object.assign(record, cachedResult(folder, record), {
+    origin: "reused",
+    reusedFrom: {
+      id: entry.id,
+      createdAt: entry.createdAt,
+      origin: entry.origin,
+      behaviour: entry.behaviour,
+      scoring: entry.scoring,
+      clientVersion: entry.clientVersion ?? null,
+      // Unknown cost stays unknown; it is never reported as free.
+      costUSD: entry.costUSD ?? null,
+      unpricedCalls: entry.unpricedCalls ?? null,
+    },
+    calls: [],
+  });
+}
+
+/** Judge a cached reply under the current scoring; the target is not called again. */
+async function rejudgeCached(candidate, item, record, folder, entry, options, deps) {
+  const cached = cachedResult(folder, record);
+  for (const file of readdirSync(folder))
+    if (
+      /^(result|deepeval-result|test-case|execution-checks|judge-response-\d+)\.json$|^final-checks\.jsonl$/.test(
+        file,
+      )
+    )
+      rmSync(path.join(folder, file));
+  Object.assign(record, {
+    origin: "rejudged",
+    source: entry.source ?? entry.id,
+    behaviourHash: entry.behaviour,
+    dependencies: entry.dependencies,
+    promptHash: cached.promptHash,
+    inputHash: cached.inputHash,
+    conditionHash: cached.conditionHash,
+    targetModels: entry.targetModels ?? [],
+    modelIdentityIncomplete: entry.modelIdentityIncomplete,
+    clientVersion: entry.clientVersion ?? null,
+    captured: true,
+  });
+  if (item.type === "routing") {
+    record.selected = cached.selected;
+    return scoreRouting(item, record);
+  }
+  if (item.type === "execution") {
+    Object.assign(record, {
+      capture: cached.capture,
+      captureDirectory: cached.captureDirectory,
+      referenceDate: cached.referenceDate ?? record.referenceDate,
+    });
+    return scoreExecution(item, record, folder, item.build(), candidate, options, deps);
+  }
+  const evidence = JSON.parse(readFileSync(path.join(folder, "judge-input-evidence.json"), "utf8"));
+  record.referenceDate = evidence.referenceDate ?? record.referenceDate;
+  await scoreClassification(
+    item,
+    record,
+    folder,
+    evidence,
+    path.join(folder, "workspace"),
+    options,
+    deps,
+  );
 }
 
 /** Use one citation-validated DeepEval path for semantic probes and actual document operations. */
@@ -447,6 +677,7 @@ async function runExecution(
   options,
   dependencies,
   report,
+  fingerprint = false,
 ) {
   if (variant.guidance !== false) {
     const body = readFileSync(path.join(variant.root, "skills", item.skill, "SKILL.md"), "utf8");
@@ -504,13 +735,79 @@ async function runExecution(
   });
   for (const call of captured.calls) recordCall(record, "target", call);
   record.capture = `${record.artifactDirectory}/${captured.artifactDirectory}/evidence.json`;
+  record.captureDirectory = captured.artifactDirectory;
+  if (captured.verdict !== "UNSCORED")
+    throw new Error(captured.error ?? "Target execution did not complete");
   const evidence = JSON.parse(
     readFileSync(path.join(folder, captured.artifactDirectory, "evidence.json"), "utf8"),
   );
-  if (captured.verdict !== "UNSCORED")
-    throw new Error(captured.error ?? "Target execution did not complete");
+  // Only a cached run needs its behaviour fingerprint.
+  if (fingerprint)
+    record.behaviourHash = executionBehaviour(
+      item,
+      fixture,
+      variant,
+      candidate,
+      options,
+      path.join(folder, "fingerprint"),
+    );
+  record.dependencies = recordDependencies(
+    evidence.events ?? [],
+    { pluginRoot: variant.root, checkerRoot: candidate.root },
+    { guidance: variant.guidance !== false },
+  );
+  record.captured = true;
+  await scoreExecution(item, record, folder, fixture, candidate, options, dependencies);
+}
+
+/** The content of one execution trial: its fingerprint and the text it carries. */
+function executionInputs(item, fixture, variant, candidate, options, scratch) {
+  createWorkspace(scratch, fixture, candidate.root);
+  try {
+    // The first-turn prompt carries the template and skill body; later turns add
+    // the item's own turns and the run's history. The date is a value, not content.
+    const prompt = executionPrompt(
+      item,
+      variant.root,
+      [],
+      options.referenceDate,
+      variant.guidance !== false,
+    );
+    const files = listFiles(scratch).map((file) => readFileSync(confined(scratch, file), "utf8"));
+    return {
+      behaviour: behaviourFingerprint({
+        prompt,
+        root: scratch,
+        item,
+        date: options.referenceDate,
+        // Fixture edits between turns and injected tool faults are what the model meets.
+        extra: {
+          turns: item.turns,
+          condition: variant.name,
+          betweenTurns: item.betweenTurns ?? null,
+          faults: item.faults ?? null,
+        },
+      }),
+      text: [prompt, JSON.stringify(item.turns), ...files].join("\n"),
+    };
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
+}
+
+/** Behaviour fingerprint of one execution trial. */
+function executionBehaviour(item, fixture, variant, candidate, options, scratch) {
+  return executionInputs(item, fixture, variant, candidate, options, scratch).behaviour;
+}
+
+/** Apply the current execution checks and judge to one captured multi-turn run. */
+async function scoreExecution(item, record, folder, fixture, candidate, options, dependencies) {
+  const evidence = JSON.parse(
+    readFileSync(path.join(folder, record.captureDirectory, "evidence.json"), "utf8"),
+  );
+  ignoreReviewArtifacts(path.join(folder, record.captureDirectory, "workspace"));
   const finalTools = makeTools({
-    root: path.join(folder, captured.artifactDirectory, "workspace"),
+    root: path.join(folder, record.captureDirectory, "workspace"),
     pluginRoot: candidate.root,
     logPath: path.join(folder, "final-checks.jsonl"),
     turn: item.turns.length,
@@ -559,30 +856,36 @@ export async function main(args, injected = {}) {
   let cases = (injected.cases ?? (await catalog())).filter(
     (c) => options.suite === "all" || c.type === options.suite,
   );
+  // `--only a,b` keeps cases matching any comma-separated substring.
+  const only = options.only?.split(",").filter(Boolean) ?? [];
+  if (only.length) cases = cases.filter((c) => only.some((part) => c.id.includes(part)));
+  const available = cases;
   let changed;
+  let probes = [];
   if (options.changed) {
-    changed = changedPaths(options.changed);
+    changed = injected.changedPaths ?? changedPaths(options.changed);
     cases = selectImpacted(cases, changed);
+    probes = injected.probes ?? changedProbes(options.changed, changed);
   }
-  if (options.only) cases = cases.filter((c) => c.id.includes(options.only));
-  if (!cases.length) {
-    if (options.changed) {
-      process.stdout.write("No related evaluation cases. No model called.\n");
-      return { status: 0 };
-    }
-    throw new Error("No matching evaluation cases");
-  }
-  if (options.list) {
-    for (const c of cases) process.stdout.write(`${c.type}\t${c.id}\n`);
-    return { status: 0 };
-  }
-  const output = path.resolve(
-    options.out ??
-      path.join(ROOT, ".codex/evals", `skills-${new Date().toISOString().replace(/[:.]/g, "-")}`),
-  );
-  if (existsSync(output) && readdirSync(output).length)
+  // Listing builds fixtures to find carried changes, so it works in a throwaway directory.
+  const output = options.list
+    ? mkdtempSync(path.join(tmpdir(), "skill-evals-list-"))
+    : path.resolve(
+        options.out ??
+          path.join(
+            ROOT,
+            ".codex/evals",
+            `skills-${new Date().toISOString().replace(/[:.]/g, "-")}`,
+          ),
+      );
+  if (!options.list && existsSync(output) && readdirSync(output).length)
     throw new Error("--out must be new or empty");
   mkdirSync(output, { recursive: true });
+  // Fixtures live under the output, which may sit inside this repository's
+  // work tree. Stop Git discovery at the output so a fixture never sees the
+  // outer repository's history or status as its own.
+  const previousCeiling = process.env.GIT_CEILING_DIRECTORIES;
+  process.env.GIT_CEILING_DIRECTORIES = [output, previousCeiling].filter(Boolean).join(":");
   const candidate = {
     name: "candidate",
     ...copyPlugin(path.join(output, "plugin/candidate"), PLUGIN, null, {
@@ -603,11 +906,6 @@ export async function main(args, injected = {}) {
   cpSync(candidate.root, probeRoot, { recursive: true });
   addSiblingGuidance(probeRoot);
   const entries = skillCatalog();
-  json(
-    output,
-    "skill-catalog.json",
-    entries.map(({ name, description, hash }) => ({ name, description, hash })),
-  );
   const dependencies = {
     ...injected,
     target: (request) =>
@@ -616,9 +914,166 @@ export async function main(args, injected = {}) {
         ...(options.targetBedrock ? { bedrock: options.targetBedrock } : {}),
       }),
   };
+  const auto = options.runs === "auto";
+  // Injected test targets never read or write the shared local cache unless given one.
+  const cache =
+    "cache" in injected
+      ? injected.cache
+      : injected.target || injected.judge || injected.evaluate
+        ? null
+        : openCache();
+  // Recorded with each live result (not a reuse key); reading it calls no model.
   const version = options.live
-    ? spawnSync("claude", ["--version"], { encoding: "utf8", timeout: 10_000 })
+    ? (injected.clientVersion ??
+      spawnSync("claude", ["--version"], { encoding: "utf8", timeout: 10_000 }))
     : null;
+  options.clientVersion =
+    typeof version === "string" ? version : version?.status === 0 ? version.stdout.trim() : null;
+
+  let known;
+  const isNew =
+    injected.isNew ??
+    ((item) => !(known ??= knownCaseIds(available, defaultBase(options.changed))).has(item.id));
+  const memo = (compute) => {
+    const values = new Map();
+    return async (item) => {
+      if (!values.has(item.id)) values.set(item.id, await compute(item));
+      return values.get(item.id);
+    };
+  };
+  const scoringOf = (item) =>
+    scoringFingerprint({
+      item,
+      ...(item.type === "routing" ? { code: [scoreRouting, routingCounts] } : {}),
+    });
+  const contextOf = (item) =>
+    item.type === "routing"
+      ? skillContext(entries)
+      : item.type === "execution"
+        ? { pluginRoot: candidate.root, checkerRoot: candidate.root }
+        : { pluginRoot: probeRoot };
+  /** The behaviour fingerprint and carried text of a case, built without calling a model. */
+  const inputsOf = memo(async (item) => {
+    if (item.id === "review-real-repo-adr" && !options.only?.split(",").includes(item.id))
+      return null;
+    try {
+      if (item.type === "routing")
+        return { behaviour: routingBehaviour(item, entries), text: routingPrompt(item, entries) };
+      const folder = confined(output, `plan/${item.id}`);
+      mkdirSync(folder, { recursive: true });
+      try {
+        if (item.type === "execution")
+          return executionInputs(
+            item,
+            item.build(),
+            candidate,
+            candidate,
+            options,
+            path.join(folder, "w"),
+          );
+        const probe = {};
+        const { wrapped, root } = await prepareClassification(
+          item,
+          probe,
+          folder,
+          probeRoot,
+          options,
+          true,
+        );
+        const files = listFiles(root).map((file) => readFileSync(confined(root, file), "utf8"));
+        return { behaviour: probe.behaviourHash, text: [wrapped, ...files].join("\n") };
+      } finally {
+        rmSync(folder, { recursive: true, force: true });
+      }
+    } catch (error) {
+      // The trial reports the preparation error itself; selection must not hide it.
+      return { error: error.message };
+    }
+  });
+  const samplesOf = memo(async (item) => {
+    const inputs = await inputsOf(item);
+    if (!cache || !inputs?.behaviour) return { reusable: [], rejudgeable: [] };
+    return cachedSamples(cache, item.id, {
+      behaviour: inputs.behaviour,
+      scoring: scoringOf(item),
+      context: contextOf(item),
+    });
+  });
+
+  // The impact map is a path heuristic. A case it skipped still runs when its
+  // prompt or fixture carries a changed hunk, or when its cached evidence no
+  // longer matches its current inputs, plugin reads included.
+  const reasons = new Map();
+  let omitted = [];
+  if (options.changed) {
+    const selected = new Set(cases.map((c) => c.id));
+    for (const item of available) {
+      if (selected.has(item.id)) continue;
+      const inputs = probes.length || cache?.entries(item.id).length ? await inputsOf(item) : null;
+      const carried = inputs?.text ? carriedChanges(inputs.text, probes) : [];
+      if (inputs?.error) reasons.set(item.id, `could not be prepared: ${inputs.error}`);
+      else if (carried.length) reasons.set(item.id, `carries ${carried.join(", ")}`);
+      else if (inputs?.behaviour && cache?.entries(item.id).length) {
+        const { reusable, rejudgeable, stale } = await samplesOf(item);
+        if (!reusable.length)
+          reasons.set(
+            item.id,
+            stale
+              ? "a plugin file one of its runs consumed has changed"
+              : rejudgeable.length
+                ? "its scoring changed or its earlier judgment failed"
+                : "its inputs changed since its cached run",
+          );
+      }
+    }
+    cases = available.filter((c) => selected.has(c.id) || reasons.has(c.id));
+    omitted = available.filter((c) => !cases.includes(c)).map((c) => c.id);
+    for (const [id, reason] of reasons)
+      process.stdout.write(`Selected beyond the impact map: ${id} — ${reason}\n`);
+    process.stdout.write(
+      `Change selection: ${cases.length} of ${available.length} case(s); ${omitted.length} omitted.\n`,
+    );
+  }
+  const restoreCeiling = () => {
+    if (previousCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES;
+    else process.env.GIT_CEILING_DIRECTORIES = previousCeiling;
+  };
+  if (!cases.length || options.list) {
+    restoreCeiling();
+    if (options.list) for (const c of cases) process.stdout.write(`${c.type}\t${c.id}\n`);
+    if (options.list) rmSync(output, { recursive: true, force: true });
+    if (options.list || options.changed) {
+      if (!cases.length) process.stdout.write("No related evaluation cases. No model called.\n");
+      return { status: 0 };
+    }
+    throw new Error("No matching evaluation cases");
+  }
+  json(
+    output,
+    "skill-catalog.json",
+    entries.map(({ name, description, hash }) => ({ name, description, hash })),
+  );
+
+  /** Decide how many trials a case needs and which of them cached evidence can supply. */
+  async function planCase(item) {
+    if (!auto) return { count: options.runs, reuse: [], rejudge: [] };
+    const required = options.confirm || isNew(item) ? 2 : 1;
+    if (!cache || options["no-reuse"] || !cache.entries(item.id).length)
+      return { count: required, reuse: [], rejudge: [] };
+    const { reusable, rejudgeable } = await samplesOf(item);
+    // Every cached run with this behaviour stays in the sample once a failure is
+    // known or the scoring changed: current ones are reused, the rest rejudged,
+    // so neither a later pass nor a new scoring hides an earlier failure.
+    const failing = reusable.some((e) => e.verdict !== "PASS");
+    const complete = failing || rejudgeable.length > 0;
+    const reuse = complete ? reusable : reusable.slice(0, required);
+    const rejudge = complete ? rejudgeable : [];
+    const count = Math.max(required, reuse.length + rejudge.length, failing ? AUTO_MAX_RUNS : 0);
+    return { count, reuse, rejudge };
+  }
+  const plans = new Map();
+  for (const item of cases) plans.set(item.id, await planCase(item));
+
   const report = {
     schemaVersion: 1,
     scoringPolicy: "semantic-v1",
@@ -631,15 +1086,21 @@ export async function main(args, injected = {}) {
       changed: options.changed ?? null,
       paths: changed ?? null,
       compare: options.compare,
+      beyondImpactMap: Object.fromEntries(reasons),
+      omitted,
     },
-    runsPerCase: options.runs,
+    runsPerCase: auto
+      ? Math.max(AUTO_MAX_RUNS, ...[...plans.values()].map((plan) => plan.count))
+      : options.runs,
+    repeatPolicy: auto ? "auto" : "fixed",
+    autoMaxRuns: AUTO_MAX_RUNS,
     referenceDate: options.referenceDate,
     variants: variants.map((v) => v.name),
     runtime: {
       node: process.version,
       platform: process.platform,
       client: "claude-bare-fixture",
-      clientVersion: version?.status === 0 ? version.stdout.trim() : null,
+      clientVersion: options.clientVersion,
       requestedModel: options.model ?? null,
       targetBedrock: options.targetBedrock ?? null,
       judge: options.judge,
@@ -657,8 +1118,9 @@ export async function main(args, injected = {}) {
     datasetHash: sha(cases.map(({ build, score, ...c }) => c)),
     runs: [],
   };
-  // Keep the report's order stable even when repeat groups finish out of order.
-  const groups = caseRepeats(cases, options.runs).map(({ item, repeat }) => {
+  const groupsByCase = new Map(cases.map((c) => [c.id, []]));
+  /** Add one repeat of a case; paired execution variants alternate their order. */
+  function addRepeat(item, repeat, source = { mode: "execute" }) {
     const trials = (item.type === "execution" ? variants : [candidate]).map((variant) => {
       const record = {
         caseId: item.id,
@@ -670,14 +1132,43 @@ export async function main(args, injected = {}) {
         judgeModels: [],
         calls: [],
         referenceDate: options.referenceDate,
+        clientVersion: options.clientVersion,
         artifactDirectory: `runs/${item.id}-${variant.name}-${repeat}`,
       };
       report.runs.push(record);
       return { record, variant };
     });
     if (repeat % 2 === 0) trials.reverse();
-    return { item, trials };
-  });
+    const group = { item, trials, ...source };
+    groupsByCase.get(item.id).push(group);
+    return group;
+  }
+
+  for (const item of cases) {
+    const plan = plans.get(item.id);
+    const sources = [
+      ...plan.reuse.map((entry) => ({ mode: "reuse", entry })),
+      ...plan.rejudge.map((entry) => ({ mode: "rejudge", entry })),
+    ];
+    for (let repeat = 1; repeat <= plan.count; repeat++)
+      addRepeat(item, repeat, sources[repeat - 1] ?? { mode: "execute" });
+  }
+  const byMode = (mode) => [...groupsByCase.values()].flat().filter((group) => group.mode === mode);
+  // Reused and rejudged cases are always named; a long execution list is summarised.
+  const listed = (groups, limit = Infinity) => {
+    const ids = [...new Set(groups.map((g) => g.item.id))];
+    if (!ids.length) return "";
+    return ids.length > limit
+      ? ` (${ids.length} cases; names in the HTML report)`
+      : ` (${ids.join(", ")})`;
+  };
+  process.stdout.write(
+    `Evidence plan: execute ${byMode("execute").length}${listed(byMode("execute"), 20)}; ` +
+      `rejudge ${byMode("rejudge").length}${listed(byMode("rejudge"))}; ` +
+      `reuse ${byMode("reuse").length}${listed(byMode("reuse"))}` +
+      (auto ? `; failures add repeats up to ${AUTO_MAX_RUNS}` : "") +
+      "\n",
+  );
   const progress = startSkillsReport(output, report, (byCase) => {
     report.datasetHash = sha(
       report.cases.map((item) => ({
@@ -693,51 +1184,129 @@ export async function main(args, injected = {}) {
       })),
     );
   });
+
+  async function runGroup({ item, trials, mode, entry }) {
+    for (const { record: slot, variant } of trials) {
+      const record = structuredClone(slot);
+      const folder = confined(output, record.artifactDirectory);
+      mkdirSync(folder, { recursive: true });
+      const started = Date.now();
+      let live = options.live ? mode : "execute";
+      if (live !== "execute")
+        try {
+          cache.restore(entry, folder);
+        } catch (error) {
+          // An unusable cache entry is a miss: run the trial rather than report an error.
+          process.stderr.write(`Cache entry for ${item.id} unusable (${error.message}); running\n`);
+          rmSync(folder, { recursive: true, force: true });
+          mkdirSync(folder, { recursive: true });
+          live = "execute";
+        }
+      try {
+        if (live === "reuse") reuseCached(record, folder, entry);
+        else if (live === "rejudge")
+          await rejudgeCached(candidate, item, record, folder, entry, options, dependencies);
+        else if (item.type === "routing")
+          await runRouting(item, record, folder, entries, options, dependencies);
+        else if (item.type === "classification")
+          await runClassification(
+            item,
+            record,
+            folder,
+            probeRoot,
+            options,
+            dependencies,
+            Boolean(cache),
+          );
+        else
+          await runExecution(
+            item,
+            record,
+            folder,
+            variant,
+            candidate,
+            options,
+            dependencies,
+            report,
+            Boolean(cache),
+          );
+      } catch (error) {
+        record.verdict = "ERROR";
+        record.error = error.message;
+      }
+      record.elapsedMs = live === "reuse" ? 0 : Date.now() - started;
+      json(output, `${record.artifactDirectory}/result.json`, record);
+      // The cache only saves later model calls; failing to write it never changes this result.
+      if (
+        cache &&
+        options.live &&
+        live !== "reuse" &&
+        record.captured &&
+        variant.name === "candidate"
+      )
+        try {
+          const unpriced = record.calls.filter((c) => c.costUSD == null).length;
+          cache.store(
+            item.id,
+            {
+              behaviour: record.behaviourHash,
+              scoring: scoringOf(item),
+              dependencies: record.dependencies ?? {},
+              verdict: record.verdict,
+              origin: record.origin ?? "executed",
+              source: record.source ?? null,
+              targetModels: record.targetModels,
+              modelIdentityIncomplete: record.modelIdentityIncomplete ?? false,
+              clientVersion: record.clientVersion ?? null,
+              costUSD: unpriced ? null : record.calls.reduce((n, c) => n + c.costUSD, 0),
+              unpricedCalls: unpriced,
+            },
+            folder,
+          );
+        } catch (error) {
+          process.stderr.write(`Could not cache ${item.id} #${record.repeat}: ${error.message}\n`);
+        }
+      Object.assign(slot, record);
+      progress.completed(item);
+      process.stdout.write(
+        `${item.type} ${item.id} ${variant.name} #${record.repeat}: ${record.verdict}` +
+          `${record.origin ? ` (${record.origin})` : ""}${record.error ? ` — ${record.error}` : ""}\n`,
+      );
+    }
+  }
+
   const previousCwd = process.cwd(),
     previousHome = process.env.DEEPEVAL_HOME;
   process.env.DEEPEVAL_HOME = path.join(output, ".deepeval-local");
   // DeepEval's optional local files stay in the disposable output, never the repository root.
   process.chdir(output);
+  const limit = limiter(options.jobs);
   try {
-    await runPool(groups, options.jobs, async ({ item, trials }) => {
-      for (const { record: slot, variant } of trials) {
-        const record = structuredClone(slot);
-        const folder = confined(output, record.artifactDirectory);
-        mkdirSync(folder, { recursive: true });
-        const started = Date.now();
-        try {
-          if (item.type === "routing")
-            await runRouting(item, record, folder, entries, options, dependencies);
-          else if (item.type === "classification")
-            await runClassification(item, record, folder, probeRoot, options, dependencies);
-          else
-            await runExecution(
-              item,
-              record,
-              folder,
-              variant,
-              candidate,
-              options,
-              dependencies,
-              report,
-            );
-        } catch (error) {
-          record.verdict = "ERROR";
-          record.error = error.message;
-        }
-        record.elapsedMs = Date.now() - started;
-        json(output, `${record.artifactDirectory}/result.json`, record);
-        Object.assign(slot, record);
-        progress.completed(item);
-        process.stdout.write(
-          `${item.type} ${item.id} ${variant.name} #${record.repeat}: ${record.verdict}${record.error ? ` — ${record.error}` : ""}\n`,
-        );
-      }
-    });
+    const settled = await Promise.allSettled(
+      cases.map(async (item) => {
+        await Promise.all(groupsByCase.get(item.id).map((group) => limit(() => runGroup(group))));
+        // Regression evidence runs once; a failure, judging error or unscored run adds repeats.
+        const runs = report.runs.filter((r) => r.caseId === item.id);
+        if (
+          !auto ||
+          !options.live ||
+          !runs.some((r) => ["NOT_PROVEN", "ERROR"].includes(r.verdict)) ||
+          groupsByCase.get(item.id).length >= AUTO_MAX_RUNS
+        )
+          return;
+        const extra = [];
+        for (let repeat = groupsByCase.get(item.id).length + 1; repeat <= AUTO_MAX_RUNS; repeat++)
+          extra.push(addRepeat(item, repeat));
+        await Promise.all(extra.map((group) => limit(() => runGroup(group))));
+      }),
+    );
+    const failed = settled.find((result) => result.status === "rejected");
+    if (failed) throw failed.reason;
   } finally {
     process.chdir(previousCwd);
     if (previousHome === undefined) delete process.env.DEEPEVAL_HOME;
     else process.env.DEEPEVAL_HOME = previousHome;
+    restoreCeiling();
   }
   const html = progress.finish();
   if (options.open) (injected.open ?? openReport)(html);

@@ -1,31 +1,4 @@
 import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
-
-const expected = {
-  A: "KEEP_30",
-  B: "KEEP_30",
-  C: "ASK_50",
-  D: "ASK_ORDER",
-  E: "KEEP_20",
-  F: "KEEP_BOTH",
-};
-
-/** Judge declared outcomes, including incomplete or duplicate records; prose is judged separately. */
-export function score({ tail }) {
-  const rows = tail?.findings ?? [];
-  return Object.entries(expected).map(([tag, choice]) => ({
-    label: `${tag} distinguishes semantic recency from a timestamp or unknown intent`,
-    pass:
-      rows.length === 6 &&
-      rows.filter((row) => row.tag === tag).length === 1 &&
-      rows.find((row) => row.tag === tag)?.summary === choice,
-    detail: rows.find((row) => row.tag === tag)?.summary ?? "missing",
-  }));
-}
-
-export function deterministicScore(input) {
-  return [...responseChecks(input, {}), ...score(input)];
-}
 
 export default {
   name: "sync-prefers-semantic-recency",
@@ -38,10 +11,9 @@ export default {
     },
     {
       id: "interaction",
-      text: "Group only C and D as remaining intent/chronology questions, continue independent cases, and do not claim edits or tests. Preserve all unrelated requirements. Outcomes in prose must agree with the records.",
+      text: "Group only C and D as remaining intent/chronology questions, continue independent cases, and do not claim edits or tests. Preserve all unrelated requirements.",
     },
   ],
-  deterministicScore,
   build() {
     return [
       skillText("adr-sync", {

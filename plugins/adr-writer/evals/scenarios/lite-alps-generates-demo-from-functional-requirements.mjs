@@ -1,5 +1,3 @@
-import { responseChecks } from "../lib/response-checks.mjs";
-
 export const obligations = [
   {
     id: "demo",
@@ -11,20 +9,9 @@ export const obligations = [
   },
   {
     id: "approval",
-    text: "Show the full proposed scenario before offering approval, revision or deferral. Do not ask the user to supply the demo flow, invoke tools or save content. The required tail agrees with the proposal.",
+    text: "Show the full proposed scenario before offering approval, revision or deferral. Do not ask the user to supply the demo flow, invoke tools or save content.",
   },
 ];
-
-/** Keep the response-only scope and requested records exact; judge meaning with GEval. */
-export function deterministicScore(input) {
-  return responseChecks(input, {
-    AUTO_GENERATED_DEMO: [],
-    COVERS_ALL_REQUIRED_FRS: [],
-    SHOWS_FULL_SCENARIO: [],
-    NO_RESTATEMENT_QUESTION: [],
-    OVERALL_PASS_SHOWS_ALL: [],
-  });
-}
 
 import {
   alpsLiteGuideText,
@@ -70,8 +57,7 @@ export default {
       alpsLiteGuideText(8),
       `\n---\n\n# This run`,
       SOURCE,
-      `Respond naturally in Korean and show the complete generated scenario before approval.`,
-      `In the tail use AUTO_GENERATED_DEMO, COVERS_ALL_REQUIRED_FRS, SHOWS_FULL_SCENARIO, NO_RESTATEMENT_QUESTION, and OVERALL_PASS_SHOWS_ALL once each.`,
+      `Respond naturally in Korean.`,
       TAIL_SPEC,
     ].join("\n");
   },

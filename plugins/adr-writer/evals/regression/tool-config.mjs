@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const TOOL_SERVER = path.join(path.dirname(fileURLToPath(import.meta.url)), "tool-server.mjs");
+const FAULTS = "--faults=";
 
 /** The MCP configuration that starts the fixture tool server; `toolServerOptions` reads it back. */
 export function toolServerConfig({
@@ -15,6 +16,7 @@ export function toolServerConfig({
   artifactPaths = [],
   draftRoot,
   businessContext = false,
+  faults = [],
 }) {
   return {
     mcpServers: {
@@ -31,6 +33,7 @@ export function toolServerConfig({
           JSON.stringify(artifactPaths),
           ...(draftRoot || businessContext ? [draftRoot ?? ""] : []),
           ...(businessContext ? ["business-context"] : []),
+          ...(faults.length ? [`${FAULTS}${JSON.stringify(faults)}`] : []),
         ],
       },
     },
@@ -38,17 +41,20 @@ export function toolServerConfig({
 }
 
 /** The `makeTools` options of a tool server's arguments (the configuration's args after the script). */
-export function toolServerOptions([
-  root,
-  pluginRoot,
-  logPath,
-  rawTurn,
-  rawGuidance,
-  checkerRoot,
-  rawArtifactPaths,
-  rawDraftRoot,
-  queryCapability,
-]) {
+export function toolServerOptions(args) {
+  // Injected faults trail the positional arguments, so the optional ones keep their places.
+  const faultArg = args.find((arg) => arg.startsWith(FAULTS));
+  const [
+    root,
+    pluginRoot,
+    logPath,
+    rawTurn,
+    rawGuidance,
+    checkerRoot,
+    rawArtifactPaths,
+    rawDraftRoot,
+    queryCapability,
+  ] = args.filter((arg) => arg !== faultArg);
   return {
     root,
     pluginRoot,
@@ -59,5 +65,6 @@ export function toolServerOptions([
     artifactPaths: rawArtifactPaths === undefined ? [] : JSON.parse(rawArtifactPaths),
     ...(rawDraftRoot ? { draftRoot: rawDraftRoot } : {}),
     ...(queryCapability === "business-context" ? { businessContext: true } : {}),
+    ...(faultArg ? { faults: JSON.parse(faultArg.slice(FAULTS.length)) } : {}),
   };
 }

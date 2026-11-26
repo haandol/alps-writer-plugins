@@ -19,31 +19,30 @@ approved or hide it in implementation code.`,
   ].join("\n\n");
 }
 
+// The classification's meaning is judged from the reply; the delegation phrase is not approval.
+export const obligations = [
+  {
+    id: "tuning",
+    text: "A, a private retry delay that no latency or recovery-time guarantee depends on, is classified as implementation discretion because of that effect, not because the user delegated it.",
+  },
+  {
+    id: "protected",
+    text: "B (how long customer records are kept before irreversible deletion), C (the paid plan's monthly usage limit) and D (which workspace roles can view a private document) are each classified as protected product decisions. None is treated as approved by the delegation phrase; a concrete value may be proposed or asked about, but is not presented as approved or hidden in implementation code.",
+  },
+  {
+    id: "reason",
+    text: "Each of the four classifications gives a reason based on what the value controls rather than on the delegation phrase. No file is edited.",
+  },
+];
+
 export default {
   name: "author-delegation-is-not-approval",
   description:
     "A delegated choice stays a product decision when it changes retention, quotas, or permissions.",
+  obligations,
   build() {
     return delegationPrompt(
       skillText("adr-new", { references: ["references/requirement-delegation.md"] }),
     );
-  },
-  score({ tail }) {
-    return ["A", "B", "C", "D"].map((id) => {
-      const matches = tail.findings.filter((finding) =>
-        new RegExp(`\\bcase\\s*=\\s*${id}\\b`, "i").test(finding.summary),
-      );
-      const row = matches[0];
-      const expected = id === "A" ? "TUNING" : "DECISION";
-      return {
-        label: `${id} classifies by effect rather than the delegation phrase`,
-        pass:
-          matches.length === 1 &&
-          row.tag === expected &&
-          (id === "A" || /approved\s*=\s*false/i.test(row.summary)) &&
-          /reason\s*=\s*\S/i.test(row.summary),
-        detail: row ? `${row.tag} | ${row.summary}` : "missing case",
-      };
-    });
   },
 };

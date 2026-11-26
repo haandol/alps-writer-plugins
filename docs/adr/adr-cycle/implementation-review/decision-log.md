@@ -2,6 +2,8 @@
 
 Newest first. Record only major decision changes.
 
+- **2026-11-26 — current ADR: [ADR 0001](0001-validated-low-risk-refactoring.md)** — 자동 수정 뒤 같은 모드의 검토 전체를 반복하던 방식 → 수정한 finding과 바뀐 단위를 원래 재현과 관련 테스트로 확인하고, 보호 표면을 넘는 수정이나 확인 실패에만 전체 검토를 다시 실행한다. full 리뷰도 그림·판단 조작이 없으면 HTML을 직접 만든다. 라운드마다 독립 관점 검토와 보고서 조합을 반복해 ADR 하나에 수백만 토큰이 들었기 때문이다.
+
 - **2026-10-16 — current ADR: [ADR 0001](0001-validated-low-risk-refactoring.md)** — 변경 위험으로 검토 모드를 통일하고 경량 standard의 설명 깊이와 직접 HTML 전달을 허용하며 계약·코드·테스트 증거를 유지한다.
 
 - **2026-10-15 — current ADR: [요구사항별 완료 증거](./0001-validated-low-risk-refactoring.md)** — 계약별 코드 경로와 테스트 단언·실행 결과를 대조하고 복합 의무·관련 반례의 공백과 외부 전제의 미검증을 완료 판정에 반영한다.

@@ -1,4 +1,4 @@
-import { mkdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { confined, createWorkspace, snapshot, makeTools } from "../regression/workspace.mjs";
 import { capturedChecks, writableCapture } from "../skills/mechanical-checks.mjs";
@@ -11,6 +11,18 @@ export function restore(root, files) {
     mkdirSync(path.dirname(target), { recursive: true });
     writeFileSync(target, bytes);
   }
+}
+
+/**
+ * A real repository ignores `.adr-review/` before any report is written (the
+ * review-artifact rule); the fixture tools only let the target write the report
+ * itself. Give the final verifiers the same ignore so a disposable report is
+ * never mistaken for code that references ADRs.
+ */
+export function ignoreReviewArtifacts(root) {
+  const folder = path.join(root, ".adr-review");
+  if (existsSync(folder) && !existsSync(path.join(folder, ".gitignore")))
+    writeFileSync(path.join(folder, ".gitignore"), "*\n");
 }
 
 /** Run the mandatory final verifiers on an execution workspace; live capture and rejudge share them. */
@@ -68,6 +80,7 @@ export function executionChecks(root, item, currentCase, evidence, pluginRoot) {
       Object.entries(evidence.after).filter(([file]) => writableCapture(item, file)),
     ),
   );
+  ignoreReviewArtifacts(root);
   const tools = makeTools({
     root,
     pluginRoot: pluginRoot,

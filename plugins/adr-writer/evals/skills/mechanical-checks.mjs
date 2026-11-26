@@ -14,6 +14,7 @@ export function writableCapture(item, file, { report = true } = {}) {
     item.type === "execution" ||
     [
       "author-keeps-values-and-lints",
+      "author-records-confirmed-unlinked",
       "author-self-checks-missing-value",
       "author-verifies-external-premise",
       "sync-rewrites-final-state-only",
@@ -32,7 +33,8 @@ export function writableCapture(item, file, { report = true } = {}) {
 
 /** Check observable writes and artifact presence; never infer meaning from reply words or tags. */
 export function capturedChecks(item, { before = {}, files = {}, events = [] }) {
-  const artifacts = new Set(item.artifactPaths ?? []);
+  // A case may allow a report file without requiring it (an optional memo).
+  const artifacts = new Set(item.requiredArtifactPaths ?? item.artifactPaths ?? []);
   const mutations = events.filter(
     (event) =>
       event.kind === "request" &&

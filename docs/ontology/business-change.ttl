@@ -101,12 +101,26 @@ m:business-change.hold-dependent-contract a onto:BusinessRule ;
     onto:basis "업무 의미를 확정하는 책임은 업무 모델에, 구현 계약을 확정하는 책임은 결정 기록에 있다." ;
     onto:constrains m:business-change.decide-model-change, m:business-change.revise-contract .
 
+m:business-change.approved-meaning a onto:ObservationCriterion ;
+    rdfs:label "승인된 업무 의미의 결정 기록 확정" ;
+    onto:startCondition "사용자가 여러 단계에 걸친 업무 규칙의 뜻을 바꾸는 변경을 승인했다." ;
+    onto:observedResult "승인한 뜻이 업무 모델에 반영된 뒤에만 그 뜻에 의존하던 결정 기록 내용이 미정에서 확정되고, 그 전에는 구현되지 않는다." ;
+    onto:criterionOf m:business-change ;
+    onto:passesThrough m:business-change.contract-revised, m:business-change.meaning-adopted .
+
 m:business-change.contract-only a onto:ObservationCriterion ;
     rdfs:label "결정 기록만의 변경" ;
     onto:startCondition "사용자가 업무 규칙의 뜻은 그대로 두고 정확한 값만 바꾸도록 요청했다." ;
     onto:observedResult "업무 모델 변경 제안 없이 결정 기록에서 변경이 확정된다." ;
     onto:criterionOf m:business-change ;
     onto:passesThrough m:business-change.contract-change-found, m:business-change.contract-revised .
+
+m:business-change.declined-meaning a onto:ObservationCriterion ;
+    rdfs:label "거절된 업무 의미의 결정 기록 유지" ;
+    onto:startCondition "사용자가 업무 의미 변경을 거절했다." ;
+    onto:observedResult "그 뜻에 의존하던 결정 기록 내용은 현재 업무 뜻으로 다시 쓰이거나 사용자가 정할 때까지 미정으로 남고 구현되지 않는다." ;
+    onto:criterionOf m:business-change ;
+    onto:passesThrough m:business-change.meaning-declined .
 
 m:business-change.meaning-first a onto:ObservationCriterion ;
     rdfs:label "업무 의미 변경의 선행 승인" ;

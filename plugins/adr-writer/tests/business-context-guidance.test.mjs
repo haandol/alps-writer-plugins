@@ -30,7 +30,7 @@ test("the session directive notes a business ontology without reading it", () =>
     assert.deepEqual(lines.slice(0, -1), plain.split("\n"), "the ADR directive is unchanged");
     assert.equal(
       lines.at(-1),
-      "Business ontology present: before an ADR decision or contract changes, obtain model content only through Ontology Writer's query. Keep model files out of direct reads and text searches, including repository-wide searches. Changes to business flow, hand-offs, policies, responsibilities, cross-step rules, concepts or terms go through its model change approval before the ADR. If it is unavailable, state that the business context was not checked.",
+      "Business ontology present: before an ADR decision or contract changes, obtain model content only through Ontology Writer's query. Keep model files out of direct reads and text searches, including repository-wide searches. Changes to business flow, hand-offs, policies, responsibilities, cross-step rules, concepts or terms go through its model change approval before the ADR. If it is unavailable, state that the business context was not checked; that covers only the query, so rows relying on a changed model meaning stay pending.",
     );
     assert.doesNotMatch(lines.at(-1), /ordering|ontology\.mjs/, "no model content or query path");
     const withModel = lines.join("\n");

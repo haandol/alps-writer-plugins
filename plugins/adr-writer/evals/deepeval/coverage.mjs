@@ -120,8 +120,8 @@ export const STAGES = [
     "RU9",
     "승인된 삭제·재번호 적용",
     "direct",
-    [ref("R1", "identity", "approval"), ref("R3", "approval", "references")],
-    "번호 변경 거절과 명시적 old→new 경로 승인을 각각 평가한다. 목적지 충돌·여러 그룹 연쇄 이동은 미포함이다.",
+    [ref("R1", "identity", "approval"), ref("R3", "approval", "references", "external-links")],
+    "번호 변경 거절과 명시적 old→new 경로 승인, 경로를 지정한 요청의 외부 링크 영향 보고를 각각 평가한다. 목적지 충돌·여러 그룹 연쇄 이동은 미포함이다.",
   ),
   stage(
     "ru_links",

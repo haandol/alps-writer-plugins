@@ -1,22 +1,7 @@
 import { skillText, TAIL_SPEC } from "./harness.mjs";
-import { responseChecks } from "./response-checks.mjs";
 
 /** Build a fixed preparation/resume task; expectations are not copied into the task text. */
 export function batchDecisionScenario(resume = false) {
-  const expected = resume
-    ? { A: ["CONTINUE", "APPLY"], B: "APPLY", C: "DEFER" }
-    : { A: "READY", B: "ASK_INTENT", C: "ASK_CONFLICT" };
-  function score({ tail }) {
-    const rows = tail?.findings ?? [];
-    return Object.entries(expected).map(([tag, summary]) => ({
-      label: `${tag} preserves the batch's intent and exact answer scope`,
-      pass:
-        rows.length === 3 &&
-        rows.filter((r) => r.tag === tag).length === 1 &&
-        [summary].flat().includes(rows.find((r) => r.tag === tag)?.summary),
-      detail: rows.find((r) => r.tag === tag)?.summary ?? "missing",
-    }));
-  }
   const scenario = {
     name: resume ? "sync-resumes-confirmed-batch" : "sync-batches-unclear-decisions",
     description: resume
@@ -30,9 +15,6 @@ export function batchDecisionScenario(resume = false) {
           : "A requires no question. Gather B and C in one domain-grouped report with evidence, recommended meaning and exact questions. C's newer code is a candidate, not authority. Do not invent B's historical reason, ask one-by-one, or claim files changed.",
       },
     ],
-    deterministicScore(input) {
-      return [...responseChecks(input, {}), ...score(input)];
-    },
     build() {
       return [
         skillText("adr-sync", {

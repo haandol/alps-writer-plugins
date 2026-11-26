@@ -1,5 +1,4 @@
 import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks, exactDecisionRecords } from "../lib/response-checks.mjs";
 
 export const obligations = [
   {
@@ -16,38 +15,15 @@ export const obligations = [
   },
   {
     id: "authorized-evidence-lifetime",
-    text: "All cases use an unchanged approved revision with Accepted prerequisites, comprehension load 3/10 and authorized bounded repairs. Publish plans as progress and proceed without new approval. Link each obligation's code, input/assertion, execution outcome and limit in disposable evidence; add no persistent ADR/mapping/code registry or new contract ID. Do not actually run tools or claim new results in this response-only probe. Actions, limit and evidence lifetime must agree with the records; no deployment or publication is requested.",
+    text: "All cases use an unchanged approved revision with Accepted prerequisites, comprehension load 3/10 and authorized bounded repairs. Publish plans as progress and proceed without new approval. Link each obligation's code, input/assertion, execution outcome and limit in disposable evidence; add no persistent ADR/mapping/code registry or new contract ID. Do not actually run tools or claim new results in this response-only probe. No deployment or publication is requested.",
   },
 ];
-
-const fields = ["action", "limit", "approval", "evidence"];
-const expected = {
-  A: ["PLAN_CONTRACT_FIRST", "3", "NONE", "DISPOSABLE"],
-  B: ["REPAIR_ASSERTIONS", "3", "NONE", "DISPOSABLE"],
-  C: ["COMPLETE", "3", "NONE", "DISPOSABLE"],
-  D: ["REPAIR_RACE_AND_TEST", "3", "NONE", "DISPOSABLE"],
-};
-
-function score(input) {
-  return exactDecisionRecords(
-    input,
-    fields,
-    expected,
-    "one implementation record per case without extras",
-  );
-}
-
-export function deterministicScore(input) {
-  return [...responseChecks(input, {}), ...score(input)];
-}
 
 export default {
   name: "impl-provability",
   description:
     "Plan and repair implementation evidence from original contract criteria, distinguishing weak assertions, adequate tests and applicable concurrency edges.",
   obligations,
-  deterministicScore,
-  score,
   build() {
     return [
       skillText("adr-impl", {

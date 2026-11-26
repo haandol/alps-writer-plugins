@@ -10,8 +10,8 @@ Return findings to `/adr-impl` in two groups:
   `Refactor`, `Spec violation`, `Best practice` weighted `now`, `Test gap`, and
   confirmed `Impl-fact mismatch`, when the fix is evidence-backed, remains
   within the approved scope, and does not change the ADR contract. `/adr-impl`
-  applies them, records what changed, reruns affected tests, and reruns the same
-  review mode.
+  applies them, records what changed, reruns affected tests, and confirms each
+  repaired finding with its original reproduction.
 - **Escalate**: a changed/new ADR decision, contradictory premises, a material
   `Unverified risk`, destructive migration, or a broad repair outside the
   approved scope.
@@ -59,9 +59,13 @@ Detailed routes:
 - `Contradiction` → do not fix anything before a human decides which of the two
   premises holds.
 
-Once automatic fixes are done, run `/adr-impl-review` again to complete the selected
-review path. Full mode completes both necessity and sufficiency passes; standard
-mode completes its sufficiency pass. On `PASS`, the caller completes the Status
+Once automatic fixes are done, confirm each repaired finding: rerun the
+reproduction or test that established it and the tests of the changed units,
+and record the result against that finding. The independent perspectives already
+ran; repeat the whole selected review path only when a repair changed a
+protected surface beyond the finding's repair, introduced a new unit the passes
+never saw, or a confirmation fails. When every finding is confirmed resolved and
+no must-fix remains, the verdict is `PASS`. On `PASS`, the caller completes the Status
 transition and reports the fixes; no routine post-implementation approval
 remains. Apply the [delivery spine's comprehension boundary](artifact-contract.md#3-completion-response):
 unverified or failed comprehension does not block PR publishing by default.

@@ -5,7 +5,6 @@ import {
   seedRuleDocs,
   TAIL_SPEC,
 } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
 import { LITE_SOURCE, liteDerivationRules } from "../lib/lite-derivation.mjs";
 
 export const obligations = [
@@ -19,19 +18,9 @@ export const obligations = [
   },
   {
     id: "approval",
-    text: "Present the draft for approval before saving; do not invoke tools or save. The required tail agrees with the visible response.",
+    text: "Present the draft for approval before saving; do not invoke tools or save.",
   },
 ];
-
-export function deterministicScore(input) {
-  return responseChecks(input, {
-    CONVERTS_LITE_FRS: [],
-    KEEPS_LITE_NFR_VALUES: [],
-    PEAK_PERIOD_TO_LITE: [],
-    NO_BUSINESS_REASK: [],
-    APPROVAL_BEFORE_SAVE: [],
-  });
-}
 
 export default {
   name: "alps-full-derives-from-lite-without-reasking",
@@ -49,7 +38,6 @@ export default {
       `새 Full ALPS를 Lite 출처로 초기화했고 Sections 1-4는 승인되어 저장되었다.`,
       LITE_SOURCE,
       `정상적인 Section 5 다음 응답을 한국어로 작성하라. 도구를 호출하거나 저장하지 마라.`,
-      `In the tail use CONVERTS_LITE_FRS, KEEPS_LITE_NFR_VALUES, PEAK_PERIOD_TO_LITE, NO_BUSINESS_REASK, and APPROVAL_BEFORE_SAVE once each.`,
       TAIL_SPEC,
     ].join("\n");
   },

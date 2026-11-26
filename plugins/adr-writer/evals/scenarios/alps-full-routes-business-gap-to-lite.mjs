@@ -5,7 +5,6 @@ import {
   seedRuleDocs,
   TAIL_SPEC,
 } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
 import { LITE_SOURCE, liteDerivationRules } from "../lib/lite-derivation.mjs";
 
 export const obligations = [
@@ -19,17 +18,9 @@ export const obligations = [
   },
   {
     id: "scope",
-    text: "Do not invoke tools or save. The required tail agrees with the visible response.",
+    text: "Do not invoke tools or save.",
   },
 ];
-
-export function deterministicScore(input) {
-  return responseChecks(input, {
-    LITE_CHANGE_PROPOSAL: [],
-    NO_FULL_BUSINESS_RULE: [],
-    HOLD_DEPENDENT_UNIT: [],
-  });
-}
 
 export default {
   name: "alps-full-routes-business-gap-to-lite",
@@ -48,7 +39,6 @@ export default {
       LITE_SOURCE,
       `기술 전환 중 확인한 사실: 비회원 장바구니에는 쿠폰을 적용할 수 있지만, Lite는 병합 뒤 그 쿠폰이 유지되는지 정하지 않았다.`,
       `정상적인 Section 7의 F1 다음 응답을 한국어로 작성하라. 도구를 호출하거나 저장하지 마라.`,
-      `In the tail use LITE_CHANGE_PROPOSAL, NO_FULL_BUSINESS_RULE, and HOLD_DEPENDENT_UNIT once each.`,
       TAIL_SPEC,
     ].join("\n");
   },

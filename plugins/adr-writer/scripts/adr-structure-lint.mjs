@@ -58,6 +58,7 @@ import {
   validateMappingShape,
   bodyStatus,
   parseHeadings,
+  sectionRange,
   isAdrFile,
   numberingGaps,
   rulesVersion,
@@ -163,6 +164,33 @@ function findFiles(root, matches) {
 // resolve. The seed at the ADR root (decision-log.template.md) does not match
 // this name, so scaffolding is excluded for free.
 const isDecisionLog = (name) => name === "decision-log.md";
+
+/**
+ * Local `.md` link targets in an ADR body outside its Related section, which
+ * R10 already checks. ADR-to-ADR links are what a rollup deletes and renumbers;
+ * other local targets are out of scope here. Links inside fenced blocks and
+ * inline code are examples, not citations.
+ */
+function bodyMarkdownLinks(parsed) {
+  const related = sectionRange(parsed, (h) => h.text.trim() === "Related");
+  const links = [];
+  let fence = null;
+  parsed.lines.forEach((text, i) => {
+    const marker = text.match(/^\s*(```+|~~~+)/);
+    if (marker) {
+      if (fence && text.trim().startsWith(fence)) fence = null;
+      else if (!fence) fence = marker[1];
+      return;
+    }
+    if (fence || (related && i >= related.start && i < related.end)) return;
+    for (const m of text.replace(/`[^`]*`/g, "").matchAll(/\[[^\]]*\]\(([^)\s]+)[^)]*\)/g)) {
+      const target = m[1].split("#")[0];
+      if (/^[a-z][a-z0-9+.-]*:/i.test(target) || !/\.md$/i.test(target)) continue;
+      links.push({ target, line: i + 1 });
+    }
+  });
+  return links;
+}
 
 function readSafe(p) {
   try {
@@ -370,6 +398,18 @@ function main() {
         rep.error("related-broken", where, `Related link target does not exist: ${target}`);
     }
 
+    // The same for markdown links in the rest of the body. A rollup that
+    // repointed Related but left a body link at a deleted or renumbered ADR
+    // otherwise passed clean.
+    for (const { target, line } of bodyMarkdownLinks(headings)) {
+      if (!existsSync(path.resolve(path.dirname(file), target)))
+        rep.error(
+          "body-link-broken",
+          `${where}:${line}`,
+          `body link target does not exist: ${target} (after a rollup removal or renumber, repoint it to the final path)`,
+        );
+    }
+
     // R2: code-reference depth (advisory)
     for (const hit of codeRefHits(body))
       rep.warn(
@@ -446,10 +486,9 @@ function main() {
   // ── decision-log ADR pointers resolve on disk ─────────────────────────
   // The log is a convention file (no NNNN- name, absent from .mapping.json), so
   // no per-ADR check reads it — yet adr-rollup's step 7 renumber moves the very
-  // ADR its "current ADR" pointer names. A missed repoint left a log pointing at a
-  // deleted path with a clean harness: the stale-citation finder matches the
-  // "<cat>/NNNN" token form while the log links relatively ("./0001-x.md"), and
-  // R10 only reads NNNN-*.md bodies. Error, not warning: a log whose pointer is
+  // ADR its "current ADR" pointer names. After the move, a missed repoint leaves
+  // a log pointing at a deleted path that the per-ADR link checks never read:
+  // they cover only NNNN-*.md bodies. Error, not warning: a log whose pointer is
   // dead has lost the one reference that makes the entry traceable.
   for (const logFile of entries.filter((file) => isDecisionLog(path.basename(file)))) {
     const rel = relFromRepo(logFile);

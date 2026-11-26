@@ -1,7 +1,4 @@
 import { skillText, ruleText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
-
-const EXPECTED = { A: "MERGE", B: "HOLD", C: "MERGE", D: "MERGE" };
 
 export const obligations = [
   {
@@ -14,26 +11,11 @@ export const obligations = [
   },
 ];
 
-export function deterministicScore(input) {
-  const rows = Array.isArray(input.tail?.findings) ? input.tail.findings : [];
-  return [
-    ...responseChecks(input, {}),
-    ...Object.entries(EXPECTED).map(([tag, decision]) => ({
-      label: `case ${tag}`,
-      pass:
-        rows.filter((r) => r?.tag === tag).length === 1 &&
-        rows.find((r) => r?.tag === tag)?.summary?.trim() === decision,
-      detail: rows.find((r) => r?.tag === tag)?.summary ?? "missing",
-    })),
-  ];
-}
-
 export default {
   name: "impl-lands-contract-with-code",
   description:
     "An edit to an implemented ADR contract reaches the shared branch together with its code, so every snapshot shows each ADR with code that follows it.",
   obligations,
-  deterministicScore,
   build() {
     return [
       skillText("adr-impl"),

@@ -5,10 +5,13 @@ The service reuses a stored completed result for that identifier instead of send
 The external service may finish even when its reply never reaches the caller. An unknown outcome must be checked with the external service before another operation is attempted.
 No global request ordering, automatic cancellation on timeout, or always-current local record is guaranteed. No live deployment, benchmark, or reader study was performed.`;
 
+// Each `references` lists only the content modules its obligations use; report-cases.mjs adds the common ones.
 export const abstractionCases = [
   {
     id: "report-drilldown-print-handout",
     title: "A report that folds deep detail remains readable as a printed handout",
+    // HTML handout: detail diagram, print/disclosure layout and Mermaid source views.
+    references: ["diagrams", "html-layout"],
     source: systemFacts,
     task: "Return a standalone Korean HTML report explaining this system with nested explanatory sections and a useful detailed diagram. It must be readable continuously on screen and as a printed handout. Preserve access to source evidence. Do not invoke tools or write files. The user excludes quizzes for this report.",
     semanticObligations: [
@@ -29,6 +32,8 @@ export const abstractionCases = [
   {
     id: "report-drilldown-visual-detail",
     title: "Detailed relationships receive their own useful visual explanations",
+    // Reader-context start, detail sequence figure, illustrative values not shown as measurements.
+    references: ["abstraction-and-analogy", "diagrams", "quantitative-claims"],
     source: `${systemFacts}
 Known reader context: the reader understands HTTP requests and prefers a small overview before inspecting the mechanism.`,
     task: "Write a Korean report explaining the retry-handling role, then unfold its internal responsibilities and detailed handling of recorded completion and unknown outcomes. Keep the overview approachable and the precise behavior reachable in the relevant deeper sections. Do not use tools or write files. The user excludes quizzes.",
@@ -50,6 +55,8 @@ Known reader context: the reader understands HTTP requests and prefers a small o
   {
     id: "report-drilldown-visual-restraint",
     title: "Review distinguishes a missing detail figure from a forced figure quota",
+    // Review-only judgement of figure need versus a figure quota.
+    references: ["diagrams", "review-results"],
     source: systemFacts,
     task: `Review the following report layout and proposed revision against the supplied facts. Explain which sections need better visual explanation and which do not, with the reader impact. Do not rewrite the report, use tools, or write files. The user excludes quizzes.
 Current layout:
@@ -75,6 +82,8 @@ Proposed revision: copy the overview diagram into every detail section and give 
   {
     id: "report-drilldown-familiar-reader",
     title: "Known reader context grounds an analogy that unfolds into the same system",
+    // Supplied familiarity grounds an analogy that must map to real terms; no figure obligation.
+    references: ["abstraction-and-analogy"],
     source: `${systemFacts}
 Known reader context from the conversation: the reader manages a library request desk and understands claim slips and request records. They are new to distributed request processing and prefer an everyday explanation before technical detail.`,
     task: "Write a Korean report explaining why retry handling works this way. Start at an approachable level, then let the reader descend to a precise explanation of the same system. Use the reader context already supplied; do not ask background questions. Do not use tools or write files. The user excludes quizzes.",
@@ -96,6 +105,8 @@ Known reader context from the conversation: the reader manages a library request
   {
     id: "report-drilldown-experienced-reader",
     title: "Known expertise changes the starting resolution without changing the facts",
+    // Known expertise sets the starting resolution and bounds any analogy; no figure obligation.
+    references: ["abstraction-and-analogy"],
     source: `${systemFacts}
 Known reader context from the conversation: the reader maintains HTTP APIs, already understands request identifiers and timeouts, and is learning how a separate provider's outcome is reconciled. They prefer building on familiar API behavior to an elementary story.`,
     task: "Write a Korean report that explains this system from an overview down to the unfamiliar mechanism. Use the known reader context and preserve the supplied system facts. Do not use tools or write files. The user excludes quizzes.",
@@ -117,6 +128,8 @@ Known reader context from the conversation: the reader maintains HTTP APIs, alre
   {
     id: "report-drilldown-no-reader-profile",
     title: "Missing personal context does not block a grounded abstraction ladder",
+    // Absent context needs a broadly familiar analogy without invented familiarity.
+    references: ["abstraction-and-analogy"],
     source: systemFacts,
     task: "Write a Korean report that starts with an accessible view and progressively explains this system precisely. No reader biography or expertise has been supplied. Do not use tools or write files. The user excludes quizzes.",
     semanticObligations: [
@@ -133,6 +146,8 @@ Known reader context from the conversation: the reader maintains HTTP APIs, alre
   {
     id: "report-drilldown-rejects-cosmetic-depth",
     title: "Review separates abstraction change from UI nesting and misleading analogy",
+    // Review of analogy limits and descent; the response must not impose a diagram quota.
+    references: ["abstraction-and-analogy", "diagrams", "review-results"],
     source: `${systemFacts}
 Known reader context: the reader understands a library request desk and claim slips.`,
     task: `Review these two report fragments against the supplied facts and reader context. Explain which transitions help or prevent precise understanding. Do not rewrite the fragments, invoke tools, or write files. The user excludes quizzes.

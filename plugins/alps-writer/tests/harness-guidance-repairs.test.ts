@@ -89,7 +89,14 @@ test("the rendered authoring example carries declared caps, expiry and approval 
   assert.ok(
     rows.some((row) => row[0] === "Incomplete draft" && row[2].includes("completion state")),
   );
-  assert.match(example, /Users complete the document step by step following AI guidance/);
+  assert.match(
+    example,
+    /As a product owner writing a first ALPS \(PRD\) document, I want AI to guide me through the template one section at a time, so that I can complete the whole document without first learning its structure\./,
+  );
+  assert.match(
+    example,
+    /Problem: alone with a blank template, owners skip sections or stall on what each one needs\. Intended outcome: a complete document in which the owner confirmed every section\./,
+  );
   assert.match(example, /After all chapters are complete, guide for final document save/);
   assert.match(example, /Data: the section content is saved after the user confirms/);
   assert.match(example, /```mermaid\nsequenceDiagram[\s\S]*UI-->>User: Show the question\n```/);

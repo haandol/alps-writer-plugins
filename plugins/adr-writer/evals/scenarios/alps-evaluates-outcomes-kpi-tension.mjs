@@ -1,7 +1,4 @@
 import { alpsSkillText, alpsGuideText, TAIL_SPEC } from "../lib/harness.mjs";
-import { responseChecks } from "../lib/response-checks.mjs";
-
-export const deterministicScore = (input) => responseChecks(input, {});
 
 export const obligations = [
   {
@@ -27,7 +24,6 @@ export default {
   description:
     "Full ALPS Section 2 always proposes a scenario-backed tension candidate for every user-supplied KPI, leaving adoption to the user.",
   obligations,
-  deterministicScore,
   build() {
     return [
       alpsSkillText("alps-init", { references: ["references/outcome-evaluation.md"] }),

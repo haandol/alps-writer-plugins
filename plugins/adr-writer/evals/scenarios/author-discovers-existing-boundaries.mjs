@@ -19,7 +19,7 @@ export const fixtureFiles = {
 };
 
 /** Check produced artifacts and protected inputs; a semantic judge checks the discovered grouping. */
-export function score(
+export function mechanicalScore(
   { dir, events = [], before = fixtureFiles },
   reportPath = ".adr-review/discovery/report.md",
 ) {
@@ -94,7 +94,6 @@ export default {
       text: "Use actual repository evidence to distinguish one monorepo from three independently deployed services; group checkout and worker under Ordering, settlement under Billing. Preserve the 1..3 item/member rules and valid confirmation transition. Ask for missing intent rather than inventing it. Do not claim access to fulfillment or change application sources or official ADR/index.",
     },
   ],
-  deterministicScore: score,
   build(dir) {
     for (const [file, body] of Object.entries(fixtureFiles)) write(dir, file, body);
     return [
@@ -113,5 +112,3 @@ commands or infer another repository's internals.`,
     ].join("\n\n");
   },
 };
-
-export const mechanicalScore = score;

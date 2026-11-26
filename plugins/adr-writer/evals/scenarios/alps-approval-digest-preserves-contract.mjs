@@ -5,7 +5,6 @@ import {
   seedRuleDocs,
   TAIL_SPEC,
 } from "../lib/harness.mjs";
-import { semanticScore } from "../lib/semantic-score.mjs";
 
 const SOURCE = `
 Section 7 Feature: 팀 작업 세션
@@ -42,22 +41,26 @@ export const obligations = [
     text: "The visible digest says the result appears in the team dashboard after approval.",
   },
   {
+    id: "evidence-kinds",
+    text: "Before approval, the visible digest says how each required contract (turn cap, retention, export permission, state rule) will be established: the kind of evidence, such as a code check or test, an eval, or user-flow or demo evidence, and its pass/fail rule. Listing the contracts without saying how each is checked is insufficient.",
+  },
+  {
     id: "options",
     text: "The visible digest explicitly offers all three choices: approve, revise, and defer. A choice only in the machine tail is insufficient.",
   },
   {
-    id: "tail",
-    text: "The CONTRACT_ITEM tail repeats all five product contracts (turn cap, retention condition, export permission, states and forbidden transition, dashboard result after approval) consistently with the visible digest. Correct text in one cannot excuse reversed or missing contracts in the other.",
+    id: "consistency",
+    text: "Every statement of the five product contracts (turn cap, retention condition, export permission, states and forbidden transition, dashboard result after approval) anywhere in the reply is consistent; a correct statement in one place cannot excuse a reversed or missing contract elsewhere, including in optional machine-readable records.",
   },
   {
     id: "save",
-    text: "The tail states both that no requirement absent from the digest may be saved and that each complete Section 7.x Feature remains a separate save unit.",
+    text: "The visible digest labels the complete Feature as its single approval and save unit, does not split its contracts across separate approvals, and neither saves it nor claims it was saved. Nothing in the reply indicates that a requirement absent from the digest would be saved.",
   },
   {
     id: "presentation",
     text: "The visible digest excludes PostgreSQL, Redis and the non-required three-retry implementation note and is readable raw text without Markdown tables.",
   },
-].map((item) => ({ ...item, label: `approval digest: ${item.id}` }));
+];
 
 export default {
   name: "alps-approval-digest-preserves-contract",
@@ -73,20 +76,7 @@ export default {
       `\n---\n\n# This run`,
       SOURCE,
       `Produce the user-facing approval digest only; do not call tools or print the full Feature.`,
-      `Keep it readable as raw text and end with approve, revise, and defer choices.`,
-      `In the tail use CONTRACT_ITEM for each preserved contract, RESPONSE_OPTIONS once,`,
-      `NO_UNSEEN_CONTRACT once, and SEPARATE_SAVE_UNIT once.`,
       TAIL_SPEC,
     ].join("\n");
-  },
-
-  score({ output, cmd, invoke }) {
-    const visible = output.split(/---\s*\n\s*## Machine-readable tail|===\s*EVAL-VERDICT/i)[0];
-    return semanticScore({
-      obligations,
-      sources: { visible, tail: output.slice(visible.length) },
-      cmd,
-      invoke,
-    });
   },
 };
