@@ -4,6 +4,13 @@ This document is the **major decision-change history** of the adr-authoring/deci
 category. Each ADR body describes only the current state, while the timeline of "what
 changed and why" accumulates here, newest first. Git preserves the individual diffs.
 
+## 2026-11-26 — 외부에서 확인할 수 있는 결정 가정은 승인 전에 원자료로 확인
+
+- **Current ADR**: [present-decision-digest-and-semantic-diff](./0001-present-decision-digest-and-semantic-diff.md)
+- **Change type**: requirement rule change
+- **What**: 계약·경계에 영향을 주는 미확정 가정은 승인 전에 질문 → 외부 원자료로 확인할 수 있는 가정은 질문 전에 권위 있는 원자료로 확인해 출처와 결과를 승인 화면에 보이고, 선택을 좌우하면 Related에 출처를 남기며, 확인하지 못한 부분만 이유와 함께 질문한다. 사용자가 대안을 기억하지 못하면 실제로 있는 대안을 근거와 함께 후보로 제안하고 확인된 대안만 기록한다.
+- **Why**: 외부 전제를 구현 단계에서야 확인하면 틀린 가정 위에서 승인한 계약을 구현 중에 다시 열어야 한다.
+
 ## 2026-10-29 — 상위 레벨이 정의를 소유한 업무 용어는 용어집에 다시 정의하지 않음
 
 - **Current ADR**: [present-decision-digest-and-semantic-diff](./0001-present-decision-digest-and-semantic-diff.md)

@@ -135,6 +135,13 @@ implementation readiness, or ADR handoff.
    Required or Optional, values and rules, pass/fail criteria, affected later items, and unresolved
    questions. Never save a requirement, exclusion, or Demo result absent from the digest. Show the
    full pending content when requested.
+   When a proposal or answer relies on an external factual claim or figure — a regulation, a market
+   or user figure, or an external service limit — that the document and supplied sources do not
+   establish, list it under unresolved questions as an unverified basis and offer to research only
+   that item with [alps-research](../alps-research/SKILL.md). It adds no question step: approval
+   choices stay available, research starts only on request, an approved basis remains unverified,
+   and the completion invitation in step 11 is unchanged. Do not repeat the offer for the same item
+   in this conversation, and never make it for a chosen goal or policy or an established fact.
 9. Do not add architecture questions or content beyond the required business-wording `C4Context`.
    Never add `C4Container`, technology stacks, interfaces, storage, deployment, libraries, code
    structure, Feature IDs, implementation plans, or ADR handoff steps to Lite.

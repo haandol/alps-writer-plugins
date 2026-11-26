@@ -21,7 +21,10 @@ or completion state for research. Supplied drafts or excerpts can be reviewed
 as input; disclose that scope and select a real document before any later save.
 
 A post-completion invitation is not permission to research. Start when the user
-requests or accepts the review; reuse an existing explicit request. Declining,
+requests or accepts the review; reuse an existing explicit request. An offer made
+during authoring for an unverified basis is likewise only an offer. When accepted,
+limit the scope to that item, review its pending draft as supplied input and
+return the findings to the same approval unit before anything is saved. Declining,
 deferring, or not answering leaves the completed document complete. Do not ask
 again for the same completed document in the current conversation after the
 user has answered. Do not persist an invitation or approval registry.

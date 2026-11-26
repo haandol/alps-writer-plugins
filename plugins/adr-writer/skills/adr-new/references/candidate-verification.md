@@ -53,6 +53,17 @@ Reuse the mechanical checks actually proved for the current candidate and baseli
 - **ADR admission gate (R12)** — does the core subject itself change a durable contract, boundary, provider/model/fallback, key design, or cross-implementation trade-off? If it is only a replaceable implementation means, do not save the ADR.
 - **Final-state wording (R3)** — do the body and mapping summary state the current result directly, without carrying replaced identifiers, previous values, or transition narration outside Alternatives and `decision-log.md`? Confirm that removing comparison residue did not remove a current prohibition.
 - **Decision identity check (R11/R12)** — did the mapping and plausible ADR bodies reveal an existing owner for this architectural question or boundary? If yes, stop and route to edit-in-place; a new provider name, reversed direction, or changed Driver is not by itself a new decision.
+- **Decision-changing assumptions and alternatives (R13/R14)** — when an
+  assumption that changes the contract, a durable boundary or the adopted
+  alternative can be settled by an authoritative source you can access, such as
+  a provider guarantee or limit, platform behavior or a regulation, read that
+  source before asking. Show the source and what it established in the approval
+  digest, and cite it under Related when that fact decides the alternative. A
+  contradicted assumption is not recorded as fact. Search snippets and unread
+  citations confirm nothing, and a confirmed fact does not approve the decision
+  or contract. Ask only about what the sources could not settle, naming why, and
+  persist no research notes. A proposed alternative needs a real basis and
+  enters Alternatives only after the user confirms it.
 - **Prose style (R20)** — advisory. Apply `reader-first-writing.md`, including
   its mechanical writing patterns, and never accept a cut that drops content.
 

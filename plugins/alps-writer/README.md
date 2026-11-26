@@ -52,7 +52,9 @@ sequenceDiagram
 Each section is explained, drafted and approved on its own. Nothing is saved
 before you confirm it. A glossary is added only when terms need confirmed
 definitions. When a document is complete, the agent offers an optional
-deep-research review; skipping it leaves the document complete.
+deep-research review; skipping it leaves the document complete. While you
+write, a section whose content relies on an unverified external fact shows that
+basis in its approval summary with an offer to research just that item.
 
 After handoff with `/feature-to-adr`, ADRs govern implementation and the PRD
 remains a planning record. Re-import a changed PRD explicitly to propose ADR
