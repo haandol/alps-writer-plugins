@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { skillText, TAIL_SPEC } from "../lib/harness.mjs";
 
 const index = "docs/adr/.mapping.json";
@@ -169,9 +168,6 @@ export default {
           "skills/report-writer/SKILL.md",
         ],
       }),
-      // Exercise the shared presentation guidance alongside the caller's override.
-      // It is not a direct reference of adr-rollup, so load its actual text here.
-      readFileSync(new URL("../../references/review-report-writing.md", import.meta.url), "utf8"),
       `# This run
 Response-only planning probe: do not call tools, edit files or claim new execution.
 For each independent snapshot, select the evidence you would inspect or reuse

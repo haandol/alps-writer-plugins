@@ -46,47 +46,20 @@ full replacement from `0001` to `0003`, preserve the adopted current contract in
 `0001` and plan removal of `0003` only after residual ownership and history checks.
 Keep existing numbers and gaps unless the user requests renumbering (step 7).
 
-```markdown
-# ADR NNNN: decision name
+Draft the survivor in the repository's ADR template (`docs/adr/README.md`, falling
+back to `${CLAUDE_PLUGIN_ROOT}/templates/adr/README.md`), with these rollup overrides:
 
-Date: <today>
-
-## Status
-
-{preserve verified completion — see rule 0 in step 4}
-
-## Purpose
-
-{why this decision is needed: the affected actor or system, current problem, intended outcome, and supplied scope or priorities that bound future autonomous choices; preserve decision-relevant background and assumptions. Follow authoring-rules.md "Reading order — intent before detail". No evolution narration such as "originally it did X, then changed to Y"}
-
-## Decision Drivers
-
-- {the actual pressures and constraints that discriminate between options; no count quota}
-
-## Decision
-
-{the current architectural choice and the driver explaining why it addresses Purpose's problem; then the behavior. No chronological listing}
-
-### Requirement contract
-
-{every still-applicable requirement row of the chain, one reviewable obligation per row, grouped as in the ADR template under Required guarantees, Prohibitions, Failure guarantees, Relied-on boundary and Observable evidence; keep each source's current observable evidence and relied-on boundary rows, and omit empty groups}
-
-### Alternatives
-
-{realistic alternatives and rejection reasons. One credible rejected alternative, or evidence that constraints leave no other valid path, is sufficient. Never invent an option for its count}
-
-## Consequences
-
-### Positive
-
-### Negative
-
-### Risks
-
-## Related
-
-{only links to currently valid ADRs and documents — keep links to other logical-decision ADRs in the same category}
-```
+- `Date:` is today; Status follows rule 0 below (preserve verified completion).
+- Purpose and Decision state the current state only: no evolution narration such
+  as "originally it did X, then changed to Y" and no chronological listing. The
+  history goes to `decision-log.md` (steps 6–9).
+- The Requirement contract carries every still-applicable row of the chain under
+  rule 4-a, grouped as the template groups them; omit empty groups.
+- Decision Drivers keep the actual pressures that discriminate between options,
+  with no count quota. Alternatives keep realistic rejected options with their
+  reasons. One credible rejected alternative, or evidence that constraints leave no other valid path, is sufficient. Never invent an option for its count.
+- Related lists only currently valid ADRs and documents, keeping links to other
+  logical-decision ADRs in the same category.
 
 **Rules**:
 

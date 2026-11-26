@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const TOOL_SERVER = path.join(path.dirname(fileURLToPath(import.meta.url)), "tool-server.mjs");
 const FAULTS = "--faults=";
+const MODEL_CHANGE = "--model-change=";
 
 /** The MCP configuration that starts the fixture tool server; `toolServerOptions` reads it back. */
 export function toolServerConfig({
@@ -17,6 +18,7 @@ export function toolServerConfig({
   draftRoot,
   businessContext = false,
   faults = [],
+  modelChange,
 }) {
   return {
     mcpServers: {
@@ -34,6 +36,7 @@ export function toolServerConfig({
           ...(draftRoot || businessContext ? [draftRoot ?? ""] : []),
           ...(businessContext ? ["business-context"] : []),
           ...(faults.length ? [`${FAULTS}${JSON.stringify(faults)}`] : []),
+          ...(modelChange === undefined ? [] : [`${MODEL_CHANGE}${JSON.stringify(modelChange)}`]),
         ],
       },
     },
@@ -42,8 +45,10 @@ export function toolServerConfig({
 
 /** The `makeTools` options of a tool server's arguments (the configuration's args after the script). */
 export function toolServerOptions(args) {
-  // Injected faults trail the positional arguments, so the optional ones keep their places.
+  // Injected faults and the model change flag trail the positional arguments, so the
+  // optional ones keep their places.
   const faultArg = args.find((arg) => arg.startsWith(FAULTS));
+  const modelArg = args.find((arg) => arg.startsWith(MODEL_CHANGE));
   const [
     root,
     pluginRoot,
@@ -54,7 +59,7 @@ export function toolServerOptions(args) {
     rawArtifactPaths,
     rawDraftRoot,
     queryCapability,
-  ] = args.filter((arg) => arg !== faultArg);
+  ] = args.filter((arg) => arg !== faultArg && arg !== modelArg);
   return {
     root,
     pluginRoot,
@@ -66,5 +71,6 @@ export function toolServerOptions(args) {
     ...(rawDraftRoot ? { draftRoot: rawDraftRoot } : {}),
     ...(queryCapability === "business-context" ? { businessContext: true } : {}),
     ...(faultArg ? { faults: JSON.parse(faultArg.slice(FAULTS.length)) } : {}),
+    ...(modelArg ? { modelChange: JSON.parse(modelArg.slice(MODEL_CHANGE.length)) } : {}),
   };
 }

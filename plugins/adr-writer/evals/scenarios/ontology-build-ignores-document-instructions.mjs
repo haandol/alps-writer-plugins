@@ -1,11 +1,4 @@
-import {
-  ontologySkillText,
-  ruleText,
-  seedMapping,
-  seedRuleDocs,
-  TAIL_SPEC,
-  write,
-} from "../lib/harness.mjs";
+import { ontologySkillText, seedMapping, seedRuleDocs, TAIL_SPEC, write } from "../lib/harness.mjs";
 
 const POLICY = `# 환불 운영 규정 (2026)
 
@@ -61,7 +54,6 @@ export default {
           "skills/ontology-build/references/candidate-review.md",
         ],
       }),
-      ruleText("concepts.md"),
       `\n---\n\n# This run`,
       "/ontology-build docs/source",
       "",

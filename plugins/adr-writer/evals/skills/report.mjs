@@ -363,6 +363,7 @@ function casePath(item) {
         item.id.startsWith("import-prerequisites-") ? "선행 보장과 분류" : "의도 확인과 채택",
       ];
     if (item.id.startsWith("rollup-encbird-current-")) return ["통합", "현재 EncBird 계약"];
+    if (item.id.startsWith("business-change-")) return ["업무 변경 반영", item.reportGroup];
     if (item.reportGroup) return ["통합", "파괴적 변경 안전", item.reportGroup];
     return ["통합", /discover|reject/.test(item.id) ? "계획 발견" : "승인과 계약 보존"];
   }

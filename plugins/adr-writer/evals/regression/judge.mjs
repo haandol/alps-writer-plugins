@@ -89,7 +89,9 @@ export function evidenceSources({
     (event) =>
       event.kind === "request" &&
       (["write_file", "delete_file", "move_file", "demote_adr_status"].includes(event.tool) ||
-        (event.tool === "run_check" && event.arguments.kind === "status")),
+        (event.tool === "run_check" && event.arguments.kind === "status") ||
+        // Saving an approved business-model change writes docs/ontology/.
+        (event.tool === "change_business_model" && event.arguments?.action === "apply")),
   );
   const remote = events.filter(
     (event) => event.kind === "request" && event.tool === "inspect_runtime",

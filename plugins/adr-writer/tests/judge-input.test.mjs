@@ -38,3 +38,37 @@ test("the judge reads the task and evidence, not the shipped guidance the target
   const kept = deepEvalInput({ ...item, judgeGuidance: true }, evidence);
   assert.ok(JSON.parse(kept.input).userTurns[0].includes(skill), "a case can opt back in");
 });
+
+test("each command output reaches the judge once, and a repeat names the first", () => {
+  const item = { obligations: [{ id: "a", text: "keep" }], turns: ["run the checks"] };
+  const run = (seq, stdout) => ({
+    seq,
+    kind: "result",
+    tool: "run_check",
+    ok: true,
+    result: { exitCode: 0, stdout },
+  });
+  const evidence = {
+    before: {},
+    after: {},
+    events: [run(2, "big report"), run(4, "big report"), run(6, "other")],
+    replies: ["done"],
+    turns: ["run the checks"],
+  };
+  const output = JSON.parse(deepEvalInput(item, evidence).actualOutput);
+  assert.deepEqual(output.checkOutput, {
+    "event:2:stdout": "big report",
+    "event:4:stdout": "[identical to checkOutput event:2:stdout]",
+    "event:6:stdout": "other",
+  });
+  assert.deepEqual(
+    output.events.map((event) => event.result.stdout),
+    [
+      "[see checkOutput event:2:stdout]",
+      "[see checkOutput event:4:stdout]",
+      "[see checkOutput event:6:stdout]",
+    ],
+  );
+  assert.equal(output.events[0].result.exitCode, 0, "other result fields stay as observed");
+  assert.equal(evidence.events[0].result.stdout, "big report", "the archived trace is not changed");
+});

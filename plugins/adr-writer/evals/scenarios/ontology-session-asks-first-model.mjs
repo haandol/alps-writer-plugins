@@ -1,4 +1,4 @@
-import { ruleText, seedMapping, TAIL_SPEC, write } from "../lib/harness.mjs";
+import { seedMapping, TAIL_SPEC, write } from "../lib/harness.mjs";
 import { ontologyDirective } from "../lib/ontology-fixtures.mjs";
 
 export const obligations = [
@@ -21,6 +21,8 @@ export default {
   description:
     "A new session in a project with no business ontology asks once whether to build one, naming the command and an input example.",
   obligations,
+  // The shipped instruction under test is the session-start directive itself.
+  directiveProbe: true,
   build(dir) {
     seedMapping(dir);
     write(dir, "README.md", "# Quotes\n\nSales can recieve a quote request and send a quote.\n");
@@ -28,8 +30,6 @@ export default {
     if (!/Would you like to create a business ontology/.test(directive))
       throw new Error("the fixture must give the first-model directive");
     return [
-      // The project uses ADR Writer, so its seeded rule document is background context.
-      ruleText("concepts.md"),
       "# Session start",
       "The client loaded this directive at the start of the session:",
       "```text",

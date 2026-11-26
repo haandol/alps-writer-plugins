@@ -1,11 +1,4 @@
-import {
-  hookContext,
-  ruleText,
-  seedIndexedAdrs,
-  seedMapping,
-  TAIL_SPEC,
-  write,
-} from "../lib/harness.mjs";
+import { hookContext, seedIndexedAdrs, seedMapping, TAIL_SPEC, write } from "../lib/harness.mjs";
 import { EXAMPLE_MODEL, ontologyDirective } from "../lib/ontology-fixtures.mjs";
 
 const MAPPING = {
@@ -45,6 +38,8 @@ export default {
   description:
     "Development work enters the business context at the smallest known scope: overview then a scoped search when unlocated, a direct detail query when known.",
   obligations,
+  // The shipped instruction under test is the session-start directive itself.
+  directiveProbe: true,
   build(dir) {
     seedMapping(dir, MAPPING);
     seedIndexedAdrs(dir, MAPPING);
@@ -54,8 +49,6 @@ export default {
     // A real session loads both installed plugins' session directives.
     const adrDirective = hookContext(dir, MAPPING);
     return [
-      // The project uses ADR Writer, so its seeded rule document is background context.
-      ruleText("concepts.md"),
       "# Session start",
       "The client loaded these directives at the start of the session:",
       "```text",

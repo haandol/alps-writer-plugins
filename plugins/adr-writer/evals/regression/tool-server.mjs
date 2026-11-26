@@ -4,13 +4,16 @@
 import { createInterface } from "node:readline";
 import { makeTools } from "./workspace.mjs";
 import { toolServerOptions } from "./tool-config.mjs";
+import { withModelChange } from "./model-change.mjs";
 
 const args = process.argv.slice(2);
 const [root, pluginRoot, logPath, rawTurn] = args;
 if (!root || !pluginRoot || !logPath || !/^\d+$/.test(rawTurn ?? "")) {
   throw new Error("tool-server requires fixture root, plugin root, event log, turn");
 }
-const tools = makeTools(toolServerOptions(args));
+const options = toolServerOptions(args);
+const { modelChange, ...fixtureOptions } = options;
+const tools = withModelChange(makeTools(fixtureOptions), options);
 const send = (message) => process.stdout.write(JSON.stringify(message) + "\n");
 
 for await (const line of createInterface({ input: process.stdin })) {

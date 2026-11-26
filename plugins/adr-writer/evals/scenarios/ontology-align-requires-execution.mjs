@@ -3,7 +3,6 @@ import path from "node:path";
 import {
   ONTOLOGY_PLUGIN_ROOT,
   ontologySkillText,
-  ruleText,
   seedIndexedAdrs,
   seedMapping,
   seedRuleDocs,
@@ -110,7 +109,6 @@ export default {
           "skills/ontology-align/references/verification.md",
         ],
       }),
-      ruleText("concepts.md"),
       `\n---\n\n# This run`,
       "/ontology-align ordering.place-order",
       "",

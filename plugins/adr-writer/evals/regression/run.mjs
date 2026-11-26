@@ -31,6 +31,13 @@ import { writableCapture } from "../skills/mechanical-checks.mjs";
 import { verifierIdentity } from "../lib/verifier-identity.mjs";
 import { checkRequiredGuidance } from "../lib/required-guidance.mjs";
 import { toolServerConfig } from "./tool-config.mjs";
+import {
+  commitWorkspace,
+  modelChangePrompt,
+  sessionStartContext,
+  validateModelChange,
+  withModelChange,
+} from "./model-change.mjs";
 
 import { caseRepeats, DEFAULT_JOBS, runPool } from "../lib/run-pool.mjs";
 export { runPool } from "../lib/run-pool.mjs";
@@ -208,8 +215,19 @@ function readEvents(file) {
     : [];
 }
 
-/** Give both conditions identical tools and tasks, changing only access to execution guidance. */
-export function executionPrompt(item, pluginRoot, history, referenceDate, guidance = true) {
+/**
+ * Give both conditions identical tools and tasks, changing only access to execution guidance.
+ * A model-change case adds its tool lines and the session-start context of its fixture.
+ */
+export function executionPrompt(
+  item,
+  pluginRoot,
+  history,
+  referenceDate,
+  guidance = true,
+  { sessionContext } = {},
+) {
+  const extra = modelChangePrompt(item, guidance, sessionContext);
   const skill = guidance
     ? readFileSync(path.join(pluginRoot, "skills", item.skill, "SKILL.md"), "utf8").replace(
         /^---\n[\s\S]*?\n---\n/,
@@ -229,12 +247,12 @@ demote_adr_status explicitly changes one ADR and its mapping entry to Proposed u
 write_file/delete_file/move_file are the available document editing tools.
 Additional report paths allowed for writing in this case: ${JSON.stringify(item.artifactPaths ?? [])}.
 No arbitrary host shell, credentials, source/test edits, or external service access are available.
-Respond normally in Korean. Do not emit evaluation tags or a machine-readable tail.
+${extra.lines}Respond normally in Korean. Do not emit evaluation tags or a machine-readable tail.
 Conversation replay below includes the preceding user turns and observable replies/events.
 
 ${guidance ? `<shipped-skill>\n${skill}\n</shipped-skill>` : ""}
 
-<conversation>
+${extra.session}<conversation>
 ${JSON.stringify(history, null, 2)}
 </conversation>`;
 }
@@ -262,6 +280,7 @@ export function validateCaseHooks(item, toolNames) {
     )
       throw new Error(`${item.id}: invalid between-turn change ${JSON.stringify(change)}`);
   }
+  if (item.modelChange !== undefined) validateModelChange(item.modelChange, turns);
   const faults = item.faults ?? [];
   validateFaults(faults, toolNames);
   if (faults.some((fault) => fault.turn === undefined || fault.turn > turns))
@@ -313,7 +332,17 @@ export async function runCase(item, variant, repeat, directory, options) {
   const root = path.join(artifactDir, "workspace");
   mkdirSync(artifactDir, { recursive: true });
   createWorkspace(root, options.fixture ?? item.build(), options.fixturePluginRoot ?? variant.root);
-  const before = snapshot(root);
+  // A business-context case starts from a committed fixture, so the query reports a settled model.
+  if (item.businessContext) commitWorkspace(root);
+  // The ADR candidate tree's copies of the seeded rules are scaffolding, as in classification.
+  const view = item.draftRoot ? { draftRoot: item.draftRoot } : {};
+  const before = snapshot(root, view);
+  const sessionContext = item.modelChange === undefined ? undefined : sessionStartContext(root);
+  // The fixture options of a case's tool servers; only flagged cases add capabilities.
+  const capabilities = {
+    ...(item.draftRoot ? { draftRoot: item.draftRoot } : {}),
+    ...(item.businessContext ? { businessContext: true } : {}),
+  };
   const verifier = verifierIdentity(options.checkerRoot ?? variant.root);
   const result = {
     caseId: item.id,
@@ -336,6 +365,9 @@ export async function runCase(item, variant, repeat, directory, options) {
       ...(item.agentTimeoutMs ? { agentTimeoutMs: item.agentTimeoutMs } : {}),
       ...(item.betweenTurns ? { betweenTurns: item.betweenTurns } : {}),
       ...(item.faults ? { faults: item.faults } : {}),
+      ...(item.modelChange === undefined
+        ? {}
+        : { modelChange: item.modelChange, capabilities, sessionContext }),
       checker: options.checkerHash ?? variant.hash,
       tools: sha(readFileSync(path.join(HERE, "workspace.mjs"), "utf8")),
       judge: {
@@ -352,7 +384,7 @@ export async function runCase(item, variant, repeat, directory, options) {
   const checkpoints = [];
   let phase = "execution";
   let evidence;
-  function capture(after = snapshot(root), events = readEvents(logPath)) {
+  function capture(after = snapshot(root, view), events = readEvents(logPath)) {
     const observed = {
       before,
       after,
@@ -364,15 +396,27 @@ export async function runCase(item, variant, repeat, directory, options) {
     return { ...observed, checkpoints, evidenceSources: evidenceSources(observed) };
   }
   try {
-    const tools = makeTools({
-      root,
-      pluginRoot: variant.root,
-      logPath: path.join(artifactDir, "fixture-checks.jsonl"),
-      turn: 0,
-      guidance: variant.guidance !== false,
-      checkerRoot: options.checkerRoot ?? variant.root,
-      artifactPaths: item.artifactPaths,
-    });
+    const checkLog = path.join(artifactDir, "fixture-checks.jsonl");
+    const tools = withModelChange(
+      makeTools({
+        root,
+        pluginRoot: variant.root,
+        logPath: checkLog,
+        turn: 0,
+        guidance: variant.guidance !== false,
+        checkerRoot: options.checkerRoot ?? variant.root,
+        artifactPaths: item.artifactPaths,
+        ...capabilities,
+      }),
+      {
+        root,
+        logPath: checkLog,
+        turn: 0,
+        guidance: variant.guidance !== false,
+        modelChange: item.modelChange,
+        draftRoot: item.draftRoot,
+      },
+    );
     validateCaseHooks(
       item,
       tools.definitions.map(({ name }) => name),
@@ -411,6 +455,8 @@ export async function runCase(item, variant, repeat, directory, options) {
             checkerRoot: options.checkerRoot ?? variant.root,
             artifactPaths: item.artifactPaths ?? [],
             faults: (item.faults ?? []).filter((fault) => fault.turn === index + 1),
+            ...capabilities,
+            ...(item.modelChange === undefined ? {} : { modelChange: item.modelChange }),
           }),
         ),
       );
@@ -421,6 +467,7 @@ export async function runCase(item, variant, repeat, directory, options) {
           history,
           referenceDate,
           variant.guidance !== false,
+          { sessionContext },
         ),
         cwd: root,
         config,
@@ -440,7 +487,7 @@ export async function runCase(item, variant, repeat, directory, options) {
           .filter((event) => event.turn === index + 1)
           .map(({ injectedFault, ...event }) => event),
       });
-      checkpoints.push({ turn: index + 1, files: snapshot(root) });
+      checkpoints.push({ turn: index + 1, files: snapshot(root, view) });
       applyBetweenTurns(item, index + 1, root, logPath);
     }
     events = readEvents(logPath);

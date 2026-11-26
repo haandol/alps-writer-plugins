@@ -112,6 +112,14 @@ MCP 서버가 아래 동작만 제공한다.
 결과 사건의 `injectedFault`는 판정용 표시이며 다음 발화에 재전달하지 않는다. 오래 걸리는 사례는
 `agentTimeoutMs`로 실행 에이전트의 호출 시간 상한을 `--timeout`보다 길게 지정할 수 있다.
 
+업무 모델이 있는 사례는 세 플래그로 실제 진입점을 연다. `businessContext`는 커밋된 fixture에서
+`query_business_context`를, `draftRoot`는 ADR 후보 트리를 준다. `modelChange: {}` 또는
+`{ approvalTurn }`은 `change_business_model`(`model-change.mjs`)을 더해 Ontology Writer의 실제
+`impact`를 `.adr-review/model-change/draft`에서 실행하고, 승인 발화부터만 기준 해시로 실제 `apply`를
+실행한다. 이 플래그가 있으면 문서 도구는 `docs/ontology/`를 거부하고, Ontology Writer의 읽기 전용
+지침은 `ontology-plugin/` 아래에 있으며, 프롬프트에는 두 플러그인의 실제 SessionStart 맥락이 붙는다.
+플래그가 없는 사례의 프롬프트·도구·지문은 그대로다.
+
 여러 발화는 앞선 사용자·응답·관찰 사건을 다음 호출에 재전달하는 **conversation replay**
 다. 실제 CLI의 resume·컨텍스트 압축·자동 메모리를 시험하는 것은 아니다. 기대 동작과
 판정기 입력은 실행 에이전트가 읽을 수 있는 fixture 밖에 둔다.

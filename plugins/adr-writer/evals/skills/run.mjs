@@ -50,6 +50,12 @@ import { BEDROCK_DEFAULTS } from "../deepeval/bedrock.mjs";
 import { validateReportEvaluation } from "./report-evaluation.mjs";
 import { executionOutcome, ignoreReviewArtifacts } from "../lib/execution-checks.mjs";
 import { toolServerConfig } from "../regression/tool-config.mjs";
+import {
+  commitWorkspace,
+  modelChangeScope,
+  sessionStartContext,
+  withModelChange,
+} from "../regression/model-change.mjs";
 
 /** The automatic policy's repeat ceiling after a failed, erroneous or unscored run. */
 export const AUTO_MAX_RUNS = 3;
@@ -247,7 +253,7 @@ export function selectImpacted(cases, changedPaths) {
                   p,
                 ) ||
                 (/^plugins\/(adr|ontology)-writer\/skills\//.test(p) &&
-                  p.split("/")[3] === c.skill),
+                  (c.impactSkills ?? [c.skill]).includes(p.split("/")[3])),
             )),
   );
 }
@@ -709,14 +715,26 @@ async function runExecution(
   if (!options.live) {
     const root = path.join(folder, "prepared");
     createWorkspace(root, fixture, candidate.root);
-    const tools = makeTools({
-      root,
-      pluginRoot: variant.root,
-      checkerRoot: candidate.root,
-      logPath: path.join(folder, "checks.jsonl"),
-      turn: 0,
-      artifactPaths: item.artifactPaths,
-    });
+    if (item.businessContext) commitWorkspace(root);
+    const tools = withModelChange(
+      makeTools({
+        root,
+        pluginRoot: variant.root,
+        checkerRoot: candidate.root,
+        logPath: path.join(folder, "checks.jsonl"),
+        turn: 0,
+        artifactPaths: item.artifactPaths,
+        ...(item.draftRoot ? { draftRoot: item.draftRoot } : {}),
+        ...(item.businessContext ? { businessContext: true } : {}),
+      }),
+      {
+        root,
+        logPath: path.join(folder, "checks.jsonl"),
+        turn: 0,
+        modelChange: item.modelChange,
+        draftRoot: item.draftRoot,
+      },
+    );
     if (variant.guidance !== false) checkRequiredGuidance(item, tools);
     const initial = initialFixtureChecks(tools);
     recordPreflight(root, initial);
@@ -772,6 +790,7 @@ function executionInputs(item, fixture, variant, candidate, options, scratch) {
       [],
       options.referenceDate,
       variant.guidance !== false,
+      item.modelChange === undefined ? {} : { sessionContext: sessionStartContext(scratch) },
     );
     const files = listFiles(scratch).map((file) => readFileSync(confined(scratch, file), "utf8"));
     return {
@@ -813,9 +832,10 @@ async function scoreExecution(item, record, folder, fixture, candidate, options,
     turn: item.turns.length,
     artifactPaths: item.artifactPaths,
   });
+  // A model-change case's model surfaces are its own verifier's to judge.
   const { checks, caseChecks } = executionOutcome(
     finalTools,
-    item,
+    modelChangeScope(item, evidence),
     evidence,
     fixture,
     item.verifyEvidence,

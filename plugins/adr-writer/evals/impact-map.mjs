@@ -238,10 +238,7 @@ export const IMPACT_RULES = [
     scenarioPrefixes: ["sync-"],
   },
   {
-    pathPrefixes: [
-      "plugins/adr-writer/skills/adr-rollup/",
-      "plugins/adr-writer/references/review-report-writing.md",
-    ],
+    pathPrefixes: ["plugins/adr-writer/skills/adr-rollup/"],
     scenarioPrefixes: ["rollup-"],
   },
   {

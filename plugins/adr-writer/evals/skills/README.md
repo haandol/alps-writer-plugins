@@ -270,6 +270,27 @@ Rollup planning is evaluated by `rollup-targeted-discovery`, which judges a prop
 scope without executing reads; the execution cases above judge real edits. Optional
 renumbering-reference loading is checked separately.
 
+## Business-change execution
+
+The `business-change-cases.mjs` cases execute the four observation criteria of the
+`business-change` process (`criterion` names each) in an authored course-enrollment
+project with both ADR Writer and Ontology Writer installed: a committed model with
+one cross-step rule, ADRs whose rows rely on it, and the seeded rule documents. The
+prompt carries both plugins' real SessionStart context. The target reaches the real
+entry points: `query_business_context`, the ADR candidate tree with `run_check`, and
+`change_business_model`, which copies the model into `.adr-review/model-change/draft`,
+runs Ontology Writer's real `impact` and, only from the case's
+`modelChange.approvalTurn` on, its real `apply` with the base hash. The document
+tools refuse `docs/ontology/`; Ontology Writer's guidance is read-only under
+`ontology-plugin/`. The `modelChange` flag gates all of this, so no other case's
+prompt, tools or fingerprints change. Local gates check the order of the query,
+the proposal, apply and ADR writes, and the model and ADR files; the meaning of the
+proposal and the revised rows stays with each case's obligations.
+
+```bash
+bun run eval:skills --prepare --suite execution --only business-change- --runs 1
+```
+
 ## Read the result
 
 The three suites deliberately report different evidence:

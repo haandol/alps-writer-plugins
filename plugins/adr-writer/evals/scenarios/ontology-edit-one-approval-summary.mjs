@@ -3,7 +3,6 @@ import path from "node:path";
 import {
   ONTOLOGY_PLUGIN_ROOT,
   ontologySkillText,
-  ruleText,
   seedIndexedAdrs,
   seedMapping,
   seedRuleDocs,
@@ -113,7 +112,6 @@ export default {
           "references/next-action.md",
         ],
       }),
-      ruleText("concepts.md"),
       `\n---\n\n# This run`,
       "/ontology-edit 스토어 적립금으로 전액 결제되는 주문은 결제 요청 없이 진행하도록 바꿔 줘.",
       "",
