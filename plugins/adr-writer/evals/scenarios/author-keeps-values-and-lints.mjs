@@ -61,6 +61,7 @@ const BRIEF = `우리는 업로드 기능에 서명된 URL 방식을 도입하�
 
 const scenario = {
   name: "author-keeps-values-and-lints",
+  agentTimeoutMs: 600_000, // reads the seeded rule documents, drafts and lints before its report
   description:
     "/adr-new must produce an ADR that passes the shipped structure lint, keeps requirement values verbatim, and leaves tuning values out.",
   bugReport: "“ADR을 써줬는데 커넥션 풀 크기까지 본문에 들어갔다 / 100MB가 '대용량'으로 뭉개졌다”",

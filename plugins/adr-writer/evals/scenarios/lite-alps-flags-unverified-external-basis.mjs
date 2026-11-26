@@ -60,7 +60,7 @@ export const obligations = [
 export default {
   name: "lite-alps-flags-unverified-external-basis",
   description:
-    "A Lite Section digest must mark an external factual claim the document and supplied sources do not establish as an unverified basis and offer item-scoped research without adding a question step, starting research, blocking approval, or offering it for chosen policies and established facts.",
+    "A Lite Section digest must mark an external factual claim the document and supplied sources do not establish as an unverified basis and offer item-scoped research without adding a question step, starting research, blocking approval, or offering it for chosen policies and established facts. Its requirements-preserved check also covers the lite-format rule that Lite records no technology.",
   bugReport:
     "작성 중에 근거 없는 법령 주장 위에서 Section을 승인했고, 문서를 다 쓴 뒤 근거 검토에서야 고쳐야 했다.",
 

@@ -16,7 +16,23 @@ const prose = (text) => String(text ?? "").replace(/\r?\n/g, " ");
 
 // Presentation-only hierarchy. It does not change prompts, expectations, or scores.
 const groups = [
-  ["제품 계약", "수용과 개선", ["alps-evaluates-outcomes-"]],
+  ["제품 계약", "수용과 개선", "결과와 지표", ["alps-evaluates-outcomes-"]],
+  ["제품 계약", "수용과 개선", "근거 검토", "안내", "완료 안내", ["alps-research-offers-once-"]],
+  [
+    "제품 계약",
+    "수용과 개선",
+    "근거 검토",
+    "안내",
+    "재질문과 재사용",
+    [
+      "alps-research-offers-reuse-",
+      "alps-research-offers-not-again-",
+      "alps-research-offers-after-",
+    ],
+  ],
+  ["제품 계약", "수용과 개선", "근거 검토", "조사와 판정", ["alps-research-reports-"]],
+  ["제품 계약", "수용과 개선", "근거 검토", "반영", ["alps-research-applies-"]],
+  ["제품 계약", "수용과 개선", "근거 검토", "작성 중 제안", ["alps-research-inflight-"]],
   ["제품 계약", "Full ALPS", "계약과 승인", ["alps-approval-", "alps-batch-", "alps-reference-"]],
   ["제품 계약", "Full ALPS", "기능 구성", ["alps-groups-", "alps-high-"]],
   ["제품 계약", "Full ALPS", "Lite 파생", ["alps-full-"]],
@@ -26,8 +42,9 @@ const groups = [
     "Lite ALPS",
     "요구사항 제안과 데모",
     "요구사항 제안",
-    ["lite-alps-proposes-", "lite-alps-groups-", "lite-alps-flags-"],
+    ["lite-alps-proposes-", "lite-alps-groups-"],
   ],
+  ["제품 계약", "Lite ALPS", "요구사항 제안과 데모", "미확인 근거", ["lite-alps-flags-"]],
   [
     "제품 계약",
     "Lite ALPS",
@@ -217,7 +234,7 @@ const groups = [
   ["결정 관리", "업무 온톨로지", "변경 승인", ["ontology-edit-"]],
   ["결정 관리", "업무 온톨로지", "준비 상태와 실행 정렬", ["ontology-sync-", "ontology-align-"]],
   ["결정 관리", "업무 온톨로지", "세션 안내와 맥락 조회", ["ontology-session-", "ontology-query-"]],
-  ["구현 보장", "의존성과 계획", "선행 상태와 계획", ["impl-blocks-", "impl-plans-"]],
+  ["구현 보장", "의존성과 계획", "선행 상태와 계획", ["impl-blocks-", "impl-plans-", "impl-edit-"]],
   ["구현 보장", "의존성과 계획", "의도와 기본값 판단", ["impl-resolves-", "impl-uses-intent-"]],
   [
     "구현 보장",

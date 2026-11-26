@@ -63,7 +63,11 @@ Reuse the mechanical checks actually proved for the current candidate and baseli
   citations confirm nothing, and a confirmed fact does not approve the decision
   or contract. Ask only about what the sources could not settle, naming why, and
   persist no research notes. A proposed alternative needs a real basis and
-  enters Alternatives only after the user confirms it.
+  enters Alternatives only after the user confirms it. An approval granted earlier
+  or in advance covers only what was settled then: an unsettled assumption that a
+  contract row or durable boundary depends on, including one you raised yourself,
+  keeps that row unapproved, while one that would only change the adopted
+  alternative stays a `reconsider <decision> if false` line.
 - **Prose style (R20)** — advisory. Apply `reader-first-writing.md`, including
   its mechanical writing patterns, and never accept a cut that drops content.
 

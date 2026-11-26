@@ -53,7 +53,9 @@ Do not infer availability from a model or product name, or invent tool names.
 4. **Unavailable external evidence.** If DuckDuckGo is absent or also fails,
    continue with accessible supplied sources and document-internal checks.
    Mark affected external claims unverified and name the failed or unavailable
-   route. Do not install servers, change connections, or claim research succeeded.
+   route. Do not supply laws, articles, figures or sources from memory, even as
+   labeled leads; name the kind of source that would settle the claim instead.
+   Do not install servers, change connections, or claim research succeeded.
    Preserve actual access/permission restrictions; fallback is not a bypass.
 
 ## Investigate and review the items

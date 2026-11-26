@@ -67,6 +67,7 @@ const BRIEF = `무료 플랜 사용자의 LLM 호출 비용이 예측 불가능�
 
 const scenario = {
   name: "author-self-checks-missing-value",
+  agentTimeoutMs: 600_000, // reads the seeded rule documents, drafts and lints before its report
   description:
     "/adr-new must catch that the brief never gave the values its own contract needs, name them as questions that block approval instead of inventing or blurring them, and leave the ADR and its mapping unsaved.",
   bugReport:

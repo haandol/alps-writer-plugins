@@ -197,6 +197,11 @@ test("embedded hook output and loaded references select every scenario that uses
       /\bontologyDirective\(/,
     ],
     [["plugins/adr-writer/references/business-context.md"], /references\/business-context\.md/],
+    [["plugins/alps-writer/dist/index.js"], /\balpsMcpGuidance\(|\balpsLiteResumeText\(/],
+    ...["alps-init", "lite-alps-init", "alps-research"].map((name) => [
+      [`plugins/alps-writer/skills/${name}/SKILL.md`],
+      new RegExp(`\\balpsSkillText\\("${name}"\\)`),
+    ]),
   ];
   for (const [paths, use] of dependencies) {
     const users = scenarios.filter((scenario) => use.test(source(scenario))).map((s) => s.name);
