@@ -96,6 +96,8 @@ export function behaviourFingerprint({ prompt, root, item, extra = null, date })
       artifactPaths: item.artifactPaths ?? [],
       draftRoot: item.draftRoot ?? null,
       businessContext: Boolean(item.businessContext),
+      // Present only on a model-change case, so every other fingerprint stays as it was.
+      ...(item.modelChange === undefined ? {} : { modelChange: item.modelChange }),
     },
     extra,
   });
@@ -125,14 +127,22 @@ function programHash(name, checkerRoot) {
 /**
  * Current value of one recorded dependency. `pluginRoot` is the tree the model
  * read through `plugin/`, `checkerRoot` the tree whose checkers ran, and
- * `skills` the shipped skill bodies a routing trial was shown. An unknown kind
- * never matches, so a stale cache format re-runs instead of failing.
+ * `skills` the shipped skill bodies a routing trial was shown. Ontology
+ * Writer's guidance read through `ontology-plugin/` is its own plugin's. An
+ * unknown kind never matches, so a stale cache format re-runs instead of failing.
  */
 function dependencyValue(key, { pluginRoot, checkerRoot = pluginRoot, skills }) {
   const [kind, subject] = [key.slice(0, key.indexOf(":")), key.slice(key.indexOf(":") + 1)];
   try {
     if (kind === "read") return fileHash(confined(pluginRoot, subject));
     if (kind === "list") return sha(listFiles(pluginRoot, subject));
+    if (kind === "ontology-read") return fileHash(confined(ONTOLOGY_PLUGIN_ROOT, subject));
+    if (kind === "ontology-list")
+      return sha(
+        listFiles(ONTOLOGY_PLUGIN_ROOT, subject).filter((file) =>
+          /^(skills|references|templates)\//.test(file),
+        ),
+      );
     if (kind === "program") return programHash(subject, checkerRoot);
     if (kind === "skill") return skills?.has(subject) ? sha(skills.get(subject)) : null;
     if (kind === "template")
@@ -147,8 +157,8 @@ function dependencyValue(key, { pluginRoot, checkerRoot = pluginRoot, skills }) 
 
 /**
  * Plugin content a run actually consumed through its tools: each plugin file it
- * read or listed, the checkers it ran and the business-context query program.
- * `skills` names the skill bodies a routing trial was shown.
+ * read or listed, the checkers it ran and the business-context query or model
+ * change program. `skills` names the skill bodies a routing trial was shown.
  */
 export function recordDependencies(events, context, { guidance = true, skills = [] } = {}) {
   const keys = new Set(skills.map((name) => `skill:${name}`));
@@ -157,6 +167,12 @@ export function recordDependencies(events, context, { guidance = true, skills = 
     const target = event.arguments?.path ?? event.arguments?.prefix;
     if (["read_file", "list_files"].includes(event.tool) && target?.startsWith("plugin/")) {
       if (guidance) keys.add(`${event.tool === "read_file" ? "read" : "list"}:${target.slice(7)}`);
+    } else if (
+      ["read_file", "list_files"].includes(event.tool) &&
+      target?.startsWith("ontology-plugin/")
+    ) {
+      const subject = target.slice("ontology-plugin/".length).replace(/\/+$/, "");
+      if (guidance) keys.add(`ontology-${event.tool === "read_file" ? "read" : "list"}:${subject}`);
     } else if (event.tool === "read_file" && templateName(target ?? ""))
       // A seeded rule document read from the fixture is the template's content.
       keys.add(`template:${templateName(target)}`);
@@ -165,7 +181,8 @@ export function recordDependencies(events, context, { guidance = true, skills = 
       // The checkers read the seeded rule documents too.
       keys.add("program:checkers");
       keys.add("template:*");
-    } else if (event.tool === "query_business_context") keys.add("program:ontology");
+    } else if (["query_business_context", "change_business_model"].includes(event.tool))
+      keys.add("program:ontology");
   }
   return Object.fromEntries([...keys].sort().map((key) => [key, dependencyValue(key, context)]));
 }

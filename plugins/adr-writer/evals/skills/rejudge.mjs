@@ -5,14 +5,28 @@ import {
   mkdirSync,
   readdirSync,
   copyFileSync,
+  unlinkSync,
 } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { evaluateEvidence, deepEvalInput } from "../deepeval/engine.mjs";
 import { catalog, PLUGIN } from "./catalog.mjs";
-import { capturedChecks } from "./mechanical-checks.mjs";
-import { confined, sha, listFiles } from "../regression/workspace.mjs";
-import { executionChecks, restore } from "../lib/execution-checks.mjs";
+import { capturedChecks, writableCapture } from "./mechanical-checks.mjs";
+import {
+  confined,
+  createWorkspace,
+  listFiles,
+  makeTools,
+  sha,
+  snapshot,
+} from "../regression/workspace.mjs";
+import {
+  executionChecks,
+  executionOutcome,
+  ignoreReviewArtifacts,
+  restore,
+} from "../lib/execution-checks.mjs";
+import { modelChangeScope } from "../regression/model-change.mjs";
 import { runPool } from "../lib/run-pool.mjs";
 import { startSkillsReport } from "./report.mjs";
 
@@ -188,7 +202,17 @@ export async function rejudge(options, injected = {}) {
       mkdirSync(workspace);
       const currentCase = current.get(item.id);
       if (item.type === "execution") {
-        record.checks = executionChecks(workspace, item, currentCase, evidence, PLUGIN);
+        const modelChange = item.modelChange ?? currentCase?.modelChange;
+        record.checks =
+          modelChange === undefined
+            ? executionChecks(workspace, item, currentCase, evidence, PLUGIN)
+            : modelChangeChecks(
+                workspace,
+                { ...item, modelChange, draftRoot: item.draftRoot ?? currentCase?.draftRoot },
+                currentCase,
+                evidence,
+                PLUGIN,
+              );
       } else {
         record.checks = capturedChecks(item, {
           before: evidence.before,
@@ -267,4 +291,34 @@ export async function rejudge(options, injected = {}) {
     html,
     output,
   };
+}
+
+/**
+ * The shared execution replay with a model-change case's model surfaces as authorized
+ * outputs, as the live run scores them. The tools keep the case's own report paths;
+ * only the immutable-fixture and capture checks see the model surfaces.
+ */
+function modelChangeChecks(root, item, currentCase, evidence, pluginRoot) {
+  if (currentCase?.type !== "execution" || typeof currentCase.build !== "function")
+    throw new Error("No current execution verifier is registered for the captured case");
+  const scoped = modelChangeScope(item, evidence);
+  const fixture = currentCase.build();
+  createWorkspace(root, fixture, pluginRoot);
+  for (const file of Object.keys(snapshot(root)))
+    if (writableCapture(scoped, file)) unlinkSync(confined(root, file));
+  restore(
+    root,
+    Object.fromEntries(
+      Object.entries(evidence.after).filter(([file]) => writableCapture(scoped, file)),
+    ),
+  );
+  ignoreReviewArtifacts(root);
+  const tools = makeTools({
+    root,
+    pluginRoot,
+    logPath: path.join(path.dirname(root), "rejudge-checks.jsonl"),
+    turn: evidence.turns.length,
+    artifactPaths: item.artifactPaths,
+  });
+  return executionOutcome(tools, scoped, evidence, fixture, currentCase.verifyEvidence).checks;
 }

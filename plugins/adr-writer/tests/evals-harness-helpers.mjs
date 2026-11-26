@@ -71,6 +71,12 @@ export function assertShippedPrompt(scenario, prompt) {
         !prompt.includes("[Business-context directive]"),
         `${scenario.name}: carries Ontology Writer's directive without that plugin`,
       );
+  } else if (scenario.directiveProbe) {
+    // A session-start probe carries the shipped directive text, not a skill body.
+    assert.ok(
+      /\[Business-context directive\]|Ontology Writer is installed/.test(prompt),
+      `${scenario.name}: missing the shipped session directive`,
+    );
   } else {
     assert.ok(
       prompt.length > 5000,
@@ -86,6 +92,12 @@ export function assertShippedPrompt(scenario, prompt) {
     assert.match(
       prompt,
       /Atomic is the default|top-3 focus set|separately labeled draft|plain-text approval digest|Comprehension load/i,
+    );
+  } else if (scenario.name.startsWith("ontology-")) {
+    // Ontology Writer's own skills and directives, which never load the ADR concepts document.
+    assert.match(
+      prompt,
+      /ontology\.mjs|onto:[A-Za-z]|\[Business-context directive\]|EventStorming|business (model|ontology)/i,
     );
   } else {
     assert.match(

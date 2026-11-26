@@ -13,6 +13,7 @@ import { importExecutionCases } from "./import-execution.mjs";
 import { importPrerequisiteCases } from "./import-prerequisites.mjs";
 import { encbirdRollupCases } from "./encbird-rollup-cases.mjs";
 import { rollupSafetyCases } from "./rollup-safety-cases.mjs";
+import { businessChangeCases } from "./business-change-cases.mjs";
 
 export const PLUGIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 export const ROOT = path.resolve(PLUGIN, "../..");
@@ -157,6 +158,7 @@ export async function catalog() {
       ...from("skills/import-prerequisites.mjs", importPrerequisiteCases),
       ...from("skills/encbird-rollup-cases.mjs", encbirdRollupCases),
       ...from("skills/rollup-safety-cases.mjs", rollupSafetyCases),
+      ...from("skills/business-change-cases.mjs", businessChangeCases),
     ].map((c) => ({
       ...c,
       type: "execution",

@@ -119,7 +119,6 @@ test("the catalog judges the probe by its semantic obligations, with no mechanic
 test("rollup and scoped presentation changes select the new probe without unrelated scenarios", () => {
   for (const path of [
     "plugins/adr-writer/skills/adr-rollup/SKILL.md",
-    "plugins/adr-writer/references/review-report-writing.md",
     "plugins/adr-writer/evals/scenarios/rollup-targeted-discovery.mjs",
   ]) {
     assert.deepEqual(

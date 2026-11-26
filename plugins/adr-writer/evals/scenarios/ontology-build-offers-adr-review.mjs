@@ -1,6 +1,5 @@
 import {
   ontologySkillText,
-  ruleText,
   seedIndexedAdrs,
   seedMapping,
   TAIL_SPEC,
@@ -37,7 +36,6 @@ export default {
       ontologySkillText("ontology-build", {
         references: ["skills/ontology-build/references/pre-build-adr-review.md"],
       }),
-      ruleText("concepts.md"),
       "# This run",
       `This project has no saved ontology. It contains ${adr.path} and quote-workflow.md. ADR Writer is available.`,
       "The user was asked whether to create a business ontology and replied: “네, 견적 처리 업무부터 만들어 줘. quote-workflow.md에 업무 내용이 있어.”",

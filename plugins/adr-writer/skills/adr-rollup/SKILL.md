@@ -122,9 +122,8 @@ For clear chains, a contract comparison table and concise change summary are
 sufficient. Add a small candidate-local before/after Mermaid only when it helps
 judge a cycle, partial replacement, ownership conflict or complex reference
 change. ADR count, routine deletion or link repointing alone does not require a
-diagram. Do not regenerate a complete dependency map for the report. Group all
-remaining questions by domain/bounded context in one report before asking; do
-not interrupt after each ADR or category. This presentation rule does not relax
+diagram. Do not regenerate a complete dependency map for the report. This
+presentation rule does not relax
 contract coverage, exact destructive scope or any verification below.
 
 ## Workflow
@@ -201,5 +200,4 @@ only within the approved scope.
 ## Notes
 
 - Roll-up is **information compression, not information loss.** Never omit an important decision — the consolidated ADR (current state) plus `decision-log.md` (the major-transition history) together preserve the chain's decisions.
-- When in doubt, do not merge. Staying separate is safe.
 - Code establishes implementation facts; it does not establish adoption or completion review. Preserve Status under the Status rule in candidate-contract.md. Apply the ADR admission gate before carrying anything from code into the consolidated document. **Gray-zone decisions and requirements remain the ADR's authority.** When code contradicts such a decision, branch into "decision change vs violation" as in step 5 item 3.

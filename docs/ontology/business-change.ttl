@@ -43,7 +43,7 @@ m:business-change a onto:Process ;
     onto:businessOutcome "업무 모델이 소유하는 뜻의 변경은 사용자가 승인한 뒤에만 결정 기록의 계약이 되고, 결정 기록이 소유하는 변경은 업무 모델을 거치지 않고 결정 기록에서 확정된다." ;
     onto:openScope "개정된 결정 기록의 계약을 구현하고 검증하는 흐름."^^onto:OpenPath ;
     onto:summary "업무 의미를 바꾸는 개발 중 변경은 업무 모델의 승인을 먼저 거친 뒤 결정 기록으로 내려간다." ;
-    onto:status "Proposed" ;
+    onto:status "Accepted (2026-11-27)" ;
     onto:hasStep m:business-change.classify-change, m:business-change.decide-model-change, m:business-change.revise-contract .
 
 m:business-change.classify-change a onto:Step ;

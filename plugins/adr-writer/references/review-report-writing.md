@@ -54,9 +54,6 @@ blockquote or bold sentence. These are rewrite signals, not banned words.
   two sentences explain gets no diagram. Never add a participant or relation the
   evidence does not establish; name the unverified axis in text instead. The
   prose must remain reviewable when Mermaid does not render.
-- **Rollup:** clear chains may use contract tables and summaries. Expand into
-  candidate-local views only when ownership, partial replacement, cycles or
-  reference changes need them. Do not add whole-system discovery for a report.
 - **Implementation review:** use
   `${CLAUDE_PLUGIN_ROOT}/skills/adr-impl-review/references/review-hiking.md` for
   Context and the vertical causal flow, and

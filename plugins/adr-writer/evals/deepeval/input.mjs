@@ -79,10 +79,26 @@ export function deepEvalInput(item, evidence) {
   // Lifecycle evaluations retain full transient writes. Final-report evaluations
   // omit only report revision bodies from the judging view; action metadata and
   // source mutations remain visible, and the runner archives the complete trace.
-  const events = evidence.events;
-  const checkOutput = Object.fromEntries(
-    Object.entries(sources).filter(([key]) => /^event:\d+:(stdout|stderr)$/.test(key)),
-  );
+  // Each command output appears once: under checkOutput, where a repeat of an
+  // earlier identical output names that output instead. The events point there.
+  const checkOutput = {};
+  const firstKey = new Map();
+  for (const [key, text] of Object.entries(sources)) {
+    if (!/^event:\d+:(stdout|stderr)$/.test(key)) continue;
+    checkOutput[key] = firstKey.has(text)
+      ? `[identical to checkOutput ${firstKey.get(text)}]`
+      : text;
+    if (!firstKey.has(text)) firstKey.set(text, key);
+  }
+  const events = evidence.events.map((event) => {
+    const streams = ["stdout", "stderr"].filter(
+      (stream) => `event:${event.seq}:${stream}` in checkOutput,
+    );
+    if (!streams.length) return event;
+    const result = { ...event.result };
+    for (const stream of streams) result[stream] = `[see checkOutput event:${event.seq}:${stream}]`;
+    return { ...event, result };
+  });
   return {
     input: JSON.stringify({
       skill: item.skill,

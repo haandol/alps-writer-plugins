@@ -1,4 +1,4 @@
-import { ruleText, seedMapping, TAIL_SPEC, write } from "../lib/harness.mjs";
+import { seedMapping, TAIL_SPEC, write } from "../lib/harness.mjs";
 import { ontologyDirective } from "../lib/ontology-fixtures.mjs";
 
 export const obligations = [
@@ -17,6 +17,8 @@ export default {
   description:
     "After the user defers the first-model question, the agent records 'later' once and continues the original request without asking again.",
   obligations,
+  // The shipped instruction under test is the session-start directive itself.
+  directiveProbe: true,
   build(dir) {
     seedMapping(dir);
     write(dir, "README.md", "# Quotes\n\nSales can recieve a quote request and send a quote.\n");
@@ -24,8 +26,6 @@ export default {
     if (!/set setup <choice>/.test(directive))
       throw new Error("the fixture must give the first-model directive");
     return [
-      // The project uses ADR Writer, so its seeded rule document is background context.
-      ruleText("concepts.md"),
       "# Session start",
       "The client loaded this directive at the start of the session:",
       "```text",

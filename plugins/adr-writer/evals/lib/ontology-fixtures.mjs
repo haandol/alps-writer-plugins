@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ONTOLOGY_PLUGIN_ROOT, ontologySkillText, ruleText, TAIL_SPEC } from "./harness.mjs";
+import { ONTOLOGY_PLUGIN_ROOT, ontologySkillText, TAIL_SPEC } from "./harness.mjs";
 
 export const EXAMPLE_MODEL = readFileSync(
   path.join(ONTOLOGY_PLUGIN_ROOT, "templates", "ontology", "example.ttl"),
@@ -192,12 +192,12 @@ export const CHECKOUT_ADR = adrDocument({
 
 /**
  * An ontology-build prompt: the shipped skill with the references this run loads (each after
- * the module that links it), the ADR concepts an agent reads alongside, then the run itself.
+ * the module that links it), then the run itself. The skill never asks for the ADR concepts
+ * document, and the model-boundary rules the obligations judge live in `ontology.md`.
  */
 export function buildPrompt(references, ...run) {
   return [
     ontologySkillText("ontology-build", { references }),
-    ruleText("concepts.md"),
     "# This run",
     ...run,
     TAIL_SPEC,
